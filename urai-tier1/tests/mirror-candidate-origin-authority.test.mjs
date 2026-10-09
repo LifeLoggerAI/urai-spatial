@@ -14,13 +14,37 @@ const authority = createCandidateRouteAuthority(baseUrl)
 const prefix = runnerSource.slice(0, runnerSource.indexOf('const original =')).replace(/^import .*$/gm, '')
 const { isNarrowReplayScreenshotFailure } = vm.runInNewContext(prefix + '\n({ isNarrowReplayScreenshotFailure })', { URL, createCandidateRouteAuthority, process: { env: { URAI_AUDIT_BASE_URL: baseUrl, URAI_EXACT_HEAD: exactSha } } })
 const receipt = (finalUrl, changes = {}) => ({ exactSha, status: 'failed', cases: [{ name: 'transition-to-replay', device: 'desktop', status: 'failed', error: 'page.screenshot: Timeout 60000ms exceeded', finalUrl, consoleErrors: [], failedRequests: [], httpErrors: [], ...changes }] })
-const predicate = proofSource.match(/page\.waitForURL\(\(url\) => (.*?), \{ timeout: 30000 \}\)/)?.[1]
+const transitionStart = proofSource.indexOf('async function proveTransition(')
+const transitionEnd = proofSource.indexOf('async function proveSemanticFallback(', transitionStart)
+assert.ok(transitionStart >= 0 && transitionEnd > transitionStart, 'actual transition proof scope is present')
+const transitionSource = proofSource.slice(transitionStart, transitionEnd)
+const predicate = transitionSource.match(/page\.waitForURL\(\(url\) => (.*?), \{ timeout: 30000 \}\)/)?.[1]
 assert.ok(predicate, 'actual transition wait predicate is present')
 const originalPathname = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 const transitionAllows = (value) => vm.runInNewContext(predicate, { url: new URL(value), destination: 'replay', pathname: originalPathname, candidateAuthority: authority })
 test('actual Mirror wait predicate rejects cross-origin same-path transition', () => assert.equal(transitionAllows('https://foreign.example/replay'), false))
 test('actual Mirror wait predicate rejects candidate port drift', () => assert.equal(transitionAllows('http://127.0.0.1:4174/replay'), false))
 test('actual Mirror wait predicate accepts exact candidate with query and trailing slash', () => assert.equal(transitionAllows(`${baseUrl}/replay/?memoryId=quiet-reset`), true))
+const bareEntryStart = proofSource.indexOf('async function proveBareEntry(')
+const bareEntryEnd = proofSource.indexOf('async function proveOverview(', bareEntryStart)
+assert.ok(bareEntryStart >= 0 && bareEntryEnd > bareEntryStart, 'actual bare-entry proof scope is present')
+const bareEntrySource = proofSource.slice(bareEntryStart, bareEntryEnd)
+const bareEntryPredicate = bareEntrySource.match(/page\.waitForURL\(\(url\) => (.*?), \{ timeout: 30000 \}\)/)?.[1]
+assert.ok(bareEntryPredicate, 'actual explicit-demo navigation predicate is present')
+const bareEntryAllows = value => vm.runInNewContext(bareEntryPredicate, { url: new URL(value), candidateAuthority: authority })
+const demoQuery = '?memoryId=demo%3Amirror-preview&node=mirror-preview&demo=1'
+test('actual bare Mirror demo wait accepts exact disclosed context and trailing slash', () => assert.equal(bareEntryAllows(`${baseUrl}/mirror/${demoQuery}`), true))
+for (const [label, value] of [
+  ['foreign origin', `https://foreign.example/mirror/${demoQuery}`],
+  ['candidate port drift', `http://127.0.0.1:4174/mirror/${demoQuery}`],
+  ['wrong route', `${baseUrl}/replay/${demoQuery}`],
+  ['unselected private memory', `${baseUrl}/mirror?memoryId=private-memory&node=mirror-preview&demo=1`],
+  ['wrong node', `${baseUrl}/mirror?memoryId=demo%3Amirror-preview&node=other&demo=1`],
+  ['missing disclosure', `${baseUrl}/mirror?memoryId=demo%3Amirror-preview&node=mirror-preview`],
+]) {
+  test(`actual bare Mirror demo wait rejects ${label}`, () => assert.equal(bareEntryAllows(value), false))
+}
+
 for (const value of ['https://foreign.example/replay', 'http://127.0.0.1:4174/replay', 'https://127.0.0.1:4173/replay', `${baseUrl}/focus`, 'not a URL', undefined, 'javascript:replay', 'http://user:password@127.0.0.1:4173/replay']) {
   test(`actual reconciliation qualification rejects ${value === undefined ? 'missing URL' : new String(value).replace(/user:password/g, 'credentials')}`, () => assert.equal(isNarrowReplayScreenshotFailure(receipt(value)), false))
 }
