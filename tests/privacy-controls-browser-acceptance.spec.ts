@@ -211,7 +211,7 @@ test('narrow direct controls and lower privacy copy remain reachable above the c
       await expect(control).toBeFocused()
       const probe = await control.evaluate(element => {
         const rect = element.getBoundingClientRect()
-        const companionOverlaps = [...document.querySelectorAll('.urai-world-companion__orb, .urai-world-companion[data-open="true"] .urai-world-companion__menu, [data-urai-adam-launcher], [data-urai-adam-presence]')].filter(candidate => {
+        const companionOverlaps = [...document.querySelectorAll('.consentSanctuary > .consentOrb, .urai-world-companion__orb, .urai-world-companion[data-open="true"] .urai-world-companion__menu, [data-urai-adam-launcher], [data-urai-adam-presence]')].filter(candidate => {
           for (let node: Element | null = candidate; node; node = node.parentElement) {
             const style = getComputedStyle(node)
             if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false
@@ -231,7 +231,7 @@ test('narrow direct controls and lower privacy copy remain reachable above the c
       expect(probe.top).toBeGreaterThanOrEqual(0)
       expect(probe.bottom).toBeLessThanOrEqual(viewport.height)
       expect(probe.samples.every(sample => sample.owned), `${probe.text}: painted target must be unobscured`).toBe(true)
-      expect(probe.companionOverlaps, `${probe.text}: companion core rectangles must be clear`).toEqual([])
+      expect(probe.companionOverlaps, `${probe.text}: privacy and persistent companion overlays must be clear`).toEqual([])
       surfaces.push({ viewport, control: probe })
     }
     for (const copy of [
@@ -242,7 +242,7 @@ test('narrow direct controls and lower privacy copy remain reachable above the c
       await expect(copy).toBeVisible()
       const probe = await copy.evaluate(element => {
         const rect = element.getBoundingClientRect()
-        const companionOverlaps = [...document.querySelectorAll('.urai-world-companion__orb, .urai-world-companion[data-open="true"] .urai-world-companion__menu, [data-urai-adam-launcher], [data-urai-adam-presence]')].filter(candidate => {
+        const companionOverlaps = [...document.querySelectorAll('.consentSanctuary > .consentOrb, .urai-world-companion__orb, .urai-world-companion[data-open="true"] .urai-world-companion__menu, [data-urai-adam-launcher], [data-urai-adam-presence]')].filter(candidate => {
           for (let node: Element | null = candidate; node; node = node.parentElement) {
             const style = getComputedStyle(node)
             if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false
@@ -262,7 +262,7 @@ test('narrow direct controls and lower privacy copy remain reachable above the c
       expect(probe.top).toBeGreaterThanOrEqual(0)
       expect(probe.bottom).toBeLessThanOrEqual(viewport.height)
       expect(probe.points.every(point => point.owned), 'lower privacy copy must be painted above any companion').toBe(true)
-      expect(probe.companionOverlaps, 'lower privacy copy must clear companion core rectangles').toEqual([])
+      expect(probe.companionOverlaps, 'lower privacy copy must clear privacy and persistent companion overlays').toEqual([])
       surfaces.push({ viewport, copy: probe })
     }
     await expect(root).toHaveAttribute('data-privacy-source', 'demo')
@@ -275,6 +275,76 @@ test('narrow direct controls and lower privacy copy remain reachable above the c
     scope: 'disclosed-demo-native-scroll-focus-and-painted-surface-only',
   }, null, 2))
   await saveEvidence('mobile-lower-runtime', runtime)
+  expect(runtime.consoleErrors).toEqual([])
+  expect(runtime.pageErrors).toEqual([])
+})
+
+test('narrow sanctuary isolates its title from world labels and keeps the enforcement surface below controls', async ({ page }) => {
+  const runtime = await captureRuntime(page)
+  const layouts: unknown[] = []
+  const viewports = [
+    { width: 320, height: 700 },
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+  ]
+
+  for (const [index, viewport] of viewports.entries()) {
+    await page.setViewportSize(viewport)
+    await page.emulateMedia({ reducedMotion: index === 2 ? 'reduce' : 'no-preference' })
+    const root = await openSanctuary(page, '?demo=1')
+    const geometry = await page.evaluate(exactSha => {
+      const root = document.querySelector<HTMLElement>('main[data-route-owner="consent-sanctuary"]')!
+      const header = root.querySelector<HTMLElement>('.consentHeader')!
+      const nav = root.querySelector<HTMLElement>('.consentRealmNav')!
+      const panel = root.querySelector<HTMLElement>('.consentPanel')!
+      const orb = root.querySelector<HTMLElement>('.consentOrb')!
+      const rootRect = root.getBoundingClientRect()
+      const layoutTop = (element: HTMLElement) => element.getBoundingClientRect().top - rootRect.top + root.scrollTop
+      const headerRect = header.getBoundingClientRect()
+      const navRect = nav.getBoundingClientRect()
+      const panelBottom = layoutTop(panel) + panel.getBoundingClientRect().height
+      const orbTop = layoutTop(orb)
+      return {
+        exactSha,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        headerBottom: headerRect.bottom,
+        navTop: navRect.top,
+        headerBackgroundImage: getComputedStyle(header).backgroundImage,
+        realmButtons: [...nav.querySelectorAll('button')].map(button => {
+          const rect = button.getBoundingClientRect()
+          return { text: button.textContent?.trim() ?? '', left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height }
+        }),
+        panelBottom,
+        orbTop,
+        panelOrbGap: orbTop - panelBottom,
+      }
+    }, process.env.EXACT_HEAD_SHA ?? null)
+
+    expect(geometry.headerBackgroundImage).toContain('linear-gradient')
+    expect(geometry.navTop).toBeGreaterThanOrEqual(geometry.headerBottom)
+    expect(geometry.panelOrbGap, `${viewport.width}x${viewport.height}: enforcement status must follow, not cover, consent controls`).toBeGreaterThanOrEqual(0)
+    expect(geometry.realmButtons).toHaveLength(6)
+    for (const button of geometry.realmButtons) {
+      expect(button.left, `${button.text}: horizontal viewport bounds`).toBeGreaterThanOrEqual(0)
+      expect(button.right, `${button.text}: horizontal viewport bounds`).toBeLessThanOrEqual(viewport.width)
+      expect(button.width, `${button.text}: usable width`).toBeGreaterThanOrEqual(48)
+      expect(button.height, `${button.text}: usable height`).toBeGreaterThanOrEqual(48)
+    }
+
+    layouts.push(geometry)
+    await expect(root).toHaveAttribute('data-privacy-source', 'demo')
+    await expect(page.getByRole('button', { name: 'Request export' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Create deletion request' })).toBeDisabled()
+    await page.screenshot({ path: path.join(evidenceRoot, `mobile-layout-initial-${viewport.width}x${viewport.height}.png`) })
+  }
+
+  await fs.writeFile(path.join(evidenceRoot, 'mobile-layout-geometry.json'), JSON.stringify({
+    exactSha: process.env.EXACT_HEAD_SHA ?? null,
+    layouts,
+    scope: 'synthetic-explicit-demo-responsive-layout-only',
+  }, null, 2))
+  await saveEvidence('mobile-layout-runtime', runtime)
   expect(runtime.consoleErrors).toEqual([])
   expect(runtime.pageErrors).toEqual([])
 })
