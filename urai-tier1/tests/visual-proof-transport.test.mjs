@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { ARTIFACT_BYTES, MAX_PARTS, PART_BYTES, REPOSITORY, prepareNativeArchive, reconstructArchive, splitArchive, validateManifest, validateNativeArtifact, verifyNativeUploads } from '../../scripts/visual-proof-transport.mjs'
 
@@ -221,7 +222,7 @@ test('native upload verification binds separate wrappers, verifies actual sizes 
 })
 
 test('production CLI requires external exact binding and rejects unknown or duplicate options', t => {
-  const script = new URL('../../scripts/visual-proof-transport.mjs', import.meta.url).pathname
+  const script = fileURLToPath(new URL('../../scripts/visual-proof-transport.mjs', import.meta.url))
   const f = fixture(t, 100)
   const run = args => spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' })
   const args = ['reconstruct', '--manifest', f.manifestPath, '--output', f.outputPath, '--source-sha', f.binding.sourceSha, '--archive-sha256', f.binding.archiveSha256, '--group', f.binding.proofGroup,
