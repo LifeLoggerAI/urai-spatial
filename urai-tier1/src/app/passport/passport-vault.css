@@ -95,11 +95,11 @@ body:has(.passportVault) [data-urai-adam-launcher]{top:max(8px,env(safe-area-ins
    partially revealed operation fields that scrollIntoView considers visible. */
 .passportVault {
   --passport-companion-clearance: max(120px, calc(env(safe-area-inset-bottom,0px) + 110px));
-  height: calc(100svh - var(--passport-companion-clearance));
-  max-height: calc(100svh - var(--passport-companion-clearance));
+  height: 100svh;
+  max-height: 100svh;
   box-sizing: border-box;
-  padding-bottom: 24px;
-  scroll-padding-block: max(12px,env(safe-area-inset-top,0px)) 16px;
+  padding-bottom: var(--passport-companion-clearance);
+  scroll-padding-block: max(12px,env(safe-area-inset-top,0px)) var(--passport-companion-clearance);
 }
 @media (min-width: 921px) {
   .passportKey {

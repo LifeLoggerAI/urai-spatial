@@ -117,7 +117,13 @@ function LifeMapAccessGate() {
     return <><LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" /><LifeMapSemanticNavigator authenticatedUserId={mode === "private" ? authenticatedUserId : null} /></>;
   }
   return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} data-life-map-source={mode} data-private-memory-mounted={mode === "signed-out" ? "false" : undefined} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}>
-    <LifeMapRouteBoundary authenticatedUserId={mode === "private" ? authenticatedUserId : null} />
+    <div
+      aria-hidden={mode === "signed-out" ? true : undefined}
+      {...(mode === "signed-out" ? { inert: true } : {})}
+      style={{ position:"absolute", inset:0 }}
+    >
+      <LifeMapRouteBoundary authenticatedUserId={mode === "private" ? authenticatedUserId : null} />
+    </div>
     {mode === "signed-out" ? <aside data-testid="urai-life-map-signed-out-disclosure" aria-label="Signed-out Life Map disclosure" style={{ position:"absolute", zIndex:120, left:"max(16px,env(safe-area-inset-left))", bottom:"max(16px,env(safe-area-inset-bottom))", width:"min(390px,calc(100vw - 32px))", padding:14, border:"1px solid rgba(183,239,255,.2)", borderRadius:18, background:"rgba(2,7,17,.78)", backdropFilter:"blur(18px)", color:"#f8fbff" }}>
       <strong style={{ display:"block", fontSize:11, letterSpacing:".12em", textTransform:"uppercase" }}>Signed out · no personal data displayed</strong>
       <span style={{ display:"block", marginTop:6, fontSize:12, lineHeight:1.45, color:"rgba(235,244,255,.76)" }}>This is the real empty Life Map realm. No private memories are mounted.</span>
