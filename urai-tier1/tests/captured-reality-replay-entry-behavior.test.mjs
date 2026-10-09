@@ -15,10 +15,11 @@ const source = fs.readFileSync(new URL('../../apps/functions/src/capturedReality
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText
 
 function callable({ place = 'place-1', anchor = 'place-1', missingAnchors = false, bindingOwner = 'owner', assetOwner = 'owner', release = true, consent = true } = {}) {
-  const domain = { mode: 'granted', retentionDays: null, precise: false, replayVisible: false, lifeMapVisible: false, modelContext: false, sharingEnabled: false, automationEnabled: false, likenessEnabled: false }
+  const domain = { mode: 'granted', retentionDays: null, precise: false, replayVisible: true, lifeMapVisible: false, modelContext: false, sharingEnabled: false, automationEnabled: false, likenessEnabled: false }
   const sourceBinding = { sourceReceiptRef: 'psr_synthetic_capture_000001', sourceRevision: 1, sourceSha256: 'a'.repeat(64), sourceByteLength: 1234, sourceFixityRef: 'private:synthetic/fixity', sourceConsentSha256: sha(JSON.stringify(['memory.storage','location.context'].map(purpose => ({ purpose, policyVersion: 'synthetic-v1', decisionReceiptId: 'synthetic-' + purpose })))) }
   const documents = {
     'users/owner': { accountStatus: 'active' },
+    'users/owner/memories/memory-1': { ownerId: 'owner', privacy: 'private', sourceMedia: [] },
     ['uraiPrivateSourceReceipts/' + sha(sourceBinding.sourceReceiptRef)]: { ...sourceBinding, ownerUid: 'owner', schemaVersion: 'urai-private-source-receipt-v2', status: 'ACTIVE', synthetic: false, purposes: ['reconstruct-place'], consents: ['memory.storage','location.context'].map(purpose => ({ purpose, policyVersion: 'synthetic-v1', decisionReceiptId: 'synthetic-' + purpose })) },
     'users/owner/privacyPolicy/current': { version: 2, revision: 1, ownerId: 'owner', domains: Object.fromEntries(['memory','location','models','exports','workforce','identity'].map(key => [key, { ...domain, mode: key === 'memory' && !consent ? 'denied' : 'granted' }])), enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } },
     'users/owner/privacyRuntime/location-collection': { enabled: true },

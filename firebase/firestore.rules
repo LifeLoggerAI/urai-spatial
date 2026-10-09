@@ -80,6 +80,17 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
 
+    // Owners receive immediate C1 withdrawal signals; clients never write consent authority.
+    match /consentRecords/{consentId} {
+      allow get: if isSignedIn()
+        && consentId == request.auth.uid + '_memory_storage'
+        && resource.data.uid == request.auth.uid
+        && resource.data.purpose == 'memory.storage'
+        && resource.data.consentTier == 'C1'
+        && resource.data.policyVersion == '1.0.0';
+      allow list, write: if false;
+    }
+
     match /features/{flagId} {
       allow read: if true;
       allow write: if isAdmin();
