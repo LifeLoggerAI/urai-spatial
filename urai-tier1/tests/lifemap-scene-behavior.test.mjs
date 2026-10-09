@@ -210,3 +210,12 @@ test('WebGL context loss preserves truthful semantic recovery', () => {
   assert.ok(canonical.includes('data-testid="urai-life-map-authored-fallback"'))
   assert.ok(canonical.includes('requestUraiWorldReturn()'))
 })
+
+
+test('Life Map search recalculates translated type matching on locale and preview changes', () => {
+  // Search type labels come from the selected locale and preview preference.
+  // Without all three dependencies React can retain obsolete results when a
+  // user switches languages while the search panel remains mounted.
+  assert.match(navigator, /const searchLocale=locale\\.locale/)
+  assert.match(navigator, /const visibleNodes = useMemo\\(/[\\s\\S]*?\\[eraFilter, nodes, search, typeFilter, requestedLocale, previewLocale, searchLocale\\]/)
+})
