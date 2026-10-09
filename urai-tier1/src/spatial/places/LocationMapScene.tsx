@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type WheelEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type TouchEvent, type WheelEvent } from 'react'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { locationMapAssets } from '@/spatial/assets/uraiAssets'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
@@ -56,6 +56,7 @@ export function LocationMapScene({ places, acceptanceAccessMode = null }: { plac
   const pinch = useRef<{ distance: number; zoom: number } | null>(null)
   const touchDrag = useRef<{ x: number; y: number; camera: Camera } | null>(null)
   const touchPinch = useRef<{ distance: number; zoom: number } | null>(null)
+  const touchActivatedPlace = useRef<string | null>(null)
   const visiblePlaces = useMemo(() => places ?? [], [places])
   const points = useMemo(() => pointsFor(visiblePlaces), [visiblePlaces])
   const demoData = visiblePlaces.length > 0 && visiblePlaces.every(place => place.privacyLevel === 'demo')
@@ -206,6 +207,23 @@ export function LocationMapScene({ places, acceptanceAccessMode = null }: { plac
     else if ((event.key === 'Enter' || event.key === ' ') && event.target === event.currentTarget && points[activeIndex]) { event.preventDefault(); focus(points[activeIndex], activeIndex) }
   }
   const onBeaconKey = (event: KeyboardEvent<HTMLButtonElement>, amount: number) => { event.preventDefault(); event.stopPropagation(); moveMarker(amount) }
+  const onBeaconClick = useCallback((point: AtlasPoint, index: number) => {
+    if (touchActivatedPlace.current === point.place.id) {
+      touchActivatedPlace.current = null
+      return
+    }
+    focus(point, index)
+  }, [focus])
+  const onBeaconTouchEnd = useCallback((event: TouchEvent<HTMLButtonElement>, point: AtlasPoint, index: number) => {
+    if (event.touches.length > 0 || event.changedTouches.length !== 1) return
+    event.preventDefault()
+    event.stopPropagation()
+    touchActivatedPlace.current = point.place.id
+    window.setTimeout(() => {
+      if (touchActivatedPlace.current === point.place.id) touchActivatedPlace.current = null
+    }, 500)
+    focus(point, index)
+  }, [focus])
   const onPointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === 'touch' || (event.target as HTMLElement).closest('button,a,[data-atlas-panel]')) return
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -308,7 +326,7 @@ export function LocationMapScene({ places, acceptanceAccessMode = null }: { plac
       <p id="location-atlas-help" className="srOnly">Use Left and Right Arrow to move between places. Enter focuses a place. Plus and Minus zoom. Escape or Home returns to overview. Drag to pan. Pinch to zoom on touch screens.</p>
       <LocationMapSpatialWorld camera={camera} points={worldPoints} selectedColor={selected ? tone(selected.place) : '#8eeaff'} reducedMotion={reducedMotion} />
       <div className="locationAtlasCamera" aria-hidden="true" data-spatial-fallback="retired"><i/><i/><i/></div>
-      <div className="locationAtlasBeacons" aria-label={`${points.length} discoverable symbolic places`}>{points.map((point,index) => <button key={point.place.id} ref={node => { markers.current[index] = node }} type="button" className="locationAtlasBeacon" style={{ '--beacon-x': `${point.x}%`, '--beacon-y': `${point.y}%`, '--beacon-depth': point.depth, '--beacon-color': tone(point.place), '--beacon-intensity': point.place.emotionalOverlay.intensity } as CSSProperties} data-selected={selectedId === point.place.id ? 'true' : 'false'} aria-pressed={selectedId === point.place.id} aria-label={`${point.place.title}. ${words(point.place.emotionalOverlay.mood)} weather. ${privacy(point.place)}. ${point.place.memoryIds.length} linked memories.`} onClick={() => focus(point,index)} onFocus={() => setActiveIndex(index)} onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') onBeaconKey(event,-1); else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') onBeaconKey(event,1) }}><span className="locationAtlasBeaconCore"><i/></span><span className="locationAtlasBeaconLabel"><strong>{point.place.title}</strong><small>{words(point.place.emotionalOverlay.mood)} · {privacy(point.place)}</small></span></button>)}</div>
+      <div className="locationAtlasBeacons" aria-label={`${points.length} discoverable symbolic places`}>{points.map((point,index) => <button key={point.place.id} ref={node => { markers.current[index] = node }} type="button" className="locationAtlasBeacon" style={{ '--beacon-x': `${point.x}%`, '--beacon-y': `${point.y}%`, '--beacon-depth': point.depth, '--beacon-color': tone(point.place), '--beacon-intensity': point.place.emotionalOverlay.intensity } as CSSProperties} data-selected={selectedId === point.place.id ? 'true' : 'false'} aria-pressed={selectedId === point.place.id} aria-label={`${point.place.title}. ${words(point.place.emotionalOverlay.mood)} weather. ${privacy(point.place)}. ${point.place.memoryIds.length} linked memories.`} onClick={() => onBeaconClick(point,index)} onTouchEnd={event => onBeaconTouchEnd(event, point,index)} onFocus={() => setActiveIndex(index)} onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') onBeaconKey(event,-1); else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') onBeaconKey(event,1) }}><span className="locationAtlasBeaconCore"><i/></span><span className="locationAtlasBeaconLabel"><strong>{point.place.title}</strong><small>{words(point.place.emotionalOverlay.mood)} · {privacy(point.place)}</small></span></button>)}</div>
       <div className="locationAtlasForeground" aria-hidden="true"/>
     </div></section>
     <aside className="locationAtlasOrientation" data-atlas-panel><span>{selected ? 'Place focus' : 'Atlas overview'}</span><strong>{selected ? selected.place.title : `${points.length} symbolic places`}</strong><small>{selected ? 'Escape returns to the atlas.' : 'Drag to explore · pinch or wheel to zoom · choose a beacon.'}</small></aside>
