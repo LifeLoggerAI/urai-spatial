@@ -1,6 +1,8 @@
 import * as admin from 'firebase-admin'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import * as functions from 'firebase-functions/v1'
 import { createHash, randomBytes } from 'node:crypto'
+import { pipeline } from 'node:stream/promises'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 import { chargeExportValue, requireExportReadBudget, type ExportReadBudget } from './exportPagination'
 
@@ -11,6 +13,7 @@ type MediaReceipt = Row & { memoryId: string; receiptId: string; sha256: string;
   byteLength: number; attemptNonce: string; kind: string; state: string; storageGeneration?: string; leaseExpiresAt: unknown }
 type Bucket = ReturnType<ReturnType<typeof admin.storage>['bucket']>
 export const MEMORY_MEDIA_SCHEMA = 'urai-owned-memory-media-v1'
+export const MEMORY_MEDIA_PLAYBACK_SCHEMA = 'urai-owned-memory-media-playback-v1'
 const SCHEMA = MEMORY_MEDIA_SCHEMA
 const SHA = /^[a-f0-9]{64}$/
 const ID = /^[A-Za-z0-9_-]{1,128}$/
@@ -28,7 +31,7 @@ function id(value: unknown): string { if (typeof value !== 'string' || !ID.test(
 function millis(value: unknown) {
   // Canonical consent-api stores its immutable expiry as an ISO string; upload
   // leases use SDK Timestamps. Do not turn a malformed date into an open lease.
-  const time = value instanceof admin.firestore.Timestamp ? value.toMillis()
+  const time = value instanceof Timestamp ? value.toMillis()
     : typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
       && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value ? Date.parse(value) : Number.NaN
   return Number.isSafeInteger(time) ? time : Number.NaN
@@ -262,8 +265,8 @@ export const registerMemoryMedia = functions.runWith({ timeoutSeconds: 180, memo
       const r = { schemaVersion: SCHEMA, ownerUid: uid, memoryId, receiptId, sha256: digest, byteLength: bytes.length,
         kind: value.kind, contentType, bucketName: bucket.name, objectPath: objectPath(uid, memoryId, receiptId, digest, contentType), attemptNonce,
         consentRevision: authority.consentRevision, consentReceiptHash: authority.consentReceiptHash, consentExpiresAt: authority.consentExpiresAt,
-        deletionGeneration: authority.deletionGeneration, state: 'uploading', leaseExpiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + UPLOAD_LEASE_MS),
-        createdAt: admin.firestore.FieldValue.serverTimestamp() }
+        deletionGeneration: authority.deletionGeneration, state: 'uploading', leaseExpiresAt: Timestamp.fromMillis(Date.now() + UPLOAD_LEASE_MS),
+        createdAt: FieldValue.serverTimestamp() }
       await requireAuthentication()
       if (authority.consentExpiresAt <= Date.now()) fail('MEMORY_MEDIA_AUTHORITY_CHANGED')
       transaction.create(ref, r)
@@ -298,7 +301,7 @@ export const registerMemoryMedia = functions.runWith({ timeoutSeconds: 180, memo
       if (media.length >= 64) fail('MEMORY_MEDIA_RESOURCE_BUDGET_EXCEEDED')
       await requireAuthentication()
       if (authority.consentExpiresAt <= Date.now() || millis(r.leaseExpiresAt) <= Date.now()) fail('MEMORY_MEDIA_UPLOAD_LEASE_UNAVAILABLE')
-      transaction.update(ref, { state: 'ready', storageGeneration, completedAt: admin.firestore.FieldValue.serverTimestamp() })
+      transaction.update(ref, { state: 'ready', storageGeneration, completedAt: FieldValue.serverTimestamp() })
       transaction.update(authority.memory.ref, { sourceMedia: [...media, { kind: value.kind, mediaReceiptId: receiptId }] })
     })
     bound.storageGeneration = storageGeneration
@@ -337,6 +340,219 @@ export function assertBoundMemoryMedia(memory: Row) {
   }
   if (row(memory.replayManifest).audioUrl !== undefined) fail('MEMORY_MEDIA_AUTHORITY_REQUIRED')
 }
+
+const PLAYBACK_TTL_MS = 300_000
+const PLAYBACK_CHUNK_BYTES = 64 * 1024
+
+// Playback is an ordinary current-owner operation; the upload's five-minute
+// reauthentication rule remains unchanged. A descriptor never authenticates a read.
+async function playbackAuthentication(uid: string, bearer: string, creationTime?: string) {
+  let token: admin.auth.DecodedIdToken, account: admin.auth.UserRecord
+  try {
+    token = await admin.auth().verifyIdToken(bearer, true)
+    account = await admin.auth().getUser(uid)
+  } catch { throw new functions.https.HttpsError('unauthenticated', 'Current authentication required.') }
+  if (token.uid !== uid || account.uid !== uid || account.disabled || !account.metadata.creationTime
+    || !Number.isSafeInteger(token.exp) || token.exp * 1000 <= Date.now()
+    || (creationTime !== undefined && creationTime !== account.metadata.creationTime)) {
+    throw new functions.https.HttpsError('unauthenticated', 'Current owner required.')
+  }
+  return { creationTime: account.metadata.creationTime, tokenExpiresAt: token.exp * 1000 }
+}
+
+async function playbackReceipt(transaction: FirebaseFirestore.Transaction, uid: string, memoryId: string, receiptId: string) {
+  const [authority, snapshot, central, permanent, block, policy] = await Promise.all([
+    readOwner(transaction, uid, memoryId),
+    transaction.get(db.doc(`users/${uid}/memoryMediaReceipts/${receiptId}`)),
+    transaction.get(db.doc(`privacyDeletionTombstones/${uid}`)),
+    transaction.get(db.doc(`uraiPrivateLifeModelOwnerFences/${sha(uid)}`)),
+    transaction.get(db.doc(`jobConsentBlocks/${sha(uid + '\n' + 'memory.storage')}`)),
+    transaction.get(db.doc(`users/${uid}/privacyPolicy/current`)),
+  ])
+  if (policy.get('domains.memory.replayVisible') !== true) fail('MEMORY_MEDIA_REPLAY_NOT_AUTHORIZED')
+  if (central.exists) {
+    const marker = central.data() ?? {}, keys = Object.keys(marker)
+    const released = !keys.includes('active') && keys.every(key => ['uid', 'updatedAt'].includes(key))
+      && marker.updatedAt instanceof Timestamp
+    if (marker.uid !== uid || keys.some(key => key.startsWith('deletionPlanningLease'))
+      || (marker.active !== false && !released)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
+  }
+  if (permanent.exists && (permanent.get('ownerHash') !== sha(uid) || permanent.get('deleted') !== false
+    || permanent.get('deletionEpoch') !== 0)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
+  if (block.exists && (block.get('ownerUid') !== uid || block.get('purpose') !== 'memory.storage'
+    || block.get('active') !== false)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
+  assertBoundMemoryMedia(authority.memory.data() ?? {})
+  const r = receipt(snapshot.data(), uid)
+  sameAuthority(r, authority)
+  const attachments = authority.memory.get('sourceMedia') as Row[]
+  if (r.memoryId !== memoryId || r.receiptId !== receiptId || r.state !== 'ready'
+    || !/^[1-9][0-9]{0,39}$/.test(String(r.storageGeneration)) || !Array.isArray(attachments)
+    || attachments.filter(entry => entry.mediaReceiptId === receiptId && entry.kind === r.kind).length !== 1) {
+    fail('MEMORY_MEDIA_SOURCE_CHANGED')
+  }
+  return r
+}
+
+function playbackHashes(uid: string, r: MediaReceipt, creationTime: string, expiresAt: number) {
+  const source = [MEMORY_MEDIA_PLAYBACK_SCHEMA, uid, creationTime,
+    ...['memoryId', 'receiptId', 'sha256', 'storageGeneration', 'attemptNonce', 'kind', 'contentType', 'bucketName', 'objectPath',
+      'byteLength', 'consentRevision', 'consentReceiptHash', 'consentExpiresAt', 'deletionGeneration'].map(key => r[key])]
+  return { sourceAuthorityHash: sha(JSON.stringify(source)), authorityHash: sha(JSON.stringify([...source, expiresAt])) }
+}
+
+async function playbackObject(uid: string, r: MediaReceipt, requireCurrent: () => Promise<unknown>) {
+  const bucket = admin.storage().bucket()
+  const [bucketMetadata] = await bucket.getMetadata()
+  await requireCurrent()
+  if (bucketMetadata.iamConfiguration?.uniformBucketLevelAccess?.enabled !== true
+    || bucketMetadata.iamConfiguration?.publicAccessPrevention !== 'enforced') fail('MEMORY_MEDIA_PRIVATE_BUCKET_REQUIRED')
+  const file = bucket.file(r.objectPath, { generation: String(r.storageGeneration) })
+  const [metadata] = await file.getMetadata()
+  await requireCurrent()
+  const m = ownedMetadata(metadata as unknown as Row, r, uid)
+  if (String(metadata.generation) !== r.storageGeneration || Number(metadata.size) !== r.byteLength
+    || metadata.contentType !== r.contentType || m.firebaseStorageDownloadTokens != null) fail('MEMORY_MEDIA_OBJECT_AUTHORITY_CHANGED')
+  return file
+}
+
+export const getMemoryMediaPlaybackAuthority = functions.https.onCall(async (data, context) => {
+  const uid = context.auth?.uid, value = row(data), memoryId = id(value.memoryId), receiptId = String(value.receiptId)
+  const bearer = context.rawRequest?.get('authorization')?.match(/^Bearer (\S+)$/)?.[1]
+  if (!uid || !ID.test(uid) || !bearer) throw new functions.https.HttpsError('unauthenticated', 'Current authentication required.')
+  if (!SHA.test(receiptId) || Object.keys(value).some(key => !['memoryId', 'receiptId'].includes(key))) fail('MEMORY_MEDIA_PLAYBACK_REQUEST_INVALID')
+  const account = await playbackAuthentication(uid, bearer)
+  const r = await db.runTransaction(transaction => playbackReceipt(transaction, uid, memoryId, receiptId))
+  const expiresAt = Math.min(Date.now() + PLAYBACK_TTL_MS, account.tokenExpiresAt, Number(r.consentExpiresAt))
+  if (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now()) fail('MEMORY_MEDIA_PLAYBACK_EXPIRED')
+  const hashes = playbackHashes(uid, r, account.creationTime, expiresAt)
+  const requireCurrent = async () => {
+    const check = async () => {
+      const current = await db.runTransaction(transaction => playbackReceipt(transaction, uid, memoryId, receiptId))
+      if (Date.now() >= expiresAt || playbackHashes(uid, current, account.creationTime, expiresAt).authorityHash !== hashes.authorityHash) fail('MEMORY_MEDIA_SOURCE_CHANGED')
+    }
+    await playbackAuthentication(uid, bearer, account.creationTime)
+    await check()
+    await playbackAuthentication(uid, bearer, account.creationTime)
+    await check()
+  }
+  await playbackObject(uid, r, requireCurrent)
+  await requireCurrent()
+  return { schemaVersion: MEMORY_MEDIA_PLAYBACK_SCHEMA, requiresAuthorization: true, ownerId: uid,
+    memoryId, receiptId, kind: r.kind, contentType: r.contentType, sha256: r.sha256, byteLength: r.byteLength,
+    storageGeneration: r.storageGeneration, ...hashes, expiresAt }
+})
+
+function playbackProject() {
+  const project = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT
+  if (project === 'urai-4dc1d' || (process.env.FUNCTIONS_EMULATOR === 'true' && project && /^demo-[a-z0-9-]{1,50}$/.test(project))) return project
+  fail('MEMORY_MEDIA_PROJECT_UNBOUND')
+}
+function playbackOrigin(origin: string, project: string) {
+  if (['https://urai.app', 'https://www.urai.app', 'https://urai.life', 'https://uraispatial.com', 'https://localhost',
+    'capacitor://localhost', 'http://localhost', `https://${project}.web.app`, `https://${project}.firebaseapp.com`].includes(origin)) return true
+  if (process.env.FUNCTIONS_EMULATOR === 'true' && ['http://localhost:4173', 'http://127.0.0.1:4173'].includes(origin)) return true
+  return new RegExp(`^https://${project}--[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.web\\.app$`).test(origin)
+    && new URL(origin).hostname.split('.')[0].length <= 63
+}
+function playbackRange(header: string | undefined, length: number) {
+  if (!header) return { start: 0, end: length - 1, partial: false }
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header)
+  if (!match || (!match[1] && !match[2])) return null
+  const first = match[1] ? Number(match[1]) : null, last = match[2] ? Number(match[2]) : null
+  if ((first !== null && !Number.isSafeInteger(first)) || (last !== null && !Number.isSafeInteger(last))) return null
+  const start = first ?? Math.max(0, length - (last ?? 0)), end = first === null || last === null ? length - 1 : Math.min(last, length - 1)
+  if (start < 0 || start >= length || end < start || (first === null && last === 0)) return null
+  return { start, end, partial: true }
+}
+
+export const streamMemoryMediaPlayback = functions.runWith({ timeoutSeconds: 60, memory: '256MB', maxInstances: 10 }).https.onRequest(async (request, response) => {
+  const operationDeadline = Date.now() + 50_000
+  response.set({ 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Vary': 'Origin' })
+  try {
+    const project = playbackProject(), origin = request.get('origin')
+    if (origin && !playbackOrigin(origin, project)) throw new functions.https.HttpsError('permission-denied', 'Origin not admitted.')
+    if (request.method === 'OPTIONS') {
+      const headers = request.get('access-control-request-headers')
+      if (!origin || !['GET', 'HEAD'].includes(request.get('access-control-request-method') ?? '') || !headers
+        || !headers.split(',').every(header => ['authorization', 'range', 'if-range'].includes(header.trim().toLowerCase()))) {
+        throw new functions.https.HttpsError('permission-denied', 'Preflight not admitted.')
+      }
+      response.set({ 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, HEAD',
+        'Access-Control-Allow-Headers': 'Authorization, Range, If-Range', 'Access-Control-Max-Age': '0' }).status(204).end()
+      return
+    }
+    if (origin) response.set({ 'Access-Control-Allow-Origin': origin,
+      'Access-Control-Expose-Headers': 'Content-Length, Content-Type, Content-Range, Accept-Ranges, ETag, X-URAI-Checksum-SHA256, X-URAI-Storage-Generation' })
+    if (!['GET', 'HEAD'].includes(request.method)) { response.set('Allow', 'GET, HEAD, OPTIONS').status(405).json({ error: 'method_not_allowed' }); return }
+    const bearer = request.get('authorization')?.match(/^Bearer (\S+)$/)?.[1]
+    if (!bearer) throw new functions.https.HttpsError('unauthenticated', 'Current authentication required.')
+    let token: admin.auth.DecodedIdToken
+    try { token = await admin.auth().verifyIdToken(bearer, true) } catch { throw new functions.https.HttpsError('unauthenticated', 'Current authentication required.') }
+    const value = request.query as Row, memoryId = id(value.memoryId), receiptId = String(value.receiptId), expiresAt = Number(value.expiresAt)
+    if (!ID.test(token.uid) || !SHA.test(receiptId) || !SHA.test(String(value.authorityHash))
+      || typeof value.storageGeneration !== 'string' || !/^[1-9][0-9]{0,39}$/.test(value.storageGeneration)
+      || typeof value.expiresAt !== 'string' || !/^[1-9][0-9]{0,15}$/.test(value.expiresAt)
+      || !Number.isSafeInteger(expiresAt) || expiresAt <= Date.now() || expiresAt > Date.now() + PLAYBACK_TTL_MS
+      || Object.keys(value).some(key => !['memoryId', 'receiptId', 'authorityHash', 'expiresAt', 'storageGeneration'].includes(key))) fail('MEMORY_MEDIA_PLAYBACK_DESCRIPTOR_INVALID')
+    const account = await playbackAuthentication(token.uid, bearer)
+    const r = await db.runTransaction(transaction => playbackReceipt(transaction, token.uid, memoryId, receiptId))
+    const requireCurrent = async () => {
+      const check = async () => {
+        const current = await db.runTransaction(transaction => playbackReceipt(transaction, token.uid, memoryId, receiptId))
+        if (request.aborted || response.destroyed || Date.now() >= Math.min(expiresAt, operationDeadline) || expiresAt > Number(current.consentExpiresAt)
+          || expiresAt > account.tokenExpiresAt || current.storageGeneration !== value.storageGeneration
+          || playbackHashes(token.uid, current, account.creationTime, expiresAt).authorityHash !== value.authorityHash) fail('MEMORY_MEDIA_SOURCE_CHANGED')
+      }
+      await playbackAuthentication(token.uid, bearer, account.creationTime)
+      await check()
+      await playbackAuthentication(token.uid, bearer, account.creationTime)
+      await check()
+    }
+    await requireCurrent()
+    const range = playbackRange(request.get('range'), r.byteLength)
+    if (!range) { response.set('Content-Range', `bytes */${r.byteLength}`).status(416).end(); return }
+    const etag = `"${r.sha256}"`
+    if (request.get('if-range') && request.get('if-range') !== etag) { response.status(412).end(); return }
+    const file = await playbackObject(token.uid, r, requireCurrent)
+    // All existing receipts are <=4MiB. Verify request-owned immutable bytes in
+    // full before releasing any range; a partial hash cannot attest the source.
+    const chunks: Buffer[] = [], digest = createHash('sha256'); let length = 0
+    const stream = file.createReadStream({ validation: 'crc32c' })
+    response.once('close', () => stream.destroy())
+    try {
+      for await (const incoming of stream) {
+        const buffer = Buffer.from(incoming)
+        for (let offset = 0; offset < buffer.length; offset += PLAYBACK_CHUNK_BYTES) {
+          await requireCurrent()
+          const chunk = buffer.subarray(offset, offset + PLAYBACK_CHUNK_BYTES); length += chunk.length
+          if (length > r.byteLength) fail('MEMORY_MEDIA_BYTES_CHANGED')
+          digest.update(chunk); chunks.push(chunk)
+        }
+      }
+    } finally { stream.destroy() }
+    await requireCurrent()
+    if (length !== r.byteLength || digest.digest('hex') !== r.sha256) fail('MEMORY_MEDIA_BYTES_CHANGED')
+    const bytes = Buffer.concat(chunks), selected = bytes.subarray(range.start, range.end + 1)
+    response.set({ 'Content-Type': r.contentType, 'Content-Length': String(selected.length), 'Accept-Ranges': 'bytes', ETag: etag,
+      'X-URAI-Checksum-SHA256': r.sha256, 'X-URAI-Storage-Generation': String(r.storageGeneration) })
+    if (range.partial) response.set('Content-Range', `bytes ${range.start}-${range.end}/${r.byteLength}`)
+    response.status(range.partial ? 206 : 200)
+    if (request.method === 'HEAD') { await requireCurrent(); response.end(); return }
+    async function* guardedOutput() {
+      for (let offset = 0; offset < selected.length; offset += PLAYBACK_CHUNK_BYTES) {
+        await requireCurrent(); yield selected.subarray(offset, offset + PLAYBACK_CHUNK_BYTES)
+      }
+      await requireCurrent()
+    }
+    await pipeline(guardedOutput(), response)
+  } catch (error) {
+    if (response.headersSent || response.destroyed) { response.destroy(); return }
+    for (const name of ['Content-Type', 'Content-Length', 'Content-Range', 'Accept-Ranges', 'ETag', 'X-URAI-Checksum-SHA256', 'X-URAI-Storage-Generation']) response.removeHeader(name)
+    const status = error instanceof functions.https.HttpsError ? ({ unauthenticated: 401, 'permission-denied': 403,
+      'not-found': 404, 'invalid-argument': 400, 'failed-precondition': 409 } as Record<string, number>)[error.code] ?? 500 : 500
+    response.status(status).json({ error: 'memory_media_playback_unavailable' })
+  }
+})
 
 export async function exportMemoryMediaBytes(database: FirebaseFirestore.Firestore, uid: string, memories: Row[], receipts: Row[],
   budget: ExportReadBudget, requireCurrent: () => Promise<unknown>) {
@@ -456,7 +672,7 @@ export async function deleteMemoryMedia(database: FirebaseFirestore.Firestore, u
         await database.runTransaction(async transaction => {
           const current = await transaction.get(document.ref)
           if (!current.exists || current.get('attemptNonce') !== r.attemptNonce) fail('MEMORY_MEDIA_CLEANUP_AUTHORITY_CHANGED')
-          transaction.update(document.ref, { state: 'deleted', tombstoneGeneration: generation, cleanupStatus: 'completed', permanentErasureProven: false, deletedAt: admin.firestore.FieldValue.serverTimestamp() })
+          transaction.update(document.ref, { state: 'deleted', tombstoneGeneration: generation, cleanupStatus: 'completed', permanentErasureProven: false, deletedAt: FieldValue.serverTimestamp() })
         })
         await requireCurrent()
       }
@@ -469,7 +685,7 @@ export async function deleteMemoryMedia(database: FirebaseFirestore.Firestore, u
 
 export const reconcileMemoryMediaUploads = functions.runWith({ timeoutSeconds: 180 }).pubsub.schedule('every 5 minutes').onRun(async () => {
   const stale = await db.collectionGroup('memoryMediaReceipts').where('state', 'in', ['uploading', 'closing'])
-    .where('leaseExpiresAt', '<=', admin.firestore.Timestamp.fromMillis(Date.now())).limit(50).get()
+    .where('leaseExpiresAt', '<=', Timestamp.fromMillis(Date.now())).limit(50).get()
   for (const snap of stale.docs) {
     const uid = id(snap.get('ownerUid')), r = receipt(snap.data(), uid)
     if (snap.ref.path !== `users/${uid}/memoryMediaReceipts/${r.receiptId}` || millis(r.leaseExpiresAt) > Date.now()) fail('MEMORY_MEDIA_CLEANUP_AUTHORITY_CHANGED')

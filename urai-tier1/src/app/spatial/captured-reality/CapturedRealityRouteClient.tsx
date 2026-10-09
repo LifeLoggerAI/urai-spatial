@@ -21,6 +21,8 @@ import {
 } from '@/spatial/captured-reality/capturedRealityDelivery'
 import { capturedRealityJourneyReturnHref } from '@/spatial/captured-reality/capturedRealityJourney'
 import type { CapturedRealityRenderDecision } from '@/spatial/captured-reality/capturedReality'
+import { useCapturedRealityReplayLookup } from '@/spatial/captured-reality/useCapturedRealityReplayEntry'
+import { sanitizeMemoryId } from '@/spatial/memory/selectedMemoryContract'
 
 type AssetMetadata = {
   assetId: string
@@ -157,7 +159,12 @@ export default function CapturedRealityRouteClient() {
   const rawAssetId = searchParams.get('assetId') ?? ''
   const assetId = SAFE_ASSET_ID.test(rawAssetId) ? rawAssetId : null
   const accessMode: 'runtime' | 'proof' = searchParams.get('proof') === '1' ? 'proof' : 'runtime'
-  const returnHref = capturedRealityJourneyReturnHref(searchParams.get('memoryId'))
+  const rawMemoryId = searchParams.get('memoryId')
+  const memoryId = sanitizeMemoryId(rawMemoryId)
+  const replayWithdrawal = useRef<() => void>(() => {})
+  const replayLookup = useCapturedRealityReplayLookup(memoryId, () => replayWithdrawal.current())
+  const memoryEntryActive = rawMemoryId === null || (Boolean(memoryId) && replayLookup.status === 'available' && replayLookup.entry?.assetId === assetId)
+  const returnHref = capturedRealityJourneyReturnHref(memoryId)
   const reducedMotion = useReducedMotion()
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [metadata, setMetadata] = useState<AssetMetadata | null>(null)
@@ -168,6 +175,7 @@ export default function CapturedRealityRouteClient() {
   const revokedRef = useRef(false)
   const truthLabelRef = useRef<string | undefined>(undefined)
   const renewedDeliveryRef = useRef<RuntimeDelivery | null>(null)
+  const activeLoadAbort = useRef<AbortController | null>(null)
 
   const exit = useCallback(() => {
     // Revoke before scheduling navigation: a pending callable may resolve while
@@ -203,6 +211,10 @@ export default function CapturedRealityRouteClient() {
     setDecision(suppressedDecision())
     setState({ kind: 'suppressed', message })
   }, [])
+  replayWithdrawal.current = () => {
+    activeLoadAbort.current?.abort()
+    suppress('Captured Reality closed because the selected Replay memory is unavailable.')
+  }
 
   useEffect(() => {
     if (!assetId) {
@@ -230,19 +242,25 @@ export default function CapturedRealityRouteClient() {
 
   useEffect(() => {
     if (!user || !assetId) return
+    if (!memoryEntryActive) {
+      suppress('Captured Reality closed because the selected Replay memory is unavailable.')
+      return
+    }
 
     revokedRef.current = false
     setState({ kind: 'loading' })
     setDelivery(null)
 
     let disposed = false
-    const identityCurrent = () => getAuth(app).currentUser?.uid === user.uid
+    const identityCurrent = () => getAuth(app).currentUser === user
     const abort = new AbortController()
+    activeLoadAbort.current = abort
     const stops: Unsubscribe[] = []
 
     const stopForPrivacy = (message: string) => {
       if (disposed) return
       abort.abort()
+      if (activeLoadAbort.current === abort) activeLoadAbort.current = null
       suppress(message)
     }
 
@@ -281,7 +299,8 @@ export default function CapturedRealityRouteClient() {
       (snapshot) => {
         const memoryMode = policyMode(snapshot, 'memory')
         const locationMode = policyMode(snapshot, 'location')
-        if (!policyAuthorityActive(snapshot, user.uid) || !modeAllowed(memoryMode) || !modeAllowed(locationMode)) {
+        if (!policyAuthorityActive(snapshot, user.uid) || !modeAllowed(memoryMode) || !modeAllowed(locationMode)
+          || (rawMemoryId !== null && snapshot.get('domains.memory.replayVisible') !== true)) {
           stopForPrivacy('Captured Reality closed because memory or location consent is no longer active.')
         }
       },
@@ -351,17 +370,18 @@ export default function CapturedRealityRouteClient() {
       disposed = true
       window.clearTimeout(assetAuthorityTimeout)
       abort.abort()
+      if (activeLoadAbort.current === abort) activeLoadAbort.current = null
       for (const stop of stops) stop()
       setDelivery(null)
     }
-  }, [accessMode, assetId, suppress, user, requestHeaders])
+  }, [accessMode, assetId, memoryEntryActive, rawMemoryId, suppress, user, requestHeaders])
 
   useEffect(() => {
     if (!user || !assetId || !delivery || state.kind !== 'ready') return
     let cancelled = false
     let timer: number | null = null
     let activeAbort: AbortController | null = null
-    const identityCurrent = () => getAuth(app).currentUser?.uid === user.uid
+    const identityCurrent = () => getAuth(app).currentUser === user
 
     const scheduleRenewal = (expiresAt: string) => {
       const expires = Date.parse(expiresAt)
@@ -374,6 +394,7 @@ export default function CapturedRealityRouteClient() {
         void (async () => {
           const renewalAbort = new AbortController()
           activeAbort = renewalAbort
+          activeLoadAbort.current = renewalAbort
           try {
             const next = await loadRuntimeDelivery(assetId, accessMode)
             if (cancelled || revokedRef.current || !identityCurrent()) return
@@ -404,6 +425,7 @@ export default function CapturedRealityRouteClient() {
     return () => {
       cancelled = true
       activeAbort?.abort()
+      if (activeLoadAbort.current === activeAbort) activeLoadAbort.current = null
       if (timer !== null) window.clearTimeout(timer)
     }
   }, [accessMode, assetId, delivery, state.kind, suppress, user, requestHeaders])
@@ -437,11 +459,11 @@ export default function CapturedRealityRouteClient() {
         </p>
       ) : null}
       <CapturedRealityPrivateScene
-        decision={decision}
+        decision={memoryEntryActive ? decision : suppressedDecision()}
         reducedMotion={reducedMotion}
         onExit={exit}
         onOpenProvenance={() => setShowProvenance((value) => !value)}
-        authority={streamAuthority}
+        authority={memoryEntryActive ? streamAuthority : undefined}
       />
       {showProvenance && metadata ? (
         <aside

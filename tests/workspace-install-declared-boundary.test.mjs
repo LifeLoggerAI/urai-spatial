@@ -5,6 +5,7 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
 
 const script = fileURLToPath(new URL('../scripts/check-workspace-install.mjs', import.meta.url))
 
@@ -131,4 +132,48 @@ test('malformed root manifest remains a retained failure',()=>{
   const result=fixture(({write})=>write('package.json','{malformed'))
   assert.equal(result.status,1)
   assert.match(result.stderr,/Could not read root package\.json/)
+})
+
+// Explicit export-only package boundaries; all original fourteen cases are retained.
+function declareExportOnly({ write, packageJson }, changes = {}) {
+  packageJson.devDependencies['export-only']='1.0.0'
+  write('package.json',JSON.stringify(packageJson))
+  write('node_modules/export-only/package.json',JSON.stringify({
+    name:'export-only', version:'1.0.0',
+    exports:{'./package.json':'./package.json','./app':'./app.js'}, ...changes,
+  }))
+  write('node_modules/export-only/app.js','export {}\n')
+}
+
+test('an installed export-only package with a public canonical manifest passes',()=>{
+  const result=fixture(declareExportOnly)
+  assert.equal(result.status,0,result.stderr)
+})
+
+test('the actual installed Firebase manifest passes despite its intentionally absent root export',()=>{
+  const source=createRequire(import.meta.url).resolve('firebase/package.json')
+  const manifest=JSON.parse(fs.readFileSync(source,'utf8'))
+  assert.equal(manifest.name,'firebase')
+  assert.equal(manifest.version,'12.13.0')
+  assert.equal(Object.hasOwn(manifest.exports,'.'),false)
+  const result=fixture(({write,packageJson})=>{
+    packageJson.devDependencies.firebase=manifest.version
+    write('package.json',JSON.stringify(packageJson))
+    write('node_modules/firebase/package.json',fs.readFileSync(source,'utf8'))
+  })
+  assert.equal(result.status,0,result.stderr)
+})
+
+for (const [label, change] of [
+  ['missing public manifest',f=>{declareExportOnly(f,{exports:{'./app':'./app.js'}})}],
+  ['outside public manifest',f=>{declareExportOnly(f);const p=path.join(f.root,'node_modules/export-only/package.json');fs.unlinkSync(p);f.write('unrelated-manifest.json',JSON.stringify({name:'export-only',version:'1.0.0',exports:{'./package.json':'./package.json','./app':'./app.js'}}));fs.symlinkSync(path.join(f.root,'unrelated-manifest.json'),p)}],
+  ['malformed public manifest',f=>{declareExportOnly(f);f.write('node_modules/export-only/package.json','{malformed')}],
+  ['incorrect manifest identity',f=>{declareExportOnly(f,{name:'unrelated-package'})}],
+  ['invalid manifest version',f=>{declareExportOnly(f,{version:'not-a-version'})}],
+  ['explicitly blocked root export',f=>{declareExportOnly(f,{exports:{'.':null,'./package.json':'./package.json','./app':'./app.js'}})}],
+  ['missing declared export-only package',f=>{declareExportOnly(f);fs.rmSync(path.join(f.root,'node_modules/export-only'),{recursive:true})}],
+]) test('export-only '+label+' remains a failure',()=>{
+  const result=fixture(change)
+  assert.equal(result.status,1,result.stderr)
+  assert.match(result.stderr,/Root workspace dependencies are not installed/)
 })

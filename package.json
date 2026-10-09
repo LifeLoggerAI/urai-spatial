@@ -144,7 +144,9 @@
   },
   "devDependencies": {
     "firebase-tools": "15.32.1",
-    "fill-range": "7.1.1"
+    "fill-range": "7.1.1",
+    "@firebase/rules-unit-testing": "5.0.1",
+    "firebase": "12.13.0"
   },
   "pnpm": {
     "overrides": {

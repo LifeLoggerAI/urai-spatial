@@ -5,6 +5,7 @@ import test from 'node:test'
 import ts from 'typescript'
 import * as deliveryControls from '../src/spatial/captured-reality/capturedRealityDelivery.ts'
 import * as journeyControls from '../src/spatial/captured-reality/capturedRealityJourney.ts'
+import * as selectedMemoryControls from '../src/spatial/memory/selectedMemoryContract.ts'
 
 const source = ts.transpileModule(fs.readFileSync(new URL('../src/app/spatial/captured-reality/CapturedRealityRouteClient.tsx', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -45,7 +46,7 @@ function harness(pendingStage) {
       const listener = { ref, fn, onError, authority }
       listeners.push(listener)
       fn({ get: key => authority ? authority[key]
-        : key === 'enabled' ? true : key === 'ownerId' ? 'owner' : key === 'version' ? 2
+        : key === 'enabled' || key === 'domains.memory.replayVisible' ? true : key === 'ownerId' ? 'owner' : key === 'version' ? 2
           : key === 'revision' ? 1 : key === 'enforcement.state' ? 'fully-enforced' : 'granted', exists: () => true })
       return () => {}
     } },
@@ -55,10 +56,12 @@ function harness(pendingStage) {
     '@/spatial/adam/AdamLauncherSlot': { default: () => null },
     '@/spatial/hooks/useReducedMotion': { useReducedMotion: () => true },
     '@/spatial/captured-reality/CapturedRealityPrivateScene': { default: () => null },
+    '@/spatial/captured-reality/useCapturedRealityReplayEntry': { useCapturedRealityReplayLookup: () => ({ status: 'available', entry: { assetId: 'place' } }) },
     '@/spatial/captured-reality/capturedRealityRuntime': { capturedRealityDeviceTier: () => 'desktop', CAPTURED_REALITY_QUALITY_PROFILES: { desktop: { maxRuntimeBytes: 4096 } }, capturedRealityBrowserCapability: () => ({ supported: true, missing: [] }) },
     '@/spatial/captured-reality/capturedRealityDelivery': { ...deliveryControls, capturedRealityWebGL2Available: () => true, capturedRealityContentLengthAvailable: () => stage('header', true) },
   }
   modules['@/spatial/captured-reality/capturedRealityJourney'] = journeyControls
+  modules['@/spatial/memory/selectedMemoryContract'] = selectedMemoryControls
   const exports = {}
   vm.runInNewContext(source, { exports, require(id) { assert.ok(id in modules, `Unexpected import: ${id}`); return modules[id] }, AbortController, URLSearchParams, ReadableStream, fetch, Worker: class {}, navigator: { userAgent: 'desktop' }, window: {
     history: { length: 2 }, setTimeout(fn, ms) { const id = ++timerId; timers.set(id, { fn, ms }); return id }, clearTimeout(id) { timers.delete(id) },
@@ -98,13 +101,13 @@ test('private route rejects predecessor signed capabilities before any renderer 
 })
 
 test('pending or foreign consent authority tears down already-loaded private resources before the next heartbeat', async () => {
-  for (const patch of [{ 'enforcement.state': 'pending' }, { ownerId: 'foreign' }, { revision: 0 }, { version: 1 }]) {
+  for (const patch of [{ 'enforcement.state': 'pending' }, { ownerId: 'foreign' }, { revision: 0 }, { version: 1 }, { 'domains.memory.replayVisible': false }]) {
     const h = harness(null)
     for (let i = 0; i < 8; i++) { h.render(); await settle() }
     assert.equal(h.states[4].kind, 'ready')
     const policy = h.listeners.find(listener => listener.ref.includes('privacyPolicy'))
     assert.ok(policy)
-    const values = { ownerId: 'owner', version: 2, revision: 1, 'enforcement.state': 'fully-enforced', ...patch }
+    const values = { ownerId: 'owner', version: 2, revision: 1, 'enforcement.state': 'fully-enforced', 'domains.memory.replayVisible': true, ...patch }
     policy.fn({ exists: () => true, get: key => values[key] ?? 'granted' })
     assert.equal(h.states[2], null)
     assert.equal(h.states[3].mode, 'suppressed')

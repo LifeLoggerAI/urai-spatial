@@ -58,7 +58,7 @@ try {
       const sanctuaryStyles = await fallback.locator('.home-accessible-sanctuary').evaluate(element => {
         const style = getComputedStyle(element)
         const world = element.querySelector('.home-accessible-sanctuary__world')
-        const heading = element.querySelector('h1')
+        const heading = element.parentElement.querySelector('.home-accessible-sanctuary__copy h1')
         return { position: style.position, backgroundImage: style.backgroundImage,
           worldPosition: world ? getComputedStyle(world).position : null,
           headingSize: heading ? Number.parseFloat(getComputedStyle(heading).fontSize) : null }
@@ -77,23 +77,46 @@ try {
       }, undefined, { timeout: 15000 })
       const recovery = fallback.locator('.home-runtime-recovery')
       const navigation = fallback.locator('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
-      const rectangles = { launcher: await launcher.boundingBox(), recovery: await recovery.boundingBox(), navigation: await navigation.boundingBox() }
+      const copy = fallback.locator(':scope > .home-accessible-sanctuary__copy')
+      const rectangles = { launcher: await launcher.boundingBox(), recovery: await recovery.boundingBox(), copy: await copy.boundingBox(), navigation: await navigation.boundingBox() }
+      const scroll = await fallback.evaluate(element => ({ height: element.clientHeight, contentHeight: element.scrollHeight, top: element.scrollTop, overflowY: getComputedStyle(element).overflowY }))
+      if (spec.height <= 700) assert.ok(['auto', 'scroll'].includes(scroll.overflowY), 'Short fallbacks must permit real content scrolling')
+      record.scroll = scroll
       for (const [name, box] of Object.entries(rectangles)) {
         assert.ok(box && box.width > 0 && box.height > 0, `${name} must have visible bounds`)
         assert.ok(box.x >= -1 && box.x + box.width <= spec.width + 1, `${name} must fit horizontally`)
-        assert.ok(box.y >= -1 && box.y + box.height <= spec.height + 1, `${name} must fit vertically`)
+        assert.ok(box.y + scroll.top >= -1 && box.y + scroll.top + box.height <= scroll.contentHeight + 1, `${name} must fit the scrollable content`)
+        assert.ok(box.height <= spec.height, `${name} must be revealable without clipping in this viewport`)
+        if (name === 'launcher' || name === 'recovery') assert.ok(box.y >= -1 && box.y + box.height <= spec.height + 1, `${name} must be visible initially`)
       }
-      for (const [a, b] of [['launcher', 'recovery'], ['recovery', 'navigation'], ['launcher', 'navigation']]) {
+      for (const [a, b] of [['launcher', 'recovery'], ['recovery', 'navigation'], ['launcher', 'navigation'], ['copy', 'recovery'], ['copy', 'navigation'], ['copy', 'launcher']]) {
         assert.equal(overlaps(rectangles[a], rectangles[b]), false, `${a} must not cover ${b}`)
       }
       record.rectangles = rectangles
+      await copy.scrollIntoViewIfNeeded()
+      const visibleCopy = await copy.boundingBox()
+      assert.ok(visibleCopy && visibleCopy.y >= -1 && visibleCopy.y + visibleCopy.height <= spec.height + 1, 'The complete authored copy must be scroll-reachable and visible')
+      assert.equal(await copy.evaluate(element => {
+        const box = element.getBoundingClientRect()
+        return [[box.x + 8, box.y + 8], [box.x + box.width - 8, box.y + box.height - 8]].every(([x, y]) => {
+          const hit = document.elementFromPoint(x, y)
+          return hit === element || element.contains(hit)
+        })
+      }), true, 'Authored copy must not be covered by another layer')
+      record.visibleCopy = visibleCopy
+      const copyImage = await page.screenshot({ animations: 'disabled', timeout: 15000 })
+      const copyFilename = `${spec.id}-copy-${exactHead.slice(0, 12)}.png`
+      await writeFile(path.join(output, copyFilename), copyImage)
+      record.copyImage = { path: copyFilename, bytes: copyImage.length, sha256: createHash('sha256').update(copyImage).digest('hex') }
       const controls = navigation.locator('button,a[href]')
       assert.equal(await controls.count(), 3, 'Retain Orb, Ground, and Life Map')
       record.controls = []
       for (let i = 0; i < 3; i++) {
         const control = controls.nth(i)
+        await control.scrollIntoViewIfNeeded()
         const box = await control.boundingBox()
         assert.ok(box && box.width >= 48 && box.height >= 48, 'Control must retain its 48px target')
+        assert.ok(box.y >= -1 && box.y + box.height <= spec.height + 1, 'Complete destination must be scroll-reachable and visible')
         assert.equal(await control.evaluate(element => {
           const box = element.getBoundingClientRect()
           const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)

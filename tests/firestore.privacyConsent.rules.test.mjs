@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import assert from 'node:assert/strict'
 import path from 'node:path'
 import test from 'node:test'
 
@@ -7,7 +8,7 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing'
-import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore'
 
 const projectId = `urai-privacy-rules-${Date.now()}`
 const rules = fs.readFileSync(path.resolve('firebase/firestore.rules'), 'utf8')
@@ -106,4 +107,93 @@ test('trusted queues and durable deletion receipts are never client-accessible',
       await assertFails(deleteDoc(ref))
     }
   }
+})
+
+// Proposed C1 boundary cases; not current accepted access policy.
+const canonicalConsent = (uid, overrides = {}) => ({
+  uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0',
+  status: 'granted', receiptHash: 'b'.repeat(64), expiresAt: Date.now() + 600000,
+  ...overrides,
+})
+async function seedC1(uid, overrides = {}, documentId = uid + '_memory_storage') {
+  await env.withSecurityRulesDisabled(context =>
+    setDoc(doc(context.firestore(), 'consentRecords', documentId), canonicalConsent(uid, overrides)))
+}
+test('owner can get only its canonical C1 record, including withdrawn status', async () => {
+  const ref = doc(env.authenticatedContext(ownerId).firestore(), 'consentRecords', ownerId + '_memory_storage')
+  await seedC1(ownerId)
+  assert.equal((await assertSucceeds(getDoc(ref))).data().status, 'granted')
+  await seedC1(ownerId, { status: 'revoked' })
+  assert.equal((await assertSucceeds(getDoc(ref))).data().status, 'revoked')
+})
+test('real owner SDK subscription observes canonical hash, expiry and status changes', async () => {
+  await seedC1(ownerId)
+  const ref = doc(env.authenticatedContext(ownerId).firestore(), 'consentRecords', ownerId + '_memory_storage')
+  let current, waiting, rejectWaiting
+  const stop = onSnapshot(ref, snapshot => {
+    current = snapshot.data()
+    waiting?.()
+  }, error => rejectWaiting?.(error))
+  const waitFor = predicate => new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Canonical C1 snapshot did not arrive')), 10000)
+    waiting = () => { if (predicate(current)) { clearTimeout(timeout); resolve(current) } }
+    rejectWaiting = error => { clearTimeout(timeout); reject(error) }
+    waiting()
+  })
+  try {
+    await waitFor(value => value?.status === 'granted')
+    await seedC1(ownerId, { receiptHash: 'e'.repeat(64) })
+    await waitFor(value => value?.receiptHash === 'e'.repeat(64))
+    const expired = Date.now() - 1
+    await seedC1(ownerId, { expiresAt: expired })
+    await waitFor(value => value?.expiresAt === expired)
+    await seedC1(ownerId, { status: 'revoked' })
+    await waitFor(value => value?.status === 'revoked')
+  } finally { stop() }
+})
+test('canonical C1 get denies anonymous, foreign and administrative clients', async () => {
+  await seedC1(ownerId)
+  for (const context of [
+    env.unauthenticatedContext(),
+    env.authenticatedContext(otherOwnerId),
+    env.authenticatedContext('admin-a', { admin: true }),
+    env.authenticatedContext('founder-a', { founder: true }),
+  ]) await assertFails(getDoc(doc(context.firestore(), 'consentRecords', ownerId + '_memory_storage')))
+})
+test('C1 reads require canonical document identity, uid, purpose, tier and version', async () => {
+  const db = env.authenticatedContext(ownerId).firestore()
+  await seedC1(ownerId, {}, ownerId + '_other_purpose')
+  await assertFails(getDoc(doc(db, 'consentRecords', ownerId + '_other_purpose')))
+  for (const invalid of [
+    { uid: otherOwnerId }, { purpose: 'data.export' },
+    { consentTier: 'C2' }, { policyVersion: '2.0.0' },
+  ]) {
+    await seedC1(ownerId, invalid)
+    await assertFails(getDoc(doc(db, 'consentRecords', ownerId + '_memory_storage')))
+  }
+  await seedC1(otherOwnerId)
+  await assertFails(getDoc(doc(db, 'consentRecords', otherOwnerId + '_memory_storage')))
+})
+test('C1 collection queries remain denied even when filtered to the owner', async () => {
+  await seedC1(ownerId)
+  const db = env.authenticatedContext(ownerId).firestore()
+  await assertFails(getDocs(collection(db, 'consentRecords')))
+  await assertFails(getDocs(query(collection(db, 'consentRecords'), where('uid', '==', ownerId))))
+})
+test('owners, anonymous, foreign and administrative clients cannot create, update or delete C1 authority', async () => {
+  await seedC1(ownerId)
+  for (const context of [
+    env.authenticatedContext(ownerId),
+    env.unauthenticatedContext(),
+    env.authenticatedContext(otherOwnerId),
+    env.authenticatedContext('admin-a', { admin: true }),
+  ]) {
+    const db = context.firestore(), ref = doc(db, 'consentRecords', ownerId + '_memory_storage')
+    await assertFails(updateDoc(ref, { status: 'granted', receiptHash: 'f'.repeat(64) }))
+    await assertFails(deleteDoc(ref))
+    await assertFails(setDoc(doc(db, 'consentRecords', 'client_created_memory_storage'), canonicalConsent(ownerId)))
+  }
+  // Also test owner creation at the exact canonical path, not only noncanonical writes.
+  await env.withSecurityRulesDisabled(context => deleteDoc(doc(context.firestore(), 'consentRecords', ownerId + '_memory_storage')))
+  await assertFails(setDoc(doc(env.authenticatedContext(ownerId).firestore(), 'consentRecords', ownerId + '_memory_storage'), canonicalConsent(ownerId)))
 })
