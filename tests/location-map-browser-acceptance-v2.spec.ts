@@ -71,11 +71,25 @@ async function gestureAnchor(page: Page): Promise<ScreenPoint> {
 async function nativeHitPoint(target: Locator): Promise<ScreenPoint> {
   let hitPoint: ScreenPoint | null = null
   await expect.poll(async () => {
-    hitPoint = await target.evaluate(element => {
-      const rect = element.getBoundingClientRect()
-      const x = rect.left + rect.width * .5
-      const y = rect.top + rect.height * .5
-      if (rect.width <= 0 || rect.height <= 0 || x < 0 || y < 0 || x >= window.innerWidth || y >= window.innerHeight) return null
+    hitPoint = await target.evaluate(async element => {
+      const point = () => {
+        const rect = element.getBoundingClientRect()
+        return { x: rect.left + rect.width * .5, y: rect.top + rect.height * .5, width: rect.width, height: rect.height }
+      }
+      // Semantic camera state can update before its 900ms transform finishes.
+      // Use measured browser actionability, without disabling motion or retrying a tap.
+      const before = point()
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+      const middle = point()
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+      const after = point()
+      const same = (a: typeof before, b: typeof before) => Math.abs(a.x - b.x) <= .25 && Math.abs(a.y - b.y) <= .25 && Math.abs(a.width - b.width) <= .25 && Math.abs(a.height - b.height) <= .25
+      if (!same(before, middle) || !same(middle, after)) return null
+      for (let ancestor: Element | null = element; ancestor; ancestor = ancestor.parentElement) {
+        if (ancestor.getAnimations().some(animation => animation.playState === 'running' && animation.effect?.getComputedTiming().iterations !== Infinity)) return null
+      }
+      const { x, y, width, height } = after
+      if (width <= 0 || height <= 0 || x < 0 || y < 0 || x >= window.innerWidth || y >= window.innerHeight) return null
       const hit = document.elementFromPoint(x, y)
       if (!(hit instanceof Node) || (hit !== element && !element.contains(hit))) return null
       return { x, y }
@@ -88,10 +102,10 @@ async function nativeHitPoint(target: Locator): Promise<ScreenPoint> {
 async function nativeTouchTap(page: Page, target: Locator) {
   await target.scrollIntoViewIfNeeded()
   await expect(target).toBeVisible()
-  const { x, y } = await nativeHitPoint(target)
   const cdp = await page.context().newCDPSession(page)
   try {
     await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
+    const { x, y } = await nativeHitPoint(target)
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1, radiusX: 6, radiusY: 6, force: 1 }] })
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   } finally {
