@@ -30,7 +30,7 @@ class FakeVideo extends EventTarget {
     return Promise.resolve()
   }
   removeAttribute(name) { if (name === 'src') this.src = '' }
-  emit(name) { this.dispatchEvent(name) }
+  emit(name) { this.dispatchEvent(new Event(name)) }
 }
 
 function session(options = {}) {
