@@ -59,12 +59,18 @@ importers:
 
   .:
     devDependencies:
-      firebase-tools:
-        specifier: 15.32.1
-        version: 15.32.1(patch_hash=6a244a585f90c42f84f3548023b70c75bd00114db33a93ba4c787b3489937032)(@types/node@25.9.1)
+      '@firebase/rules-unit-testing':
+        specifier: 5.0.1
+        version: 5.0.1(firebase@12.13.0)
       fill-range:
         specifier: 7.1.1
         version: 7.1.1
+      firebase:
+        specifier: 12.13.0
+        version: 12.13.0
+      firebase-tools:
+        specifier: 15.32.1
+        version: 15.32.1(patch_hash=6a244a585f90c42f84f3548023b70c75bd00114db33a93ba4c787b3489937032)(@types/node@25.9.1)
 
   apps/functions:
     dependencies:
@@ -712,6 +718,12 @@ packages:
     resolution: {integrity: sha512-ggGKAaLy9YNOvpFoQZgm5p5SiFw3ZFtwti08dojnBQmQicpThTxvG5xZMSpCTYMj2o3gM/yK9CVd2w+kZub8YA==}
     peerDependencies:
       '@firebase/app': 0.x
+
+  '@firebase/rules-unit-testing@5.0.1':
+    resolution: {integrity: sha512-EvbxUvgoY2cG7vgtdhKc7gjalKzeO3AWr2NiUuyEEmcXaSaOJanV3hXLj3Viigs+Y/jFYQmtVPpSoiwUs/ZlPg==}
+    engines: {node: '>=20.0.0'}
+    peerDependencies:
+      firebase: ^12.0.0
 
   '@firebase/storage-compat@0.4.3':
     resolution: {integrity: sha512-gruVqjtUGX8tEoeNbaWXZm0Zfcfcb7fvmDmBxV8yPAbWvExRnZYLO2+qw9idxNE7BvPXt5csyjSYHy//dAizxw==}
@@ -5864,6 +5876,10 @@ snapshots:
       '@firebase/logger': 0.5.1
       '@firebase/util': 1.15.1
       tslib: 2.8.1
+
+  '@firebase/rules-unit-testing@5.0.1(firebase@12.13.0)':
+    dependencies:
+      firebase: 12.13.0
 
   '@firebase/storage-compat@0.4.3(@firebase/app-compat@0.5.12)(@firebase/app-types@0.9.5)(@firebase/app@0.14.12)':
     dependencies:

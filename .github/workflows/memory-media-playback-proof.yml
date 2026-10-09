@@ -52,7 +52,7 @@ jobs:
           git rev-parse HEAD > "$RUNNER_TEMP/memory-media-playback/source-sha.txt"
           git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/memory-media-playback/source-tree.txt"
           sha256sum \
-            firebase/firestore.rules tests/firestore.privacyConsent.rules.test.mjs \
+            package.json pnpm-lock.yaml firebase/firestore.rules tests/firestore.privacyConsent.rules.test.mjs \
             apps/functions/src/memoryMedia.ts apps/functions/src/capturedReality.ts apps/functions/src/consentPolicyAuthority.ts apps/functions/src/index.ts \
             apps/functions/test/memoryMediaPlayback.test.js apps/functions/test/captured-reality-replay-memory-authority.test.js \
             apps/functions/scripts/memory-media-playback-emulator-proof.cjs firebase.memory-media-playback-test.json .github/workflows/memory-media-playback-proof.yml \
@@ -61,7 +61,7 @@ jobs:
             urai-tier1/src/spatial/captured-reality/useCapturedRealityReplayEntry.ts urai-tier1/src/spatial/life-movie/useLifeMovieRuntimeManifest.ts \
             urai-tier1/src/app/spatial/captured-reality/CapturedRealityRouteClient.tsx urai-tier1/src/app/replay/CinematicReplayClient.tsx \
             urai-tier1/src/app/replay/ReplayRecordedSource.tsx urai-tier1/src/app/replay/replayMediaSession.ts urai-tier1/src/app/life-movie/LifeMovieClient.tsx \
-            urai-tier1/tests/captured-reality-replay-entry-behavior.test.mjs urai-tier1/tests/owned-memory-media-playback.browser.mjs \
+            urai-tier1/tests/replay-source-media-behavior.test.mjs urai-tier1/tests/captured-reality-replay-entry-behavior.test.mjs urai-tier1/tests/owned-memory-media-playback.browser.mjs \
             urai-tier1/tests/fixtures/owned-memory-playback-synthetic.json \
             > "$RUNNER_TEMP/memory-media-playback/source-files-sha256.txt"
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
@@ -81,6 +81,7 @@ jobs:
           pnpm --filter urai-functions build 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/build.log"
           pnpm --dir apps/functions exec node --test test/memoryMediaPlayback.test.js test/captured-reality-replay-memory-authority.test.js 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/tests.tap"
           pnpm --dir urai-tier1 exec node --import tsx --test tests/captured-reality-replay-entry-behavior.test.mjs 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/captured-entry-source.tap"
+          pnpm --dir urai-tier1 exec node --experimental-strip-types --test tests/replay-source-media-behavior.test.mjs 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/replay-source.tap"
       - name: Actual React consumers and Chromium decoding
         run: |
           set -euo pipefail
