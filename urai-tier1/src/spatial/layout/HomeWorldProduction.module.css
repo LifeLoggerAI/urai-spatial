@@ -81,13 +81,17 @@
   padding: .46rem .74rem;
   border: 1px solid rgba(232, 240, 234, .1);
   border-radius: 999px;
-  background: rgba(9, 21, 17, .2);
-  color: rgba(246, 249, 247, .76);
+  background: rgba(9, 21, 17, .92);
+  color: #f6f9f7;
   backdrop-filter: blur(10px);
-  font-size: .58rem;
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: min(360px, calc(100vw - 184px));
+  text-align: center;
+  overflow-wrap: anywhere;
   font-weight: 650;
   letter-spacing: .07em;
-  opacity: .74;
+  opacity: 1;
 }
 
 .world :global(.urai-mobile-movement) {
@@ -163,10 +167,7 @@
   .worldHint {
     bottom: max(16px, env(safe-area-inset-bottom));
     max-width: calc(100vw - 184px);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: .54rem;
+    white-space: normal;
   }
   .world :global(.urai-mobile-movement) {
     opacity: 1;

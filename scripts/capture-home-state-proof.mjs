@@ -1,3 +1,4 @@
+import { inspectFocusedHomeNavigation } from './lib/home-ui-readability.mjs'
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
@@ -463,6 +464,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.closedAnimation = await owner.getAttribute('data-home-orb-animation')
 
     stage = 'capture-closed-world'
+    record.focusedNavigationReadability = await inspectFocusedHomeNavigation(page)
+    if (!record.focusedNavigationReadability.passed) throw new Error('Actual focused Home destination labels are clipped, hidden or obstructed')
     record.visual = await waitForVisualEvidence(page)
     record.screenshot = `${id}-${exactHead.slice(0, 12)}.png`
     const screenshot = await page.screenshot({ path: path.join(outputDir, record.screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })

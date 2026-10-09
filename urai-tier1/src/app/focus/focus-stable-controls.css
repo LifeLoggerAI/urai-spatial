@@ -62,6 +62,14 @@
   }
 }
 
+/* Keep the existing secondary Replay aperture wholly inside short landscape
+   viewports. Its top control rail remains an independent travel path. */
+@media (min-width: 701px) and (max-height: 500px) {
+  .focus-spatial-aperture-button {
+    top: min(calc(50vh + 176px), calc(100svh - 40px - env(safe-area-inset-bottom))) !important;
+  }
+}
+
 @media (forced-colors: active) {
   .focus-spatial-aperture-button:disabled {
     opacity: 1;
