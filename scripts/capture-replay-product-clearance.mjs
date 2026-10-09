@@ -12,8 +12,8 @@ const base = new URL(process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173')
 assert.ok(['127.0.0.1', 'localhost'].includes(base.hostname), 'Proof is limited to the locally built candidate')
 const output = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/replay-product-clearance')
 await mkdir(output, { recursive: true })
-const receipt = { schema: 'urai.replay-product-clearance.v2', exactHead,
-  scope: 'Unsigned explicit read-only demo. Layout, hit testing and keyboard disclosure only; no private memory, mutations, provider, device, final-art or release acceptance.',
+const receipt = { schema: 'urai.replay-product-clearance.v3', exactHead,
+  scope: 'Unsigned explicit read-only demo. Layout, opaque action-panel readability, hit testing and keyboard disclosure only; no private memory, mutations, provider, device, final-art or release acceptance.',
   cases: [], errors: [] }
 const profiles = [
   { id: 'narrow', width: 320, height: 700 },
@@ -93,10 +93,21 @@ try {
         separate(bounds.summary, bounds.adam, `${state}: summary/Adam`)
         separate(bounds.orb, bounds.adam, `${state}: Orb/Adam`)
         if (expanded) {
-          bounds.actions = await box(product.locator('.replayProductActions'))
+          const actions = product.locator('.replayProductActions')
+          bounds.actions = await box(actions)
           within(bounds.actions)
           separate(bounds.actions, bounds.adam, `${state}: full panel/Adam`)
           separate(bounds.actions, bounds.orb, `${state}: full panel/Orb`)
+          bounds.actionPanel = await actions.evaluate(element => {
+            const style = getComputedStyle(element)
+            let opacity = 1
+            for (let node = element; node; node = node.parentElement) opacity *= Number(getComputedStyle(node).opacity)
+            return { background: style.backgroundColor, backgroundImage: style.backgroundImage, backdropFilter: style.backdropFilter, opacity }
+          })
+          assert.equal(bounds.actionPanel.background, 'rgb(2, 7, 14)', `${state}: actions must mask underlying memory copy with an opaque surface`)
+          assert.equal(bounds.actionPanel.backgroundImage, 'none', `${state}: action-panel background must remain uniform`)
+          assert.equal(bounds.actionPanel.backdropFilter, 'none', `${state}: readability must not depend on backdrop blur`)
+          assert.equal(bounds.actionPanel.opacity, 1, `${state}: action-panel ancestors must not reintroduce translucency`)
         }
         record[state] = bounds
       }

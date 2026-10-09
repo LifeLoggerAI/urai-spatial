@@ -23,6 +23,9 @@ body:has(.replayWorld) [data-urai-adam-launcher] {
 .replayWorld .replayProductActions {
   box-sizing: border-box;
   bottom: 54px;
+  /* Open actions must mask the memory copy beneath the scrollable panel. */
+  background: #02070e;
+  backdrop-filter: none;
   max-height: calc(100svh - var(--replay-product-clearance) - 72px - env(safe-area-inset-top, 0px));
   overflow: auto;
   overscroll-behavior: contain;

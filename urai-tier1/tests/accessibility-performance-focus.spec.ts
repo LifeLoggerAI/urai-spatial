@@ -140,6 +140,64 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }
       expect(rect.x + rect.width).toBeLessThanOrEqual(viewport.width)
       expect(rect.y + rect.height).toBeLessThanOrEqual(viewport.height)
     }
+    // A scrollable disclosure need not show all of its copy simultaneously.
+    // Exercise the real scroll path rather than altering its DOM or styles.
+    const description = focus.locator('.focusNarration strong')
+    await focus.locator('.focusHeading').hover()
+    await page.mouse.wheel(0, 1000)
+    const descriptionReachability = () => description.evaluate(element => {
+      const region = element.closest('.focusHeading') as HTMLElement
+      const regionBox = region.getBoundingClientRect()
+      const range = document.createRange()
+      range.selectNodeContents(element)
+      const lines = [...range.getClientRects()].filter(line => line.width > 0 && line.height > 0)
+      const last = lines[lines.length - 1]
+      const textHeight = lines.length ? last.bottom - lines[0].top : 0
+      const horizontallyVisible = lines.length > 0 && lines.every(line =>
+        line.left >= regionBox.left && line.right <= regionBox.right)
+      const endVisible = !!last && last.top >= regionBox.top && last.bottom <= regionBox.bottom
+      const allVisible = lines.length > 0 && lines.every(line =>
+        line.top >= regionBox.top && line.bottom <= regionBox.bottom)
+      const scrollEndReached = Math.abs(region.scrollTop + region.clientHeight - region.scrollHeight) <= 1
+      return {
+        text: element.textContent, lineCount: lines.length, textHeight,
+        regionHeight: regionBox.height, scrollTop: region.scrollTop,
+        clientHeight: region.clientHeight, scrollHeight: region.scrollHeight,
+        horizontallyVisible, endVisible, allVisible, scrollEndReached,
+        reachable: horizontallyVisible && endVisible && scrollEndReached &&
+          (textHeight > regionBox.height || allVisible),
+      }
+    })
+    await expect.poll(async () => (await descriptionReachability()).reachable).toBe(true)
+    await test.info().attach('focus-landscape-description-geometry.json', {
+      body: JSON.stringify(await descriptionReachability()), contentType: 'application/json',
+    })
+    await test.info().attach(`focus-landscape-description-${viewport.width}x${viewport.height}.png`, {
+      body: await page.screenshot(), contentType: 'image/png',
+    })
+    await page.mouse.wheel(0, -1000)
+
+    const aperture = focus.locator('.focus-spatial-aperture-button')
+    await expect(aperture).toBeVisible()
+    const apertureGeometry = await aperture.evaluate(element => {
+      const box = element.getBoundingClientRect()
+      const point = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+      return {
+        x: box.x, y: box.y, right: box.right, bottom: box.bottom,
+        width: box.width, height: box.height,
+        pointerReachable: point === element || (point !== null && element.contains(point)),
+      }
+    })
+    expect(apertureGeometry.width).toBeGreaterThanOrEqual(48)
+    expect(apertureGeometry.height).toBeGreaterThanOrEqual(48)
+    expect(apertureGeometry.x).toBeGreaterThanOrEqual(0)
+    expect(apertureGeometry.y).toBeGreaterThanOrEqual(0)
+    expect(apertureGeometry.right).toBeLessThanOrEqual(viewport.width)
+    expect(apertureGeometry.bottom).toBeLessThanOrEqual(viewport.height)
+    expect(apertureGeometry.pointerReachable).toBe(true)
+    await test.info().attach('focus-landscape-aperture-geometry.json', {
+      body: JSON.stringify(apertureGeometry), contentType: 'application/json',
+    })
     await focus.locator('.focusControls').getByRole('button', { name: 'Recenter', exact: true }).click()
     await focus.locator('.focusControls').getByRole('button', { name: /Open Replay for/ }).click()
     await expect.poll(() => new URL(page.url()).pathname.split('/').filter(Boolean).join('/')).toBe('replay')

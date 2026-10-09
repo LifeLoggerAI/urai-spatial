@@ -13,11 +13,12 @@ assert.ok(start >= 0 && end > start, 'the actual Orb lifecycle capture tail must
 const captureTail = vm.compileFunction(`return (async () => { ${source.slice(start, end)} })()`, [
   'page', 'consent', 'owner', 'record', 'ownerSelector', 'outputDir', 'id',
   'exactHead', 'waitForVisualEvidence', 'createHash', 'path', 'stage',
+  'inspectFocusedHomeNavigation',
 ])
 
 // These are proof-harness ports, not provider, product or pixel acceptance.
 // Execute the actual script tail with the unchanged strict canvas-capture helper.
-async function runCapture({ escapeCloses = true, revokeWorks = true } = {}) {
+async function runCapture({ escapeCloses = true, revokeWorks = true, navigationReadable = true } = {}) {
   const events = []
   const record = {}
   let checked = true
@@ -64,7 +65,14 @@ async function runCapture({ escapeCloses = true, revokeWorks = true } = {}) {
     const retained = await captureVisibleCanvasPng(page, canvas)
     return { available: true, viewportCoverage: retained.capture.viewportCoverage, luminanceRange: 143, visibleSamples: 9 }
   }
-  await captureTail(page, consent, owner, record, '.home-owner', '/evidence', 'orb-lifecycle', 'exact-head', visual, createHash, path)
+  // Explicit synthetic measurement port for this extracted-tail unit test.
+  // Actual browser measurement stays in the native capture's imported helper.
+  const inspectFocusedNavigation = async () => {
+    events.push('inspect-focused-navigation')
+    assert.equal(panelOpen, false, 'label inspection must follow native companion closure')
+    return { passed: navigationReadable, qualification: 'synthetic proof-harness port only' }
+  }
+  await captureTail(page, consent, owner, record, '.home-owner', '/evidence', 'orb-lifecycle', 'exact-head', visual, createHash, path, undefined, inspectFocusedNavigation)
   return { events, record }
 }
 
@@ -74,6 +82,9 @@ test('retain the revoked-consent panel before native closure and strict unocclud
   assert.equal(record.privacyState, 'privacy')
   assert.equal(record.closedState, 'idle')
   assert.equal(record.visual.available, true)
+  assert.equal(record.focusedNavigationReadability.passed, true)
+  assert.ok(events.indexOf('key:Escape') < events.indexOf('inspect-focused-navigation'))
+  assert.ok(events.indexOf('inspect-focused-navigation') < events.indexOf('canvas-pixels'))
   assert.ok(record.privacyScreenshotBytes > 12000)
   assert.match(record.privacyScreenshotSha256, /^[a-f0-9]{64}$/)
   assert.ok(events.indexOf('privacy-panel-pixels') < events.indexOf('key:Escape'))
@@ -87,4 +98,8 @@ test('failure to close the companion cannot produce a canvas-proof pass', async 
 
 test('failure to revoke consent cannot be certified by closing the panel', async () => {
   await assert.rejects(runCapture({ revokeWorks: false }))
+})
+
+test('failed focused-label measurement cannot produce a closed-world canvas-proof pass', async () => {
+  await assert.rejects(runCapture({ navigationReadable: false }), /Actual focused Home destination labels are clipped, hidden or obstructed/)
 })

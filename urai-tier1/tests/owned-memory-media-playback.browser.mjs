@@ -47,7 +47,6 @@ const shims = {
   '@/spatial/performance/useAdaptiveSpatialQuality': `export const useAdaptiveSpatialQuality=()=>({shadows:false,pixelRatioMax:1,documentVisible:true,reducedMotion:true,antialias:false});`,
   '@/spatial/world/WorldStateProvider': `export const useUraiWorldState=()=>({world:{previousDestination:'focus'}});`,
   '@/spatial/world/worldEvents': `export const requestUraiWorldTravel=value=>{window.__fixture.worldTravel=value};export const requestUraiWorldReturn=()=>{window.__fixture.worldReturnRequests=(window.__fixture.worldReturnRequests??0)+1};`,
-  '@/lib/i18n/useUraiLocale': `const text=(key)=>key;export const useUraiLocale=()=>({locale:'en',text,props:()=>({lang:'en'})});`,
   '@/lib/i18n/JourneyOfflineNotice': `export default function JourneyOfflineNotice(){return null}`, 
   './ReplayProductControls': `export function ReplayProductControls(){return null}`, 
   './ReplayPersonPresence': `export function ReplayPersonPresence(){return null}`, 
@@ -55,7 +54,7 @@ const shims = {
   '@/spatial/captured-reality/CapturedRealityPrivateScene': `import {useEffect} from 'react';export default function Scene({decision}){useEffect(()=>{if(decision.mode!=='gaussian-splat')return;window.__fixture.sceneMounts++;return()=>{window.__fixture.sceneDisposals++}},[decision.mode]);return <div data-scene-fixture={decision.mode} style={{minHeight:'100svh'}}>Synthetic scene-disposal boundary — no reconstructed geometry</div>}`,
 }
 const compiled = await build({
-  stdin: { contents: `import React from 'react';import{createRoot}from'react-dom/client';import Replay from './src/app/replay/CinematicReplayClient';import Movie from './src/app/life-movie/LifeMovieClient';import Place from './src/app/spatial/captured-reality/CapturedRealityRouteClient';const Component=location.pathname==='/life-movie'?Movie:location.pathname==='/spatial/captured-reality'?Place:Replay;const root=createRoot(document.getElementById('root'));root.render(<Component/>);window.__unmount=()=>root.unmount();`, resolveDir: path.join(repo, 'urai-tier1'), loader: 'tsx' },
+  stdin: { contents: `import React from 'react';import{createRoot}from'react-dom/client';import{localizedMessage,ENGLISH_LOCALE_PREFERENCE}from'./src/lib/i18n/localePreference';window.__fixtureLocaleText=(id,values)=>localizedMessage(ENGLISH_LOCALE_PREFERENCE,id,values).text;import Replay from './src/app/replay/CinematicReplayClient';import Movie from './src/app/life-movie/LifeMovieClient';import Place from './src/app/spatial/captured-reality/CapturedRealityRouteClient';const Component=location.pathname==='/life-movie'?Movie:location.pathname==='/spatial/captured-reality'?Place:Replay;const root=createRoot(document.getElementById('root'));root.render(<Component/>);window.__unmount=()=>root.unmount();`, resolveDir: path.join(repo, 'urai-tier1'), loader: 'tsx' },
   bundle: true, write: false, metafile: true, format: 'iife', platform: 'browser', jsx: 'automatic',
   define: { 'process.env.NODE_ENV': '"test"', 'process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID': '"urai-4dc1d"', 'process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET': '"urai-4dc1d.firebasestorage.app"' },
   plugins: [{ name: 'sdk-only-fixtures', setup(plugin) {
@@ -71,6 +70,7 @@ const compiled = await build({
     plugin.onLoad({ filter: /.*/, namespace: 'fixture' }, args => ({ contents: shims[args.path], loader: 'tsx', resolveDir: path.join(repo, 'urai-tier1') }))
   } }],
 })
+assert.ok(Object.keys(compiled.metafile.inputs).some(file => file.replaceAll('\\','/').endsWith('/lib/i18n/useUraiLocale.ts')),'Actual locale hook must be compiled, not a raw-key fixture')
 const bundle = compiled.outputFiles[0].text
 const server = createServer((request, response) => {
   if (request.url === '/fixture.js') { response.setHeader('Content-Type', 'text/javascript'); response.end(bundle); return }
@@ -89,7 +89,7 @@ async function open(route = '/replay', settings = {}) {
   const page = await context.newPage()
   page.on('pageerror', error => errors.push(error.message))
   await page.addInitScript(({ fixture, memoryId, receiptId, ownerId, settings }) => {
-    const memory = { ownerId, title: settings.title ?? 'Synthetic receipt source — not family media', occurredAt: '2026-01-01T12:00:00.000Z', summary: 'A synthetic control fixture.', emotionalState: 'calm', privacy: 'private', sourceMedia: [{ kind: settings.audio ? 'audio' : 'video', mediaReceiptId: receiptId }], star: { position: [0, 0, -4] }, replayManifest: { id: 'synthetic-manifest', version: 1, durationMs: 3000, segments: ['memory', 'emotion', 'pattern', 'return'].map((id, i) => ({ id, label: id, caption: `Synthetic ${id}`, narratorLine: 'Synthetic narration caption only', startsAtMs: i * 750, durationMs: 750 })) } }
+    const memory = { ownerId, title: settings.title ?? 'Synthetic receipt source — not family media', occurredAt: '2026-01-01T12:00:00.000Z', summary: 'A synthetic control fixture.', emotionalState: 'calm', privacy: 'private', sourceMedia: [{ kind: settings.audio ? 'audio' : 'video', mediaReceiptId: receiptId }], star: { position: [0, 0, -4] }, replayManifest: { id: 'synthetic-manifest', version: 1, durationMs: 3000, segments: ['memory', 'emotion', 'pattern', 'return'].map((id, i) => ({ id, label: id, caption: `Synthetic ${id}`, narratorLine: settings.narration ?? 'Synthetic narration caption only', startsAtMs: i * 750, durationMs: 750 })) } }
     const kind = settings.audio ? 'audio' : 'video', mime = settings.audio ? 'audio/wav' : 'video/mp4'
     const receipt = { schemaVersion: 'urai-owned-memory-media-v1', ownerUid: ownerId, memoryId, receiptId, kind, state: 'ready', sha256: fixture.sha256, byteLength: fixture.byteLength, contentType: mime, storageGeneration: '123', consentRevision: 1, consentReceiptHash: 'b'.repeat(64), consentExpiresAt: Date.now() + 600000, deletionGeneration: 0, attemptNonce: 'synthetic-private-nonce', bucketName: 'synthetic-opaque-bucket', objectPath: 'synthetic-private-object' }
     const policy = { ownerId, version: 2, revision: 1, domains: { memory: { mode: 'granted', replayVisible: true }, location: { mode: 'granted' } }, enforcement: { state: 'fully-enforced' } }
@@ -136,7 +136,93 @@ async function assertDisposed(page) {
   assert.ok(result.some(item => item.media.length > 0), 'actual mounted media was stopped before Blob revocation')
 }
 
+// Read real mounted text by scrolling its existing region. Retain which positive
+// text lines were actually visible and unobscured; never assign scrollTop/styles.
+async function pointAtScrollableRegion(page, region, context) {
+  const pointer = await region.evaluate(owner => {
+    const r = owner.getBoundingClientRect()
+    for (const [xFraction, yFraction] of [[.5,.5],[.25,.25],[.75,.25],[.25,.75],[.75,.75]]) {
+      const x = r.x + r.width * xFraction, y = r.y + r.height * yFraction
+      if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue
+      const hit = document.elementFromPoint(x,y)
+      if (hit === owner || owner.contains(hit)) return {x,y}
+    }
+    return null
+  })
+  assert.ok(pointer, JSON.stringify({ ...context, error:'Scrollable copy region has no unobscured pointer target' }))
+  await page.mouse.move(pointer.x,pointer.y)
+  return pointer
+}
+
+async function inspectScrollableCopy(page, { profile, regionSelector, textSelector, name }) {
+  const region = page.locator(regionSelector)
+  await pointAtScrollableRegion(page,region,{profile,name})
+  await page.mouse.wheel(0, -10000)
+  await page.waitForTimeout(50)
+  const visited = new Set(), samples = []
+  let expectedLines = 0
+  for (let step = 0; step < 128; step++) {
+    const sample = await region.evaluate((owner, selector) => {
+      const region = owner.getBoundingClientRect()
+      const elements = [...owner.querySelectorAll(selector)]
+      const lines = elements.flatMap((element, elementIndex) => {
+        const range = document.createRange(); range.selectNodeContents(element)
+        return [...range.getClientRects()].filter(rect => rect.width > 0 && rect.height > 0).map((rect, lineIndex) => {
+          const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)
+          return { id: `${elementIndex}:${lineIndex}`, x:rect.x,y:rect.y,width:rect.width,height:rect.height,
+            visible: rect.left >= region.left && rect.right <= region.right &&
+              rect.top >= region.top && rect.bottom <= region.bottom &&
+              hit !== null && (hit === element || element.contains(hit)) }
+        })
+      })
+      return { region:{x:region.x,y:region.y,width:region.width,height:region.height},
+        text:elements.map(element => element.textContent), lines, scrollTop:owner.scrollTop,
+        clientHeight:owner.clientHeight,scrollHeight:owner.scrollHeight,
+        atEnd:Math.abs(owner.scrollTop+owner.clientHeight-owner.scrollHeight)<=1 }
+    }, textSelector)
+    assert.ok(sample.lines.length > 0, JSON.stringify({profile,name,sample}))
+    expectedLines = sample.lines.length
+    const previouslySeen = visited.size
+    for (const line of sample.lines) if (line.visible) visited.add(line.id)
+    if (visited.size > previouslySeen) {
+      sample.screenshot = `synthetic-replay-${profile}-${name}-scroll-step-${step}.png`
+      await page.screenshot({path:path.join(output,sample.screenshot)})
+    }
+    samples.push(sample)
+    if (visited.size === expectedLines && sample.atEnd) break
+    sample.wheelPointer = await pointAtScrollableRegion(page,region,{profile,name,step})
+    await page.mouse.wheel(0, Math.max(8, Math.floor(sample.clientHeight / 3)))
+    await page.waitForTimeout(50) // Allow a genuine wheel event to commit its scroll.
+  }
+  assert.equal(visited.size, expectedLines, JSON.stringify({profile,name,expectedLines,visited:[...visited],samples}))
+  assert.equal(samples.at(-1).atEnd,true,JSON.stringify({profile,name,samples}))
+  writeFileSync(path.join(output,`synthetic-replay-${profile}-${name}-geometry.json`),JSON.stringify({profile,name,regionSelector,textSelector,expectedLines,visitedLines:[...visited],samples},null,2))
+  await page.screenshot({path:path.join(output,`synthetic-replay-${profile}-${name}.png`)})
+}
+
 try {
+  await check('Replay uses actual reviewed English copy and rejects an unregistered locale key', async () => {
+    const { page, context } = await open()
+    try {
+      await playable(page)
+      const copy = await page.evaluate(() => {
+        let missingRejected = false
+        try { window.__fixtureLocaleText('replay.unregisteredSyntheticProbe') } catch { missingRejected = true }
+        const pulse = document.querySelector('.memoryPulse')
+        return {continue:window.__fixtureLocaleText('replay.continue'),pause:window.__fixtureLocaleText('replay.pause'),
+          time:window.__fixtureLocaleText('replay.timeValue',{elapsed:'0:00',duration:'0:03'}),missingRejected,
+          pulse:pulse.textContent.trim(),lang:pulse.lang,dir:pulse.dir,
+          rawKeyVisible:document.body.textContent.includes('replay.continue')}
+      })
+      assert.equal(copy.continue,'Continue memory')
+      assert.equal(copy.pause,'Pause memory')
+      assert.equal(copy.time,'0:00 of 0:03')
+      assert.equal(copy.missingRejected,true)
+      assert.ok(copy.pulse.endsWith(copy.continue),JSON.stringify(copy))
+      assert.equal(copy.lang,'en');assert.equal(copy.dir,'ltr');assert.equal(copy.rawKeyVisible,false)
+      writeFileSync(path.join(output,'synthetic-replay-actual-locale-copy.json'),JSON.stringify(copy,null,2))
+    } finally { await context.close() }
+  })
   await check('Replay selects a receipt Blob only after full SHA and length verification; decoded media owns play, pause and seek', async () => {
     const { page, context } = await open(); await playable(page)
     assert.deepEqual(await page.evaluate(() => window.__fixture.creates.map(({ type, size }) => ({ type, size }))), [{ type: 'video/mp4', size: bytes.length }])
@@ -153,18 +239,20 @@ try {
     await assertDisposed(page); assert.equal(await page.getByText('Synthetic receipt source — not family media', { exact: true }).count(), 0)
     await context.close()
   })
+  const longNarration = "Synthetic narration fixture only. This complete narration deliberately exceeds two lines on a narrow viewport. It is retained as real mounted copy so every sentence must become visible through the caption region's own scrolling. No family recording, person, private runtime, movie, or world is accepted by these synthetic words. The final sentence must remain reachable alongside the memory controls."
   for (const profile of [
     { name: 'desktop', viewport: { width: 1280, height: 800 } },
     { name: 'expanded-title-desktop', viewport: { width: 1280, height: 800 }, title: 'Synthetic receipt source — not family media: a retained expanded-title navigation fixture whose complete title remains available while journey controls stay reachable.' },
-    { name: 'mobile', viewport: { width: 390, height: 844 }, mobile: true },
-    { name: 'small-mobile', viewport: { width: 320, height: 568 }, mobile: true },
+    { name: 'mobile', narration:longNarration, viewport: { width: 390, height: 844 }, mobile: true },
+    { name: 'small-mobile', narration:longNarration, viewport: { width: 320, height: 568 }, mobile: true },
     { name: 'landscape', viewport: { width: 844, height: 390 } },
-    { name: 'short-viewport', viewport: { width: 320, height: 320 } },
+    { name: 'short-viewport', narration:longNarration, viewport: { width: 320, height: 320 } },
   ]) await check(`Long-title Replay preserves visible, pointer-reachable journey controls on ${profile.name}`, async () => {
     const { page, context } = await open('/replay', { ...profile,
       title: profile.title ?? 'Synthetic receipt source — not family media' })
     try {
       await playable(page)
+      assert.equal(await page.locator('.caption span').textContent(),profile.narration ?? 'Synthetic narration caption only')
       for (const selector of ['.unwind', '.replayLifeMovieEntry']) {
         const control = page.locator(selector)
         await control.scrollIntoViewIfNeeded()
@@ -187,6 +275,22 @@ try {
       assert.equal(new URL(journey.travel.href,'https://synthetic.invalid').searchParams.get('memoryId'),memoryId)
       assert.equal(await page.locator('.replaySourceStatus strong').textContent(),'Recorded source · original framing')
       await page.screenshot({path:path.join(output,`synthetic-replay-long-title-${profile.name}.png`)})
+      const narrationGeometry = await page.evaluate(() => {
+        const caption = document.querySelector('.caption').getBoundingClientRect()
+        const controls = document.querySelector('.memoryTempo').getBoundingClientRect()
+        const header = document.querySelector('.replayWorld header').getBoundingClientRect()
+        return { header:{x:header.x,y:header.y,right:header.right,bottom:header.bottom},
+          overlapsHeader:caption.left<header.right&&caption.right>header.left&&caption.top<header.bottom&&caption.bottom>header.top,
+          caption:{x:caption.x,y:caption.y,right:caption.right,bottom:caption.bottom},
+          controls:{x:controls.x,y:controls.y,right:controls.right,bottom:controls.bottom},
+          overlap:caption.left<controls.right&&caption.right>controls.left&&caption.top<controls.bottom&&caption.bottom>controls.top }
+      })
+      assert.equal(narrationGeometry.overlap,false,JSON.stringify({profile:profile.name,...narrationGeometry}))
+      assert.equal(narrationGeometry.overlapsHeader,false,JSON.stringify({profile:profile.name,...narrationGeometry}))
+      writeFileSync(path.join(output,`synthetic-replay-${profile.name}-caption-control-geometry.json`),JSON.stringify(narrationGeometry,null,2))
+      await inspectScrollableCopy(page,{profile:profile.name,regionSelector:'.replayWorld header',textSelector:'.replaySourceStatus strong,.replaySourceStatus span',name:'source-notice'})
+      await inspectScrollableCopy(page,{profile:profile.name,regionSelector:'.caption',textSelector:'small,strong,span',name:'caption-copy'})
+
     } finally { await context.close() }
   })
   await check('Life Movie uses the same decoded output clock and stops on live manifest withdrawal on mobile', async () => {

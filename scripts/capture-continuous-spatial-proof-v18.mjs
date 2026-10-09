@@ -1,3 +1,4 @@
+import { inspectHomeCaption } from './lib/home-ui-readability.mjs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -451,6 +452,7 @@ async function captureInteraction(browser, spec, method, destination) {
   const result = {
     nearby: await page.locator(ownerSelector).getAttribute('data-home-nearby').catch(() => null),
     contextVisible: await visibleCount(page.locator('.home-world-context')).catch(() => 0) === 1,
+    captionReadability: await inspectHomeCaption(page).catch(error => ({ passed:false, error:String(error) })),
     editableFocusProven,
     focusClear: movement?.focus || movementFailure?.evidence?.focus || null,
     movement,
@@ -463,6 +465,7 @@ async function captureInteraction(browser, spec, method, destination) {
   receipt.interactions.push(record)
   const failed = Boolean(movementFailure)
     || result.nearby !== destination || !result.contextVisible
+    || !result.captionReadability.passed
     || !movement || movement.distanceTravelled == null || movement.distanceTravelled < 0.25
     || (method === 'keyboard' && (!result.editableFocusProven || !result.focusClear?.blurred || result.focusClear.afterEditable))
     || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length

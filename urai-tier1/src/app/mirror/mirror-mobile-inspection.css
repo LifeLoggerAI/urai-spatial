@@ -10,6 +10,17 @@ body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
 }
 
 @media (max-width: 760px) {
+  /* Keep Orb travel available apart from the local Mirror Orb, above both the
+     reflection rail and world thresholds. The default global bottom-center
+     dock covers the Passport label while the overview is visible. */
+  body:has(.mirrorWorld):not(:has(.mirrorInspection)) .urai-world-companion[data-open='false'] {
+    left: auto;
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(172px, calc(50svh + 48px));
+    transform: none;
+    justify-items: end;
+  }
+
   /* Keep the global Founder launcher available in the reserved top strip.
      Its default viewport-center position covers the inspector's controls. */
   body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
