@@ -8,12 +8,13 @@ on:
         required: true
         type: string
   pull_request:
-    branches: [main, 'converge/**']
+    branches: [main, 'converge/**', 'repair/release-closure-integration-20261007']
     paths:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
       - 'scripts/capture-continuous-spatial-proof-v18.mjs'
       - 'scripts/capture-memory-world-runtime-proof.mjs'
       - 'scripts/capture-launch-route-matrix.mjs'
+      - 'scripts/capture-lifemap-signed-out-authority.mjs'
       - 'scripts/visual-proof-transport.mjs'
       - 'release/route-manifest.json'
       - 'scripts/run-continuous-spatial-proof-v18-stable.mjs'
@@ -108,8 +109,10 @@ jobs:
           node --check scripts/run-continuous-spatial-proof-v22-natural.mjs
           node --check scripts/capture-memory-world-runtime-proof.mjs
           node --check scripts/capture-launch-route-matrix.mjs
+          node --check scripts/capture-lifemap-signed-out-authority.mjs
           node --check scripts/visual-proof-transport.mjs
           node --test urai-tier1/tests/visual-proof-transport.test.mjs
+          node --test urai-tier1/tests/lifemap-signed-out-landmark-behavior.test.mjs
           node scripts/capture-launch-route-matrix.mjs --validate-only
 
       - name: Capture bounded spatial proof group
@@ -132,6 +135,12 @@ jobs:
             URAI_PROOF_DIR="$output/memory-world" \
               node scripts/run-with-ci-webgl.mjs scripts/capture-memory-world-runtime-proof.mjs 2>&1 | tee "$output/memory-world-capture.log" || memory_status=$?
           fi
+          unsigned_lifemap_status=0
+          if [ "$URAI_PROOF_GROUP" = 'visual' ]; then
+            URAI_PROOF_BASE=http://127.0.0.1:4173 \
+            URAI_PROOF_DIR="$output/lifemap-signed-out-authority" \
+              node scripts/run-with-ci-webgl.mjs scripts/capture-lifemap-signed-out-authority.mjs 2>&1 | tee "$output/lifemap-signed-out-authority.log" || unsigned_lifemap_status=$?
+          fi
           spatial_status=0
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_PROOF_DIR="$output" \
@@ -148,6 +157,7 @@ jobs:
           test "$memory_status" = 0
           test "$spatial_status" = 0
           test "$route_matrix_status" = 0
+          test "$unsigned_lifemap_status" = 0
 
       - name: Prove complete group receipt
         shell: bash
