@@ -237,6 +237,7 @@ export default function HomeSpatialRuntimeLayer() {
     return (
       <section
         className="urai-home-spatial-runtime-layer"
+        role="main"
         data-testid="urai-home-accessible-fallback"
         data-webgl-state={unavailable ? 'unavailable' : assetLoadFailed ? 'asset-load-failed' : 'renderer-failed'}
         data-urai-home-runtime={unavailable ? 'accessible-fallback-without-webgl' : assetLoadFailed ? 'accessible-fallback-after-asset-load-failure' : 'accessible-fallback-after-renderer-failure'}
