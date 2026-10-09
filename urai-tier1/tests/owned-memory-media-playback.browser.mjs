@@ -46,7 +46,7 @@ const shims = {
   '@/spatial/interpretive-world/useInterpretiveWorldReplayEntry': `export const useInterpretiveWorldReplayEntry=()=>null;`,
   '@/spatial/performance/useAdaptiveSpatialQuality': `export const useAdaptiveSpatialQuality=()=>({shadows:false,pixelRatioMax:1,documentVisible:true,reducedMotion:true,antialias:false});`,
   '@/spatial/world/WorldStateProvider': `export const useUraiWorldState=()=>({world:{previousDestination:'focus'}});`,
-  '@/spatial/world/worldEvents': `export const requestUraiWorldTravel=()=>{};export const requestUraiWorldReturn=()=>{};`,
+  '@/spatial/world/worldEvents': `export const requestUraiWorldTravel=value=>{window.__fixture.worldTravel=value};export const requestUraiWorldReturn=()=>{window.__fixture.worldReturnRequests=(window.__fixture.worldReturnRequests??0)+1};`,
   '@/lib/i18n/useUraiLocale': `const text=(key)=>key;export const useUraiLocale=()=>({locale:'en',text,props:()=>({lang:'en'})});`,
   '@/lib/i18n/JourneyOfflineNotice': `export default function JourneyOfflineNotice(){return null}`, 
   './ReplayProductControls': `export function ReplayProductControls(){return null}`, 
@@ -85,11 +85,11 @@ const memoryId = 'synthetic-receipt-memory', receiptId = 'a'.repeat(64), ownerId
 async function open(route = '/replay', settings = {}) {
   const mediaFixture = settings.audio ? audioFixture : fixture
   const mediaBytes = settings.audio ? audioBytes : bytes
-  const context = await browser.newContext({ viewport: settings.mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, isMobile: !!settings.mobile, hasTouch: !!settings.mobile })
+  const context = await browser.newContext({ viewport: settings.viewport ?? (settings.mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }), isMobile: !!settings.mobile, hasTouch: !!settings.mobile })
   const page = await context.newPage()
   page.on('pageerror', error => errors.push(error.message))
   await page.addInitScript(({ fixture, memoryId, receiptId, ownerId, settings }) => {
-    const memory = { ownerId, title: 'Synthetic receipt source — not family media', occurredAt: '2026-01-01T12:00:00.000Z', summary: 'A synthetic control fixture.', emotionalState: 'calm', privacy: 'private', sourceMedia: [{ kind: settings.audio ? 'audio' : 'video', mediaReceiptId: receiptId }], star: { position: [0, 0, -4] }, replayManifest: { id: 'synthetic-manifest', version: 1, durationMs: 3000, segments: ['memory', 'emotion', 'pattern', 'return'].map((id, i) => ({ id, label: id, caption: `Synthetic ${id}`, narratorLine: 'Synthetic narration caption only', startsAtMs: i * 750, durationMs: 750 })) } }
+    const memory = { ownerId, title: settings.title ?? 'Synthetic receipt source — not family media', occurredAt: '2026-01-01T12:00:00.000Z', summary: 'A synthetic control fixture.', emotionalState: 'calm', privacy: 'private', sourceMedia: [{ kind: settings.audio ? 'audio' : 'video', mediaReceiptId: receiptId }], star: { position: [0, 0, -4] }, replayManifest: { id: 'synthetic-manifest', version: 1, durationMs: 3000, segments: ['memory', 'emotion', 'pattern', 'return'].map((id, i) => ({ id, label: id, caption: `Synthetic ${id}`, narratorLine: 'Synthetic narration caption only', startsAtMs: i * 750, durationMs: 750 })) } }
     const kind = settings.audio ? 'audio' : 'video', mime = settings.audio ? 'audio/wav' : 'video/mp4'
     const receipt = { schemaVersion: 'urai-owned-memory-media-v1', ownerUid: ownerId, memoryId, receiptId, kind, state: 'ready', sha256: fixture.sha256, byteLength: fixture.byteLength, contentType: mime, storageGeneration: '123', consentRevision: 1, consentReceiptHash: 'b'.repeat(64), consentExpiresAt: Date.now() + 600000, deletionGeneration: 0, attemptNonce: 'synthetic-private-nonce', bucketName: 'synthetic-opaque-bucket', objectPath: 'synthetic-private-object' }
     const policy = { ownerId, version: 2, revision: 1, domains: { memory: { mode: 'granted', replayVisible: true }, location: { mode: 'granted' } }, enforcement: { state: 'fully-enforced' } }
@@ -152,6 +152,42 @@ try {
     await page.evaluate(() => { const f=window.__fixture,p=`users/${f.auth.currentUser.uid}/privacyPolicy/current`; f.update(p,{...f.docs[p],domains:{...f.docs[p].domains,memory:{mode:'granted',replayVisible:false}}}) })
     await assertDisposed(page); assert.equal(await page.getByText('Synthetic receipt source — not family media', { exact: true }).count(), 0)
     await context.close()
+  })
+  for (const profile of [
+    { name: 'desktop', viewport: { width: 1280, height: 800 } },
+    { name: 'expanded-title-desktop', viewport: { width: 1280, height: 800 }, title: 'Synthetic receipt source — not family media: a retained expanded-title navigation fixture whose complete title remains available while journey controls stay reachable.' },
+    { name: 'mobile', viewport: { width: 390, height: 844 }, mobile: true },
+    { name: 'small-mobile', viewport: { width: 320, height: 568 }, mobile: true },
+    { name: 'landscape', viewport: { width: 844, height: 390 } },
+    { name: 'short-viewport', viewport: { width: 320, height: 320 } },
+  ]) await check(`Long-title Replay preserves visible, pointer-reachable journey controls on ${profile.name}`, async () => {
+    const { page, context } = await open('/replay', { ...profile,
+      title: profile.title ?? 'Synthetic receipt source — not family media' })
+    try {
+      await playable(page)
+      for (const selector of ['.unwind', '.replayLifeMovieEntry']) {
+        const control = page.locator(selector)
+        await control.scrollIntoViewIfNeeded()
+        const geometry = await control.evaluate(button => {
+          const r = button.getBoundingClientRect(), notice = document.querySelector('.replaySourceStatus'), n = notice.getBoundingClientRect()
+          const points = [[.5,.5],[.25,.25],[.75,.25],[.25,.75],[.75,.75]]
+          return { control: { x:r.x,y:r.y,width:r.width,height:r.height },
+            overlapsNotice: r.left < n.right && r.right > n.left && r.top < n.bottom && r.bottom > n.top,
+            reachable: points.every(([x,y]) => { const hit=document.elementFromPoint(r.x+r.width*x,r.y+r.height*y);return hit===button||button.contains(hit) }) }
+        })
+        assert.equal(geometry.overlapsNotice,false,JSON.stringify({profile:profile.name,selector,...geometry}))
+        assert.equal(geometry.reachable,true,JSON.stringify({profile:profile.name,selector,...geometry}))
+        assert.ok(geometry.control.height>=48,JSON.stringify(geometry))
+        await control.focus();assert.equal(await control.evaluate(button=>button===document.activeElement),true)
+        await control.click() // No force: exercise real mounted control hit testing.
+      }
+      const journey=await page.evaluate(()=>({travel:window.__fixture.worldTravel,returns:window.__fixture.worldReturnRequests}))
+      assert.equal(journey.returns,1)
+      assert.equal(journey.travel.destination,'life-movie')
+      assert.equal(new URL(journey.travel.href,'https://synthetic.invalid').searchParams.get('memoryId'),memoryId)
+      assert.equal(await page.locator('.replaySourceStatus strong').textContent(),'Recorded source · original framing')
+      await page.screenshot({path:path.join(output,`synthetic-replay-long-title-${profile.name}.png`)})
+    } finally { await context.close() }
   })
   await check('Life Movie uses the same decoded output clock and stops on live manifest withdrawal on mobile', async () => {
     const { page, context } = await open('/life-movie', { mobile: true }); await playable(page)
