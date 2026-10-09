@@ -18,6 +18,7 @@ const tests = [
   '../scripts/simulation/run-v10-scenario.test.mjs',
   'tests/passport-render-cadence.test.mjs',
   'tests/passport-ownership-vault-contract.test.mjs',
+  'tests/passport-empty-owner-actions.test.mjs',
   'tests/dependency-security-regressions.test.mjs',
   'tests/android-aab-transport.test.mjs',
   'tests/android-native-google-auth.test.mjs',

@@ -455,7 +455,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
     </nav> : null}
 
-    {!thresholdsVisible ? <button type="button" className="overview-home-return" data-life-map-overview-home-return="true" onClick={returnHome}>Return Home</button> : null}
+    {!thresholdsVisible && sourceMode !== "signed-out" ? <button type="button" className="overview-home-return" data-life-map-overview-home-return="true" onClick={returnHome}>Return Home</button> : null}
 
     {recovery ? <section className="life-map-recovery" role="status" aria-live="assertive">
       <h2>{webglState === "lost" ? "Visual field paused safely" : "Restoring visual field"}</h2>

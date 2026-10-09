@@ -13,6 +13,8 @@ if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required
 
 const devices = {
   desktop: { viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
+  landscape: { viewport: { width: 844, height: 390 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true },
+  narrow: { viewport: { width: 320, height: 568 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true },
   mobile: {
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
@@ -167,10 +169,114 @@ function diagnostics(consoleErrors, failedRequests, httpErrors, unattributedCons
   return { consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors }
 }
 
+function assertBareEntryGeometry(geometry) {
+  if (!Number.isFinite(geometry.sectionScrollHeight) || !Number.isFinite(geometry.sectionClientHeight)) throw new Error('bare Mirror section geometry is unavailable')
+  if (geometry.sectionScrollHeight > geometry.sectionClientHeight + 1) {
+    throw new Error(`bare Mirror choices are clipped by a nested section scroll surface: ${JSON.stringify(geometry)}`)
+  }
+  if (!Array.isArray(geometry.choices) || geometry.choices.length !== 3) throw new Error('expected all three bare Mirror entry choices')
+  for (const choice of geometry.choices) {
+    if (!Number.isFinite(choice.width) || !Number.isFinite(choice.height) || choice.width < 48 || choice.height < 48) throw new Error(`undersized bare Mirror choice: ${JSON.stringify(choice)}`)
+    if (choice.insideViewport !== true || choice.insideClippingAncestors !== true || choice.unobstructed !== true) {
+      throw new Error(`bare Mirror choice is clipped or obstructed: ${JSON.stringify(choice)}`)
+    }
+  }
+}
+
+async function proveBareEntry(browser, deviceName) {
+  const name = 'bare-entry-choices'
+  const { context, page, consoleErrors, failedRequests, httpErrors } = await createPage(browser, deviceName)
+  let initialScreenshot = ''
+  try {
+    const response = await page.goto(absolute('/mirror'), { waitUntil: 'domcontentloaded', timeout: 60000 })
+    if (response && response.status() >= 400) throw new Error(`HTTP ${response.status()} for bare Mirror`)
+    candidateAuthority.assertExactRoute(page.url(), '/mirror')
+    const guard = page.getByTestId('mirror-bare-entry')
+    await guard.waitFor({ state: 'visible', timeout: 30000 })
+    await guard.getByRole('heading', { name: 'Choose what Mirror may open.', exact: true }).waitFor({ state: 'visible' })
+    if (await guard.getAttribute('data-demo-disclosure') !== 'required') throw new Error('bare Mirror demo disclosure is missing')
+    if (await page.getByTestId('mirror-spatial-world').count()) throw new Error('bare Mirror mounted a memory world without explicit context')
+    const choices = guard.getByRole('navigation', { name: 'Mirror entry choices' }).locator('a')
+    const expectedHrefs = ['/mirror?memoryId=demo%3Amirror-preview&node=mirror-preview&demo=1', '/passport', '/']
+    if (await choices.count() !== expectedHrefs.length) throw new Error('bare Mirror choice count changed')
+    for (let index = 0; index < expectedHrefs.length; index += 1) {
+      if (await choices.nth(index).getAttribute('href') !== expectedHrefs[index]) throw new Error('bare Mirror choice destination changed')
+    }
+    const founder = guard.locator('[data-urai-adam-launcher-slot="mirror-entry"] [data-urai-adam-launcher]')
+    await founder.waitFor({ state: 'visible', timeout: 30000 })
+    initialScreenshot = await screenshot(page, `${deviceName}-bare-entry-initial`)
+    await founder.scrollIntoViewIfNeeded()
+    const founderGeometry = await founder.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      const style = getComputedStyle(element)
+      const unobstructed = [0.25, 0.5, 0.75].every((x) => [0.25, 0.5, 0.75].every((y) => {
+        const hit = document.elementFromPoint(rect.left + rect.width * x, rect.top + rect.height * y)
+        return Boolean(hit && (hit === element || element.contains(hit)))
+      }))
+      return { width: rect.width, height: rect.height, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, position: style.position, transform: style.transform, animationName: style.animationName, insideViewport: rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight, unobstructed }
+    })
+    if (!Number.isFinite(founderGeometry.width) || !Number.isFinite(founderGeometry.height) || founderGeometry.width < 48 || founderGeometry.height < 48 || founderGeometry.position !== 'static' || founderGeometry.transform !== 'none' || founderGeometry.animationName !== 'none' || !founderGeometry.insideViewport || !founderGeometry.unobstructed) throw new Error(`bare Mirror Founder control is clipped or obstructed: ${JSON.stringify(founderGeometry)}`)
+    await guard.evaluate((element) => { element.scrollTop = element.scrollHeight })
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+    const geometry = await guard.evaluate((element) => {
+      const section = element.querySelector('section')
+      return {
+        shellClientHeight: element.clientHeight, shellScrollHeight: element.scrollHeight, shellScrollTop: element.scrollTop,
+        sectionClientHeight: section.clientHeight, sectionScrollHeight: section.scrollHeight,
+        choices: [...element.querySelectorAll('nav a')].map((choice) => {
+          const rect = choice.getBoundingClientRect()
+          let insideClippingAncestors = true
+          for (let parent = choice.parentElement; parent; parent = parent.parentElement) {
+            const style = getComputedStyle(parent)
+            const box = parent.getBoundingClientRect()
+            if (/^(auto|scroll|hidden|clip)$/.test(style.overflowX) && (rect.left < box.left - 1 || rect.right > box.right + 1)) insideClippingAncestors = false
+            if (/^(auto|scroll|hidden|clip)$/.test(style.overflowY) && (rect.top < box.top - 1 || rect.bottom > box.bottom + 1)) insideClippingAncestors = false
+          }
+          const unobstructed = [0.25, 0.5, 0.75].every((x) => [0.25, 0.5, 0.75].every((y) => {
+            const hit = document.elementFromPoint(rect.left + rect.width * x, rect.top + rect.height * y)
+            return Boolean(hit && (hit === choice || choice.contains(hit)))
+          }))
+          return {
+            label: choice.textContent.trim(), href: choice.getAttribute('href'),
+            left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height,
+            insideViewport: rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight,
+            insideClippingAncestors, unobstructed,
+          }
+        }),
+      }
+    })
+    assertBareEntryGeometry(geometry)
+    await choices.first().focus()
+    for (let index = 0; index < expectedHrefs.length; index += 1) {
+      if (index > 0) await page.keyboard.press('Tab')
+      if (!await choices.nth(index).evaluate((element) => document.activeElement === element)) throw new Error('keyboard focus did not reach a bare Mirror choice in order')
+    }
+    await guard.evaluate((element) => { element.scrollTop = element.scrollHeight })
+    const shot = await screenshot(page, `${deviceName}-bare-entry-choices-reachable`)
+    const demoBox = await choices.first().boundingBox()
+    if (!demoBox) throw new Error('explicit demo choice has no bounds')
+    await page.touchscreen.tap(demoBox.x + demoBox.width / 2, demoBox.y + demoBox.height / 2)
+    await page.waitForURL((url) => candidateAuthority.isExactRoute(url.toString(), '/mirror') && url.searchParams.get('memoryId') === 'demo:mirror-preview' && url.searchParams.get('node') === 'mirror-preview' && url.searchParams.get('demo') === '1', { timeout: 30000 })
+    const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
+    return { name, device: deviceName, status: 'passed', screenshot: shot, initialScreenshot, geometry, founderGeometry, keyboardChoicesReachable: true, explicitDemoOpenedByTouch: true, personalizedRuntimeVerified: false, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) }
+  } catch (error) {
+    const shot = await screenshot(page, `${deviceName}-bare-entry-choices-failure`).catch(() => '')
+    const failure = new Error(`bare Mirror ${deviceName}: ${String(error?.message || error)}`)
+    failure.bareEntryEvidence = { name, device: deviceName, status: 'failed', screenshot: shot, initialScreenshot, error: String(error?.message || error), finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors) }
+    throw failure
+  } finally {
+    await context.close()
+  }
+}
+
 async function proveOverview(browser, deviceName) {
   const name = 'overview-and-inspection'
   const { context, page, consoleErrors, failedRequests, httpErrors } = await createPage(browser, deviceName)
+  let bareEntryProof = null
+  let narrowBareEntryProof = null
   try {
+    bareEntryProof = await proveBareEntry(browser, deviceName === 'mobile' ? 'mobile' : 'landscape')
+    if (deviceName === 'mobile') narrowBareEntryProof = await proveBareEntry(browser, 'narrow')
     const world = await waitForWorld(page, `/mirror?${demoQuery}`)
     if (await world.getAttribute('data-demo') !== 'true') throw new Error('demo disclosure missing')
     if (await page.locator('canvas').count() !== 1) throw new Error('canonical canvas missing or duplicated')
@@ -241,10 +347,10 @@ async function proveOverview(browser, deviceName) {
     const shot = await screenshot(page, `${deviceName}-mirror-selected-body-rhythm`)
     candidateAuthority.assertExactRoute(page.url(), '/mirror')
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
-    pushCase(name, deviceName, 'passed', { screenshot: shot, startCameraZ: startZ, finalCameraZ: movedZ, mobileOrbHiddenDuringInspection: deviceName === 'mobile', finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
+    pushCase(name, deviceName, 'passed', { screenshot: shot, bareEntryProof, narrowBareEntryProof, startCameraZ: startZ, finalCameraZ: movedZ, mobileOrbHiddenDuringInspection: deviceName === 'mobile', finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
     const shot = await screenshot(page, `${deviceName}-mirror-overview-failure`).catch(() => '')
-    pushCase(name, deviceName, 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors) })
+    pushCase(name, deviceName, 'failed', { screenshot: shot, bareEntryProof, narrowBareEntryProof: narrowBareEntryProof || (error?.bareEntryEvidence?.device === 'narrow' ? error.bareEntryEvidence : null), bareEntryFailure: error?.bareEntryEvidence || null, error: String(error?.message || error), finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors) })
   } finally {
     await context.close()
   }
@@ -382,6 +488,7 @@ const receipt = {
   status: errors.length ? 'failed' : 'passed',
   caseCount: cases.length,
   screenshotCount: cases.filter((item) => item.screenshot).length,
+  supportingBareEntryScreenshotCount: cases.reduce((sum, item) => sum + Number(Boolean(item.bareEntryProof?.screenshot)) + Number(Boolean(item.bareEntryProof?.initialScreenshot)) + Number(Boolean(item.narrowBareEntryProof?.screenshot)) + Number(Boolean(item.narrowBareEntryProof?.initialScreenshot)), 0),
   unattributedConsoleErrorCount: cases.reduce((sum, item) => sum + (item.unattributedConsoleErrors?.length || 0), 0),
   cases,
   errors,

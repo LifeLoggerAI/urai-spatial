@@ -34,6 +34,7 @@ on:
       - 'urai-tier1/src/app/spatial/ar-vr/UraiQuestEntryWorld.module.css'
       - 'scripts/visual-proof-transport.mjs'
       - 'urai-tier1/tests/visual-proof-transport.test.mjs'
+      - 'urai-tier1/tests/lifemap-signed-out-navigation-behavior.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -92,8 +93,8 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
-      - name: Verify bounded native transport behavior
-        run: node --test urai-tier1/tests/visual-proof-transport.test.mjs
+      - name: Verify bounded transport and mounted Life Map navigation
+        run: node --test urai-tier1/tests/visual-proof-transport.test.mjs urai-tier1/tests/lifemap-signed-out-navigation-behavior.test.mjs
 
       - name: Typecheck and build exact static donor
         run: |
