@@ -678,8 +678,15 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
       if (document.visibilityState === 'visible' && (moving || looking || settling || target.current || groundDescent || useSceneStore.getState().phase === 'ASCENT')) invalidate()
       frame = window.requestAnimationFrame(observeInput)
     }
+    const wakeFromKeyboard = (event: KeyboardEvent) => {
+      if (['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(event.code)) invalidate()
+    }
+    window.addEventListener('keydown', wakeFromKeyboard, true)
     frame = window.requestAnimationFrame(observeInput)
-    return () => window.cancelAnimationFrame(frame)
+    return () => {
+      window.removeEventListener('keydown', wakeFromKeyboard, true)
+      window.cancelAnimationFrame(frame)
+    }
   }, [camera, groundDescent, input.keys, input.virtualX, input.virtualZ, invalidate, pitch, reducedMotion, target, yaw])
 
   useFrame(({ clock }, delta) => {
@@ -750,6 +757,13 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
       }
       onNearby(next)
     }
+    if (reducedMotion && (
+      input.keys.current.size > 0 ||
+      input.virtualX.current !== 0 ||
+      input.virtualZ.current !== 0 ||
+      velocity.current.lengthSq() > 0.000001 ||
+      target.current
+    )) invalidate()
   })
   return null
 }
