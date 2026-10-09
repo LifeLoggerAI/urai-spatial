@@ -3,7 +3,7 @@ import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-import { attachHomeOrbFailureProbe, captureHomeOrbFailure, diagnosticUrl } from './home-orb-failure-diagnostics.mjs'
+import { attachHomeOrbFailureProbe, captureHomeOrbFailure, diagnosticUrl, readCanvasOcclusionSamples } from './home-orb-failure-diagnostics.mjs'
 
 function fixture({ unavailable = false, oversized = false } = {}) {
   const listeners = new Map()
@@ -13,7 +13,7 @@ function fixture({ unavailable = false, oversized = false } = {}) {
     off(name, listener) { assert.equal(listeners.get(name), listener); listeners.delete(name) },
     async addInitScript(script) { assert.equal(typeof script, 'function') },
     async evaluate() { if (unavailable) throw new Error('private-evaluation-error'); return { ownerPresent: true, attributes: { 'data-home-assets-ready': 'false' } } },
-    async screenshot(options) { assert.equal(options.timeout, 3000); if (unavailable) throw new Error('private-screenshot-error'); return Buffer.alloc(oversized ? 4 * 1024 * 1024 + 1 : 12, 1) },
+    async screenshot(options) { assert.equal(options.timeout, 30_000); if (unavailable) throw new Error('private-screenshot-error'); return Buffer.alloc(oversized ? 4 * 1024 * 1024 + 1 : 12, 1) },
   }
 }
 
@@ -49,7 +49,7 @@ for (const mode of ['available', 'unavailable', 'oversized']) {
       const saved = JSON.parse(await readFile(path.join(outputDir, result.file), 'utf8'))
       assert.deepEqual(saved, result)
       if (mode === 'unavailable') {
-        assert.deepEqual(result.errors, ['browser-snapshot-unavailable', 'failure-screenshot-unavailable'])
+        assert.deepEqual(result.errors, ['occlusion-snapshot-unavailable', 'browser-snapshot-unavailable', 'failure-screenshot-unavailable'])
         assert.ok(!JSON.stringify(result).includes('private-'))
       } else {
         assert.equal(result.browser.attributes['data-home-assets-ready'], 'false')
@@ -65,4 +65,20 @@ for (const mode of ['available', 'unavailable', 'oversized']) {
 
 test('artifact prefix cannot escape the selected diagnostic directory', async () => {
   await assert.rejects(captureHomeOrbFailure(fixture(), { outputDir: os.tmpdir(), prefix: '../escape', stage: 'ready', probe: { snapshot: () => ({}) } }), /invalid-diagnostic-prefix/)
+})
+
+test('occlusion diagnostic identifies the covered point without recording DOM text or private attributes', () => {
+  const previous = globalThis.document
+  const canvas = { getBoundingClientRect: () => ({ x: 0, y: 0, width: 390, height: 844 }), tagName: 'CANVAS', classList: [] }
+  const overlay = { tagName: 'BUTTON', classList: ['home-touch-control'], textContent: 'private text', id: 'private-id' }
+  try {
+    globalThis.document = { querySelector: () => canvas, elementFromPoint: (x, y) => x > 300 && y > 600 ? overlay : canvas }
+    const result = readCanvasOcclusionSamples()
+    assert.equal(result.samples.length, 12)
+    assert.equal(result.samples.filter(sample => !sample.canvasTopmost).length, 1)
+    assert.deepEqual(result.samples[11], { point: [.88,.82], canvasTopmost: false, hitTag: 'BUTTON', hitClasses: ['home-touch-control'] })
+    assert.ok(!JSON.stringify(result).includes('private'))
+    globalThis.document.querySelector = () => null
+    assert.deepEqual(readCanvasOcclusionSamples(), { canvasPresent: false, samples: [] })
+  } finally { globalThis.document = previous }
 })

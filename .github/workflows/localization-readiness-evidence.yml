@@ -2,7 +2,7 @@ name: Localization Readiness Evidence
 
 on:
   pull_request:
-    branches: [main, 'converge/**', 'integration/**', 'repair/release-closure-integration-20261007']
+    branches: [main, 'converge/**', 'integration/**', 'repair/release-closure-integration-20261007', 'repair/scoped-donor-convergence-20261008']
     paths:
       - '.github/workflows/localization-readiness-evidence.yml'
       - 'scripts/generate-localization-readiness.mjs'
@@ -68,7 +68,7 @@ jobs:
       - name: Verify locale preference, fallback and formatting behavior
         run: pnpm --dir urai-tier1 exec node --import tsx --test tests/localization-runtime-contract.test.mjs tests/localization-flow.test.mjs tests/localization-journey-copy.test.mjs tests/localization-readiness-evidence-contract.test.mjs
       - name: Strict-check registered catalogs and offline copy
-        run: pnpm --dir urai-tier1 exec tsc --strict --noEmit --skipLibCheck --esModuleInterop --target es2022 --module esnext --moduleResolution bundler --jsx preserve src/lib/i18n/coreMessages.ts src/lib/i18n/journeyMessages.ts src/lib/i18n/locales.ts src/lib/i18n/localePreference.ts src/lib/i18n/useUraiLocale.ts src/lib/i18n/JourneyOfflineNotice.tsx
+        run: pnpm --dir urai-tier1 exec tsc --project tsconfig.localization-proof.json
       - name: Install standard Chromium runtime
         run: pnpm exec playwright install --with-deps chromium
       - name: Verify selected locale in real core routes

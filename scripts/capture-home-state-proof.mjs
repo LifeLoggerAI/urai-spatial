@@ -446,18 +446,28 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.privacyClip = await owner.getAttribute('data-home-orb-clip')
     record.privacyAnimation = await owner.getAttribute('data-home-orb-animation')
 
+    // Retain the actual privacy UI while it is open. It intentionally covers
+    // the world and cannot satisfy the unobstructed-canvas evidence contract.
+    stage = 'capture-revoked-consent-ui'
+    record.privacyScreenshot = `${id}-privacy-${exactHead.slice(0, 12)}.png`
+    const privacyScreenshot = await page.screenshot({ path: path.join(outputDir, record.privacyScreenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+    record.privacyScreenshotBytes = privacyScreenshot.length
+    record.privacyScreenshotSha256 = createHash('sha256').update(privacyScreenshot).digest('hex')
+
+    stage = 'close-companion'
+    await page.keyboard.press('Escape')
+    await page.locator('#urai-world-companion-menu[aria-hidden="true"]').waitFor({ state: 'attached', timeout: 20_000 })
+    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'idle', ownerSelector)
+    record.closedState = await owner.getAttribute('data-home-orb-state')
+    record.closedClip = await owner.getAttribute('data-home-orb-clip')
+    record.closedAnimation = await owner.getAttribute('data-home-orb-animation')
+
+    stage = 'capture-closed-world'
     record.visual = await waitForVisualEvidence(page)
     record.screenshot = `${id}-${exactHead.slice(0, 12)}.png`
     const screenshot = await page.screenshot({ path: path.join(outputDir, record.screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
     record.screenshotBytes = screenshot.length
     record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
-
-    stage = 'close-companion'
-    await page.keyboard.press('Escape')
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'idle', ownerSelector)
-    record.closedState = await owner.getAttribute('data-home-orb-state')
-    record.closedClip = await owner.getAttribute('data-home-orb-clip')
-    record.closedAnimation = await owner.getAttribute('data-home-orb-animation')
 
     const expectedAnimation = reducedMotion === 'reduce' ? 'orb-state-static' : null
     record.voiceQualificationPassed = record.voicePlayback?.available === true
@@ -483,6 +493,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       && record.privacyState === 'privacy'
       && record.privacyClip === 'Orb_Privacy'
       && record.privacyAnimation === (expectedAnimation ?? 'orb-privacy')
+      && record.privacyScreenshotBytes > 12_000
       && record.closedState === 'idle'
       && record.closedClip === 'Orb_Idle'
       && record.closedAnimation === (expectedAnimation ?? 'orb-breathe')
@@ -694,3 +705,4 @@ try {
 
 await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 if (receipt.errors.length) process.exit(1)
+

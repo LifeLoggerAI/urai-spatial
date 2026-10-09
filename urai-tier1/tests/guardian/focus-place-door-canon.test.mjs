@@ -26,7 +26,7 @@ assert.match(door, /enterPlaceHref/, "FocusPlaceDoor must use enterPlaceHref.");
 assert.match(focusPage, /FocusChamberClient/, "Focus route must render the final focus chamber client owner.");
 assert.match(focusClient, /useSelectedMemory\(\)/, "Final Focus chamber must resolve the authenticated selected-memory contract.");
 assert.match(focusClient, /className="focus-spatial-aperture-button"/, "Final Focus chamber must retain the spatial Replay portal control.");
-assert.match(focusClient, /aria-label=\{memory \? `Open Replay for \$\{memory\.title\}` : 'Select a memory in Life Map to open Replay'\}/, "Final Focus chamber must expose an accessible Replay portal action in selected and neutral states.");
+assert.match(focusClient, /aria-label=\{memory \? locale\.text\('focus\.openReplayFor', \{title:memory\.title\}\) : locale\.text\('focus\.chooseReplay'\)\}/, "Final Focus chamber must expose an accessible Replay portal action in selected and neutral states.");
 assert.match(focusClient, /requestUraiWorldTravel\(\{/, "Final Focus chamber must enter Replay through persistent world travel.");
 assert.match(focusClient, /destination: 'replay'/, "Final Focus chamber must target the Replay destination.");
 assert.match(focusClient, /replayManifestId: memory\.replayManifest\.id/, "Final Focus chamber must preserve replay manifest identity.");

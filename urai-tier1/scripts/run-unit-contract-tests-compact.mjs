@@ -97,6 +97,7 @@ const tests = [
   'tests/captured-reality-receipt-contract.test.mjs',
   'tests/captured-reality-receipt-validation.test.mjs',
   'tests/council-provider-registry-contract.test.mjs',
+  'tests/ai-client-actor-continuity.test.mjs',
   'tests/intelligence-client-account-lifecycle.test.mjs',
   'tests/continuous-spatial-restoration-contract.test.mjs',
   'tests/embodied-exploration-contract.test.mjs',

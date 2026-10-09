@@ -7,6 +7,7 @@ import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import HomeSceneRenderBoundary from './home/HomeSceneRenderBoundary'
 import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
 import { homeJourneyHref } from '@/spatial/navigation/homeSkyInteraction'
@@ -17,20 +18,34 @@ type RendererState = 'ready' | 'recovering' | 'failed'
 
 const HOME_TELEMETRY_SELECTOR = '.urai-asset-home-world[data-home-primary-owner="asset-driven"], .urai-final-home-world'
 
+function HomeAdamLauncher() {
+  return <div className="home-adam-launcher-slot"><AdamLauncherSlot name="home" as="div" /></div>
+}
+
 function HomeSemanticNavigation() {
   const locale = useUraiLocale()
   const [currentSearch, setCurrentSearch] = useState('')
+  const [companionReady, setCompanionReady] = useState(false)
   useEffect(() => { setCurrentSearch(window.location.search) }, [])
+  useEffect(() => {
+    // The Home boundary can hydrate before its sibling Orb event owner. Keep
+    // the control disabled until that owner has registered its open listener.
+    const updateCompanionReady = () => setCompanionReady(Boolean(document.querySelector('.urai-world-companion[data-hydrated="true"][data-phase="idle"]')))
+    const observer = new MutationObserver(updateCompanionReady)
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-hydrated', 'data-phase'] })
+    updateCompanionReady()
+    return () => observer.disconnect()
+  }, [])
   return (
     <nav className="home-semantic-navigation" {...locale.props('home.destinations')} aria-label={locale.text('home.destinations')} data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
-      <button type="button" {...locale.props('home.orbAction')} aria-label={locale.text('home.orbAction')} data-testid="home-semantic-orb" onClick={requestUraiWorldOrbOpen}>{locale.text('home.orbAction')}</button>
+      <button type="button" {...locale.props('home.orbAction')} aria-label={locale.text('home.orbAction')} data-testid="home-semantic-orb" disabled={!companionReady} onClick={requestUraiWorldOrbOpen}>{locale.text('home.orbAction')}</button>
       <a href={homeJourneyHref('/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent', currentSearch)} {...locale.props('home.groundAction')} aria-label={locale.text('home.groundAction')} data-testid="home-semantic-ground">{locale.text('nav.ground')}</a>
       <a href={homeJourneyHref('/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete', currentSearch)} {...locale.props('home.lifeMapAction')} aria-label={locale.text('home.lifeMapAction')} data-testid="home-semantic-life-map">{locale.text('nav.lifeMap')}</a>
     </nav>
   )
 }
 
-const runtimeStyles = `.urai-home-spatial-runtime-layer .urai-final-home-doorways,.urai-home-spatial-runtime-layer .urai-asset-home-world>.home-semantic-navigation{display:none!important}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]{position:fixed;z-index:2147483647;right:max(10px,env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:grid;gap:8px;width:48px;pointer-events:auto;opacity:.015}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]:focus-within{opacity:1}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"] :is(button,a){display:flex;align-items:center;justify-content:center;width:48px;height:48px;min-width:48px;min-height:48px;padding:0;border:1px solid rgba(230,246,240,.32);border-radius:50%;background:rgba(6,18,19,.92);color:#f3fbf8;font:700 0/1 system-ui;cursor:pointer;pointer-events:auto;touch-action:manipulation}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"] :is(button,a):focus-visible{font-size:10px;outline:2px solid #fff;outline-offset:2px}.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation{position:absolute;left:50%;right:auto;top:auto;bottom:max(34px,calc(env(safe-area-inset-bottom) + 24px));transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:min(680px,calc(100vw - 32px));padding:12px;border:1px solid rgba(230,246,240,.28);border-radius:22px;background:rgba(6,18,19,.92);box-shadow:0 18px 54px rgba(0,0,0,.46);opacity:1}.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation :is(button,a){width:auto;height:auto;min-width:0;min-height:52px;padding:9px 12px;border-radius:14px;font:700 12px/1.25 system-ui;text-align:center}.urai-home-spatial-runtime-layer>.home-runtime-loading{position:absolute;inset:0;z-index:45;display:grid;place-content:center;gap:14px;text-align:center;background:radial-gradient(circle at 50% 52%,rgba(80,139,119,.2),rgba(8,25,22,.94) 48%,#081b18 100%);color:#eef8f3;font:600 13px/1.3 system-ui;letter-spacing:.03em;pointer-events:none}.urai-home-spatial-runtime-layer>.home-runtime-loading span{width:52px;height:52px;margin:auto;border:1px solid rgba(190,232,218,.34);border-radius:50%;box-shadow:0 0 34px rgba(109,201,174,.2),inset 0 0 22px rgba(109,201,174,.12);animation:home-runtime-forming-breath 1.8s ease-in-out infinite}@keyframes home-runtime-forming-breath{50%{transform:scale(1.08);opacity:.68}}@media(max-width:700px){.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]{right:max(8px,env(safe-area-inset-right))}.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation{left:16px;right:16px;bottom:max(18px,calc(env(safe-area-inset-bottom) + 12px));transform:none;grid-template-columns:1fr;width:auto}}@media(prefers-reduced-motion:reduce){.urai-home-spatial-runtime-layer>.home-runtime-loading span{animation:none}}`
+const runtimeStyles = `.home-adam-launcher-slot{position:fixed;z-index:2147483646;right:max(8px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));width:64px;min-height:48px}.urai-home-spatial-runtime-layer .urai-final-home-doorways,.urai-home-spatial-runtime-layer .urai-asset-home-world>.home-semantic-navigation{display:none!important}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]{position:fixed;z-index:2147483647;right:max(10px,env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:grid;gap:8px;width:48px;pointer-events:auto;opacity:.015}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]:focus-within{opacity:1}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"] :is(button,a){display:flex;align-items:center;justify-content:center;width:48px;height:48px;min-width:48px;min-height:48px;padding:0;border:1px solid rgba(230,246,240,.32);border-radius:50%;background:rgba(6,18,19,.92);color:#f3fbf8;font:700 0/1 system-ui;cursor:pointer;pointer-events:auto;touch-action:manipulation}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"] :is(button,a):focus-visible{font-size:10px;outline:2px solid #fff;outline-offset:2px}.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation{position:absolute;left:50%;right:auto;top:auto;bottom:max(34px,calc(env(safe-area-inset-bottom) + 24px));transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:min(680px,calc(100vw - 32px));padding:12px;border:1px solid rgba(230,246,240,.28);border-radius:22px;background:rgba(6,18,19,.92);box-shadow:0 18px 54px rgba(0,0,0,.46);opacity:1}.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation :is(button,a){width:auto;height:auto;min-width:0;min-height:52px;padding:9px 12px;border-radius:14px;font:700 12px/1.25 system-ui;text-align:center}.urai-home-spatial-runtime-layer>.home-runtime-loading{position:absolute;inset:0;z-index:45;display:grid;place-content:center;gap:14px;text-align:center;background:radial-gradient(circle at 50% 52%,rgba(80,139,119,.2),rgba(8,25,22,.94) 48%,#081b18 100%);color:#eef8f3;font:600 13px/1.3 system-ui;letter-spacing:.03em;pointer-events:none}.urai-home-spatial-runtime-layer>.home-runtime-loading span{width:52px;height:52px;margin:auto;border:1px solid rgba(190,232,218,.34);border-radius:50%;box-shadow:0 0 34px rgba(109,201,174,.2),inset 0 0 22px rgba(109,201,174,.12);animation:home-runtime-forming-breath 1.8s ease-in-out infinite}@keyframes home-runtime-forming-breath{50%{transform:scale(1.08);opacity:.68}}@media(max-width:700px){.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]{right:max(80px,calc(env(safe-area-inset-right) + 80px));top:max(12px,env(safe-area-inset-top));transform:none;grid-template-columns:48px;width:48px}.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation{left:16px;right:16px;bottom:max(18px,calc(env(safe-area-inset-bottom) + 12px));transform:none;grid-template-columns:1fr;width:auto}}@media(prefers-reduced-motion:reduce){.urai-home-spatial-runtime-layer>.home-runtime-loading span{animation:none}}`
 
 export default function HomeSpatialRuntimeLayer() {
   const locale = useUraiLocale()
@@ -201,6 +216,7 @@ export default function HomeSpatialRuntimeLayer() {
         data-home-assets-ready="false"
         aria-label="Spatial Home fallback"
       >
+        <HomeAdamLauncher />
         <HomeManualEmotionalWeatherStatus />
         <div role="status" aria-live="polite" className="home-runtime-recovery">
           <span {...locale.props(failureMessageId)}>{locale.text(failureMessageId)}</span>
@@ -217,6 +233,7 @@ export default function HomeSpatialRuntimeLayer() {
 
   return (
     <>
+      <HomeAdamLauncher />
       <HomeSemanticNavigation />
       <HomeManualEmotionalWeatherStatus />
       <section
@@ -245,3 +262,5 @@ export default function HomeSpatialRuntimeLayer() {
     </>
   )
 }
+
+

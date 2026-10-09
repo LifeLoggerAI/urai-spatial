@@ -108,7 +108,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/lifemap-founder-proof
-          node --test \
+          node --import tsx --test \
             urai-tier1/tests/lifemap-aaa-composition-contract.test.mjs \
             urai-tier1/tests/lifemap-scene-behavior.test.mjs \
             urai-tier1/tests/lifemap-semantic-owner-contract.test.mjs \

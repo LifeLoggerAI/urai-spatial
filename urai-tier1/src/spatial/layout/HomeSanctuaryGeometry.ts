@@ -240,6 +240,9 @@ export const HOME_NAVIGATION_OBSTACLES = [-1, 1].flatMap((side) => {
   footprints.push({ ...homeCourtyardPoint(side, -side * .65, 1.82), radius: .54 })
   return footprints
 }).concat([
+  // Covers the retained Orb's 0.534756m animated vertex envelope at its
+  // existing maximum core scale. Its off-path physical body is not walk-through.
+  { x: 1.8, z: -9.5, radius: .54 },
   { x: -2.85, z: -6.15, radius: .98 },
   { x: 2.75, z: -6.35, radius: .94 },
   { x: -7, z: -7, radius: .93 },

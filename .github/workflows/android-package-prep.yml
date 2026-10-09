@@ -70,6 +70,9 @@ jobs:
       - name: Install canonical dependencies
         run: corepack pnpm install --frozen-lockfile
 
+      - name: Verify pinned native Gradle integrity preparation
+        run: node --test urai-tier1/tests/native-gradle-integrity.test.mjs
+
       - name: Load canonical Firebase public configuration
         shell: bash
         run: |
@@ -123,9 +126,11 @@ jobs:
       - name: Generate and sync Android project
         working-directory: distribution/android-shell
         run: |
+          set -euo pipefail
           rm -rf android
           corepack pnpm exec cap add android
           node ../../scripts/prepare-native-links.mjs --android-project android
+          node ../../scripts/prepare-native-gradle-integrity.mjs --android-project android
           node ../../scripts/prepare-android-native-google-auth.mjs --optional --apply-project android
           corepack pnpm exec cap sync android
           node ../../scripts/prepare-native-static-provenance.mjs --directory android/app/src/main/assets/public --source-sha "$URAI_EXACT_HEAD" --platform android --workflow-run-id "$GITHUB_RUN_ID" --verify-only

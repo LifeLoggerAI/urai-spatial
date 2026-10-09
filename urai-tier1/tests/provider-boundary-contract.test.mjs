@@ -25,7 +25,10 @@ test('OpenAI Orb is authenticated, moderated, non-stored, structured and cancell
 })
 
 test('Orb UI keeps external consent off and excludes rejected provider turns from future context', () => {
-  assert.match(openAiClient, /getAuth\(app\)\.currentUser/)
+  const aiActorBoundary = fs.readFileSync(new URL('../src/lib/privacy/aiActorBoundary.ts', import.meta.url), 'utf8')
+  assert.match(aiActorBoundary, /getAuth\(app\)\.currentUser/)
+  assert.match(openAiClient, /beginAIActorRequest\(input\.signal\)/)
+  assert.match(openAiClient, /actor\.wait\(actor\.actor\.getIdToken\(\)\)/)
   assert.match(openAiClient, /Authorization/)
   assert.match(openAiClient, /deterministicOrbFallback/)
   assert.match(orbPanel, /const \[aiConsent, setAiConsent\] = useState\(false\)/)

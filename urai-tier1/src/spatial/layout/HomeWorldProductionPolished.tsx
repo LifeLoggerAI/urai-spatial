@@ -6,7 +6,7 @@ import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, us
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { isOrbState, resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
-import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
+import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, URAI_EMBODIED_MOVEMENT_INPUT_EVENT, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import HomeSkyInteraction from '@/spatial/navigation/HomeSkyAscentInteraction'
 import { useSceneStore } from '@/spatial/store/useSceneStore'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
@@ -27,7 +27,7 @@ const HOME_SCANNED_COMPOSITION_V1 = 'canonical-sanctuary-plus-cc0-fern-plus-livi
 const HOME_INTERPRETIVE_SPLAT_ASSET = resolveHomeInterpretiveSplatAsset(process.env.NEXT_PUBLIC_URAI_HOME_INTERPRETIVE_SPLAT_ASSET)
 const HOME_BOUNDS = { minX: -14, maxX: 14, minZ: -18, maxZ: 12 }
 const SPAWN = new THREE.Vector3(-0.85, 0, 8.4)
-const ORB = new THREE.Vector3(0, 0.82, -4.25)
+const ORB = new THREE.Vector3(1.8, 0.82, -9.5)
 const GROUND_THRESHOLD = new THREE.Vector3(-5.4, 0, -10.8)
 const LIFE_MAP_LOOKOUT = new THREE.Vector3(5.4, 0, -10.8)
 const ASCENT_DURATION_SECONDS = 3.4
@@ -678,8 +678,21 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
       if (document.visibilityState === 'visible' && (moving || looking || settling || target.current || groundDescent || useSceneStore.getState().phase === 'ASCENT')) invalidate()
       frame = window.requestAnimationFrame(observeInput)
     }
+    const wakeDemandRenderer = () => {
+      invalidate()
+      window.requestAnimationFrame(() => invalidate())
+    }
+    const wakeFromKeyboard = (event: KeyboardEvent) => {
+      if (['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(event.code)) wakeDemandRenderer()
+    }
+    window.addEventListener('keydown', wakeFromKeyboard, true)
+    window.addEventListener(URAI_EMBODIED_MOVEMENT_INPUT_EVENT, wakeDemandRenderer)
     frame = window.requestAnimationFrame(observeInput)
-    return () => window.cancelAnimationFrame(frame)
+    return () => {
+      window.removeEventListener('keydown', wakeFromKeyboard, true)
+      window.removeEventListener(URAI_EMBODIED_MOVEMENT_INPUT_EVENT, wakeDemandRenderer)
+      window.cancelAnimationFrame(frame)
+    }
   }, [camera, groundDescent, input.keys, input.virtualX, input.virtualZ, invalidate, pitch, reducedMotion, target, yaw])
 
   useFrame(({ clock }, delta) => {
@@ -750,6 +763,13 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
       }
       onNearby(next)
     }
+    if (reducedMotion && (
+      input.keys.current.size > 0 ||
+      input.virtualX.current !== 0 ||
+      input.virtualZ.current !== 0 ||
+      velocity.current.lengthSq() > 0.000001 ||
+      target.current
+    )) invalidate()
   })
   return null
 }
