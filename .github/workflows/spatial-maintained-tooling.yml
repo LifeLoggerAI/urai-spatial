@@ -94,6 +94,7 @@ jobs:
           node --test scripts/advisory-source-authority.test.mjs
           git clone --branch main --depth 1 --filter=blob:none --sparse https://github.com/github/advisory-database.git "$RUNNER_TEMP/spatial-current-reviewed-advisories"
           git -C "$RUNNER_TEMP/spatial-current-reviewed-advisories" sparse-checkout set advisories/github-reviewed
+          node scripts/prepare-current-spatial-reviewed-advisories.mjs "$RUNNER_TEMP/spatial-current-reviewed-advisories" "$RUNNER_TEMP/spatial-maintained-evidence/current-advisory-acquisition.json"
           URAI_LEGACY_TOOLING_FIXTURE="$RUNNER_TEMP/spatial-legacy-tooling" node scripts/check-current-spatial-reviewed-advisories.mjs "$RUNNER_TEMP/spatial-current-reviewed-advisories" "$RUNNER_TEMP/spatial-maintained-evidence/current-advisories.json"
       - name: Existing current Functions compile and tests
         run: |
