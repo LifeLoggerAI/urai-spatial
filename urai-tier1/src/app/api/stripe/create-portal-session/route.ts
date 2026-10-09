@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readEntitlement } from '@/lib/entitlementStore';
+import { readEntitlement, hasCurrentStripeCustomer } from '@/lib/entitlementStore';
 import { resolveApprovedReturnUrl } from '@/lib/server/approved-return-url';
 import { verifyFirebaseUser } from '@/lib/server/firebase-user';
 import {
@@ -42,6 +42,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No Stripe customer is associated with this user.' }, { status: 409 });
   }
 
+  if (stripeMode !== 'test') return NextResponse.json({ error: 'Stripe LIVE portal is not authorized.' }, { status: 503 });
+
   let redirectBase: URL;
   try {
     redirectBase = resolveApprovedReturnUrl(returnUrl, appUrl);
@@ -63,10 +65,13 @@ export async function POST(request: Request) {
     console.error('Stripe Billing Portal could not verify customer', { userId: uid, error });
     return NextResponse.json({ error: 'Stripe customer could not be verified.' }, { status: 502 });
   }
+  if (await verifyFirebaseUser(request) !== uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if ('deleted' in customer && customer.deleted) {
     return NextResponse.json({ error: 'Stripe customer is no longer active.' }, { status: 409 });
   }
-  if (!stripeLivemodeMatchesRuntime(customer.livemode, stripeMode)) {
+  if (customer.id !== entitlement.stripeCustomerId || customer.metadata?.userId !== uid
+    || customer.metadata?.uraiAccountIncarnation !== entitlement.stripeIncarnationId
+    || !stripeLivemodeMatchesRuntime(customer.livemode, stripeMode)) {
     return NextResponse.json({ error: 'Stripe customer mode mismatch.' }, { status: 500 });
   }
 
@@ -89,6 +94,10 @@ export async function POST(request: Request) {
     }
   }
 
+  if (await verifyFirebaseUser(request) !== uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!await hasCurrentStripeCustomer(uid, entitlement)) {
+    return NextResponse.json({ error: 'Current Stripe association changed.' }, { status: 409 });
+  }
   const session = await stripe.billingPortal.sessions.create({
     customer: customer.id,
     return_url: redirectBase.toString(),
@@ -98,5 +107,6 @@ export async function POST(request: Request) {
   if (await verifyFirebaseUser(request) !== uid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (!await hasCurrentStripeCustomer(uid, entitlement)) return NextResponse.json({ error: 'Current Stripe association changed.' }, { status: 409 });
   return NextResponse.json({ url: session.url, environment: stripeMode }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

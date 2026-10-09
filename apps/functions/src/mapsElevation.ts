@@ -88,8 +88,12 @@ export const mapsElevationProvider = onRequest({
     response.on('close', () => { if (!response.writableEnded) controller.abort() })
     try {
       const input = { latitude, longitude }
+      let rateConsumed = false
       const upstream = await paidSpatialElevationFetch(db, uid, input, apiKey, controller.signal, async () => {
-        await consumeElevationRateLimit(uid)
+        if (!rateConsumed) {
+          await consumeElevationRateLimit(uid)
+          rateConsumed = true
+        }
         if (await authenticatedUid(request) !== uid) throw new ElevationError(401, 'authentication_required')
       })
       const result = await readNormalizedElevation(upstream, input)

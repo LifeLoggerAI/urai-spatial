@@ -48,6 +48,10 @@ export function assertCheckoutSubscriptionMatch(
       throw new Error('Stripe Checkout metadata mismatch');
     }
   }
+  const sessionIncarnation = session.metadata?.uraiAccountIncarnation;
+  if (sessionIncarnation && subscription.metadata?.uraiAccountIncarnation !== sessionIncarnation) {
+    throw new Error('Stripe Checkout incarnation mismatch');
+  }
 }
 
 /** Stripe's current parent field and legacy event versions must agree if both occur. */

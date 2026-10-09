@@ -25,7 +25,9 @@ function actualElevationHandler(kind, { authenticated = true, enabledLabels = fa
   const protectedExecutor = { SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON:{}, assertSpatialPaidOutputCurrent: () => { if(authorityExpired)throw new SpatialSpendError() }, paidSpatialElevationFetch: async (_db, uid, input, key, signal, beforeReserve) => {
     assert.equal(uid,'synthetic-owner');assert.equal(key,'SYNTHETIC-KEY');assert.ok(signal)
     if(!admitted)throw new SpatialSpendError()
-    await beforeReserve();counters.providerCalls++;return new Response('SYNTHETIC')
+    await beforeReserve()
+    await beforeReserve()
+    counters.providerCalls++;return new Response('SYNTHETIC')
   } }
   const normalizedResult = { ElevationResultError, readNormalizedElevation: async () => ({elevationMeters:123,resolutionMeters:1,source:'google-maps-elevation'}) }
   const imports = {
@@ -72,14 +74,17 @@ for (const kind of ['functions', 'next']) {
       assert.equal(invalid.counters.providerCalls, 0); assert.equal(invalid.counters.credentialReads, 0)
     }
   })
-  test(`actual ${kind} Elevation leaf checks owner before reservation and again before output`,async()=>{
+  test(`actual ${kind} Elevation leaf checks owner before reservation, before dispatch and before output`,async()=>{
     const allowed=actualElevationHandler(kind,{admitted:true}),result=await allowed.invoke()
     assert.equal(result.status,200);assert.deepEqual(JSON.parse(JSON.stringify(result.body)),{elevationMeters:123,resolutionMeters:1,source:'google-maps-elevation',subject:'synthetic-owner'})
-    assert.equal(allowed.counters.tokenChecks,3);assert.equal(allowed.counters.rateWrites,1)
-    for(const revokeAt of [2,3]){
+    assert.equal(allowed.counters.tokenChecks,4);assert.equal(allowed.counters.rateWrites,1)
+    assert.equal(allowed.counters.providerCalls,1)
+    for(const revokeAt of [2,3,4]){
       const revoked=actualElevationHandler(kind,{admitted:true,revokeAt}),result=await revoked.invoke()
       assert.equal(result.status,401);assert.equal(result.body.error,'authentication_required')
-      assert.equal(revoked.counters.providerCalls,revokeAt===2?0:1)
+      assert.equal(revoked.counters.providerCalls,revokeAt<=3?0:1)
+      assert.equal(revoked.counters.tokenChecks,revokeAt)
+      assert.equal(revoked.counters.rateWrites,1)
     }
     const expired=actualElevationHandler(kind,{admitted:true,authorityExpired:true})
     assert.equal((await expired.invoke()).status,503)
@@ -107,7 +112,8 @@ test('deployed Elevation rate-limits per uid before the billable provider fetch'
   assert.match(functionSource, /throw new ElevationError\(429, 'rate_limited'\)/)
   const limiterIndex = functionSource.indexOf('await consumeElevationRateLimit(uid)')
   assert.ok(limiterIndex > -1)
-  assert.match(functionSource, /paidSpatialElevationFetch\([^\n]+async \(\) => \{\s+await consumeElevationRateLimit\(uid\)/)
+  assert.match(functionSource, /let rateConsumed = false/)
+  assert.match(functionSource, /paidSpatialElevationFetch\([^\n]+async \(\) => \{\s+if \(!rateConsumed\) \{\s+await consumeElevationRateLimit\(uid\)\s+rateConsumed = true\s+\}\s+if \(await authenticatedUid\(request\) !== uid\)/)
   assert.doesNotMatch(functionSource,/await fetch\(/)
 })
 
@@ -119,7 +125,8 @@ test('standalone Next Elevation route rate-limits per uid before provider fetch'
   assert.match(source, /throw new Error\('rate_limited'\)/)
   const limiterIndex = source.indexOf('await consumeElevationRateLimit(uid)')
   assert.ok(limiterIndex > -1)
-  assert.match(source,/paidSpatialElevationFetch\([^\n]+async \(\) =>/)
+  assert.match(source, /let rateConsumed = false/)
+  assert.match(source, /paidSpatialElevationFetch\([^\n]+async \(\) => \{\s+if \(!rateConsumed\) \{[\s\S]*?if \(!allowed\) throw new Error\('rate_limited'\)\s+rateConsumed = true\s+\}\s+if \(await verifyFirebaseUser\(request\) !== uid\)/)
   assert.doesNotMatch(source,/await fetch\(/)
 })
 

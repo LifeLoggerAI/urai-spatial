@@ -1,6 +1,6 @@
 import { buildOrbCompanionResponse } from '@/lib/orb-companion-contract'
-import { getAuth } from 'firebase/auth'
-import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { beginAIActorRequest, cancelAIResponse } from '@/lib/privacy/aiActorBoundary'
+import { firebasePublicEnvReady } from '@/lib/firebase/client'
 import { clientApiUrl } from '@/lib/clientApiUrl'
 import { currentSpeechTag } from '@/lib/i18n/localePreference'
 import { contentLanguage } from '@/lib/i18n/contentLanguage'
@@ -105,42 +105,41 @@ export async function requestOpenAIOrb(input: {
   if (!input.aiProcessingConsent || !firebasePublicEnvReady || input.signal.aborted) return null
   const locale = contentLanguage(input.locale ?? currentSpeechTag())?.speechTag
   if (!locale) return null
-  const user = getAuth(app).currentUser
-  if (!user) return null
-  const token = await user.getIdToken()
-  if (!token || input.signal.aborted) return null
-  const requestId = await stableIntentRequestId(input.message, input.context, locale)
-  if (!requestId || input.signal.aborted) return null
+  const actor = beginAIActorRequest(input.signal)
+  if (!actor) return null
+  try {
+  const token = await actor.wait(actor.actor.getIdToken())
+  if (!token) return null
+  const requestId = await actor.wait(stableIntentRequestId(input.message, input.context, locale))
+  if (!requestId) return null
+  actor.check()
+  const body = JSON.stringify({ message: input.message, context: input.context.slice(-8), aiProcessingConsent: true, requestId, locale })
+  actor.check()
 
   let response: Response
   try {
-    response = await fetch(clientApiUrl('/api/urai/orb/openai'), {
+    response = await actor.wait(fetch(clientApiUrl('/api/urai/orb/openai'), {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       cache: 'no-store',
-      signal: input.signal,
-      body: JSON.stringify({
-        message: input.message,
-        context: input.context.slice(-8),
-        aiProcessingConsent: true,
-        requestId,
-        locale,
-      }),
-    })
+      signal: actor.signal,
+      body,
+    }), cancelAIResponse)
   } catch (error) {
-    if (input.signal.aborted) throw error
+    if (!actor.isCurrent()) throw error
     throw new OrbProviderAttemptUncertainError()
   }
 
   if (!response.ok || !response.body) {
     let code = 'PROVIDER_BOUNDARY_FAILURE'
     try {
-      const payload = await response.json() as { error?: unknown }
+      const payload = await actor.wait(response.json()) as { error?: unknown }
       if (payload.error) code = String(payload.error)
-    } catch {
+    } catch (error) {
+      if (!actor.isCurrent()) throw error
       // A submitted HTTP request with an unknown outcome may already be admitted.
     }
     if (DEFINITE_EXTERNAL_ATTEMPT_CODES.has(code)) throw new OrbProviderAttemptError(code)
@@ -155,7 +154,9 @@ export async function requestOpenAIOrb(input: {
 
   try {
     while (true) {
-      const { value, done } = await reader.read()
+      actor.check()
+      const { value, done } = await actor.wait(reader.read())
+      actor.check()
       if (done) break
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n')
@@ -171,17 +172,24 @@ export async function requestOpenAIOrb(input: {
           if (!returned || returned.speechTag !== locale) throw new OrbProviderAttemptError('INVALID_PROVIDER_LOCALE')
           event = { ...event, locale: returned.speechTag }
         }
+        actor.check()
         input.onEvent?.(event)
+        actor.check()
         if (event.type === 'done') finalResult = event
         if (event.type === 'error') throw new OrbProviderAttemptError(event.code)
       }
     }
   } catch (error) {
-    if (input.signal.aborted) throw error
+    if (!actor.isCurrent()) throw error
     if (error instanceof OrbProviderAttemptError) throw error
     throw new OrbProviderAttemptError('EXTERNAL_STREAM_FAILED')
+  } finally {
+    if (!actor.isCurrent()) { try { void Promise.resolve(reader.cancel()).catch(() => {}) } catch {} }
+    try { reader.releaseLock() } catch {}
   }
 
   if (!finalResult) throw new OrbProviderAttemptError('EXTERNAL_RESPONSE_INCOMPLETE')
+  actor.check()
   return finalResult
+  } finally { actor.dispose() }
 }

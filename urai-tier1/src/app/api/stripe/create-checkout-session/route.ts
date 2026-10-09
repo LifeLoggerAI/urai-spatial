@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { prepareCurrentStripeCheckout, recordCurrentStripeCheckout, revalidateCurrentStripeCheckout } from '@/lib/entitlementStore';
 import { resolveApprovedReturnUrl, withStripeResult } from '@/lib/server/approved-return-url';
 import { verifyFirebaseUser } from '@/lib/server/firebase-user';
 import {
@@ -56,6 +57,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid return URL.' }, { status: 400 });
   }
 
+  if (stripeMode !== 'test') return NextResponse.json({ error: 'Stripe LIVE checkout is not authorized.' }, { status: 503 });
+
   const stripeModule = await import('stripe');
   const Stripe = stripeModule.default;
   const stripe = new Stripe(secretKey);
@@ -76,25 +79,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Configured Stripe Price authority mismatch.' }, { status: 500 });
   }
 
+  let authority;
+  try {
+    authority = await prepareCurrentStripeCheckout(uid, stripe.customers, async () => await verifyFirebaseUser(request) === uid);
+  } catch {
+    return NextResponse.json({ error: 'Stripe customer association could not be verified.' }, { status: 502 });
+  }
+  if (await verifyFirebaseUser(request) !== uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!authority.allowed) return NextResponse.json({ error: 'Current Stripe association requires reconciliation.' }, { status: 409 });
+  const incarnationId = authority.binding.incarnationId;
+  if (!await revalidateCurrentStripeCheckout(uid, authority.binding)) return NextResponse.json({ error: 'Current Stripe association changed.' }, { status: 409 });
   const session = await stripe.checkout.sessions.create({
     mode: checkoutModeForPlan(planId),
     line_items: [{ price: price.id, quantity: 1 }],
+    customer: authority.binding.stripeCustomerId!,
     success_url: withStripeResult(redirectBase, 'success', planId),
     cancel_url: withStripeResult(redirectBase, 'cancelled', planId),
     metadata: {
       planId,
       userId: uid,
+      uraiAccountIncarnation: incarnationId,
     },
     payment_intent_data: planId === 'founder' ? {
       metadata: {
         planId,
         userId: uid,
+        uraiAccountIncarnation: incarnationId,
       },
     } : undefined,
     subscription_data: planId === 'founder' ? undefined : {
       metadata: {
         planId,
         userId: uid,
+        uraiAccountIncarnation: incarnationId,
       },
     },
   });
@@ -102,5 +119,12 @@ export async function POST(request: Request) {
   if (await verifyFirebaseUser(request) !== uid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (session.livemode !== false || session.customer !== authority.binding.stripeCustomerId
+    || session.metadata?.uraiAccountIncarnation !== incarnationId
+    || !await recordCurrentStripeCheckout(uid, authority.binding, planId, session.id)) {
+    return NextResponse.json({ error: 'Stripe checkout association could not be committed.' }, { status: 409 });
+  }
+  if (await verifyFirebaseUser(request) !== uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!await revalidateCurrentStripeCheckout(uid, authority.binding)) return NextResponse.json({ error: 'Current Stripe association changed.' }, { status: 409 });
   return NextResponse.json({ url: session.url, environment: stripeMode }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

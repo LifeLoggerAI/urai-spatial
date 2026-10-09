@@ -80,7 +80,7 @@ async function boundedGatewayJson(response: Response) {
 }
 
 /** Every external POST, including screening, enters this exact request boundary. */
-export async function paidSpatialFetch(db: BindingStore, uid: string, lane: string, provider: string, model: string, sourceInput: unknown, target: string | URL, init: RequestInit): Promise<Response> {
+export async function paidSpatialFetch(db: BindingStore, uid: string, lane: string, provider: string, model: string, sourceInput: unknown, target: string | URL, init: RequestInit, beforeReserve?: () => Promise<void>): Promise<Response> {
   need(uid && lane && provider && model && init.method === 'POST' && typeof init.body === 'string')
   const url = endpoint(String(target))
   const bytes = Buffer.from(init.body, 'utf8'), headers = new Headers(init.headers), callerSignal = init.signal
@@ -90,7 +90,7 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   need(provider === 'gemini' ? new URL(url).pathname === `/v1beta/models/${encodeURIComponent(model)}:generateContent` : (provider === 'elevenlabs' ? actualBody.model_id : actualBody.model) === model)
   const credentials = Object.fromEntries([...headers.entries()].filter(([key]) => ['authorization', 'xi-api-key', 'x-api-key', 'x-goog-api-key'].includes(key)))
   need(Object.keys(credentials).length > 0 && Object.values(credentials).every(value => Boolean(value.trim())) && (!credentials.authorization || /^Bearer\s+\S+$/.test(credentials.authorization)))
-  return executeSpatialRequest(db, uid, lane, provider, model, sourceInput, url, bytes, headers, credentials, () => JSON.parse(bytes.toString('utf8')), () => Object.fromEntries([...headers.entries()].filter(([key]) => Object.prototype.hasOwnProperty.call(credentials, key))), init, callerSignal)
+  return executeSpatialRequest(db, uid, lane, provider, model, sourceInput, url, bytes, headers, credentials, () => JSON.parse(bytes.toString('utf8')), () => Object.fromEntries([...headers.entries()].filter(([key]) => Object.prototype.hasOwnProperty.call(credentials, key))), init, callerSignal, beforeReserve)
 }
 
 type ElevationInput = { latitude: number; longitude: number }
@@ -240,6 +240,8 @@ async function executeSpatialRequest(db: BindingStore, uid: string, lane: string
     observe('failed').catch(() => undefined)
   }, { once:true })
   try {
+    current()
+    await beforeReserve?.()
     current()
     const upstream = await fetch(dispatchUrl, { ...init, method, body:method === 'POST' ? bytes : undefined, headers, redirect:'error', signal })
     current()

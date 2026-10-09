@@ -19,6 +19,15 @@ const approvedReturnUrl = fs.readFileSync(new URL("../src/lib/server/approved-re
 const stripeFunctions = fs.readFileSync(new URL("../../apps/functions/src/stripeEntitlements.ts", import.meta.url), "utf8");
 const staticHosting = JSON.parse(fs.readFileSync(new URL("../../firebase.static.json", import.meta.url), "utf8")).hosting;
 
+function assertStripeWebhookTestOnly(source) {
+  const declaration = "export const handleStripeWebhook =";
+  const start = source.indexOf(declaration);
+  assert.notEqual(start, -1, "governed Stripe webhook must exist");
+  const webhook = source.slice(start).split(/\nexport const /)[0];
+  assert.match(webhook, /if \(mode !== 'test'\) \{/, "Stripe webhook must reject LIVE runtime authority");
+  assert.match(webhook, /if \(event\.livemode !== false\) \{/, "Stripe webhook must reject LIVE provider events");
+}
+
 test("static provider paths cannot shadow authenticated Firebase rewrites", () => {
   for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false);
 });
@@ -74,7 +83,7 @@ test("static production topology exposes authenticated Stripe lifecycle only thr
   assert.match(stripeFunctions, /verifyIdToken\(token, true\)/);
   assert.match(stripeFunctions, /URAI_STRIPE_COMMERCE_ENABLED === 'true'/);
   assert.match(stripeFunctions, /ENTITLEMENT_COLLECTION = 'userEntitlements'/);
-  assert.match(stripeFunctions, /event\.livemode !== \(mode === 'production'\)/);
+  assertStripeWebhookTestOnly(stripeFunctions);
   assert.match(stripeFunctions, /applyOrderedEntitlement/);
   assert.match(stripeFunctions, /customers\.retrieve/);
   assert.match(stripeFunctions, /customer\.livemode !== \(mode === 'production'\)/);
@@ -87,4 +96,18 @@ test("static production topology exposes authenticated Stripe lifecycle only thr
   assert.equal(rewrites.get('/api/entitlement'), 'getStripeEntitlement');
   assert.equal(rewrites.get('/api/stripe/webhook'), 'handleStripeWebhook');
   assert.equal([...rewrites.keys()].some((source) => source === '**' || source === '/**'), false);
+});
+
+for (const [name, before, after] of [
+  ["LIVE runtime", "if (mode !== 'test') {", "if (mode !== 'production') {"],
+  ["LIVE event", "if (event.livemode !== false) {", "if (event.livemode !== true) {"],
+  ["historical production-mode event", "if (event.livemode !== false) {", "if (event.livemode !== (mode === 'production')) {"],
+]) test(`governed webhook source contract rejects ${name} admission`, () => {
+  const start = stripeFunctions.indexOf("export const handleStripeWebhook =");
+  assert.notEqual(start, -1);
+  const webhook = stripeFunctions.slice(start);
+  assert.ok(webhook.includes(before), "mutation must change the actual webhook guard");
+  const changed = stripeFunctions.slice(0, start) + webhook.replace(before, after);
+  assert.notEqual(changed, stripeFunctions);
+  assert.throws(() => assertStripeWebhookTestOnly(changed), assert.AssertionError);
 });

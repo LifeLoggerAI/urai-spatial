@@ -15,7 +15,20 @@ const localRequire = createRequire(import.meta.url)
 const hash = (text) => createHash('sha256').update(text).digest('hex')
 const message = 'synthetic private reflection; never send this fixture externally'
 const requestId = hash(JSON.stringify({ message, context: [], locale: 'en-US' }))
-const policy = { version: 2, revision: 0, ownerId: 'alice', domains: Object.fromEntries(['memory', 'location', 'models', 'exports', 'workforce', 'identity'].map(domain => [domain, { mode: domain === 'models' ? 'granted' : 'denied', retentionDays: null, precise: false, replayVisible: false, lifeMapVisible: false, modelContext: domain === 'models', sharingEnabled: false, automationEnabled: false, likenessEnabled: false }])), enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } }
+const consentPolicyAuthority = loadSource('apps/functions/src/consentPolicyAuthority.ts', {})
+const consentModel = loadSource('urai-tier1/src/app/privacy-controls/consentModel.ts', {})
+function canonicalProviderPolicy(uid) {
+  const policy = JSON.parse(JSON.stringify(consentModel.defaultConsentPolicy(uid)))
+  // Preserve the current owner's models-only grant without recreating its canonical shape.
+  for (const [domain, settings] of Object.entries(policy.domains)) {
+    settings.mode = domain === 'models' ? 'granted' : 'denied'
+    settings.retentionDays = null
+    for (const key of Object.keys(settings)) if (typeof settings[key] === 'boolean') settings[key] = domain === 'models' && key === 'modelContext'
+  }
+  assert.equal(consentPolicyAuthority.isCanonicalStoredPolicy(policy, uid), true, 'positive reservation fixture executes actual canonical owner consent')
+  return policy
+}
+const policy = canonicalProviderPolicy('alice')
 const answer = { message: 'A synthetic answer.', caption: 'A synthetic answer.', disclosure: 'OpenAI processed the response.', suggestedActions: ['Pause here'], locale: 'en-US' }
 
 function loadSource(relativePath, dependencies, globals = {}) {
@@ -24,7 +37,7 @@ function loadSource(relativePath, dependencies, globals = {}) {
   const emitted = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText
   const module = { exports: {} }
   const require = (id) => Object.hasOwn(dependencies, id) ? dependencies[id] : localRequire(id)
-  const context = vm.createContext({ Buffer, TextEncoder, TextDecoder, AbortController, URL, Response, setTimeout, clearTimeout, process: { env: globals.env || {} }, crypto: webcrypto, ...globals })
+  const context = vm.createContext({ Buffer, TextEncoder, TextDecoder, AbortController, AbortSignal, DOMException, URL, Response, setTimeout, clearTimeout, process: { env: globals.env || {} }, crypto: webcrypto, ...globals })
   const wrapper = new vm.Script(`(function(require, module, exports) { ${emitted}\n})`, { filename }).runInContext(context)
   wrapper(require, module, module.exports)
   return module.exports
@@ -105,7 +118,7 @@ function responseDouble({ loseDelivery = false } = {}) {
 
 function fixture({ store = storage(), env = {}, fetchHook, authHook, shortenDeadlineMs } = {}) {
   for (const uid of ['alice', 'bob']) {
-    if (!store.state.docs.has(`users/${uid}/privacyPolicy/current`)) store.state.docs.set(`users/${uid}/privacyPolicy/current`, clone({ ...policy, ownerId: uid }))
+    if (!store.state.docs.has(`users/${uid}/privacyPolicy/current`)) store.state.docs.set(`users/${uid}/privacyPolicy/current`, canonicalProviderPolicy(uid))
   }
   const calls = []
   let authReads = 0
@@ -129,8 +142,8 @@ function fixture({ store = storage(), env = {}, fetchHook, authHook, shortenDead
     return sse(answer)
   }
   const exports = loadSource('apps/functions/src/providerFunctions.ts', {
-    './consentPolicyAuthority': loadSource('apps/functions/src/consentPolicyAuthority.ts', {}),
     '../../../packages/localization/src/contentLanguage': loadSource('packages/localization/src/contentLanguage.ts', {}),
+    './consentPolicyAuthority': consentPolicyAuthority,
     './protectedProviderSpend': { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => fetch(url, init), SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} },
     'firebase-admin': admin,
     'firebase-functions/params': { defineSecret: () => ({ value: () => 'synthetic-test-only-key' }) },
@@ -315,6 +328,7 @@ for (const [name, savedPolicy, connection] of [
   ['provider revocation pending', policy, { processingAllowed: true, revocationState: 'pending' }],
 ]) test(`${name} cannot use client-supplied consent as authority`, async () => {
   const f = fixture(); const docs = f.store.state.docs
+  if (savedPolicy) assert.equal(consentPolicyAuthority.isCanonicalStoredPolicy(savedPolicy, 'alice'), true, 'permission-denial fixture retains a canonical policy shape')
   if (savedPolicy) docs.set('users/alice/privacyPolicy/current', clone(savedPolicy)); else docs.delete('users/alice/privacyPolicy/current')
   if (connection) docs.set('users/alice/providerConnections/openai', clone(connection))
   assert.ok((await f.run()).statusCode >= 400); assert.equal(f.calls.length, 0); assert.equal(f.reservations().length, 0)
@@ -407,10 +421,24 @@ test('canonical whitespace and context field ordering cannot create a second ide
 })
 
 function client(fetch) {
+  const auth = { currentUser: { uid: 'alice', getIdToken: async () => 'alice' } }
+  const observers = new Set()
+  const sdk = { getAuth: () => auth, onIdTokenChanged: (_auth, next, error) => {
+    const observer = { next, error }, initial = auth.currentUser
+    observers.add(observer)
+    queueMicrotask(() => { if (observers.has(observer)) next(initial) })
+    return () => observers.delete(observer)
+  } }
+  const firebase = { app: {}, firebasePublicEnvReady: true }
+  const authority = loadSource('urai-tier1/src/lib/privacy/aiActorBoundary.ts', {
+    'firebase/auth': sdk,
+    '@/lib/firebase/client': firebase,
+  })
   return loadSource('urai-tier1/src/spatial/orb/openaiClient.ts', {
     '@/lib/orb-companion-contract': { buildOrbCompanionResponse: () => ({ reply: 'synthetic local fallback' }) },
-    'firebase/auth': { getAuth: () => ({ currentUser: { getIdToken: async () => 'alice' } }) },
-    '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true },
+    'firebase/auth': sdk,
+    '@/lib/firebase/client': firebase,
+    '@/lib/privacy/aiActorBoundary': authority,
     '@/lib/clientApiUrl': { clientApiUrl: (value) => value },
     '@/lib/i18n/localePreference': { currentSpeechTag: () => 'en-US' },
     '@/lib/i18n/contentLanguage': loadSource('packages/localization/src/contentLanguage.ts', {}),

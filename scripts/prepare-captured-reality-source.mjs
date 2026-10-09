@@ -17,8 +17,8 @@ function arg(name, fallback = '') {
 }
 
 function command(name, args) {
-  const result = spawnSync(name, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
-  if (result.status !== 0) fail(`${name} failed: ${String(result.stderr || result.stdout).slice(0, 1200)}`)
+  const result = spawnSync(name, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 16 * 1024 * 1024 })
+  if (result.status !== 0) throw new Error(`${name} failed: ${String(result.stderr || result.stdout).slice(0, 1200)}`)
   return String(result.stdout || '')
 }
 
@@ -41,9 +41,12 @@ function sha256(file) {
 const source = path.resolve(arg('source'))
 const outDir = path.resolve(arg('out-dir', './captured-reality-derivatives'))
 const segmentSeconds = Number(arg('segment-seconds', '90'))
+const durationArg = arg('duration-seconds')
+const durationSeconds = process.argv.includes('--duration-seconds') ? Number(durationArg) : null
 
 if (!source || !fs.existsSync(source) || !fs.statSync(source).isFile()) fail('--source must be an existing local file')
 if (!Number.isInteger(segmentSeconds) || segmentSeconds < 20 || segmentSeconds > 180) fail('--segment-seconds must be an integer from 20 to 180')
+if (durationSeconds !== null && (!Number.isFinite(durationSeconds) || durationSeconds <= 0)) fail('--duration-seconds must be a positive finite number')
 for (const binary of ['ffmpeg', 'ffprobe']) {
   const probe = spawnSync(binary, ['-version'], { encoding: 'utf8' })
   if (probe.status !== 0) fail(`${binary} is required`)
@@ -53,76 +56,154 @@ const before = fs.statSync(source)
 const originalSha256 = sha256(source)
 const probeJson = JSON.parse(command('ffprobe', [
   '-v', 'error',
-  '-show_entries', 'format=duration,size,bit_rate:stream=index,codec_type,codec_name,width,height,r_frame_rate',
+  '-show_entries', 'format=duration,start_time,size,bit_rate:stream=index,codec_type,codec_name,width,height,r_frame_rate,time_base,start_time:stream_tags=rotate:stream_side_data=rotation',
   '-of', 'json',
   source,
 ]))
 
 fs.mkdirSync(outDir, { recursive: true })
 const base = path.basename(source, path.extname(source)).replace(/[^A-Za-z0-9._-]+/g, '_')
-const pattern = path.join(outDir, `${base}_PART%03d.mp4`)
 const receiptPath = path.join(outDir, `${base}_DERIVATIVE_RECEIPT.json`)
-const existing = fs.readdirSync(outDir).some((name) =>
+const outputOccupied = () => fs.readdirSync(outDir).some((name) =>
   name === path.basename(receiptPath) || (name.startsWith(`${base}_PART`) && name.endsWith('.mp4')),
 )
-if (existing) fail('output contains prior derivatives or receipt for this source; select a fresh --out-dir to preserve provenance')
-
-command('ffmpeg', [
-  '-hide_banner', '-loglevel', 'error', '-n',
-  '-i', source,
-  '-map', '0:v:0', '-map', '0:a?',
-  '-c:v', 'libx264', '-preset', 'slow', '-crf', '18',
-  '-pix_fmt', 'yuv420p',
-  '-c:a', 'aac', '-b:a', '192k',
-  '-force_key_frames', `expr:gte(t,n_forced*${segmentSeconds})`,
-  '-f', 'segment', '-segment_time', String(segmentSeconds),
-  '-reset_timestamps', '1',
-  pattern,
-])
-
-const after = fs.statSync(source)
-if (before.size !== after.size || before.mtimeMs !== after.mtimeMs || sha256(source) !== originalSha256) {
-  fail('immutable source changed during derivative creation')
+// The lock owns this basename, not a process ID. Never reclaim an interrupted
+// invocation automatically: its source-bound evidence must first be reconciled.
+const lockPath = path.join(outDir, `.source-preparation-lock-${crypto.createHash('sha256').update(base).digest('hex')}`)
+try {
+  fs.mkdirSync(lockPath, { mode: 0o700 })
+} catch (error) {
+  if (error.code === 'EEXIST') fail(`output destination is reserved or incomplete: ${lockPath}; preserve its staged evidence and reconcile it, or select a fresh --out-dir`)
+  fail(error.message)
 }
 
-const derivatives = fs.readdirSync(outDir)
-  .filter((name) => name.startsWith(`${base}_PART`) && name.endsWith('.mp4'))
-  .sort()
-  .map((name) => {
-    const file = path.join(outDir, name)
-    const stat = fs.statSync(file)
-    if (stat.size > MAX_DERIVATIVE_BYTES) {
-      fail(`${name} is ${stat.size} bytes and exceeds the 240 MiB analysis ceiling; rerun with a shorter --segment-seconds value`)
-    }
-    return {
-      fileName: name,
-      byteSize: stat.size,
-      sha256: sha256(file),
-    }
-  })
+let stage
+let derivatives
+let receipt
+let mode = 'stream-copy'
+let copyFallbackReason = null
+let publicationStarted = false
+let committed = false
+let failure
+try {
+  if (outputOccupied()) throw new Error('output contains prior derivatives or receipt for this source; select a fresh --out-dir to preserve provenance')
+  stage = fs.mkdtempSync(path.join(outDir, '.source-preparation-'))
+  fs.writeFileSync(path.join(lockPath, 'owner.json'), JSON.stringify({
+    schema: 'urai-captured-reality-preparation-owner-v1',
+    classification: 'INCOMPLETE_UNTIL_FINAL_RECEIPT',
+    originalSha256,
+    sourceFileName: path.basename(source),
+    stageDirectory: path.basename(stage),
+    receiptFileName: path.basename(receiptPath),
+  }, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
+  const pattern = path.join(stage, `${base}_PART%03d.mp4`)
+  const listPath = path.join(stage, 'segments.csv')
+  const bound = durationSeconds === null ? [] : ['-t', String(durationSeconds)]
+  const segmentArgs = [
+    '-f', 'segment', '-segment_time', String(segmentSeconds),
+    '-segment_list', listPath, '-segment_list_type', 'csv',
+    '-reset_timestamps', '1', pattern,
+  ]
+  const copied = spawnSync('ffmpeg', [
+    '-hide_banner', '-loglevel', 'error', '-n', '-i', source,
+    ...bound, '-map', '0', '-c', 'copy', ...segmentArgs,
+  ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 16 * 1024 * 1024 })
+  const oversizeCopy = fs.readdirSync(stage).some((name) => name.endsWith('.mp4') && fs.statSync(path.join(stage, name)).size > MAX_DERIVATIVE_BYTES)
+  if (copied.status !== 0 || oversizeCopy) {
+    copyFallbackReason = copied.status !== 0 ? 'STREAM_COPY_CONTAINER_INCOMPATIBLE_OR_FAILED' : 'STREAM_COPY_EXCEEDED_TRANSFER_CEILING'
+    // Delete only this invocation's temporary outputs. Never mix two attempts.
+    for (const name of fs.readdirSync(stage)) fs.unlinkSync(path.join(stage, name))
+    mode = 'analysis-proxy'
+    command('ffmpeg', [
+      '-hide_banner', '-loglevel', 'error', '-n', '-i', source, ...bound,
+      '-map', '0:v:0', '-map', '0:a?',
+      '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p',
+      '-c:a', 'aac', '-b:a', '192k',
+      '-force_key_frames', `expr:gte(t,n_forced*${segmentSeconds})`,
+      ...segmentArgs,
+    ])
+  }
+  const timeline = new Map()
+  // FFmpeg quotes CSV filenames that contain commas; source basenames are sanitized.
+  for (const line of fs.readFileSync(listPath, 'utf8').trim().split(/\r?\n/)) {
+    const match = line.match(/^(?:"((?:[^"]|"")*)"|([^,]+)),([^,]+),([^,]+)$/)
+    if (!match) throw new Error('ffmpeg produced an invalid segment timeline')
+    const fileName = path.basename((match[1] ?? match[2]).replace(/""/g, '"'))
+    const start = Number(match[3]), end = Number(match[4])
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || timeline.has(fileName)) throw new Error('ffmpeg produced an invalid segment interval')
+    timeline.set(fileName, { startSeconds: start, endSeconds: end })
+  }
+  derivatives = fs.readdirSync(stage)
+    .filter((name) => name.startsWith(`${base}_PART`) && name.endsWith('.mp4'))
+    .sort()
+    .map((name) => {
+      const file = path.join(stage, name)
+      const stat = fs.statSync(file)
+      if (stat.size > MAX_DERIVATIVE_BYTES) throw new Error(`${name} is ${stat.size} bytes and exceeds the 240 MiB analysis ceiling; rerun with a shorter --segment-seconds value`)
+      const segment = timeline.get(name)
+      if (!segment) throw new Error('derivative is missing its source timeline binding')
+      const derivativeProbe = JSON.parse(command('ffprobe', ['-v', 'error', '-show_entries', 'format=duration,start_time:stream=index,codec_type,codec_name,width,height,time_base,start_time:stream_tags=rotate:stream_side_data=rotation', '-of', 'json', file]))
+      return {
+        fileName: name,
+        byteSize: stat.size,
+        sha256: sha256(file),
+        sourceTimeline: {
+          basis: 'FFMPEG_SEGMENT_MUXER_UNRESET_TIMELINE',
+          startSeconds: segment.startSeconds,
+          endSeconds: segment.endSeconds,
+          sourceFormatStartSeconds: Number(probeJson.format?.start_time ?? 0),
+          outputTimestampsReset: true,
+          precision: 'CONTAINER_TIMING_NOT_FRAME_OR_SAMPLE_CORRESPONDENCE',
+        },
+        probe: derivativeProbe,
+      }
+    })
+  if (!derivatives.length || derivatives.length !== timeline.size) throw new Error('ffmpeg produced an incomplete derivative set')
+  const after = fs.statSync(source)
+  if (before.size !== after.size || before.mtimeMs !== after.mtimeMs || sha256(source) !== originalSha256) throw new Error('immutable source changed during derivative creation')
+  receipt = {
+    schema: 'urai-captured-reality-source-derivative-v1',
+    classification: 'ANALYSIS_DERIVATIVE_NOT_SOURCE_AUTHORITY',
+    generatedAt: new Date().toISOString(),
+    original: {
+      fileName: path.basename(source),
+      byteSize: before.size,
+      sha256: originalSha256,
+      probe: probeJson,
+      immutableVerified: true,
+    },
+    derivativePolicy: {
+      maxBytes: MAX_DERIVATIVE_BYTES,
+      segmentSeconds,
+      mode,
+      codec: mode === 'stream-copy' ? 'original-streams-preserved' : 'h264+aac',
+      videoCrf: mode === 'stream-copy' ? null : 18,
+      copyFallbackReason,
+      requestedSourceDurationSeconds: durationSeconds,
+      timelinePrecision: 'CONTAINER_TIMING_NOT_FRAME_OR_SAMPLE_CORRESPONDENCE',
+      purpose: 'private captured-reality analysis and reconstruction input',
+    },
+    derivatives,
+  }
 
-if (!derivatives.length) fail('ffmpeg produced no derivatives')
-
-const receipt = {
-  schema: 'urai-captured-reality-source-derivative-v1',
-  classification: 'ANALYSIS_DERIVATIVE_NOT_SOURCE_AUTHORITY',
-  generatedAt: new Date().toISOString(),
-  original: {
-    fileName: path.basename(source),
-    byteSize: before.size,
-    sha256: originalSha256,
-    probe: probeJson,
-    immutableVerified: true,
-  },
-  derivativePolicy: {
-    maxBytes: MAX_DERIVATIVE_BYTES,
-    segmentSeconds,
-    codec: 'h264+aac',
-    videoCrf: 18,
-    purpose: 'private captured-reality analysis and reconstruction input',
-  },
-  derivatives,
+  // Same-filesystem hard links publish without replacing any existing path.
+  // The complete staged receipt survives interruption and is committed last.
+  const stagedReceiptPath = path.join(stage, path.basename(receiptPath))
+  fs.writeFileSync(stagedReceiptPath, JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
+  publicationStarted = true
+  for (const derivative of derivatives) fs.linkSync(path.join(stage, derivative.fileName), path.join(outDir, derivative.fileName))
+  fs.linkSync(stagedReceiptPath, receiptPath)
+  committed = true
+} catch (error) {
+  failure = error
+} finally {
+  // Never remove evidence for an incomplete publication. Abrupt interruption
+  // likewise leaves the exclusive lock and staged receipt for reconciliation.
+  if (!publicationStarted || committed) {
+    if (stage) fs.rmSync(stage, { recursive: true, force: true })
+    fs.rmSync(lockPath, { recursive: true, force: true })
+  }
 }
 
-fs.writeFileSync(receiptPath, JSON.stringify(receipt, null, 2) + '\n')
+if (failure) fail(`${failure.message}${publicationStarted ? `; incomplete publication preserved at ${lockPath}; reconcile it before reuse` : ''}`)
 console.log(JSON.stringify({ ok: true, receiptPath, derivativeCount: derivatives.length, originalSha256 }, null, 2))

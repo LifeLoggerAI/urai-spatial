@@ -152,9 +152,15 @@ requireTokens('apps/functions/src/stripeEntitlements.ts', [
   "ENTITLEMENT_COLLECTION = 'userEntitlements'",
   "verifyIdToken(token, true)",
   "URAI_STRIPE_COMMERCE_ENABLED === 'true'",
-  "event.livemode !== (mode === 'production')",
   'applyOrderedEntitlement',
 ])
+// The adopted release permits Stripe TEST only. Scope both gates to the actual
+// webhook consumer so a separate checkout marker cannot mask a callback defect.
+const stripeSource = read('apps/functions/src/stripeEntitlements.ts')
+const stripeWebhookSource = stripeSource.slice(stripeSource.indexOf('export const handleStripeWebhook'))
+for (const token of ["mode !== 'test'", 'event.livemode !== false']) {
+  if (!stripeWebhookSource.includes(token)) failures.push(`apps/functions/src/stripeEntitlements.ts is missing: ${token} in handleStripeWebhook`)
+}
 requireTokens('apps/functions/src/index.ts', [
   'createStripeCheckout',
   'createStripeCustomerPortal',

@@ -2,7 +2,7 @@ name: Localization Readiness Evidence
 
 on:
   pull_request:
-    branches: [main, 'converge/**', 'integration/**', 'repair/release-closure-integration-20261007']
+    branches: [main, 'converge/**', 'integration/**', 'repair/release-closure-integration-20261007', 'repair/scoped-donor-convergence-20261008']
     paths:
       - '.github/workflows/localization-readiness-evidence.yml'
       - 'scripts/generate-localization-readiness.mjs'

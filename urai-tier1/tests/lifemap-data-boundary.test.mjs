@@ -66,8 +66,8 @@ test('semantic Life Map navigation uses authenticated ownership and remains avai
   assert.match(semanticNavigator, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)/)
   assert.match(routeBoundary, /<LifeMapSemanticNavigator authenticatedUserId=\{authenticatedUserId\}/)
   assert.match(accessGate, /if \(!webglAvailable\) \{/)
-  assert.match(accessGate, /if \(mode === "signed-out"\) \{[\s\S]*<LifeMapSemanticNavigator authenticatedUserId=\{null\} \/><\/\>;/)
-  assert.match(accessGate, /return <><LifeMapLoading label="WebGL is unavailable\. Semantic navigation remains available" \/><LifeMapSemanticNavigator authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\} \/><\/\>;/)
+  assert.match(accessGate, /if \(mode === "signed-out"\) \{[\s\S]*<LifeMapSemanticNavigator authenticatedUserId=\{null\} semanticOnly \/><\/\>;/)
+  assert.match(accessGate, /return <><LifeMapLoading label="WebGL is unavailable\. Semantic navigation remains available" \/><LifeMapSemanticNavigator authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\} semanticOnly \/><\/\>;/)
   assert.doesNotMatch(semanticNavigator, /localStorage\.getItem/)
 })
 

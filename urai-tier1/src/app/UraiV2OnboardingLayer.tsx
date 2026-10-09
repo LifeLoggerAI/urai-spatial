@@ -1,8 +1,12 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { usePathname, useSearchParams } from "next/navigation";
 import { v2Onboarding } from "@/spatial/assets/uraiV2Assets";
+import { useBrowserLocation } from "@/hooks/useBrowserLocation";
+import { useSelectedMemory } from "@/spatial/memory/useSelectedMemory";
+import { guidedCardHref, guidedFocusArrived, guidedFocusHref } from "./onboardingJourney";
 import UraiCanonicalVersionAssetTemplate from "./UraiCanonicalVersionAssetTemplate";
 import "./v2-ground-states.css";
 import "./v2-ground-council.css";
@@ -38,7 +42,6 @@ const cards = {
     asset: v2Onboarding["first-run-life-map-card"],
     label: "MEMORY FIELD",
     title: "Select a star. Enter its Focus.",
-    href: "/focus?memoryId=quiet-reset&onboarding=1",
     action: "Open Focus",
   },
   "/privacy-controls": {
@@ -58,8 +61,53 @@ function rememberCompletion() {
   }
 }
 
+function paramsForLocation(location: string) {
+  const address = location.split("#")[0];
+  return new URLSearchParams(address.includes("?") ? address.slice(address.indexOf("?") + 1) : "");
+}
+
+function GuidedMemoryAction() {
+  const location = useBrowserLocation();
+  const result = useSelectedMemory();
+  const href = guidedFocusHref(paramsForLocation(location), result);
+  return href
+    ? <a href={href}>Open Focus</a>
+    : <button type="button" disabled aria-label="Select a Memory Star before opening Focus">{result.status === "loading" ? "Opening selected star…" : "Select a Memory Star"}</button>;
+}
+
+function GuidedFocusCompletion() {
+  const location = useBrowserLocation();
+  const result = useSelectedMemory();
+  useEffect(() => {
+    if (result.status !== "ready" && result.status !== "demo") return;
+    const params = paramsForLocation(location);
+    if (!guidedFocusHref(params, result)) return;
+    let completed = false;
+    const observer = new MutationObserver(() => checkArrival());
+    const checkArrival = () => {
+      // A route can change before React tears down this effect. A stale result
+      // must not complete a different memory's journey or a failed arrival.
+      if (completed || `${window.location.pathname}${window.location.search}${window.location.hash}` !== location) return;
+      const chamber = document.querySelector<HTMLElement>('[data-testid="urai-final-focus-chamber"]');
+      if (!chamber || !guidedFocusArrived(params, result, chamber.dataset)) return;
+      completed = true;
+      rememberCompletion();
+      observer.disconnect();
+    };
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-memory-status", "data-chamber-state", "data-memory-id", "data-manifest-id"],
+    });
+    checkArrival();
+    return () => observer.disconnect();
+  }, [location, result]);
+  return null;
+}
+
 function OnboardingCardContent() {
-  const pathname = usePathname() || "";
+  const pathname = (usePathname() || "/").replace(/\/+$/, "") || "/";
   const searchParams = useSearchParams();
   const query = searchParams?.toString() ?? "";
   const [dismissed, setDismissed] = useState(false);
@@ -110,32 +158,39 @@ function OnboardingCardContent() {
     };
   }, [card, explicitSequence, pathname, query, shouldShow]);
 
+  if (pathname === "/focus" && explicitSequence) return <GuidedFocusCompletion />;
   if (dismissed || !shouldShow || !card) return null;
 
   const dismiss = () => {
+    // Commit the user's dismissal before synchronous completion consumers can
+    // schedule heavy world work or observe the guide as still available.
+    flushSync(() => setDismissed(true));
     rememberCompletion();
-    setDismissed(true);
   };
 
   const finishIfLastGuidedStep = () => {
-    if (pathname === "/life-map" || pathname === "/privacy-controls") rememberCompletion();
+    if (pathname === "/privacy-controls") rememberCompletion();
   };
 
   return (
     <aside className="uraiV2OnboardingCard" aria-label={`${card.label} first-run guide`} data-first-run={automaticFirstRun ? "automatic" : "guided"}>
-      <img
-        src={card.asset.src}
-        alt={card.asset.alt}
-        onError={(event) => {
-          if (event.currentTarget.dataset.fallbackApplied === "true") return;
-          event.currentTarget.dataset.fallbackApplied = "true";
-          event.currentTarget.src = card.asset.fallback;
-        }}
-      />
-      <div>
-        <span>{card.label}</span>
-        <strong>{card.title}</strong>
-        <a href={card.href} onClick={finishIfLastGuidedStep}>{card.action}</a>
+      <div className="uraiV2OnboardingContent">
+        <img
+          src={card.asset.src}
+          alt={card.asset.alt}
+          onError={(event) => {
+            if (event.currentTarget.dataset.fallbackApplied === "true") return;
+            event.currentTarget.dataset.fallbackApplied = "true";
+            event.currentTarget.src = card.asset.fallback;
+          }}
+        />
+        <div className="uraiV2OnboardingCopy">
+          <span>{card.label}</span>
+          <strong>{card.title}</strong>
+        </div>
+      </div>
+      <div className="uraiV2OnboardingActions">
+        {pathname === "/life-map" ? <GuidedMemoryAction /> : "href" in card ? <a href={guidedCardHref(card.href, new URLSearchParams(query))} onClick={finishIfLastGuidedStep}>{card.action}</a> : null}
         <button ref={dismissRef} type="button" onClick={dismiss}>Skip</button>
       </div>
     </aside>

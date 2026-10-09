@@ -3,7 +3,7 @@ import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
-import { paidSpatialFetch, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
+import { paidSpatialFetch, assertSpatialPaidOutputCurrent, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -41,9 +41,13 @@ function bearerToken(value: unknown) {
 }
 
 async function authenticatedUid(request: { headers: Record<string, unknown> }) {
-  const decoded = await admin.auth().verifyIdToken(bearerToken(request.headers.authorization), true)
-  if (!decoded.uid) throw new CouncilProviderError(401, 'UNAUTHORIZED', 'Authentication is required.')
-  return decoded.uid
+  try {
+    const decoded = await admin.auth().verifyIdToken(bearerToken(request.headers.authorization), true)
+    if (!decoded.uid) throw new CouncilProviderError(401, 'UNAUTHORIZED', 'Authentication is required.')
+    return decoded.uid
+  } catch {
+    throw new CouncilProviderError(401, 'UNAUTHORIZED', 'Authentication is required.')
+  }
 }
 
 function readBody(request: { body?: unknown }) {
@@ -100,6 +104,7 @@ async function requireProviderConsent(uid: string, provider: CouncilProvider, ex
       throw new CouncilProviderError(403, 'PROVIDER_PROCESSING_REVOKED', 'Provider processing is not authorized.')
     }
   }
+  return policy.revision
 }
 
 async function consumeRateLimit(uid: string, provider: CouncilProvider) {
@@ -206,7 +211,7 @@ function validateProviderText(value: string) {
   return message
 }
 
-async function callAnthropic(uid: string, sourceInput: JsonMap, apiKey: string, model: string, message: string, context: ConversationTurn[], signal: AbortSignal) {
+async function callAnthropic(uid: string, sourceInput: JsonMap, apiKey: string, model: string, message: string, context: ConversationTurn[], signal: AbortSignal, beforeReserve: () => Promise<void>) {
   const response = await paidSpatialFetch(db, uid, 'council-anthropic', 'anthropic', model, sourceInput, 'https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -224,13 +229,13 @@ async function callAnthropic(uid: string, sourceInput: JsonMap, apiKey: string, 
       ],
     }),
     signal,
-  })
+  }, beforeReserve)
   if (!response.ok) throw new CouncilProviderError(response.status === 429 ? 429 : 503, 'ANTHROPIC_REQUEST_FAILED', 'Anthropic Council provider is unavailable.')
   const payload = await response.json()
-  return { message: validateProviderText(textFromAnthropic(payload)), requestId: response.headers.get('request-id') ?? response.headers.get('x-request-id') }
+  return { message: validateProviderText(textFromAnthropic(payload)), requestId: response.headers.get('request-id') ?? response.headers.get('x-request-id'), assertCurrent: () => assertSpatialPaidOutputCurrent(response) }
 }
 
-async function callGemini(uid: string, sourceInput: JsonMap, apiKey: string, model: string, message: string, context: ConversationTurn[], signal: AbortSignal) {
+async function callGemini(uid: string, sourceInput: JsonMap, apiKey: string, model: string, message: string, context: ConversationTurn[], signal: AbortSignal, beforeReserve: () => Promise<void>) {
   const endpoint = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`)
   const response = await paidSpatialFetch(db, uid, 'council-gemini', 'gemini', model, sourceInput, endpoint, {
     method: 'POST',
@@ -248,13 +253,13 @@ async function callGemini(uid: string, sourceInput: JsonMap, apiKey: string, mod
       generationConfig: { maxOutputTokens: 700 },
     }),
     signal,
-  })
+  }, beforeReserve)
   if (!response.ok) throw new CouncilProviderError(response.status === 429 ? 429 : 503, 'GEMINI_REQUEST_FAILED', 'Gemini Council provider is unavailable.')
   const payload = await response.json()
-  return { message: validateProviderText(textFromGemini(payload)), requestId: response.headers.get('x-request-id') }
+  return { message: validateProviderText(textFromGemini(payload)), requestId: response.headers.get('x-request-id'), assertCurrent: () => assertSpatialPaidOutputCurrent(response) }
 }
 
-async function callCompatible(uid: string, sourceInput: JsonMap, provider: 'xai' | 'mistral', apiKey: string, model: string, message: string, context: ConversationTurn[], signal: AbortSignal) {
+async function callCompatible(uid: string, sourceInput: JsonMap, provider: 'xai' | 'mistral', apiKey: string, model: string, message: string, context: ConversationTurn[], signal: AbortSignal, beforeReserve: () => Promise<void>) {
   const endpoint = provider === 'xai'
     ? 'https://api.x.ai/v1/chat/completions'
     : 'https://api.mistral.ai/v1/chat/completions'
@@ -272,13 +277,13 @@ async function callCompatible(uid: string, sourceInput: JsonMap, provider: 'xai'
       temperature: 0.4,
     }),
     signal,
-  })
+  }, beforeReserve)
   if (!response.ok) {
     const code = provider === 'xai' ? 'XAI_REQUEST_FAILED' : 'MISTRAL_REQUEST_FAILED'
     throw new CouncilProviderError(response.status === 429 ? 429 : 503, code, `${provider === 'xai' ? 'xAI' : 'Mistral'} Council provider is unavailable.`)
   }
   const payload = await response.json()
-  return { message: validateProviderText(textFromCompatibleCompletion(payload)), requestId: response.headers.get('x-request-id') ?? response.headers.get('request-id') }
+  return { message: validateProviderText(textFromCompatibleCompletion(payload)), requestId: response.headers.get('x-request-id') ?? response.headers.get('request-id'), assertCurrent: () => assertSpatialPaidOutputCurrent(response) }
 }
 
 function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof defineSecret>) {
@@ -287,6 +292,9 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
     let uid = ''
     let inputUnits = 0
     let model = ''
+    let externalProcessingAttempted = false
+    let requestController: AbortController | undefined
+    let timeout: ReturnType<typeof setTimeout> | undefined
     try {
       if (request.method !== 'POST') throw new CouncilProviderError(405, 'METHOD_NOT_ALLOWED', 'POST is required.')
       uid = await authenticatedUid(request)
@@ -297,21 +305,35 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       requireRequestId(body.requestId)
       const context = boundedContext(body.context)
       inputUnits = message.length + context.reduce((sum, turn) => sum + turn.content.length, 0)
-      await requireProviderConsent(uid, provider, body.aiProcessingConsent === true)
+      const policyRevision = await requireProviderConsent(uid, provider, body.aiProcessingConsent === true)
       await consumeRateLimit(uid, provider)
       model = providerModel(provider)
       const apiKey = secret.value().trim()
       if (!apiKey) throw new CouncilProviderError(503, 'COUNCIL_PROVIDER_CREDENTIAL_MISSING', 'This Council provider credential is unavailable.')
 
+      const recheck = async () => {
+        if (await authenticatedUid(request) !== uid) throw new CouncilProviderError(401, 'UNAUTHORIZED', 'Authentication is required.')
+        if (await requireProviderConsent(uid, provider, true) !== policyRevision) {
+          throw new CouncilProviderError(409, 'CONSENT_AUTHORITY_CHANGED', 'Council consent authority changed. Start a new request.')
+        }
+        if (!providerEnabled(provider) || providerModel(provider) !== model) {
+          throw new CouncilProviderError(503, 'COUNCIL_PROVIDER_DISABLED', 'This Council provider configuration changed.')
+        }
+      }
       const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 30_000)
+      requestController = controller
+      timeout = setTimeout(() => controller.abort(), 30_000)
       response.on('close', () => { if (!response.writableEnded) controller.abort() })
       const result = await (provider === 'anthropic'
-        ? callAnthropic(uid, body, apiKey, model, message, context, controller.signal)
+        ? callAnthropic(uid, body, apiKey, model, message, context, controller.signal, recheck)
         : provider === 'gemini'
-          ? callGemini(uid, body, apiKey, model, message, context, controller.signal)
-          : callCompatible(uid, body, provider, apiKey, model, message, context, controller.signal)
-      ).finally(() => clearTimeout(timeout))
+          ? callGemini(uid, body, apiKey, model, message, context, controller.signal, recheck)
+          : callCompatible(uid, body, provider, apiKey, model, message, context, controller.signal, recheck)
+      )
+      externalProcessingAttempted = true
+      await recheck()
+      result.assertCurrent()
+      if (controller.signal.aborted) throw new CouncilProviderError(409, 'COUNCIL_REQUEST_ABORTED', 'Council request stopped before publication.')
 
       response.status(200)
       response.setHeader('Content-Type', 'application/json; charset=utf-8')
@@ -342,8 +364,11 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       const boundary = error instanceof CouncilProviderError || error instanceof SpatialSpendError
         ? error
         : new CouncilProviderError(500, 'COUNCIL_PROVIDER_BOUNDARY_FAILURE', 'Council provider boundary is unavailable.')
-      if (!response.headersSent) response.status(boundary.status).json({ error: boundary.code, message: boundary.message })
+      if (!response.headersSent) response.status(boundary.status).json({ error: boundary.code, message: boundary.message, ...(externalProcessingAttempted ? { externalProcessingAttempted: true } : {}) })
       else response.end()
+    } finally {
+      if (timeout) clearTimeout(timeout)
+      requestController?.abort()
     }
   }
 }

@@ -56,12 +56,14 @@ type ResolvedEntitlementEvent = {
   customerId: string | null;
   subscriptionId: string | null;
   subscriptionStatus: SubscriptionStatus;
+  incarnationId: string | null;
+  checkoutSessionId?: string | null;
 };
 
 async function resolveMetadataIdentity(
   metadata: Stripe.Metadata | undefined,
   customerId: string | null,
-): Promise<{ userId: string | null; planId: InsightPlanId | null }> {
+): Promise<{ userId: string | null; planId: InsightPlanId | null; incarnationId: string | null }> {
   let userId = stringValue(metadata?.userId);
   const rawPlanId = stringValue(metadata?.planId);
   let planId = isPlanId(rawPlanId) ? rawPlanId : null;
@@ -72,7 +74,7 @@ async function resolveMetadataIdentity(
     planId = planId ?? existing?.planId ?? null;
   }
 
-  return { userId, planId };
+  return { userId, planId, incarnationId: stringValue(metadata?.uraiAccountIncarnation) };
 }
 
 async function resolveSubscription(
@@ -140,6 +142,7 @@ async function resolveSubscription(
     ...identity,
     customerId,
     subscriptionId,
+    checkoutSessionId: eventType.startsWith('checkout.session.') ? (payload as Stripe.Checkout.Session).id : null,
     subscriptionStatus: mapStripeStatus(stripeStatus),
   };
 }
@@ -198,6 +201,7 @@ export async function POST(request: Request) {
   if (!signature || !webhookSecret || !secretKey || !runtimeMode) {
     return NextResponse.json({ error: 'Missing or invalid Stripe webhook configuration' }, { status: 400 });
   }
+  if (runtimeMode !== 'test') return NextResponse.json({ error: 'Stripe LIVE callbacks are not authorized.' }, { status: 503 });
   if (!stripeRuntimeMatchesSecret(runtimeMode, secretKey)) {
     console.error('Stripe webhook refused mismatched secret key mode', { runtimeMode });
     return NextResponse.json({ error: 'Stripe mode mismatch' }, { status: 503 });
@@ -263,6 +267,8 @@ export async function POST(request: Request) {
     userId: resolved.userId,
     planId: resolved.planId,
     stripeCustomerId: resolved.customerId,
+    stripeIncarnationId: resolved.incarnationId,
+    stripeCheckoutSessionId: resolved.checkoutSessionId ?? null,
     stripeSubscriptionId: resolved.subscriptionId,
     subscriptionStatus: resolved.subscriptionStatus,
     updatedAt: Date.now(),
@@ -277,7 +283,7 @@ export async function POST(request: Request) {
       return {
         ...defaultEntitlement(identity.userId ?? ''),
         userId: identity.userId ?? '', planId: identity.planId ?? 'free',
-        stripeCustomerId: customerId, stripeSubscriptionId: current.id,
+        stripeCustomerId: customerId, stripeSubscriptionId: current.id, stripeIncarnationId: identity.incarnationId,
         subscriptionStatus: await settledStripeSubscriptionStatus(
           current, (id) => stripe.invoices.retrieve(id), event.type === 'invoice.payment_failed',
         ),

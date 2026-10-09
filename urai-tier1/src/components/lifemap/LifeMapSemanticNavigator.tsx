@@ -10,6 +10,7 @@ import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 import { localizedMessage } from '@/lib/i18n/localePreference'
 import type { UraiLaunchLocale } from '@/lib/i18n/locales'
+import { withLifeMapSelectionIdentity } from '@/spatial/memory/lifeMapSelectionJourney'
 
 const LIFE_MAP_TYPE_MESSAGES = {"memory": "lifeMap.type.memory", "relationship": "lifeMap.type.relationship", "season": "lifeMap.type.season", "recovery": "lifeMap.type.recovery", "threshold": "lifeMap.type.threshold", "ritual": "lifeMap.type.ritual", "forecast": "lifeMap.type.forecast", "legacy": "lifeMap.type.legacy"} as const
 
@@ -27,7 +28,7 @@ function matchesSearch(node: LifeMapNode, search: string, typeLabel: string, sea
     .some((value) => String(value).toLocaleLowerCase(searchLocale).includes(query))
 }
 
-export default function LifeMapSemanticNavigator({ authenticatedUserId = null }: { authenticatedUserId?: string | null }) {
+export default function LifeMapSemanticNavigator({ authenticatedUserId = null, semanticOnly = false }: { authenticatedUserId?: string | null; semanticOnly?: boolean }) {
   const locale = useUraiLocale()
   const router = useRouter()
   const params = useSearchParams()
@@ -37,12 +38,14 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<LifeMapNodeType | 'all'>('all')
   const [eraFilter, setEraFilter] = useState('all')
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(semanticOnly && (explicitDemo || Boolean(authenticatedUserId)))
   const [portalReady, setPortalReady] = useState(false)
   const selectedId = overviewRequested ? null : params.get('node') || params.get('memoryId')
   const selected = nodes.find((node) => node.id === selectedId) || null
+  const selectedMemoryId = selected?.id
   const searchRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const focusEntryRef = useRef<HTMLButtonElement>(null)
 
   const closeNavigator = useCallback(() => {
     setOpen(false)
@@ -56,14 +59,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     [eraFilter, nodes, search, typeFilter],
   )
 
-  const withIdentity = useCallback((next: URLSearchParams) => {
-    if (explicitDemo) next.set('demo', '1')
-    // A disclosed Home Ascent arrives without a movie query. Bind the existing
-    // demo thread when choosing its memory; never synthesize private authority.
-    const manifestId = params.get('manifestId') || (explicitDemo ? 'replay-recovery-thread' : null)
-    if (manifestId) next.set('manifestId', manifestId)
-    return next
-  }, [explicitDemo, params])
+  const withIdentity = useCallback((next: URLSearchParams, memoryId?: string) => withLifeMapSelectionIdentity(params, next, memoryId), [params])
 
   const commitBrowserIdentity = useCallback((next: URLSearchParams) => {
     const destination = `/life-map?${next.toString()}`
@@ -75,9 +71,10 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     // Semantic result activation returns focus to the navigator trigger. Global keyboard
     // stepping must not steal focus into that button, otherwise the next Arrow key is
     // correctly ignored by the button-target guard and the selected identity gets stuck.
-    if (source === 'semantic') closeNavigator()
+    if (semanticOnly) setOpen(true)
+    else if (source === 'semantic') closeNavigator()
     else setOpen(false)
-    const next = withIdentity(new URLSearchParams())
+    const next = withIdentity(new URLSearchParams(), node.id)
     next.set('memoryId', node.id)
     next.set('node', node.id)
     if (node.eraId) next.set('era', node.eraId)
@@ -93,10 +90,10 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     // If the listener already handled the event, localSelectionId preserves the
     // departure/travel/approach sequence and this replace is idempotent.
     router.replace(destination, { scroll: false })
-  }, [closeNavigator, commitBrowserIdentity, router, withIdentity])
+  }, [closeNavigator, commitBrowserIdentity, router, semanticOnly, withIdentity])
 
   const destinationHref = useCallback((route: 'focus' | 'replay', node: LifeMapNode) => {
-    const next = withIdentity(new URLSearchParams())
+    const next = withIdentity(new URLSearchParams(), node.id)
     next.set('memoryId', node.id)
     next.set('node', node.id)
     next.set('returnNode', node.id)
@@ -105,7 +102,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   }, [withIdentity])
 
   const overview = useCallback(() => {
-    setOpen(false)
+    setOpen(semanticOnly)
     const next = withIdentity(new URLSearchParams())
     const current = new URLSearchParams(window.location.search)
     const memoryId = current.get('memoryId')
@@ -115,7 +112,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     next.set('overview', '1')
     commitBrowserIdentity(next)
     router.replace(`/life-map?${next.toString()}`, { scroll: false })
-  }, [commitBrowserIdentity, router, withIdentity])
+  }, [commitBrowserIdentity, router, semanticOnly, withIdentity])
 
   const step = useCallback((direction: number) => {
     const candidates = visibleNodes.length ? visibleNodes : nodes
@@ -140,8 +137,16 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   useEffect(() => { setPortalReady(true) }, [])
 
   useEffect(() => {
-    if (open) searchRef.current?.focus()
-  }, [open])
+    if (semanticOnly) setOpen(explicitDemo || Boolean(authenticatedUserId))
+  }, [authenticatedUserId, explicitDemo, semanticOnly])
+
+  useEffect(() => {
+    if (open && portalReady) searchRef.current?.focus()
+  }, [open, portalReady])
+
+  useEffect(() => {
+    if (semanticOnly && open && portalReady && selectedMemoryId) focusEntryRef.current?.focus()
+  }, [open, portalReady, selectedMemoryId, semanticOnly])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -177,6 +182,18 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     ? <time dateTime={node.occurredAt} {...locale.formatProps}>{locale.date(node.occurredAt, {dateStyle:'medium'})}</time>
     : <span dir="auto">{node.dateLabel}</span>
 
+  const selectedInspector = selected && open ? <aside className="life-map-semantic-inspector" data-life-map-semantic-only={semanticOnly ? "true" : undefined} aria-labelledby="life-map-semantic-inspector-label"><span id="life-map-semantic-inspector-label" className="sr-only" {...locale.props('lifeMap.inspector')}>{locale.text('lifeMap.inspector')}</span>
+      <span><span {...locale.props(LIFE_MAP_TYPE_MESSAGES[selected.type])}>{locale.text(LIFE_MAP_TYPE_MESSAGES[selected.type])}</span> · {nodeDate(selected)}</span>
+      <h2 dir="auto">{selected.title}</h2>
+      <p dir="auto">{selected.summary}</p>
+      <nav className="semantic-thresholds" aria-labelledby="semantic-thresholds-label"><span id="semantic-thresholds-label" className="sr-only" {...locale.props('lifeMap.destinations')}>{locale.text('lifeMap.destinations')}</span>
+        <button ref={focusEntryRef} type="button" onClick={() => router.push(destinationHref('focus', selected))} {...locale.props('lifeMap.enterFocus')}>{locale.text('lifeMap.enterFocus')}</button>
+        <button type="button" disabled={!selected.replayAvailable || selected.locked} onClick={() => router.push(destinationHref('replay', selected))} {...locale.props('nav.replay')}>{locale.text('nav.replay')}</button>
+        <button type="button" onClick={overview} {...locale.props('common.overview')}>{locale.text('common.overview')}</button>
+      </nav>
+      {related.length ? <div className="related-paths"><strong {...locale.props('lifeMap.connected')}>{locale.text('lifeMap.connected')}</strong>{related.slice(0, 4).map((node) => <button key={node.id} type="button" onClick={() => selectNode(node)} dir="auto">{node.title}</button>)}</div> : null}
+    </aside> : null
+
   if (!portalReady) return null
 
   return createPortal(<>
@@ -198,6 +215,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     {open ? <section className="life-map-navigator" aria-labelledby="life-map-navigator-label" id="life-map-navigator"><span id="life-map-navigator-label" className="sr-only" {...locale.props('lifeMap.searchRegion')}>{locale.text('lifeMap.searchRegion')}</span>
       <header><strong {...locale.props('common.search')}>{locale.text('common.search')}</strong><button type="button" onClick={closeNavigator} {...locale.props('common.close')} aria-label={locale.locale === 'en' ? 'Close Life Map search' : locale.text('common.close')}>×</button></header>
       <label htmlFor="life-map-search" className="sr-only" {...locale.props('common.search')}>{locale.locale === 'en' ? 'Search memories, people, dates, places, themes, and eras' : locale.text('common.search')}</label>
+      {semanticOnly ? selectedInspector : null}
       <input ref={searchRef} id="life-map-search" value={search} onChange={(event) => setSearch(event.target.value)} {...locale.props('lifeMap.searchHint')} placeholder={locale.text('lifeMap.searchHint')} />
       <div className="filter-row" role="group" aria-labelledby="life-map-type-label"><span id="life-map-type-label" className="sr-only" {...locale.props('lifeMap.filterType')}>{locale.text('lifeMap.filterType')}</span>{TYPE_FILTERS.map((type) => <button key={type} type="button" data-active={typeFilter === type ? 'true' : 'false'} aria-pressed={typeFilter === type} onClick={() => setTypeFilter(type)} {...locale.props(type === 'all' ? 'common.all' : LIFE_MAP_TYPE_MESSAGES[type])}>{locale.text(type === 'all' ? 'common.all' : LIFE_MAP_TYPE_MESSAGES[type])}</button>)}</div>
       <div className="filter-row" role="group" aria-labelledby="life-map-era-label"><span id="life-map-era-label" className="sr-only" {...locale.props('lifeMap.filterEra')}>{locale.text('lifeMap.filterEra')}</span><button type="button" data-active={eraFilter === 'all' ? 'true' : 'false'} aria-pressed={eraFilter === 'all'} onClick={() => setEraFilter('all')} {...locale.props('lifeMap.allEras')}>{locale.text('lifeMap.allEras')}</button>{eras.map((era) => <button key={era.id} type="button" data-active={eraFilter === era.id ? 'true' : 'false'} aria-pressed={eraFilter === era.id} onClick={() => setEraFilter(era.id)}>{era.title}</button>)}</div>
@@ -209,17 +227,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
       <p className="privacy-truth">{sourceMode === 'explicit-demo' ? 'Disclosed sample universe · not your memories' : sourceMode === 'private' ? 'Private universe' : sourceMode}</p>
     </section> : null}
 
-    {selected && open ? <aside className="life-map-semantic-inspector" aria-labelledby="life-map-semantic-inspector-label"><span id="life-map-semantic-inspector-label" className="sr-only" {...locale.props('lifeMap.inspector')}>{locale.text('lifeMap.inspector')}</span>
-      <span><span {...locale.props(LIFE_MAP_TYPE_MESSAGES[selected.type])}>{locale.text(LIFE_MAP_TYPE_MESSAGES[selected.type])}</span> · {nodeDate(selected)}</span>
-      <h2 dir="auto">{selected.title}</h2>
-      <p dir="auto">{selected.summary}</p>
-      <nav className="semantic-thresholds" aria-labelledby="semantic-thresholds-label"><span id="semantic-thresholds-label" className="sr-only" {...locale.props('lifeMap.destinations')}>{locale.text('lifeMap.destinations')}</span>
-        <button type="button" onClick={() => router.push(destinationHref('focus', selected))} {...locale.props('lifeMap.enterFocus')}>{locale.text('lifeMap.enterFocus')}</button>
-        <button type="button" disabled={!selected.replayAvailable || selected.locked} onClick={() => router.push(destinationHref('replay', selected))} {...locale.props('nav.replay')}>{locale.text('nav.replay')}</button>
-        <button type="button" onClick={overview} {...locale.props('common.overview')}>{locale.text('common.overview')}</button>
-      </nav>
-      {related.length ? <div className="related-paths"><strong {...locale.props('lifeMap.connected')}>{locale.text('lifeMap.connected')}</strong>{related.slice(0, 4).map((node) => <button key={node.id} type="button" onClick={() => selectNode(node)} dir="auto">{node.title}</button>)}</div> : null}
-    </aside> : null}
+    {!semanticOnly ? selectedInspector : null}
 
     <style jsx global>{`
       .life-map-search-trigger{position:fixed;z-index:2147483600;left:auto;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));width:48px;height:48px;box-sizing:border-box;border:1px solid rgba(205,240,255,.22);border-radius:50%;background:rgba(3,10,20,.58);color:rgba(238,251,255,.82);font:700 21px/1 system-ui;backdrop-filter:blur(16px);box-shadow:0 12px 38px rgba(0,0,0,.28);cursor:pointer;opacity:.48;transition:opacity .2s ease,background .2s ease}.life-map-search-trigger:hover,.life-map-search-trigger:focus-visible,.life-map-search-trigger[aria-expanded='true']{opacity:1;background:rgba(4,16,29,.92);outline:none}.life-map-navigator{box-sizing:border-box;position:fixed;z-index:2147483601;right:max(18px,env(safe-area-inset-right));bottom:max(78px,calc(env(safe-area-inset-bottom) + 66px));width:min(420px,calc(100vw - 36px));display:grid;gap:12px;max-height:min(70vh,720px);padding:16px;border:1px solid rgba(195,240,255,.2);border-radius:22px;background:rgba(2,7,18,.92);backdrop-filter:blur(24px);color:#f8fbff;box-shadow:0 24px 80px rgba(0,0,0,.46)}.life-map-navigator header{display:flex;align-items:center;justify-content:space-between}.life-map-navigator header strong{font-size:12px;letter-spacing:.16em;text-transform:uppercase}.life-map-navigator header button{width:48px;height:48px;border:0;border-radius:50%;background:rgba(255,255,255,.05);color:#fff;font-size:22px;cursor:pointer}.life-map-navigator input{min-height:48px;border:1px solid rgba(205,244,255,.2);border-radius:16px;background:rgba(6,17,29,.95);color:#fff;padding:0 14px;font:inherit}.filter-row{display:flex;gap:7px;overflow:auto;padding-bottom:2px}.filter-row button,.life-map-navigator .semantic-results button,.life-map-semantic-inspector button{border:1px solid rgba(220,248,255,.18);background:rgba(10,25,40,.86);color:#f8fbff;font:inherit;cursor:pointer}.filter-row button{min-height:48px;min-width:48px;border-radius:999px;white-space:nowrap;padding:0 12px;font-size:11px}.filter-row button[data-active='true']{border-color:rgba(221,250,255,.72);background:rgba(24,67,88,.9)}.semantic-results{display:grid;gap:8px;min-height:0;overflow:auto;overscroll-behavior:contain}.semantic-results>li>button{min-height:62px;display:grid;gap:3px;text-align:left;padding:10px 13px;border-radius:14px}.semantic-results>li>button[data-selected='true']{border-color:rgba(221,250,255,.72);background:rgba(18,58,78,.9)}.semantic-results span,.semantic-results small{color:rgba(225,243,255,.66)}.semantic-results small{line-height:1.3}.life-map-semantic-result>strong,.life-map-semantic-result>span>small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}.life-map-semantic-result>span>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}.privacy-truth{margin:0;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(194,244,255,.62)}.life-map-semantic-inspector{box-sizing:border-box;position:fixed;z-index:2147483601;left:max(18px,env(safe-area-inset-left));bottom:max(18px,env(safe-area-inset-bottom));width:min(420px,calc(100vw - 36px));display:grid;gap:10px;padding:16px;border:1px solid rgba(195,240,255,.16);border-radius:20px;background:rgba(4,12,23,.84);backdrop-filter:blur(18px);color:#f8fbff}.life-map-semantic-inspector span{font-size:10px;color:rgba(214,242,255,.66);text-transform:uppercase;letter-spacing:.12em}.life-map-semantic-inspector h2{margin:0;font-size:clamp(22px,3vw,34px);line-height:.95}.life-map-semantic-inspector p{margin:0;color:rgba(235,246,255,.74);line-height:1.42}.semantic-thresholds,.related-paths{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.semantic-thresholds button,.related-paths button{min-height:48px;min-width:48px;border-radius:999px;padding:0 11px;font-size:11px}.semantic-thresholds button:disabled{opacity:.45;cursor:not-allowed}@media(max-width:760px){.life-map-search-trigger{left:auto;right:12px;top:max(12px,env(safe-area-inset-top));bottom:auto;transform:none;margin:0;opacity:.58}.life-map-navigator{right:12px;top:max(68px,calc(env(safe-area-inset-top) + 58px));bottom:auto;width:calc(100vw - 24px);max-height:min(64vh,calc(100svh - 84px))}.life-map-semantic-inspector{display:none}}@media(prefers-reduced-motion:reduce){.life-map-search-trigger{transition:none}}
