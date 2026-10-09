@@ -30,7 +30,7 @@ class FakeVideo extends EventTarget {
     return Promise.resolve()
   }
   removeAttribute(name) { if (name === 'src') this.src = '' }
-  emit(name) { this.dispatchEvent(new Event(name)) }
+  emit(name) { this.dispatchEvent(name) }
 }
 
 function session(options = {}) {
@@ -337,4 +337,145 @@ test('an unusable duration fails accessibly instead of exposing a fictitious med
   assert.equal(latest().status, 'error')
   assert.match(latest().error, /no usable duration/)
   controls.dispose()
+})
+
+// Bounded token-wait regressions; included in the existing compact runner.
+import { createHash, webcrypto } from 'node:crypto'
+
+// Actual transport source; only time and the token/HTTP boundaries are controlled.
+// This is not Firebase, full React-consumer, provider or private-media acceptance.
+function harness() {
+  const source = fs.readFileSync(new URL('../src/spatial/memory/ownedMemoryMediaPlayback.ts', import.meta.url), 'utf8')
+  const { outputText } = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  })
+  const module = { exports: {} }, timers = new Set()
+  let now = 1_800_000_000_000
+  class Clock extends Date { static now() { return now } }
+  vm.runInNewContext(outputText, {
+    module, exports: module.exports, Date: Clock, URL, AbortController,
+    Uint8Array, Blob, crypto: webcrypto, fetch,
+    setTimeout: (callback, delay) => { const timer = { callback, at: now + delay }; timers.add(timer); return timer },
+    clearTimeout: timer => timers.delete(timer),
+  }, { filename: 'actual-ownedMemoryMediaPlayback.js' })
+  const bytes = Buffer.from('synthetic byte transport fixture; not playable family media')
+  const descriptor = {
+    schemaVersion: 'urai-owned-memory-media-playback-v1', requiresAuthorization: true,
+    ownerId: 'synthetic-owner', memoryId: 'synthetic-memory', receiptId: 'a'.repeat(64),
+    kind: 'audio', contentType: 'audio/wav', sha256: createHash('sha256').update(bytes).digest('hex'),
+    byteLength: bytes.length, storageGeneration: '123', sourceAuthorityHash: 'b'.repeat(64),
+    authorityHash: 'c'.repeat(64), expiresAt: now + 1000,
+  }
+  const abort = new AbortController()
+  let requests = 0, headersCalls = 0, current = true
+  const lifecycle = {
+    signal: abort.signal, isCurrent: () => current,
+    requestHeaders: async () => { headersCalls++; return { Authorization: 'Bearer synthetic-owned-token' } },
+  }
+  const fetcher = async (_url, options) => {
+    requests++
+    assert.equal(options.headers.Authorization, 'Bearer synthetic-owned-token')
+    return new Response(bytes, { status: 200, headers: {
+      'content-type': descriptor.contentType, 'content-length': String(bytes.length),
+      'x-urai-checksum-sha256': descriptor.sha256, 'x-urai-storage-generation': descriptor.storageGeneration,
+    } })
+  }
+  return {
+    descriptor, abort, lifecycle, bytes, timers,
+    run: () => module.exports.fetchOwnedMemoryPlayback(descriptor, 'urai-4dc1d', lifecycle, fetcher),
+    advance: milliseconds => { now += milliseconds; for (const timer of [...timers]) if (timer.at <= now) { timers.delete(timer); timer.callback() } },
+    setCurrent: value => { current = value }, get requests() { return requests }, get headersCalls() { return headersCalls },
+  }
+}
+function deferred() {
+  let resolve, reject
+  const promise = new Promise((ok, no) => { resolve = ok; reject = no })
+  return { promise, resolve, reject }
+}
+async function drain() { for (let i = 0; i < 20; i++) await Promise.resolve() }
+function track(promise) {
+  const result = { status: 'pending', value: null }
+  const settled = promise.then(value => { result.status = 'fulfilled'; result.value = value }, error => { result.status = 'rejected'; result.value = error })
+  return { result, settled }
+}
+
+test('authorized token and exact response bytes still produce the original Blob', async () => {
+  const h = harness(), blob = await h.run()
+  assert.equal(blob.type, h.descriptor.contentType)
+  assert.deepEqual(Buffer.from(await blob.arrayBuffer()), h.bytes)
+  assert.equal(h.requests, 1)
+  assert.equal(h.headersCalls, 1)
+  assert.equal(h.timers.size, 0)
+})
+
+test('unmount abort settles while token refresh remains unresolved', async () => {
+  const h = harness(), token = deferred()
+  h.lifecycle.requestHeaders = () => token.promise
+  const { result, settled } = track(h.run())
+  await drain(); h.abort.abort(); await drain()
+  const observed = result.status
+  token.resolve({ Authorization: 'Bearer synthetic-owned-token' }); await settled
+  assert.equal(observed, 'rejected', 'transport remained pending after cancellation of an unresolved token refresh')
+  assert.match(result.value.message, /PRIVATE_MEDIA_AUTHORITY_CHANGED/)
+  assert.equal(h.requests, 0)
+  assert.equal(h.timers.size, 0)
+})
+
+test('existing deadline settles token wait without waiting for SDK completion', async () => {
+  const h = harness(), token = deferred()
+  h.lifecycle.requestHeaders = () => token.promise
+  const { result, settled } = track(h.run())
+  await drain(); h.advance(1000); await drain()
+  const observed = result.status
+  token.resolve({ Authorization: 'Bearer synthetic-owned-token' }); await settled
+  assert.equal(observed, 'rejected', 'transport remained pending after its existing deadline')
+  assert.match(result.value.message, /PRIVATE_MEDIA_AUTHORITY_CHANGED/)
+  assert.equal(h.requests, 0)
+  assert.equal(h.timers.size, 0)
+})
+
+test('late token rejection after cancellation is observed without starting HTTP', async () => {
+  const h = harness(), token = deferred()
+  h.lifecycle.requestHeaders = () => token.promise
+  const { result, settled } = track(h.run())
+  await drain(); h.abort.abort(); await drain()
+  const observed = result.status
+  token.reject(new Error('late SDK rejection')); await settled; await drain()
+  assert.equal(observed, 'rejected')
+  assert.match(result.value.message, /PRIVATE_MEDIA_AUTHORITY_CHANGED/)
+  assert.equal(h.requests, 0)
+})
+
+test('current token rejection preserves its original error and releases deadline', async () => {
+  const h = harness(), expected = new Error('owned token refresh unavailable')
+  h.lifecycle.requestHeaders = async () => { throw expected }
+  await assert.rejects(h.run(), error => error === expected)
+  assert.equal(h.requests, 0)
+  assert.equal(h.timers.size, 0)
+})
+
+test('already cancelled request never begins token acquisition', async () => {
+  const h = harness(); h.abort.abort()
+  await assert.rejects(h.run(), /PRIVATE_MEDIA_AUTHORITY_CHANGED/)
+  assert.equal(h.requests, 0)
+  assert.equal(h.headersCalls, 0)
+  assert.equal(h.timers.size, 0)
+})
+
+test('changed current lifecycle before token settlement still prevents HTTP', async () => {
+  const h = harness(), token = deferred()
+  h.lifecycle.requestHeaders = () => token.promise
+  const result = h.run()
+  await drain(); h.setCurrent(false); token.resolve({ Authorization: 'Bearer synthetic-owned-token' })
+  await assert.rejects(result, /PRIVATE_MEDIA_AUTHORITY_CHANGED/)
+  assert.equal(h.requests, 0)
+  assert.equal(h.timers.size, 0)
+})
+
+test('synchronous token error retains the error and cleans up', async () => {
+  const h = harness(), expected = new Error('synchronous owned SDK error')
+  h.lifecycle.requestHeaders = () => { throw expected }
+  await assert.rejects(h.run(), error => error === expected)
+  assert.equal(h.requests, 0)
+  assert.equal(h.timers.size, 0)
 })
