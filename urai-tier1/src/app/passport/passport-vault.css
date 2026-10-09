@@ -36,6 +36,15 @@
 .passportOperation button {
   min-width: 48px;
 }
+/* Scope checkboxes keep their own size inside the full-width operation fields.
+   The enclosing label supplies the 48px activation area. */
+.passportCheckGrid input[type="checkbox"] {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  padding: 0;
+}
 @media (min-width: 921px) {
   .passportPanel {
     width: min(650px, calc(100vw - min(290px,28vw) - 54px));
