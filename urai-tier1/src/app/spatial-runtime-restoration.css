@@ -267,10 +267,6 @@ body:has(.urai-asset-home-world) .urai-home-spatial-world-final .urai-genesis-ho
   filter: brightness(1.28) saturate(1.16) contrast(1.04);
 }
 
-[data-testid="urai-r3f-canonical-lifemap"] > div[aria-hidden="true"] {
-  opacity: .012 !important;
-}
-
 [data-testid="urai-true-3d-life-map"] canvas {
   filter: brightness(1.12) saturate(1.18) contrast(1.04);
 }
