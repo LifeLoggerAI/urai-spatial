@@ -39,8 +39,11 @@ test('Home keeps one capability-aware accessible fallback', () => {
   assert.match(runtime, /webglAvailable === false \|\| rendererState === 'failed'/)
   assert.match(runtime, /data-testid="urai-home-accessible-fallback"/)
   assert.match(runtime, /aria-label="Spatial Home fallback"/)
+  assert.match(runtime, /<section[\s\S]{0,180}role="main"[\s\S]{0,180}data-testid="urai-home-accessible-fallback"/)
   assert.match(runtime, /<HomeSemanticNavigation \/>/)
-  assert.match(runtime, /<HomeSpatialWorldFinal \/>/)
+  assert.match(runtime, /<HomeAccessibleSanctuaryFallback \/>/)
+  assert.match(runtime, /data-home-fallback-canon="inhabited-natural-sanctuary"/)
+  assert.doesNotMatch(runtime, /<HomeSpatialWorldFinal \/>/)
 })
 
 test('Home keeps direct semantic Ground, Orb, and Life Map navigation in the runtime boundary', () => {

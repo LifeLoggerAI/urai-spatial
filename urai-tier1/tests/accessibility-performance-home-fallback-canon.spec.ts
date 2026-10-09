@@ -15,12 +15,18 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 320, height: 700 
     const fallback = page.locator('[data-testid="urai-home-accessible-fallback"][data-webgl-state="unavailable"]')
     await expect(fallback).toHaveCount(1)
     await expect(fallback.getByRole('status')).toContainText('WebGL is unavailable')
-    const art = await fallback.locator('.urai-genesis-home__world').evaluate(world => ({
-      backgrounds: [getComputedStyle(world).backgroundImage, getComputedStyle(world, '::before').backgroundImage, getComputedStyle(world, '::after').backgroundImage],
-      avatarVisible: [...world.querySelectorAll('.urai-genesis-home__body')].some(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 }),
+    const art = await fallback.locator('[data-home-fallback-canon="inhabited-natural-sanctuary"]').evaluate(world => ({
+      backgrounds: [getComputedStyle(world).backgroundImage, getComputedStyle(world.querySelector('.home-accessible-sanctuary__ground')!).backgroundImage],
+      retiredShellVisible: [...world.querySelectorAll('.urai-genesis-home,.urai-genesis-home__world')].some(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 }),
+      canon: world.getAttribute('data-home-fallback-canon'),
+      retiredShell: world.getAttribute('data-home-fallback-retired-shell'),
+      copy: world.textContent,
     }))
     expect(art.backgrounds.join(' ')).not.toMatch(/home-threshold|https?:|url\(/)
-    expect(art.avatarVisible).toBe(false)
+    expect(art.canon).toBe('inhabited-natural-sanctuary')
+    expect(art.retiredShell).toBe('absent')
+    expect(art.retiredShellVisible).toBe(false)
+    expect(art.copy).not.toContain('Own your life')
     const readable = await fallback.evaluate(owner => {
       const rect = (element: Element) => {
         const r = element.getBoundingClientRect()
@@ -149,3 +155,4 @@ test('reduced-motion Home rests between keyboard movement and look interactions'
   await page.mouse.up()
   await expect.poll(readDraws, { timeout: 15_000 }).toBeGreaterThan(restingDraws)
 })
+
