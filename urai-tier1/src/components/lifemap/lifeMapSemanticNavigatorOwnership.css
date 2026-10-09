@@ -40,6 +40,19 @@
 .life-map-navigator .privacy-truth,
 .life-map-semantic-inspector { overflow-wrap: anywhere; }
 .life-map-semantic-inspector { max-height: calc(100svh - 36px); overflow-y: auto; }
+
+/* Without a canvas, selected-memory actions belong to the panel's scroll flow.
+   Healthy canvas inspection keeps its existing concealed mobile presentation. */
+.life-map-navigator .life-map-semantic-inspector[data-life-map-semantic-only="true"] {
+  display: grid !important;
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 12px;
+  box-shadow: none;
+}
 .life-map-search-trigger:focus-visible,
 .life-map-navigator :is(input, button):focus-visible,
 .life-map-semantic-inspector button:focus-visible {
