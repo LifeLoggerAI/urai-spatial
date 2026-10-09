@@ -11,7 +11,8 @@ Sanctuary Escape correction. This donor merges that ancestry without force.
 All four owner leaves (Sanctuary, world controller, Privacy browser proof,
 and Privacy contract tests) are preserved byte-exact. The duplicate donor
 privacy correction is superseded. The remaining delta against that owner
-is nine paths, including this receipt; no integration-owner ref is moved.
+is ten paths, including this receipt and the explicit policy keyboard
+expectation described below; no integration-owner ref is moved.
 
 ## Corrected behavior
 
@@ -97,6 +98,15 @@ security, keyboard, motion, fallback, and offline assertions remain.
   checking passes. Native browser/build evidence must run against the newly
   published merge source; the two checks on the conflicted `1d1a` source do not
   satisfy these gates.
+- Actual owner Privacy job `113627721061`, run `37870653430`, fails before
+  browser execution because the policy-validation test expects navigation
+  alone, omitting the owner handler's intentional Escape ownership. Its 44
+  other cases pass. The corrected assertion retains the exact Passport return
+  and additionally requires `preventDefault`; a new already-consumed Escape
+  case prohibits a second return. All 46 policy-validation cases now pass
+  locally, with no production source change or removed assertion. The original
+  native failure remains retained. The four stronger owner leaves still match
+  byte-exact; fresh native Privacy execution remains required.
 - Thirteen retained source/archive tests pass for manual Apple containment.
   The manual-only workflow is byte-identical to the separately reviewed
   containment leaf `ab53b956ef51e791e2c0c54a3f3ed5c75b5a1f93` from donor #1761.
