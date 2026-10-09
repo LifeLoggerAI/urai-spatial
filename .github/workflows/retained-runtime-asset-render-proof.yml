@@ -7,6 +7,8 @@ on:
       - 'urai-tier1/src/spatial/layout/HomeSanctuaryGeometry.ts'
       - 'urai-tier1/src/spatial/council/CouncilRealm.tsx'
       - 'urai-tier1/src/spatial/council/CouncilAnimationLayers.ts'
+      - 'urai-tier1/src/app/replay-mobile-control-clearance.css'
+      - 'scripts/capture-replay-product-clearance.mjs'
       - 'scripts/test-runtime-asset-bindings.mjs'
       - 'scripts/capture-council-animation-layer-proof.mjs'
       - '.github/workflows/retained-runtime-asset-render-proof.yml'
@@ -27,6 +29,8 @@ jobs:
       URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
       NEXT_PUBLIC_URAI_BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       NEXT_TELEMETRY_DISABLED: '1'
+      # This unsigned CI fixture must explicitly disclose and preserve read-only demo state.
+      NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
       PLAYWRIGHT_BROWSERS_PATH: '0'
     steps:
       - name: Checkout exact isolated runtime donor
@@ -82,6 +86,21 @@ jobs:
           URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR="$output/home" node scripts/run-with-ci-webgl.mjs scripts/capture-restored-home-source-proof.mjs
           URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR="$output/council" node scripts/run-with-ci-webgl.mjs scripts/capture-council-animation-layer-proof.mjs
           node scripts/verify-production-asset-receipt-bindings.mjs --report "$output/after-build-bindings.json"
+      - name: Verify Replay product-control clearance with read-only demo data
+        shell: bash
+        run: |
+          set -euo pipefail
+          output=artifacts/retained-runtime-asset-render-proof/replay-clearance
+          mkdir -p "$output"
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > "$output/http-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            curl --fail --silent http://127.0.0.1:4173/replay/ >/dev/null && break
+            sleep 1
+          done
+          curl --fail --silent --show-error http://127.0.0.1:4173/replay/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR="$output" node scripts/run-with-ci-webgl.mjs scripts/capture-replay-product-clearance.mjs
       - name: Retain source-bound screenshots and receipts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

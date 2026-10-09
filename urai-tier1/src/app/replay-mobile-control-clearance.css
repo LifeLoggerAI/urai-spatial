@@ -7,3 +7,37 @@
     transform: none;
   }
 }
+
+/* Product actions belong to CinematicReplayClient, not the legacy footer above. */
+@media (max-width: 700px) {
+  .replayWorld .replayProduct {
+    --replay-product-clearance: max(14px, env(safe-area-inset-bottom, 0px));
+    right: max(14px, env(safe-area-inset-right, 0px));
+    bottom: var(--replay-product-clearance);
+  }
+  .replayWorld .replayProductActions {
+    box-sizing: border-box;
+    bottom: 54px;
+    width: min(300px, calc(100vw - 28px - env(safe-area-inset-right, 0px)));
+    max-height: calc(100svh - var(--replay-product-clearance) - 72px - env(safe-area-inset-top, 0px));
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  .replayWorld .replayHistory[open] { grid-column: 1 / -1; }
+  .replayWorld .replayHistory > :is(ol, p) {
+    position: static;
+    width: 100%;
+    max-height: 160px;
+    margin-top: 8px;
+    overflow-wrap: anywhere;
+  }
+}
+@media (max-width: 480px) {
+  .replayWorld .replayProduct {
+    /* Clear the persistent centered Orb, including its visible focus halo. */
+    --replay-product-clearance: max(96px, calc(env(safe-area-inset-bottom, 0px) + 86px));
+  }
+  .replayWorld .replayOperationStatus[data-attention='true'] {
+    bottom: max(150px, calc(env(safe-area-inset-bottom, 0px) + 140px));
+  }
+}
