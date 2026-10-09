@@ -34,6 +34,12 @@ const MOVEMENT_KEYS = new Set([
   'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight',
 ])
 
+export const URAI_EMBODIED_MOVEMENT_INPUT_EVENT = 'urai:embodied-movement-input'
+
+function notifyMovementInputChanged() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(URAI_EMBODIED_MOVEMENT_INPUT_EVENT))
+}
+
 // The motion kernel is called once per rendered frame. Reusing scratch vectors keeps
 // locomotion allocation-free while the active realm owns the only motion call.
 const MOTION_REQUESTED = new THREE.Vector3()
@@ -77,6 +83,7 @@ export function useMovementInput({
       if (MOVEMENT_KEYS.has(event.code)) {
         if (editableTarget && !movementControl) return
         keys.current.add(event.code)
+        notifyMovementInputChanged()
         event.preventDefault()
         return
       }
@@ -98,12 +105,14 @@ export function useMovementInput({
       }
     }
     const onKeyUp = (event: KeyboardEvent) => {
-      keys.current.delete(event.code)
+      if (keys.current.delete(event.code)) notifyMovementInputChanged()
     }
     const clear = () => {
+      const hadMovement = keys.current.size > 0 || virtualX.current !== 0 || virtualZ.current !== 0
       keys.current.clear()
       virtualX.current = 0
       virtualZ.current = 0
+      if (hadMovement) notifyMovementInputChanged()
     }
     window.addEventListener('keydown', onKeyDown, { passive: false, capture: true })
     window.addEventListener('keyup', onKeyUp)
@@ -171,11 +180,14 @@ export function useDragLook({
 export function setVirtualMovement(input: MovementInput, x: number, z: number) {
   input.virtualX.current = THREE.MathUtils.clamp(x, -1, 1)
   input.virtualZ.current = THREE.MathUtils.clamp(z, -1, 1)
+  notifyMovementInputChanged()
 }
 
 export function clearVirtualMovement(input: MovementInput) {
+  const hadMovement = input.virtualX.current !== 0 || input.virtualZ.current !== 0
   input.virtualX.current = 0
   input.virtualZ.current = 0
+  if (hadMovement) notifyMovementInputChanged()
 }
 
 export function stepEmbodiedMotion({

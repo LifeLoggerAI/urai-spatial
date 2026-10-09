@@ -6,7 +6,7 @@ import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, us
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { isOrbState, resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
-import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
+import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, URAI_EMBODIED_MOVEMENT_INPUT_EVENT, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import HomeSkyInteraction from '@/spatial/navigation/HomeSkyAscentInteraction'
 import { useSceneStore } from '@/spatial/store/useSceneStore'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
@@ -678,13 +678,19 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
       if (document.visibilityState === 'visible' && (moving || looking || settling || target.current || groundDescent || useSceneStore.getState().phase === 'ASCENT')) invalidate()
       frame = window.requestAnimationFrame(observeInput)
     }
+    const wakeDemandRenderer = () => {
+      invalidate()
+      window.requestAnimationFrame(() => invalidate())
+    }
     const wakeFromKeyboard = (event: KeyboardEvent) => {
-      if (['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(event.code)) invalidate()
+      if (['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(event.code)) wakeDemandRenderer()
     }
     window.addEventListener('keydown', wakeFromKeyboard, true)
+    window.addEventListener(URAI_EMBODIED_MOVEMENT_INPUT_EVENT, wakeDemandRenderer)
     frame = window.requestAnimationFrame(observeInput)
     return () => {
       window.removeEventListener('keydown', wakeFromKeyboard, true)
+      window.removeEventListener(URAI_EMBODIED_MOVEMENT_INPUT_EVENT, wakeDemandRenderer)
       window.cancelAnimationFrame(frame)
     }
   }, [camera, groundDescent, input.keys, input.virtualX, input.virtualZ, invalidate, pitch, reducedMotion, target, yaw])
