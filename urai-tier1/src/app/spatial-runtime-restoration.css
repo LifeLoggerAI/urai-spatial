@@ -267,6 +267,15 @@ body:has(.urai-asset-home-world) .urai-home-spatial-world-final .urai-genesis-ho
   filter: brightness(1.28) saturate(1.16) contrast(1.04);
 }
 
+/* Keep the signed-out landmark inside its floating control footprint. */
+[data-testid="urai-r3f-canonical-lifemap"] > main[data-testid="urai-life-map-signed-out-disclosure"] {
+  height: auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  max-height: calc(100svh - 32px) !important;
+  overflow-y: auto;
+}
+
 [data-testid="urai-true-3d-life-map"] canvas {
   filter: brightness(1.12) saturate(1.18) contrast(1.04);
 }

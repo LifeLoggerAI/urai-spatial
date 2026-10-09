@@ -50,6 +50,8 @@ try {
         const wrapper = element.querySelector(':scope > div')
         const realm = element.querySelector('[data-testid="urai-true-3d-life-map"]')
         const canvas = realm?.querySelector('canvas')
+        const disclosure = element.querySelector('[data-testid="urai-life-map-signed-out-disclosure"]')
+        const disclosureRect = disclosure?.getBoundingClientRect()
         let effectiveOpacity = 1
         for (let current = canvas; current instanceof Element; current = current.parentElement) {
           effectiveOpacity *= Number.parseFloat(getComputedStyle(current).opacity || '1')
@@ -60,12 +62,15 @@ try {
           const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
           return { label: button.textContent?.trim(), width: rect.width, height: rect.height, x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, centerOwned: Boolean(hit && (hit === button || button.contains(hit))) }
         })
-        return { effectiveOpacity, underlayInert: wrapper?.inert, underlayAriaHidden: wrapper?.getAttribute('aria-hidden'), canvasWidth: canvasRect?.width, canvasHeight: canvasRect?.height, backingWidth: canvas?.width, backingHeight: canvas?.height, controls }
+        return { effectiveOpacity, underlayInert: wrapper?.inert, underlayAriaHidden: wrapper?.getAttribute('aria-hidden'), canvasWidth: canvasRect?.width, canvasHeight: canvasRect?.height, backingWidth: canvas?.width, backingHeight: canvas?.height, disclosure: disclosureRect ? { x: disclosureRect.x, y: disclosureRect.y, width: disclosureRect.width, height: disclosureRect.height, right: disclosureRect.right, bottom: disclosureRect.bottom } : null, controls }
       })
       assert.ok(record.geometry.effectiveOpacity >= .98, 'semantic privacy flags must not dim the rendered empty realm')
       assert.equal(record.geometry.underlayInert, true)
       assert.equal(record.geometry.underlayAriaHidden, 'true')
       assert.ok(record.geometry.canvasWidth > 0 && record.geometry.canvasHeight > 0 && record.geometry.backingWidth > 0 && record.geometry.backingHeight > 0)
+      const panel = record.geometry.disclosure
+      assert.ok(panel && panel.x >= 0 && panel.y >= 0 && panel.right <= profile.width + 1 && panel.bottom <= profile.height + 1, 'the signed-out landmark must fit inside the viewport')
+      assert.ok(panel.width * panel.height <= profile.width * profile.height * .35, 'the floating disclosure must preserve the visible spatial realm')
       for (const control of record.geometry.controls) {
         assert.ok(control.width >= 48 && control.height >= 48 && control.centerOwned, 'visible disclosure controls retain 48px owned targets')
         assert.ok(control.x >= 0 && control.y >= 0 && control.right <= profile.width + 1 && control.bottom <= profile.height + 1, 'disclosure controls stay within the viewport')
