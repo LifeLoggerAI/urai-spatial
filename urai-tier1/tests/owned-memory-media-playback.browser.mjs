@@ -19,6 +19,18 @@ assert.equal(fixture.privateFamilyUsed, false)
 assert.equal(bytes.length, fixture.byteLength)
 assert.equal(createHash('sha256').update(bytes).digest('hex'), fixture.sha256)
 
+// A separate synthetic PCM source exercises the production audio/wav allowlist.
+// MP4 video bytes labeled audio/mp4 are not an admitted owned-memory format.
+const audioBytes = Buffer.alloc(44 + 8_000 * 3 * 2)
+audioBytes.write('RIFF', 0); audioBytes.writeUInt32LE(audioBytes.length - 8, 4); audioBytes.write('WAVEfmt ', 8)
+audioBytes.writeUInt32LE(16, 16); audioBytes.writeUInt16LE(1, 20); audioBytes.writeUInt16LE(1, 22)
+audioBytes.writeUInt32LE(8_000, 24); audioBytes.writeUInt32LE(16_000, 28)
+audioBytes.writeUInt16LE(2, 32); audioBytes.writeUInt16LE(16, 34); audioBytes.write('data', 36)
+audioBytes.writeUInt32LE(audioBytes.length - 44, 40)
+for (let sample = 0; sample < 24_000; sample++) audioBytes.writeInt16LE(Math.round(512 * Math.sin(sample * 2 * Math.PI * 220 / 8_000)), 44 + sample * 2)
+const audioFixture = { ...fixture, bytes: audioBytes.toString('base64'), byteLength: audioBytes.length,
+  sha256: createHash('sha256').update(audioBytes).digest('hex') }
+
 // Only Firebase SDK and unrelated world/assistant boundaries are fixtures.
 // The consumers, receipt parser, transport, Blob ownership and decoded clock
 // below are the actual repository sources, not reimplementations.
@@ -71,12 +83,14 @@ const cases = [], errors = []
 const memoryId = 'synthetic-receipt-memory', receiptId = 'a'.repeat(64), ownerId = 'synthetic-owner'
 
 async function open(route = '/replay', settings = {}) {
+  const mediaFixture = settings.audio ? audioFixture : fixture
+  const mediaBytes = settings.audio ? audioBytes : bytes
   const context = await browser.newContext({ viewport: settings.mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, isMobile: !!settings.mobile, hasTouch: !!settings.mobile })
   const page = await context.newPage()
   page.on('pageerror', error => errors.push(error.message))
   await page.addInitScript(({ fixture, memoryId, receiptId, ownerId, settings }) => {
     const memory = { ownerId, title: 'Synthetic receipt source — not family media', occurredAt: '2026-01-01T12:00:00.000Z', summary: 'A synthetic control fixture.', emotionalState: 'calm', privacy: 'private', sourceMedia: [{ kind: settings.audio ? 'audio' : 'video', mediaReceiptId: receiptId }], star: { position: [0, 0, -4] }, replayManifest: { id: 'synthetic-manifest', version: 1, durationMs: 3000, segments: ['memory', 'emotion', 'pattern', 'return'].map((id, i) => ({ id, label: id, caption: `Synthetic ${id}`, narratorLine: 'Synthetic narration caption only', startsAtMs: i * 750, durationMs: 750 })) } }
-    const kind = settings.audio ? 'audio' : 'video', mime = settings.audio ? 'audio/mp4' : 'video/mp4'
+    const kind = settings.audio ? 'audio' : 'video', mime = settings.audio ? 'audio/wav' : 'video/mp4'
     const receipt = { schemaVersion: 'urai-owned-memory-media-v1', ownerUid: ownerId, memoryId, receiptId, kind, state: 'ready', sha256: fixture.sha256, byteLength: fixture.byteLength, contentType: mime, storageGeneration: '123', consentRevision: 1, consentReceiptHash: 'b'.repeat(64), consentExpiresAt: Date.now() + 600000, deletionGeneration: 0, attemptNonce: 'synthetic-private-nonce', bucketName: 'synthetic-opaque-bucket', objectPath: 'synthetic-private-object' }
     const policy = { ownerId, version: 2, revision: 1, domains: { memory: { mode: 'granted', replayVisible: true }, location: { mode: 'granted' } }, enforcement: { state: 'fully-enforced' } }
     const base = `users/${ownerId}`
@@ -100,14 +114,14 @@ async function open(route = '/replay', settings = {}) {
     URL.revokeObjectURL = url => { f.revocations.push({ url, media: f.heldMedia.filter(element => element.dataset.ownedFixtureUrl === url).map(element => ({ paused: element.paused, src: element.getAttribute('src') })) }); revoke(url) }
     const src = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src')
     Object.defineProperty(HTMLMediaElement.prototype, 'src', { ...src, set(value) { if (String(value).startsWith('blob:')) { this.dataset.ownedFixtureUrl = value; f.heldMedia.push(this) } src.set.call(this, value) } })
-  }, { fixture, memoryId, receiptId, ownerId, settings })
+  }, { fixture: mediaFixture, memoryId, receiptId, ownerId, settings })
   await page.route('https://us-central1-urai-4dc1d.cloudfunctions.net/**', async intercepted => {
     const request = intercepted.request(), url = new URL(request.url())
     if (request.method() === 'OPTIONS') { await intercepted.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'authorization', 'Access-Control-Allow-Methods': 'GET' } }); return }
     assert.match(request.headers().authorization ?? '', /^Bearer synthetic-sdk-token$/)
     const tamper = await page.evaluate(() => window.__fixture.tamper)
-    const body = url.pathname === '/streamCapturedRealityRuntime' ? Buffer.alloc(32) : tamper ? Buffer.alloc(bytes.length) : bytes
-    await intercepted.fulfill({ status: 200, body, headers: { 'Access-Control-Allow-Origin': origin, 'Access-Control-Expose-Headers': 'Content-Length,X-Content-SHA256,X-Storage-Generation', 'Content-Type': url.pathname === '/streamCapturedRealityRuntime' ? 'application/octet-stream' : settings.audio ? 'audio/mp4' : 'video/mp4', 'Content-Length': String(body.length), 'X-Content-SHA256': url.pathname === '/streamCapturedRealityRuntime' ? 'f'.repeat(64) : fixture.sha256, 'X-Storage-Generation': url.pathname === '/streamCapturedRealityRuntime' ? '321' : '123' } })
+    const body = url.pathname === '/streamCapturedRealityRuntime' ? Buffer.alloc(32) : tamper ? Buffer.alloc(mediaBytes.length) : mediaBytes
+    await intercepted.fulfill({ status: 200, body, headers: { 'Access-Control-Allow-Origin': origin, 'Access-Control-Expose-Headers': 'Content-Length,X-URAI-Checksum-SHA256,X-URAI-Storage-Generation', 'Content-Type': url.pathname === '/streamCapturedRealityRuntime' ? 'application/octet-stream' : settings.audio ? 'audio/wav' : 'video/mp4', 'Content-Length': String(body.length), 'X-URAI-Checksum-SHA256': url.pathname === '/streamCapturedRealityRuntime' ? 'f'.repeat(64) : mediaFixture.sha256, 'X-URAI-Storage-Generation': url.pathname === '/streamCapturedRealityRuntime' ? '321' : '123' } })
   })
   const query = route === '/spatial/captured-reality' ? `?assetId=synthetic-accepted-place${settings.standalone ? '' : `&memoryId=${memoryId}`}` : route === '/life-movie' ? `?movieId=synthetic-movie&memoryId=${memoryId}` : `?memoryId=${memoryId}`
   await page.goto(origin + route + query)

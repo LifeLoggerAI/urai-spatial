@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import * as functions from 'firebase-functions/v1'
 import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
@@ -30,7 +31,7 @@ function id(value: unknown): string { if (typeof value !== 'string' || !ID.test(
 function millis(value: unknown) {
   // Canonical consent-api stores its immutable expiry as an ISO string; upload
   // leases use SDK Timestamps. Do not turn a malformed date into an open lease.
-  const time = value instanceof admin.firestore.Timestamp ? value.toMillis()
+  const time = value instanceof Timestamp ? value.toMillis()
     : typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
       && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value ? Date.parse(value) : Number.NaN
   return Number.isSafeInteger(time) ? time : Number.NaN
@@ -264,8 +265,8 @@ export const registerMemoryMedia = functions.runWith({ timeoutSeconds: 180, memo
       const r = { schemaVersion: SCHEMA, ownerUid: uid, memoryId, receiptId, sha256: digest, byteLength: bytes.length,
         kind: value.kind, contentType, bucketName: bucket.name, objectPath: objectPath(uid, memoryId, receiptId, digest, contentType), attemptNonce,
         consentRevision: authority.consentRevision, consentReceiptHash: authority.consentReceiptHash, consentExpiresAt: authority.consentExpiresAt,
-        deletionGeneration: authority.deletionGeneration, state: 'uploading', leaseExpiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + UPLOAD_LEASE_MS),
-        createdAt: admin.firestore.FieldValue.serverTimestamp() }
+        deletionGeneration: authority.deletionGeneration, state: 'uploading', leaseExpiresAt: Timestamp.fromMillis(Date.now() + UPLOAD_LEASE_MS),
+        createdAt: FieldValue.serverTimestamp() }
       await requireAuthentication()
       if (authority.consentExpiresAt <= Date.now()) fail('MEMORY_MEDIA_AUTHORITY_CHANGED')
       transaction.create(ref, r)
@@ -300,7 +301,7 @@ export const registerMemoryMedia = functions.runWith({ timeoutSeconds: 180, memo
       if (media.length >= 64) fail('MEMORY_MEDIA_RESOURCE_BUDGET_EXCEEDED')
       await requireAuthentication()
       if (authority.consentExpiresAt <= Date.now() || millis(r.leaseExpiresAt) <= Date.now()) fail('MEMORY_MEDIA_UPLOAD_LEASE_UNAVAILABLE')
-      transaction.update(ref, { state: 'ready', storageGeneration, completedAt: admin.firestore.FieldValue.serverTimestamp() })
+      transaction.update(ref, { state: 'ready', storageGeneration, completedAt: FieldValue.serverTimestamp() })
       transaction.update(authority.memory.ref, { sourceMedia: [...media, { kind: value.kind, mediaReceiptId: receiptId }] })
     })
     bound.storageGeneration = storageGeneration
@@ -372,7 +373,7 @@ async function playbackReceipt(transaction: FirebaseFirestore.Transaction, uid: 
   if (central.exists) {
     const marker = central.data() ?? {}, keys = Object.keys(marker)
     const released = !keys.includes('active') && keys.every(key => ['uid', 'updatedAt'].includes(key))
-      && marker.updatedAt instanceof admin.firestore.Timestamp
+      && marker.updatedAt instanceof Timestamp
     if (marker.uid !== uid || keys.some(key => key.startsWith('deletionPlanningLease'))
       || (marker.active !== false && !released)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
   }
@@ -671,7 +672,7 @@ export async function deleteMemoryMedia(database: FirebaseFirestore.Firestore, u
         await database.runTransaction(async transaction => {
           const current = await transaction.get(document.ref)
           if (!current.exists || current.get('attemptNonce') !== r.attemptNonce) fail('MEMORY_MEDIA_CLEANUP_AUTHORITY_CHANGED')
-          transaction.update(document.ref, { state: 'deleted', tombstoneGeneration: generation, cleanupStatus: 'completed', permanentErasureProven: false, deletedAt: admin.firestore.FieldValue.serverTimestamp() })
+          transaction.update(document.ref, { state: 'deleted', tombstoneGeneration: generation, cleanupStatus: 'completed', permanentErasureProven: false, deletedAt: FieldValue.serverTimestamp() })
         })
         await requireCurrent()
       }
@@ -684,7 +685,7 @@ export async function deleteMemoryMedia(database: FirebaseFirestore.Firestore, u
 
 export const reconcileMemoryMediaUploads = functions.runWith({ timeoutSeconds: 180 }).pubsub.schedule('every 5 minutes').onRun(async () => {
   const stale = await db.collectionGroup('memoryMediaReceipts').where('state', 'in', ['uploading', 'closing'])
-    .where('leaseExpiresAt', '<=', admin.firestore.Timestamp.fromMillis(Date.now())).limit(50).get()
+    .where('leaseExpiresAt', '<=', Timestamp.fromMillis(Date.now())).limit(50).get()
   for (const snap of stale.docs) {
     const uid = id(snap.get('ownerUid')), r = receipt(snap.data(), uid)
     if (snap.ref.path !== `users/${uid}/memoryMediaReceipts/${r.receiptId}` || millis(r.leaseExpiresAt) > Date.now()) fail('MEMORY_MEDIA_CLEANUP_AUTHORITY_CHANGED')

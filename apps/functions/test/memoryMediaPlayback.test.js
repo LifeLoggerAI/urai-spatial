@@ -20,7 +20,7 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
 
 // The SDK boundary is fictional. All authority/delivery code and helpers below
 // are the actual strict-tsc output; Node streams/pipeline and HTTP are real.
-function fixture() {
+function fixture({ modularFirestoreOnly = false } = {}) {
   const clock = { value: Date.now() }
   class ClockDate extends Date { static now() { return clock.value } }
   class Timestamp {
@@ -108,6 +108,8 @@ function fixture() {
     } }
   const admin = { apps: ['fictional'], firestore: Object.assign(() => db, { Timestamp, FieldValue: { serverTimestamp: () => new Timestamp(clock.value) } }),
     auth: () => auth, storage: () => ({ bucket: () => bucket }) }
+  const firestoreValues = { Timestamp, FieldValue: admin.firestore.FieldValue }
+  if (modularFirestoreOnly) admin.firestore = () => db
   const functions = { https: { HttpsError, onCall: callback => callback, onRequest: callback => callback }, runWith: () => functions,
     pubsub: { schedule: () => ({ onRun: callback => callback }) } }
   const filename = process.env.URAI_MEMORY_MEDIA_COMPILED_MODULE || path.resolve(__dirname, '../lib/apps/functions/src/memoryMedia.js')
@@ -119,6 +121,7 @@ function fixture() {
       Date: ClockDate, console: Object.fromEntries(['log', 'warn', 'error'].map(key => [key, (...args) => stats.logs.push(args)])),
       process: { env: { GCLOUD_PROJECT: 'urai-4dc1d', FIREBASE_STORAGE_BUCKET: bucket.name } }, require: name => {
         if (name === 'firebase-admin') return admin
+        if (name === 'firebase-admin/firestore') return firestoreValues
         if (name === 'firebase-functions/v1') return functions
         if (name.startsWith('./')) return load(path.resolve(path.dirname(compiled), name + '.js'))
         return nativeRequire(name)
@@ -174,6 +177,23 @@ test('actual immutable receipt descriptor exposes no bearer, URL, bucket, object
   assert.equal(out.response.headers['X-URAI-Storage-Generation'], d.storageGeneration)
   assert.equal(out.response.headers['Content-Length'], String(f.bytes.length)); assert.equal(out.response.headers['Cache-Control'], 'private, no-store')
 })
+
+test('modular Firestore values support canonical ISO consent, upload leases and exact playback without namespace statics', async () => {
+  const f = fixture({ modularFirestoreOnly: true })
+  f.docs.get(consentPath).expiresAt = new Date(f.receipt.consentExpiresAt).toISOString()
+  f.docs.delete(receiptPath); f.docs.get(memoryPath).sourceMedia = []
+  const result = await f.handler.registerMemoryMedia({ memoryId, operationId: 'fictional-modular-roundtrip', contentType: 'video/mp4', kind: 'video', base64: f.bytes.toString('base64') }, f.context)
+  const d = await f.descriptor({ memoryId, receiptId: result.receiptId }), out = await f.deliver(d)
+  assert.equal(out.response.statusCode, 200); assert.deepEqual(out.bytes, f.bytes)
+  assert.equal(d.sha256, result.sha256); assert.equal(f.stats.signed, 0)
+})
+
+for (const invalid of ['2026-02-30T00:00:00.000Z', { toMillis: () => Date.now() + 3_600_000 }]) {
+  test('modular Firestore parsing still rejects malformed or non-SDK consent expiry ' + String(invalid), async () => {
+    const f = fixture({ modularFirestoreOnly: true }); f.docs.get(consentPath).expiresAt = invalid
+    await assert.rejects(f.descriptor()); assert.equal(f.stats.streams, 0)
+  })
+}
 
 test('actual receipt-only upload can immediately resolve and deliver exact privately owned bytes', async () => {
   const f = fixture(); f.docs.delete(receiptPath); f.docs.get(memoryPath).sourceMedia = []

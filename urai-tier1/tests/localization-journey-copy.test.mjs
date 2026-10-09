@@ -58,6 +58,8 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(id.includes('homeSkyInteraction')) return {homeJourneyHref}
     if(id.includes('HomeSpatialCanvas')) return {useWebGLAvailable:()=>webgl}
     if(id.includes('useSelectedMemory')) return {useSelectedMemory:()=>({memory,status,message})}
+    if(id.includes('useReplayMemoryVisibility')) return {useReplayMemoryVisibility:()=>memory ? 'visible' : 'unavailable'}
+    if(id.includes('useOwnedMemoryMediaPlayback')) return {useOwnedMemoryMediaPlayback:()=>({status:'absent',media:[]})}
     if(id.includes('useAdaptiveSpatialQuality')) return {useAdaptiveSpatialQuality:()=>quality}
     if(id.includes('useReducedMotion')) return {useReducedMotion:()=>true}
     if(id.includes('useReplayLifeModelAuthority')) return {useReplayLifeModelAuthority:()=>({available:false,status:'blocked',decision:'fixture',people:[]})}

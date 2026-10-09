@@ -111,6 +111,7 @@ function fixture(options = {}) {
       require(name) {
         if (name === 'firebase-functions/v1') return functions
         if (name === 'firebase-admin') return admin
+        if (name === 'firebase-admin/firestore') return { Timestamp, FieldValue: firestore.FieldValue }
         if (name === './lifeModelPrivateInputs') return service
         if (name === './exportPagination') return load('exportPagination')
         if (name === './consentPolicyAuthority') return load('consentPolicyAuthority')
