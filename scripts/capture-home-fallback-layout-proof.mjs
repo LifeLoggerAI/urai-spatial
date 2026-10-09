@@ -51,8 +51,10 @@ try {
       })
       const response = await page.goto(`${base}/home/`, { waitUntil: 'domcontentloaded', timeout: 60000 })
       assert.equal(response?.status(), 200, 'Built Home must load')
-      const fallback = page.locator('[data-testid="urai-home-accessible-fallback"]')
+      // Capability placeholders reuse the test ID; only the mounted runtime owns this proof.
+      const fallback = page.locator('section.urai-home-spatial-runtime-layer[data-testid="urai-home-accessible-fallback"][data-urai-home-runtime="accessible-fallback-without-webgl"]')
       await fallback.waitFor({ state: 'visible', timeout: 90000 })
+      assert.equal(await fallback.count(), 1, 'Exactly one canonical Home fallback must own the proof')
       assert.equal(await fallback.getAttribute('data-webgl-state'), 'unavailable')
       assert.equal(await fallback.getAttribute('role'), 'main', 'Fallback must own the primary page landmark')
       assert.equal(await page.locator('body').getAttribute('data-deployed-sha'), exactHead, 'Served build must match the proof head')
