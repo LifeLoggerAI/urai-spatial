@@ -289,6 +289,34 @@ function SanctuaryPath() {
   </group>
 }
 
+function FernBatch({ geometry, localMatrix, indices, rootRotation, material, castShadow, name }: {
+  geometry: THREE.BufferGeometry; localMatrix: THREE.Matrix4; indices: readonly number[];
+  rootRotation: THREE.Euler; material: THREE.Material; castShadow: boolean; name: string;
+}) {
+  const meshRef = useRef<THREE.InstancedMesh>(null)
+  const transform = useMemo(() => new THREE.Object3D(), [])
+  const matrix = useMemo(() => new THREE.Matrix4(), [])
+
+  useLayoutEffect(() => {
+    const mesh = meshRef.current
+    if (!mesh) return
+    indices.forEach((index, localIndex) => {
+      const [x,z,scale,rotation] = FERN_PLACEMENTS[index]
+      transform.position.set(x, terrainHeight(x,z) + .025, z)
+      transform.rotation.copy(rootRotation)
+      transform.rotation.y = rotation
+      transform.scale.set(scale * (1 + seeded(index, 16) * .08), scale * (.9 + seeded(index, 22) * .18), scale * (1 + seeded(index, 29) * .08))
+      transform.updateMatrix()
+      mesh.setMatrixAt(localIndex, matrix.multiplyMatrices(transform.matrix, localMatrix))
+    })
+    mesh.instanceMatrix.needsUpdate = true
+    mesh.computeBoundingSphere()
+    return () => { mesh.dispose() }
+  }, [indices, localMatrix, matrix, rootRotation, transform])
+
+  return <instancedMesh ref={meshRef} args={[geometry, material, indices.length]} name={name} castShadow={castShadow} receiveShadow dispose={null} userData={{ instanceNames: indices.map((index) => `home-scanned-fern-${index + 1}`) }} />
+}
+
 function Vegetation() {
   const fern = useGLTF(HOME_FERN_MODEL)
   const materials = useMemo(() => [
@@ -297,16 +325,24 @@ function Vegetation() {
     new THREE.MeshStandardMaterial({ color: '#5f7c61', roughness: .97, metalness: 0, side: THREE.DoubleSide }),
   ], [])
   useEffect(() => () => materials.forEach((material) => material.dispose()), [materials])
-  const instances = useMemo(() => FERN_PLACEMENTS.map(([x,z,scale,rotation], index) => {
-    const object = fern.scene.clone(true)
-    object.name = `home-scanned-fern-${index + 1}`
-    object.position.set(x, terrainHeight(x,z) + .025, z)
-    object.rotation.y = rotation
-    object.scale.set(scale * (1 + seeded(index, 16) * .08), scale * (.9 + seeded(index, 22) * .18), scale * (1 + seeded(index, 29) * .08))
-    object.traverse((child) => { if (child instanceof THREE.Mesh) { child.material = materials[index % materials.length]; child.castShadow = index < 24; child.receiveShadow = true } })
-    return object
-  }), [fern.scene, materials])
-  return <group name="home-living-vegetation" userData={{ role: 'edge-clustered-scanned-cc0-nature', source: 'Poly Haven fern_02 CC0' }}>{instances.map((object) => <primitive key={object.name} object={object} />)}</group>
+  const parts = useMemo(() => {
+    // Resolve local geometry transforms on one clone without mutating cached GLTF.
+    const model = fern.scene.clone(true)
+    model.updateMatrixWorld(true)
+    const inverseRoot = model.matrixWorld.clone().invert()
+    const result: { geometry: THREE.BufferGeometry; localMatrix: THREE.Matrix4 }[] = []
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) result.push({ geometry: child.geometry, localMatrix: new THREE.Matrix4().multiplyMatrices(inverseRoot, child.matrixWorld) })
+    })
+    return result
+  }, [fern.scene])
+  const groups = useMemo(() => Array.from({ length: 6 }, (_, group) => {
+    const variant = group % materials.length
+    const castShadow = group < materials.length
+    const indices = FERN_PLACEMENTS.flatMap((_, index) => index % materials.length === variant && (index < 24) === castShadow ? [index] : [])
+    return { variant, castShadow, indices }
+  }), [materials.length])
+  return <group name="home-living-vegetation" userData={{ role: 'edge-clustered-scanned-cc0-nature', source: 'Poly Haven fern_02 CC0' }}>{parts.flatMap((part, partIndex) => groups.map(({ variant, castShadow, indices }) => <FernBatch key={`${partIndex}-${variant}-${castShadow}`} geometry={part.geometry} localMatrix={part.localMatrix} indices={indices} rootRotation={fern.scene.rotation} material={materials[variant]} castShadow={castShadow} name={`home-scanned-fern-batch-${partIndex}-${variant}-${castShadow}`} />))}</group>
 }
 
 type StonePlacement = (typeof STONE_SCATTER)[number]

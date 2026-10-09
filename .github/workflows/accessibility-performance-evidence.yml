@@ -18,6 +18,9 @@ on:
       - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
       - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
       - 'urai-tier1/src/app/HomeSanctuaryWorld.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx'
+      - 'urai-tier1/tests/home-vegetation-instancing-behavior.test.mjs'
+      - 'urai-tier1/tests/orb-menu-commit-ordering-behavior.test.mjs'
       - 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
@@ -29,6 +32,8 @@ on:
       - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
       - 'urai-tier1/src/spatial/memory/explicitDemoMemory.ts'
       - 'urai-tier1/src/components/lifemap/**'
+      - 'urai-tier1/src/app/passport/**'
+      - 'urai-tier1/src/app/privacy-controls/**'
       - 'urai-tier1/src/app/status/**'
       - 'urai-tier1/src/data/launchTruth.ts'
       - 'urai-tier1/tests/status-live-authority-contract.test.mjs'
@@ -41,7 +46,7 @@ on:
         required: true
         type: string
   pull_request:
-    branches: [main]
+    branches: [main, repair/release-closure-integration-20261007]
     paths:
       - '.github/workflows/accessibility-performance-evidence.yml'
       - 'scripts/visual-proof-transport.mjs'
@@ -57,6 +62,9 @@ on:
       - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
       - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
       - 'urai-tier1/src/app/HomeSanctuaryWorld.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx'
+      - 'urai-tier1/tests/home-vegetation-instancing-behavior.test.mjs'
+      - 'urai-tier1/tests/orb-menu-commit-ordering-behavior.test.mjs'
       - 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
@@ -68,6 +76,8 @@ on:
       - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
       - 'urai-tier1/src/spatial/memory/explicitDemoMemory.ts'
       - 'urai-tier1/src/components/lifemap/**'
+      - 'urai-tier1/src/app/passport/**'
+      - 'urai-tier1/src/app/privacy-controls/**'
       - 'urai-tier1/src/app/status/**'
       - 'urai-tier1/src/data/launchTruth.ts'
       - 'urai-tier1/tests/status-live-authority-contract.test.mjs'
@@ -125,6 +135,12 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
+
+      - name: Verify retained Home vegetation construction
+        run: node --test urai-tier1/tests/home-vegetation-instancing-behavior.test.mjs
+
+      - name: Verify Orb menu commit and focus before external Home updates
+        run: node --test urai-tier1/tests/orb-menu-commit-ordering-behavior.test.mjs
 
       - name: Typecheck and build exact candidate
         run: |
