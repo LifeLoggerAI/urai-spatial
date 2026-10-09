@@ -3,6 +3,10 @@ import { spawnSync } from "node:child_process";
 
 const steps = [
   {
+    name: "Verify TEST-only Stripe production-route boundary",
+    command: ["node", "--test", "tests/production-route-stripe-test-boundary.test.mjs"],
+  },
+  {
     name: "Verify production routes",
     command: ["node", "scripts/check-production-route-exposure.mjs"],
   },
