@@ -2,7 +2,7 @@ name: Home State Proof
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, 'repair/release-closure-integration-20261007']
     paths:
       - 'scripts/capture-home-state-proof.mjs'
       - 'scripts/capture-visible-canvas-png.mjs'
@@ -12,6 +12,7 @@ on:
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - '.github/workflows/home-state-proof.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
+      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/home/**'
   workflow_dispatch:
 
@@ -72,4 +73,5 @@ jobs:
           path: artifacts/home-state-proof
           if-no-files-found: error
           retention-days: 365
+
 
