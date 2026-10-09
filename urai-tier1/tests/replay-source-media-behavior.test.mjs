@@ -479,3 +479,51 @@ test('synchronous token error retains the error and cleans up', async () => {
   assert.equal(h.requests, 0)
   assert.equal(h.timers.size, 0)
 })
+
+
+function lifeMovieReleaseHarness() {
+  const text = fs.readFileSync(new URL('../src/app/life-movie/LifeMovieClient.tsx', import.meta.url), 'utf8')
+  const ast = ts.createSourceFile('LifeMovieClient.tsx', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  let release, advance
+  const visit = node => {
+    if (ts.isCallExpression(node) && node.expression.getText(ast) === 'useOwnedMemoryMediaPlayback') release = node.arguments[1]
+    if (ts.isCallExpression(node) && node.expression.getText(ast) === 'useEffect'
+      && node.arguments[0]?.getText(ast).includes('window.setTimeout')
+      && node.arguments[0]?.getText(ast).includes('chapterDurationMs')) advance = node.arguments[0]
+    ts.forEachChild(node, visit)
+  }
+  visit(ast)
+  assert.ok(release && advance, 'execute the real disposal and chapter-advance callbacks')
+  let playing = false
+  const video = new FakeVideo(), timers = [], image = { style: { visibility: 'visible' }, src: 'blob:source', removeAttribute(name) { if (name === 'src') this.src = null } }
+  const controls = createReplayMediaSession(video, 'blob:source', snapshot => { playing = snapshot.playing })
+  const output = {}
+  const context = { exports: output, mediaSession: { current: controls }, imageRef: { current: image },
+    setPlaying(value) { playing = typeof value === 'function' ? value(playing) : value },
+    active: { id: 'source-less-next-chapter' }, get playing() { return playing },
+    expectsPrivateSource: false, ownedPlayback: { status: 'absent' }, timedSource: false,
+    memories: [{}, {}], reducedMotion: true, chapterDurationMs: 9000,
+    window: { setTimeout(fn, ms) { timers.push({ fn, ms }); return timers.length }, clearTimeout() {} },
+    setActiveIndex() { throw new Error('a released session must not auto-advance a following chapter') } }
+  const compiled = ts.transpileModule('exports.release = ' + release.getText(ast) + '; exports.advance = ' + advance.getText(ast),
+    { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
+  vm.runInNewContext(compiled, context)
+  return { video, controls, image, timers, release: output.release, advance: output.advance, playing: () => playing }
+}
+
+test('Life Movie release resets the playing state even when decoder disposal suppresses snapshots', async () => {
+  const h = lifeMovieReleaseHarness()
+  h.video.duration = 3; h.video.readyState = 2; h.video.emit('loadedmetadata'); h.video.emit('loadeddata')
+  await h.controls.play(); assert.equal(h.playing(), true)
+  h.release()
+  assert.equal(h.video.paused, true); assert.equal(h.video.src, '')
+  assert.equal(h.image.src, null); assert.equal(h.image.style.visibility, 'hidden')
+  assert.equal(h.playing(), false, 'withdrawal must not leave Pause film selected')
+})
+
+test('released Life Movie media cannot auto-start the source-less chapter timer', async () => {
+  const h = lifeMovieReleaseHarness()
+  h.video.duration = 3; h.video.readyState = 2; h.video.emit('loadedmetadata'); h.video.emit('loadeddata')
+  await h.controls.play(); h.release(); h.advance()
+  assert.equal(h.timers.length, 0, 'a following source-less chapter needs a new explicit play action')
+})

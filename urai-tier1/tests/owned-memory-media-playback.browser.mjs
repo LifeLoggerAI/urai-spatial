@@ -170,6 +170,16 @@ try {
     assert.equal(await page.locator('audio').evaluate(v => v.muted), true)
     await page.evaluate(() => window.__unmount()); await assertDisposed(page); await context.close()
   })
+  await check('Life Movie returns to Play film when a private media receipt is withdrawn during playback', async () => {
+    const { page, context } = await open('/life-movie', { mobile: true }); await playable(page)
+    await page.getByRole('button', { name: 'Play film', exact: true }).click()
+    await page.waitForFunction(() => document.querySelector('video').currentTime > .3 && !document.querySelector('video').paused)
+    await page.evaluate(() => { const f=window.__fixture,p=`users/${f.auth.currentUser.uid}/memoryMediaReceipts/${'a'.repeat(64)}`; f.update(p,{...f.docs[p],state:'revoked'}) })
+    await assertDisposed(page)
+    await page.getByRole('button', { name: 'Play film', exact: true }).waitFor()
+    assert.equal(await page.getByRole('button', { name: 'Play film', exact: true }).getAttribute('aria-pressed'), 'false')
+    await context.close()
+  })
   for (const [label, mutation] of [
     ['immutable receipt authority changed with unchanged bytes', `const p=base+'/memoryMediaReceipts/${receiptId}';f.update(p,{...f.docs[p],attemptNonce:'changed'})`],
     ['same-UID account recreation', `f.denyAuthority=true;f.emitAuth({uid:f.auth.currentUser.uid,getIdToken:async()=> 'synthetic-sdk-token'})`],

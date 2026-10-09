@@ -148,6 +148,7 @@ export default function LifeMovieClient() {
     ? runtimeManifest.manifest.chapters.find((chapter) => chapter.memoryId === active.id) ?? null
     : null
   const ownedPlayback = useOwnedMemoryMediaPlayback(visibility !== 'visible' || (requestedMovieId && runtimeManifest.status !== 'ready') ? null : active, () => {
+    setPlaying(false)
     mediaSession.current?.dispose()
     if (imageRef.current) { imageRef.current.style.visibility = 'hidden'; imageRef.current.removeAttribute('src') }
   })
