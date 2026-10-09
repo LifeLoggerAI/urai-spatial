@@ -96,7 +96,14 @@ try {
       assert.equal(errors.length, 0)
       if (route === '/life-map') {
         await disclosure.getByRole('button', { name: 'Open disclosed sample', exact: true }).click()
-        await page.waitForFunction(() => document.querySelector('[data-testid="urai-r3f-canonical-lifemap"]')?.getAttribute('data-life-map-access') === 'explicit-demo')
+        await page.waitForFunction(() => {
+          const canonical = document.querySelector('[data-testid="urai-r3f-canonical-lifemap"]')
+          const url = new URL(window.location.href)
+          return canonical?.getAttribute('data-life-map-access') === 'explicit-demo'
+            && url.pathname.replace(/\/+$/, '') === '/life-map'
+            && url.searchParams.get('demo') === '1'
+            && url.searchParams.get('manifestId') === 'replay-recovery-thread'
+        })
         const url = new URL(page.url())
         assert.equal(url.searchParams.get('demo'), '1')
         assert.equal(url.searchParams.get('manifestId'), 'replay-recovery-thread')
