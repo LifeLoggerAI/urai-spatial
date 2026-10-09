@@ -64,14 +64,16 @@ function walk(node, predicate) {
 test('signed-out access exposes one main owner while its renderer stays semantically hidden and inert', () => {
   const h = mount('signed-out')
   const tree = h.render()
-  assert.equal(tree.props.role, 'main', 'the visible signed-out disclosure must own a main landmark')
+  assert.equal(tree.props.role, undefined, 'the renderer must not create a second accessible main owner')
   assert.equal(tree.props['data-private-memory-mounted'], 'false')
   const wrapper = tree.props.children[0]
   assert.equal(wrapper.props['aria-hidden'], true)
   assert.equal(wrapper.props.inert, true)
   assert.equal(wrapper.props.children.type, h.boundary)
   assert.equal(wrapper.props.children.props.authenticatedUserId, null)
-  assert.ok(walk(tree, node => node.props?.['data-testid'] === 'urai-life-map-signed-out-disclosure'))
+  const disclosure = walk(tree, node => node.props?.['data-testid'] === 'urai-life-map-signed-out-disclosure')
+  assert.ok(disclosure)
+  assert.equal(disclosure.type, 'main', 'the current owner disclosure must retain its visible main landmark')
 })
 
 test('signed-out disclosure retains explicit sample consent and canonical Home return', () => {
