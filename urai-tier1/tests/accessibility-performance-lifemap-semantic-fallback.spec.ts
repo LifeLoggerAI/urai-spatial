@@ -1,6 +1,6 @@
 import { test, expect, type Locator } from '@playwright/test'
 
-test.use({ hasTouch: true, reducedMotion: 'reduce' })
+test.use({ hasTouch: true })
 
 async function assertPainted(target: Locator, receiptName: string) {
   await expect(target).toBeVisible()
@@ -40,6 +40,7 @@ async function assertPainted(target: Locator, receiptName: string) {
 
 test.beforeEach(async ({ page, baseURL }) => {
   if (!baseURL || !['localhost', '127.0.0.1', '[::1]'].includes(new URL(baseURL).hostname)) throw new Error('Life Map fallback acceptance is restricted to the authorized local candidate.')
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.addInitScript(() => {
     localStorage.setItem('urai:onboarding:v2:complete', '1')
     // An explicit browser capability failure, not a physical-device acceptance claim.
