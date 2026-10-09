@@ -25,10 +25,20 @@ function HomeAdamLauncher() {
 function HomeSemanticNavigation() {
   const locale = useUraiLocale()
   const [currentSearch, setCurrentSearch] = useState('')
+  const [companionReady, setCompanionReady] = useState(false)
   useEffect(() => { setCurrentSearch(window.location.search) }, [])
+  useEffect(() => {
+    // The Home boundary can hydrate before its sibling Orb event owner. Keep
+    // the control disabled until that owner has registered its open listener.
+    const updateCompanionReady = () => setCompanionReady(Boolean(document.querySelector('.urai-world-companion[data-hydrated="true"][data-phase="idle"]')))
+    const observer = new MutationObserver(updateCompanionReady)
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-hydrated', 'data-phase'] })
+    updateCompanionReady()
+    return () => observer.disconnect()
+  }, [])
   return (
     <nav className="home-semantic-navigation" {...locale.props('home.destinations')} aria-label={locale.text('home.destinations')} data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
-      <button type="button" {...locale.props('home.orbAction')} aria-label={locale.text('home.orbAction')} data-testid="home-semantic-orb" onClick={requestUraiWorldOrbOpen}>{locale.text('home.orbAction')}</button>
+      <button type="button" {...locale.props('home.orbAction')} aria-label={locale.text('home.orbAction')} data-testid="home-semantic-orb" disabled={!companionReady} onClick={requestUraiWorldOrbOpen}>{locale.text('home.orbAction')}</button>
       <a href={homeJourneyHref('/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent', currentSearch)} {...locale.props('home.groundAction')} aria-label={locale.text('home.groundAction')} data-testid="home-semantic-ground">{locale.text('nav.ground')}</a>
       <a href={homeJourneyHref('/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete', currentSearch)} {...locale.props('home.lifeMapAction')} aria-label={locale.text('home.lifeMapAction')} data-testid="home-semantic-life-map">{locale.text('nav.lifeMap')}</a>
     </nav>
@@ -252,4 +262,5 @@ export default function HomeSpatialRuntimeLayer() {
     </>
   )
 }
+
 
