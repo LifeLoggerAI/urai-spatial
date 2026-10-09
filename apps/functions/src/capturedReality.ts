@@ -100,6 +100,23 @@ async function requireLocationRuntimeConsent(uid: string, transaction: FirebaseF
   return { consentRevision: p.revision, deletionGeneration: generation }
 }
 
+// A captured place can stand alone. Entry from Replay additionally belongs to
+// the selected, still-visible owner memory; a place binding is not that grant.
+async function requireReplayMemoryAuthority(transaction: FirebaseFirestore.Transaction, uid: string, memoryId: string) {
+  const [memory, policy] = await Promise.all([
+    transaction.get(db.doc(`users/${uid}/memories/${memoryId}`)),
+    transaction.get(db.doc(`users/${uid}/privacyPolicy/current`)),
+  ])
+  const value = memory.data(), p = policy.data()
+  if (!memory.exists || (value?.ownerId ?? value?.userId) !== uid || value?.deleted === true
+    || value?.privacy === 'hidden' || ['revoked', 'pending'].includes(String(value?.consentState))
+    || !policy.exists || !isCanonicalStoredPolicy(p, uid) || p.revision < 1
+    || p.enforcement.state !== 'fully-enforced' || !['granted', 'limited'].includes(p.domains.memory.mode)
+    || p.domains.memory.replayVisible !== true) {
+    throw new functions.https.HttpsError('permission-denied', 'CAPTURED_REALITY_REPLAY_MEMORY_UNAVAILABLE')
+  }
+}
+
 async function requireSourceBindings(transaction: FirebaseFirestore.Transaction, uid: string, asset: FirebaseFirestore.DocumentSnapshot) {
   const bindings = asset.get('sourceBindings')
   if (!Array.isArray(bindings) || !bindings.length || bindings.length > 32 || new Set(bindings.map(row => row?.sourceReceiptRef)).size !== bindings.length) {
@@ -486,12 +503,16 @@ export const getCapturedRealityReplayEntry = capturedRealityFunctions.https.onCa
   const actor = await requireCallableOwner(context), uid = actor.uid
   if (!capturedRealityEnabled()) return { available: false }
 
-  await db.runTransaction(transaction => requireLocationRuntimeConsent(uid, transaction))
   const memoryId = requireToken(data?.memoryId, 'memoryId')
   const deviceTier = requireToken(data?.deviceTier, 'deviceTier', 16)
   if (deviceTier !== 'desktop' && deviceTier !== 'mobile') {
     throw new functions.https.HttpsError('invalid-argument', 'CAPTURED_REALITY_BROWSER_DEVICE_TIER_REQUIRED')
   }
+
+  await db.runTransaction(async transaction => {
+    await requireLocationRuntimeConsent(uid, transaction)
+    await requireReplayMemoryAuthority(transaction, uid, memoryId)
+  })
 
   const binding = await db.doc(`users/${uid}/capturedRealityReplayBindings/${memoryId}`).get()
   if (!binding.exists) return { available: false }
@@ -502,6 +523,7 @@ export const getCapturedRealityReplayEntry = capturedRealityFunctions.https.onCa
   ) {
     return { available: false }
   }
+  const bindingHash = sha(JSON.stringify(binding.data()))
 
   const assetId = requireToken(binding.get('capturedRealityAssetId'), 'capturedRealityAssetId')
   const asset = await db.doc(`users/${uid}/capturedRealityAssets/${assetId}`).get()
@@ -533,8 +555,24 @@ export const getCapturedRealityReplayEntry = capturedRealityFunctions.https.onCa
     : asset.get('browserCertified') === true
   if (!certified) return { available: false }
 
-  await db.runTransaction(transaction => readRuntimeAuthority(transaction, uid, { assetId, deviceTier, accessMode: 'runtime' }))
+  const requireCurrentEntry = () => db.runTransaction(async transaction => {
+    await requireReplayMemoryAuthority(transaction, uid, memoryId)
+    const currentBinding = await transaction.get(db.doc(`users/${uid}/capturedRealityReplayBindings/${memoryId}`))
+    if (!currentBinding.exists || sha(JSON.stringify(currentBinding.data())) !== bindingHash) {
+      throw new functions.https.HttpsError('permission-denied', 'CAPTURED_REALITY_REPLAY_BINDING_CHANGED')
+    }
+    const currentAsset = await transaction.get(db.doc(`users/${uid}/capturedRealityAssets/${assetId}`))
+    if (!currentAsset.exists || currentAsset.get('ownerId') !== uid || currentAsset.get('anchorEntityId') !== placeEntityId
+      || currentAsset.get('truthClass') !== 'spatially-reconstructable') {
+      throw new functions.https.HttpsError('permission-denied', 'CAPTURED_REALITY_REPLAY_PLACE_CHANGED')
+    }
+    return readRuntimeAuthority(transaction, uid, { assetId, deviceTier, accessMode: 'runtime' })
+  })
+  await requireCurrentEntry()
   await requireCurrentOwner(uid, actor.bearer, actor.creationTime)
+  // Current authentication is an external await. Re-read the memory and all
+  // runtime fences afterwards so withdrawal there cannot reopen the entry.
+  await requireCurrentEntry()
   return {
     available: true,
     assetId,

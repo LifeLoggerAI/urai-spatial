@@ -1,0 +1,111 @@
+name: Private Memory Media Playback Proof
+
+on:
+  pull_request:
+    paths:
+      - 'apps/functions/src/**'
+      - 'apps/functions/test/memoryMediaPlayback.test.js'
+      - 'apps/functions/test/captured-reality-replay-memory-authority.test.js'
+      - 'apps/functions/scripts/memory-media-playback-emulator-proof.cjs'
+      - 'urai-tier1/src/spatial/memory/**'
+      - 'urai-tier1/src/spatial/captured-reality/useCapturedRealityReplayEntry.ts'
+      - 'urai-tier1/src/app/spatial/captured-reality/CapturedRealityRouteClient.tsx'
+      - 'urai-tier1/src/app/replay/**'
+      - 'urai-tier1/src/app/life-movie/LifeMovieClient.tsx'
+      - 'urai-tier1/src/spatial/life-movie/useLifeMovieRuntimeManifest.ts'
+      - 'urai-tier1/tests/captured-reality-replay-entry-behavior.test.mjs'
+      - 'urai-tier1/tests/owned-memory-media-playback.browser.mjs'
+      - 'urai-tier1/tests/fixtures/owned-memory-playback-synthetic.json'
+      - 'firebase.memory-media-playback-test.json'
+      - '.github/workflows/memory-media-playback-proof.yml'
+      - 'apps/functions/package.json'
+      - 'apps/functions/tsconfig.json'
+      - 'pnpm-lock.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: memory-media-playback-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  authority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          persist-credentials: false
+      - name: Preserve exact clean source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          mkdir -p "$RUNNER_TEMP/memory-media-playback"
+          git rev-parse HEAD > "$RUNNER_TEMP/memory-media-playback/source-sha.txt"
+          git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/memory-media-playback/source-tree.txt"
+          sha256sum \
+            apps/functions/src/memoryMedia.ts apps/functions/src/capturedReality.ts apps/functions/src/consentPolicyAuthority.ts apps/functions/src/index.ts \
+            apps/functions/test/memoryMediaPlayback.test.js apps/functions/test/captured-reality-replay-memory-authority.test.js \
+            apps/functions/scripts/memory-media-playback-emulator-proof.cjs firebase.memory-media-playback-test.json .github/workflows/memory-media-playback-proof.yml \
+            urai-tier1/src/spatial/memory/selectedMemoryContract.ts urai-tier1/src/spatial/memory/ownedMemoryMediaPlayback.ts \
+            urai-tier1/src/spatial/memory/useOwnedMemoryMediaPlayback.ts urai-tier1/src/spatial/memory/useReplayMemoryVisibility.ts \
+            urai-tier1/src/spatial/captured-reality/useCapturedRealityReplayEntry.ts urai-tier1/src/spatial/life-movie/useLifeMovieRuntimeManifest.ts \
+            urai-tier1/src/app/spatial/captured-reality/CapturedRealityRouteClient.tsx urai-tier1/src/app/replay/CinematicReplayClient.tsx \
+            urai-tier1/src/app/replay/ReplayRecordedSource.tsx urai-tier1/src/app/replay/replayMediaSession.ts urai-tier1/src/app/life-movie/LifeMovieClient.tsx \
+            urai-tier1/tests/captured-reality-replay-entry-behavior.test.mjs urai-tier1/tests/owned-memory-media-playback.browser.mjs \
+            urai-tier1/tests/fixtures/owned-memory-playback-synthetic.json \
+            > "$RUNNER_TEMP/memory-media-playback/source-files-sha256.txt"
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install exact frozen graph
+        run: pnpm install --frozen-lockfile
+      - name: Strict build and independent actual handler range regressions
+        run: |
+          set -euo pipefail
+          pnpm --filter urai-functions build 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/build.log"
+          pnpm --dir apps/functions exec node --test test/memoryMediaPlayback.test.js test/captured-reality-replay-memory-authority.test.js 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/tests.tap"
+          pnpm --dir urai-tier1 exec node --import tsx --test tests/captured-reality-replay-entry-behavior.test.mjs 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/captured-entry-source.tap"
+      - name: Actual React consumers and Chromium decoding
+        run: |
+          set -euo pipefail
+          pnpm --dir urai-tier1 exec playwright install --with-deps chromium 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/chromium-install.log"
+          pnpm --dir urai-tier1 exec node tests/owned-memory-media-playback.browser.mjs 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/browser.log"
+      - name: Actual loaded Auth, Firestore, Storage and Functions boundaries
+        env:
+          URAI_ENABLE_CAPTURED_REALITY: 'true'
+          FIREBASE_STORAGE_BUCKET: 'demo-memory-media-playback.appspot.com'
+        run: |
+          set -euo pipefail
+          export JAVA_HOME="${JAVA_HOME_21_X64:?Java21 runtime is required}"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          java -version 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/java-version.log"
+          java -version 2>&1 | grep -E 'version "21\.'
+          pnpm exec firebase emulators:exec --project demo-memory-media-playback --config firebase.memory-media-playback-test.json --only auth,firestore,storage,functions "node apps/functions/scripts/memory-media-playback-emulator-proof.cjs" 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/loaded-emulators.log"
+      - name: Preserve scope and current source integrity
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/memory-media-playback"
+          sha256sum -c "$RUNNER_TEMP/memory-media-playback/source-files-sha256.txt"
+          node --version > "$RUNNER_TEMP/memory-media-playback/node-version.txt"
+          pnpm --version > "$RUNNER_TEMP/memory-media-playback/pnpm-version.txt"
+          printf '%s\n' 'The loaded synthetic proof verifies real receipt registration, exact stored bytes, current authority denials and selected-memory entry controls. Captured catalog rows are fictional authority fixtures, not approvals or runtime byte acceptance. Storage emulator bucket IAM is unavailable, so native positive private playback remains unproven. Browser evidence executes actual React consumers and Chromium media decoding with synthetic Firebase SDK and unrelated scene/assistant boundaries; the scene sentinel verifies disposal, not reconstruction. Real family media, world or likeness acceptance, production deployment and independent release acceptance remain unproven. Range and stream revocation tests use actual compiled source and real Node HTTP with controlled SDK boundaries.' > "$RUNNER_TEMP/memory-media-playback/acceptance-limits.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: memory-media-playback-${{ env.URAI_EXACT_HEAD }}
+          path: |
+            ${{ runner.temp }}/memory-media-playback
+            artifacts/owned-memory-playback-browser
+          if-no-files-found: error

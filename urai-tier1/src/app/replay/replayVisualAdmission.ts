@@ -6,7 +6,7 @@ export type ReplayVisualAdmission =
   | { kind: 'neutral'; media: null }
 
 export function replayVisualAdmission(memory: SelectedMemory): ReplayVisualAdmission {
-  const media = memory.sourceMedia.find((item) => item.kind === 'video' || item.kind === 'image')
+  const media = memory.sourceMedia.find((item) => item.kind === 'video' || item.kind === 'image' || item.kind === 'audio')
   if (media) return { kind: 'recorded-source', media }
   return memory.demo ? { kind: 'disclosed-demo', media: null } : { kind: 'neutral', media: null }
 }
@@ -22,5 +22,6 @@ export function replaySessionIdentity(memory: SelectedMemory) {
     memory.replayManifest.version,
     memory.replayManifest.durationMs,
     memory.sourceMedia.map(({ kind, url, caption }) => [kind, url, caption ?? null]),
+    ...(memory.sourceMediaReceipts?.length ? [memory.sourceMediaReceipts.map(({ kind, mediaReceiptId, caption }) => [kind, mediaReceiptId, caption ?? null])] : []),
   ])
 }

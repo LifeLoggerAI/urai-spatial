@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import test from 'node:test'
 import ts from 'typescript'
-import { createReplayVideoSession } from '../src/app/replay/replayMediaSession.ts'
+import { createReplayVideoSession, createReplayMediaSession } from '../src/app/replay/replayMediaSession.ts'
 import { replaySessionIdentity, replayVisualAdmission } from '../src/app/replay/replayVisualAdmission.ts'
 import { buildExplicitDemoMemory } from '../src/spatial/memory/selectedMemoryContract.ts'
 
@@ -53,7 +53,8 @@ test('source media admission cannot use demo art for a personal memory or interp
   assert.equal(replayVisualAdmission(demo).kind, 'disclosed-demo')
   const personal = { ...demo, demo: false, ownerId: 'owner-a', id: 'personal-a' }
   assert.deepEqual(replayVisualAdmission(personal), { kind: 'neutral', media: null })
-  assert.equal(replayVisualAdmission({ ...personal, sourceMedia: [{ kind: 'audio', url: 'https://example.invalid/source.ogg' }] }).kind, 'neutral')
+  const audio = { kind: 'audio', url: 'https://example.invalid/source.ogg' }
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [audio] }), { kind: 'recorded-source', media: audio })
   const source = { kind: 'image', url: 'https://example.invalid/photo.jpg', caption: 'Original photo' }
   assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }), { kind: 'recorded-source', media: source })
 })
@@ -261,7 +262,7 @@ test('recorded-source owner listens to canonical sensory policy and removes its 
   let safe = false
   let effect
   const video = new FakeVideo()
-  const refs = [{ current: null }, { current: video }, { current: true }]
+  const refs = [{ current: null }, { current: video }, { current: null }, { current: true }]
   const snapshots = []
   const sessions = []
   class Surface extends EventTarget {
@@ -278,7 +279,7 @@ test('recorded-source owner listens to canonical sensory policy and removes its 
     require: (id) => {
       if (id === 'react') return { useRef: () => refs.shift(), useEffect: (callback) => { effect = callback } }
       if (id === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) }
-      if (id === './replayMediaSession') return { createReplayVideoSession }
+      if (id === './replayMediaSession') return { createReplayVideoSession, createReplayMediaSession }
       assert.equal(id, '@/spatial/accessibility/SensorySafeRuntime')
       return { sensorySafeEnabled: () => safe, URAI_SENSORY_SAFE_EVENT: 'urai:sensory-safe-changed', URAI_SENSORY_SAFE_STORAGE_KEY: 'urai:sensory-safe:enabled-v1' }
     },

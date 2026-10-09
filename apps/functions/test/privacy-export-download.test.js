@@ -146,7 +146,7 @@ function fixture(options = {}) {
     vm.runInNewContext(fs.readFileSync(path.join(path.dirname(filename), 'memoryMedia.js'), 'utf8'), {
       module: result, exports: result.exports, Buffer, Error, Date: class extends Date { static now() { return options.clock?.value ?? now } },
       require: name => { if (name === 'firebase-admin') return admin; if (name === 'firebase-functions/v1') return functions;
-        if (name === 'node:crypto') return crypto; if (name === './exportPagination') return loadPagination(); if (name === './consentPolicyAuthority') return loadPolicyAuthority(); throw new Error(`Unexpected memory-media dependency ${name}`) },
+        if (name === 'node:crypto') return crypto; if (name === 'node:stream/promises') return require(name); if (name === './exportPagination') return loadPagination(); if (name === './consentPolicyAuthority') return loadPolicyAuthority(); throw new Error(`Unexpected memory-media dependency ${name}`) },
     }, { filename: 'memoryMedia.strict-compiled.js' })
     return memoryMedia = result.exports
   }
