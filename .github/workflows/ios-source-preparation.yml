@@ -2,19 +2,6 @@ name: iOS Source Preparation
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "distribution/ios-shell/**"
-      - "urai-tier1/**"
-      - "pnpm-workspace.yaml"
-      - "pnpm-lock.yaml"
-      - "scripts/prepare-ios-shell.mjs"
-      - "scripts/prepare-native-links.mjs"
-      - "scripts/prepare-native-static-provenance.mjs"
-      - "scripts/prepare-ios-source-archive.py"
-      - "scripts/prepare-ios-compiler-artifact.py"
-      - ".github/workflows/ios-source-preparation.yml"
-
 permissions:
   contents: read
 

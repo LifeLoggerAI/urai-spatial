@@ -121,7 +121,7 @@ function LifeMapAccessGate() {
     {mode === "signed-out" ? <aside data-testid="urai-life-map-signed-out-disclosure" aria-label="Signed-out Life Map disclosure" style={{ position:"absolute", zIndex:120, left:"max(16px,env(safe-area-inset-left))", bottom:"max(16px,env(safe-area-inset-bottom))", width:"min(390px,calc(100vw - 32px))", padding:14, border:"1px solid rgba(183,239,255,.2)", borderRadius:18, background:"rgba(2,7,17,.78)", backdropFilter:"blur(18px)", color:"#f8fbff" }}>
       <strong style={{ display:"block", fontSize:11, letterSpacing:".12em", textTransform:"uppercase" }}>Signed out · no personal data displayed</strong>
       <span style={{ display:"block", marginTop:6, fontSize:12, lineHeight:1.45, color:"rgba(235,244,255,.76)" }}>This is the real empty Life Map realm. No private memories are mounted.</span>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:10 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr)", gap:8, marginTop:10 }}>
         <button type="button" onClick={openDemo} style={{ minHeight:48, padding:"0 16px", border:0, borderRadius:999, fontWeight:900, cursor:"pointer" }}>Open disclosed sample</button>
         <button type="button" onClick={() => router.push("/home")} style={{ minHeight:48, padding:"0 16px", border:"1px solid rgba(232,251,255,.2)", borderRadius:999, background:"rgba(2,7,17,.62)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button>
         <AdamLauncherSlot name="life-map-unsigned-controls" />
