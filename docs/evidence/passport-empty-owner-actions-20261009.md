@@ -44,6 +44,24 @@ security, keyboard, motion, fallback, and offline assertions remain.
   browser execution. The existing Passport workflow is extended to this owner
   destination and runs the focused contracts, unchanged static build, six
   actual Chromium cases, and exact-head artifact retention.
+- Published predecessor `7003208005f9280667738ee9ce05eac2b834bc21` has
+  actual native Passport run `37869817574`, job `113625069379`: 105 focused
+  cases and all six Chromium cases pass. Artifact `11589926125` is fully
+  downloaded and checked (22 member hashes and ZIP CRC), SHA-256
+  `056b144cba70858399b99f8cb7713c62d3a72d3b771e96d5e7cbd9764aa6c902`.
+  Original desktop, 390px, and 320px PNGs were inspected: all scope labels
+  are readable and measured as one line; all checkboxes are 22px and labels
+  have 48px activation height. A subsequent assertion also verifies the
+  request button scrolls above the persistent companion. Fresh successor
+  evidence is required for the final published tests/workflow.
+- That predecessor exposed an inherited strict receipt mismatch in the
+  existing Spatial export client workflow (`37869817433`, job `113625069877`):
+  every selected case passes (95/95), but the unchanged receipt expects 93.
+  Its test and workflow leaves are unchanged from the starting source. The
+  affected workflow now also executes the new 13 empty-owner regressions;
+  the actual local Node 22.23.3 total is 108 pass, 0 fail, 0 cancelled, 0 skip.
+  The exact-count receipt requires 108. All existing tests/type checks and
+  zero-failure/zero-skip controls remain; no acceptance requirement is waived.
 - Thirteen retained source/archive tests pass for manual Apple containment.
   The manual-only workflow is byte-identical to the separately reviewed
   containment leaf `ab53b956ef51e791e2c0c54a3f3ed5c75b5a1f93` from donor #1761.

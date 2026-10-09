@@ -60,6 +60,16 @@ async function expectReadableExportScopes(page: Page, captureName: string) {
     expect(measured.textFits, `${measured.scope} must fit beside its checkbox`).toBe(true)
     expect(measured.hits, `${measured.scope} label must remain unobstructed`).toEqual([true, true, true])
   }
+  const exportAction = page.getByRole('button', { name: 'Unlock and request export' })
+  await exportAction.scrollIntoViewIfNeeded()
+  const actionHits = await exportAction.evaluate(element => {
+    const rect = element.getBoundingClientRect()
+    return [0.1, 0.5, 0.9].map(fraction => {
+      const hit = document.elementFromPoint(rect.left + rect.width * fraction, rect.top + rect.height / 2)
+      return Boolean(hit && (hit === element || element.contains(hit)))
+    })
+  })
+  expect(actionHits, 'the export action must scroll above the persistent companion').toEqual([true, true, true])
   await fs.mkdir(evidenceRoot, { recursive: true })
   await fs.writeFile(path.join(evidenceRoot, `${captureName}.json`), JSON.stringify(geometry, null, 2))
   await page.screenshot({ path: path.join(evidenceRoot, `${captureName}.png`), fullPage: true })
