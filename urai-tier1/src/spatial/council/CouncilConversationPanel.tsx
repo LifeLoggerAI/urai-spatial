@@ -29,7 +29,8 @@ import {
 
 export default function CouncilConversationPanel({ agent }: { agent: CouncilAgent }) {
   const actor = useSyncExternalStore(subscribeAIActor, getAIActorSnapshot, getServerAIActorSnapshot)
-  return <ActorBoundCouncilConversationPanel key={actor.generation} agent={agent} actor={actor} />
+  const sessionKey = JSON.stringify([actor.generation, agent.id, agent.name, agent.role, agent.focus])
+  return <ActorBoundCouncilConversationPanel key={sessionKey} agent={agent} actor={actor} />
 }
 
 function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAgent; actor: AIActorSnapshot }) {
