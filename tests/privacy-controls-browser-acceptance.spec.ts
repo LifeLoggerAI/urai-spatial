@@ -302,6 +302,10 @@ test('narrow sanctuary isolates its title from world labels and keeps the enforc
       const layoutTop = (element: HTMLElement) => element.getBoundingClientRect().top - rootRect.top + root.scrollTop
       const headerRect = header.getBoundingClientRect()
       const navRect = nav.getBoundingClientRect()
+      const backgroundAlpha = (color: string) => {
+        const channels = color.match(/[\d.]+/g) ?? []
+        return channels.length >= 4 ? Number(channels[3]) : 1
+      }
       const panelBottom = layoutTop(panel) + panel.getBoundingClientRect().height
       const orbTop = layoutTop(orb)
       return {
@@ -310,6 +314,9 @@ test('narrow sanctuary isolates its title from world labels and keeps the enforc
         height: window.innerHeight,
         headerBottom: headerRect.bottom,
         navTop: navRect.top,
+        navColumnCount: getComputedStyle(nav).gridTemplateColumns.trim().split(/\s+/).length,
+        realmButtonBackgroundAlpha: backgroundAlpha(getComputedStyle(nav.querySelector('button')!).backgroundColor),
+        panelBackgroundAlpha: backgroundAlpha(getComputedStyle(panel).backgroundColor),
         headerBackgroundImage: getComputedStyle(header).backgroundImage,
         realmButtons: [...nav.querySelectorAll('button')].map(button => {
           const rect = button.getBoundingClientRect()
@@ -324,6 +331,9 @@ test('narrow sanctuary isolates its title from world labels and keeps the enforc
     expect(geometry.headerBackgroundImage).toContain('linear-gradient')
     expect(geometry.navTop).toBeGreaterThanOrEqual(geometry.headerBottom)
     expect(geometry.panelOrbGap, `${viewport.width}x${viewport.height}: enforcement status must follow, not cover, consent controls`).toBeGreaterThanOrEqual(0)
+    expect(geometry.navColumnCount).toBe(viewport.width <= 340 ? 1 : 2)
+    expect(geometry.realmButtonBackgroundAlpha).toBeGreaterThanOrEqual(0.97)
+    expect(geometry.panelBackgroundAlpha).toBeGreaterThanOrEqual(0.97)
     expect(geometry.realmButtons).toHaveLength(6)
     for (const button of geometry.realmButtons) {
       expect(button.left, `${button.text}: horizontal viewport bounds`).toBeGreaterThanOrEqual(0)
