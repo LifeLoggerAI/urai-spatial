@@ -209,7 +209,7 @@ export function PersistentWorldCompanion() {
   ))
 
   return (
-    <aside className="urai-world-companion" data-open={open ? 'true' : 'false'} data-phase={phase} data-destination={world.destination} data-spatial-audio={audioEnabled ? 'on' : 'off'}>
+    <aside className="urai-world-companion" data-hydrated={hydrated ? 'true' : 'false'} data-open={open ? 'true' : 'false'} data-phase={phase} data-destination={world.destination} data-spatial-audio={audioEnabled ? 'on' : 'off'}>
       <div ref={menuRef} id="urai-world-companion-menu" className="urai-world-companion__menu" aria-hidden={!open} inert={!open ? true : undefined}>
         <p>{current.label}</p>
         <nav aria-label="Travel through the URAI world">{destinationButtons(primaryDestinations)}</nav>
@@ -276,3 +276,4 @@ export function PersistentWorldCompanion() {
 }
 
 export default PersistentWorldCompanion
+
