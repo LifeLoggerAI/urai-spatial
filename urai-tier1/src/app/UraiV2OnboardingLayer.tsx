@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { usePathname, useSearchParams } from "next/navigation";
 import { v2Onboarding } from "@/spatial/assets/uraiV2Assets";
 import { useBrowserLocation } from "@/hooks/useBrowserLocation";
@@ -106,7 +107,7 @@ function GuidedFocusCompletion() {
 }
 
 function OnboardingCardContent() {
-  const pathname = usePathname() || "";
+  const pathname = (usePathname() || "/").replace(/\/+$/, "") || "/";
   const searchParams = useSearchParams();
   const query = searchParams?.toString() ?? "";
   const [dismissed, setDismissed] = useState(false);
@@ -161,8 +162,10 @@ function OnboardingCardContent() {
   if (dismissed || !shouldShow || !card) return null;
 
   const dismiss = () => {
+    // Commit the user's dismissal before synchronous completion consumers can
+    // schedule heavy world work or observe the guide as still available.
+    flushSync(() => setDismissed(true));
     rememberCompletion();
-    setDismissed(true);
   };
 
   const finishIfLastGuidedStep = () => {

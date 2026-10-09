@@ -138,7 +138,10 @@ test('French preview persists and renders in actual Home, Life Map, Focus and Re
   await expect(page.getByTestId('home-semantic-life-map')).toHaveAccessibleName('Ouvrir directement la carte de vie')
   await expect(page.getByTestId('home-semantic-life-map')).toHaveAttribute('lang', 'fr')
   await page.goto('/life-map?demo=1')
-  await page.getByRole('button', { name: 'Rechercher · Carte de vie', exact: true }).click()
+  // This suite deliberately denies WebGL: admitted sample choices open on arrival.
+  // Clicking an already-expanded disclosure would close the required fallback.
+  const lifeMapSearch = page.getByRole('button', { name: 'Rechercher · Carte de vie', exact: true })
+  await expect(lifeMapSearch).toHaveAttribute('aria-expanded', 'true')
   await expect(page.getByRole('textbox', { name: 'Rechercher', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Fermer', exact: true })).toHaveAttribute('lang', 'fr')
   const results = page.locator('.semantic-results')
@@ -152,6 +155,7 @@ test('French preview persists and renders in actual Home, Life Map, Focus and Re
   await expect(date).toHaveAttribute('lang', 'fr')
   await expect(page.locator('.privacy-truth')).toHaveText('Disclosed sample universe · not your memories')
   await page.getByRole('button', { name: 'Fermer', exact: true }).click()
+  await expect(lifeMapSearch).toHaveAttribute('aria-expanded', 'false')
   await expect(page.getByTestId('life-map-semantic-trigger')).toBeFocused()
 
   await page.goto('/focus?memoryId=quiet-reset&demo=1')

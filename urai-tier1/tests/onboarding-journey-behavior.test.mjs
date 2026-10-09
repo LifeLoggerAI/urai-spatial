@@ -72,7 +72,7 @@ function harness(address = '/life-map?memoryId=chosen-memory&manifestId=chosen-m
   const jsx = { jsx: element, jsxs: element, Fragment: 'fragment' }
   const assets = Object.fromEntries(['home', 'ground', 'life-map', 'privacy'].map(name => [`first-run-${name}-card`, { src: `${name}.webp`, alt: name, fallback: 'fallback.webp' }]))
   const imports = {
-    react, 'react/jsx-runtime': jsx,
+    react, 'react-dom': { flushSync: callback => callback() }, 'react/jsx-runtime': jsx,
     'next/navigation': { usePathname: () => browser.location.pathname, useSearchParams: () => browser.location.searchParams },
     '@/hooks/useBrowserLocation': { useBrowserLocation: () => `${browser.location.pathname}${browser.location.search}${browser.location.hash}` },
     '@/spatial/memory/useSelectedMemory': { useSelectedMemory: () => result },
@@ -226,4 +226,20 @@ test('only explicitly guided arrival can persist completion', () => {
   const dataset = { memoryStatus: 'ready', chamberState: 'ready', memoryId: 'chosen-memory', manifestId: 'chosen-manifest' }
   assert.equal(journey.guidedFocusArrived(new URLSearchParams('memoryId=chosen-memory'), selection(), dataset), false)
   assert.equal(journey.guidedFocusArrived(new URLSearchParams('memoryId=chosen-memory&firstRun=1'), selection(), dataset), true)
+})
+
+for (const route of ['/home/', '/ground/', '/life-map/', '/privacy-controls/']) {
+  test(`static-export trailing-slash ${route} retains its real guided card`, () => {
+    const h = harness(`${route}?memoryId=chosen-memory&manifestId=chosen-manifest&onboarding=1`); h.render()
+    assert.equal(h.nodes(node => node.type === 'aside').length, 1)
+    if (route === '/life-map/') assert.equal(new URL(primary(h).props.href, 'https://urai.app').searchParams.get('memoryId'), 'chosen-memory')
+    assert.equal(h.stored.has(completionKey), false)
+  })
+}
+
+test('static-export trailing-slash Focus persists only validated actual chamber arrival', () => {
+  const h = harness('/focus/?memoryId=chosen-memory&manifestId=chosen-manifest&onboarding=1'); h.render()
+  assert.equal(h.stored.has(completionKey), false)
+  h.setChamber({ memoryStatus: 'ready', chamberState: 'ready', memoryId: 'chosen-memory', manifestId: 'chosen-manifest' })
+  assert.equal(h.stored.get(completionKey), '1')
 })

@@ -12,6 +12,7 @@ on:
     paths:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
       - 'scripts/capture-continuous-spatial-proof-v18.mjs'
+      - 'scripts/home-orb-review-fixture.mjs'
       - 'scripts/capture-memory-world-runtime-proof.mjs'
       - 'scripts/capture-launch-route-matrix.mjs'
       - 'scripts/capture-lifemap-signed-out-authority.mjs'

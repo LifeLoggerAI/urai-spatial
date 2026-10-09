@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { admitSyntheticHomeOrbFixture } from './home-orb-review-fixture.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -181,12 +182,14 @@ async function captureHomeState(browser, spec, state) {
   const query = expectReady ? state.query : candidateQuery(state.query)
   await page.goto(urlFor(route, query), { waitUntil: 'domcontentloaded', timeout: 45_000 })
   await waitForAssetHome(page)
+  const syntheticFixtureAdmission = await admitSyntheticHomeOrbFixture(page, state, { ownerSelector, orbStates, orbClips, expectReady })
+  if (syntheticFixtureAdmission) await waitFrames(page, 3)
   const verification = await verifyHome(page, state)
   const screenshot = path.join(outputDir, `${safeName(id)}-${exactHead.slice(0, 12)}.png`)
   await page.screenshot({ path: screenshot, fullPage: false })
   const diagnosticResult = diagnostics()
   const video = await closeAndRecordVideo(context, page, id)
-  const record = { id, route, query, viewport: spec, screenshot: path.relative(outputDir, screenshot), video, verification, diagnostics: diagnosticResult }
+  const record = { id, route, query, viewport: spec, screenshot: path.relative(outputDir, screenshot), video, syntheticFixtureAdmission, verification, diagnostics: diagnosticResult }
   receipt.captures.push(record)
   if (!verification.passed || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
 }
@@ -221,6 +224,7 @@ async function captureOrbStates(browser) {
       mode: 'private-personalized',
       fixture: 'safe-private',
       orbState: state,
+      syntheticOrbFixture: true,
     })
   }
 }
