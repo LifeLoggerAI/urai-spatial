@@ -104,6 +104,33 @@ async function inspectHeader(inspector, phase) {
   return { phase, scrollTop: await inspector.evaluate(element => element.scrollTop), geometry,
     screenshot: await retainScreenshot(`mobile-mirror-inspector-${phase}`) }
 }
+
+async function inspectOverviewDock(phase) {
+  const thresholds = page.locator('.mirrorThresholds')
+  const thresholdGeometry = []
+  for (const name of ['Replay threshold', 'Passport threshold', 'Previous realm']) {
+    thresholdGeometry.push(await reachableGeometry(thresholds.getByRole('button', { name, exact: true }), `${phase}: ${name}`, true))
+  }
+  const companion = page.locator('.urai-world-companion__orb')
+  await companion.waitFor({ state: 'visible' })
+  const dock = await companion.evaluate(element => {
+    const rect = element.getBoundingClientRect()
+    const blockers = [...document.querySelectorAll('.mirrorThresholds, .mirrorPatternRail, .mirrorOrb, [data-urai-adam-launcher]')].map(other => {
+      const bounds = other.getBoundingClientRect()
+      return { selector: other.className || 'Founder launcher',
+        overlaps: rect.left < bounds.right && rect.right > bounds.left && rect.top < bounds.bottom && rect.bottom > bounds.top }
+    })
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+    return { rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height },
+      insideViewport: rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight,
+      atLeast48px: rect.width >= 48 && rect.height >= 48,
+      ownsCenter: Boolean(hit && (hit === element || element.contains(hit))), blockers }
+  })
+  if (!dock.insideViewport || !dock.atLeast48px || !dock.ownsCenter || dock.blockers.some(blocker => blocker.overlaps)) {
+    throw new Error(`${phase}: Orb travel covers or is covered by Mirror controls: ${JSON.stringify(dock)}`)
+  }
+  return { phase, thresholdGeometry, companionDock: dock, screenshot: await retainScreenshot(`mobile-mirror-${phase}-dock`) }
+}
 page.on('console', (message) => {
   if (message.type() === 'error') consoleErrors.push(message.text())
 })
@@ -126,6 +153,16 @@ try {
   const orb = page.locator('.mirrorOrb')
   await movementPad.waitFor({ state: 'visible' })
   await orb.waitFor({ state: 'visible' })
+  const initialOverviewDock = await inspectOverviewDock('initial-overview')
+  const travelOrb = page.getByRole('button', { name: 'Open Orb travel controls', exact: true })
+  await travelOrb.click()
+  const travelMenu = page.locator('#urai-world-companion-menu')
+  await travelMenu.waitFor({ state: 'visible' })
+  if (await travelMenu.getAttribute('aria-hidden') !== 'false') throw new Error('Orb travel menu did not open')
+  await page.getByRole('button', { name: 'Close Orb travel controls', exact: true }).click()
+  await travelMenu.waitFor({ state: 'hidden' })
+  if (await travelMenu.getAttribute('aria-hidden') !== 'true') throw new Error('Orb travel menu did not close')
+  const closedTravelOverviewDock = await inspectOverviewDock('travel-closed-overview')
 
   const rail = page.locator('section[aria-label="Reflection patterns"]')
   const expectedPatterns = ['Rhythm', 'Relationships', 'Recurrence', 'Becoming']
@@ -252,6 +289,7 @@ try {
   await inspector.waitFor({ state: 'hidden' })
   await movementPad.waitFor({ state: 'visible' })
   await orb.waitFor({ state: 'visible' })
+  const returnedOverviewDock = await inspectOverviewDock('returned-overview')
   await retainScreenshot('mobile-mirror-overview-after-inspection')
 
   if (consoleErrors.length) throw new Error(`console errors: ${consoleErrors.join(' | ')}`)
@@ -281,6 +319,10 @@ try {
     returnedHeader,
     returnedToOverviewByReachableClose: true,
     retainedScreenshots,
+    initialOverviewDock,
+    returnedOverviewDock,
+    closedTravelOverviewDock,
+    orbTravelOpenedAndClosed: true,
     consoleErrors,
     failedRequests,
   }
