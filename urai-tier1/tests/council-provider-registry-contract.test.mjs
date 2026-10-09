@@ -35,7 +35,7 @@ const { getAuth } = await import('firebase/auth')
 const { deleteApp } = await import('firebase/app')
 const { app } = await import('../src/lib/firebase/client.ts')
 const auth = getAuth(app)
-const syntheticUser = { getIdToken: async () => 'synthetic-council-id-token' }
+const syntheticUser = { uid: 'synthetic-council-owner', getIdToken: async () => 'synthetic-council-id-token' }
 before(async () => {
   await auth.authStateReady()
   Object.defineProperty(auth, 'currentUser', { configurable: true, writable: true, value: syntheticUser })
@@ -120,7 +120,11 @@ test('configured providers retain their actual authenticated consented adapters'
     const sent = requests.at(-1)
     assert.equal(sent.endpoint, provider === 'openai' ? '/api/urai/orb/openai' : `/api/urai/council/${provider}`)
     assert.equal(sent.init.headers.Authorization, 'Bearer synthetic-council-id-token')
-    assert.equal(sent.init.signal, request.signal)
+    // The actor boundary owns a private signal and disposes it after the reply;
+    // it must not abort a caller-owned controller.
+    assert.notEqual(sent.init.signal, request.signal)
+    assert.equal(sent.init.signal.aborted, true)
+    assert.equal(request.signal.aborted, false)
     assert.equal(sent.init.cache, 'no-store')
     assert.equal(sent.body.aiProcessingConsent, true)
     assert.equal(sent.body.context.length, 8)

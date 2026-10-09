@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
+import { getAIActorSnapshot, getServerAIActorSnapshot, isCurrentAIActorSnapshot, subscribeAIActor, type AIActorSnapshot } from '@/lib/privacy/aiActorBoundary'
 import type { CouncilAgent } from './councilAgentSchema'
 import {
   attemptedExternalOrbFallback,
@@ -27,6 +28,11 @@ import {
 } from './councilClient'
 
 export default function CouncilConversationPanel({ agent }: { agent: CouncilAgent }) {
+  const actor = useSyncExternalStore(subscribeAIActor, getAIActorSnapshot, getServerAIActorSnapshot)
+  return <ActorBoundCouncilConversationPanel key={actor.generation} agent={agent} actor={actor} />
+}
+
+function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAgent; actor: AIActorSnapshot }) {
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
   const [result, setResult] = useState<CouncilProviderResult | null>(null)
@@ -37,8 +43,16 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
   const [consent, setConsent] = useState(false)
   const aborter = useRef<AbortController | null>(null)
 
+  useEffect(() => {
+    const unsubscribe = subscribeAIActor(() => {
+      if (!isCurrentAIActorSnapshot(actor)) { aborter.current?.abort(); aborter.current = null }
+    })
+    return () => { unsubscribe(); aborter.current?.abort(); aborter.current = null }
+  }, [actor])
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!isCurrentAIActorSnapshot(actor)) return
     const trimmed = message.trim()
     if (!trimmed || busy) return
     if (!consent) {
@@ -70,7 +84,7 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
         aiProcessingConsent: true,
         signal: controller.signal,
       })
-      if (controller.signal.aborted) return
+      if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
       const resolved = response ?? deterministicOrbFallback(trimmed)
       setResult(resolved)
       if (response) {
@@ -85,7 +99,7 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
         ? `${agent.name} responded through ${COUNCIL_PROVIDER_REGISTRY[resolved.provider].label}.`
         : 'The selected provider was unavailable before external processing; a disclosed local fallback is shown.')
     } catch (error) {
-      if (controller.signal.aborted) return
+      if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
       const fallback = error instanceof OrbProviderAttemptError
         ? attemptedExternalOrbFallback(trimmed)
         : error instanceof OrbProviderAttemptUncertainError
@@ -98,8 +112,8 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
       setResult(fallback)
       setStatus('The selected Council provider did not return a usable answer; a disclosed local fallback is shown.')
     } finally {
+      if (!controller.signal.aborted && aborter.current === controller && isCurrentAIActorSnapshot(actor)) setBusy(false)
       if (aborter.current === controller) aborter.current = null
-      if (!controller.signal.aborted) setBusy(false)
     }
   }
 
