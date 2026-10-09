@@ -7,6 +7,10 @@ on:
       - 'urai-tier1/src/spatial/layout/HomeSanctuaryGeometry.ts'
       - 'urai-tier1/src/spatial/council/CouncilRealm.tsx'
       - 'urai-tier1/src/spatial/council/CouncilAnimationLayers.ts'
+      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+      - 'urai-tier1/src/app/layout.tsx'
+      - 'urai-tier1/src/app/home-recovery-layout.css'
+      - 'scripts/capture-home-fallback-layout-proof.mjs'
       - 'scripts/test-runtime-asset-bindings.mjs'
       - 'scripts/capture-council-animation-layer-proof.mjs'
       - '.github/workflows/retained-runtime-asset-render-proof.yml'
@@ -81,6 +85,7 @@ jobs:
           done
           URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR="$output/home" node scripts/run-with-ci-webgl.mjs scripts/capture-restored-home-source-proof.mjs
           URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR="$output/council" node scripts/run-with-ci-webgl.mjs scripts/capture-council-animation-layer-proof.mjs
+          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR="$output/fallback-layout" node scripts/run-with-ci-webgl.mjs scripts/capture-home-fallback-layout-proof.mjs
           node scripts/verify-production-asset-receipt-bindings.mjs --report "$output/after-build-bindings.json"
       - name: Retain source-bound screenshots and receipts
         if: always()
