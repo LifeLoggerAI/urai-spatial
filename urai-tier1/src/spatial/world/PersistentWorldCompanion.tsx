@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { publishOrbState } from '@/app/home/orbStateController'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
@@ -76,12 +77,23 @@ export function PersistentWorldCompanion() {
   const primaryDestinations = useMemo(() => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
   const secondaryDestinations = useMemo(() => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
 
-  const closeCompanion = useCallback((restoreFocus = true) => {
+  const closeMenuState = useCallback((restoreFocus: boolean) => {
     restoreFocusRef.current = restoreFocus
     if (!restoreFocus) externalTriggerRef.current = null
     setOpen(false)
-    publishOrbState('idle', 'companion')
   }, [])
+
+  const closeCompanion = useCallback((restoreFocus = true) => {
+    closeMenuState(restoreFocus)
+    publishOrbState('idle', 'companion')
+  }, [closeMenuState])
+
+  // Event listeners can schedule expensive Home rendering. Commit the menu and
+  // its focus effect before broadcasting the external Orb visual update.
+  const closeCompanionFromEvent = useCallback((restoreFocus = true) => {
+    flushSync(() => closeMenuState(restoreFocus))
+    publishOrbState('idle', 'companion')
+  }, [closeMenuState])
 
   useEffect(() => {
     setHydrated(true)
@@ -93,13 +105,13 @@ export function PersistentWorldCompanion() {
   }, [])
 
   const toggleCompanion = useCallback(() => {
-    if (open) closeCompanion(true)
+    if (open) closeCompanionFromEvent(true)
     else {
-      setOpen(true)
+      flushSync(() => setOpen(true))
       publishOrbState('attention', 'companion')
       window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue: 'orb-confirm' } }))
     }
-  }, [closeCompanion, open])
+  }, [closeCompanionFromEvent, open])
 
   const toggleAudio = useCallback(() => {
     const enabled = !audioEnabled
@@ -114,7 +126,7 @@ export function PersistentWorldCompanion() {
       externalTriggerRef.current = active instanceof HTMLElement && active !== document.body && active !== orbRef.current
         ? active
         : null
-      setOpen(true)
+      flushSync(() => setOpen(true))
       publishOrbState('attention', 'companion')
     }
     window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
@@ -149,15 +161,15 @@ export function PersistentWorldCompanion() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       event.preventDefault()
-      closeCompanion(true)
+      closeCompanionFromEvent(true)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [closeCompanion, open])
+  }, [closeCompanionFromEvent, open])
 
   const travel = useCallback((destination: UraiDestination) => {
     if (phase !== 'idle' || destination === world.destination) {
-      closeCompanion(true)
+      closeCompanionFromEvent(true)
       return
     }
     const target = definitionForDestination(destination)
@@ -178,21 +190,21 @@ export function PersistentWorldCompanion() {
       },
     }
     const href = buildCompanionTravelHref(request)
-    closeCompanion(false)
+    closeCompanionFromEvent(false)
     publishOrbState('transition', 'companion')
     router.push(href)
     requestUraiWorldTravel({ ...request, href })
-  }, [closeCompanion, phase, router, world])
+  }, [closeCompanionFromEvent, phase, router, world])
 
   const returnThroughWorld = useCallback(() => {
     if (phase !== 'idle' || world.destination === 'home') {
-      closeCompanion(true)
+      closeCompanionFromEvent(true)
       return
     }
-    closeCompanion(false)
+    closeCompanionFromEvent(false)
     publishOrbState('transition', 'companion')
     requestUraiWorldReturn()
-  }, [closeCompanion, phase, world.destination])
+  }, [closeCompanionFromEvent, phase, world.destination])
 
   const destinationButtons = (destinations: typeof primaryDestinations) => destinations.map((destination) => (
     <button
@@ -262,12 +274,6 @@ export function PersistentWorldCompanion() {
         data-urai-audit-action="orb-controls"
         disabled={!hydrated || phase !== 'idle'}
         onClick={toggleCompanion}
-        onKeyDown={(event) => {
-          if (event.key !== 'Enter' && event.key !== ' ') return
-          event.preventDefault()
-          event.stopPropagation()
-          toggleCompanion()
-        }}
       >
         <span aria-hidden="true" />
       </button>
