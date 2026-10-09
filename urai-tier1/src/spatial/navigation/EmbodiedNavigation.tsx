@@ -270,7 +270,7 @@ export function stepEmbodiedMotion({
       owner.dataset.homePlayerX = position.x.toFixed(3)
       owner.dataset.homePlayerZ = position.z.toFixed(3)
       owner.dataset.homeDistance = Math.hypot(position.x - spawnX, position.z - spawnZ).toFixed(3)
-      owner.dataset.homeDistanceOrb = Math.hypot(position.x, position.z + 4.25).toFixed(3)
+      owner.dataset.homeDistanceOrb = Math.hypot(position.x - 1.8, position.z + 9.5).toFixed(3)
       owner.dataset.homeDistanceGround = Math.hypot(position.x + 5.4, position.z + 10.8).toFixed(3)
       owner.dataset.homeDistanceLifeMap = Math.hypot(position.x - 5.4, position.z + 10.8).toFixed(3)
       owner.dataset.homeMoving = moving ? 'true' : 'false'
