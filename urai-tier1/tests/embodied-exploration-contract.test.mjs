@@ -112,7 +112,10 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
     'home-visible-navigable-sanctuary-world',
   ]) has(finalHome, marker)
   assert.match(homeRuntime, /accessible-fallback-after-renderer-failure/)
-  assert.match(homeRuntime, /<HomeSpatialWorldFinal \/>/)
+  assert.match(homeRuntime, /data-home-fallback-canon="inhabited-natural-sanctuary"/)
+  assert.match(homeRuntime, /data-home-fallback-retired-shell="absent"/)
+  assert.match(homeRuntime, /<HomeAccessibleSanctuaryFallback \/>/)
+  assert.doesNotMatch(homeRuntime, /<HomeSpatialWorldFinal \/>/)
 })
 
 test('Home keeps one physical stateful Orb owner and semantic access parity', () => {
