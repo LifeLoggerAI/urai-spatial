@@ -1,0 +1,257 @@
+{
+  "schema": "urai-intelligence-current-authority-proof-1",
+  "observedAt": "2026-10-08T07:44:37.911250+00:00",
+  "releaseController": "https://github.com/LifeLoggerAI/urai-spatial/pull/1636",
+  "inputSourceSha": "3817922a8b0a536ddcce718d3ce1c74e9299a1d2",
+  "inputTree": "670359effc5af2ac85354aa7e858d1038f50e6e1",
+  "changes": [
+    {
+      "path": ".github/workflows/council-provider-request-truth.yml",
+      "bytes": 7034,
+      "baseline_blob": "b30f5bfbd275d6aef2076b220d73d99b00faf2a9",
+      "successor_blob": "f2a73178455642f2a9a99e643f9ec3d1593c3a07",
+      "changed": true
+    },
+    {
+      "path": "apps/functions/src/councilProviderFunctions.ts",
+      "bytes": 19542,
+      "baseline_blob": "679b6074c4a8e50eb8e55a9fb6fa2502dc20100a",
+      "successor_blob": "7b647fc40f1d5f1ce6e7061868919827be01ae9d",
+      "changed": true
+    },
+    {
+      "path": "apps/functions/src/personPresenceVoiceProvider.ts",
+      "bytes": 10369,
+      "baseline_blob": "d30ce0cd4625d8054cd4dfdbf4b5fd807c83c3a3",
+      "successor_blob": "cb177a6ddd51ba9935cd4cbb102c07626570758d",
+      "changed": true
+    },
+    {
+      "path": "apps/functions/src/protectedProviderSpend.ts",
+      "bytes": 24029,
+      "baseline_blob": "4ee07befc2a70aef3757c84694c8622e8a3cae71",
+      "successor_blob": "6dc1b796e4671733df7d564d46ed6ec77815561c",
+      "changed": true
+    },
+    {
+      "path": "apps/functions/test/protectedProviderSpend.test.mjs",
+      "bytes": 65724,
+      "baseline_blob": "824fb84adfe486357d0cd6327be4c1f623e32f76",
+      "successor_blob": "8dd34ef270852d50fa129c7bc5259ffdd1383f74",
+      "changed": true
+    },
+    {
+      "path": "urai-tier1/scripts/run-unit-contract-tests-compact.mjs",
+      "bytes": 9722,
+      "baseline_blob": "a63bd2aef077bfe1ffc276588a0e7934a6779fa7",
+      "successor_blob": "635b8b220bd10f88f0bc9212a82c797ce319e49f",
+      "changed": true
+    },
+    {
+      "path": "urai-tier1/src/spatial/council/CouncilConversationPanel.tsx",
+      "bytes": 9075,
+      "baseline_blob": "6d98a1d2d8c37dee081eb374793ebdc2cc4f87f6",
+      "successor_blob": "29d862b3ed81f1f751ae0f66d45dc38d143f88f5",
+      "changed": true
+    },
+    {
+      "path": "urai-tier1/src/spatial/council/councilClient.ts",
+      "bytes": 6789,
+      "baseline_blob": "639b204464748171701bd7607d57ca19ecee5866",
+      "successor_blob": "f7a04edcc5b06ed21ebbbd0cc3dd25ad513fda21",
+      "changed": true
+    },
+    {
+      "path": "urai-tier1/src/spatial/life-model/personPresenceVoiceClient.ts",
+      "bytes": 2333,
+      "baseline_blob": "9741ca4e7ccceaa41e4e8e20844d358564d62d54",
+      "successor_blob": "610c3c2caafa0496eee4dcd0a6232990cceecd2b",
+      "changed": true
+    },
+    {
+      "path": "urai-tier1/src/spatial/orb/openaiClient.ts",
+      "bytes": 7609,
+      "baseline_blob": "a91234c22371cc7f16d05a844c0f8a7882a4dca6",
+      "successor_blob": "fff94d976204d93d536049b0b450139c87b14d60",
+      "changed": true
+    },
+    {
+      "path": "apps/functions/test/council-current-authority.test.js",
+      "baseline_blob": null,
+      "successor_blob": "3c98b55ffd2c9d2f7e0bb91f85ac288b77ac1a77",
+      "changed": true
+    },
+    {
+      "path": "urai-tier1/tests/intelligence-client-account-lifecycle.test.mjs",
+      "baseline_blob": null,
+      "successor_blob": "f8ac41f69b25cc3deffbf9d067154f8cee9e76c9",
+      "changed": true
+    },
+    {
+      "path": "apps/functions/test/person-presence-authority.test.js",
+      "bytes": 20564,
+      "baseline_blob": "b9ca0436aa2d0e8ed840ef9a1f35d626c8c4f170",
+      "successor_blob": "9f4263789edc15f46ea5adfb40422504b3825bd3",
+      "changed": true
+    }
+  ],
+  "localRuntime": {
+    "node": "24.19.0",
+    "backendTypeScript": "5.9.3",
+    "clientTypeScript": "6.0.3",
+    "dependencyGraph": "Existing read-only dependency graph borrowed from prior workspace; no full current frozen dependency installation or declared Node22 execution"
+  },
+  "proofs": [
+    {
+      "path": "verification/evidence/intelligence-current-authority-20261008/intelligence-backend-baseline.tap",
+      "sha256": "c891c993ab41f5c686b565bf23706e0b61e58aff61aada938a13dbf38da55dbf",
+      "counts": {
+        "tests": 21,
+        "pass": 1,
+        "fail": 20,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "expectedBaselineFailure": true
+    },
+    {
+      "path": "verification/evidence/intelligence-current-authority-20261008/intelligence-client-ui-baseline.tap",
+      "sha256": "8bcc5b5c503409faf436169581805d7b7fafb01b34f090e4ddb6ec7e3cfe061a",
+      "counts": {
+        "tests": 27,
+        "pass": 5,
+        "fail": 22,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "expectedBaselineFailure": true
+    },
+    {
+      "path": "verification/evidence/intelligence-current-authority-20261008/protected-callback-baseline.tap",
+      "sha256": "4a76de4dd37f1c06cc0401d3bd9a153d6173d0a9f3b380b695c3d664dd13176a",
+      "counts": {
+        "tests": 2,
+        "pass": 0,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "expectedBaselineFailure": true
+    },
+    {
+      "path": "verification/evidence/intelligence-current-authority-20261008/intelligence-backend-successor.tap",
+      "sha256": "cf1711cae08b2766e08f641fbda7a8881e00047c34e9cc0e7c7c05164153e513",
+      "counts": {
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "expectedBaselineFailure": false
+    },
+    {
+      "path": "verification/evidence/intelligence-current-authority-20261008/intelligence-client-ui-successor.tap",
+      "sha256": "f5e4a8fcc95136dada7f62a040cc75b19d36dfc8e67671663f94d9a5d7d8a131",
+      "counts": {
+        "tests": 27,
+        "pass": 27,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "expectedBaselineFailure": false
+    },
+    {
+      "path": "verification/evidence/intelligence-current-authority-20261008/protected-spend-successor.tap",
+      "sha256": "26ecc1970ef76de796c49c7b7ac920b7e29f0b4a6f843a6519de306bd63412d3",
+      "counts": {
+        "tests": 128,
+        "pass": 128,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "expectedBaselineFailure": false
+    },
+    {
+      "path": "verification/evidence/intelligence-current-authority-20261008/retained-boundary.tap",
+      "sha256": "7be040271c54c9c7e4bcb2ceea3819f31090327f3c819691ce2024b47835b206",
+      "counts": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "expectedBaselineFailure": false
+    },
+    {
+      "path": "verification/evidence/intelligence-current-authority-20261008/council-loaded-sdk-successor.tap",
+      "sha256": "82bf7076bf33a55b9574d81a71168acc044be211c9b97b004624b847490b14e5",
+      "counts": {
+        "tests": 54,
+        "pass": 54,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "expectedBaselineFailure": false
+    },
+    {
+      "path": "verification/evidence/intelligence-current-authority-20261008/presence-retained-successor.tap",
+      "sha256": "33e7aa0d5469995d00f76701cb1e78aaf7afc8f5e8ee0b57cb1695feeba3136e",
+      "counts": {
+        "tests": 11,
+        "pass": 11,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "scope": "actual targeted compiled Presence authority/provider/language modules; explicit cloud and paid transport adapters"
+    }
+  ],
+  "compile": {
+    "status": "PASS",
+    "command": "node node_modules/typescript/bin/tsc --noEmit --strict --skipLibCheck --esModuleInterop --module commonjs --target ES2022 src/councilProviderFunctions.ts src/personPresenceVoiceProvider.ts",
+    "scope": "actual changed backend source and imported declarations; not complete native Functions build"
+  },
+  "transport": "Actual adapters/client/TSX source with explicit local Firebase and protected-gateway doubles, real local HTTP delayed body, SDK-loaded Firebase/React SSR readiness fixture; all provider network requests denied or intercepted",
+  "realProviderRequests": 0,
+  "spending": 0,
+  "nativeExactHeadCI": {
+    "head": "cb6935b93a346d43aaf93931af6ccb5fd9852849",
+    "job": 113205979527,
+    "run": 37745527826,
+    "status": "FAIL",
+    "result": "Native complete Functions compile and1213/1214 tests passed; retained voice fixture used noncanonical incomplete privacy policy, correctly rejected403 before binding test expected409. Fixture now canonical, original denial/success assertions retained; synthetic financial adapter follows new callback contract. Local targeted compiled retained11/11PASS; successor full exact-head native CI required."
+  },
+  "sourceOnly": true,
+  "runtimeVerified": false,
+  "humanAccepted": false,
+  "productionDeployed": false,
+  "releaseAccepted": false,
+  "blockers": [
+    {
+      "blocked": "Real Council and voice provider lifecycles",
+      "reason": "Session has no provider credentials/ADC, protected-spend worker binding or verified budget allocation",
+      "action": "Authorized operator uses existing staging/provider verifier with approved exact executor/gateway source, canonical consenting test account, valid priced and bounded protected job, and Secret Manager versions; retain provider request and reconciliation receipts without key values",
+      "where": "urai-spatial PR1636 protected provider boundaries and urai-staging configured harness"
+    },
+    {
+      "blocked": "Final source release approval and deployment",
+      "reason": "Owner remains draft/unmerged/unfrozen, legitimate independent review and current native/full actual-experience acceptance not established",
+      "action": "Release owner admits donor with current source lease and runner union, executes required exact-head native checks, freezes accepted candidate, obtains independent review and follows sole controller",
+      "where": "https://github.com/LifeLoggerAI/urai-spatial/pull/1636"
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+TAP version 13
+# Subtest: council current-account request remains functional
+ok 1 - council current-account request remains functional
+  ---
+  duration_ms: 145.033423
+  type: 'test'
+  ...
+# Subtest: council signout during token refresh prevents dispatch of prior-account data
+ok 2 - council signout during token refresh prevents dispatch of prior-account data
+  ---
+  duration_ms: 28.917017
+  type: 'test'
+  ...
+# Subtest: council signout during response consumption withholds prior-account output
+ok 3 - council signout during response consumption withholds prior-account output
+  ---
+  duration_ms: 20.441808
+  type: 'test'
+  ...
+# Subtest: council switch during token refresh prevents dispatch of prior-account data
+ok 4 - council switch during token refresh prevents dispatch of prior-account data
+  ---
+  duration_ms: 16.914053
+  type: 'test'
+  ...
+# Subtest: council switch during response consumption withholds prior-account output
+ok 5 - council switch during response consumption withholds prior-account output
+  ---
+  duration_ms: 19.443938
+  type: 'test'
+  ...
+# Subtest: council same-uid-replacement during token refresh prevents dispatch of prior-account data
+ok 6 - council same-uid-replacement during token refresh prevents dispatch of prior-account data
+  ---
+  duration_ms: 13.547231
+  type: 'test'
+  ...
+# Subtest: council same-uid-replacement during response consumption withholds prior-account output
+ok 7 - council same-uid-replacement during response consumption withholds prior-account output
+  ---
+  duration_ms: 16.306219
+  type: 'test'
+  ...
+# Subtest: council cancellation before invocation prevents all transport
+ok 8 - council cancellation before invocation prevents all transport
+  ---
+  duration_ms: 16.874965
+  type: 'test'
+  ...
+# Subtest: voice current-account request remains functional
+ok 9 - voice current-account request remains functional
+  ---
+  duration_ms: 12.974209
+  type: 'test'
+  ...
+# Subtest: voice signout during token refresh prevents dispatch of prior-account data
+ok 10 - voice signout during token refresh prevents dispatch of prior-account data
+  ---
+  duration_ms: 9.139603
+  type: 'test'
+  ...
+# Subtest: voice signout during response consumption withholds prior-account output
+ok 11 - voice signout during response consumption withholds prior-account output
+  ---
+  duration_ms: 6.987337
+  type: 'test'
+  ...
+# Subtest: voice switch during token refresh prevents dispatch of prior-account data
+ok 12 - voice switch during token refresh prevents dispatch of prior-account data
+  ---
+  duration_ms: 4.882192
+  type: 'test'
+  ...
+# Subtest: voice switch during response consumption withholds prior-account output
+ok 13 - voice switch during response consumption withholds prior-account output
+  ---
+  duration_ms: 4.531003
+  type: 'test'
+  ...
+# Subtest: voice same-uid-replacement during token refresh prevents dispatch of prior-account data
+ok 14 - voice same-uid-replacement during token refresh prevents dispatch of prior-account data
+  ---
+  duration_ms: 4.057702
+  type: 'test'
+  ...
+# Subtest: voice same-uid-replacement during response consumption withholds prior-account output
+ok 15 - voice same-uid-replacement during response consumption withholds prior-account output
+  ---
+  duration_ms: 4.82184
+  type: 'test'
+  ...
+# Subtest: voice cancellation before invocation prevents all transport
+ok 16 - voice cancellation before invocation prevents all transport
+  ---
+  duration_ms: 4.101528
+  type: 'test'
+  ...
+# Subtest: orb current-account request remains functional
+ok 17 - orb current-account request remains functional
+  ---
+  duration_ms: 23.275358
+  type: 'test'
+  ...
+# Subtest: orb signout during token refresh prevents dispatch of prior-account data
+ok 18 - orb signout during token refresh prevents dispatch of prior-account data
+  ---
+  duration_ms: 17.776671
+  type: 'test'
+  ...
+# Subtest: orb signout during response consumption withholds prior-account output
+ok 19 - orb signout during response consumption withholds prior-account output
+  ---
+  duration_ms: 26.350252
+  type: 'test'
+  ...
+# Subtest: orb switch during token refresh prevents dispatch of prior-account data
+ok 20 - orb switch during token refresh prevents dispatch of prior-account data
+  ---
+  duration_ms: 14.946836
+  type: 'test'
+  ...
+# Subtest: orb switch during response consumption withholds prior-account output
+ok 21 - orb switch during response consumption withholds prior-account output
+  ---
+  duration_ms: 14.691261
+  type: 'test'
+  ...
+# Subtest: orb same-uid-replacement during token refresh prevents dispatch of prior-account data
+ok 22 - orb same-uid-replacement during token refresh prevents dispatch of prior-account data
+  ---
+  duration_ms: 13.073192
+  type: 'test'
+  ...
+# Subtest: orb same-uid-replacement during response consumption withholds prior-account output
+ok 23 - orb same-uid-replacement during response consumption withholds prior-account output
+  ---
+  duration_ms: 17.694217
+  type: 'test'
+  ...
+# Subtest: orb cancellation before invocation prevents all transport
+ok 24 - orb cancellation before invocation prevents all transport
+  ---
+  duration_ms: 23.786527
+  type: 'test'
+  ...
+# Subtest: person voice needs explicit current external consent before any request
+ok 25 - person voice needs explicit current external consent before any request
+  ---
+  duration_ms: 15.669402
+  type: 'test'
+  ...
+# Subtest: Council post-provider consent failure retains truthful attempted-processing disclosure
+ok 26 - Council post-provider consent failure retains truthful attempted-processing disclosure
+  ---
+  duration_ms: 53.034737
+  type: 'test'
+  ...
+# Subtest: mounted Council account change clears private draft, history, result and consent, and aborts the prior request
+ok 27 - mounted Council account change clears private draft, history, result and consent, and aborts the prior request
+  ---
+  duration_ms: 96.064606
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1100.069855

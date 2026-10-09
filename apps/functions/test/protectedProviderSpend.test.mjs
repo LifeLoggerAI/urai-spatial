@@ -141,6 +141,26 @@ function fixture(change = {}) {
   const directArgs = () => [db, UID, 'orb-reasoning', 'openai', 'synthetic-model', { message:'Synthetic question' }, 'https://api.openai.com/v1/responses', { method:'POST', headers:{ Authorization:`Bearer ${apiKey}`, 'Content-Type':'application/json', 'Idempotency-Key':'synthetic-stable-request' }, body:JSON.stringify({ model:'synthetic-model', input:'Synthetic question' }) }]
   return { controls, env, calls, providerCalls, rows, bindings, db, helper, paidFetch, directArgs, params, sourceModule, fakeFetch, prepare, elevationArgs, prepareElevation, paidElevation, advanceTime, advanceMonotonic, now, setProvider:fn => { currentProvider = fn }, expected:() => expectedFields }
 }
+test('current user authority callback denies POST reservation after successful protected preflight', async () => {
+  const f = fixture()
+  let checks = 0
+  await assert.rejects(f.paidFetch(...f.directArgs(), async () => { checks++; throw new Error('SYNTHETIC consent withdrawn') }))
+  assert.equal(checks, 1)
+  assert.deepEqual(f.calls.map(call => call.action), ['preflight'])
+  assert.equal(f.providerCalls.length, 0)
+})
+test('authority callback cannot extend expired protected admission or dispatch after cancellation', async () => {
+  for (const revoke of ['expiry', 'cancellation']) {
+    const f = fixture(), args = f.directArgs(), controller = new AbortController()
+    args[7].signal = controller.signal
+    await assert.rejects(f.paidFetch(...args, async () => {
+      if (revoke === 'expiry') f.advanceTime(400000)
+      else controller.abort()
+    }))
+    assert.equal(f.calls.some(call => call.action === 'reserve'), false)
+    assert.equal(f.providerCalls.length, 0)
+  }
+})
 test('actual unmocked clean Git provenance rejects every dirty untracked or misdeclared provider source', () => {
   const root=mkdtempSync(join(tmpdir(),'spatial-spend-source-')), env={}
   const git=(...args) => { const r=spawnSync('git',['-C',root,...args],{encoding:'utf8'}); assert.equal(r.status,0,r.stderr); return r.stdout.trim() }
