@@ -36,10 +36,28 @@ function readRequiredTextFile(file) {
 }
 
 function resolveInstalledDependency(resolver, dependency, moduleDirectories) {
-  const resolved = fs.realpathSync(resolver.resolve(dependency))
   const installedRoots = moduleDirectories.filter(directory => fs.existsSync(directory)).map(directory => fs.realpathSync(directory))
-  if (!installedRoots.some(directory => resolved.startsWith(directory + path.sep))) {
-    throw new Error('Dependency resolved outside the installed workspace: ' + dependency)
+  const checkedRealpath = resolvedPath => {
+    const resolved = fs.realpathSync(resolvedPath)
+    if (!installedRoots.some(directory => resolved.startsWith(directory + path.sep))) {
+      throw new Error('Dependency resolved outside the installed workspace: ' + dependency)
+    }
+    return resolved
+  }
+  try {
+    checkedRealpath(resolver.resolve(dependency))
+  } catch (error) {
+    // Export-only packages such as Firebase intentionally have no root entry.
+    // Their public manifest must still resolve inside this installed workspace.
+    if (error.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') throw error
+    const manifestPath = checkedRealpath(resolver.resolve(dependency + '/package.json'))
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+    if (!manifest || !manifest.exports || typeof manifest.exports !== 'object'
+      || Array.isArray(manifest.exports) || Object.hasOwn(manifest.exports, '.')
+      || manifest.name !== dependency || typeof manifest.version !== 'string'
+      || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(manifest.version)) {
+      throw new Error('Invalid installed dependency manifest: ' + dependency)
+    }
   }
 }
 
