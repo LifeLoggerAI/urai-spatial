@@ -59,11 +59,14 @@ export function projectHomeTerrainGeometry(source: THREE.BufferGeometry, worldTr
   geometry.setAttribute('position', position)
   geometry.deleteAttribute('normal')
   const inverse = worldTransform.clone().invert()
+  const worldNormalToLocal = new THREE.Matrix3().setFromMatrix4(worldTransform).transpose()
   const orientation = Math.sign(worldTransform.determinant())
   if (!orientation || !Number.isFinite(worldTransform.determinant())) throw new Error('Finite invertible terrain transform required')
   const point = new THREE.Vector3()
   const color = new THREE.Color()
   const colors = new Float32Array(position.count * 3)
+  const normals = new Float32Array(position.count * 3)
+  const normal = new THREE.Vector3()
   const uv = new Float32Array(position.count * 2)
   for (let index = 0; index < position.count; index += 1) {
     point.fromBufferAttribute(position, index).applyMatrix4(worldTransform)
@@ -74,6 +77,17 @@ export function projectHomeTerrainGeometry(source: THREE.BufferGeometry, worldTr
     homeTerrainColor(x, z, color)
     colors.set([color.r, color.g, color.b], index * 3)
     uv.set([x, z], index * 2)
+    // Retained GLB surfaces contain split vertices. Recomputing triangle normals
+    // gives each copy a different light response and exposes every old facet.
+    // Sample the shared height field in world meters so duplicate vertices and
+    // the extension receive the same smooth surface normal, even after scaling.
+    const step = .025
+    normal.set(
+      -(homeTerrainHeight(x + step, z) - homeTerrainHeight(x - step, z)) / (2 * step),
+      1,
+      -(homeTerrainHeight(x, z + step) - homeTerrainHeight(x, z - step)) / (2 * step),
+    ).applyMatrix3(worldNormalToLocal).normalize()
+    normals.set([normal.x, normal.y, normal.z], index * 3)
   }
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
   geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
@@ -93,7 +107,7 @@ export function projectHomeTerrainGeometry(source: THREE.BufferGeometry, worldTr
     if (new THREE.Vector3().crossVectors(b.sub(a), c.sub(a)).y * orientation > 0) surfaceIndices.push(...ids)
   }
   geometry.setIndex(surfaceIndices)
-  geometry.computeVertexNormals()
+  geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
   return geometry
@@ -136,7 +150,7 @@ export function makeHomeRibbonGeometry(points: readonly HomePathPoint[], width: 
     const length = Math.max(.001, Math.hypot(dx, dz))
     const nx = -dz / length
     const nz = dx / length
-    const half = width * (.46 + Math.sin(index * 1.71) * .028)
+    const half = width * (.46 + Math.sin(x * .62 + z * .47) * .018)
     for (let column = 0; column < columns; column += 1) {
       const offset = (1 - column / (columns - 1) * 2) * half
       const edgeX = x + nx * offset

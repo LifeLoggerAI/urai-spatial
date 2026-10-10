@@ -91,3 +91,10 @@ body:has(.replayWorld) [data-urai-adam-launcher] {
   .replayWorld.replayWorld header:has(.transcript[open]) { max-height: calc(100svh - 360px); gap: 4px; }
   .replayWorld.replayWorld header .transcript[open] p { padding-bottom: 8px; }
 }
+
+@media (max-height: 500px) and (min-width: 501px) {
+  /* Keep transport on one row in the narrow landscape column. Its 48px
+     seek area is always reserved, so keyboard focus cannot move playback. */
+  .replayWorld .memoryTempo { gap: 6px; }
+  .replayWorld .memoryTempo .memoryPulse { min-width: 0; padding: 0 8px; font-size: 11px; letter-spacing: 0; flex-shrink: 0; }
+}

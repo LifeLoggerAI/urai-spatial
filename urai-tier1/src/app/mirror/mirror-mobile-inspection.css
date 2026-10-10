@@ -39,6 +39,11 @@ body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
   main.mirrorState {
     --mirror-travel-dock-height: max(104px, calc(env(safe-area-inset-bottom) + 96px));
     bottom: var(--mirror-travel-dock-height);
+    /* globals.css gives every main height/min-height:100%; cancel that rule
+       so the bottom inset actually clips the scroll viewport above the dock. */
+    height: calc(100svh - var(--mirror-travel-dock-height));
+    min-height: 0;
+    max-height: calc(100svh - var(--mirror-travel-dock-height));
     box-sizing: border-box;
     overflow-y: auto;
     overscroll-behavior-y: contain;

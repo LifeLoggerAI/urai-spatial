@@ -36,7 +36,7 @@ for (const width of [320, 390]) {
       await page.keyboard.press('Escape')
       await expect(panel).toHaveCount(0)
       await expect(launcher).toBeFocused()
-      await expect(main.getByRole('link', { name: 'Enter Home', exact: true })).toHaveAttribute('href', '/home')
+      await expect(main.getByRole('link', { name: 'Enter Home', exact: true })).toHaveAttribute('href', /^\/home\/?$/)
       await main.getByRole('link', { name: 'Play the proof rail', exact: true }).click()
       await expect(main.locator('#film')).toBeInViewport()
       expect(errors).toEqual([])

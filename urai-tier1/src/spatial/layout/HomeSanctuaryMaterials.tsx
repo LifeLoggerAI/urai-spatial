@@ -32,14 +32,16 @@ homeSurfacePoint = instanceMatrix * homeSurfacePoint;
 vHomeSurfacePosition = (modelMatrix * homeSurfacePoint).xyz;`)
     const grain = kind === 'timber'
       ? 'vec2(vHomeSurfacePosition.x * 48.0 + vHomeSurfacePosition.z * 5.0, vHomeSurfacePosition.y * 17.0 + vHomeSurfacePosition.z * 1.8)'
-      : 'vec2(vHomeSurfacePosition.x + vHomeSurfacePosition.z * .73, vHomeSurfacePosition.y + vHomeSurfacePosition.z * .43) * 32.0'
+      : kind === 'ground'
+        ? 'vHomeSurfacePosition.xz * 38.0'
+        : 'vec2(vHomeSurfacePosition.x + vHomeSurfacePosition.z * .73, vHomeSurfacePosition.y + vHomeSurfacePosition.z * .43) * 32.0'
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\n${DETAIL_FUNCTIONS}`).replace('#include <color_fragment>', `#include <color_fragment>
 float homeGrain = homeDetailNoise(${grain});
 float homeBroad = homeDetailNoise(vHomeSurfacePosition.xz * 2.4);
 float homeMacro = homeDetailNoise(vHomeSurfacePosition.xz * .52 + vec2(7.3, -3.1));
 float homeMottle = homeDetailNoise(vHomeSurfacePosition.xz * 7.8 + vec2(-2.4, 5.7));
-float homeVariation = mix(.82, 1.14, homeMacro) * mix(.92, 1.07, homeBroad) * mix(.965, 1.025, homeMottle);
-diffuseColor.rgb *= homeVariation * mix(.94, 1.05, homeGrain);`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (homeGrain - .5) * .085 + (homeMacro - .5) * .04, .68, 1.0);').replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = homeDetailNormal(-vViewPosition, normal, homeGrain * .0038 + homeMottle * .0016);')
+float homeVariation = mix(.86, 1.10, homeMacro) * mix(.95, 1.05, homeBroad) * mix(.98, 1.02, homeMottle);
+diffuseColor.rgb *= homeVariation * mix(.97, 1.03, homeGrain);`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (homeGrain - .5) * .085 + (homeMacro - .5) * .04, .68, 1.0);').replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = homeDetailNormal(-vViewPosition, normal, homeGrain * .0012 + homeMottle * .0008);')
   }
 }
 
@@ -49,9 +51,9 @@ export const HOME_SURFACE_SHADERS = {
   timber: compileOriginalDetail('timber'),
 }
 const PROGRAM_KEYS = {
-  ground: () => 'urai-original-home-ground-detail-v2',
-  stone: () => 'urai-original-home-stone-detail-v2',
-  timber: () => 'urai-original-home-timber-detail-v2',
+  ground: () => 'urai-original-home-ground-detail-v3',
+  stone: () => 'urai-original-home-stone-detail-v3',
+  timber: () => 'urai-original-home-timber-detail-v3',
 }
 
 export function applyOriginalHomeSurfaceDetail(material: THREE.MeshStandardMaterial, kind: SurfaceKind) {

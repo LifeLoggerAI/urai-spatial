@@ -70,9 +70,14 @@ async function waitFrames(page, count = 2) {
 async function visibleCount(locator) {
   return locator.evaluateAll((nodes) => nodes.filter((node) => {
     if (node.closest('.sr-only')) return false
-    const style = getComputedStyle(node)
+    let effectiveOpacity = 1
+    for (let current = node; current; current = current.parentElement) {
+      const style = getComputedStyle(current)
+      if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse') return false
+      effectiveOpacity *= Number.parseFloat(style.opacity || '1')
+    }
     const rect = node.getBoundingClientRect()
-    return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+    return effectiveOpacity > 0.02
       && rect.width > 4 && rect.height > 4 && rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth
   }).length)
 }
