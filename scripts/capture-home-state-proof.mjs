@@ -651,8 +651,15 @@ async function captureHomeAssetFailure(fixture) {
   } catch (error) {
     record.error = String(error)
     record.failedStage = stage
-    record.failureScreenshot = `${record.id}-harness-failure-${exactHead.slice(0, 12)}.png`
-    await page.screenshot({ path: path.join(outputDir, record.failureScreenshot), timeout: 30_000 }).catch(() => {})
+    const harnessFailureScreenshot = `${record.id}-harness-failure-${exactHead.slice(0, 12)}.png`
+    try {
+      const screenshot = await page.screenshot({ path: path.join(outputDir, harnessFailureScreenshot), timeout: 30_000 })
+      record.harnessFailureScreenshot = harnessFailureScreenshot
+      record.harnessFailureScreenshotBytes = screenshot.length
+      record.harnessFailureScreenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
+    } catch (captureError) {
+      record.harnessFailureScreenshotError = String(captureError)
+    }
   } finally {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
