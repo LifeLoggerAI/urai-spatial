@@ -14,7 +14,10 @@ function componentFixture(relative, exportName, threeState, initialProps, attach
   const source = fs.readFileSync(new URL(relative, import.meta.url), 'utf8') + `\nexport { ${exportName} as motionTestOwner }\n`
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText
   const slots = []
-  let cursor = 0, queued = [], frameCallback, framePriority
+  let cursor = 0, queued = [], frameCallback, framePriority, elapsedTime = 0
+  // Execute the actual visibility listener against native event semantics.
+  const browser = new EventTarget()
+  const document = Object.assign(new EventTarget(), { visibilityState: 'visible' })
   const changed = (a, b) => !a || !b || a.length !== b.length || a.some((value, index) => !Object.is(value, b[index]))
   const effect = (callback, deps) => { const index = cursor++; if (!slots[index] || changed(slots[index].deps, deps)) { slots[index] = { deps }; queued.push(callback) } }
   const react = {
@@ -31,11 +34,11 @@ function componentFixture(relative, exportName, threeState, initialProps, attach
     './lifeMapCameraFrame': { parseLifeMapCameraFrame },
   }
   const module = { exports: {} }
-  vm.runInNewContext(compiled, { module, exports: module.exports, require(id) { return imports[id] ?? {} }, window: { addEventListener() {}, removeEventListener() {} }, URLSearchParams })
+  vm.runInNewContext(compiled, { module, exports: module.exports, require(id) { return imports[id] ?? {} }, window: browser, document, URLSearchParams })
   const props = { ...initialProps }
   const render = (next = {}) => { Object.assign(props, next); cursor = 0; queued = []; const result = module.exports.motionTestOwner(props); attach(result); queued.forEach(callback => callback()); return result }
   render()
-  return { render, step(delta) { frameCallback({ pointer: new THREE.Vector2() }, delta) }, priority: () => framePriority }
+  return { render, step(delta) { elapsedTime += delta; frameCallback({ pointer: new THREE.Vector2(), clock: { elapsedTime } }, delta) }, priority: () => framePriority }
 }
 
 function find(tree, name) {
@@ -49,7 +52,7 @@ function find(tree, name) {
 function sceneFixture(portrait, reducedMotion = false) {
   const selected = { id: 'synthetic-selected-memory', position: [2, 1, -3], connectedTo: [] }
   const size = portrait ? { width: 390, height: 844 } : { width: 1440, height: 900 }
-  const stage = new THREE.Group(), scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(46), shell = { dataset: {} }, settled = []
+  const stage = new THREE.Group(), scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(46), shell = { dataset: {}, setAttribute(name, value) { this[name] = String(value); if (name.startsWith('data-')) this.dataset[name.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = String(value) }, getAttribute(name) { return this[name] ?? null } }, settled = []
   stage.name = 'life-map-world-stage'
   scene.add(stage)
   let attached = false

@@ -10,6 +10,7 @@ import * as replayMotion from '../src/app/replay/replayMotion.ts'
 import * as narrativeClock from '../src/app/replay/replayNarrativeClock.ts'
 import * as mediaSession from '../src/app/replay/replayMediaSession.ts'
 import * as admission from '../src/app/replay/replayVisualAdmission.ts'
+import { localeDate, localeNumber } from '../src/lib/i18n/localePreference.ts'
 
 const source = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
 const compiled = ts.transpileModule(source + '\nexport { ReplayMemoryExperience, ReplayCameraRig }', {
@@ -44,7 +45,7 @@ function fixture({ video = false, webglReady = false, entrySearch = '', reducedM
     setInterval: (fn) => { const id = ++nextTimer; timers.set(id, fn); return id }, clearInterval: (id) => timers.delete(id) })
   const document = Object.assign(new EventTarget(), { visibilityState: 'visible', createElement: () => ({ getContext: () => webglReady ? { getExtension: () => null } : null }) })
   const memory = { id: 'synthetic-memory', ownerId: 'synthetic-owner', demo: false, privacy: 'private', authorization: 'owner',
-    title: 'Synthetic transport fixture', sourceMedia: video ? [{ kind: 'video', url: 'blob:synthetic-only' }] : [],
+    title: 'Synthetic transport fixture', occurredAt: '2026-01-01T12:00:00.000Z', sourceMedia: video ? [{ kind: 'video', url: 'blob:synthetic-only' }] : [],
     star: { id: 'synthetic-star' }, narrator: { replay: 'Synthetic text' },
     replayManifest: { id: 'synthetic-manifest', version: 1, durationMs: 3000, segments: [] },
     visuals: { accent: '#70dcec', light: '#bff8ff', sky: '#02060d', ground: '#07121d' } }
@@ -68,7 +69,9 @@ function fixture({ video = false, webglReady = false, entrySearch = '', reducedM
     '@/spatial/world/worldEvents': { URAI_WORLD_RETURN_EVENT: 'urai:world-return', URAI_WORLD_TRAVEL_EVENT: 'urai:world-travel',
       requestUraiWorldReturn: () => { returns++; window.dispatchEvent(new Event('urai:world-return')) }, requestUraiWorldTravel: () => window.dispatchEvent(new Event('urai:world-travel')) },
     '@/spatial/world/WorldStateProvider': { useUraiWorldState: () => ({ world: { destination: 'replay' }, phase }) },
-    '@/lib/i18n/useUraiLocale': { useUraiLocale: () => ({ locale: 'en', text: (id) => id, props: () => ({}) }) },
+    '@/lib/i18n/useUraiLocale': { useUraiLocale: () => ({ locale: 'en', text: (id) => id, props: () => ({}), formatProps: { lang: 'en', dir: 'ltr' },
+      date: (value, options) => localeDate({ requested: 'en', preview: false }, value, options),
+      number: (value, options) => localeNumber({ requested: 'en', preview: false }, value, options) }) },
     './ReplayProductControls': { ReplayProductControls: () => null },
     '@/spatial/adam/AdamLauncherSlot': { default: () => null }, '@/lib/i18n/JourneyOfflineNotice': { default: () => null },
     './ReplayPersonPresence': { ReplayPersonPresence: () => null }, './ReplayRecordedSource': { ReplayRecordedSource: recordedSource },

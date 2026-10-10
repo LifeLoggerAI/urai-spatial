@@ -45,8 +45,8 @@ const shims = {
   '@/spatial/life-model/useReplayLifeModelAuthority': `export const useReplayLifeModelAuthority=()=>({available:false,status:'unavailable',people:[]});`,
   '@/spatial/interpretive-world/useInterpretiveWorldReplayEntry': `export const useInterpretiveWorldReplayEntry=()=>null;`,
   '@/spatial/performance/useAdaptiveSpatialQuality': `export const useAdaptiveSpatialQuality=()=>({shadows:false,pixelRatioMax:1,documentVisible:true,reducedMotion:true,antialias:false});`,
-  '@/spatial/world/WorldStateProvider': `export const useUraiWorldState=()=>({world:{previousDestination:'focus'}});`,
-  '@/spatial/world/worldEvents': `export const requestUraiWorldTravel=value=>{window.__fixture.worldTravel=value};export const requestUraiWorldReturn=()=>{window.__fixture.worldReturnRequests=(window.__fixture.worldReturnRequests??0)+1};`,
+  '@/spatial/world/WorldStateProvider': `export const useUraiWorldState=()=>({phase:'idle',world:{destination:'replay',previousDestination:'focus'}});`,
+  '@/spatial/world/worldEvents': `export const URAI_WORLD_TRAVEL_EVENT='urai:world-travel';export const URAI_WORLD_RETURN_EVENT='urai:world-return';export const requestUraiWorldTravel=value=>{window.__fixture.worldTravel=value};export const requestUraiWorldReturn=()=>{window.__fixture.worldReturnRequests=(window.__fixture.worldReturnRequests??0)+1};`,
   '@/lib/i18n/JourneyOfflineNotice': `export default function JourneyOfflineNotice(){return null}`, 
   './ReplayProductControls': `export function ReplayProductControls(){return null}`, 
   './ReplayPersonPresence': `export function ReplayPersonPresence(){return null}`, 
@@ -239,6 +239,32 @@ try {
     await assertDisposed(page); assert.equal(await page.getByText('Synthetic receipt source — not family media', { exact: true }).count(), 0)
     await context.close()
   })
+  // World navigation is an explicitly synthetic boundary here. Exercise the
+  // real consumer listeners with real DOM events and decoded media, without
+  // claiming a spatial transition or positive deployed private playback.
+  for (const eventName of ['urai:world-travel', 'urai:world-return', 'pagehide']) {
+    await check(`Mounted Replay pauses decoded media synchronously on ${eventName}`, async () => {
+      const { page, context } = await open()
+      try {
+        await playable(page)
+        await page.locator('.memoryPulse').click()
+        await page.waitForFunction(() => document.querySelector('video').currentTime > .2 && !document.querySelector('video').paused)
+        const stopped = await page.evaluate(eventName => {
+          window.dispatchEvent(new Event(eventName))
+          const media = document.querySelector('video')
+          return { paused: media.paused, time: media.currentTime }
+        }, eventName)
+        assert.equal(stopped.paused, true)
+        await page.waitForTimeout(220)
+        assert.ok(Math.abs(await page.locator('video').evaluate(media => media.currentTime) - stopped.time) < .03)
+        if (eventName !== 'pagehide') {
+          await page.locator('.memoryPulse').click()
+          assert.equal(await page.locator('video').evaluate(media => media.paused), true,
+            'departure fencing prevents a stale mounted control from restarting playback')
+        }
+      } finally { await context.close() }
+    })
+  }
   const longNarration = "Synthetic narration fixture only. This complete narration deliberately exceeds two lines on a narrow viewport. It is retained as real mounted copy so every sentence must become visible through the caption region's own scrolling. No family recording, person, private runtime, movie, or world is accepted by these synthetic words. The final sentence must remain reachable alongside the memory controls."
   for (const profile of [
     { name: 'desktop', viewport: { width: 1280, height: 800 } },

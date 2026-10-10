@@ -134,9 +134,9 @@ function PatternInstrument({ selected, onSelect, reducedMotion }: { selected: Mi
     core.current.rotation.x = Math.sin(clock.elapsedTime * 0.31) * 0.08
   })
   return <group position={[0, 1.4, 0.85]} name="mirror-reflection-instrument" onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (selected) onSelect(null) }}>
-    <mesh ref={core} castShadow scale={[.72, 1.2, .32]}>
+    <mesh ref={core} castShadow scale={[.55, .8, .32]}>
       <icosahedronGeometry args={[0.85, 4]} />
-      <meshPhysicalMaterial color={selected?.accent ?? '#c8fbff'} emissive={selected?.accent ?? '#63dbe5'} emissiveIntensity={selected ? 0.75 : 0.42} transmission={0.58} thickness={1.2} roughness={0.08} clearcoat={1} transparent opacity={0.94} />
+      <meshPhysicalMaterial color={selected?.accent ?? '#547b87'} emissive={selected?.accent ?? '#63dbe5'} emissiveIntensity={selected ? 0.12 : 0.04} metalness={0.55} roughness={0.3} clearcoat={0.7} />
     </mesh>
     {[1.12, 1.34].map((radius, index) => <mesh key={radius} rotation={[Math.PI / 2, index * 0.6, index * 0.32]}><torusGeometry args={[radius, 0.018, 12, 80]} /><meshBasicMaterial color={selected?.accent ?? '#a8f4f8'} transparent opacity={0.18 - index * 0.035} /></mesh>)}
     <pointLight color={selected?.accent ?? '#9df3f8'} intensity={selected ? 1.65 : 1.05} distance={8} decay={2} />
@@ -153,8 +153,8 @@ function PatternObject({ pattern, selected, onSelect, reducedMotion }: { pattern
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(pattern) }
   return <group ref={group} position={pattern.position} data-testid="mirror-pattern-object" onClick={activate}>
     <mesh castShadow scale={selected ? 1.18 : 1}>
-      {pattern.id === 'relationship-weather' ? <dodecahedronGeometry args={[0.72, 1]} /> : pattern.id === 'becoming' ? <octahedronGeometry args={[0.8, 2]} /> : <icosahedronGeometry args={[0.7, 2]} />}
-      <meshStandardMaterial color={pattern.accent} emissive={pattern.accent} emissiveIntensity={selected ? 0.72 : 0.22} transparent opacity={pattern.evidenceState === 'insufficient' ? 0.32 : 0.78} wireframe={pattern.evidenceState === 'conflicting' || pattern.evidenceState === 'insufficient'} metalness={0.3} roughness={0.25} />
+      {pattern.id === 'relationship-weather' ? <dodecahedronGeometry args={[0.72, 0]} /> : pattern.id === 'becoming' ? <octahedronGeometry args={[0.8, 0]} /> : <icosahedronGeometry args={[0.7, 0]} />}
+      <meshStandardMaterial color={pattern.accent} emissive={pattern.accent} emissiveIntensity={selected ? 0.24 : 0.06} wireframe={pattern.evidenceState === 'conflicting' || pattern.evidenceState === 'insufficient'} metalness={0.3} roughness={0.4} />
     </mesh>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.72, 0]}><ringGeometry args={[0.58, 0.67, 48]} /><meshBasicMaterial color={pattern.accent} transparent opacity={selected ? 0.44 : 0.2} /></mesh>
     {selected ? <pointLight color={pattern.accent} intensity={1.1} distance={6} /> : null}
@@ -321,6 +321,7 @@ useEffect(() => {
 
     {empty ? <section className="mirrorEmpty" role="status"><h2>No reflection is available yet.</h2><p>Mirror will not invent a pattern. Return after more permitted memories exist, or review permissions in Passport.</p></section> : null}
 
+    <p className="mirrorPatternHint" aria-hidden="true">Patterns<br />Swipe ↔</p>
     <section className="mirrorPatternRail" aria-label="Reflection patterns" aria-description="Swipe or scroll horizontally to reach every pattern.">
       {patterns.map((pattern) => <button key={pattern.id} type="button" aria-pressed={selected?.id === pattern.id} onClick={() => selectPattern(pattern)}><strong>{pattern.shortLabel}</strong><span>{pattern.confidenceLabel}</span></button>)}
     </section>

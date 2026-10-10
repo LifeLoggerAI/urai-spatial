@@ -5,6 +5,7 @@ import test from 'node:test'
 import ts from 'typescript'
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime'
 import * as THREE from 'three'
+import { useSceneStore as productionSceneStore } from '../src/spatial/store/useSceneStore.ts'
 
 const source = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionPolished.tsx', import.meta.url), 'utf8')
 const compile = value => ts.transpileModule(value, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText
@@ -155,4 +156,56 @@ test('atmospheric effect replay retains star buffers and shader declarations wit
   f.step(2)
   assert.equal(stars.material.uniforms.uHomeAscent.value, 1)
   assert.equal(f.scene.background.getHexString(), '01050b')
+})
+
+
+// Exercise the actual outer Home component's selected store snapshots with the
+// real Zustand store. This is subscription work evidence, not a GPU benchmark.
+function homeSubscriptions() {
+  const homeSource = source.slice(source.indexOf('export function HomeWorldProductionPolished('), source.indexOf('\nexport function clearHomeAssetCache('))
+  const selectors = []
+  const sandbox = {
+    THREE, exports: {}, require: () => jsxRuntime,
+    useUraiLocale: () => ({ locale: 'en', props: () => ({}), text: id => id }),
+    useAdaptiveSpatialQuality: () => ({ pixelRatioMax: 1, shadows: false, antialias: false, documentVisible: true }),
+    useState: value => [value, () => {}], useRef: value => ({ current: value }),
+    useCallback: callback => callback, useEffect: () => {},
+    useSceneStore: Object.assign(selector => { selectors.push(selector); return selector(productionSceneStore.getState()) }, { getState: productionSceneStore.getState }),
+    useMovementInput: () => ({}), useDragLook: () => ({}),
+    requestUraiWorldOrbOpen: () => {}, requestUraiWorldTravel: () => {},
+    resolveOrbSensoryOutput: () => ({ movement: 'settled' }),
+    SPAWN: new THREE.Vector3(-.85, 0, 8.4), ORB_CLIPS: { idle: 'Orb_Idle' },
+    HOME_SCANNED_COMPOSITION_V1: 'fixture', HOME_PROVIDER_ENVIRONMENT: 'fixture',
+    styles: {}, Canvas: 'Canvas', HomeSceneAssetBoundary: 'HomeSceneAssetBoundary', Scene: 'Scene', MobileMovementPad: 'MobileMovementPad',
+  }
+  vm.createContext(sandbox)
+  vm.runInContext(compile(homeSource), sandbox)
+  sandbox.exports.HomeWorldProductionPolished({})
+  return selectors
+}
+
+test('Home store progress does not notify the static-world React subscriptions while phase and input locks still do', () => {
+  const original = productionSceneStore.getState()
+  productionSceneStore.setState({ phase: 'HOME', progress: 0, inputLocked: false })
+  const selectors = homeSubscriptions()
+  let notifications = 0
+  const unsubscribers = selectors.map(selector => {
+    let previous = selector(productionSceneStore.getState())
+    return productionSceneStore.subscribe(state => {
+      const next = selector(state)
+      if (!Object.is(next, previous)) { notifications++; previous = next }
+    })
+  })
+  try {
+    productionSceneStore.getState().enterLifeMap()
+    assert.equal(notifications, 2, 'Home did not observe entry phase and input lock')
+    notifications = 0
+    for (let frame = 1; frame <= 204; frame++) productionSceneStore.getState().setProgress(frame / 204)
+    assert.equal(notifications, 0, 'Ascent rebuilt the outer React world on each camera frame')
+    productionSceneStore.getState().setPhase('HOME')
+    assert.equal(notifications, 2, 'Home did not observe cancellation phase and input unlock')
+  } finally {
+    for (const unsubscribe of unsubscribers) unsubscribe()
+    productionSceneStore.setState(original, true)
+  }
 })

@@ -18,6 +18,7 @@ import { applyOriginalHomeSurfaceDetail, HomeSkyGradient, HomeSurfaceMaterial } 
 import { classifyRetainedHomeMesh } from './HomeSanctuaryAssetPolicy'
 import styles from './HomeWorldProduction.module.css'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
+import { clearHomeReturnCheckpoint, requestedHomeReturnCheckpoint, saveHomeReturnCheckpoint, type HomeReturnCheckpoint } from '@/spatial/navigation/homeReturnCheckpoint'
 import { cameraDampingAlpha, cameraFrameDelta, dampCameraAngle } from '@/spatial/canon/cameraMotion'
 
 const HOME_PROVIDER_ENVIRONMENT = '/assets/urai/home/home-threshold-main.webp'
@@ -27,6 +28,7 @@ const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const HOME_SCANNED_COMPOSITION_V1 = 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'
 const HOME_INTERPRETIVE_SPLAT_ASSET = resolveHomeInterpretiveSplatAsset(process.env.NEXT_PUBLIC_URAI_HOME_INTERPRETIVE_SPLAT_ASSET)
 const HOME_BOUNDS = { minX: -14, maxX: 14, minZ: -18, maxZ: 12 }
+const HOME_GROUND_COLOR = '#52654c'
 const SPAWN = new THREE.Vector3(-0.85, 0, 8.4)
 const ORB = new THREE.Vector3(1.8, 0.82, -9.5)
 const GROUND_THRESHOLD = new THREE.Vector3(-5.4, 0, -10.8)
@@ -100,8 +102,10 @@ function cloneNaturalSanctuaryMaterial(material: THREE.Material, grounded: boole
       clone.aoMap = null
       clone.roughness = .96
       clone.envMapIntensity = .32
-      clone.color.set('#ffffff')
-      clone.vertexColors = true
+      // All retained patches share one world-space material field. Their coarse
+      // vertex grids interpolate color differently at overlaps and expose seams.
+      clone.color.set(HOME_GROUND_COLOR)
+      clone.vertexColors = false
       clone.normalMap = null
       clone.emissive.set('#000000')
       clone.emissiveIntensity = 0
@@ -276,7 +280,7 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
   return <group name="home-authored-terrain" userData={{ geometryOwner: 'retained-glb-ground-topology-plus-original-terrain-extension', materialOwner: 'original-procedural-detail-not-photographic-pbr', sharedElevation: true }}>
     <primitive object={authored} />
     <mesh name="home-natural-terrain" geometry={extension} receiveShadow onClick={onWalk}>
-      <HomeSurfaceMaterial kind="ground" color="#ffffff" vertexColors roughness={.96} metalness={0} envMapIntensity={.32} />
+      <HomeSurfaceMaterial kind="ground" color={HOME_GROUND_COLOR} roughness={.96} metalness={0} envMapIntensity={.32} />
     </mesh>
     <mesh name="home-walkable-navigation-surface" rotation={[-Math.PI / 2, 0, 0]} position={[0, .7, -2]} onClick={onWalk}>
       <planeGeometry args={[28, 34]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
@@ -682,19 +686,23 @@ function Thresholds({ onGround, onLifeMap }: { onGround: () => void; onLifeMap: 
   </>
 }
 
-function PlayerRig({ input, yaw, pitch, target, avatar, ascentProgress, onNearby, groundDescent, reducedMotion, onGroundComplete, onTransitionSequence, onRecoveryChange }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; ascentProgress: MutableRefObject<number>; onNearby: (value: Nearby) => void; groundDescent: boolean; reducedMotion: boolean; onGroundComplete: () => void; onTransitionSequence: (value: TransitionSequence) => void; onRecoveryChange: (value: boolean) => void }) {
+function PlayerRig({ returnCheckpoint, input, yaw, pitch, target, avatar, ascentProgress, onNearby, groundDescent, reducedMotion, onGroundComplete, onTransitionSequence, onRecoveryChange }: { returnCheckpoint?: HomeReturnCheckpoint | null; input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; ascentProgress: MutableRefObject<number>; onNearby: (value: Nearby) => void; groundDescent: boolean; reducedMotion: boolean; onGroundComplete: () => void; onTransitionSequence: (value: TransitionSequence) => void; onRecoveryChange: (value: boolean) => void }) {
   const { camera, size, invalidate, gl } = useThree()
   const owner = useRef<HTMLElement | null>(null)
   const position = useRef(SPAWN.clone())
   const velocity = useRef(new THREE.Vector3())
   const lastNearby = useRef<Nearby>(null)
+  const suppressReturnAttention = useRef(Boolean(returnCheckpoint))
   const placed = useRef(false)
   const renderedYaw = useRef(yaw.current)
   const renderedPitch = useRef(pitch.current)
-  const flight = useRef<{ kind: 'ascent' | 'ground'; elapsed: number; duration: number; sample: number; recoveryElapsed: number | null; startYaw: number; startPitch: number; endYaw: number; endPitch: number; path: THREE.CubicBezierCurve3 } | null>(null)
+  const flight = useRef<{ kind: 'ascent' | 'ground'; checkpointId?: string; startedAt: number; elapsed: number; duration: number; sample: number; recoveryElapsed: number | null; startYaw: number; startPitch: number; endYaw: number; endPitch: number; path: THREE.CubicBezierCurve3 } | null>(null)
   const transitionIssued = useRef(false)
   const lastTransitionSequence = useRef<TransitionSequence>('idle')
   const desired = useRef(new THREE.Vector3())
+  const homeArrival = useRef(returnCheckpoint ? { checkpoint: returnCheckpoint, elapsed: 0, startedAt: null as number | null } : null)
+  const resumeClock = useRef(false)
+  const eyeHeight = useRef<number | null>(returnCheckpoint ? returnCheckpoint.position[1] - returnCheckpoint.groundPosition[1] : null)
 
   const place = useCallback(() => {
     const portrait = size.height > size.width
@@ -703,16 +711,43 @@ function PlayerRig({ input, yaw, pitch, target, avatar, ascentProgress, onNearby
     camera.position.y += portrait ? 1.58 : 1.68
     camera.rotation.set(pitch.current, yaw.current, 0, 'YXZ')
   }, [camera, pitch, size.height, size.width, yaw])
-  useLayoutEffect(() => { if (!placed.current) { place(); desired.current.copy(camera.position); placed.current = true } }, [camera, place])
+  useLayoutEffect(() => {
+    if (placed.current) return
+    const arrival = homeArrival.current
+    if (arrival) {
+      const c = arrival.checkpoint
+      position.current.set(...c.groundPosition)
+      yaw.current = renderedYaw.current = c.startYaw
+      pitch.current = renderedPitch.current = c.startPitch
+      camera.position.set(...(reducedMotion ? c.position : c.endPosition))
+      camera.rotation.set(reducedMotion ? c.startPitch : c.endPitch, reducedMotion ? c.startYaw : c.endYaw, 0, 'YXZ')
+      if (camera instanceof THREE.PerspectiveCamera) { camera.fov = c.fov; camera.updateProjectionMatrix() }
+      ascentProgress.current = reducedMotion || c.kind !== 'ascent' ? 0 : 1
+      onRecoveryChange(true)
+    } else place()
+    desired.current.copy(camera.position)
+    placed.current = true
+  }, [ascentProgress, camera, onRecoveryChange, pitch, place, reducedMotion, yaw])
+  useEffect(() => {
+    const pause = () => { resumeClock.current = true }
+    document.addEventListener('visibilitychange', pause)
+    window.addEventListener('pagehide', pause)
+    window.addEventListener('pageshow', pause)
+    return () => { document.removeEventListener('visibilitychange', pause); window.removeEventListener('pagehide', pause); window.removeEventListener('pageshow', pause) }
+  }, [])
   useEffect(() => { owner.current = gl.domElement.closest<HTMLElement>('[data-home-primary-owner="asset-driven"]') }, [gl])
   const publishCameraPose = (controller: string, delta: number) => {
     if (!owner.current) return
+    const sceneState = useSceneStore.getState()
     const values = {
       homeCameraHeight: camera.position.y.toFixed(4),
       homeCameraX: camera.position.x.toFixed(4), homeCameraY: camera.position.y.toFixed(4), homeCameraZ: camera.position.z.toFixed(4),
       homeCameraQx: camera.quaternion.x.toFixed(6), homeCameraQy: camera.quaternion.y.toFixed(6), homeCameraQz: camera.quaternion.z.toFixed(6), homeCameraQw: camera.quaternion.w.toFixed(6),
       homeCameraFov: camera instanceof THREE.PerspectiveCamera ? camera.fov.toFixed(4) : '',
       homeCameraOwner: controller, homeCameraFrameDelta: delta.toFixed(6),
+      // Frame-rate telemetry belongs to the existing camera writer. Subscribing
+      // the React world to progress rebuilt the static sanctuary every frame.
+      homeAscentProgress: sceneState.phase === 'ASCENT' ? sceneState.progress.toFixed(3) : '0.000',
     }
     for (const [key, value] of Object.entries(values)) if (owner.current.dataset[key] !== value) owner.current.dataset[key] = value
   }
@@ -745,7 +780,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, ascentProgress, onNearby
       previousPitch = pitch.current
       const moving = input.keys.current.size > 0 || input.virtualX.current !== 0 || input.virtualZ.current !== 0
       const settling = velocity.current.lengthSq() > 0.000001 || camera.position.distanceToSquared(desired.current) > 0.000001
-      if (document.visibilityState === 'visible' && (moving || looking || settling || target.current || flight.current || groundDescent || useSceneStore.getState().phase === 'ASCENT')) invalidate()
+      if (document.visibilityState === 'visible' && (moving || looking || settling || target.current || homeArrival.current || flight.current || groundDescent || useSceneStore.getState().phase === 'ASCENT')) invalidate()
       frame = window.requestAnimationFrame(observeInput)
     }
     const wakeDemandRenderer = () => invalidate()
@@ -762,14 +797,52 @@ function PlayerRig({ input, yaw, pitch, target, avatar, ascentProgress, onNearby
     }
   }, [camera, groundDescent, input.keys, input.virtualX, input.virtualZ, invalidate, pitch, reducedMotion, target, yaw])
 
-  useFrame((_, delta) => {
+  useFrame(({ clock }, delta) => {
     const dt = cameraFrameDelta(delta)
+    const now = clock.elapsedTime
+    const paused = document.visibilityState !== 'visible'
+    const elapsedFor = (active: { elapsed: number; startedAt: number }, duration: number) => {
+      if (resumeClock.current || paused || !Number.isFinite(now)) active.startedAt = Number.isFinite(now) ? now - active.elapsed : active.startedAt
+      if (paused) return active.elapsed
+      const elapsed = Number.isFinite(now) && Number.isFinite(delta) && delta >= 0 ? Math.max(active.elapsed, now - active.startedAt) : active.elapsed
+      return elapsed >= duration - 1e-9 ? duration : Math.min(duration, elapsed)
+    }
+    if (homeArrival.current) {
+      const arrival = homeArrival.current, c = arrival.checkpoint
+      releaseExploration()
+      if (arrival.startedAt === null) arrival.startedAt = Number.isFinite(now) ? now : 0
+      const duration = reducedMotion ? .42 : c.duration
+      arrival.elapsed = elapsedFor(arrival as typeof arrival & { startedAt: number }, duration)
+      resumeClock.current = false
+      const fraction = arrival.elapsed / duration
+      const sample = 1 - THREE.MathUtils.smootherstep(fraction, 0, 1)
+      if (!reducedMotion) {
+        const path = new THREE.CubicBezierCurve3(new THREE.Vector3(...c.position), new THREE.Vector3(...c.firstControl), new THREE.Vector3(...c.secondControl), new THREE.Vector3(...c.endPosition))
+        path.getPoint(sample, camera.position)
+        const turn = Math.atan2(Math.sin(c.endYaw - c.startYaw), Math.cos(c.endYaw - c.startYaw))
+        camera.rotation.set(THREE.MathUtils.lerp(c.startPitch, c.endPitch, sample), c.startYaw + turn * sample, 0, 'YXZ')
+      }
+      ascentProgress.current = !reducedMotion && c.kind === 'ascent' ? sample : 0
+      const sequence: TransitionSequence = c.kind === 'ascent' ? sample > .84 ? 'life-map:closing' : sample > .16 ? 'life-map:traversal' : 'life-map:opening' : sample > .84 ? 'ground:closing' : sample > .16 ? 'ground:traversal' : 'ground:opening'
+      if (sequence !== lastTransitionSequence.current) { lastTransitionSequence.current = sequence; onTransitionSequence(sequence) }
+      publishCameraPose('home-return-descent', dt)
+      if (owner.current) { owner.current.dataset.homeReturnProgress = fraction.toFixed(4); owner.current.dataset.homeReturnReady = fraction >= 1 ? 'true' : 'false' }
+      if (fraction >= 1) {
+        camera.position.set(...c.position)
+        camera.rotation.set(c.startPitch, c.startYaw, 0, 'YXZ')
+        desired.current.copy(camera.position)
+        homeArrival.current = null
+        clearHomeReturnCheckpoint(c.id)
+        onRecoveryChange(false)
+      } else invalidate()
+      return
+    }
     const store = useSceneStore.getState()
     const ascending = store.phase === 'ASCENT'
     if (groundDescent || ascending) {
       const duration = reducedMotion ? .42 : ascending ? ASCENT_DURATION_SECONDS : GROUND_DESCENT_DURATION_SECONDS
       const kind = ascending ? 'ascent' : 'ground'
-      if (!flight.current || flight.current.kind !== kind) {
+      if (!flight.current || flight.current.kind !== kind || flight.current.recoveryElapsed !== null) {
         const start = camera.position.clone()
         const end = ascending ? new THREE.Vector3(0, 44, -54) : new THREE.Vector3(-5.3, -2.4, -16.5)
         const endLook = ascending ? new THREE.Vector3(0, 48, -62) : new THREE.Vector3(-5.4, -1.2, -18)
@@ -777,13 +850,15 @@ function PlayerRig({ input, yaw, pitch, target, avatar, ascentProgress, onNearby
         const to = new THREE.Euler().setFromRotationMatrix(new THREE.Matrix4().lookAt(end, endLook, camera.up), 'YXZ')
         const first = ascending ? new THREE.Vector3(start.x, start.y + (end.y - start.y) * .35, start.z) : start.clone().lerp(end, .25).setY(start.y)
         const second = ascending ? new THREE.Vector3(end.x, end.y - (end.y - start.y) * .15, end.z) : end.clone().lerp(start, .15).setY(end.y)
-        flight.current = { kind, elapsed: 0, duration, sample: 0, recoveryElapsed: null, startYaw: from.y, startPitch: from.x, endYaw: to.y, endPitch: to.x, path: new THREE.CubicBezierCurve3(start, first, second, end) }
+        const checkpoint = saveHomeReturnCheckpoint({ kind, position: start.toArray() as [number, number, number], groundPosition: position.current.toArray() as [number, number, number], firstControl: first.toArray() as [number, number, number], secondControl: second.toArray() as [number, number, number], endPosition: end.toArray() as [number, number, number], startYaw: from.y, startPitch: from.x, endYaw: to.y, endPitch: to.x, fov: camera instanceof THREE.PerspectiveCamera ? camera.fov : 50, duration: ascending ? ASCENT_DURATION_SECONDS : GROUND_DESCENT_DURATION_SECONDS })
+        flight.current = { kind, checkpointId: checkpoint?.id, startedAt: Number.isFinite(now) ? now : 0, elapsed: 0, duration, sample: 0, recoveryElapsed: null, startYaw: from.y, startPitch: from.x, endYaw: to.y, endPitch: to.x, path: new THREE.CubicBezierCurve3(start, first, second, end) }
         transitionIssued.current = false
         onRecoveryChange(false)
       }
       releaseExploration()
       const active = flight.current
-      active.elapsed = Math.min(duration, active.elapsed + dt)
+      active.elapsed = elapsedFor(active, duration)
+      resumeClock.current = false
       const fraction = active.elapsed >= duration - 1e-9 ? 1 : active.elapsed / duration
       const t = THREE.MathUtils.smootherstep(fraction, 0, 1)
       active.sample = t
@@ -808,7 +883,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, ascentProgress, onNearby
       // Until the destination canvas mounts, retain the settled cinematic frame.
       if (store.phase !== 'HOME') { publishCameraPose('home-handoff', dt); return }
       releaseExploration()
-      if (active.recoveryElapsed === null) { active.recoveryElapsed = 0; onRecoveryChange(!reducedMotion && active.sample > 0) }
+      if (active.recoveryElapsed === null) { if (active.checkpointId) clearHomeReturnCheckpoint(active.checkpointId); active.recoveryElapsed = 0; onRecoveryChange(!reducedMotion && active.sample > 0) }
       const duration = active.elapsed
       active.recoveryElapsed = Math.min(duration, active.recoveryElapsed + dt)
       const fraction = duration <= 0 || active.recoveryElapsed >= duration - 1e-9 ? 1 : active.recoveryElapsed / duration
@@ -845,7 +920,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, ascentProgress, onNearby
     if (avatar.current) { avatar.current.position.copy(position.current); avatar.current.rotation.y = yaw.current }
     const portrait = size.height > size.width
     desired.current.copy(position.current)
-    desired.current.y += portrait ? 1.58 : 1.68
+    desired.current.y += eyeHeight.current ?? (portrait ? 1.58 : 1.68)
     // Locomotion already accelerates and brakes. A second horizontal camera lag
     // made collision-safe player paths cut through assets and feel slippery.
     camera.position.x = desired.current.x
@@ -860,7 +935,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, ascentProgress, onNearby
     if (next !== lastNearby.current) {
       const previousNearby = lastNearby.current
       lastNearby.current = next
-      if (next === 'orb' && previousNearby !== 'orb') {
+      if (next === 'orb' && previousNearby !== 'orb' && !suppressReturnAttention.current) {
         const dx = ORB.x - position.current.x
         const dz = ORB.z - position.current.z
         if (Math.hypot(dx, dz) > 0.001) {
@@ -873,6 +948,9 @@ function PlayerRig({ input, yaw, pitch, target, avatar, ascentProgress, onNearby
       }
       onNearby(next)
     }
+    // Arrival restores the user's manual look. Proximity can acknowledge the
+    // Orb without reacquiring that camera on its first released input frame.
+    suppressReturnAttention.current = false
     if (reducedMotion && (
       input.keys.current.size > 0 ||
       input.virtualX.current !== 0 ||
@@ -987,7 +1065,7 @@ function HomeAscentAtmosphere({ ascentProgress, reducedMotion }: { ascentProgres
   </>
 }
 
-function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onGroundComplete: () => void; onLifeMap: () => void; onReady: () => void; onTransitionSequence: (value: TransitionSequence) => void; onRecoveryChange: (value: boolean) => void; groundDescent: boolean; reducedMotion: boolean; reducedStimulation: boolean; orbState: OrbState }) {
+function Scene(props: { returnCheckpoint: HomeReturnCheckpoint | null; input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onGroundComplete: () => void; onLifeMap: () => void; onReady: () => void; onTransitionSequence: (value: TransitionSequence) => void; onRecoveryChange: (value: boolean) => void; groundDescent: boolean; reducedMotion: boolean; reducedStimulation: boolean; orbState: OrbState }) {
   const ascentProgress = useRef(0)
   // Keep captured Environment/ContactShadows children stable across the store's
   // per-frame progress updates, so frames={1} does not recapture on each render.
@@ -1008,7 +1086,7 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     <EmbodiedPresence root={props.avatar} />
     <HomeSkyInteraction groundDescent={props.groundDescent} onAscent={props.onLifeMap} />
     <Thresholds onGround={props.onGround} onLifeMap={props.onLifeMap} />
-    <PlayerRig input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} ascentProgress={ascentProgress} onNearby={props.onNearby} groundDescent={props.groundDescent} reducedMotion={props.reducedMotion} onGroundComplete={props.onGroundComplete} onTransitionSequence={props.onTransitionSequence} onRecoveryChange={props.onRecoveryChange} />
+    <PlayerRig returnCheckpoint={props.returnCheckpoint} input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} ascentProgress={ascentProgress} onNearby={props.onNearby} groundDescent={props.groundDescent} reducedMotion={props.reducedMotion} onGroundComplete={props.onGroundComplete} onTransitionSequence={props.onTransitionSequence} onRecoveryChange={props.onRecoveryChange} />
     <SceneReady onReady={props.onReady} />
   </>
 }
@@ -1021,15 +1099,29 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const [nearby, setNearby] = useState<Nearby>(null)
   const [dragging, setDragging] = useState(false)
   const [groundDescent, setGroundDescent] = useState(false)
-  const [recovering, setRecovering] = useState(false)
-  const [reducedMotion, setReducedMotion] = useState(false)
+  const [returnCheckpoint] = useState<HomeReturnCheckpoint | null>(() => {
+    if (typeof window === 'undefined') return null
+    const params = new URLSearchParams(window.location.search)
+    const saved = requestedHomeReturnCheckpoint(params)
+    if (saved) return saved
+    if (params.getAll('homeReturn').length !== 1 || params.get('homeReturn') !== 'descent') return null
+    const ground = SPAWN.clone(); ground.y = homeWalkSurfaceHeight(ground.x, ground.z)
+    const start = ground.clone().add(new THREE.Vector3(0, window.innerHeight > window.innerWidth ? 1.58 : 1.68, 0))
+    const end = new THREE.Vector3(0, 44, -54)
+    const endLook = new THREE.Vector3(0, 48, -62)
+    const rotation = new THREE.Euler().setFromRotationMatrix(new THREE.Matrix4().lookAt(end, endLook, new THREE.Vector3(0, 1, 0)), 'YXZ')
+    return { version: 1, id: 'descent', savedAt: Date.now(), kind: 'ascent', position: start.toArray() as [number, number, number], groundPosition: ground.toArray() as [number, number, number], firstControl: new THREE.Vector3(start.x, start.y + (end.y - start.y) * .35, start.z).toArray() as [number, number, number], secondControl: new THREE.Vector3(end.x, end.y - (end.y - start.y) * .15, end.z).toArray() as [number, number, number], endPosition: end.toArray() as [number, number, number], startYaw: -.055, startPitch: -.062, endYaw: rotation.y, endPitch: rotation.x, fov: 50, duration: ASCENT_DURATION_SECONDS }
+  })
+  const [recovering, setRecovering] = useState(Boolean(returnCheckpoint))
+  const [reducedMotion, setReducedMotion] = useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   const [reducedStimulation, setReducedStimulation] = useState(false)
   const [mobileControls, setMobileControls] = useState(false)
   const [orbState, setOrbState] = useState<OrbState>('idle')
   const [reviewFixture, setReviewFixture] = useState<'none' | 'safe-private'>('none')
   const [portalSequence, setPortalSequence] = useState<TransitionSequence>('idle')
   const phase = useSceneStore((state) => state.phase)
-  const progress = useSceneStore((state) => state.progress)
+  // Read the initial attribute on ordinary renders; PlayerRig publishes frames.
+  const progress = useSceneStore.getState().progress
   const inputLocked = useSceneStore((state) => state.inputLocked)
   const transitioning = phase === 'ASCENT' || groundDescent
   const exploring = phase === 'HOME' && !transitioning && !inputLocked && !recovering
@@ -1091,7 +1183,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const contextId = phase === 'ASCENT' ? 'ascent.progress' : groundDescent ? 'home.groundProgress' : nearby === 'orb' ? 'home.orbNearby' : nearby === 'ground' ? 'home.groundNearby' : nearby === 'life-map' ? 'home.skyNearby' : null
 
   return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="legacy-placeholder-metadata-only" data-home-provider-regions="not-rendered" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : recovering ? 'return' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked || recovering ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-orb-reduced-stimulation={reducedStimulation ? 'true' : 'false'} data-home-orb-playback={orbSensory.movement === 'settled' ? 'stopped' : 'playing'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
-    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? (reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} onRecoveryChange={setRecovering} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
+    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? (reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene returnCheckpoint={returnCheckpoint} input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} onRecoveryChange={setRecovering} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
     {contextId ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" {...locale.props(contextId)} style={{ zIndex:19, ...(locale.locale !== 'en' ? { maxInlineSize:'calc(100vw - 32px)', whiteSpace:'normal', overflowWrap:'anywhere', textAlign:'start' as const } : {}) }}>{locale.text(contextId)}</div> : null}
     {!transitioning && !recovering && mobileControls ? <MobileMovementPad input={input} label="Home movement controls" /> : null}

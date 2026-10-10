@@ -20,15 +20,15 @@ class HarnessEvent {
 class DomNode {
   constructor(type, name, document) { Object.assign(this, { nodeType: type, nodeName: name, ownerDocument: document, parentNode: null, childNodes: [], listeners: new Map() }) }
   appendChild(node) { return this.insertBefore(node, null) }
-  insertBefore(node, before) { node.parentNode?.removeChild(node); const index = before ? this.childNodes.indexOf(before) : this.childNodes.length; assert.ok(index >= 0); this.childNodes.splice(index, 0, node); node.parentNode = this; return node }
-  removeChild(node) { const index = this.childNodes.indexOf(node); assert.ok(index >= 0); this.childNodes.splice(index, 1); node.parentNode = null; return node }
+  insertBefore(node, before) { node.parentNode?.removeChild(node); const index = before ? this.childNodes.indexOf(before) : this.childNodes.length; assert.ok(index >= 0); this.childNodes.splice(index, 0, node); node.parentNode = this; this.ownerDocument?.notifyMutation?.({ type: 'childList', target: this, addedNodes: [node], removedNodes: [] }); return node }
+  removeChild(node) { const index = this.childNodes.indexOf(node); assert.ok(index >= 0); this.childNodes.splice(index, 1); node.parentNode = null; this.ownerDocument?.notifyMutation?.({ type: 'childList', target: this, addedNodes: [], removedNodes: [node] }); return node }
   get firstChild() { return this.childNodes[0] ?? null }
   get lastChild() { return this.childNodes.at(-1) ?? null }
   get nextSibling() { const siblings = this.parentNode?.childNodes ?? []; return siblings[siblings.indexOf(this) + 1] ?? null }
   get isConnected() { return this.nodeType === 9 || Boolean(this.parentNode?.isConnected) }
   contains(node) { return node === this || this.childNodes.some(child => child.contains(node)) }
   get textContent() { return this.nodeType === 3 ? this.nodeValue : this.childNodes.map(child => child.textContent).join('') }
-  set textContent(value) { this.childNodes.forEach(child => { child.parentNode = null }); this.childNodes = []; if (value !== '') this.appendChild(this.ownerDocument.createTextNode(String(value))) }
+  set textContent(value) { const removedNodes = [...this.childNodes]; this.childNodes.forEach(child => { child.parentNode = null }); this.childNodes = []; if (removedNodes.length) this.ownerDocument?.notifyMutation?.({ type: 'childList', target: this, addedNodes: [], removedNodes }); if (value !== '') this.appendChild(this.ownerDocument.createTextNode(String(value))) }
   addEventListener(type, callback, options = false) { const entries = this.listeners.get(type) ?? []; entries.push({ callback, capture: options === true || options?.capture === true }); this.listeners.set(type, entries) }
   removeEventListener(type, callback, options = false) { const capture = options === true || options?.capture === true; this.listeners.set(type, (this.listeners.get(type) ?? []).filter(entry => entry.callback !== callback || entry.capture !== capture)) }
   dispatchEvent(event) {
@@ -45,19 +45,40 @@ class DomNode {
 }
 class DomElement extends DomNode {
   constructor(tag, document) { super(1, tag.toUpperCase(), document); this.tagName = this.nodeName; this.namespaceURI = 'http://www.w3.org/1999/xhtml'; this.attributes = new Map(); this.style = { setProperty(name, value) { this[name] = value }, removeProperty(name) { delete this[name] } } }
-  setAttribute(name, value) { this.attributes.set(name, String(value)) }
-  removeAttribute(name) { this.attributes.delete(name) }
+  setAttribute(name, value) { this.attributes.set(name, String(value)); this.ownerDocument.notifyMutation({ type: 'attributes', target: this, attributeName: name }) }
+  removeAttribute(name) { this.attributes.delete(name); this.ownerDocument.notifyMutation({ type: 'attributes', target: this, attributeName: name }) }
   getAttribute(name) { return this.attributes.get(name) ?? null }
   hasAttribute(name) { return this.attributes.has(name) }
   matches(selector) { return selector.split(',').some(value => value.trim() === this.tagName.toLowerCase() || (value.trim() === '[role="textbox"]' && this.getAttribute('role') === 'textbox')) }
   focus() { this.ownerDocument.activeElement = this }
 }
 class DomDocument extends DomNode {
-  constructor() { super(9, '#document', null); this.ownerDocument = this; this.documentElement = this.createElement('html'); this.appendChild(this.documentElement); this.body = this.createElement('body'); this.documentElement.appendChild(this.body); this.activeElement = this.body; this.replayReady = true }
+  constructor() { super(9, '#document', null); this.ownerDocument = this; this.observers = new Set(); this.documentElement = this.createElement('html'); this.appendChild(this.documentElement); this.body = this.createElement('body'); this.documentElement.appendChild(this.body); this.activeElement = this.body; this.replayReady = true }
+  notifyMutation(record) { for (const observer of this.observers) observer.enqueue(record) }
   createElement(tag) { return new DomElement(tag, this) }
   createElementNS(_namespace, tag) { return this.createElement(tag) }
   createTextNode(value) { const text = new DomNode(3, '#text', this); text.nodeValue = String(value); return text }
   querySelector(selector) { if (selector === '[data-testid="cinematic-replay-client"]') return this.replayReady ? {} : null; if (selector.includes('passport-ownership-vault')) return {}; return null }
+}
+class DomMutationObserver {
+  constructor(callback) { this.callback = callback; this.records = []; this.queued = false }
+  observe(target, options) { this.disconnect(); this.target = target; this.options = options; target.ownerDocument.observers.add(this) }
+  disconnect() { this.target?.ownerDocument.observers.delete(this); this.target = null; this.records = [] }
+  takeRecords() { return this.records.splice(0) }
+  enqueue(record) {
+    const target = this.target, options = this.options
+    if (!target || (record.target !== target && (!options.subtree || !target.contains(record.target)))) return
+    if (record.type === 'childList' && !options.childList) return
+    if (record.type === 'attributes' && (!options.attributes || (options.attributeFilter && !options.attributeFilter.includes(record.attributeName)))) return
+    this.records.push(record)
+    if (this.queued) return
+    this.queued = true
+    void Promise.resolve().then(() => {
+      this.queued = false
+      const records = this.takeRecords()
+      if (this.target && records.length) this.callback(records, this)
+    })
+  }
 }
 const bootstrapDocument = new DomDocument()
 const bootstrapWindow = new DomNode(0, 'window', bootstrapDocument)
@@ -116,7 +137,7 @@ function mount({ url = '/focus?memoryId=one&node=one&manifestId=manifest-one', r
     const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
     const module = { exports: {} }
     vm.runInNewContext(output, {
-      module, exports: module.exports, window, document, HTMLElement: DomElement, Event: HarnessEvent, CustomEvent: HarnessEvent, URL, URLSearchParams, console,
+      module, exports: module.exports, window, document, HTMLElement: DomElement, MutationObserver: DomMutationObserver, Event: HarnessEvent, CustomEvent: HarnessEvent, URL, URLSearchParams, console,
       Date: { now: time.now },
       require(name) { assert.ok(name in imports, `Unexpected production dependency ${name}`); return imports[name] },
     })
@@ -227,6 +248,31 @@ test('unmount removes every owned route and hard-recovery callback', async () =>
   assert.deepEqual(h.routes, [])
   assert.deepEqual(h.hardRoutes, [])
   assert.equal(h.time.size, 0)
+  assert.equal(h.document.observers.size, 0, 'unmount disconnects every per-trip surface observer')
+})
+
+test('a late mounted Replay surface retires actual controller and travel-boundary recovery', async () => {
+  const h = mount()
+  h.document.replayReady = false
+  h.travel({ destination: 'replay', href: '/replay?memoryId=one&node=one' })
+  await h.advance(1900)
+  assert.equal(h.routes.length, 1)
+  assert.ok(h.document.observers.size > 0)
+  assert.ok(h.time.size > 0, 'unmounted Replay must retain recovery')
+  await act(async () => {
+    const surface = h.document.createElement('main')
+    surface.setAttribute('data-testid', 'cinematic-replay-client')
+    h.document.replayReady = true
+    h.document.body.appendChild(surface)
+    await Promise.resolve()
+  })
+  assert.equal(h.document.observers.size, 0, 'actual surface observer disconnects on admission')
+  assert.equal(h.time.size, 0, 'both the controller watchdog and captured travel fallback are retired')
+  await h.advance(6000)
+  assert.deepEqual(h.hardRoutes, [])
+  assert.equal(h.runtime.world.destination, 'replay')
+  assert.equal(h.runtime.world.memoryId, 'one')
+  h.unmount()
 })
 
 test('URL synchronization clears removed context and restores Back camera checkpoints', async () => {

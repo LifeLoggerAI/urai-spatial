@@ -282,6 +282,31 @@ test('terrain extension removes its duplicate interior and retains the outside w
   extension.dispose(); whole.dispose()
 })
 
+test('split retained ground vertices share smooth normals across different triangle neighborhoods', () => {
+  const source = new THREE.BufferGeometry()
+  source.setAttribute('position', new THREE.Float32BufferAttribute([
+    0, 0, 0, -4, 0, 0, 0, 0, 4,
+    0, 0, 0, 4, 0, 0, 0, 0, -4,
+  ], 3))
+  const world = new THREE.Matrix4().compose(
+    new THREE.Vector3(2, .2, -3),
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(.05, .3, 0)),
+    new THREE.Vector3(1.2, .9, .7),
+  )
+  const projected = projectHomeTerrainGeometry(source, world)
+  const normals = projected.getAttribute('normal')
+  const first = new THREE.Vector3().fromBufferAttribute(normals, 0)
+  const duplicate = new THREE.Vector3().fromBufferAttribute(normals, 3)
+  assert.ok(first.distanceTo(duplicate) < 1e-6, 'split vertices must not expose a triangle seam in the lighting')
+  const worldNormal = first.applyMatrix3(new THREE.Matrix3().getNormalMatrix(world)).normalize()
+  const point = new THREE.Vector3().fromBufferAttribute(projected.attributes.position, 0).applyMatrix4(world)
+  const tangent = new THREE.Vector3(.002, homeTerrainHeight(point.x + .001, point.z) - homeTerrainHeight(point.x - .001, point.z), 0).normalize()
+  assert.ok(Math.abs(worldNormal.dot(tangent)) < .0001, 'lighting normal must follow the actual world height field under nonuniform scale')
+  assert.equal(projected.attributes.position.count, source.attributes.position.count, 'retained vertex topology must be preserved')
+  assert.deepEqual(Array.from(source.attributes.position.array).slice(0, 3), [0, 0, 0])
+  projected.dispose(); source.dispose()
+})
+
 test('path edges and interior rows follow the hillside rather than their center elevation', () => {
   const points = Array.from({ length: 30 }, (_, i) => [4 + Math.sin(i / 29 * Math.PI) * 1.2, 8 - i / 29 * 17])
   const geometry = makeHomeRibbonGeometry(points, 2)

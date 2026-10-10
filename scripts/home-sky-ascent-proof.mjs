@@ -47,6 +47,7 @@ export async function proveHomeSkyAscent(page, home, { mode = 'pointer', capture
   const disclosedDemo = startDemo.length === 1 && startDemo[0] === '1'
   const key = '__uraiLiteralHomeAscentProof'
   let startingHeight = null
+  let departureCameraFrame = null
   let samples = []
   try {
   // These are actual current scene/rig fields, not retired Avatar/SKY_ASCENT
@@ -66,6 +67,13 @@ export async function proveHomeSkyAscent(page, home, { mode = 'pointer', capture
   assert.ok(box && box.width > 200 && box.height > 200, 'Home canvas must expose broad visible-sky interaction')
   startingHeight = await home.evaluateAll(nodes => nodes.length === 1 ? Number(nodes[0].getAttribute('data-home-camera-height')) : NaN)
   assert.ok(Number.isFinite(startingHeight) && startingHeight > 0, 'actual PlayerRig camera height must be available')
+  departureCameraFrame = await home.evaluateAll(nodes => {
+    const node=nodes.length===1?nodes[0]:null
+    const fields=['x','y','z','qx','qy','qz','qw','fov']
+    const attributes=Object.fromEntries(fields.map(field=>[field,node?.getAttribute(`data-home-camera-${field}`)??null]))
+    const available=fields.every(field=>attributes[field]!==null&&attributes[field]!==''&&Number.isFinite(Number(attributes[field])))
+    return {available,source:'actual-pre-ascent-Home-camera-DOM-publisher',attributes,...(available?{position:fields.slice(0,3).map(field=>Number(attributes[field])),quaternion:fields.slice(3,7).map(field=>Number(attributes[field])),fov:Number(attributes.fov)}:{limitation:'Actual pose tuples are not exposed by this source; no restoration pose is inferred.'})}
+  })
 
   await home.evaluateAll((nodes, key) => {
     if (nodes.length !== 1) throw new Error('Ascent observation requires exactly one actual Home owner')
@@ -108,7 +116,7 @@ export async function proveHomeSkyAscent(page, home, { mode = 'pointer', capture
     while ((new URL(page.url()).pathname.replace(/\/+$/, '') || '/') !== '/life-map' && Date.now() - started < 60_000) await pause(100)
     const arrived = new URL(page.url())
     assertHomeAscentArrival(startingUrl.href, arrived.href)
-    return { ascentProven:true, startingHeight, peakHeight:Math.max(...samples.filter(row => Number.isFinite(row.height)).map(row => row.height)), samples, arrivalUrl:proofUrl(page.url()), disclosedDemo }
+    return { ascentProven:true, startingHeight, departureCameraFrame, peakHeight:Math.max(...samples.filter(row => Number.isFinite(row.height)).map(row => row.height)), samples, arrivalUrl:proofUrl(page.url()), disclosedDemo }
   } catch (error) {
     const observed = await page.evaluate(key => window[key]?.samples ?? [], key).catch(() => [])
     if (observed.length) samples = observed

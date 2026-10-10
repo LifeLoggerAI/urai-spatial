@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
 import { app, firebasePublicEnvReady, functions } from '@/lib/firebase/client'
 
@@ -29,28 +29,38 @@ const unavailable: ReplayLifeModelAuthority = { status: 'unavailable', available
 const loading: ReplayLifeModelAuthority = { status: 'loading', available: false }
 
 export function useReplayLifeModelAuthority(memoryId: string | null, demo = false): ReplayLifeModelAuthority {
-  const [authority, setAuthority] = useState<ReplayLifeModelAuthority>(memoryId && !demo && firebasePublicEnvReady ? loading : unavailable)
+  const auth = firebasePublicEnvReady ? getAuth(app) : null
+  const [selection, setSelection] = useState<{
+    memoryId: string | null
+    demo: boolean
+    user: User | null
+    authority: ReplayLifeModelAuthority
+  }>({ memoryId: null, demo: false, user: null, authority: unavailable })
 
   useEffect(() => {
-    if (!memoryId || demo || !firebasePublicEnvReady) {
-      setAuthority(unavailable)
+    const publish = (user: User | null, authority: ReplayLifeModelAuthority) => setSelection({ memoryId, demo, user, authority })
+    if (!memoryId || demo || !auth) {
+      publish(null, unavailable)
       return
     }
     let cancelled = false
-    const auth = getAuth(app)
+    let generation = 0
     const stop = onAuthStateChanged(auth, (user) => {
       if (cancelled) return
+      const version = ++generation
+      const current = () => !cancelled && generation === version && auth.currentUser === user
+      if (!current()) return
       if (!user) {
-        setAuthority({ status: 'unavailable', available: false, reason: 'AUTH_REQUIRED' })
+        publish(null, { status: 'unavailable', available: false, reason: 'AUTH_REQUIRED' })
         return
       }
-      setAuthority(loading)
+      publish(user, loading)
       const callable = httpsCallable<{ memoryId: string }, ReplayLifeModelLookupResponse>(
         functions,
         'getReplayLifeModelAuthority',
       )
       void callable({ memoryId }).then((result) => {
-        if (cancelled || auth.currentUser?.uid !== user.uid) return
+        if (!current()) return
         const data = result.data
         if (
           data.available === true
@@ -60,18 +70,23 @@ export function useReplayLifeModelAuthority(memoryId: string | null, demo = fals
           && Array.isArray(data.people)
           && typeof data.sceneTruthPacketId === 'string'
         ) {
-          setAuthority({ ...data, status: 'available' } as ReplayLifeModelAuthority)
+          publish(user, { ...data, status: 'available' } as ReplayLifeModelAuthority)
           return
         }
-        setAuthority({ status: 'unavailable', available: false, reason: 'reason' in data ? String(data.reason ?? '') : 'LIFE_MODEL_UNAVAILABLE' })
+        publish(user, { status: 'unavailable', available: false, reason: 'reason' in data ? String(data.reason ?? '') : 'LIFE_MODEL_UNAVAILABLE' })
       }).catch(() => {
-        if (!cancelled && auth.currentUser?.uid === user.uid) {
-          setAuthority({ status: 'unavailable', available: false, reason: 'LIFE_MODEL_LOOKUP_FAILED' })
+        if (current()) {
+          publish(user, { status: 'unavailable', available: false, reason: 'LIFE_MODEL_LOOKUP_FAILED' })
         }
       })
     })
-    return () => { cancelled = true; stop() }
-  }, [demo, memoryId])
+    return () => { cancelled = true; generation += 1; stop() }
+  }, [auth, demo, memoryId])
 
-  return authority
+  // Query and auth commits can precede replacement effects. Never expose an
+  // earlier selection or same-UID session's authority during that render.
+  if (!memoryId || demo || !auth) return unavailable
+  if (!auth.currentUser) return { status: 'unavailable', available: false, reason: 'AUTH_REQUIRED' }
+  if (selection.memoryId !== memoryId || selection.demo !== demo || selection.user !== auth.currentUser) return loading
+  return selection.authority
 }

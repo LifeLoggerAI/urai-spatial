@@ -1,3 +1,4 @@
+import { homeReturnHref } from '../navigation/homeReturnCheckpoint'
 import { parseFocusCameraFrame } from '../../app/focus/focusCameraFrame'
 import { parseLifeMapCameraFrame, retainLifeMapCameraFrame } from '../../components/lifemap/lifeMapCameraFrame'
 import { definitionForDestination } from './destinationRegistry'
@@ -10,6 +11,7 @@ export function worldReturnCameraFrame(
   world: Pick<UraiWorldState, 'memoryId'>,
   params: URLSearchParams,
 ): { href: string; cameraCheckpoint: string } {
+  if (destination === 'home') return { href: homeReturnHref(params.toString()), cameraCheckpoint: 'home-sky-return' }
   const definition = definitionForDestination(destination)
   const next = new URLSearchParams()
   let cameraCheckpoint = definition.cameraCheckpoint

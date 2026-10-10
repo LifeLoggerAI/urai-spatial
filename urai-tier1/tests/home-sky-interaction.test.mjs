@@ -166,8 +166,9 @@ for(const [name,url] of [
 for(const start of ['https://urai.example/home/','https://urai.example/home/?demo=0','https://urai.example/home/?demo=1&demo=0','https://urai.example/home/?demo=1&demo=1'])test(`literal driver rejects invented demo from ${new URL(start).search || 'ordinary Home'}`,()=>assert.throws(()=>assertHomeAscentArrival(start,arrival)))
 test('literal driver retains sanitized failed source evidence before cleanup',async()=>{
   const page={url:()=>origin+'&memoryId=private-memory&token=secret',getByTestId:()=>({count:async()=>0}),evaluate:async()=>[]}
-  const home={count:async()=>1,getAttribute:async name=>({'data-home-scene-phase':'HOME','data-home-camera-mode':'embodied-first-person','data-home-input-locked':'false','data-home-embodied-self':'wrong-body-policy'}[name]??null)}
-  await assert.rejects(proveHomeSkyAscent(page,home),error=>error.proof?.ascentProven===false&&!JSON.stringify(error.proof).includes('private-memory')&&!JSON.stringify(error.proof).includes('secret'))
+  const node={getAttribute:name=>({'data-home-scene-phase':'HOME','data-home-camera-mode':'embodied-first-person','data-home-input-locked':'false','data-home-embodied-self':'wrong-body-policy'}[name]??null)}
+  const home={count:async()=>1,getAttribute:async name=>node.getAttribute(name),evaluateAll:async(fn,arg)=>fn([node],arg)}
+  await assert.rejects(proveHomeSkyAscent(page,home),error=>error.message.includes('wrong-body-policy')&&error.proof?.ascentProven===false&&!JSON.stringify(error.proof).includes('private-memory')&&!JSON.stringify(error.proof).includes('secret'))
 })
 
 test('canonical source uses same existing scene/action/motion and current physical proof',()=>{

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import fs from 'node:fs'
+import { runInNewContext } from 'node:vm'
+import ts from 'typescript'
 
 const page = fs.readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
 const canonical = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
@@ -16,6 +18,34 @@ const events = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEven
 const shell = fs.readFileSync(new URL('../src/spatial/world/UraiWorldShell.tsx', import.meta.url), 'utf8')
 const isolation = fs.readFileSync(new URL('../src/spatial/world/lifeMapProductionIsolation.css', import.meta.url), 'utf8')
 const proof = fs.readFileSync(new URL('../../scripts/capture-lifemap-founder-proof.mjs', import.meta.url), 'utf8')
+
+function requireJourneyAndHomeOwners(candidate) {
+  const tree = ts.createSourceFile('scene.tsx', candidate, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const phases = []
+  const rigs = []
+  const finishers = []
+  const visit = node => {
+    if (ts.isJsxAttribute(node) && node.name.getText(tree) === 'data-life-map-phase') phases.push(node.initializer?.expression?.getText(tree))
+    if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(tree) === 'CameraRig') rigs.push(node)
+    if (ts.isVariableDeclaration(node) && node.name.getText(tree) === 'finishHomeReturn') finishers.push(node.initializer?.getText(tree))
+    ts.forEachChild(node, visit)
+  }
+  visit(tree)
+  assert.equal(phases.length, 1, 'one live phase owner')
+  const observe = runInNewContext(`(homeReturn, phase) => (${phases[0]})`)
+  for (const phase of ['overview', 'departure', 'travel', 'approach', 'arrival']) {
+    assert.equal(observe(null, phase), phase, 'ordinary phase identity')
+    assert.equal(observe({ id: 1 }, phase), 'home-return', 'Home flight phase identity')
+  }
+  assert.equal(rigs.length, 1, 'one camera completion owner')
+  const attrs = new Map(rigs[0].attributes.properties.filter(ts.isJsxAttribute).map(attr => [attr.name.getText(tree), attr.initializer?.expression?.getText(tree)]))
+  assert.equal(attrs.get('homeReturn'), 'homeReturn', 'camera must receive the active flight')
+  assert.equal(attrs.get('onHomeReturnComplete'), 'finishHomeReturn', 'camera completion must govern Home dispatch')
+  assert.equal(finishers.length, 1, 'one Home completion handler')
+  assert.match(finishers[0], /worldTravelLocationMatches\(flight\.startingLocation\)/, 'Home completion must retain its location fence')
+  assert.match(finishers[0], /requestUraiWorldTravel\(\{ destination: 'home', href: flight\.href, entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-return' \}\)/, 'Home completion must use the governed flight identity')
+  assert.doesNotMatch(finishers[0], /router\.push/, 'Home completion cannot bypass governed travel')
+}
 
 test('Life Map route has one canonical production scene owner', () => {
   assert.match(page, /SpatialLifeMapCanonical/)
@@ -81,7 +111,7 @@ test('Life Map uses deterministic sequential travel compositions with a safe sel
   assert.ok(source.includes('addScaledVector(direction, SELECTED_MEMORY_STANDOFF)'))
   assert.ok(source.includes('direction.lengthSq()'))
   assert.ok(source.includes('cameraDampingAlpha'))
-  assert.ok(source.includes('data-life-map-phase={phase}'))
+  requireJourneyAndHomeOwners(source)
   assert.ok(source.includes('data-life-map-scale='))
   assert.doesNotMatch(source, /setTimeout\(\(\) => setPhase\("approach"\), 1050\)/)
 })
@@ -119,9 +149,21 @@ test('Selection Focus Replay Overview and Escape preserve artifact identity', ()
   assert.ok(source.includes('router.push(destinationHref("focus"))'))
   assert.ok(source.includes('router.push(destinationHref("replay"))'))
   assert.ok(source.includes('if (selectedId) overview(); else returnHome()'))
-  assert.ok(source.includes('router.push(homeJourneyHref("/home", params.toString()))'))
+  assert.ok(source.includes('href: homeReturnHref(params.toString())'))
+  requireJourneyAndHomeOwners(source)
   assert.ok(source.includes('next.set("overview", "1")'))
   assert.match(source, /aria-label="Selected memory actions"/)
+})
+
+test('Journey ownership rejects hidden Home flights and completion dispatch identity drift', () => {
+  const phase = 'data-life-map-phase={homeReturn ? "home-return" : phase}'
+  const completion = 'onHomeReturnComplete={finishHomeReturn}'
+  assert.ok(source.includes(phase) && source.includes(completion), 'negative mutants must alter actual journey ownership')
+  assert.throws(() => requireJourneyAndHomeOwners(source.replace(phase, 'data-life-map-phase={phase}')), /Home flight phase/)
+  assert.throws(() => requireJourneyAndHomeOwners(source.replace(completion, 'onHomeReturnComplete={returnHome}')), /camera completion/)
+  const wrongDestination = source.replaceAll("destination: 'home', href: flight.href", "destination: 'focus', href: flight.href")
+  assert.notEqual(wrongDestination, source)
+  assert.throws(() => requireJourneyAndHomeOwners(wrongDestination), /governed flight identity/)
 })
 
 test('Semantic navigator supports search filters keyboard travel and connected destinations', () => {

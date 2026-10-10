@@ -9,7 +9,7 @@ import { createHash } from 'node:crypto'
 const require = createRequire(import.meta.url), ts = require('typescript')
 const root = process.env.CONSENT_SOURCE_ROOT ? path.resolve(process.env.CONSENT_SOURCE_ROOT) : path.resolve(import.meta.dirname, '..')
 const modelSource = fs.readFileSync(path.join(root, 'src/app/privacy-controls/consentModel.ts'), 'utf8')
-const clientSource = fs.readFileSync(path.join(root, 'src/app/privacy-controls/ConsentSanctuaryClient.tsx'), 'utf8')
+const clientSource = fs.readFileSync(path.join(root, 'src/app/privacy-controls/ConsentSanctuaryClient.tsx'), 'utf8').replace(/\r\n/g, '\n')
 const compile = source => ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
 const model = {}
 vm.runInNewContext(compile(modelSource), { exports: model })
@@ -109,8 +109,17 @@ class Element {
   closest(selector) { return selector.split(',').some(s => s.trim() === this.tag.toLowerCase() || (this.role && s.trim() === '[role="' + this.role + '"]')) ? this : null }
 }
 class HTMLElement extends Element { constructor(tag = 'DIV', role = null, rich = false) { super(tag, role); this.isContentEditable = rich } }
-const runKey = (event = {}) => {
-  const effects = [], state = { pending: null, showAudit: false, Element, HTMLElement, setSelectedDomain: d => effects.push(['selected', d]), setPending: () => effects.push(['pending']), setMutationState: () => effects.push(['mutation']), setShowAudit: () => effects.push(['audit']), document: { getElementById: id => ({ focus: () => effects.push(['focus', id]) }) }, window: { history: { length: 1 }, location: { assign: url => effects.push(['navigate', url]) } }, event: { key: 'Home', target: new HTMLElement(), preventDefault: () => effects.push(['preventDefault']), ...event } }
+const runKey = (event = {}, context = {}) => {
+  const effects = [], state = {
+    pending: null, showAudit: false, phase: 'idle', world: { previousDestination: null }, ...context,
+    Element, HTMLElement,
+    setSelectedDomain: d => effects.push(['selected', d]), setPending: value => effects.push(['pending', value]),
+    setMutationState: value => effects.push(['mutation', value]), setShowAudit: value => effects.push(['audit', value]),
+    requestUraiWorldReturn: () => effects.push(['return']),
+    requestUraiWorldTravel: request => effects.push(['travel', JSON.parse(JSON.stringify(request))]),
+    document: { getElementById: id => ({ focus: () => effects.push(['focus', id]) }) },
+    event: { key: 'Home', target: new HTMLElement(), preventDefault: () => effects.push(['preventDefault']), ...event },
+  }
   vm.runInNewContext(compile('const callback = (event: KeyboardEvent) => {' + handlerBody + '}; callback(event)'), state)
   return effects
 }
@@ -119,7 +128,24 @@ test('actual Home shortcut preserves inherited contenteditable', () => assert.de
 for (const key of ['defaultPrevented', 'altKey', 'ctrlKey', 'metaKey', 'shiftKey']) test('actual Home shortcut preserves ' + key, () => assert.deepEqual(runKey({ [key]: true }), []))
 test('plain Home retains canonical direct-controls focus and Escape claims its canonical return', () => {
   assert.deepEqual(runKey(), [['preventDefault'], ['selected', 'memory'], ['focus', 'consent-controls']])
-  assert.deepEqual(runKey({ key: 'Escape' }), [['preventDefault'], ['navigate', '/passport']])
+  assert.deepEqual(runKey({ key: 'Escape' }), [['preventDefault'], ['travel', { destination: 'passport', href: '/passport' }]])
+})
+
+test('Escape returns through the shared world owner when a different previous destination exists', () => {
+  assert.deepEqual(runKey({ key: 'Escape' }, { world: { previousDestination: 'focus' } }), [['preventDefault'], ['return']])
+  assert.deepEqual(runKey({ key: 'Escape' }, { world: { previousDestination: 'privacy-controls' } }), [['preventDefault'], ['travel', { destination: 'passport', href: '/passport' }]])
+})
+
+for (const phase of ['descending', 'ascending', 'travelling']) test('Escape adds no second travel while ' + phase, () => {
+  assert.deepEqual(runKey({ key: 'Escape' }, { phase, world: { previousDestination: 'focus' } }), [['preventDefault']])
+})
+
+test('Escape cancels a pending preview before audit dismissal or shared return', () => {
+  assert.deepEqual(runKey({ key: 'Escape' }, { pending: { domain: 'memory' }, showAudit: true, world: { previousDestination: 'focus' } }), [['preventDefault'], ['pending', null], ['mutation', 'idle']])
+})
+
+test('Escape dismisses the audit before shared return', () => {
+  assert.deepEqual(runKey({ key: 'Escape' }, { showAudit: true, world: { previousDestination: 'focus' } }), [['preventDefault'], ['audit', false]])
 })
 test('an already consumed Escape adds no second return', () => {
   assert.deepEqual(runKey({ key: 'Escape', defaultPrevented: true }), [])

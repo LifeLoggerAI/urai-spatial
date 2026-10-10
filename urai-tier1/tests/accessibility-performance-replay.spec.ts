@@ -44,6 +44,7 @@ test.describe('Replay source ownership and accessible transport', () => {
     await expect(replay.locator('[data-replay-visual-owner="disclosed-demo-asset-fallback"] img')).toBeVisible()
     expect(await replay.locator('img').evaluate((image) => getComputedStyle(image).objectFit)).toBe('contain')
 
+    await page.evaluate(() => document.fonts.ready)
     const context = replay.locator('.replayMemoryContext')
     await expect(context.getByText('Sample', { exact: true })).toBeVisible()
     await expect(context.locator('time')).toHaveAttribute('datetime', '2026-01-01T12:00:00.000Z')
@@ -68,8 +69,13 @@ test.describe('Replay source ownership and accessible transport', () => {
     await expect(replay).toHaveAttribute('data-current-time-ms', pausedAt!)
 
     const seek = replay.getByRole('slider', { name: /Move through memory time/ })
+    const playBeforeSeek = await play.boundingBox()
     await seek.focus()
     await expect(seek).toBeFocused()
+    const playDuringSeek = await play.boundingBox()
+    expect(playDuringSeek!.x).toBeCloseTo(playBeforeSeek!.x, 1)
+    expect(playDuringSeek!.y).toBeCloseTo(playBeforeSeek!.y, 1)
+    expect(playDuringSeek!.height).toBeGreaterThanOrEqual(48)
     const seekRect = await seek.boundingBox()
     expect(seekRect!.height).toBeGreaterThanOrEqual(48)
     expect(seekRect!.x).toBeGreaterThanOrEqual(0)

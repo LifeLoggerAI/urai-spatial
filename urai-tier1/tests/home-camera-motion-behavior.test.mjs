@@ -6,6 +6,7 @@ import ts from 'typescript'
 import * as THREE from 'three'
 import { stepEmbodiedMotion, URAI_EMBODIED_MOVEMENT_INPUT_EVENT } from '../src/spatial/navigation/EmbodiedNavigation.tsx'
 import { homeWalkSurfaceHeight, HOME_NAVIGATION_OBSTACLES, resolveHomeSolidPenetration } from '../src/spatial/layout/HomeSanctuaryGeometry.ts'
+import * as homeReturn from '../src/spatial/navigation/homeReturnCheckpoint.ts'
 import { cameraDampingAlpha, cameraFrameDelta, dampCameraAngle } from '../src/spatial/canon/cameraMotion.ts'
 
 const source = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionPolished.tsx', import.meta.url), 'utf8')
@@ -21,12 +22,12 @@ const landmark = name => {
 // Mount the production writer with real Three matrices and the actual shared
 // motion/terrain kernels. Frame callbacks run under controlled elapsed time;
 // this is numerical lifecycle evidence, not rendered visual acceptance.
-function fixture({ yaw = 0, pitch = -.062, reducedMotion = false, width = 1440, height = 900 } = {}) {
+function fixture({ yaw = 0, pitch = -.062, reducedMotion = false, width = 1440, height = 900, returnCheckpoint = null } = {}) {
   const camera = new THREE.PerspectiveCamera(50, width / height, .05, 300)
   const owner = { dataset: { homeAssetsReady: 'true' } }
   const state = { phase: 'HOME', inputLocked: false, setProgress(value) { state.progress = value } }
   const input = { keys: { current: new Set() }, virtualX: { current: 0 }, virtualZ: { current: 0 } }
-  const props = { input, yaw: { current: yaw }, pitch: { current: pitch }, target: { current: null }, avatar: { current: null }, ascentProgress: { current: 0 }, groundDescent: false, reducedMotion, onNearby() {}, onGroundComplete: () => arrivals.push('ground'), onTransitionSequence: sequence => sequences.push(sequence), onRecoveryChange: value => { recovering = value } }
+  const props = { returnCheckpoint, input, yaw: { current: yaw }, pitch: { current: pitch }, target: { current: null }, avatar: { current: null }, ascentProgress: { current: 0 }, groundDescent: false, reducedMotion, onNearby() {}, onGroundComplete: () => arrivals.push('ground'), onTransitionSequence: sequence => sequences.push(sequence), onRecoveryChange: value => { recovering = value } }
   const size = { width, height }
   const window = new EventTarget()
   const raf = new Map()
@@ -40,7 +41,7 @@ function fixture({ yaw = 0, pitch = -.062, reducedMotion = false, width = 1440, 
   }
   Object.assign(window, { requestAnimationFrame: callback => { raf.set(++rafId, callback); return rafId }, cancelAnimationFrame: id => raf.delete(id) })
   const sandbox = {
-    THREE, cameraDampingAlpha, cameraFrameDelta, dampCameraAngle,
+    ...homeReturn, THREE, cameraDampingAlpha, cameraFrameDelta, dampCameraAngle,
     stepEmbodiedMotion, homeWalkSurfaceHeight, HOME_NAVIGATION_OBSTACLES, resolveHomeSolidPenetration, URAI_EMBODIED_MOVEMENT_INPUT_EVENT,
     HOME_BOUNDS: { minX: -14, maxX: 14, minZ: -18, maxZ: 12 },
     SPAWN: landmark('SPAWN'), ORB: landmark('ORB'), GROUND_THRESHOLD: landmark('GROUND_THRESHOLD'), LIFE_MAP_LOOKOUT: landmark('LIFE_MAP_LOOKOUT'),
@@ -50,7 +51,7 @@ function fixture({ yaw = 0, pitch = -.062, reducedMotion = false, width = 1440, 
     useCallback: callback => { cursor++; return callback },
     useLayoutEffect: hookEffect(layouts), useEffect: hookEffect(effects), useFrame: (callback, priority) => { frame = callback; framePriority = priority },
     useSceneStore: { getState: () => state }, requestUraiWorldTravel: request => arrivals.push(request),
-    document: { visibilityState: 'visible' }, window,
+    document: Object.assign(new EventTarget(), { visibilityState: 'visible' }), window,
   }
   vm.createContext(sandbox)
   vm.runInContext(compiled, sandbox)
@@ -64,7 +65,7 @@ function fixture({ yaw = 0, pitch = -.062, reducedMotion = false, width = 1440, 
   const step = delta => { clock += delta; frame({ clock: { elapsedTime: clock } }, delta); camera.updateMatrixWorld(true) }
   const run = (seconds, fps = 60) => { for (let i = 0; i < Math.round(seconds * fps); i++) step(1 / fps) }
   render()
-  return { camera, owner, state, props, arrivals, sequences, size, render, step, run, get framePriority() { return framePriority }, get recovering() { return recovering }, get invalidations() { return invalidations }, unmount() { for (const cell of cells) cell?.cleanup?.(); assert.equal(raf.size, 0) } }
+  return { camera, owner, state, props, arrivals, sequences, size, render, step, run, hide() { sandbox.document.visibilityState = 'hidden'; sandbox.document.dispatchEvent(new Event('visibilitychange')) }, show() { sandbox.document.visibilityState = 'visible'; sandbox.document.dispatchEvent(new Event('visibilitychange')) }, get framePriority() { return framePriority }, get recovering() { return recovering }, get invalidations() { return invalidations }, unmount() { for (const cell of cells) cell?.cleanup?.(); assert.equal(raf.size, 0) } }
 }
 
 test('actual Home view and forward walking agree after turning in either direction', () => {
@@ -207,7 +208,7 @@ test('viewport changes during Ascent cannot rerun Home placement or background t
   f.size.width = 390; f.size.height = 844; f.render()
   assert.ok(f.camera.position.distanceTo(position) < 1e-8, 'viewport resize reset an active cinematic camera')
   assert.ok(f.camera.quaternion.angleTo(quaternion) < 1e-7)
-  f.step(30)
+  f.hide(); f.step(30); f.show(); f.step(0)
   assert.equal(f.arrivals.length, 0, 'background elapsed time skipped Ascent')
   f.camera.fov = 58
   f.step(0)
@@ -251,4 +252,135 @@ test('invalid frame time cannot corrupt the active Home camera or skip cinematic
   }
   assert.equal(f.arrivals.length, 0)
   f.unmount()
+})
+
+
+test('the actual camera writer publishes Ascent progress without a React scene render and clears it on cancellation', () => {
+  const f = fixture()
+  f.step(0)
+  assert.equal(f.owner.dataset.homeAscentProgress, '0.000')
+  f.state.phase = 'ASCENT'
+  f.step(0)
+  f.run(1.7)
+  assert.equal(f.owner.dataset.homeAscentProgress, f.state.progress.toFixed(3))
+  assert.equal(f.owner.dataset.homeAscentProgress, '0.500')
+  f.state.phase = 'HOME'
+  f.step(0)
+  assert.equal(f.owner.dataset.homeAscentProgress, '0.000')
+  f.run(2)
+  assert.equal(f.owner.dataset.homeAscentProgress, '0.000')
+  f.unmount()
+})
+
+test('return starts at the captured Ascent endpoint and restores the actual departed Home view', () => {
+  const departed = fixture({ yaw: -.8, pitch: .18 })
+  departed.props.input.keys.current.add('KeyW'); departed.run(.8)
+  departed.props.input.keys.current.clear(); departed.run(.5)
+  const position = departed.camera.position.clone(), quaternion = departed.camera.quaternion.clone()
+  departed.state.phase = 'ASCENT'; departed.step(0); departed.run(3.4)
+  const checkpoint = homeReturn.peekHomeReturnCheckpoint()
+  assert.ok(checkpoint, 'actual Home writer did not capture a camera pose')
+  const returning = fixture({ returnCheckpoint: checkpoint })
+  assert.ok(returning.camera.position.distanceTo(new THREE.Vector3(...checkpoint.endPosition)) < 1e-8, 'Home first frame popped to its spawn instead of the outgoing cosmic frame')
+  returning.step(0)
+  assert.equal(returning.recovering, true)
+  assert.equal(returning.props.ascentProgress.current, 1)
+  returning.props.input.keys.current.add('KeyW')
+  returning.run(3.4)
+  assert.ok(returning.camera.position.distanceTo(position) < .001, 'return lost the actual manual position')
+  assert.ok(returning.camera.quaternion.angleTo(quaternion) < .001, 'return lost the actual manual orientation')
+  assert.equal(returning.recovering, false)
+  assert.equal(returning.props.ascentProgress.current, 0)
+  assert.equal(returning.props.input.keys.current.size, 0)
+  returning.run(.5)
+  assert.ok(returning.camera.position.distanceTo(position) < .001, 'first manual frame snapped back to the spawn')
+  assert.equal(homeReturn.peekHomeReturnCheckpoint(), null)
+  departed.unmount(); returning.unmount()
+})
+
+function mapReturnRig(checkpoint, reducedMotion = false) {
+  const source = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+  const rig = source.slice(source.indexOf('function CameraRig('), source.indexOf('\nfunction WebGLRecoveryBridge('))
+  const code = ts.transpileModule(rig, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
+  const camera = new THREE.PerspectiveCamera(46, 1.6, .08, 140)
+  const shellRef = { current: { dataset: {} } }, arrivals = []
+  let frame, elapsedTime = 0
+  const sandbox = { document: { visibilityState: 'visible' }, THREE, cameraDampingAlpha, cameraFrameDelta, OVERVIEW_POSITION: [0, 1.55, 13.4], OVERVIEW_TARGET: [0, .12, -4.5],
+    useThree: () => ({ camera, size: { width: 1440, height: 900 }, scene: new THREE.Scene() }),
+    useRef: current => ({ current }), useCallback: callback => callback, useEffect() {}, useLayoutEffect: callback => callback(), useFrame: callback => { frame = callback } }
+  vm.createContext(sandbox); vm.runInContext(code, sandbox)
+  sandbox.CameraRig({ selected: null, phase: 'overview', reducedMotion, shellRef, onSettledChange() {}, entryFrame: null,
+    homeReturn: { id: 1, position: checkpoint.endPosition, yaw: checkpoint.endYaw, pitch: checkpoint.endPitch, fov: checkpoint.fov, href: '/home' }, onHomeReturnComplete: value => arrivals.push(value) })
+  return { camera, shellRef, arrivals, step: delta => { elapsedTime += delta; frame({ pointer: { x: 0, y: 0 }, clock: { elapsedTime } }, delta) } }
+}
+
+test('actual Map camera hands its endpoint position, orientation and FOV to Home without a camera reset', () => {
+  const departure = fixture({ yaw: .4, pitch: -.1 })
+  departure.state.phase = 'ASCENT'; departure.step(0); departure.run(3.4)
+  const checkpoint = homeReturn.peekHomeReturnCheckpoint()
+  const map = mapReturnRig(checkpoint)
+  const start = map.camera.position.clone(), rotation = map.camera.quaternion.clone()
+  map.step(9)
+  assert.ok(map.camera.position.distanceTo(start) < 1e-9, 'first return frame consumed the previous render delay')
+  assert.ok(map.camera.quaternion.angleTo(rotation) < 1e-7)
+  for (let n = 0; n < 120; n++) map.step(1 / 60)
+  assert.equal(map.arrivals.length, 1)
+  assert.equal(map.shellRef.current.dataset.lifeMapCameraOwner, 'life-map-home-return')
+  const home = fixture({ returnCheckpoint: checkpoint })
+  assert.ok(map.camera.position.distanceTo(home.camera.position) < 1e-9)
+  assert.ok(map.camera.quaternion.angleTo(home.camera.quaternion) < 1e-7)
+  assert.equal(map.camera.fov, home.camera.fov)
+  map.step(1)
+  assert.equal(map.arrivals.length, 1, 'endpoint committed duplicate travel')
+  home.unmount(); departure.unmount(); homeReturn.clearHomeReturnCheckpoint(checkpoint.id)
+})
+
+test('reduced motion return holds both realm cameras and restores the real Home pose', () => {
+  const departure = fixture({ yaw: -.9, pitch: .25 })
+  departure.state.phase = 'ASCENT'; departure.step(0); departure.run(3.4)
+  const checkpoint = homeReturn.peekHomeReturnCheckpoint()
+  const map = mapReturnRig(checkpoint, true), start = map.camera.position.clone(), rotation = map.camera.quaternion.clone()
+  map.step(0); map.step(.1); map.step(.1); map.step(.1)
+  assert.ok(map.camera.position.distanceTo(start) < 1e-9)
+  assert.ok(map.camera.quaternion.angleTo(rotation) < 1e-7)
+  assert.equal(map.arrivals.length, 1)
+  const home = fixture({ returnCheckpoint: checkpoint, reducedMotion: true })
+  const position = home.camera.position.clone(), quaternion = home.camera.quaternion.clone()
+  home.step(0); home.run(.5)
+  assert.ok(home.camera.position.distanceTo(position) < 1e-9)
+  assert.ok(home.camera.quaternion.angleTo(quaternion) < 1e-7)
+  assert.equal(home.recovering, false)
+  assert.equal(home.props.ascentProgress.current, 0)
+  home.unmount(); departure.unmount()
+})
+
+test('Home return pauses background time, keeps its pose during resize, and resumes the same reverse path', () => {
+  const departure = fixture()
+  departure.state.phase = 'ASCENT'; departure.step(0); departure.run(3.4)
+  const checkpoint = homeReturn.peekHomeReturnCheckpoint(), home = fixture({ returnCheckpoint: checkpoint })
+  home.step(0); home.run(1)
+  const position = home.camera.position.clone(), quaternion = home.camera.quaternion.clone()
+  home.size.width = 390; home.size.height = 844; home.render()
+  assert.ok(home.camera.position.distanceTo(position) < 1e-9)
+  home.hide(); home.step(30); home.show(); home.step(0)
+  assert.equal(home.recovering, true)
+  assert.ok(home.camera.position.distanceTo(position) < 1e-9)
+  assert.ok(home.camera.quaternion.angleTo(quaternion) < 1e-7)
+  home.run(2.4)
+  assert.equal(home.recovering, false)
+  assert.ok(home.camera.position.distanceTo(new THREE.Vector3(...checkpoint.position)) < 1e-9)
+  home.unmount(); departure.unmount()
+})
+
+
+test('returning beside the Orb preserves the restored manual look after input is released', () => {
+  const ground = new THREE.Vector3(1.8, homeWalkSurfaceHeight(1.8, -9.5), -9.5)
+  const position = ground.clone().add(new THREE.Vector3(0, 1.68, 0))
+  const c = homeReturn.saveHomeReturnCheckpoint({ kind: 'ascent', position: position.toArray(), groundPosition: ground.toArray(), firstControl: [1.8, 17, -9.5], secondControl: [0, 37, -54], endPosition: [0, 44, -54], startYaw: .91, startPitch: .12, endYaw: 0, endPitch: .46, fov: 50, duration: 3.4 })
+  const r = fixture({ returnCheckpoint: c })
+  r.step(0); r.run(3.4)
+  const quaternion = r.camera.quaternion.clone()
+  r.run(.5)
+  assert.ok(r.camera.quaternion.angleTo(quaternion) < 1e-7, 'Orb proximity stole the just-restored manual camera')
+  r.unmount()
 })

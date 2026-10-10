@@ -2,9 +2,17 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 
 const focusedContractTests = [
+  'tests/world-transition-watchdog-lifecycle.test.mjs',
+  'tests/middleware-disclosed-memory-assets.test.mjs',
+  'tests/lifemap-signed-out-navigation-behavior.test.mjs',
   'tests/camera-motion-behavior.test.mjs',
   'tests/embodied-motion-behavior.test.mjs',
   'tests/home-camera-motion-behavior.test.mjs',
+  'tests/home-ascent-camera-clock.test.mjs',
+  'tests/council-stage-composition.test.mjs',
+  'tests/privacy-return-keyboard.test.mjs',
+  'tests/home-return-checkpoint.test.mjs',
+  'tests/lifemap-home-return-generation.test.mjs',
   'tests/home-ascent-atmosphere-behavior.test.mjs',
   'tests/drag-look-lifecycle.test.mjs',
   'tests/lifemap-camera-motion-behavior.test.mjs',
@@ -13,6 +21,7 @@ const focusedContractTests = [
   'tests/replay-motion-behavior.test.mjs',
   'tests/replay-playback-lifecycle.test.mjs',
   '../tests/motion-proof-observer.test.mjs',
+  '../tests/lossless-meshopt-glb.test.mjs',
   'tests/stripe-session-authority.test.mjs',
   'tests/owned-memory-media-client.test.mjs',
   'tests/authorized-export-download.test.mjs',
@@ -54,6 +63,7 @@ const focusedContractTests = [
   'tests/life-model-kernel.test.mjs',
   'tests/scene-truth-life-model-compiler.test.mjs',
   'tests/replay-life-model-authority.test.mjs',
+  'tests/replay-life-model-authority-lifecycle.test.mjs',
   'tests/life-movie-life-model-binding.test.mjs',
   'tests/life-movie-runtime-contract.test.mjs',
   'tests/life-movie-runtime-binding-contract.test.mjs',
@@ -117,15 +127,25 @@ if (missingTests.length > 0) {
   process.exit(1)
 }
 
-const child = spawn(process.execPath, ['--import', 'tsx', '--test', ...focusedContractTests], {
-  stdio: 'inherit',
-  shell: false,
-})
-
-child.on('exit', (code, signal) => {
-  if (signal) {
-    console.error(`Focused contract tests terminated with signal ${signal}`)
-    process.exit(1)
-  }
-  process.exit(code ?? 1)
-})
+// Keep synchronous native module-hook fixtures out of the asynchronous tsx
+// loader cohort. Both cohorts execute their original source and assertions.
+const nativeSourceHookTests = new Set([
+  'tests/stripe-webhook-lifecycle.test.mjs',
+  'tests/stripe-session-authority.test.mjs',
+  '../tests/stripe-plan-gate.test.mjs',
+])
+for (const group of [
+  { tests: focusedContractTests.filter((path) => !nativeSourceHookTests.has(path)), loaderArgs: ['--import', 'tsx'] },
+  { tests: focusedContractTests.filter((path) => nativeSourceHookTests.has(path)), loaderArgs: ['--experimental-strip-types'] },
+]) {
+  if (!group.tests.length) continue
+  const code = await new Promise((resolve) => {
+    const child = spawn(process.execPath, [...group.loaderArgs, '--test', ...group.tests], { stdio: 'inherit', shell: false })
+    child.on('error', (error) => { console.error(error); resolve(1) })
+    child.on('exit', (status, signal) => {
+      if (signal) console.error(`Focused contract tests terminated with signal ${signal}`)
+      resolve(signal ? 1 : status ?? 1)
+    })
+  })
+  if (code !== 0) process.exit(code)
+}

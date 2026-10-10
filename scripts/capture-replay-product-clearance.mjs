@@ -79,6 +79,10 @@ try {
       const adam = page.locator('[data-urai-adam-launcher="true"]')
       await adam.waitFor({ state: 'visible', timeout: 15000 })
       assert.equal(await adam.count(), 1, 'The existing Adam action must remain available exactly once')
+      const lifeMovie = world.locator('button.replayLifeMovieEntry')
+      assert.equal(await lifeMovie.count(), 1, 'The canonical Life Movie continuation must remain available exactly once')
+      assert.equal(await lifeMovie.textContent(), 'Continue Life Movie')
+      assert.equal(await product.locator('.lifeMovieEntry').count(), 0, 'Memory actions must not duplicate the canonical continuation')
       await page.evaluate(async () => { await document.fonts.ready; await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))) })
       assert.equal(await product.count(), 1)
       assert.equal(await product.getAttribute('open'), null)
@@ -88,16 +92,20 @@ try {
         assert.ok(gapX >= 8 || gapY >= 8, `${label}: control rectangles need 8px clearance`)
       }
       const verifyControlLayout = async (state, expanded = false) => {
-        const bounds = { summary: await hit(summary), orb: await hit(orb), adam: await hit(adam) }
+        const bounds = { summary: await hit(summary), orb: await hit(orb), adam: await hit(adam), lifeMovie: await hit(lifeMovie) }
         separate(bounds.summary, bounds.orb, `${state}: summary/Orb`)
         separate(bounds.summary, bounds.adam, `${state}: summary/Adam`)
         separate(bounds.orb, bounds.adam, `${state}: Orb/Adam`)
+        separate(bounds.lifeMovie, bounds.summary, `${state}: Life Movie/summary`)
+        separate(bounds.lifeMovie, bounds.orb, `${state}: Life Movie/Orb`)
+        separate(bounds.lifeMovie, bounds.adam, `${state}: Life Movie/Adam`)
         if (expanded) {
           const actions = product.locator('.replayProductActions')
           bounds.actions = await box(actions)
           within(bounds.actions)
           separate(bounds.actions, bounds.adam, `${state}: full panel/Adam`)
           separate(bounds.actions, bounds.orb, `${state}: full panel/Orb`)
+          separate(bounds.actions, bounds.lifeMovie, `${state}: full panel/Life Movie`)
           bounds.actionPanel = await actions.evaluate(element => {
             const style = getComputedStyle(element)
             let opacity = 1
@@ -123,7 +131,7 @@ try {
       const buttons = actions.locator(':scope > button:not(.retry)')
       assert.equal(await buttons.count(), 3)
       for (let i = 0; i < 3; i += 1) assert.equal(await buttons.nth(i).isDisabled(), true, 'Demo mutation must remain disabled')
-      await hit(actions.locator('.lifeMovieEntry'))
+      await hit(lifeMovie)
       const history = actions.locator('.replayHistory > summary')
       await hit(history)
       await history.click()

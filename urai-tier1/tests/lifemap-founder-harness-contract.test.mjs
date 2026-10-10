@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { runInNewContext } from 'node:vm'
+import ts from 'typescript'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 const launcherPath = fileURLToPath(new URL('../../scripts/run-lifemap-founder-proof-fixed.mjs', import.meta.url))
@@ -18,6 +19,25 @@ const isolation = await readFile(new URL('../src/spatial/world/lifeMapProduction
 
 function runNode(args) {
   return spawnSync(process.execPath, args, { cwd: repoRoot, encoding: 'utf8' })
+}
+
+function requireObservableJourneyPhase(source) {
+  const tree = ts.createSourceFile('scene.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const expressions = []
+  const visit = node => {
+    if (ts.isJsxAttribute(node) && node.name.getText(tree) === 'data-life-map-phase') {
+      assert.ok(node.initializer && ts.isJsxExpression(node.initializer) && node.initializer.expression, 'phase must observe live state')
+      expressions.push(node.initializer.expression.getText(tree))
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(tree)
+  assert.equal(expressions.length, 1, 'one observable journey phase owner')
+  const observe = runInNewContext(`(homeReturn, phase) => (${expressions[0]})`)
+  for (const phase of ['overview', 'departure', 'travel', 'approach', 'arrival']) {
+    assert.equal(observe(null, phase), phase, 'ordinary journey phase must remain observable')
+    assert.equal(observe({ id: 1 }, phase), 'home-return', 'Home flight must publish its actual phase')
+  }
 }
 
 test('Founder proof is a checked-in stable module with a mandatory syntax gate', () => {
@@ -120,7 +140,7 @@ test('Founder proof observes the real production state machine without a product
   assert.match(scene, /setPhase\("travel"\)/)
   assert.match(scene, /setPhase\("approach"\)/)
   assert.match(scene, /setPhase\("arrival"\)/)
-  assert.match(scene, /data-life-map-phase=\{phase\}/)
+  requireObservableJourneyPhase(scene)
   assert.match(navigator, /className="life-map-search-trigger"/)
   assert.match(navigator, /className="life-map-navigator" aria-labelledby="life-map-navigator-label"/)
   assert.match(navigator, /id="life-map-navigator-label"[^>]*locale.props\('lifeMap.searchRegion'\)[^>]*>\{locale.text\('lifeMap.searchRegion'\)\}/)
@@ -128,6 +148,13 @@ test('Founder proof observes the real production state machine without a product
   assert.doesNotMatch(scene, /URAI_FOUNDER|founderProof|proofPhase|__uraiFounderPhase/)
   assert.doesNotMatch(navigator, /URAI_FOUNDER|founderProof|proofPhase|__uraiFounderPhase/)
   assert.doesNotMatch(runner, /setPhase\(|PHASE_DURATION_MS\s*=|window\.setTimeout\s*=/)
+})
+
+test('Founder phase observation rejects hidden Home flights and fabricated ordinary phases', () => {
+  const current = 'data-life-map-phase={homeReturn ? "home-return" : phase}'
+  assert.ok(scene.includes(current), 'phase negative mutants must alter the production attribute')
+  assert.throws(() => requireObservableJourneyPhase(scene.replace(current, 'data-life-map-phase={phase}')), /Home flight/)
+  assert.throws(() => requireObservableJourneyPhase(scene.replace(current, 'data-life-map-phase={homeReturn ? "home-return" : "arrival"}')), /ordinary journey/)
 })
 
 test('restored Life Map route preserves URL identity but commits arrival only after that id resolves to a real node', () => {

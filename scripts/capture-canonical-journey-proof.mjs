@@ -343,6 +343,26 @@ async function lifeMapToHome(page, journey, mode, root) {
     await sleep(250)
   } while (Date.now() - settleStarted < 5_000)
   journey.settledHome = settledHome
+  const departure=journey.ascentEvidence?.departureCameraFrame
+  const returned=await home.evaluateAll(nodes=>{
+    const node=nodes.length===1?nodes[0]:null
+    const fields=['x','y','z','qx','qy','qz','qw','fov']
+    const attributes=Object.fromEntries(fields.map(field=>[field,node?.getAttribute(`data-home-camera-${field}`)??null]))
+    const available=fields.every(field=>attributes[field]!==null&&attributes[field]!==''&&Number.isFinite(Number(attributes[field])))
+    return {available,source:'actual-settled-Home-camera-DOM-publisher',attributes,...(available?{position:fields.slice(0,3).map(field=>Number(attributes[field])),quaternion:fields.slice(3,7).map(field=>Number(attributes[field])),fov:Number(attributes.fov)}:{})}
+  })
+  journey.homePoseRestoration={departure:departure??null,returned,available:Boolean(departure?.available&&returned.available),source:'actual-pre-Ascent-and-post-return-camera-tuples'}
+  if(journey.homePoseRestoration.available){
+    const positionError=Math.hypot(...returned.position.map((value,index)=>value-departure.position[index]))
+    const norm=values=>Math.hypot(...values)
+    const quaternionDot=Math.abs(returned.quaternion.reduce((sum,value,index)=>sum+value*departure.quaternion[index],0)/(norm(returned.quaternion)*norm(departure.quaternion)))
+    const fovError=Math.abs(returned.fov-departure.fov)
+    const tolerance=.002
+    Object.assign(journey.homePoseRestoration,{positionError,quaternionDot,fovError,tolerance,claim:'same actual departure pose within camera-publisher rounding allowance'})
+    assert.ok(Number.isFinite(positionError)&&positionError<=tolerance,`Home return failed actual departure position restoration: ${positionError}`)
+    assert.ok(Number.isFinite(quaternionDot)&&Math.abs(1-quaternionDot)<=tolerance,`Home return failed actual departure orientation restoration: ${quaternionDot}`)
+    assert.ok(Number.isFinite(fovError)&&fovError<=tolerance,`Home return failed actual departure FOV restoration: ${fovError}`)
+  }else journey.homePoseRestoration.limitation='The baseline or selected accessible handoff exposes no measured complete departure frame; exact pose restoration is not claimed.'
   await capture(page, journey, 'return-home')
 }
 
@@ -435,7 +455,12 @@ try {
   await browser.close()
 }
 
-receipt.status = receipt.journeys.every((journey) => journey.passed && journey.identityStable) && receipt.journeys.some((journey) => journey.ascentProven === true) && receipt.errors.length === 0 ? 'passed' : 'failed'
+receipt.fullMotionAscentProved = receipt.journeys.some((journey) => journey.ascentProven === true)
+receipt.accessibleReducedJourneyProved = receipt.journeys.some((journey) => journey.id === 'desktop-reduced-keyboard' && journey.passed && journey.identityStable)
+// A selected reduced-motion run uses the adopted accessible handoff rather than
+// camera travel. Its own valid outcome must not require an unrequested normal
+// ascent recording. Every requested physical-ascent variant still must prove it.
+receipt.status = receipt.journeys.every((journey) => journey.passed && journey.identityStable && (!journey.realAscent || journey.ascentProven === true)) && receipt.errors.length === 0 ? 'passed' : 'failed'
 await fs.writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
 console.log(JSON.stringify(receipt, null, 2))
 if (receipt.status !== 'passed') process.exitCode = 1

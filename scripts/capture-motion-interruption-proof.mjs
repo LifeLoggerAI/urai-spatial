@@ -177,14 +177,21 @@ const cases = [
     await waitAttribute(map(page),'data-life-map-render-ready','true')
     await holdStable(page,'/life-map')
   }},
-  {id:'life-map-focus-departure-cancel',realm:'life-map',async run(page) {
+  {id:'life-map-focus-arrival-escape',realm:'life-map',async run(page,result) {
     await selectMemory(page)
+    await markMotionProof(page,'selected-life-map-before-actual-focus-navigation')
     await map(page).getByRole('button',{name:/Enter Focus$/}).click()
-    await waitAttribute(shell(page),'data-world-transition','departing',10_000)
-    await markMotionProof(page,'active-life-map-focus-before-escape')
+    await waitPath(page,'/focus')
+    await identity(focus(page))
+    const arriving=await markMotionProof(page,'actual-focus-arrival-before-escape')
+    result.arrivalInterruption={observed:arriving.focus?.['data-focus-input-ready']==='false',owner:arriving.focus?.['data-focus-camera-owner']??null,worldPhase:arriving.world?.['data-world-transition']??null,source:'real-selected-Map-button-navigation; no-injected-world-travel-event'}
+    if(!result.arrivalInterruption.observed)result.arrivalInterruption.limitation='The first reachable Focus observation was already input-ready; this proves its settled return only, not cancellation during arrival.'
     await escapeBurst(page)
     await holdStable(page,'/life-map')
+    await waitAttribute(map(page),'data-life-map-phase','arrival')
+    await waitAttribute(map(page),'data-life-map-render-ready','true')
     assert.equal(new URL(page.url()).searchParams.get('node'),'quiet-reset')
+    assert.equal(new URL(page.url()).searchParams.get('memoryId'),'demo:quiet-reset')
   }},
   {id:'focus-replay-departure-cancel',realm:'focus',async run(page) {
     await focus(page).getByRole('button',{name:'Open Replay for The Quiet Reset',exact:true}).click()
@@ -193,6 +200,56 @@ const cases = [
     await escapeBurst(page)
     await holdStable(page,'/focus')
     await identity(focus(page))
+  }},
+  {id:'focus-replay-cancel-then-new-trip',realm:'focus',async run(page,result) {
+    const open=()=>focus(page).getByRole('button',{name:'Open Replay for The Quiet Reset',exact:true})
+    await open().click()
+    await waitAttribute(shell(page),'data-world-transition','departing',10_000)
+    await markMotionProof(page,'first-replay-trip-before-cancellation')
+    await escapeBurst(page)
+    await holdStable(page,'/focus')
+    await identity(focus(page))
+    await waitAttribute(focus(page),'data-focus-input-ready','true')
+    await markMotionProof(page,'new-replay-trip-after-cancellation')
+    await open().click()
+    await waitPath(page,'/replay')
+    await identity(replay(page))
+    await waitAttribute(replay(page),'data-replay-media-ready','true')
+    await waitAttribute(replay(page).locator('canvas'),'data-replay-first-frame','true')
+    const arrival=await replay(page).evaluateAll(nodes=>nodes[0]?.getAttribute('data-replay-arrival-ready')??null)
+    if(arrival!==null)await waitAttribute(replay(page),'data-replay-interaction-ready','true')
+    await holdStable(page,'/replay',3000)
+    result.newTrip={source:'actual-Focus-control-after-native-Escape-cancellation',sameMemory:true,staleDestinationOverwritesObserved:false}
+  }},
+  {id:'life-map-focus-browser-back',realm:'life-map',async run(page,result) {
+    await selectMemory(page)
+    const selectedUrl=page.url()
+    await map(page).getByRole('button',{name:/Enter Focus$/}).click()
+    await waitPath(page,'/focus')
+    await identity(focus(page))
+    await waitAttribute(focus(page),'data-focus-input-ready','true')
+    await markMotionProof(page,'actual-focus-before-browser-back')
+    await page.goBack({waitUntil:'domcontentloaded',timeout:60_000})
+    await holdStable(page,'/life-map')
+    await waitAttribute(map(page),'data-life-map-phase','arrival')
+    await waitAttribute(map(page),'data-life-map-render-ready','true')
+    const returned=new URL(page.url()),selected=new URL(selectedUrl)
+    for(const key of ['demo','node','memoryId','manifestId'])assert.equal(returned.searchParams.get(key),selected.searchParams.get(key),`native Back changed selected ${key}`)
+    result.history={source:'native-browser-goBack-after-actual-Map-control',selectedUrl,returnedUrl:page.url(),selectionRestored:true}
+  }},
+  {id:'focus-responsive-resize',realm:'focus',async run(page,result) {
+    const widths=[390,1024,640]
+    result.resizes=[]
+    for(const width of widths){
+      await page.setViewportSize({width,height:width===390?844:400})
+      await identity(focus(page))
+      await waitAttribute(focus(page),'data-focus-input-ready','true')
+      await waitAttribute(focus(page).locator('canvas'),'data-focus-first-frame','true')
+      await markMotionProof(page,`focus-native-viewport-${width}`)
+      await holdStable(page,'/focus',500)
+      result.resizes.push({width,height:width===390?844:400,url:page.url()})
+    }
+    result.resizeClass='actual-browser-viewport-change; not-physical-device-acceptance'
   }},
   {id:'playing-replay-unwind-repeated-escape',realm:'replay',async run(page) {
     await replay(page).getByRole('button',{name:'Continue memory',exact:true}).click()
@@ -230,6 +287,10 @@ const cases = [
     await waitAttribute(replay(page),'data-current-time-ms','1200')
     await waitAttribute(replay(page),'data-playing','false')
     result.seek=await markMotionProof(page,'replay-paused-after-real-keyboard-seek')
+    // Preserve the adopted editable-input Escape exclusion. Leave the native
+    // slider by real keyboard navigation before asking the realm to unwind.
+    await seek.press('Tab')
+    result.seekFocusRelease=await markMotionProof(page,'replay-seek-focus-released-by-native-tab')
     await page.keyboard.press('Escape')
     await holdStable(page,'/focus')
     await identity(focus(page))

@@ -21,7 +21,7 @@ export function installMotionProofObserver() {
       pathname: location.pathname,
       realm,
       world: attributes(world, ['data-world-', 'data-camera-checkpoint', 'data-entry-portal']),
-      home: attributes(home, ['data-home-camera-', 'data-home-player-', 'data-home-atmosphere-', 'data-home-scene-phase', 'data-home-input-', 'data-home-ascent-', 'data-home-portal-sequence']),
+      home: attributes(home, ['data-home-camera-', 'data-home-player-', 'data-home-atmosphere-', 'data-home-return-', 'data-home-scene-phase', 'data-home-input-', 'data-home-ascent-', 'data-home-portal-sequence']),
       map: attributes(map, ['data-life-map-camera-', 'data-life-map-target-', 'data-life-map-fov', 'data-life-map-phase', 'data-life-map-render-', 'data-life-map-input-', 'data-life-map-interaction-', 'data-life-map-source', 'data-life-map-selected', 'data-memory-id', 'data-star-id']),
       focus: attributes(focus, ['data-focus-camera-', 'data-focus-target-', 'data-focus-fov', 'data-focus-input-', 'data-focus-render-', 'data-focus-moving', 'data-focus-entry-', 'data-memory-id', 'data-star-id', 'data-manifest-id', 'data-webgl-state']),
       replay: attributes(replay, ['data-replay-camera-', 'data-replay-arrival-', 'data-replay-interaction-', 'data-replay-media-', 'data-replay-spatial-', 'data-playing', 'data-current-time-', 'data-memory-id', 'data-star-id', 'data-manifest-id', 'data-webgl-state']),
@@ -77,7 +77,10 @@ export function summarizeMotionProof(proof) {
   for (const row of proof.frames) {
     while (sampleIndex + 1 < proof.samples.length && proof.samples[sampleIndex+1].ms <= row.ms) sampleIndex++
     const sample = proof.samples[sampleIndex]
-    const state = sample ? `${sample.realm}:${sample.home?.['data-home-scene-phase'] || sample.map?.['data-life-map-phase'] || sample.world?.['data-world-transition'] || 'unknown'}` : 'unavailable'
+    const phase = sample?.realm === 'home' ? sample.home?.['data-home-scene-phase']
+      : sample?.realm === 'life-map' ? sample.map?.['data-life-map-phase']
+      : sample?.world?.['data-world-transition']
+    const state = sample ? `${sample.realm}:${phase || 'unknown'}` : 'unavailable'
     ;(framesByState[state] ??= []).push(row.intervalMs)
   }
   const stateFrameIntervals = Object.fromEntries(Object.entries(framesByState).map(([state, intervals]) => {

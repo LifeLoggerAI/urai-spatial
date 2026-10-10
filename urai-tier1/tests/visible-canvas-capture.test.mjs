@@ -5,7 +5,10 @@ import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import vm from 'node:vm'
+import { createRequire } from 'node:module'
 import { CANVAS_EVIDENCE_SAMPLE_POINTS, captureVisibleCanvasPng } from '../../scripts/capture-visible-canvas-png.mjs'
+
+const ts = createRequire(import.meta.url)('typescript')
 
 const visibleBounds = { x: 12, y: 18, width: 800, height: 600 }
 function fixture(bounds = visibleBounds, after = bounds) {
@@ -83,11 +86,63 @@ test('overlay appearing during capture rejects otherwise stable retained pixels'
 test('Home/Orb proof binds its visual samples and receipt to guarded canvas pixels', async () => {
   const { readFile } = await import('node:fs/promises')
   const source = await readFile(new URL('../../scripts/capture-natural-home-orb-proof.mjs', import.meta.url), 'utf8')
-  assert.match(source, /import \{ captureVisibleCanvasPng \} from '\.\/capture-visible-canvas-png\.mjs'/)
-  assert.match(source, /captureVisibleCanvasPng\(page, canvas\)/)
+  const ast = ts.createSourceFile('proof.mjs', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+  const captureImport = ast.statements.find(node => ts.isImportDeclaration(node)
+    && node.moduleSpecifier.text === './capture-visible-canvas-png.mjs')
+  assert.deepEqual(captureImport?.importClause?.namedBindings?.elements.map(node => node.name.text).sort(),
+    ['CANVAS_EVIDENCE_SAMPLE_POINTS', 'captureVisibleCanvasPng'])
+  const calls = []
+  const visit = node => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'captureVisibleCanvasPng') calls.push(node)
+    ts.forEachChild(node, visit)
+  }
+  visit(ast)
+  assert.equal(calls.length, 1)
+  assert.deepEqual(calls[0].arguments.map(node => node.getText(ast)), ['page', 'canvas', '90_000', 'samplePoints'])
+  const helperSource = await readFile(new URL('../../scripts/capture-visible-canvas-png.mjs', import.meta.url), 'utf8')
+  const helperAst = ts.createSourceFile('capture.mjs', helperSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+  const helper = helperAst.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'captureVisibleCanvasPng')
+  assert.equal(Number(helper.parameters[2].initializer.text), 90_000)
+  assert.equal(helper.parameters[3].initializer.text, 'CANVAS_EVIDENCE_SAMPLE_POINTS')
+  assert.match(source, /record\.canvasSamplingBefore = await worldCanvas\.evaluate\(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS\)/)
+  assert.match(source, /if \(!record\.canvasSamplingBefore\.accepted\) throw/)
+  assert.match(source, /imageEvidence\(page, worldCanvas, record\.canvasSamplingBefore\.samplePoints\)/)
+  assert.match(source, /!record\.canvasSamplingAfter\.accepted \|\| JSON\.stringify\(record\.canvasSamplingAfter\) !== JSON\.stringify\(record\.canvasSamplingBefore\)/)
   assert.match(source, /record\.canvasCapture = visual\.capture/)
   assert.match(source, /record\.canvasCapture\?\.canvasTopmostAfterCapture === true/)
   assert.match(source, /if \(await worldCanvas\.count\(\) !== 1\)/)
+})
+
+test('Home/Orb image sampler executes the shared guarded capture with the admitted points and unchanged deadline', async () => {
+  const source = await readFile(new URL('../../scripts/capture-natural-home-orb-proof.mjs', import.meta.url), 'utf8')
+  const ast = ts.createSourceFile('proof.mjs', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+  const sampler = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'imageEvidence')
+  assert.ok(sampler)
+  // Inert browser/PNG decode boundary; this tests capture wiring, not rendered pixels.
+  const f = fixture()
+  const points = CANVAS_EVIDENCE_SAMPLE_POINTS.slice(0, -1)
+  let captureCalls = 0
+  f.page.evaluate = async (_decode, input) => {
+    assert.equal(input.url, `data:image/png;base64,${f.pixels.toString('base64')}`)
+    assert.equal(input.points, points)
+    return { luminanceRange: 32, visibleSamples: points.length }
+  }
+  const run = vm.runInNewContext(`${sampler.getText(ast)}\nimageEvidence`, {
+    captureVisibleCanvasPng: async (page, canvas, timeout, selected) => {
+      captureCalls += 1
+      assert.equal(page, f.page)
+      assert.equal(canvas, f.canvas)
+      assert.equal(timeout, 90_000)
+      assert.equal(selected, points)
+      return captureVisibleCanvasPng(page, canvas, timeout, selected)
+    },
+  })
+  const result = await run(f.page, f.canvas, points)
+  assert.equal(captureCalls, 1)
+  assert.equal(result.buffer, f.pixels)
+  assert.deepEqual(result.capture.samplePoints, points)
+  assert.deepEqual(f.calls.filter(([name]) => name === 'occlusion').map(([, selected]) => selected), [points, points])
+  assert.equal(result.capture.canvasTopmostAfterCapture, true)
 })
 
 const homePoints = [[.18,.2],[.5,.2],[.82,.2],[.18,.5],[.5,.5],[.82,.5],[.18,.8],[.5,.8],[.82,.8]]

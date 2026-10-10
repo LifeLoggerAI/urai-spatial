@@ -119,6 +119,8 @@ export function WorldTransitionController() {
   const { world, phase, pendingTravel, beginTravel, cancelTransition } = useUraiWorldState()
   const timer = useRef<number | null>(null)
   const navigationWatchdog = useRef<number | null>(null)
+  const navigationGeneration = useRef(0)
+  const stopNavigationObservation = useRef<(() => void) | null>(null)
   const worldRef = useRef(world)
   const phaseRef = useRef(phase)
   const beginTravelRef = useRef(beginTravel)
@@ -139,6 +141,8 @@ export function WorldTransitionController() {
   }, [beginTravel, cancelTransition, phase, world])
 
   const clearTimer = useCallback(() => {
+    // Fence already queued callbacks as well as scheduled timers.
+    navigationGeneration.current += 1
     if (timer.current !== null) {
       window.clearTimeout(timer.current)
       timer.current = null
@@ -147,6 +151,8 @@ export function WorldTransitionController() {
       window.clearTimeout(navigationWatchdog.current)
       navigationWatchdog.current = null
     }
+    stopNavigationObservation.current?.()
+    stopNavigationObservation.current = null
   }, [])
 
   const cancelActiveTravel = useCallback((restoreWorld = true) => {
@@ -189,21 +195,49 @@ export function WorldTransitionController() {
       }
     }
 
+    const generation = navigationGeneration.current
+    let navigationStarted = false
+    let reachedTarget = false
+    const observeNavigation = () => {
+      if (generation !== navigationGeneration.current || activeTravel.current !== trip) return
+      if (navigationStarted && worldTravelLocationMatches(href)) {
+        reachedTarget = true
+        if (destinationSurfaceReady(request.destination)) cancelActiveTravel(false)
+        return
+      }
+      // Browser navigation away, including Back after reaching this target,
+      // retires this trip before a queued recovery can reclaim its route.
+      if (!worldTravelLocationMatches(trip.startingLocation) || reachedTarget) cancelActiveTravel()
+    }
+    const unsubscribeLocation = subscribeBrowserLocation(observeNavigation)
+    const surfaceObserver = new MutationObserver(observeNavigation)
+    surfaceObserver.observe(document.body, {
+      childList: true, subtree: true, attributes: true,
+      attributeFilter: ['data-testid', 'data-route-owner'],
+    })
+    stopNavigationObservation.current = () => {
+      unsubscribeLocation()
+      surfaceObserver.disconnect()
+    }
+
     timer.current = window.setTimeout(() => {
-      if (activeTravel.current !== trip) return
+      if (generation !== navigationGeneration.current || activeTravel.current !== trip) return
       if (!worldTravelLocationMatches(trip.startingLocation)) { cancelActiveTravel(); return }
       // Use the governed client-router path for every realm transition, including
       // Mirror -> Replay. A prior Replay-only hard-document shortcut could stall
       // before navigation committed under the patched Next runtime.
-      router.push(href)
       timer.current = null
+      navigationStarted = true
+      router.push(href)
 
       // Route ownership is not proven by pathname alone. If the router changes
       // the URL but the destination surface never mounts, force one deterministic
       // document handoff after the client-router grace period.
       navigationWatchdog.current = window.setTimeout(() => {
-        if (activeTravel.current !== trip) return
-        navigationWatchdog.current = null
+        if (generation !== navigationGeneration.current || activeTravel.current !== trip) return
+        observeNavigation()
+        if (generation !== navigationGeneration.current || activeTravel.current !== trip) return
+        clearTimer()
         if (!worldTravelLocationMatches(trip.startingLocation) && !worldTravelLocationMatches(href)) {
           cancelActiveTravel()
           return
@@ -216,6 +250,7 @@ export function WorldTransitionController() {
           else window.location.assign(href)
         }
       }, 2500)
+      observeNavigation()
     }, transitionDuration(request.destination))
   }, [cancelActiveTravel, clearTimer, router])
 

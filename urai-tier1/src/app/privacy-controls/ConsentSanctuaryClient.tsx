@@ -2,7 +2,8 @@
 
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
-import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
+import { requestUraiWorldOrbOpen, requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Float, Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
@@ -235,6 +236,7 @@ function errorCode(error: unknown) {
 }
 
 export default function ConsentSanctuaryClient() {
+  const { world, phase } = useUraiWorldState()
   const params = useMemo(() => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search), [])
   const explicitDemo = params.get('demo') === '1'
   const authEpoch = useRef(0)
@@ -404,11 +406,13 @@ export default function ConsentSanctuaryClient() {
       event.preventDefault()
       if (pending) { setPending(null); setMutationState('idle'); return }
       if (showAudit) { setShowAudit(false); return }
-      if (window.history.length > 1) window.history.back(); else window.location.assign('/passport')
+      if (phase !== 'idle') return
+      if (world.previousDestination && world.previousDestination !== 'privacy-controls') requestUraiWorldReturn()
+      else requestUraiWorldTravel({ destination: 'passport', href: '/passport' })
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [pending, showAudit])
+  }, [pending, showAudit, phase, world.previousDestination])
 
   useEffect(() => { if (pending) requestAnimationFrame(() => confirmRef.current?.focus()) }, [pending])
 

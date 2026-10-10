@@ -22,3 +22,14 @@ test('empty recording remains unavailable, never an invented performance pass', 
   assert.equal(result.numericCameraSamples,0)
   assert.equal(result.reducedMotion,true)
 })
+
+test('persistent hidden Home does not mislabel actual Map or Replay frame intervals', () => {
+  const home={'data-home-scene-phase':'HOME'}
+  const result=summarizeMotionProof({source:'unit-test-data-only',reducedMotion:false,longTasks:[],frames:[{ms:20,intervalMs:20},{ms:100,intervalMs:80}],samples:[
+    {ms:0,realm:'life-map',home,map:{'data-life-map-phase':'acquisition'},world:{'data-world-transition':'idle'}},
+    {ms:90,realm:'replay',home,map:{'data-life-map-phase':'arrival'},world:{'data-world-transition':'arriving'}},
+  ]})
+  assert.deepEqual(Object.keys(result.stateFrameIntervals),['life-map:acquisition','replay:arriving'])
+  assert.equal(result.stateFrameIntervals['life-map:acquisition'].count,1)
+  assert.equal(result.stateFrameIntervals['replay:arriving'].maxMs,80)
+})
