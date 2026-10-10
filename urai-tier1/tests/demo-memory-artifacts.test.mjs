@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 
 const demoSource = readFileSync(new URL('../src/spatial/demo/demoMemoryStars.ts', import.meta.url), 'utf8')
 const rendererSource = readFileSync(new URL('../src/spatial/assets/ManifestRenderer.tsx', import.meta.url), 'utf8')
+const middlewareSource = readFileSync(new URL('../src/middleware.ts', import.meta.url), 'utf8')
 
 const requiredDemoAssets = [
   '/demo/memories/recovery-bloom.svg',
@@ -30,4 +31,16 @@ test('manifest renderer allows same-origin demo public assets without allowing s
   assert.match(rendererSource, /url\.startsWith\('gs:\/\/'\)/)
   assert.match(rendererSource, /url\.startsWith\('\/demo\/'\)/)
   assert.match(rendererSource, /parsed\.protocol === 'https:' \|\| parsed\.protocol === 'http:'/)
+})
+
+test('production middleware serves only the disclosed demo memory assets without opening demo routes', () => {
+  const assetAllowance = 'PUBLIC_DEMO_MEMORY_ASSETS.has(pathname)'
+  const routeGate = "pathname.startsWith('/demo')"
+  for (const asset of requiredDemoAssets) {
+    assert.ok(middlewareSource.includes(asset), `Missing middleware allowlist entry: ${asset}`)
+  }
+  assert.ok(middlewareSource.includes(assetAllowance))
+  assert.ok(middlewareSource.includes(routeGate))
+  assert.ok(middlewareSource.indexOf(assetAllowance) < middlewareSource.indexOf(routeGate))
+  assert.match(middlewareSource, /NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES/)
 })
