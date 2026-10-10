@@ -23,7 +23,7 @@
 .focusWorld .focusHelp summary { justify-content: center; min-height: 48px; padding: 0 4px; font-size: 12px; }
 .focusWorld .focusHelp p { position: absolute; top: calc(100% + 16px); right: 0; width: min(290px, calc(100vw - 54px)); box-sizing: border-box; padding: 18px; border: 1px solid #bdeaff44; border-radius: 16px; background: #05101c; color: #dceaf4; box-shadow: 0 16px 48px #0008; }
 .focusWorld .focusHelp[open] { overflow: visible; max-height: none; }
-.focusWorld .focusStatus { top: auto; bottom: 24px; max-width: 24vw; line-height: 1.5; }
+.focusWorld .focusStatus { left: auto; right: max(20px, env(safe-area-inset-right)); top: auto; bottom: 24px; transform: none; max-width: 24vw; line-height: 1.5; }
 @media (max-width: 760px) {
   .focusWorld .focusHeading { left: 16px; top: max(16px, env(safe-area-inset-top)); width: calc(100vw - 32px); max-height: 28svh; overflow: auto; pointer-events: auto; }
   .focusWorld .focusHeading h2 { max-width: 100%; font-size: clamp(2rem, 9vw, 3.5rem); margin: 7px 0; }

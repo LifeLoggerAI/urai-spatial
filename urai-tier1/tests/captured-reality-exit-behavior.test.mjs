@@ -10,6 +10,9 @@ import * as selectedMemoryControls from '../src/spatial/memory/selectedMemoryCon
 const source = ts.transpileModule(fs.readFileSync(new URL('../src/app/spatial/captured-reality/CapturedRealityRouteClient.tsx', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
 }).outputText
+const entryStateSource = ts.transpileModule(fs.readFileSync(new URL('../src/spatial/memory/MemoryExperienceState.tsx', import.meta.url), 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+}).outputText
 const settle = async () => { for (let i = 0; i < 12; i++) await Promise.resolve() }
 
 // Run the production route callbacks/effects with controlled identity and async
@@ -62,6 +65,11 @@ function harness(pendingStage) {
   }
   modules['@/spatial/captured-reality/capturedRealityJourney'] = journeyControls
   modules['@/spatial/memory/selectedMemoryContract'] = selectedMemoryControls
+  // Keep the shared entry presentation real while the route's identity,
+  // asynchronous delivery, and navigation remain controlled by this harness.
+  const entryStateExports = {}
+  vm.runInNewContext(entryStateSource, { exports: entryStateExports, require(id) { assert.ok(id in modules, `Unexpected entry-state import: ${id}`); return modules[id] } })
+  modules['@/spatial/memory/MemoryExperienceState'] = entryStateExports
   const exports = {}
   vm.runInNewContext(source, { exports, require(id) { assert.ok(id in modules, `Unexpected import: ${id}`); return modules[id] }, AbortController, URLSearchParams, ReadableStream, fetch, Worker: class {}, navigator: { userAgent: 'desktop' }, window: {
     history: { length: 2 }, setTimeout(fn, ms) { const id = ++timerId; timers.set(id, { fn, ms }); return id }, clearTimeout(id) { timers.delete(id) },
@@ -69,6 +77,7 @@ function harness(pendingStage) {
   const render = () => { stateIndex = refIndex = effectIndex = memoIndex = 0; const tree = exports.default(); while (queued.length) queued.shift()(); return tree }
   const exitFrom = tree => {
     if (!tree || typeof tree !== 'object') return undefined
+    if (typeof tree.type === 'function') return exitFrom(tree.type(tree.props))
     if (tree?.type === 'button' && tree.props.children === 'Return to memory') return tree.props.onClick
     for (const child of [tree?.props?.children].flat()) { const found = exitFrom(child); if (found) return found }
   }

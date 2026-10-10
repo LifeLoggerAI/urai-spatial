@@ -60,8 +60,10 @@ body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
     overflow-wrap: anywhere;
   }
 
-  /* The inspector repeats the selected title and explains its evidence. Keep
-     the document heading/summary accessible without a second covered panel. */
+  /* The inspector owns the visible title, evidence and selected-fragment text.
+     Keep the duplicate heading, summary and live status available to readers
+     without a floating status pill crossing the inspector's last line. */
+  .mirrorWorld:has(.mirrorInspection) .mirrorAnnouncement,
   .mirrorWorld:has(.mirrorInspection) .mirrorIdentity > h1,
   .mirrorWorld:has(.mirrorInspection) .mirrorIdentity > span:not([data-urai-adam-launcher-slot]) {
     position: absolute;

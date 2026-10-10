@@ -59,6 +59,7 @@ for (const width of [320, 390, 768, 1024, 1200, 1440]) {
         return {
           helper: rect(launcher),
           controlRail: rect(owner.querySelector('.focusControls')!),
+          memoryContext: rect(owner.querySelector('.memoryMeaning')!),
           headingText: [...headingRange.getClientRects()].map(r => ({ x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom, selector: 'heading text' })),
           status: {
             box: statusBox,
@@ -86,6 +87,7 @@ for (const width of [320, 390, 768, 1024, 1200, 1440]) {
       for (const box of geometry.headingText) expect(overlaps(geometry.controlRail, box)).toBe(false)
       if (!geometry.status.visuallyHidden) {
         expect(overlaps(geometry.status.box, geometry.controlRail)).toBe(false)
+        expect(overlaps(geometry.status.box, geometry.memoryContext)).toBe(false)
         for (const box of geometry.headingText) expect(overlaps(geometry.status.box, box)).toBe(false)
       }
       await expect(focus.locator('.focusStatus')).toHaveAttribute('aria-live', 'polite')
