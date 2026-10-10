@@ -343,10 +343,9 @@
   }
 }
 
-/* Keep the closed travel control outside the narrow consent domain lane. The
- * menu must not size the grid container; otherwise its hidden 296px width centers
- * the Orb over the fixed-width domain navigation. */
-@media (max-width: 700px) {
+/* Keep the closed travel control at the edge of mobile and tablet layouts. The
+ * hidden menu must not size the companion and center the Orb over consent controls. */
+@media (max-width: 1100px) {
   .urai-world-runtime[data-world-destination='privacy-controls'] .urai-world-companion {
     position: absolute !important;
     left: auto !important;
