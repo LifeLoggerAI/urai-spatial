@@ -99,6 +99,26 @@ test('rejects missing bindings, reordered manifest, traversal names, false count
   assert.throws(() => validateManifest(f.manifest, undefined))
 })
 
+test('manifest supports a 13-part archive above the former eight-part ceiling', t => {
+  const f = fixture(t)
+  const archiveBytes = PART_BYTES * 12 + 123
+  const manifest = structuredClone(f.manifest)
+  manifest.archiveBytes = archiveBytes
+  manifest.partCount = 13
+  manifest.parts = Array.from({ length: manifest.partCount }, (_, offset) => {
+    const index = offset + 1
+    const suffix = String(index).padStart(2, '0')
+    return {
+      index,
+      name: `visual-proof.zip.part-${suffix}`,
+      bytes: Math.min(PART_BYTES, archiveBytes - offset * PART_BYTES),
+      sha256: 'a'.repeat(64),
+      artifactName: `continuous-spatial-visual-transport-visual-${sourceSha}-100-2-part-${suffix}`,
+    }
+  })
+  assert.equal(validateManifest(manifest, f.binding), manifest)
+})
+
 test('partition and reconstruction never overwrite existing archives or evidence directories', t => {
   const f = fixture(t, 100)
   assert.throws(() => splitArchive(f), /EEXIST/)
@@ -249,6 +269,20 @@ test('workflow preserves all original proof assertions and upload, and uses eigh
   assert.equal(workflow.match(/compression-level: 0/g).length, MAX_PARTS + 2)
   assert.match(workflow, /verify-native-uploads/)
   assert.doesNotMatch(workflow, /path: artifacts\/continuous-spatial-transport-\$\{\{ matrix.proof_group \}\}\s*\n/)
+})
+
+test('founder placement workflow uploads the same bounded native archive parts', () => {
+  const workflow = fs.readFileSync(new URL('../../.github/workflows/adam-placement-proof.yml', import.meta.url), 'utf8')
+  const start = workflow.indexOf('      - name: Upload exact-head focused native proof\n')
+  const end = workflow.indexOf('      - name: Partition the original native visual archive\n')
+  const original = workflow.slice(start, end)
+  assert.ok(original.includes('if: always()'))
+  assert.ok(original.includes('path: artifacts/adam-placement\n'))
+  const parts = workflow.split('\n').filter(line => line.includes('path: artifacts/adam-placement-transport/adam-placement.zip.part-'))
+  assert.equal(parts.length, MAX_PARTS)
+  assert.equal(new Set(parts).size, MAX_PARTS)
+  assert.equal(workflow.match(/compression-level: 0/g).length, MAX_PARTS + 2)
+  assert.ok(workflow.includes('verify-native-uploads'))
 })
 
 test('accessibility workflow retains the complete archive and strict first-run/recovered-flake result', () => {
