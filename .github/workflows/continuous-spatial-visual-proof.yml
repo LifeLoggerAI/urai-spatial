@@ -347,7 +347,7 @@ jobs:
           retention-days: 90
           compression-level: 0
 
-     - name: Upload bounded visual archive part 09
+      - name: Upload bounded visual archive part 09
         id: bounded-visual-part-09
         if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 9 }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -358,7 +358,7 @@ jobs:
           retention-days: 90
           compression-level: 0
 
-     - name: Upload bounded visual archive part 10
+      - name: Upload bounded visual archive part 10
         id: bounded-visual-part-10
         if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 10 }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -369,7 +369,7 @@ jobs:
           retention-days: 90
           compression-level: 0
 
-     - name: Upload bounded visual archive part 11
+      - name: Upload bounded visual archive part 11
         id: bounded-visual-part-11
         if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 11 }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -380,7 +380,7 @@ jobs:
           retention-days: 90
           compression-level: 0
 
-     - name: Upload bounded visual archive part 12
+      - name: Upload bounded visual archive part 12
         id: bounded-visual-part-12
         if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 12 }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -391,7 +391,7 @@ jobs:
           retention-days: 90
           compression-level: 0
 
-     - name: Upload bounded visual archive part 13
+      - name: Upload bounded visual archive part 13
         id: bounded-visual-part-13
         if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 13 }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -402,7 +402,7 @@ jobs:
           retention-days: 90
           compression-level: 0
 
-     - name: Upload bounded visual archive part 14
+      - name: Upload bounded visual archive part 14
         id: bounded-visual-part-14
         if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 14 }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -413,7 +413,7 @@ jobs:
           retention-days: 90
           compression-level: 0
 
-     - name: Upload bounded visual archive part 15
+      - name: Upload bounded visual archive part 15
         id: bounded-visual-part-15
         if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 15 }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -424,7 +424,7 @@ jobs:
           retention-days: 90
           compression-level: 0
 
-     - name: Upload bounded visual archive part 16
+      - name: Upload bounded visual archive part 16
         id: bounded-visual-part-16
         if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 16 }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
