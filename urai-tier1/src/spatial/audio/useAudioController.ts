@@ -51,6 +51,7 @@ export function useAudioController() {
   const cueAudioRef = useRef<HTMLAudioElement | null>(null);
   const activeAmbientRef = useRef<"A" | "B">("A");
   const ambientTrackRef = useRef<AmbientTrack | null>(null);
+  const ambientAttemptRef = useRef(0);
   const fadeRafRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -69,6 +70,7 @@ export function useAudioController() {
   }, []);
 
   const stopAmbient = useCallback(() => {
+    ambientAttemptRef.current += 1;
     if (fadeRafRef.current) {
       cancelAnimationFrame(fadeRafRef.current);
       fadeRafRef.current = null;
@@ -140,7 +142,12 @@ export function useAudioController() {
       // quick return must replace that fade, and repeated requests must not
       // restart it before the previous track has finished fading out.
       ambientTrackRef.current = nextTrack;
-      void next.play().catch(() => undefined);
+      const attempt = ++ambientAttemptRef.current;
+      void next.play().catch(() => {
+        // Release only this attempt so the same route can retry after a
+        // playback denial. A retired rejection must not stop a newer track.
+        if (ambientAttemptRef.current === attempt) stopAmbient();
+      });
       const started = performance.now();
       const duration = phase === "REPLAY" ? 2000 : phase === "FOCUS" ? 1600 : 1300;
       const target = isSpeakingRef.current ? 0.18 : Math.min(0.62, 0.28 + intensity * 0.34);
@@ -165,7 +172,7 @@ export function useAudioController() {
       };
       fadeRafRef.current = requestAnimationFrame(tick);
     },
-    [ensureAmbient],
+    [ensureAmbient, stopAmbient],
   );
 
   const playCue = useCallback((cue: SpatialAudioCue) => {
@@ -211,20 +218,34 @@ export function useAudioController() {
     });
     if (!res.ok) throw new Error("elevenlabs request failed");
     const blob = await res.blob();
+    // A response body can finish after Stop, unmount or a newer narration.
+    // Never turn that retired response into a live media element.
+    signal.throwIfAborted();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
     voiceAudioRef.current = audio;
     audio.volume = 1;
     await new Promise<void>((resolve, reject) => {
-      signal.addEventListener("abort", () => {
+      let settled = false;
+      const finish = (error?: unknown) => {
+        if (settled) return;
+        settled = true;
+        signal.removeEventListener("abort", onAbort);
+        audio.onended = null;
+        audio.onerror = null;
         audio.pause();
         audio.src = "";
         URL.revokeObjectURL(url);
-        reject(new DOMException("aborted", "AbortError"));
-      });
-      audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-      audio.onerror = () => { URL.revokeObjectURL(url); reject(new Error("elevenlabs audio failed")); };
-      audio.play().catch(reject);
+        if (voiceAudioRef.current === audio) voiceAudioRef.current = null;
+        if (error !== undefined) reject(error);
+        else resolve();
+      };
+      const onAbort = () => finish(new DOMException("aborted", "AbortError"));
+      signal.addEventListener("abort", onAbort, { once: true });
+      audio.onended = () => finish();
+      audio.onerror = () => finish(new Error("elevenlabs audio failed"));
+      if (signal.aborted) { onAbort(); return; }
+      audio.play().catch((error: unknown) => finish(error ?? new Error("elevenlabs audio failed")));
     });
   }, []);
 
