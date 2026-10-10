@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import {
   assetCssStack,
   focusAssets,
@@ -117,9 +118,10 @@ export default function CutOneReplayFilmPage() {
           <p className="mt-7 max-w-3xl text-base font-semibold leading-8 text-violet-50/82 md:text-xl md:leading-9">
             A disclosed cinematic proof of the complete journey: pressure to portal, Ground to sky, Life Map to Focus, Replay to Mirror, and ownership through Passport.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="demoFilmActions mt-8 flex flex-wrap gap-3">
             <a href="#film" className="rounded-full bg-white px-6 py-3 text-sm font-black text-slate-950 no-underline transition hover:-translate-y-0.5">Play the proof rail</a>
             <Link href="/home" className="rounded-full border border-white/20 bg-black/35 px-6 py-3 text-sm font-black text-white no-underline backdrop-blur-xl transition hover:bg-white/10">Enter Home</Link>
+            <AdamLauncherSlot name="demo-film" />
           </div>
         </div>
       </section>

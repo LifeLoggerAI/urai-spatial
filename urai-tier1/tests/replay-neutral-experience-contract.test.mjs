@@ -4,7 +4,7 @@ import test from 'node:test'
 import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
 const replay = fs.readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
-const focusCss = fs.readFileSync(new URL('../src/app/focus/focus-stable-controls.css', import.meta.url), 'utf8')
+const focus = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
 
 test('Replay no-selection state is a designed memory horizon, not an error dead end', () => {
   assert.doesNotMatch(replay, /Replay unavailable/)
@@ -21,7 +21,9 @@ test('Replay no-selection state is a designed memory horizon, not an error dead 
   assert.match(replay, /@media\(forced-colors:active\)/)
 })
 
-test('Neutral Focus threshold never exposes waiting-room copy visually', () => {
-  assert.match(focusCss, /\.focus-spatial-aperture-button:disabled\s*\{[\s\S]*font-size:\s*0/)
-  assert.match(focusCss, /\.focus-spatial-aperture-button:disabled::after\s*\{[\s\S]*content:\s*'Choose a memory'/)
+test('Neutral Focus offers the real Life Map action and no inactive Replay doorway', () => {
+  assert.match(focus, /memory \? <button type="button" className="primary"[^>]+onClick=\{enterReplay\}/)
+  assert.match(focus, /<div className="neutralActions"><button type="button" onClick=\{unwind\}[^>]+>\{locale.text\('focus.openLifeMap'\)\}<\/button>/)
+  assert.equal(URAI_SOURCE_MESSAGES['focus.openLifeMap'].source, 'Open Life Map')
+  assert.doesNotMatch(focus, /<button[^>]+className="focus-spatial-aperture-button"/)
 })

@@ -314,10 +314,12 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
         float pores = smoothstep(.86, .975, noise(p * 127.0 - vec3(t * .06, -t * .04, t * .03)));
         float viewFacing = clamp(vNormalView.z * .5 + .5, 0.0, 1.0);
         float limb = pow(viewFacing, .55);
-        vec3 solarOrange = vec3(1.0, .18, .012);
-        vec3 solarGold = vec3(1.0, .60, .085);
-        vec3 hotWhite = vec3(1.0, .93, .64);
-        vec3 surface = mix(solarOrange, solarGold, .42 + cells * .46);
+        // The selected memory owns the stellar palette. Fixed gold previously
+        // overwhelmed the passed accent and made distinct memories look alike.
+        vec3 coolGranule = uAccent * .32;
+        vec3 brightGranule = uAccent;
+        vec3 hotWhite = mix(uLight, vec3(1.0), .10);
+        vec3 surface = mix(coolGranule, brightGranule, .42 + cells * .46);
         surface = mix(surface, hotWhite, .10 + fine * .14 + micro * .08 + faculae * .22 + limb * .06);
         surface = mix(surface, uLight, .08);
         surface = mix(surface, uAccent * (.65 + cells * .45), .32);

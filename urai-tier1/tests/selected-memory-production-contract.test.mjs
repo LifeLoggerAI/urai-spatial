@@ -211,7 +211,8 @@ test('Focus retains adaptive quality, reduced motion, visibility pausing, and We
 
 test('public demo is disclosed by default and retains an explicit production kill switch', () => {
   assert.match(demoPage, /import CutOneReplayFilmPage from '\.\/replay-film\/page'/)
-  assert.match(demoPage, /return <CutOneReplayFilmPage \/>/)
+  assert.match(demoPage, /import '\.\/replay-film\/aaa-mobile\.css'/)
+  assert.match(demoPage, /return <div className="urai-replay-film-route"><CutOneReplayFilmPage \/><\/div>/)
   assert.match(demoPage, /publicDemoRouteExplicitlyDisabled/)
   assert.match(demoPage, /NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === 'false'/)
   assert.match(demoPage, /URAI_ALLOW_PUBLIC_DEMO_ROUTES === 'false'/)
