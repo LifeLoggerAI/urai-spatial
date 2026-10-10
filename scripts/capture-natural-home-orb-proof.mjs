@@ -13,6 +13,7 @@ const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/portal-orb-proof')
 const orbPath = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const portalPath = '/assets/urai/generated/models/portal-ring-master-v1.glb'
+const paintedHomeEvaluationTimeout = 90_000
 const finalPackReceiptPath = path.resolve('operations/assets/generated-receipts/urai-final-glb-pack-v1.json')
 const finalPackReceipt = JSON.parse(await readFile(finalPackReceiptPath, 'utf8'))
 const orbReceipt = finalPackReceipt.assets?.find((asset) => asset.fileName === path.basename(orbPath))
@@ -126,10 +127,10 @@ for (const spec of cases) {
     })
     const worldCanvas = owner.locator('canvas')
     if (await worldCanvas.count() !== 1) throw new Error('Home/Orb visual proof requires exactly one world canvas')
-    record.canvasSamplingBefore = await worldCanvas.evaluate(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS)
+    record.canvasSamplingBefore = await worldCanvas.evaluate(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS, { timeout: paintedHomeEvaluationTimeout })
     if (!record.canvasSamplingBefore.accepted) throw new Error(`Home world sampling rejected an occlusion: ${JSON.stringify(record.canvasSamplingBefore)}`)
     const visual = await imageEvidence(page, worldCanvas, record.canvasSamplingBefore.samplePoints)
-    record.canvasSamplingAfter = await worldCanvas.evaluate(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS)
+    record.canvasSamplingAfter = await worldCanvas.evaluate(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS, { timeout: paintedHomeEvaluationTimeout })
     if (!record.canvasSamplingAfter.accepted || JSON.stringify(record.canvasSamplingAfter) !== JSON.stringify(record.canvasSamplingBefore)) {
       throw new Error('Home world sampling or its exact Ground HUD exception changed during capture')
     }
