@@ -47,7 +47,7 @@ test.describe('Replay source ownership and accessible transport', () => {
     await page.evaluate(() => document.fonts.ready)
     const context = replay.locator('.replayMemoryContext')
     await expect(context.getByText('Sample', { exact: true })).toBeVisible()
-    await expect(context.locator('time')).toHaveAttribute('datetime', '2026-01-01T12:00:00.000Z')
+    await expect(context.locator('time')).toHaveAttribute('datetime', '2026-05-09T12:00:00.000Z')
     await expect(context.locator('time')).toContainText('2026')
     await expect(context.getByText('Example place', { exact: true })).toBeVisible()
     await expect(context.locator('.replaySequence')).toHaveText('1 / 4 · Memory')
