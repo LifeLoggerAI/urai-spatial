@@ -12,7 +12,7 @@ export async function captureVisibleCanvasPng(page, canvas, timeoutMs = 90_000, 
     throw new Error('Canvas capture requires finite bounded sampling points within the canvas')
   }
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 90_000) throw new Error('Canvas capture requires a finite deadline between 1 and 90000 milliseconds')
-  const deadline = Date.now() + timeoutMs
+  let deadline = Date.now() + timeoutMs
   const remaining = () => {
     const value = deadline - Date.now()
     if (value <= 0) throw new Error('Canvas capture exceeded its bounded deadline')
@@ -39,8 +39,9 @@ export async function captureVisibleCanvasPng(page, canvas, timeoutMs = 90_000, 
   }, samplePoints, { timeout: remaining() })
   if (!unoccluded) throw new Error('Canvas evidence sample points are covered by another hit-testable element')
   const buffer = await page.screenshot({
-    type: 'png', fullPage: false, clip, animations: 'disabled', caret: 'hide', timeout: remaining(),
+    type: 'png', fullPage: false, clip, animations: 'disabled', caret: 'hide', timeout: timeoutMs,
   })
+  deadline = Date.now() + timeoutMs
   const after = await canvas.boundingBox({ timeout: remaining() })
   if (!after || Object.keys(clip).some((key) => !Number.isFinite(after[key]) || Math.abs(after[key] - clip[key]) > .01)) {
     throw new Error('Canvas bounds changed during capture; retained pixels cannot be bound to the canvas')

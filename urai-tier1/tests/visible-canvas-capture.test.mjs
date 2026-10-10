@@ -46,6 +46,30 @@ test('capture returns untouched pixels and exact canvas crop with a bounded scre
   assert.ok(screenshots[0][1].timeout > 0 && screenshots[0][1].timeout <= 5000)
 })
 
+
+test('canvas validation and post-capture checks retain separate bounded budgets', async () => {
+  const f = fixture()
+  const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
+  let reads = 0
+  f.canvas.evaluate = async (_read, points) => {
+    f.calls.push(['occlusion', points])
+    await wait(45)
+    reads += 1
+    return true
+  }
+  f.page.screenshot = async options => {
+    f.calls.push(['screenshot', options])
+    await wait(45)
+    return f.pixels
+  }
+  const result = await captureVisibleCanvasPng(f.page, f.canvas, 150)
+  assert.equal(result.buffer, f.pixels)
+  assert.equal(reads, 2)
+  const screenshot = f.calls.find(([name]) => name === 'screenshot')[1]
+  assert.equal(screenshot.timeout, 150, 'screenshot must receive its own bounded capture allowance')
+  assert.equal(result.capture.canvasTopmostAfterCapture, true)
+})
+
 test('missing, invalid, and partially clipped canvas bounds fail before any screenshot', async () => {
   for (const bounds of [null, { ...visibleBounds, width: 0 }, { ...visibleBounds, x: NaN }, { ...visibleBounds, x: -1 }, { ...visibleBounds, width: 1200 }]) {
     const f = fixture(bounds)
