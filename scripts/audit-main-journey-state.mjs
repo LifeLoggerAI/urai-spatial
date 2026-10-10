@@ -58,7 +58,8 @@ requireMatch(
 requireMatch('Focus enters Replay through world travel', focusClient, /requestUraiWorldTravel\(\{/)
 requireMatch('Focus Replay destination', focusClient, /destination: 'replay'/)
 requireMatch('Focus Replay manifest context', focusClient, /replayManifestId: memory\.replayManifest\.id/)
-requireMatch('Focus Replay portal accessibility', focusClient, /aria-label=\{locale\.locale === 'en' \? `Open Replay for \$\{memory\.title\}` : locale\.text\('focus.enterReplay'\)\}/)
+requireMatch('Focus Replay portal accessibility', focusClient, /aria-label=\{memory\s*\?\s*locale\.text\('focus\.openReplayFor',\s*\{\s*title:\s*memory\.title\s*\}\)\s*:\s*locale\.text\('focus\.chooseReplay'\)\}/)
+requireMatch('Focus Replay portal locale metadata', focusClient, /\{\.\.\.locale\.props\(memory\s*\?\s*'focus\.openReplayFor'\s*:\s*'focus\.chooseReplay'\)\}/)
 
 const combinedFocusGuard = /if \(!memory \|\| !replayHref \|\| committed\) return/.test(focusClient)
 const separateAuthorizationGuard = /if \(!memory \|\| !replayHref\) return/.test(focusClient)
