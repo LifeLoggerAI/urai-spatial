@@ -668,11 +668,15 @@ function EmbodiedPresence({ root }: { root: MutableRefObject<THREE.Group | null>
 function Thresholds({ onGround, onLifeMap }: { onGround: () => void; onLifeMap: () => void }) {
   const locale = useUraiLocale()
   const phase = useSceneStore((state) => state.phase)
+  const thresholds = [
+    { position: GROUND_THRESHOLD, label: locale.text('nav.ground') },
+    { position: LIFE_MAP_LOOKOUT, label: locale.text('nav.lifeMap') },
+  ]
   return <>
     <group name="home-ground-environmental-threshold" position={GROUND_THRESHOLD}><mesh position={[0,.8,0]} onClick={(e) => { e.stopPropagation(); onGround() }}><boxGeometry args={[4.2,2.8,4.2]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh></group>
     <group name="home-life-map-sky-lookout" position={LIFE_MAP_LOOKOUT}><mesh position={[0,.8,0]} onClick={(e) => { e.stopPropagation(); onLifeMap() }}><boxGeometry args={[4.2,2.8,4.2]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh></group>
-    {phase === 'HOME' ? [[GROUND_THRESHOLD, 'nav.ground'], [LIFE_MAP_LOOKOUT, 'nav.lifeMap']].map(([position, label]) => <Html key={String(label)} position={(position as THREE.Vector3).clone().add(new THREE.Vector3(0, 1.25, 0))} center distanceFactor={14} zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
-      <span aria-hidden="true" style={{ display: 'block', whiteSpace: 'nowrap', padding: '7px 11px', borderBottom: '1px solid #a9c9d399', borderRadius: 3, background: '#09151dcc', color: '#e2edf3', font: '500 14px/1.35 system-ui', letterSpacing: '.05em' }}>{locale.text(label as 'nav.ground' | 'nav.lifeMap')}</span>
+    {phase === 'HOME' ? thresholds.map(({ position, label }) => <Html key={label} position={position.clone().add(new THREE.Vector3(0, 1.25, 0))} center distanceFactor={14} zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
+      <span aria-hidden="true" style={{ display: 'block', whiteSpace: 'nowrap', padding: '7px 11px', borderBottom: '1px solid #a9c9d399', borderRadius: 3, background: '#09151dcc', color: '#e2edf3', font: '500 14px/1.35 system-ui', letterSpacing: '.05em' }}>{label}</span>
     </Html>) : null}
   </>
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import { Html, Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
+import { Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import StellarCorona from "@/spatial/stellar/StellarCorona";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
@@ -600,7 +600,6 @@ function ArtifactShape(props: ArtifactProps) {
 
 function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect }: { node: LifeMapNode; index: number; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void }) {
   const root = useRef<THREE.Group>(null);
-  const [hovered, setHovered] = useState(false);
   const active = selected?.id === node.id;
   const related = Boolean(selected && (selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)));
   const visible = !selected || active || (related && phase !== "arrival");
@@ -626,17 +625,9 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
       userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
       onClick={(event) => { event.stopPropagation(); onSelect(node); }}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
     >
       {overviewCluster ? <FieldParticles seed={index * 137 + node.id.length * 17} count={44} radius={2.25} depth={5.8} height={3.8} color={node.aura} opacity={0.42} size={0.052} /> : <ArtifactShape node={node} active={active} />}
       <Sparkles count={active ? 34 : overviewCluster ? 14 : 10} scale={active ? [3.4, 3.8, 3.4] : overviewCluster ? [3.8, 4.3, 5.1] : [1.8, 2.2, 1.8]} size={active ? 2.4 : overviewCluster ? 0.92 : 1.3} speed={reducedMotion ? 0 : 0.11} opacity={active ? 0.72 : overviewCluster ? 0.28 : 0.34} color={node.aura} />
-      {visible && (active || (phase === 'overview' && (index < 3 || hovered))) ? <Html center position={[0, 1.85, 0]} zIndexRange={[11, 1]}>
-        <button type="button" className="life-map-world-label" data-active={active ? 'true' : 'false'} aria-pressed={active} onClick={(event) => { event.stopPropagation(); onSelect(node); }}>
-          <strong>{node.locked ? 'Protected memory' : node.title}</strong>
-          <span>{node.locked ? 'Protected' : semanticLabel}</span>
-        </button>
-      </Html> : null}
       <pointLight color={node.aura} intensity={active ? 8 : overviewCluster ? 1.2 : 2.8} distance={active ? 15 : overviewCluster ? 5 : 7} decay={2} />
     </group>
   );

@@ -16,6 +16,7 @@ import { URAI_JOURNEY_MESSAGES } from '../src/lib/i18n/journeyMessages.ts'
 import { localizedMessage, localeNumber, localeDate } from '../src/lib/i18n/localePreference.ts'
 import { homeJourneyHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
 import * as homeGeometry from '../src/spatial/layout/HomeSanctuaryGeometry.ts'
+import * as focusMemoryAppearance from '../src/app/focus/focusMemoryAppearance.ts'
 import { localizationMessageBindings } from '../../scripts/lib/localization-message-bindings.mjs'
 
 const require = createRequire(import.meta.url)
@@ -77,6 +78,7 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(id.includes('orbStateController')) return {resolveOrbSensoryOutput:()=>({animation:'settled',material:'neutral',movement:'settled',caption:''})}
     if(id.includes('HomeInterpretiveSplat')) return {resolveHomeInterpretiveSplatAsset:()=>null,HomeInterpretiveSplatEnvironment:()=>null}
     if(id.includes('HomeSanctuaryGeometry')) return homeGeometry
+    if(id.includes('focusMemoryAppearance')) return focusMemoryAppearance
     if(id==='@react-three/drei') return {useGLTF:Object.assign(()=>({}),{preload:()=>{},clear:()=>{}})}
     if(id.endsWith('.module.css')) return {__esModule:true,default:new Proxy({},{get:(_target,key)=>String(key)})}
     return unknown
@@ -205,7 +207,7 @@ test('missing prepared entry falls back with matching English language and direc
 
 test('actual Focus text leaves preserve long RTL/private strings and React escapes markup',()=>{
   const malicious='<img src=x onerror="alert(1)"> & private <script>identity</script>'
-  const memory={id:'private-fixture',title:malicious,narrator:{focus:malicious},privacy:'private',demo:false,occurredAt:'2026-10-07T00:00:00Z',visuals:{accent:'#fff',light:'#fff',sky:'#000',ground:'#000'},star:{id:'private-fixture'},replayManifest:{id:'manifest'},people:[],emotionalState:'fixture',place:null}
+  const memory={id:'private-fixture',title:malicious,narrator:{focus:malicious},privacy:'private',demo:false,occurredAt:'2026-10-07T00:00:00Z',visuals:{accent:'#fff',light:'#fff',sky:'#000',ground:'#000'},star:{id:'private-fixture'},replayManifest:{id:'manifest'},people:[],emotionalState:'fixture',place:null,sourceMedia:[]}
   const rendered=fixture({requested:'ar',preview:true},{memory,states:[false,0,false,true,null,'ready']}).render(focus)
   const heading=elements(rendered,n=>n.type==='h2')[0]
   assert.equal(text(heading),malicious);assert.equal(heading.props.lang,undefined);assert.equal(heading.props.dir,'auto')

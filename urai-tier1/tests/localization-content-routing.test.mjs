@@ -18,7 +18,7 @@ function sourceModule(path, require, globals = {}) {
   const module = { exports: {} }
   vm.runInNewContext(outputText, {
     exports: module.exports, module, require,
-    AbortController, Buffer, TextEncoder, TextDecoder, Response,
+    AbortController, Buffer, DOMException, TextEncoder, TextDecoder, Response,
     setTimeout, clearTimeout, Date, console,
     ...globals,
   }, { filename: path })
@@ -30,13 +30,34 @@ const doneEvent = (locale, message = 'Synthetic response') => ({
   disclosure: 'OpenAI processed the response.', suggestedActions: [], provider: 'openai', locale,
 })
 
+function actorFixture({ getToken = async () => 'synthetic-token', user = true } = {}) {
+  const auth = { currentUser: user ? { uid: 'synthetic-owner', getIdToken: getToken } : null }
+  const firebaseClient = { app: {}, firebasePublicEnvReady: true }
+  // Execute the admitted actor boundary with a stable SDK actor, so its identity
+  // and cancellation checks remain active in the localized transport fixture.
+  const actorBoundary = sourceModule('../src/lib/privacy/aiActorBoundary.ts', id => {
+    if (id === 'firebase/auth') return {
+      getAuth: () => auth,
+      onIdTokenChanged(observedAuth, listener) {
+        assert.equal(observedAuth, auth)
+        listener(auth.currentUser)
+        return () => {}
+      },
+    }
+    if (id === '@/lib/firebase/client') return firebaseClient
+    throw new Error(`Unexpected actor boundary dependency ${id}`)
+  })
+  return { actorBoundary, firebaseClient }
+}
+
 function clientFixture({ initialLocale = 'en-US', events, getToken = async () => 'synthetic-token', user = true } = {}) {
   let currentLocale = initialLocale
   const calls = []
+  const { actorBoundary, firebaseClient } = actorFixture({ getToken, user })
   const client = sourceModule('../src/spatial/orb/openaiClient.ts', (id) => {
     if (id === '@/lib/orb-companion-contract') return { buildOrbCompanionResponse: () => ({ reply: 'Canonical English fallback.' }) }
-    if (id === 'firebase/auth') return { getAuth: () => ({ currentUser: user ? { getIdToken: getToken } : null }) }
-    if (id === '@/lib/firebase/client') return { app: {}, firebasePublicEnvReady: true }
+    if (id === '@/lib/privacy/aiActorBoundary') return actorBoundary
+    if (id === '@/lib/firebase/client') return firebaseClient
     if (id === '@/lib/clientApiUrl') return { clientApiUrl: path => path }
     if (id === '@/lib/i18n/localePreference') return { currentSpeechTag: () => currentLocale }
     if (id === '@/lib/i18n/contentLanguage') return { contentLanguage }
@@ -54,7 +75,7 @@ function clientFixture({ initialLocale = 'en-US', events, getToken = async () =>
     message: 'Synthetic user question', context: [], aiProcessingConsent: true,
     signal: new AbortController().signal, ...input,
   })
-  return { client, calls, request, changeLocale: value => { currentLocale = value } }
+  return { client, calls, request, actorBoundary, changeLocale: value => { currentLocale = value } }
 }
 
 const unexpectedConsentDependency = id => { throw new Error(`Unexpected canonical consent dependency ${id}`) }
@@ -240,10 +261,11 @@ test('canonical English fallback and legacy English streams retain truthful Engl
 })
 
 test('actual Council fallback satisfies the shared response type with authored English metadata', () => {
+  const { actorBoundary, firebaseClient } = actorFixture({ user: false })
   const client = sourceModule('../src/spatial/council/councilClient.ts', id => {
     if (id === '@/lib/orb-companion-contract') return { buildOrbCompanionResponse: () => ({ reply: 'Canonical English Council fallback.' }) }
-    if (id === 'firebase/auth') return { getAuth: () => ({ currentUser: null }) }
-    if (id === '@/lib/firebase/client') return { app: {}, firebasePublicEnvReady: true }
+    if (id === '@/lib/privacy/aiActorBoundary') return actorBoundary
+    if (id === '@/lib/firebase/client') return firebaseClient
     if (id === '@/lib/clientApiUrl') return { clientApiUrl: path => path }
     throw new Error(`Unexpected Council dependency ${id}`)
   })
@@ -338,7 +360,7 @@ function panelFixture(locale, live = true) {
   const hooks = []
   const voiceCalls = []
   const requestCalls = []
-  const clients = clientFixture({ initialLocale: locale }).client
+  const { client: clients, actorBoundary } = clientFixture({ initialLocale: locale })
   const react = {
     useState(initial) {
       const index = cursor++
@@ -347,11 +369,13 @@ function panelFixture(locale, live = true) {
     },
     useRef(initial) { const index = cursor++; return hooks[index] ??= { current: initial } },
     useEffect() {}, useCallback: callback => callback,
+    useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
   }
   const jsx = (type, props) => ({ type, props })
   const panel = sourceModule('../src/spatial/orb/OrbConversationPanel.tsx', id => {
     if (id === 'react') return react
     if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx }
+    if (id === '@/lib/privacy/aiActorBoundary') return actorBoundary
     if (id === '@/app/home/orbStateController') return { publishOrbState() {} }
     if (id === '@/spatial/narrator/elevenlabsClient') return { requestExternalVoiceAudio() { throw new Error('External voice must be mocked at playback') } }
     if (id === '@/spatial/narrator/narratorCopy') return { URAI_VOICE_CONFIG: { neutral: { voiceId: 'synthetic-voice' } } }
@@ -379,6 +403,8 @@ function panelFixture(locale, live = true) {
   function descendants(node) {
     if (!node || typeof node !== 'object') return []
     if (Array.isArray(node)) return node.flatMap(descendants)
+    // Render the real actor-keyed child as well as its public panel wrapper.
+    if (typeof node.type === 'function') return descendants(node.type(node.props))
     return [node, ...descendants(node.props?.children)]
   }
   const elements = () => descendants(render())

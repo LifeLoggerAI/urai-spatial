@@ -407,10 +407,27 @@ test('canonical whitespace and context field ordering cannot create a second ide
 })
 
 function client(fetch) {
+  const actor = { uid: 'alice', getIdToken: async () => 'alice' }
+  const auth = { currentUser: actor }
+  const firebaseAuth = {
+    getAuth: () => auth,
+    onIdTokenChanged: (observedAuth, listener) => {
+      assert.equal(observedAuth, auth)
+      listener(auth.currentUser)
+      return () => {}
+    },
+  }
+  const firebaseClient = { app: {}, firebasePublicEnvReady: true }
+  // Keep the admitted actor checks real. Only the Firebase SDK session and
+  // transport are synthetic; repeated reads must preserve SDK actor identity.
+  const actorBoundary = loadSource('urai-tier1/src/lib/privacy/aiActorBoundary.ts', {
+    'firebase/auth': firebaseAuth,
+    '@/lib/firebase/client': firebaseClient,
+  }, { DOMException })
   return loadSource('urai-tier1/src/spatial/orb/openaiClient.ts', {
     '@/lib/orb-companion-contract': { buildOrbCompanionResponse: () => ({ reply: 'synthetic local fallback' }) },
-    'firebase/auth': { getAuth: () => ({ currentUser: { getIdToken: async () => 'alice' } }) },
-    '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true },
+    '@/lib/privacy/aiActorBoundary': actorBoundary,
+    '@/lib/firebase/client': firebaseClient,
     '@/lib/clientApiUrl': { clientApiUrl: (value) => value },
     '@/lib/i18n/localePreference': { currentSpeechTag: () => 'en-US' },
     '@/lib/i18n/contentLanguage': loadSource('packages/localization/src/contentLanguage.ts', {}),

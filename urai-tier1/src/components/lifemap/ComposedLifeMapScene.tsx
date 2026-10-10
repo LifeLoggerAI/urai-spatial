@@ -476,16 +476,11 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       .life-map-thresholds button span{font-size:10px;letter-spacing:.08em;color:#c5dce8}
       .life-map-thresholds button strong{font-size:16px}
       .life-map-thresholds .overview-return,.overview-home-return{font-size:13px;letter-spacing:0;text-transform:none}
-      :global(.life-map-world-label){min-width:0;max-width:160px;padding:9px 12px;background:#03101ee8;border-color:#bce8f04d;backdrop-filter:none}
-      :global(.life-map-world-label strong){font-size:13px;line-height:1.3;font-weight:650}
-      :global(.life-map-world-label span){font-size:11px;line-height:1.35;color:#c6dce9}
-      :global(.life-map-world-label:focus-visible){outline:3px solid #effbff;outline-offset:4px}
       @media(max-width:700px){.life-map-title{max-width:calc(100vw - 28px);gap:6px}.life-map-title strong{font-size:30px;max-width:16ch}.life-map-title span,.life-map-title em{font-size:10px;letter-spacing:.08em}.life-map-status{top:auto;right:14px;bottom:max(152px,calc(env(safe-area-inset-bottom) + 146px));max-width:calc(100vw - 28px);padding:8px 10px}.life-map-status span{font-size:11px}.life-map-status small{display:block;font-size:12px;max-width:32ch;text-align:right}:global(.life-map-world-label){max-width:130px;padding:7px 9px}:global(.life-map-world-label strong){font-size:12px}:global(.life-map-world-label span){font-size:10px}}
       @media(max-height:500px) and (min-width:501px){.life-map-title{max-width:46vw}.life-map-title strong{font-size:30px}.life-map-status{top:16px;bottom:auto;max-width:42vw}.life-map-thresholds{left:auto;right:16px;bottom:16px;transform:none;width:48vw;grid-template-columns:1fr 1fr auto}.life-map-thresholds .overview-return{grid-column:auto;min-width:64px;width:auto}.life-map-thresholds button span{display:none}}
       .life-map-root .life-map-title::after{content:none!important;display:none!important}
-      /* The adopted scene owns its hierarchy; retire the legacy isolation rules
-         that concealed its world labels and reduced its current route header. */
-      .life-map-root[data-life-map-production-world='true'] :global(.life-map-world-label){display:grid!important;min-height:48px;box-sizing:border-box}
+      /* The adopted scene owns the route hierarchy. Memory identity and search
+         remain with the existing semantic navigator, outside the 3D world. */
       .life-map-root[data-life-map-production-world='true'] .life-map-title strong{font-size:clamp(32px,4.2vw,60px)!important;line-height:1.04!important;max-width:14ch!important}
       @media(max-width:700px){
         .life-map-root[data-life-map-production-world='true'] .life-map-title{max-width:calc(100vw - 100px)!important}

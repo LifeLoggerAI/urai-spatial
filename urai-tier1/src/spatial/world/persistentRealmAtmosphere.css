@@ -1,7 +1,10 @@
 .urai-world-atmosphere {
   position: fixed;
   inset: 0;
-  z-index: 2;
+  /* The isolated world shell keeps this above its background and below route
+     stacking contexts. Each scene owns effects that should cover its canvas;
+     shared weather and depth must never paint over route text or controls. */
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
   isolation: isolate;
