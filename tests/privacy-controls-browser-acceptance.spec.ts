@@ -263,7 +263,7 @@ test('settled mobile privacy navigation controls remain unobscured by the persis
       const overlays = '.consentSanctuary > .consentOrb, .urai-world-companion__orb, .urai-world-companion[data-open="true"] .urai-world-companion__menu, [data-urai-adam-launcher], [data-urai-adam-presence]'
       return elements.map(element => {
         const rect = element.getBoundingClientRect()
-        const onScreen = rect.width > 0 && rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0
+        const onScreen = rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= window.innerHeight
         const companionOverlaps = onScreen ? [...document.querySelectorAll(overlays)].filter(candidate => {
           for (let node: Element | null = candidate; node; node = node.parentElement) {
             const style = getComputedStyle(node)
