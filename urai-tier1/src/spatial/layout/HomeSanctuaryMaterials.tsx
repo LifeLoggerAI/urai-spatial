@@ -100,13 +100,19 @@ export function HomeSkyGradient() {
           sky+=vec3(.006,.004,.006)*horizonBand;
           // A fixed, original star field stays visible above the horizon even
           // on low-power devices. No image or reconstructed place is implied.
-          vec2 skyUv=vec2(atan(dir.z,dir.x)/6.2831853+.5,asin(dir.y)/3.14159265+.5);
+          vec2 skyUv=vec2(atan(dir.z,dir.x)/6.2831853+.5,asin(clamp(dir.y,-1.,1.))/3.14159265+.5);
           vec2 cells=skyUv*vec2(720.,360.);
           vec2 cell=floor(cells);
           vec2 point=fract(cells)-vec2(.18+.64*skyHash(cell+3.7),.18+.64*skyHash(cell+9.1));
           float seed=skyHash(cell);
           float radius=mix(.025,.085,skyHash(cell+2.4));
-          float aa=max(fwidth(cells.x),fwidth(cells.y))*.65;
+          // Longitude wraps at atan's branch cut. Differentiate its periodic
+          // distance so seam pixels keep the same star footprint as other sky.
+          vec2 cellDx=dFdx(cells), cellDy=dFdy(cells);
+          cellDx.x-=floor(cellDx.x/720.+.5)*720.;
+          cellDy.x-=floor(cellDy.x/720.+.5)*720.;
+          vec2 cellWidth=abs(cellDx)+abs(cellDy);
+          float aa=max(cellWidth.x,cellWidth.y)*.65;
           float star=(1.-smoothstep(radius,radius+aa,length(point)))*step(.991,seed);
           vec3 starColor=mix(vec3(.54,.72,1.),vec3(1.,.83,.62),skyHash(cell+4.2));
           sky+=starColor*star*smoothstep(.015,.18,dir.y)*(.65+skyHash(cell+1.3)*.8);

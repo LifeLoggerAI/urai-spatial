@@ -13,7 +13,7 @@ import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world
 import { HomeInterpretiveSplatEnvironment, resolveHomeInterpretiveSplatAsset } from '@/spatial/home/HomeInterpretiveSplat'
 import { sensorySafeEnabled, URAI_SENSORY_SAFE_EVENT, URAI_SENSORY_SAFE_STORAGE_KEY } from '@/spatial/accessibility/SensorySafeRuntime'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
-import { HOME_COURTYARD, HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL, homeCourtyardFloorHeight, homeTerrainHeight, homeWalkSurfaceHeight, makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, projectHomeTerrainGeometry, resolveHomeSolidPenetration } from './HomeSanctuaryGeometry'
+import { HOME_COURTYARD, HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL, homeCourtyardFloorHeight, homeTerrainHeight, homeWalkSurfaceHeight, makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, resolveHomeSolidPenetration } from './HomeSanctuaryGeometry'
 import { applyOriginalHomeSurfaceDetail, HomeSkyGradient, HomeSurfaceMaterial } from './HomeSanctuaryMaterials'
 import { classifyRetainedHomeMesh } from './HomeSanctuaryAssetPolicy'
 import styles from './HomeWorldProduction.module.css'
@@ -123,30 +123,26 @@ function prepareNaturalSanctuary(source: THREE.Object3D) {
   world.position.set(0, .02, -1.15)
   world.scale.setScalar(.94)
   world.updateWorldMatrix(true, true)
-  const groundBounds = new THREE.Box3()
   let visibleMeshCount = 0
   world.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
     const disposition = classifyRetainedHomeMesh(object)
-    object.visible = disposition !== 'excluded'
+    // The six retained ground layers have incompatible coarse triangulations.
+    // Their vertex-only projection intersects the courtyard grading between
+    // vertices. The existing continuous heightfield below owns ground rendering;
+    // keep the governed asset bytes and all admitted non-ground surfaces intact.
+    object.visible = disposition !== 'excluded' && disposition !== 'ground'
     if (!object.visible) return
-    const grounded = disposition === 'ground'
-    if (grounded) {
-      object.geometry = projectHomeTerrainGeometry(object.geometry, object.matrixWorld)
-      object.userData.homeProjectedGround = true
-      groundBounds.union(new THREE.Box3().setFromBufferAttribute(object.geometry.attributes.position as THREE.BufferAttribute).applyMatrix4(object.matrixWorld))
-    }
     object.material = Array.isArray(object.material)
-      ? object.material.map((material) => cloneNaturalSanctuaryMaterial(material, grounded))
-      : cloneNaturalSanctuaryMaterial(object.material, grounded)
+      ? object.material.map((material) => cloneNaturalSanctuaryMaterial(material, false))
+      : cloneNaturalSanctuaryMaterial(object.material, false)
     object.castShadow = true
     object.receiveShadow = true
     visibleMeshCount += 1
   })
   world.name = 'home-canonical-sanctuary-structure'
   world.userData.visibleMeshCount = visibleMeshCount
-  world.userData.role = 'retained-ground-topology-with-original-procedural-materials'
-  if (!groundBounds.isEmpty()) world.userData.groundBounds = { minX: groundBounds.min.x, maxX: groundBounds.max.x, minZ: groundBounds.min.z, maxZ: groundBounds.max.z }
+  world.userData.role = 'retained-non-ground-assets-with-single-runtime-heightfield'
   return world
 }
 
@@ -257,7 +253,7 @@ const STONE_SCATTER = Array.from({ length: 48 }, (_, index) => {
 function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> }) {
   const sanctuary = useGLTF(HOME_SANCTUARY_MODEL)
   const authored = useMemo(() => prepareNaturalSanctuary(sanctuary.scene), [sanctuary.scene])
-  const extension = useMemo(() => makeHomeTerrainGeometry(authored.userData.groundBounds), [authored])
+  const extension = useMemo(() => makeHomeTerrainGeometry(), [authored])
   useEffect(() => () => {
     extension.dispose()
     authored.traverse((object) => {
@@ -272,7 +268,7 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
     if (useSceneStore.getState().inputLocked) return
     target.current = new THREE.Vector3(THREE.MathUtils.clamp(event.point.x, HOME_BOUNDS.minX, HOME_BOUNDS.maxX), 0, THREE.MathUtils.clamp(event.point.z, HOME_BOUNDS.minZ, HOME_BOUNDS.maxZ))
   }
-  return <group name="home-authored-terrain" userData={{ geometryOwner: 'retained-glb-ground-topology-plus-original-terrain-extension', materialOwner: 'original-procedural-detail-not-photographic-pbr', sharedElevation: true }}>
+  return <group name="home-authored-terrain" userData={{ geometryOwner: 'single-original-runtime-heightfield', materialOwner: 'original-procedural-detail-not-photographic-pbr', sharedElevation: true }}>
     <primitive object={authored} />
     <mesh name="home-natural-terrain" geometry={extension} receiveShadow onClick={onWalk}>
       <HomeSurfaceMaterial kind="ground" color="#ffffff" vertexColors roughness={.96} metalness={0} envMapIntensity={.32} />
@@ -700,7 +696,10 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     camera.position.copy(position.current).add(new THREE.Vector3(0, portrait ? 1.58 : 1.68, .14))
     forward.current.set(Math.sin(yaw.current),0,-Math.cos(yaw.current))
     look.current.copy(position.current).addScaledVector(forward.current, portrait ? 6 : 8)
-    camera.lookAt(look.current.x, position.current.y + 1.22 + pitch.current, look.current.z)
+    // Input pitch is an angle; retain the original resting composition at -.04.
+    const lookDistance = Math.hypot(look.current.x - camera.position.x, look.current.z - camera.position.z)
+    const restPitch = Math.atan2(position.current.y + 1.18 - camera.position.y, lookDistance)
+    camera.lookAt(look.current.x, camera.position.y + Math.tan(restPitch + pitch.current + .04) * lookDistance, look.current.z)
   }, [camera, pitch, size.height, size.width, yaw])
   useLayoutEffect(() => place(), [place])
   useEffect(() => { owner.current = gl.domElement.closest<HTMLElement>('[data-home-primary-owner="asset-driven"]') }, [gl])
@@ -787,7 +786,10 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     camera.position.lerp(desired.current, 1 - Math.pow(.001, delta))
     publishCameraHeight()
     look.current.copy(position.current).addScaledVector(forward.current, portrait ? 6 : 8)
-    camera.lookAt(look.current.x, position.current.y + 1.22 + pitch.current, look.current.z)
+    // Input pitch is an angle; retain the original resting composition at -.04.
+    const lookDistance = Math.hypot(look.current.x - camera.position.x, look.current.z - camera.position.z)
+    const restPitch = Math.atan2(position.current.y + 1.18 - camera.position.y, lookDistance)
+    camera.lookAt(look.current.x, camera.position.y + Math.tan(restPitch + pitch.current + .04) * lookDistance, look.current.z)
     const candidates: readonly [Nearby, THREE.Vector3, number][] = [['orb', ORB, 2.4], ['ground', GROUND_THRESHOLD, 2.8], ['life-map', LIFE_MAP_LOOKOUT, 2.8]]
     let next: Nearby = null, best = Infinity
     for (const [name, poi, radius] of candidates) { const distance = Math.hypot(position.current.x - poi.x, position.current.z - poi.z); if (distance < radius && distance < best) { next = name; best = distance } }
@@ -802,10 +804,13 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
           // user actually enters its proximity radius. This is not a camera lock:
           // pointer/touch look remains authoritative immediately afterward.
           yaw.current = Math.atan2(dx, -dz)
-          pitch.current = THREE.MathUtils.clamp(ORB.y - position.current.y - 1.22, -.42, .18)
           forward.current.set(Math.sin(yaw.current), 0, -Math.cos(yaw.current))
           look.current.copy(position.current).addScaledVector(forward.current, portrait ? 6 : 8)
-          camera.lookAt(look.current.x, position.current.y + 1.22 + pitch.current, look.current.z)
+          const attentionDistance = Math.hypot(look.current.x - camera.position.x, look.current.z - camera.position.z)
+          const attentionRestPitch = Math.atan2(position.current.y + 1.18 - camera.position.y, attentionDistance)
+          const orbPitch = Math.atan2(ORB.y - camera.position.y, Math.hypot(ORB.x - camera.position.x, ORB.z - camera.position.z))
+          pitch.current = THREE.MathUtils.clamp(orbPitch - attentionRestPitch - .04, -.85, .18)
+          camera.lookAt(look.current.x, camera.position.y + Math.tan(attentionRestPitch + pitch.current + .04) * attentionDistance, look.current.z)
         }
       }
       onNearby(next)
@@ -910,7 +915,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const interact = useCallback(() => { if (nearby === 'orb') openOrb(); else if (nearby === 'ground') startGround(); else if (nearby === 'life-map') startLifeMap() }, [nearby, openOrb, startGround, startLifeMap])
   const reset = useCallback(() => { if (!groundDescent) { yaw.current = .055; pitch.current = -.04; target.current = SPAWN.clone() } }, [groundDescent])
   const input = useMovementInput({ enabled: !groundDescent, onInteract: interact, onReset: reset })
-  const look = useDragLook({ yaw, pitch, enabled: !groundDescent && phase !== 'ASCENT', sensitivity: .0031, minPitch: -.55, maxPitch: .68, onDragState: setDragging })
+  const look = useDragLook({ yaw, pitch, enabled: !groundDescent && phase !== 'ASCENT', sensitivity: .0031, minPitch: -.85, maxPitch: 1.2, onDragState: setDragging })
 
   useEffect(() => { const reduced = window.matchMedia('(prefers-reduced-motion: reduce)'); const mobile = window.matchMedia('(pointer: coarse), (max-width: 700px)'); const apply = () => { setReducedMotion(reduced.matches); setMobileControls(mobile.matches) }; apply(); reduced.addEventListener?.('change', apply); mobile.addEventListener?.('change', apply); return () => { reduced.removeEventListener?.('change', apply); mobile.removeEventListener?.('change', apply) } }, [])
   useEffect(() => {
