@@ -456,7 +456,8 @@ try {
       // the first screenshot attempt. Re-sample the same strict readiness
       // predicate so the retained pixels and readiness describe one instant.
       if (captured.retried) {
-        const postScreenshotDeadline = Math.min(Date.now() + 15_000, caseDeadline - 10_000)
+        const postScreenshotWindowMs = wideHomeCase ? 30_000 : 15_000
+        const postScreenshotDeadline = Math.min(Date.now() + postScreenshotWindowMs, caseDeadline - 10_000)
         let postStableSamples = 0
         let postSignature = null
         while (Date.now() < postScreenshotDeadline && postStableSamples < 3) {
