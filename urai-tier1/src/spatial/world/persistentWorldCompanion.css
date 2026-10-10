@@ -350,8 +350,8 @@
     position: absolute !important;
     left: auto !important;
     right: max(18px, env(safe-area-inset-right)) !important;
-    top: auto !important;
-    bottom: max(18px, env(safe-area-inset-bottom)) !important;
+    top: max(18px, env(safe-area-inset-top)) !important;
+    bottom: auto !important;
     width: 64px !important;
     justify-items: end !important;
     transform: none !important;
@@ -360,7 +360,8 @@
   .urai-world-runtime[data-world-destination='privacy-controls'] .urai-world-companion__menu {
     position: absolute !important;
     right: 0 !important;
-    bottom: calc(100% + 10px) !important;
+    top: calc(100% + 10px) !important;
+    bottom: auto !important;
   }
 }
 
