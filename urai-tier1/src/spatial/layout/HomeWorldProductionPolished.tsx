@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { ContactShadows, Environment, Html, Lightformer, Stars, useAnimations, useGLTF } from '@react-three/drei'
+import { Environment, Html, Lightformer, Stars, useAnimations, useGLTF } from '@react-three/drei'
 import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
@@ -862,7 +862,6 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     <GroundDetail />
     <SanctuaryPavilion />
     <Water />
-    {!cosmic ? <ContactShadows position={[0, terrainHeight(0,-4.4) + .04, -4.4]} opacity={.32} scale={22} blur={2.8} far={8} frames={1} /> : null}
     <OrbPlatform />
     <OrbGroundGlow state={props.orbState} />
     <Orb onOpen={props.onOrbOpen} reducedMotion={props.reducedMotion} reducedStimulation={props.reducedStimulation} state={props.orbState} />
