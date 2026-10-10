@@ -58,8 +58,11 @@ requireMatch(
 requireMatch('Focus enters Replay through world travel', focusClient, /requestUraiWorldTravel\(\{/)
 requireMatch('Focus Replay destination', focusClient, /destination: 'replay'/)
 requireMatch('Focus Replay manifest context', focusClient, /replayManifestId: memory\.replayManifest\.id/)
-requireMatch('Focus Replay portal accessibility', focusClient, /aria-label=\{memory\s*\?\s*locale\.text\('focus\.openReplayFor',\s*\{\s*title:\s*memory\.title\s*\}\)\s*:\s*locale\.text\('focus\.chooseReplay'\)\}/)
-requireMatch('Focus Replay portal locale metadata', focusClient, /\{\.\.\.locale\.props\(memory\s*\?\s*'focus\.openReplayFor'\s*:\s*'focus\.chooseReplay'\)\}/)
+requireMatch('Focus Replay portal accessibility', focusClient, /aria-label=\{memory \? locale\.text\('focus\.openReplayFor', \{title:memory\.title\}\) : locale\.text\('focus\.chooseReplay'\)\}/)
+requireMatch('Focus Replay locale metadata', focusClient, /\{\.\.\.locale\.props\(memory \? 'focus\.openReplayFor' : 'focus\.chooseReplay'\)\}/)
+requireMatch('Focus Replay selected-memory gate', focusClient, /\{memory \? <button type="button" className="primary"/)
+requireCondition('Focus exposes exactly one primary Replay action.', (focusClient.match(/className="primary"/g) ?? []).length === 1)
+requireMatch('Focus neutral field disclosure', focusClient, /No personal memory is displayed in this neutral stellar field\./)
 
 const combinedFocusGuard = /if \(!memory \|\| !replayHref \|\| committed\) return/.test(focusClient)
 const separateAuthorizationGuard = /if \(!memory \|\| !replayHref\) return/.test(focusClient)

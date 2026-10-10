@@ -175,6 +175,36 @@ test('the unchanged Orb fits the actual first-person arrival framing on desktop,
   }
 })
 
+test('actual first-person look reaches the open sky and the ground while preserving arrival composition', () => {
+  const start = homeSource.indexOf('  const place = useCallback(() => {')
+  const end = homeSource.indexOf('\n  }, [camera, pitch, size.height, size.width, yaw])', start)
+  assert.ok(start > 0 && end > start)
+  const body = homeSource.slice(start + '  const place = useCallback(() => {'.length, end)
+  const spawn = sourceVector('SPAWN')
+  const initial = homeSource.match(/const yaw = useRef\(([^)]+)\), pitch = useRef\(([^)]+)\)/)
+  assert.ok(initial)
+  for (const [width, height] of [[1440, 900], [390, 844], [844, 390]]) {
+    const camera = new THREE.PerspectiveCamera(50, width / height, .05, 300)
+    const sandbox = { THREE, camera, homeWalkSurfaceHeight, size: { width, height }, position: { current: spawn.clone() }, yaw: { current: Number(initial[1]) }, pitch: { current: -.04 }, forward: { current: new THREE.Vector3() }, look: { current: new THREE.Vector3() } }
+    const place = () => vm.runInNewContext(`(() => {${body}\n})()`, sandbox)
+    place()
+    const arrival = camera.getWorldDirection(new THREE.Vector3())
+    const floor = homeWalkSurfaceHeight(spawn.x, spawn.z)
+    const oldTarget = spawn.clone().setY(floor + 1.18).addScaledVector(sandbox.forward.current, height > width ? 6 : 8)
+    const expected = oldTarget.sub(camera.position).normalize()
+    assert.ok(arrival.distanceTo(expected) < 1e-10, `${width}x${height} changed the established resting composition`)
+    const eye = camera.position.clone()
+    sandbox.pitch.current = 1.2; place()
+    const upwardAngle = Math.asin(camera.getWorldDirection(new THREE.Vector3()).y) * 180 / Math.PI
+    assert.ok(upwardAngle > 60, `${width}x${height} cannot look into the open sky: ${upwardAngle} degrees`)
+    assert.ok(camera.position.distanceTo(eye) < 1e-10, 'looking up must not move the physical eye')
+    sandbox.pitch.current = -.85; place()
+    const downwardAngle = Math.asin(camera.getWorldDirection(new THREE.Vector3()).y) * 180 / Math.PI
+    assert.ok(downwardAngle < -45, `${width}x${height} cannot inspect the ground: ${downwardAngle} degrees`)
+    assert.ok(camera.position.distanceTo(eye) < 1e-10, 'looking down must not move the physical eye')
+  }
+})
+
 test('Orb physical footprint, native telemetry and current proof agree while the 2.4m interaction radius stays intact', () => {
   const envelope = maximumRetainedOrbRadius()
   const footprint = HOME_NAVIGATION_OBSTACLES.find(obstacle => obstacle.x === actualOrb.x && obstacle.z === actualOrb.z)
@@ -417,4 +447,33 @@ test('click-target movement reaches the actual Orb approach, Ground and Life Map
     assert.ok(Math.hypot(position.x - x, position.z - z) < .15, 'world destination must remain physically reachable')
     if (name === 'orb') assert.ok(Math.hypot(position.x - actualOrb.x, position.z - actualOrb.z) < 2.4, 'the actual Orb must retain its interaction zone after click-target approach')
   }
+})
+
+test('one complete terrain grid owns ground without intersecting coarse retained overlays', () => {
+  const start = homeSource.indexOf('function prepareNaturalSanctuary(')
+  const end = homeSource.indexOf('\nfunction terrainHeight', start)
+  assert.ok(start >= 0 && end > start)
+  const compiled = ts.transpileModule(homeSource.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
+  const source = new THREE.Group()
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshStandardMaterial())
+  ground.name = 'sanctuary-terrain'
+  const earth = ground.clone(); earth.name = 'sanctuary-inner-earth'
+  const stone = ground.clone(); stone.name = 'admitted-wall'
+  source.add(ground, earth, stone)
+  const context = vm.createContext({ THREE, classifyRetainedHomeMesh, cloneNaturalSanctuaryMaterial: material => material.clone() })
+  vm.runInContext(compiled, context)
+  context.source = source
+  const prepared = vm.runInContext('prepareNaturalSanctuary(source)', context)
+  assert.equal(prepared.getObjectByName(ground.name).visible, false)
+  assert.equal(prepared.getObjectByName(earth.name).visible, false)
+  assert.equal(prepared.getObjectByName(stone.name).visible, true)
+  assert.equal(source.getObjectByName(ground.name).visible, true, 'cached source visibility stays intact')
+  assert.equal(source.getObjectByName(earth.name).geometry, earth.geometry, 'cached source geometry stays intact')
+  assert.match(homeSource, /makeHomeTerrainGeometry\(\)/, 'terrain must have no retained-ground cutout')
+  assert.doesNotMatch(homeSource, /makeHomeTerrainGeometry\(authored\.userData\.groundBounds\)/)
+  const geometry = makeHomeTerrainGeometry()
+  assert.equal(geometry.index.count / 3, 180 * 180 * 2, 'complete existing terrain grid has no holes')
+  const pos = geometry.getAttribute('position')
+  for (let i = 0; i < pos.count; i++) assert.ok(Math.abs(pos.getY(i) - homeTerrainHeight(pos.getX(i), pos.getZ(i))) < 1e-6)
+  geometry.dispose()
 })

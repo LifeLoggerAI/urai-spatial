@@ -3,6 +3,10 @@ import { spawnSync } from "node:child_process";
 
 const steps = [
   {
+    name: "Verify lossless asset candidate preparation",
+    command: ["node", "--test", "scripts/asset-meshopt-candidate.test.mjs"],
+  },
+  {
     name: "Verify production route renderer contract",
     command: ["node", "--test", "tests/production-route-render-contract.test.mjs"],
   },

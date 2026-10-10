@@ -25,6 +25,9 @@ function requireSinglePrimaryReplayAction(source) {
   }
   visit(parsed)
   assert.equal(actions.length, 1, 'Focus must expose exactly one primary Replay action, without restoring the duplicate CTA')
+  const selection = actions[0].parent.parent
+  assert.ok(ts.isConditionalExpression(selection) && selection.condition.getText(parsed) === 'memory'
+    && selection.whenFalse.kind === ts.SyntaxKind.NullKeyword, 'Replay action must be gated by the selected memory')
   const action = actions[0].getText(parsed)
   requireText(action, 'className="primary"')
   requireText(action, 'disabled={committed}')
@@ -184,4 +187,5 @@ test('Focus Replay action contract rejects a duplicated action or missing memory
   assert.throws(() => requireSinglePrimaryReplayAction(focus.replace("locale.text('focus.openReplayFor', {title:memory.title})", "locale.text('focus.enterReplay')")), /aria-label/)
   assert.throws(() => requireSinglePrimaryReplayAction(focus.replace("locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')", "locale.props('focus.enterReplay')")), /locale metadata/)
   assert.throws(() => requireSinglePrimaryReplayAction(focus.replace('disabled={committed} onClick={enterReplay}', 'onClick={enterReplay}')), /disabled/)
+  assert.throws(() => requireSinglePrimaryReplayAction(focus.replace('{memory ? <button type="button" className="primary"', '{true ? <button type="button" className="primary"')), /selected memory/)
 })

@@ -10,8 +10,22 @@ const canonicalPublicRoot = realpathSync(publicRoot)
 const manifestPath = resolve(appRoot, 'src/spatial/assets/assetManifest.ts')
 const reportPath = resolve(repoRoot, 'docs/ASSET_VERIFICATION_REPORT.md')
 
-const source = existsSync(manifestPath) ? await import(`file://${manifestPath}?t=${Date.now()}`) : null
-const manifest = source?.uraiSpatialAssetManifest ?? []
+if (!existsSync(manifestPath)) {
+  console.error('FAIL: asset manifest source is missing.')
+  process.exit(1)
+}
+let source
+try {
+  source = await import(`file://${manifestPath}?t=${Date.now()}`)
+} catch (error) {
+  console.error(`FAIL: asset manifest could not be loaded: ${error instanceof Error ? error.message : String(error)}`)
+  process.exit(1)
+}
+const manifest = source.uraiSpatialAssetManifest
+if (!Array.isArray(manifest) || manifest.length === 0) {
+  console.error('FAIL: asset manifest must export a nonempty uraiSpatialAssetManifest array.')
+  process.exit(1)
+}
 
 const extensionByType = {
   model: ['.glb', '.gltf'],

@@ -16,6 +16,8 @@ import { URAI_JOURNEY_MESSAGES } from '../src/lib/i18n/journeyMessages.ts'
 import { localizedMessage, localeNumber, localeDate } from '../src/lib/i18n/localePreference.ts'
 import { homeJourneyHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
 import * as homeGeometry from '../src/spatial/layout/HomeSanctuaryGeometry.ts'
+import * as homeRenderCostPolicy from '../src/spatial/performance/homeRenderCostPolicy.ts'
+import * as homeGpuSubmissionGate from '../src/spatial/performance/homeGpuSubmissionGate.ts'
 import * as focusMemoryAppearance from '../src/app/focus/focusMemoryAppearance.ts'
 import { localizationMessageBindings } from '../../scripts/lib/localization-message-bindings.mjs'
 
@@ -62,6 +64,8 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(id.includes('useReplayMemoryVisibility')) return {useReplayMemoryVisibility:()=>memory ? 'visible' : 'unavailable'}
     if(id.includes('useOwnedMemoryMediaPlayback')) return {useOwnedMemoryMediaPlayback:()=>({status:'absent',media:[]})}
     if(id.includes('useAdaptiveSpatialQuality')) return {useAdaptiveSpatialQuality:()=>quality}
+    if(id.includes('homeRenderCostPolicy')) return homeRenderCostPolicy
+    if(id.includes('homeGpuSubmissionGate')) return homeGpuSubmissionGate
     if(id.includes('useReducedMotion')) return {useReducedMotion:()=>true}
     if(id.includes('useReplayLifeModelAuthority')) return {useReplayLifeModelAuthority:()=>({available:false,status:'blocked',decision:'fixture',people:[]})}
     if(id.includes('useCapturedRealityReplayEntry')) return {useCapturedRealityReplayLookup:()=>({entry:null,status:'unavailable'})}

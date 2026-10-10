@@ -13,7 +13,9 @@ import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world
 import { HomeInterpretiveSplatEnvironment, resolveHomeInterpretiveSplatAsset } from '@/spatial/home/HomeInterpretiveSplat'
 import { sensorySafeEnabled, URAI_SENSORY_SAFE_EVENT, URAI_SENSORY_SAFE_STORAGE_KEY } from '@/spatial/accessibility/SensorySafeRuntime'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
-import { HOME_COURTYARD, HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL, homeCourtyardFloorHeight, homeTerrainHeight, homeWalkSurfaceHeight, makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, projectHomeTerrainGeometry, resolveHomeSolidPenetration } from './HomeSanctuaryGeometry'
+import { createHomeRenderCostMonitor, resolveHomeRenderQuality } from '@/spatial/performance/homeRenderCostPolicy'
+import { createHomeGpuSubmissionGate } from '@/spatial/performance/homeGpuSubmissionGate'
+import { HOME_COURTYARD, HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL, homeCourtyardFloorHeight, homeTerrainHeight, homeWalkSurfaceHeight, makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, resolveHomeSolidPenetration } from './HomeSanctuaryGeometry'
 import { applyOriginalHomeSurfaceDetail, HomeSkyGradient, HomeSurfaceMaterial } from './HomeSanctuaryMaterials'
 import { classifyRetainedHomeMesh } from './HomeSanctuaryAssetPolicy'
 import styles from './HomeWorldProduction.module.css'
@@ -126,30 +128,26 @@ function prepareNaturalSanctuary(source: THREE.Object3D) {
   world.position.set(0, .02, -1.15)
   world.scale.setScalar(.94)
   world.updateWorldMatrix(true, true)
-  const groundBounds = new THREE.Box3()
   let visibleMeshCount = 0
   world.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
     const disposition = classifyRetainedHomeMesh(object)
-    object.visible = disposition !== 'excluded'
+    // The six retained ground layers have incompatible coarse triangulations.
+    // Their vertex-only projection intersects the courtyard grading between
+    // vertices. The existing continuous heightfield below owns ground rendering;
+    // keep the governed asset bytes and all admitted non-ground surfaces intact.
+    object.visible = disposition !== 'excluded' && disposition !== 'ground'
     if (!object.visible) return
-    const grounded = disposition === 'ground'
-    if (grounded) {
-      object.geometry = projectHomeTerrainGeometry(object.geometry, object.matrixWorld)
-      object.userData.homeProjectedGround = true
-      groundBounds.union(new THREE.Box3().setFromBufferAttribute(object.geometry.attributes.position as THREE.BufferAttribute).applyMatrix4(object.matrixWorld))
-    }
     object.material = Array.isArray(object.material)
-      ? object.material.map((material) => cloneNaturalSanctuaryMaterial(material, grounded))
-      : cloneNaturalSanctuaryMaterial(object.material, grounded)
+      ? object.material.map((material) => cloneNaturalSanctuaryMaterial(material, false))
+      : cloneNaturalSanctuaryMaterial(object.material, false)
     object.castShadow = true
     object.receiveShadow = true
     visibleMeshCount += 1
   })
   world.name = 'home-canonical-sanctuary-structure'
   world.userData.visibleMeshCount = visibleMeshCount
-  world.userData.role = 'retained-ground-topology-with-original-procedural-materials'
-  if (!groundBounds.isEmpty()) world.userData.groundBounds = { minX: groundBounds.min.x, maxX: groundBounds.max.x, minZ: groundBounds.min.z, maxZ: groundBounds.max.z }
+  world.userData.role = 'retained-non-ground-assets-with-single-runtime-heightfield'
   return world
 }
 
@@ -260,7 +258,7 @@ const STONE_SCATTER = Array.from({ length: 48 }, (_, index) => {
 function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> }) {
   const sanctuary = useGLTF(HOME_SANCTUARY_MODEL)
   const authored = useMemo(() => prepareNaturalSanctuary(sanctuary.scene), [sanctuary.scene])
-  const extension = useMemo(() => makeHomeTerrainGeometry(authored.userData.groundBounds), [authored])
+  const extension = useMemo(() => makeHomeTerrainGeometry(), [authored])
   useEffect(() => () => {
     extension.dispose()
     authored.traverse((object) => {
@@ -275,7 +273,7 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
     if (useSceneStore.getState().inputLocked) return
     target.current = new THREE.Vector3(THREE.MathUtils.clamp(event.point.x, HOME_BOUNDS.minX, HOME_BOUNDS.maxX), 0, THREE.MathUtils.clamp(event.point.z, HOME_BOUNDS.minZ, HOME_BOUNDS.maxZ))
   }
-  return <group name="home-authored-terrain" userData={{ geometryOwner: 'retained-glb-ground-topology-plus-original-terrain-extension', materialOwner: 'original-procedural-detail-not-photographic-pbr', sharedElevation: true }}>
+  return <group name="home-authored-terrain" userData={{ geometryOwner: 'single-original-runtime-heightfield', materialOwner: 'original-procedural-detail-not-photographic-pbr', sharedElevation: true }}>
     <primitive object={authored} />
     <mesh name="home-natural-terrain" geometry={extension} receiveShadow onClick={onWalk}>
       <HomeSurfaceMaterial kind="ground" color={HOME_GROUND_COLOR} roughness={.96} metalness={0} envMapIntensity={.32} />
@@ -414,21 +412,36 @@ function GroundDetail() {
   </group>
 }
 
+const HOME_MOON_HALO_FRAGMENT = `
+varying vec3 vHomeMoonNormal;
+varying vec3 vHomeMoonView;
+float homeMoonHaloAlpha(float facing) {
+  return pow(clamp(facing, 0.0, 1.0), 3.0) * .065;
+}
+void main() {
+  float facing = dot(normalize(vHomeMoonNormal), normalize(vHomeMoonView));
+  gl_FragColor = vec4(vec3(.70, .80, .89), homeMoonHaloAlpha(facing));
+  #include <colorspace_fragment>
+}`
+
 function Horizon() {
   return <group name="home-mountain-horizon" userData={{ source: 'original-three-dimensional-runtime-landform', photographicEvidence: false }}>
-    <mesh geometry={RIDGE_FAR} position={[0, -1.2, -56]}><meshStandardMaterial color="#6d817b" roughness={1} metalness={0} envMapIntensity={.12} /></mesh>
-    <mesh geometry={RIDGE_MID} position={[0, -1.48, -48]}><meshStandardMaterial color="#5d7469" roughness={1} metalness={0} envMapIntensity={.14} /></mesh>
-    <mesh geometry={RIDGE_NEAR} position={[0, -1.78, -40]}><meshStandardMaterial color="#506557" roughness={1} metalness={0} envMapIntensity={.16} /></mesh>
+    <mesh geometry={RIDGE_FAR} position={[0, -1.2, -56]}><meshStandardMaterial color="#455563" roughness={1} metalness={0} envMapIntensity={.12} /></mesh>
+    <mesh geometry={RIDGE_MID} position={[0, -1.48, -48]}><meshStandardMaterial color="#374b55" roughness={1} metalness={0} envMapIntensity={.14} /></mesh>
+    <mesh geometry={RIDGE_NEAR} position={[0, -1.78, -40]}><meshStandardMaterial color="#30464b" roughness={1} metalness={0} envMapIntensity={.16} /></mesh>
     <mesh position={[0, 2.5, -36]} renderOrder={-1}>
       <planeGeometry args={[92, 12]} />
       <shaderMaterial transparent depthWrite={false} fog={false}
         vertexShader={`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`}
-        fragmentShader={`varying vec2 vUv; void main(){ float band=sin(3.14159265*vUv.y); float edge=smoothstep(.0,.16,vUv.x)*smoothstep(.0,.16,1.0-vUv.x); gl_FragColor=vec4(vec3(.31,.41,.38), band*edge*.16); }`}
+        fragmentShader={`varying vec2 vUv; void main(){ float band=sin(3.14159265*vUv.y); float edge=smoothstep(.0,.16,vUv.x)*smoothstep(.0,.16,1.0-vUv.x); gl_FragColor=vec4(vec3(.22,.30,.39), band*edge*.10); }`}
       />
     </mesh>
     <group position={[-17, 13.5, -52]}>
       <mesh><sphereGeometry args={[1.5, 32, 32]} /><meshBasicMaterial color="#e5eee4" toneMapped={false} /></mesh>
-      <mesh scale={1.7}><sphereGeometry args={[1.5, 24, 24]} /><meshBasicMaterial color="#d9ede4" transparent opacity={.035} depthWrite={false} toneMapped={false} /></mesh>
+      <mesh scale={1.7}><sphereGeometry args={[1.5, 24, 24]} /><shaderMaterial transparent depthWrite={false} toneMapped={false} fog={false}
+        vertexShader={`varying vec3 vHomeMoonNormal; varying vec3 vHomeMoonView; void main(){ vec4 viewPoint=modelViewMatrix*vec4(position,1.0); vHomeMoonNormal=normalMatrix*normal; vHomeMoonView=-viewPoint.xyz; gl_Position=projectionMatrix*viewPoint; }`}
+        fragmentShader={HOME_MOON_HALO_FRAGMENT}
+      /></mesh>
     </group>
   </group>
 }
@@ -550,6 +563,19 @@ function Water() {
   </group>
 }
 
+const ORB_MOTE_ALPHA_GLSL = `
+float homeOrbMoteAlpha(vec2 point) {
+  vec2 centered = point * 2.0 - 1.0;
+  return 1.0 - smoothstep(.64, 1.0, dot(centered, centered));
+}`
+
+function compileOrbMoteCircle(shader: Parameters<THREE.PointsMaterial['onBeforeCompile']>[0]) {
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', `#include <common>\n${ORB_MOTE_ALPHA_GLSL}`)
+    .replace('#include <map_particle_fragment>', '#include <map_particle_fragment>\ndiffuseColor.a *= homeOrbMoteAlpha(gl_PointCoord);')
+}
+const orbMoteProgramKey = () => 'urai-home-orb-motes-circle-v1'
+
 function OrbMotes({ reducedMotion, color }: { reducedMotion: boolean; color: string }) {
   const ref = useRef<THREE.Points>(null)
   const geometry = useMemo(() => {
@@ -567,7 +593,7 @@ function OrbMotes({ reducedMotion, color }: { reducedMotion: boolean; color: str
   }, [])
   useEffect(() => () => geometry.dispose(), [geometry])
   useFrame((_, delta) => { if (!reducedMotion && ref.current) ref.current.rotation.y += delta * .065 })
-  return <points ref={ref} geometry={geometry}><pointsMaterial color={color} size={.024} transparent opacity={.38} depthWrite={false} toneMapped={false} /></points>
+  return <points ref={ref} geometry={geometry}><pointsMaterial color={color} size={.024} transparent opacity={.38} depthWrite={false} toneMapped={false} onBeforeCompile={compileOrbMoteCircle} customProgramCacheKey={orbMoteProgramKey} /></points>
 }
 
 function OrbGroundGlow({ state }: { state: OrbState }) {
@@ -704,7 +730,10 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     camera.position.copy(position.current).add(new THREE.Vector3(0, portrait ? 1.58 : 1.68, .14))
     forward.current.set(Math.sin(yaw.current),0,-Math.cos(yaw.current))
     look.current.copy(position.current).addScaledVector(forward.current, portrait ? 6 : 8)
-    camera.lookAt(look.current.x, position.current.y + 1.22 + pitch.current, look.current.z)
+    // Input pitch is an angle; retain the original resting composition at -.04.
+    const lookDistance = Math.hypot(look.current.x - camera.position.x, look.current.z - camera.position.z)
+    const restPitch = Math.atan2(position.current.y + 1.18 - camera.position.y, lookDistance)
+    camera.lookAt(look.current.x, camera.position.y + Math.tan(restPitch + pitch.current + .04) * lookDistance, look.current.z)
   }, [camera, pitch, size.height, size.width, yaw])
   useLayoutEffect(() => place(), [place])
   useEffect(() => { owner.current = gl.domElement.closest<HTMLElement>('[data-home-primary-owner="asset-driven"]') }, [gl])
@@ -794,7 +823,10 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     camera.position.lerp(desired.current, 1 - Math.pow(.001, delta))
     publishCameraHeight()
     look.current.copy(position.current).addScaledVector(forward.current, portrait ? 6 : 8)
-    camera.lookAt(look.current.x, position.current.y + 1.22 + pitch.current, look.current.z)
+    // Input pitch is an angle; retain the original resting composition at -.04.
+    const lookDistance = Math.hypot(look.current.x - camera.position.x, look.current.z - camera.position.z)
+    const restPitch = Math.atan2(position.current.y + 1.18 - camera.position.y, lookDistance)
+    camera.lookAt(look.current.x, camera.position.y + Math.tan(restPitch + pitch.current + .04) * lookDistance, look.current.z)
     const candidates: readonly [Nearby, THREE.Vector3, number][] = [['orb', ORB, 2.4], ['ground', GROUND_THRESHOLD, 2.8], ['life-map', LIFE_MAP_LOOKOUT, 2.8]]
     let next: Nearby = null, best = Infinity
     for (const [name, poi, radius] of candidates) { const distance = Math.hypot(position.current.x - poi.x, position.current.z - poi.z); if (distance < radius && distance < best) { next = name; best = distance } }
@@ -809,10 +841,13 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
           // user actually enters its proximity radius. This is not a camera lock:
           // pointer/touch look remains authoritative immediately afterward.
           yaw.current = Math.atan2(dx, -dz)
-          pitch.current = THREE.MathUtils.clamp(ORB.y - position.current.y - 1.22, -.42, .18)
           forward.current.set(Math.sin(yaw.current), 0, -Math.cos(yaw.current))
           look.current.copy(position.current).addScaledVector(forward.current, portrait ? 6 : 8)
-          camera.lookAt(look.current.x, position.current.y + 1.22 + pitch.current, look.current.z)
+          const attentionDistance = Math.hypot(look.current.x - camera.position.x, look.current.z - camera.position.z)
+          const attentionRestPitch = Math.atan2(position.current.y + 1.18 - camera.position.y, attentionDistance)
+          const orbPitch = Math.atan2(ORB.y - camera.position.y, Math.hypot(ORB.x - camera.position.x, ORB.z - camera.position.z))
+          pitch.current = THREE.MathUtils.clamp(orbPitch - attentionRestPitch - .04, -.85, .18)
+          camera.lookAt(look.current.x, camera.position.y + Math.tan(attentionRestPitch + pitch.current + .04) * attentionDistance, look.current.z)
         }
       }
       onNearby(next)
@@ -825,6 +860,61 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
       target.current
     )) invalidate()
   })
+  return null
+}
+
+function HomeRenderCostMonitor({ ready, continuous, visible, onSlowRendering }: { ready: boolean; continuous: boolean; visible: boolean; onSlowRendering: () => void }) {
+  const { gl, invalidate } = useThree()
+  const runtime = useMemo(() => ({ monitor: createHomeRenderCostMonitor(), gate: createHomeGpuSubmissionGate(gl.getContext()), submitted: 0, completed: 0, readySubmissions: 0 }), [gl])
+  useEffect(() => runtime.monitor.reset(), [runtime, ready, continuous, visible])
+  useEffect(() => {
+    // React may reconnect effects in development; restore a disposed gate before
+    // subscribing, without replacing the real renderer, camera or scene.
+    runtime.gate.activate()
+    const lost = () => { runtime.gate.contextLost(); runtime.readySubmissions = 0; runtime.monitor.reset() }
+    const restored = () => { runtime.gate.contextRestored(); runtime.monitor.reset(); invalidate() }
+    gl.domElement.addEventListener('webglcontextlost', lost)
+    gl.domElement.addEventListener('webglcontextrestored', restored)
+    const owner = gl.domElement.closest<HTMLElement>('[data-home-primary-owner="asset-driven"]')
+    const context = gl.getContext()
+    if (owner) {
+      try {
+        owner.dataset.homeContextAntialias = String(context.getContextAttributes()?.antialias ?? 'unknown')
+        owner.dataset.homeContextSamples = String(context.getParameter(context.SAMPLES))
+      } catch {
+        owner.dataset.homeContextAntialias = 'unknown'
+        owner.dataset.homeContextSamples = 'unknown'
+      }
+    }
+    return () => {
+      gl.domElement.removeEventListener('webglcontextlost', lost)
+      gl.domElement.removeEventListener('webglcontextrestored', restored)
+      runtime.gate.dispose()
+    }
+  }, [gl, invalidate, runtime])
+  useFrame(({ scene, camera }) => {
+    const documentVisible = visible && document.visibilityState === 'visible'
+    const result = runtime.gate.submit(() => gl.render(scene, camera), documentVisible)
+    if (result.submitted) { runtime.submitted += 1; runtime.readySubmissions += 1 }
+    if (result.completionObserved) runtime.completed += 1
+    if (result.cadenceObserved) {
+      if (runtime.monitor.observe(performance.now(), { ready, continuous, visible: documentVisible })) onSlowRendering()
+    }
+    const owner = gl.domElement.closest<HTMLElement>('[data-home-primary-owner="asset-driven"]')
+    if (owner) {
+      // The movement kernel counts callbacks. Report actual main-world render
+      // submissions here so skipped GPU work never inflates frame evidence.
+      owner.dataset.homeRenderedFrames = String(runtime.submitted)
+      owner.dataset.homeReady = ready && runtime.readySubmissions >= 3 && runtime.gate.mode !== 'context-lost' && runtime.gate.mode !== 'disposed' ? 'true' : 'false'
+      owner.dataset.homeRenderSubmissions = String(runtime.submitted)
+      owner.dataset.homeRenderCompletions = String(runtime.completed)
+      owner.dataset.homeGpuSubmissionMode = runtime.gate.mode
+      owner.dataset.homeRenderCadenceSource = runtime.gate.mode === 'fenced' ? 'gpu-completion' : runtime.gate.mode === 'unavailable' ? 'render-submission' : 'paused'
+    }
+    // A requested demand frame must eventually render after the prior GPU work
+    // completes. Ordinary motion keeps its existing always-loop and callbacks.
+    if (documentVisible && !continuous && ((runtime.gate.mode === 'fenced' && !result.submitted) || (ready && runtime.readySubmissions < 3 && runtime.gate.mode !== 'context-lost' && runtime.gate.mode !== 'disposed'))) invalidate()
+  }, 1)
   return null
 }
 
@@ -882,7 +972,10 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
 
 export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpen, webglAvailable = true, onSceneFailure }: Props) {
   const locale = useUraiLocale()
-  const quality = useAdaptiveSpatialQuality()
+  const adaptiveQuality = useAdaptiveSpatialQuality()
+  const [measuredSlowRendering, setMeasuredSlowRendering] = useState(false)
+  const quality = resolveHomeRenderQuality(adaptiveQuality, measuredSlowRendering)
+  const onSlowRendering = useCallback(() => setMeasuredSlowRendering(true), [])
   const [canvasReady, setCanvasReady] = useState(false)
   const [sceneReady, setSceneReady] = useState(false)
   const [nearby, setNearby] = useState<Nearby>(null)
@@ -916,7 +1009,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const interact = useCallback(() => { if (nearby === 'orb') openOrb(); else if (nearby === 'ground') startGround(); else if (nearby === 'life-map') startLifeMap() }, [nearby, openOrb, startGround, startLifeMap])
   const reset = useCallback(() => { if (!groundDescent) { yaw.current = .055; pitch.current = -.04; target.current = SPAWN.clone() } }, [groundDescent])
   const input = useMovementInput({ enabled: !groundDescent, onInteract: interact, onReset: reset })
-  const look = useDragLook({ yaw, pitch, enabled: !groundDescent && phase !== 'ASCENT', sensitivity: .0031, minPitch: -.55, maxPitch: .68, onDragState: setDragging })
+  const look = useDragLook({ yaw, pitch, enabled: !groundDescent && phase !== 'ASCENT', sensitivity: .0031, minPitch: -.85, maxPitch: 1.2, onDragState: setDragging })
 
   useEffect(() => { const reduced = window.matchMedia('(prefers-reduced-motion: reduce)'); const mobile = window.matchMedia('(pointer: coarse), (max-width: 700px)'); const apply = () => { setReducedMotion(reduced.matches); setMobileControls(mobile.matches) }; apply(); reduced.addEventListener?.('change', apply); mobile.addEventListener?.('change', apply); return () => { reduced.removeEventListener?.('change', apply); mobile.removeEventListener?.('change', apply) } }, [])
   useEffect(() => {
@@ -955,8 +1048,8 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const orbSensory = resolveOrbSensoryOutput(orbState, reducedMotion, true, reducedStimulation)
   const contextId = phase === 'ASCENT' ? 'ascent.progress' : groundDescent ? 'home.groundProgress' : nearby === 'orb' ? 'home.orbNearby' : nearby === 'ground' ? 'home.groundNearby' : nearby === 'life-map' ? 'home.skyNearby' : null
 
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="legacy-placeholder-metadata-only" data-home-provider-regions="not-rendered" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-orb-reduced-stimulation={reducedStimulation ? 'true' : 'false'} data-home-orb-playback={orbSensory.movement === 'settled' ? 'stopped' : 'playing'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
-    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? (reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="legacy-placeholder-metadata-only" data-home-provider-regions="not-rendered" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-render-quality={quality.tier} data-home-render-cost-fallback={measuredSlowRendering ? 'true' : 'false'} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-orb-reduced-stimulation={reducedStimulation ? 'true' : 'false'} data-home-orb-playback={orbSensory.movement === 'settled' ? 'stopped' : 'playing'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
+    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? (reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><HomeRenderCostMonitor ready={sceneReady} continuous={!reducedMotion} visible={quality.documentVisible} onSlowRendering={onSlowRendering} /><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
     {contextId ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" {...locale.props(contextId)} style={{ zIndex:19, ...(locale.locale !== 'en' ? { maxInlineSize:'calc(100vw - 32px)', whiteSpace:'normal', overflowWrap:'anywhere', textAlign:'start' as const } : {}) }}>{locale.text(contextId)}</div> : null}
     {!transitioning && mobileControls ? <MobileMovementPad input={input} label="Home movement controls" /> : null}

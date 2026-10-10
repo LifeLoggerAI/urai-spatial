@@ -80,6 +80,9 @@ export function HomeSkyGradient() {
           vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
           return mix(mix(skyHash(i),skyHash(i+vec2(1.,0.)),f.x),mix(skyHash(i+vec2(0.,1.)),skyHash(i+vec2(1.,1.)),f.x),f.y);
         }
+        float homeStarThreshold(float stellarWeight) {
+          return mix(.991, .985, clamp(stellarWeight, 0.0, 1.0));
+        }
         void main() {
           vec3 dir=normalize(vHomeSkyDirection);
           float height=clamp(dir.y,0.0,1.0);
@@ -102,18 +105,25 @@ export function HomeSkyGradient() {
           sky+=vec3(.006,.004,.006)*horizonBand;
           // A fixed, original star field stays visible above the horizon even
           // on low-power devices. No image or reconstructed place is implied.
-          vec2 skyUv=vec2(atan(dir.z,dir.x)/6.2831853+.5,asin(dir.y)/3.14159265+.5);
+          vec2 skyUv=vec2(atan(dir.z,dir.x)/6.2831853+.5,asin(clamp(dir.y,-1.,1.))/3.14159265+.5);
           vec2 cells=skyUv*vec2(720.,360.);
           vec2 cell=floor(cells);
           vec2 point=fract(cells)-vec2(.18+.64*skyHash(cell+3.7),.18+.64*skyHash(cell+9.1));
           float seed=skyHash(cell);
+          float stellarBand=exp(-pow((dir.y-.28-dir.x*.18)*7.5,2.));
+          float stellarWeight=stellarBand*(.4+.6*broad);
           float radius=mix(.025,.085,skyHash(cell+2.4));
-          float aa=max(fwidth(cells.x),fwidth(cells.y))*.65;
-          float star=(1.-smoothstep(radius,radius+aa,length(point)))*step(.991,seed);
+          // Longitude wraps at atan's branch cut. Differentiate its periodic
+          // distance so seam pixels keep the same star footprint as other sky.
+          vec2 cellDx=dFdx(cells), cellDy=dFdy(cells);
+          cellDx.x-=floor(cellDx.x/720.+.5)*720.;
+          cellDy.x-=floor(cellDy.x/720.+.5)*720.;
+          vec2 cellWidth=abs(cellDx)+abs(cellDy);
+          float aa=max(cellWidth.x,cellWidth.y)*.65;
+          float star=(1.-smoothstep(radius,radius+aa,length(point)))*step(homeStarThreshold(stellarWeight),seed);
           vec3 starColor=mix(vec3(.54,.72,1.),vec3(1.,.83,.62),skyHash(cell+4.2));
           sky+=starColor*star*smoothstep(.015,.18,dir.y)*(.65+skyHash(cell+1.3)*.8);
-          float stellarBand=exp(-pow((dir.y-.28-dir.x*.18)*7.5,2.));
-          sky+=vec3(.003,.004,.012)*stellarBand*(.4+.6*broad)*smoothstep(.02,.3,height);
+          sky+=vec3(.003,.004,.012)*stellarWeight*smoothstep(.02,.3,height);
           gl_FragColor=vec4(sky,1.0);
           #include <colorspace_fragment>
         }`.replace('#include <colorspace_fragment>', '\n#include <colorspace_fragment>\n')}

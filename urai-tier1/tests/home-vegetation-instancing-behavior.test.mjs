@@ -5,6 +5,7 @@ import test from 'node:test'
 import ts from 'typescript'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
+import * as homeGpuSubmissionGate from '../src/spatial/performance/homeGpuSubmissionGate.ts'
 
 // Execute production vegetation with explicit hook/GLTF adapters and real Three
 // geometry. This tests scene construction, never browser/GPU timing or pixels.
@@ -16,6 +17,10 @@ const geometrySource = fs.readFileSync(new URL('../src/spatial/layout/HomeSanctu
 const geometryModule = { exports: {} }
 vm.runInNewContext(compile(geometrySource), { module: geometryModule, exports: geometryModule.exports,
   require: id => { assert.equal(id, 'three'); return THREE } })
+const renderCostSource = fs.readFileSync(new URL('../src/spatial/performance/homeRenderCostPolicy.ts', import.meta.url), 'utf8')
+const renderCostModule = { exports: {} }
+vm.runInNewContext(compile(renderCostSource), { module: renderCostModule, exports: renderCostModule.exports,
+  require: id => { assert.fail(`undeclared render cost policy dependency ${id}`) } })
 const source = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionPolished.tsx', import.meta.url), 'utf8')
 const palette = [
   { color: '#6f8d68', roughness: .96 }, { color: '#819b72', roughness: .94 }, { color: '#5f7c61', roughness: .97 },
@@ -63,6 +68,8 @@ function mountVegetation(scene) {
     '@/spatial/navigation/HomeSkyAscentInteraction': {}, '@/spatial/store/useSceneStore': {},
     '@/spatial/world/worldEvents': {}, '@/spatial/accessibility/SensorySafeRuntime': {},
     '@/spatial/performance/useAdaptiveSpatialQuality': {}, '@/lib/i18n/useUraiLocale': {},
+    '@/spatial/performance/homeRenderCostPolicy': renderCostModule.exports,
+    '@/spatial/performance/homeGpuSubmissionGate': homeGpuSubmissionGate,
     '@/spatial/home/HomeInterpretiveSplat': { resolveHomeInterpretiveSplatAsset: () => null },
   }
   const module = { exports: {} }
