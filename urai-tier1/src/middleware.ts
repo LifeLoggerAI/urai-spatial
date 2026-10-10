@@ -4,6 +4,15 @@ function enabled(...values: Array<string | undefined>) {
   return values.some((value) => value === 'true')
 }
 
+const PUBLIC_DEMO_MEMORY_ASSETS = new Set([
+  '/demo/memories/recovery-bloom.svg',
+  '/demo/memories/threshold-storm.svg',
+  '/demo/memories/mirror-focus.svg',
+  '/demo/memories/ritual-echo.svg',
+  '/demo/memories/dream-signal.svg',
+  '/demo/memories/calm-return.svg',
+])
+
 function routeAllowed(pathname: string) {
   if (process.env.NODE_ENV !== 'production') return true
 
@@ -11,7 +20,7 @@ function routeAllowed(pathname: string) {
     return enabled(process.env.NEXT_PUBLIC_ALLOW_ADMIN_ROUTES, process.env.URAI_ALLOW_ADMIN_ROUTES)
   }
 
-  if (pathname.startsWith('/demo/memories/')) return true
+  if (PUBLIC_DEMO_MEMORY_ASSETS.has(pathname)) return true
 
   if (pathname.startsWith('/demo')) {
     return enabled(process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES, process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES)
