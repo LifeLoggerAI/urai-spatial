@@ -38,8 +38,13 @@ export async function captureVisibleCanvasPng(page, canvas, timeoutMs = 90_000, 
     return points.every(([x, y]) => document.elementFromPoint(rect.x + rect.width * x, rect.y + rect.height * y) === element)
   }, samplePoints, { timeout: remaining() })
   if (!unoccluded) throw new Error('Canvas evidence sample points are covered by another hit-testable element')
+  const clipIsViewport = Math.abs(clip.x) <= .01 && Math.abs(clip.y) <= .01
+    && Math.abs(clip.width - viewport.width) <= .01 && Math.abs(clip.height - viewport.height) <= .01
+  // Chromium's software-WebGL clipped screenshot path can stall even when the
+  // canvas is the exact viewport. Capture the identical viewport composite
+  // without a redundant clip in that case; retain clipping for partial canvases.
   const buffer = await page.screenshot({
-    type: 'png', fullPage: false, clip, animations: 'disabled', caret: 'hide', timeout: remaining(),
+    type: 'png', fullPage: false, ...(clipIsViewport ? {} : { clip }), animations: 'disabled', caret: 'hide', timeout: remaining(),
   })
   const after = await canvas.boundingBox({ timeout: remaining() })
   if (!after || Object.keys(clip).some((key) => !Number.isFinite(after[key]) || Math.abs(after[key] - clip[key]) > .01)) {
