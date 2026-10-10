@@ -74,7 +74,27 @@ async function readOwner(transaction: FirebaseFirestore.Transaction, uid: string
     || (central.exists && (central.get('uid') !== uid || central.get('active') === true))
     || !Number.isSafeInteger(generation) || generation < 0 || (local.exists && (!pending || typeof pending !== 'object' || Array.isArray(pending)))
     || (pending && Object.keys(pending).length > 0) || !deletions.empty
-    || barrier.get('blocked') === true || permanent.get('deleted') === true || consentBlock.get('active') === true) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
+    || barrier.get('blocked') === true) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
+  // A planning lease and malformed/foreign fence remain closed during upload,
+  // export and delivery. Only the canonical released forms grant authority.
+  if (central.exists) {
+    const marker = central.data() ?? {}, keys = Object.keys(marker)
+    const released = !keys.includes('active') && keys.every(key => ['uid', 'updatedAt'].includes(key))
+      && marker.updatedAt instanceof Timestamp
+    // Canonical C7 consent projects into this same document without an active
+    // deletion field. Its presence must not block unrelated C1 source ingestion.
+    const exportProjection = !keys.includes('active') && keys.every(key => ['uid', 'updatedAt', 'exportConsentStatus',
+      'exportConsentReceiptHash', 'exportConsentPolicyVersion', 'exportConsentExpiresAt'].includes(key))
+      && ['granted', 'revoked'].includes(String(marker.exportConsentStatus))
+      && SHA.test(String(marker.exportConsentReceiptHash)) && marker.exportConsentPolicyVersion === '1.0.0'
+      && Number.isSafeInteger(millis(marker.exportConsentExpiresAt))
+    if (marker.uid !== uid || keys.some(key => key.startsWith('deletionPlanningLease'))
+      || (marker.active !== false && !released && !exportProjection)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
+  }
+  if (permanent.exists && (permanent.get('ownerHash') !== sha(uid) || permanent.get('deleted') !== false
+    || permanent.get('deletionEpoch') !== 0)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
+  if (consentBlock.exists && (consentBlock.get('ownerUid') !== uid || consentBlock.get('purpose') !== 'memory.storage'
+    || consentBlock.get('active') !== false)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
   return { consentRevision: p.revision as number, consentReceiptHash: c.receiptHash as string, consentExpiresAt: expiresAt, deletionGeneration: generation as number, memory }
 }
 function sameAuthority(value: Row, authority: Awaited<ReturnType<typeof readOwner>>) {
@@ -374,8 +394,15 @@ async function playbackReceipt(transaction: FirebaseFirestore.Transaction, uid: 
     const marker = central.data() ?? {}, keys = Object.keys(marker)
     const released = !keys.includes('active') && keys.every(key => ['uid', 'updatedAt'].includes(key))
       && marker.updatedAt instanceof Timestamp
+    // Canonical C7 consent projects into this same document without an active
+    // deletion field. Its presence must not block unrelated C1 source ingestion.
+    const exportProjection = !keys.includes('active') && keys.every(key => ['uid', 'updatedAt', 'exportConsentStatus',
+      'exportConsentReceiptHash', 'exportConsentPolicyVersion', 'exportConsentExpiresAt'].includes(key))
+      && ['granted', 'revoked'].includes(String(marker.exportConsentStatus))
+      && SHA.test(String(marker.exportConsentReceiptHash)) && marker.exportConsentPolicyVersion === '1.0.0'
+      && Number.isSafeInteger(millis(marker.exportConsentExpiresAt))
     if (marker.uid !== uid || keys.some(key => key.startsWith('deletionPlanningLease'))
-      || (marker.active !== false && !released)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
+      || (marker.active !== false && !released && !exportProjection)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
   }
   if (permanent.exists && (permanent.get('ownerHash') !== sha(uid) || permanent.get('deleted') !== false
     || permanent.get('deletionEpoch') !== 0)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')

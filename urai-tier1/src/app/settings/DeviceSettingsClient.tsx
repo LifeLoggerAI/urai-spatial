@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { setHapticsEnabled, URAI_HAPTICS_STORAGE_KEY } from '@/spatial/haptics/HapticRuntime'
@@ -41,8 +41,11 @@ function isNativeCapacitorRuntime() {
   return Boolean((window as CapacitorWindow).Capacitor?.isNativePlatform?.())
 }
 
-async function googleRequest<T>(path: string, user: User): Promise<T> {
+async function googleRequest<T>(path: string, user: User, lifecycle: { signal: AbortSignal; isCurrent: () => boolean }): Promise<T> {
+  const current = () => { if (lifecycle.signal.aborted || !lifecycle.isCurrent()) throw new DOMException('Account changed.', 'AbortError') }
+  current()
   const token = await user.getIdToken()
+  current()
   const response = await fetch(clientApiUrl(path), {
     method: 'POST',
     headers: {
@@ -51,8 +54,14 @@ async function googleRequest<T>(path: string, user: User): Promise<T> {
     },
     body: '{}',
     cache: 'no-store',
+    signal: lifecycle.signal,
+    credentials: 'omit',
+    redirect: 'error',
+    referrerPolicy: 'no-referrer',
   })
+  current()
   const payload = await response.json().catch(() => ({})) as T & { message?: string; error?: string }
+  current()
   if (!response.ok) throw new Error(payload.message || payload.error || 'Google Workspace request failed.')
   return payload
 }
@@ -63,6 +72,7 @@ export default function DeviceSettingsClient() {
   const [sensorySafe, setSensorySafe] = useState(false)
   const [supportsVibration, setSupportsVibration] = useState(false)
   const [supportsGamepad, setSupportsGamepad] = useState(false)
+  const googleSession = useRef<{ controller: AbortController; owner: User } | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [googleState, setGoogleState] = useState<GoogleUiState>(firebasePublicEnvReady ? 'checking' : 'signed-out')
   const [googleConnection, setGoogleConnection] = useState<GoogleConnection | null>(null)
@@ -84,17 +94,26 @@ export default function DeviceSettingsClient() {
   useEffect(() => {
     if (!firebasePublicEnvReady) return
     const auth = getAuth(app)
-    return onAuthStateChanged(auth, (nextUser) => {
+    let active = true
+    const invalidate = () => { googleSession.current?.controller.abort(); googleSession.current = null }
+    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+      if (!active) return
+      invalidate()
       setUser(nextUser)
+      setGoogleConnection(null)
       if (!nextUser) {
-        setGoogleConnection(null)
         setGoogleState('signed-out')
         setGoogleMessage('Sign in to connect Gmail, Calendar, Contacts, and Drive.')
         return
       }
+      const session = { controller: new AbortController(), owner: nextUser }
+      googleSession.current = session
+      const isCurrent = () => active && googleSession.current === session && auth.currentUser === nextUser
       setGoogleState('checking')
-      void googleRequest<GoogleConnection>('/api/google/oauth/status', nextUser)
+      setGoogleMessage('Checking this account’s Google Workspace connection...')
+      void googleRequest<GoogleConnection>('/api/google/oauth/status', nextUser, { signal: session.controller.signal, isCurrent })
         .then((status) => {
+          if (!isCurrent()) return
           setGoogleConnection(status)
           setGoogleState('ready')
           setGoogleMessage(status.connected
@@ -102,10 +121,19 @@ export default function DeviceSettingsClient() {
             : 'Connect only the Google services you choose to use with URAI.')
         })
         .catch(() => {
+          if (!isCurrent()) return
           setGoogleState('error')
           setGoogleMessage('Google Workspace connection status is temporarily unavailable.')
         })
+    }, () => {
+      if (!active) return
+      invalidate()
+      setUser(null)
+      setGoogleConnection(null)
+      setGoogleState('error')
+      setGoogleMessage('Account authority is unavailable. Google Workspace access remains closed.')
     })
+    return () => { active = false; invalidate(); unsubscribe() }
   }, [])
 
   useEffect(() => {
@@ -136,13 +164,19 @@ export default function DeviceSettingsClient() {
       }
       return
     }
+    const session = googleSession.current
+    if (!session || session.owner !== user) return
+    const isCurrent = () => googleSession.current === session && getAuth(app).currentUser === user
+    const lifecycle = { signal: session.controller.signal, isCurrent }
     setGoogleState('working')
     setGoogleMessage('Opening Google permission controls...')
     try {
-      const result = await googleRequest<{ authorizationUrl: string }>('/api/google/oauth/start', user)
+      const result = await googleRequest<{ authorizationUrl: string }>('/api/google/oauth/start', user, lifecycle)
+      if (!isCurrent()) return
       if (!result.authorizationUrl.startsWith('https://accounts.google.com/')) throw new Error('Unexpected Google authorization URL.')
       window.location.assign(result.authorizationUrl)
     } catch {
+      if (!isCurrent()) return
       setGoogleState('error')
       setGoogleMessage('Google Workspace connection could not start. Your account remains unchanged.')
     }
@@ -150,14 +184,20 @@ export default function DeviceSettingsClient() {
 
   const disconnectGoogle = async () => {
     if (!user || googleState === 'working') return
+    const session = googleSession.current
+    if (!session || session.owner !== user) return
+    const isCurrent = () => googleSession.current === session && getAuth(app).currentUser === user
+    const lifecycle = { signal: session.controller.signal, isCurrent }
     setGoogleState('working')
     setGoogleMessage('Revoking the Google Workspace connection...')
     try {
-      await googleRequest<{ connected: false }>('/api/google/oauth/disconnect', user)
+      await googleRequest<{ connected: false }>('/api/google/oauth/disconnect', user, lifecycle)
+      if (!isCurrent()) return
       setGoogleConnection({ connected: false, status: 'disconnected', scopes: [], expiresAt: null })
       setGoogleState('ready')
       setGoogleMessage('Google Workspace is disconnected from URAI.')
     } catch {
+      if (!isCurrent()) return
       setGoogleState('error')
       setGoogleMessage('URAI could not confirm the disconnect. Try again before assuming access was revoked.')
     }

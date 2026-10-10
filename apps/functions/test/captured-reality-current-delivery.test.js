@@ -125,3 +125,9 @@ test('actual current backend HTTP handler and actual client stream agree on toke
     const before=chunks.length;await assert.rejects(client.streamCapturedRealitySplat(args),/INVALID_SPLAT_RESPONSE/);assert.equal(chunks.length,before)
   }finally{server.closeAllConnections();await new Promise(done=>server.close(done))}
 })
+
+for (const status of ['granted','revoked']) test('canonical C7 '+status+' projection preserves independent captured-place source authority', async()=>{
+  const f=fixture();f.put(`privacyDeletionTombstones/${uid}`,{uid,exportConsentStatus:status,exportConsentReceiptHash:'e'.repeat(64),
+    exportConsentPolicyVersion:'1.0.0',exportConsentExpiresAt:new Date(Date.now()+60000).toISOString()})
+  const d=await f.descriptor();assert.equal(d.runtimeSha256,sha(f.bytes));assert.equal(d.requiresAuthorization,true)
+})

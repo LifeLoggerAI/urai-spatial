@@ -83,8 +83,8 @@ test('overlay appearing during capture rejects otherwise stable retained pixels'
 test('Home/Orb proof binds its visual samples and receipt to guarded canvas pixels', async () => {
   const { readFile } = await import('node:fs/promises')
   const source = await readFile(new URL('../../scripts/capture-natural-home-orb-proof.mjs', import.meta.url), 'utf8')
-  assert.match(source, /import \{ captureVisibleCanvasPng \} from '\.\/capture-visible-canvas-png\.mjs'/)
-  assert.match(source, /captureVisibleCanvasPng\(page, canvas\)/)
+  assert.match(source, /import \{[^}]*\bcaptureVisibleCanvasPng\b[^}]*\} from '\.\/capture-visible-canvas-png\.mjs'/)
+  assert.match(source, /captureVisibleCanvasPng\(page, canvas, 90_000, samplePoints\)/)
   assert.match(source, /record\.canvasCapture = visual\.capture/)
   assert.match(source, /record\.canvasCapture\?\.canvasTopmostAfterCapture === true/)
   assert.match(source, /if \(await worldCanvas\.count\(\) !== 1\)/)

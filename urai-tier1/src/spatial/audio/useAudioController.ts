@@ -197,14 +197,33 @@ export function useAudioController() {
     utterance.pitch = 0.92;
     utterance.volume = 1;
     await new Promise<void>((resolve, reject) => {
-      signal.addEventListener("abort", () => {
+      let settled = false;
+      const finish = (error?: unknown) => {
+        if (settled) return;
+        settled = true;
+        signal.removeEventListener("abort", onAbort);
+        utterance.onend = null;
+        utterance.onerror = null;
+        if (error !== undefined) reject(error);
+        else resolve();
+      };
+      const onAbort = () => {
+        // Retire callbacks before cancel(), which may synchronously emit an
+        // error on some browsers. A completed utterance must never retain a
+        // listener that can cancel a later speech owner.
+        finish(new DOMException("aborted", "AbortError"));
         window.speechSynthesis.cancel();
-        reject(new DOMException("aborted", "AbortError"));
-      });
-      utterance.onend = () => resolve();
-      utterance.onerror = () => reject(new Error("google speech synthesis failed"));
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
+      };
+      // This utterance has not been dispatched yet. A prior cancellation
+      // must reject locally without stopping another speech owner's output.
+      if (signal.aborted) { finish(new DOMException("aborted", "AbortError")); return; }
+      signal.addEventListener("abort", onAbort, { once: true });
+      utterance.onend = () => finish();
+      utterance.onerror = () => finish(new Error("google speech synthesis failed"));
+      try {
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+      } catch (error) { finish(error); }
     });
   }, []);
 

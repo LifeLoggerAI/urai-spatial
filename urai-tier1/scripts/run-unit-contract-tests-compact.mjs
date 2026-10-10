@@ -28,6 +28,7 @@ const tests = [
   'tests/ios-source-archive.test.mjs',
   'tests/ios-native-preparation.test.mjs',
   'tests/privacy-session-lifecycle.test.mjs',
+  'tests/device-settings-account-lifecycle.test.mjs',
   'tests/authorized-export-download.test.mjs',
   'tests/operational-export-client.test.mjs',
   'tests/owned-memory-media-client.test.mjs',
