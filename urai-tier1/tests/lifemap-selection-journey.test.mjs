@@ -103,8 +103,9 @@ for (const flag of ['onboarding', 'firstRun']) {
 }
 test('the retained scene uses the actual nondefault sample manifest at selection and Focus', () => {
   const fixture = sceneFixture('?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&onboarding=1', 'voice-note-home')
-  assert.equal(fixture.select().get('manifestId'), 'demo-manifest')
-  assert.equal(fixture.focus().get('manifestId'), 'demo-manifest')
+  const manifestId = buildNamedExplicitDemoMemory('demo:voice-note-home').replayManifest.id
+  assert.equal(fixture.select().get('manifestId'), manifestId)
+  assert.equal(fixture.focus().get('manifestId'), manifestId)
 })
 for (const search of ['', '?memoryId=another-memory&manifestId=previous-manifest']) {
   test(`the retained scene cannot mint or carry unrelated private manifest authority from ${search || 'an unbound selection'}`, () => {

@@ -3,6 +3,8 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import test from 'node:test'
 import ts from 'typescript'
+import { withLifeMapSelectionIdentity } from '../src/spatial/memory/lifeMapSelectionJourney.ts'
+import { buildNamedExplicitDemoMemory } from '../src/spatial/memory/explicitDemoMemory.ts'
 
 // Execute the actual scene and canonical threshold with explicit synthetic
 // hook/router/Auth/WebGL adapters. This is component proof, not browser,
@@ -56,6 +58,7 @@ function fixture({ component = 'scene', sourceMode = 'signed-out', pathname = '/
     '@react-three/fiber': { Canvas: 'synthetic-Canvas' }, three: {},
     '@/spatial/performance/useAdaptiveSpatialQuality': { useAdaptiveSpatialQuality: () => profile },
     '@/spatial/navigation/homeSkyInteraction': homeModule.exports,
+    '@/spatial/memory/lifeMapSelectionJourney': { withLifeMapSelectionIdentity },
     './useLifeMapEvents': { useLifeMapEvents: () => ({ nodes: memoryNodes, loading: false, sourceMode }) },
     './LifeMapProductionWorld': { LifeMapProductionWorld: 'synthetic-production-world-boundary' },
     './lifeMapVisualSystem': { artifactFamilyLabel: () => 'Visual memory', resolveArtifactFamily: () => 'visual' },
@@ -180,7 +183,8 @@ test('selected disclosed memory keeps Focus/Replay identity and its separate Ove
   assert.equal(destination.pathname, '/focus')
   for (const key of ['memoryId', 'node', 'returnNode']) assert.equal(destination.searchParams.get(key), memory.id)
   assert.equal(destination.searchParams.get('demo'), '1')
-  assert.equal(destination.searchParams.get('manifestId'), 'synthetic-manifest')
+  assert.equal(destination.searchParams.get('manifestId'), buildNamedExplicitDemoMemory('demo:' + memory.id).replayManifest.id,
+    'the selected demo binds its own manifest instead of carrying unrelated incoming metadata')
   assert.ok(nodes(actions).find(node => node.props?.className === 'replay-threshold'))
   assert.ok(nodes(actions).find(node => node.props?.className === 'overview-return'))
   f.unmount()

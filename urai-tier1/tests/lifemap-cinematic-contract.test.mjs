@@ -52,7 +52,7 @@ test('memory lenses select in place before Focus or Replay navigation', () => {
   assert.match(scene, /const target = selectedStagePoint\(node, portrait\)/)
   assert.match(scene, /const destinationHref = useCallback/)
   assert.match(scene, /next\.set\("memoryId", selected\.id\)/)
-  assert.match(scene, /next\.set\("manifestId", manifestId\)/)
+  assert.match(scene, /withIdentity\(new URLSearchParams\(\), selected\.id\)/)
   assert.match(scene, /next\.set\("node", selected\.id\)/)
   assert.match(scene, /next\.set\("returnNode", selected\.id\)/)
 })

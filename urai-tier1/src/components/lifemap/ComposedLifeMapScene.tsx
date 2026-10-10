@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import * as THREE from "three";
 import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import { homeJourneyHref } from "@/spatial/navigation/homeSkyInteraction";
+import { withLifeMapSelectionIdentity } from "@/spatial/memory/lifeMapSelectionJourney";
 import { useLifeMapEvents, type LifeMapSourceMode } from "./useLifeMapEvents";
 import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
@@ -13,7 +14,6 @@ import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSyste
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
-const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
 const SELECTED_MEMORY_STANDOFF = 5.8;
 const PHASE_DURATION_MS = { departure: 280, travel: 720, approach: 820 } as const;
 
@@ -225,7 +225,7 @@ function phaseLabel(phase: JourneyPhase) {
   if (phase === "departure") return "Leaving overview";
   if (phase === "travel") return "Traveling the memory field";
   if (phase === "approach") return "Entering the chapter";
-  return "Inside the Memory Star";
+  return "At the selected Memory Star";
 }
 
 export default function ComposedLifeMapScene({ authenticatedUserId }: { authenticatedUserId: string | null }) {
@@ -245,7 +245,6 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const overviewRequested = params.get("overview") === "1";
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : authenticatedUserId ?? undefined);
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
-  const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
   const [phase, setPhase] = useState<JourneyPhase>("overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
@@ -256,11 +255,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const restoredRoutePending = useRef(Boolean(!overviewRequested && queryNode));
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
 
-  const withIdentity = useCallback((next: URLSearchParams) => {
-    if (explicitDemoRequested) next.set("demo", "1");
-    if (manifestId) next.set("manifestId", manifestId);
-    return next;
-  }, [explicitDemoRequested, manifestId]);
+  const withIdentity = useCallback((next: URLSearchParams, memoryId?: string) => withLifeMapSelectionIdentity(params, next, memoryId), [params]);
 
   const returnHome = useCallback(() => {
     router.push(homeJourneyHref("/home", params.toString()));
@@ -291,7 +286,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     setSelectedId(node.id);
     if (profile.reducedMotion) setPhase("arrival");
     else setPhase("departure");
-    const next = withIdentity(new URLSearchParams());
+    const next = withIdentity(new URLSearchParams(), node.id);
     next.set("memoryId", node.id);
     next.set("node", node.id);
     if (node.eraId) next.set("era", node.eraId);
@@ -306,7 +301,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     journeyToken.current += 1;
     setSelectedId(null);
     setPhase("overview");
-    const next = withIdentity(new URLSearchParams());
+    const next = withIdentity(new URLSearchParams(), retainedId || undefined);
     if (retainedId) {
       next.set("memoryId", retainedId);
       next.set("node", retainedId);
@@ -317,7 +312,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
 
   const destinationHref = useCallback((route: "focus" | "replay") => {
     if (!selected) return "/life-map";
-    const next = withIdentity(new URLSearchParams());
+    const next = withIdentity(new URLSearchParams(), selected.id);
     next.set("memoryId", selected.id);
     next.set("node", selected.id);
     next.set("returnNode", selected.id);
