@@ -110,6 +110,9 @@ for (const spec of cases) {
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count()
     record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
     const semanticNav = page.getByRole('navigation', { name: 'Accessible Home destinations' })
+    // The runtime intentionally reveals its non-dominant destination rail on keyboard focus.
+    // Focus the canonical Ground destination before asserting visible/operable semantics.
+    await semanticNav.getByTestId('home-semantic-ground').focus()
     record.semanticButtons = await semanticNav.getByRole('button').count()
     record.semanticLinks = await semanticNav.getByRole('link').count()
     record.semanticVisibleActions = await semanticNav.locator('button,a[href]').evaluateAll((elements) => elements.filter((element) => {
@@ -120,10 +123,13 @@ for (const spec of cases) {
     record.semanticOwner = await semanticNav.getAttribute('data-home-navigation-owner')
     record.semanticNonDominant = await semanticNav.getAttribute('data-home-navigation-non-dominant')
     record.semanticVisual = await semanticNav.evaluate(inspectVisibleHomeNavigation)
-    record.semanticOpacity = await page.evaluate(() => {
+    const semanticDisplay = await page.evaluate(() => {
       const element = document.querySelector('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
-      return element ? Number.parseFloat(getComputedStyle(element).opacity || '1') : null
+      return { opacity: element ? Number.parseFloat(getComputedStyle(element).opacity || '1') : null,
+        focusWithin: Boolean(element && element.contains(document.activeElement)) }
     })
+    record.semanticOpacity = semanticDisplay.opacity
+    record.semanticFocusWithin = semanticDisplay.focusWithin
     const worldCanvas = owner.locator('canvas')
     if (await worldCanvas.count() !== 1) throw new Error('Home/Orb visual proof requires exactly one world canvas')
     record.canvasSamplingBefore = await worldCanvas.evaluate(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS)
@@ -166,6 +172,7 @@ for (const spec of cases) {
       && record.semanticOwner === 'runtime-boundary'
       && record.semanticNonDominant === 'true'
       && Number.isFinite(record.semanticOpacity) && record.semanticOpacity >= .99
+      && record.semanticFocusWithin === true
       && record.semanticVisual?.passed === true
       && record.visiblePortals === 'false'
       && record.portalRequests.length === 0
