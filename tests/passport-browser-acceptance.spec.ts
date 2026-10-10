@@ -5,6 +5,8 @@ import path from 'node:path'
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000'
 const evidenceRoot = path.resolve('test-results/passport-evidence')
 
+test.describe.configure({ timeout: 30_000, retries: 0 })
+
 type RuntimeEvidence = { consoleErrors: string[]; pageErrors: string[]; failedRequests: string[] }
 
 async function observe(page: Page): Promise<RuntimeEvidence> {
@@ -110,8 +112,19 @@ test('desktop Ownership Vault exposes every zone and transition', async ({ page 
   await page.keyboard.press('Home')
   await expect(page.locator('#passport-controls')).toBeFocused()
   await page.screenshot({ path: path.join(evidenceRoot, 'desktop-ownership-vault.png'), fullPage: true })
-  await expectReadableExportScopes(page, 'desktop-export-scopes')
   await save('desktop-runtime', runtime)
+  expect(runtime.consoleErrors).toEqual([])
+  expect(runtime.pageErrors).toEqual([])
+})
+
+test('desktop export navigation preserves readable scopes and an unobstructed action', async ({ page }) => {
+  const runtime = await observe(page)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await openDemo(page)
+  await page.getByRole('button', { name: 'Export chamber', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Export chamber', level: 2, exact: true })).toBeVisible()
+  await expectReadableExportScopes(page, 'desktop-export-scopes')
+  await save('desktop-export-runtime', runtime)
   expect(runtime.consoleErrors).toEqual([])
   expect(runtime.pageErrors).toEqual([])
 })

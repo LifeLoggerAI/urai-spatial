@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
 import { URAI_LAUNCH_LOCALES, URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 import { localizedMessage } from '../src/lib/i18n/localePreference.ts'
 
@@ -11,6 +12,26 @@ const read = (relativePath) => fs.readFileSync(path.resolve(testDirectory, '..',
 const requireText = (source, marker, message = marker) => assert.equal(source.includes(marker), true, message)
 const normalizeSource = (source) => source.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ')
 const requireNormalizedPattern = (source, pattern, message) => assert.match(normalizeSource(source), pattern, message)
+
+function requireSinglePrimaryReplayAction(source) {
+  const parsed = ts.createSourceFile('FocusChamberClient.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  assert.equal(parsed.parseDiagnostics.length, 0, 'Focus must remain valid TSX')
+  const actions = []
+  const visit = node => {
+    if (ts.isJsxOpeningElement(node) && node.tagName.getText(parsed) === 'button'
+      && node.attributes.properties.some(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(parsed) === 'onClick'
+        && attribute.initializer && ts.isJsxExpression(attribute.initializer) && attribute.initializer.expression?.getText(parsed) === 'enterReplay')) actions.push(node)
+    ts.forEachChild(node, visit)
+  }
+  visit(parsed)
+  assert.equal(actions.length, 1, 'Focus must expose exactly one primary Replay action, without restoring the duplicate CTA')
+  const action = actions[0].getText(parsed)
+  requireText(action, 'className="primary"')
+  requireText(action, 'disabled={committed}')
+  requireNormalizedPattern(action, /\{\.\.\.locale\.props\(memory\s*\?\s*'focus\.openReplayFor'\s*:\s*'focus\.chooseReplay'\)\}/, 'Primary Replay action must carry memory-specific locale metadata')
+  requireNormalizedPattern(action, /aria-label=\{memory\s*\?\s*locale\.text\('focus\.openReplayFor',\s*\{\s*title:\s*memory\.title\s*\}\)\s*:\s*locale\.text\('focus\.chooseReplay'\)\}/, 'Primary Replay aria-label must interpolate the selected memory through the locale owner')
+  return actions[0].parent.getText(parsed)
+}
 
 test('accessibility and performance implementation contracts are present', () => {
   const reducedMotion = read('src/spatial/hooks/useReducedMotion.ts')
@@ -134,8 +155,7 @@ test('accessibility and performance implementation contracts are present', () =>
   assert.doesNotMatch(routeOwnerCss, /ground-spatial-root canvas[\s\S]{0,220}transform:\s*scale\(/, 'Ground canvas must not exceed the mobile viewport through CSS scaling')
   requireText(routeOwnerCss, 'max-width: 100vw !important;')
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
-  requireText(focus, "aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}")
-  requireText(focus, "{...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')} aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}")
+  requireSinglePrimaryReplayAction(focus)
   requireText(read('src/lib/i18n/journeyControlMessages.ts'), '"focus.openReplayFor": {id:"focus.openReplayFor",source:"Open Replay for {title}"')
   assert.equal(URAI_SOURCE_MESSAGES['focus.openReplayFor'].source, 'Open Replay for {title}')
   for (const requested of URAI_LAUNCH_LOCALES) {
@@ -155,4 +175,13 @@ test('accessibility and performance implementation contracts are present', () =>
   assert.equal(playwrightConfig.includes('next dev'), false, 'Performance evidence must not use a development server')
   for (const marker of ['DESKTOP_FRAME_P95_BUDGET_MS = 20', 'MOBILE_FRAME_P95_BUDGET_MS = 33.3', 'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024', 'JOURNEY_CYCLES = 5', "serverMode: 'static-export'", 'WEBGL_debug_renderer_info', 'NOT_AVAILABLE_HARDWARE_RENDERER', 'hardwareAcceleration']) requireText(performanceMetrics, marker)
   for (const marker of ['[data-urai-audit-action="orb-controls"]', 'toHaveAccessibleName(/close orb travel controls/i)', 'hasScrollableAncestor', 'scrollableGroundRail']) requireText(accessibilityEvidence, marker)
+})
+
+test('Focus Replay action contract rejects a duplicated action or missing memory label', () => {
+  const focus = read('src/app/focus/FocusChamberClient.tsx')
+  const action = requireSinglePrimaryReplayAction(focus)
+  assert.throws(() => requireSinglePrimaryReplayAction(focus.replace(action, `<>${action}${action}</>`)), /exactly one primary Replay action/)
+  assert.throws(() => requireSinglePrimaryReplayAction(focus.replace("locale.text('focus.openReplayFor', {title:memory.title})", "locale.text('focus.enterReplay')")), /aria-label/)
+  assert.throws(() => requireSinglePrimaryReplayAction(focus.replace("locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')", "locale.props('focus.enterReplay')")), /locale metadata/)
+  assert.throws(() => requireSinglePrimaryReplayAction(focus.replace('disabled={committed} onClick={enterReplay}', 'onClick={enterReplay}')), /disabled/)
 })
