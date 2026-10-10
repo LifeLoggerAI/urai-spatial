@@ -13,6 +13,7 @@ const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/portal-orb-proof')
 const orbPath = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const portalPath = '/assets/urai/generated/models/portal-ring-master-v1.glb'
+const SEMANTIC_NAVIGATION_MEASUREMENT_TIMEOUT_MS = 90_000
 const finalPackReceiptPath = path.resolve('operations/assets/generated-receipts/urai-final-glb-pack-v1.json')
 const finalPackReceipt = JSON.parse(await readFile(finalPackReceiptPath, 'utf8'))
 const orbReceipt = finalPackReceipt.assets?.find((asset) => asset.fileName === path.basename(orbPath))
@@ -110,6 +111,7 @@ for (const spec of cases) {
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count()
     record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
     const semanticNav = page.getByRole('navigation', { name: 'Accessible Home destinations' })
+    await semanticNav.waitFor({ state: 'visible', timeout: SEMANTIC_NAVIGATION_MEASUREMENT_TIMEOUT_MS })
     record.semanticButtons = await semanticNav.getByRole('button').count()
     record.semanticLinks = await semanticNav.getByRole('link').count()
     record.semanticVisibleActions = await semanticNav.locator('button,a[href]').evaluateAll((elements) => elements.filter((element) => {
@@ -119,7 +121,11 @@ for (const spec of cases) {
     }).length)
     record.semanticOwner = await semanticNav.getAttribute('data-home-navigation-owner')
     record.semanticNonDominant = await semanticNav.getAttribute('data-home-navigation-non-dominant')
-    record.semanticVisual = await semanticNav.evaluate(inspectVisibleHomeNavigation)
+    record.semanticVisual = await semanticNav.evaluate(
+      inspectVisibleHomeNavigation,
+      undefined,
+      { timeout: SEMANTIC_NAVIGATION_MEASUREMENT_TIMEOUT_MS },
+    )
     record.semanticOpacity = await page.evaluate(() => {
       const element = document.querySelector('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
       return element ? Number.parseFloat(getComputedStyle(element).opacity || '1') : null
