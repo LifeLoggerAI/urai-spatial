@@ -301,6 +301,21 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.keyboard.press('Enter')
     const message = page.getByLabel('Message for Orb').first()
     await message.waitFor({ state: 'visible', timeout: 20_000 })
+    await message.evaluate((element) => { element.dataset.uraiProofMessageTarget = 'true' })
+    const inspectMessageActionability = () => message.evaluate((element) => {
+      const control = element
+      const bounds = control.getBoundingClientRect()
+      const style = getComputedStyle(control)
+      const busyOwner = control.closest('[aria-busy]')
+      return {
+        disabled: control instanceof HTMLTextAreaElement ? control.disabled : null,
+        readOnly: control instanceof HTMLTextAreaElement ? control.readOnly : null,
+        ariaDisabled: control.getAttribute('aria-disabled'),
+        ariaBusy: busyOwner?.getAttribute('aria-busy') ?? null,
+        visible: bounds.width > 0 && bounds.height > 0 && style.visibility !== 'hidden' && style.display !== 'none',
+        activeElement: document.activeElement === control,
+      }
+    })
     stage = 'focus-message'
     await message.focus()
     await page.waitForFunction(
@@ -328,8 +343,24 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     if (!await consent.isChecked()) throw new Error('Native keyboard consent grant did not check the checkbox')
     record.consentInput = 'native-keyboard'
     record.consentGranted = true
-    await message.fill('Give me a short grounded reflection.')
-    await message.focus()
+    record.messageActionabilityAfterConsent = await inspectMessageActionability()
+    await page.waitForFunction((selector) => {
+      const control = document.querySelector(selector)
+      if (!(control instanceof HTMLTextAreaElement)) return false
+      const bounds = control.getBoundingClientRect()
+      const style = getComputedStyle(control)
+      return !control.disabled && !control.readOnly
+        && control.getAttribute('aria-disabled') !== 'true'
+        && bounds.width > 0 && bounds.height > 0
+        && style.visibility !== 'hidden' && style.display !== 'none'
+    }, 'textarea[data-urai-proof-message-target="true"]', { timeout: 90_000 })
+    record.messageActionabilityBeforeTyping = await inspectMessageActionability()
+    const reflectionPrompt = 'Give me a short grounded reflection.'
+    await message.focus({ timeout: 20_000 })
+    await page.keyboard.type(reflectionPrompt, { delay: 10 })
+    const typedReflection = await message.inputValue()
+    if (typedReflection !== reflectionPrompt) throw new Error('Native keyboard reflection input did not retain the exact prompt')
+    record.messageInput = 'native-keyboard'
     stage = 'send-text-response'
     await page.getByRole('button', { name: 'Send' }).focus()
     await page.keyboard.press('Enter')

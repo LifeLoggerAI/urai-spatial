@@ -322,11 +322,13 @@ try {
     const id = `${spec.route.split('/').filter(Boolean).join('-') || 'root'}--${spec.state}--${captureProfile.id}`
     const representative = spec.coverage === 'representative-tablet-or-wide'
     const homeCase = ['/', '/home'].includes(spec.route) && !captureProfile.noWebGL
-    // Exact-head synchronization: the wide Home retry remains inside the existing case budget.
-    // The matrix records real GPU-backed browser pixels. Budgets must cover navigation,
-    // route stabilization, retained screenshot readback, and context shutdown without
-    // treating a slow CI GPU readback as missing product evidence.
-    const caseBudgetMs = homeCase ? 130_000 : representative ? 75_000 : 90_000
+    // Exact-head synchronization: budgets cover navigation, route stabilization,
+    // retained screenshot readback, bounded post-retry DOM resampling, and context
+    // shutdown. The readiness assertions below remain unchanged.
+    const caseBudgetMs = representative && homeCase ? 160_000
+      : homeCase ? 130_000
+      : representative ? 75_000
+      : 110_000
     const caseDeadline = Date.now() + caseBudgetMs
     const record = { id, exactHead, route: spec.route, requestedState: spec.state, profile: captureProfile.id, profileMetadata: { ...captureProfile, deviceScaleFactor: 1 }, coverage: spec.coverage, sessionState: 'fresh-unsigned-initial-entry', returningSession: 'not-exercised', caseBudgetMs, startedAt: new Date().toISOString(), response: null, finalUrl: null, dom: null, readiness: null, image: null, events: [], eventCount: 0, omittedEvents: 0, technicalDefects: [] }
     receipt.captures.push(record)
@@ -400,11 +402,9 @@ try {
 
       const settleBudgetMs = representative ? homeCase ? 32_000 : 20_000 : homeCase ? 60_000 : 25_000
       // Wide Home captures are the heaviest compositor readback in the matrix.
-      // Preserve at least 45s of the existing 100s representative case budget
-      // for final DOM evidence + a full-resolution screenshot retry. Readiness
-      // criteria remain identical; this only prevents the settle loop from
-      // consuming the screenshot's time budget after the route is already stable.
-      const screenshotReserveMs = representative && homeCase ? 45_000 : 30_000
+      // Preserve enough of its bounded case budget for the existing 12s first
+      // capture, 60s compositor retry, and post-retry readiness resampling.
+      const screenshotReserveMs = representative && homeCase ? 100_000 : 30_000
       const settleDeadline = Math.min(Date.now() + settleBudgetMs, caseDeadline - screenshotReserveMs)
       let stableSamples = 0
       let previousSignature = null
@@ -443,6 +443,36 @@ try {
           defect('unwind-compatibility-redirect-unconfirmed', { finalUrl: record.finalUrl, abortedRequests: compatibilityNavigationAborts.length })
         }
       }
+      const filename = `${id}--${exactHead.slice(0, 12)}.png`
+      const captured = await captureViewportScreenshot(page, path.join(outputDir, filename), caseDeadline)
+      const screenshot = captured.buffer
+      if (captured.retried) events({ type: 'screenshot-retry', reason: 'transient-compositor-timeout' })
+      record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-viewport-png', fullPage: false, captureRetried: captured.retried }
+      if (record.image.width !== captureProfile.width || record.image.height !== captureProfile.height) defect('actual-viewport-image-size-mismatch', { expectedWidth: captureProfile.width, expectedHeight: captureProfile.height, actualWidth: record.image.width, actualHeight: record.image.height })
+
+      // A successful compositor retry may outlive the DOM sample taken before
+      // the first screenshot attempt. Re-sample the same strict readiness
+      // predicate so the retained pixels and readiness describe one instant.
+      if (captured.retried) {
+        const postScreenshotDeadline = Math.min(Date.now() + 15_000, caseDeadline - 10_000)
+        let postStableSamples = 0
+        let postSignature = null
+        while (Date.now() < postScreenshotDeadline && postStableSamples < 3) {
+          dom = await inspectDomWithinBudget(page, caseDeadline)
+          const signature = JSON.stringify({ text: dom.mainText.slice(0, 800), states: dom.stateFields, readiness: dom.readiness, canvasCount: dom.canvasCount, images: dom.images.map(image => [image.src, image.complete, image.naturalWidth]) })
+          const ready = dom.visibleMainCount > 0 && !dom.globalLoading && !dom.pendingStates.length && !dom.visibleLoadingText.length
+            && dom.readiness.every(marker => marker.applicability === 'explicit-semantic-fallback' || marker.value === 'true')
+            && dom.images.every(image => image.complete && image.naturalWidth > 0)
+            && dom.fonts !== 'loading' && pendingAssets.size === 0
+          postStableSamples = ready && signature === postSignature ? postStableSamples + 1 : ready ? 1 : 0
+          postSignature = signature
+          if (postStableSamples < 3) await page.waitForTimeout(250)
+        }
+        record.postScreenshotStableSamples = postStableSamples
+        events({ type: 'post-screenshot-dom-refresh', stableSamples: postStableSamples })
+        if (postStableSamples < 3) defect('post-screenshot-readiness-unstable', { stableSamples: postStableSamples })
+      }
+
       record.observedState = classifyState(spec, dom)
       if (spec.route === '/status' || spec.route === '/waitlist') {
         const embedded = await page.getByTestId('urai-embedded-build-identity').getAttribute('data-preview-build-identity')
@@ -464,12 +494,6 @@ try {
       if (dom.canvases.some(canvas => canvas.backingWidth < 1 || canvas.backingHeight < 1)) defect('visible-canvas-without-backing-buffer', {})
       if (spec.state === 'explicit-demo' && record.observedState !== 'explicit-demo') defect('explicit-demo-source-unconfirmed', { observedState: record.observedState })
 
-      const filename = `${id}--${exactHead.slice(0, 12)}.png`
-      const captured = await captureViewportScreenshot(page, path.join(outputDir, filename), caseDeadline)
-      const screenshot = captured.buffer
-      if (captured.retried) events({ type: 'screenshot-retry', reason: 'transient-compositor-timeout' })
-      record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-viewport-png', fullPage: false, captureRetried: captured.retried }
-      if (record.image.width !== captureProfile.width || record.image.height !== captureProfile.height) defect('actual-viewport-image-size-mismatch', { expectedWidth: captureProfile.width, expectedHeight: captureProfile.height, actualWidth: record.image.width, actualHeight: record.image.height })
     } catch (error) {
       defect('capture-error', { message: String(error) })
       // Keep a failure frame wherever the browser still has a document.
