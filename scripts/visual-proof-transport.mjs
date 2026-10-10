@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url'
 // Reserve 1 MiB for the native ZIP wrapper around each individually uploaded part.
 export const PART_BYTES = 23 * 1024 * 1024
 export const ARTIFACT_BYTES = 24 * 1024 * 1024
-export const MAX_PARTS = 8
+// Keep the original proof bytes lossless while allowing 16 independently bounded uploads.
+export const MAX_PARTS = 16
 export const REPOSITORY = 'LifeLoggerAI/urai-spatial'
 const SCHEMA = 'urai-visual-proof-transport-v1'
 const GROUPS = ['visual', 'desktop', 'mobile', 'portal-fallback', 'accessibility-performance', 'adam-placement']

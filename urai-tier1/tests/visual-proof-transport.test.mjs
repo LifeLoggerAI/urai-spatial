@@ -34,6 +34,42 @@ const reconstruct = (f, overrides = {}) => reconstructArchive({ ...f, expected: 
 const metadata = (binding, overrides = {}) => ({ id: Number(binding.artifactId), name: binding.proofGroup === 'adam-placement' ? `adam-placement-proof-${binding.sourceSha}` : binding.proofGroup === 'accessibility-performance' ? `accessibility-performance-evidence-${binding.sourceSha}` : `continuous-spatial-visual-proof-${binding.proofGroup}-${binding.sourceSha}`, expired: false,
   size_in_bytes: 100, digest: `sha256:${binding.archiveSha256}`, workflow_run: { id: Number(binding.runId) }, ...overrides })
 
+test('accepts a 269 MB accessibility archive as twelve lossless parts within the sixteen-part bound', () => {
+  const archiveBytes = 269_131_745
+  const binding = { repository: REPOSITORY, sourceSha, proofGroup: 'accessibility-performance', runId: '100', runAttempt: '2', artifactId: '200', archiveSha256: 'a'.repeat(64) }
+  const partCount = Math.ceil(archiveBytes / PART_BYTES)
+  assert.equal(partCount, 12)
+  assert.ok(partCount <= MAX_PARTS)
+  const manifest = {
+    schemaVersion: 'urai-visual-proof-transport-v1',
+    validationScope: 'archive-transport-only',
+    ...binding,
+    originalArtifactName: `accessibility-performance-evidence-${sourceSha}`,
+    archiveName: 'accessibility-performance.zip',
+    archiveBytes,
+    partBytes: PART_BYTES,
+    partCount,
+    manifestArtifactName: `accessibility-performance-transport-${sourceSha}-100-2-manifest`,
+    parts: Array.from({ length: partCount }, (_, offset) => {
+      const index = offset + 1
+      const part = String(index).padStart(2, '0')
+      return {
+        index,
+        name: `accessibility-performance.zip.part-${part}`,
+        bytes: Math.min(PART_BYTES, archiveBytes - offset * PART_BYTES),
+        sha256: 'b'.repeat(64),
+        artifactName: `accessibility-performance-transport-${sourceSha}-100-2-part-${part}`,
+      }
+    }),
+  }
+  assert.equal(validateManifest(manifest, binding).partCount, 12)
+  assert.doesNotThrow(() => validateNativeArtifact(metadata(binding, { size_in_bytes: archiveBytes }), binding, {
+    id: binding.artifactId,
+    name: manifest.originalArtifactName,
+    archiveDigest: binding.archiveSha256,
+  }))
+})
+
 test('partitioning is deterministic and reassembly retains every original byte', t => {
   const f = fixture(t)
   const second = path.join(f.root, 'second')
@@ -234,7 +270,7 @@ test('production CLI requires external exact binding and rejects unknown or dupl
   assert.deepEqual(fs.readFileSync(f.outputPath), f.archive)
 })
 
-test('workflow preserves all original proof assertions and upload, and uses eight separate bounded paths', () => {
+test('workflow preserves all original proof assertions and upload, and uses MAX_PARTS separate bounded paths', () => {
   const workflow = fs.readFileSync(new URL('../../.github/workflows/continuous-spatial-visual-proof.yml', import.meta.url), 'utf8')
   const assertions = workflow.slice(workflow.indexOf('      - name: Prove complete group receipt\n'), workflow.indexOf('      - name: Upload exact-head grouped visual proof\n'))
   assert.equal(sha(assertions), '47ba006bf54949f3bdab54a860a483e22e3abd7300b3d1b0462ffd99c4c91612')
@@ -267,6 +303,16 @@ test('accessibility workflow retains the complete archive and strict first-run/r
   assert.equal(workflow.match(/compression-level: 0/g).length, MAX_PARTS + 2)
   assert.match(workflow, /verify-native-uploads/)
   assert.doesNotMatch(workflow, /path: artifacts\/accessibility-performance-transport\s*\n/)
+})
+
+test('founder placement workflow uses MAX_PARTS separate bounded archive paths', () => {
+  const workflow = fs.readFileSync(new URL('../../.github/workflows/adam-placement-proof.yml', import.meta.url), 'utf8')
+  const parts = workflow.match(/path: artifacts\/adam-placement-transport\/adam-placement\.zip\.part-[0-9]{2}/g)
+  assert.equal(parts.length, MAX_PARTS)
+  assert.equal(new Set(parts).size, MAX_PARTS)
+  assert.equal(workflow.match(/URAI_PART_[0-9]{2}_ID:/g).length, MAX_PARTS)
+  assert.equal(workflow.match(/compression-level: 0/g).length, MAX_PARTS + 2)
+  assert.match(workflow, /verify-native-uploads/)
 })
 
 for (const status of [404, 429, 500, 502, 503, 504, 'network']) test(`native preparation recovers bounded ${status} metadata/redirect failures with exact validation`, async t => {
