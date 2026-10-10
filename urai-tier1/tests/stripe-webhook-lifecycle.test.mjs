@@ -49,7 +49,7 @@ const hooks = registerHooks({
       case 'firebase-admin/app':
         source = "export const getApps=()=>[{}]; export const applicationDefault=()=>({}); export const initializeApp=()=>({});"; break;
       case 'firebase-admin/auth':
-        source = `export function getAuth(){ return {async verifyIdToken(token, checkRevoked) {
+        source = `export function getAuth(){ return {getUser:uid=>globalThis.__uraiStripeSourceState.getUser(uid), async verifyIdToken(token, checkRevoked) {
           const s=globalThis.__uraiStripeSourceState; s.authChecks.push(checkRevoked);
           if(token==='revoked-fixture' && checkRevoked===true) throw Error('revoked');
           if(!['valid-fixture','revoked-fixture'].includes(token)) throw Error('invalid');
@@ -61,7 +61,7 @@ const hooks = registerHooks({
         source = "export const https={onRequest:handler=>handler}; export const config=()=>({});"; break;
       case 'firebase-admin':
         source = `export const apps=[{}]; export const initializeApp=()=>({});
-          export const auth=()=>({async verifyIdToken(token,checkRevoked){
+          export const auth=()=>({getUser:uid=>globalThis.__uraiStripeSourceState.getUser(uid), async verifyIdToken(token,checkRevoked){
             const s=globalThis.__uraiStripeSourceState; s.authChecks.push(checkRevoked);
             if(token==='revoked-fixture' && checkRevoked===true) throw Error('revoked');
             if(!['valid-fixture','revoked-fixture'].includes(token)) throw Error('invalid');
@@ -76,6 +76,8 @@ const hooks = registerHooks({
 beforeEach(() => {
   state = {
     subscriptions: new Map(), invoices: new Map(), paymentIntents: new Map(), charges: new Map(),
+    accountDocs: new Map([['users/user-source-fixture', {accountStatus:'active'}]]),
+    async getUser(uid) { return {uid, disabled:false, metadata:{creationTime:new Date(1000).toUTCString()}}; },
     entitlements: new Map(), clients: [], readbacks: [], authChecks: [], reads: 0,
     async retrieve(kind, id) {
       this.readbacks.push([kind,id]);
@@ -90,8 +92,11 @@ beforeEach(() => {
     async get() { state.reads++; return {exists: state.entitlements.has(id), data: () => state.entitlements.get(id)}; },
     async set(value) { state.entitlements.set(id, {...value}); },
   });
+  const accountReference = path => ({path, async get() {return {exists:state.accountDocs.has(path), data:()=>state.accountDocs.get(path)};}});
   state.db = {
-    collection() {
+    doc: accountReference,
+    collection(path) {
+      if(path !== 'userEntitlements') return {doc:id=>accountReference(path+'/'+id),where:(_field,_op,values)=>({limit:()=>({get:async()=>({empty:![...state.accountDocs].some(([p,d])=>p.startsWith(path+'/')&&values.includes(d.state))})})})};
       return {
         doc: reference,
         where(_key, _operator, id) {
@@ -443,4 +448,5 @@ test(transport + ' equal-second ' + status + ' denies access and suppresses a co
   await send('invoice.paid', invoice(), { id: 'evt_later_paid', created: 201 });
   assert.equal(state.entitlements.get(userId).subscriptionStatus, 'active');
 });
+
 
