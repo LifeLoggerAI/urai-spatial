@@ -5,8 +5,8 @@ import test from 'node:test'
 const proof = await readFile(new URL('./native-doorway-proof.mjs', import.meta.url), 'utf8')
 
 test('keyboard doorway activation bypasses moving-target geometric stability', () => {
-  assert.match(proof, /await target\.focus\(\)/)
-  assert.match(proof, /target\.press\('Enter'\)/)
+  assert.match(proof, /await target\.focus\(\{ timeout: domEvaluationTimeout \}\)/)
+  assert.match(proof, /target\.press\('Enter', \{ timeout: domEvaluationTimeout \}\)/)
   assert.match(proof, /node === document\.activeElement/)
   assert.doesNotMatch(proof, /page\.keyboard\.press\('Enter'\)/)
 })
@@ -22,6 +22,29 @@ test('pointer and touch retain real browser-coordinate hit ownership', () => {
   assert.match(proof, /page\.touchscreen\.tap\(hitPoint\.center\.x, hitPoint\.center\.y\)/)
   assert.match(proof, /targetOwnsHitPoint/)
   assert.match(proof, /box\.width < 44 \|\| box\.height < 44/)
+})
+
+test('doorway proof separates settled fallback and focus disclosure from quiet loaded-world non-dominance', () => {
+  assert.match(proof, /waitForSettledHomePresentation/)
+  assert.match(proof, /data-webgl-ready="true"\]\[data-home-assets-ready="true"/)
+  assert.match(proof, /data-testid="urai-home-accessible-fallback"\]\[data-webgl-ready="false"/)
+  assert.match(proof, /record\.homePresentationState === 'loaded-world'/)
+  assert.match(proof, /restoreQuietLoadedWorldNavigation/)
+  assert.match(proof, /focused instanceof HTMLElement\) focused\.blur\(\)/)
+  assert.match(proof, /Number\.parseFloat\(style\.opacity \|\| '1'\) <= 0\.05/)
+  assert.match(proof, /rect\.width <= 64 && navAreaRatio <= 0\.03/)
+  assert.match(proof, /loadedWorldNonDominanceRequiredBeforeFocus: true/)
+})
+
+test('all locator DOM probes use an explicit bounded evaluation timeout', () => {
+  assert.match(proof, /const domEvaluationTimeout = 90_000/)
+  const targetEvaluations = (proof.match(/target\.evaluate\(/g) || []).length
+  const boundedTargetEvaluations = (proof.match(/target\.evaluate\([\s\S]*?\{ timeout: domEvaluationTimeout \}\)/g) || []).length
+  assert.equal(targetEvaluations, 7)
+  assert.equal(boundedTargetEvaluations, targetEvaluations)
+  assert.match(proof, /target\.focus\(\{ timeout: domEvaluationTimeout \}\)/)
+  assert.match(proof, /target\.press\('Enter', \{ timeout: domEvaluationTimeout \}\)/)
+  assert.match(proof, /target\.boundingBox\(\{ timeout: domEvaluationTimeout \}\)/)
 })
 
 
