@@ -16,7 +16,7 @@ A CPU meshopt preparation tool creates independent candidate GLBs without modify
 
 ## Executed evidence
 
-Runtime TypeScript passes. An isolated export of the integrated runtime compiled and generated 151 static pages. The compact suite has been checked in segments: the initial run stopped at an obsolete selected-memory label contract; the repaired 16-case suite and all 22 subsequent suites pass independently. A final uninterrupted run and native candidate workflows are pending. Targeted frame-cost behavior, meshopt consumer/corruption tests, asset-validation subprocess checks and accessibility materialization checks pass. No segmented run is reported as an uninterrupted pass.
+Runtime TypeScript passes. An isolated export of the integrated runtime compiled and generated 151 static pages. All 183 focused contract suites now pass in an uninterrupted run on the integrated runtime. Native candidate checks exposed an additional stale production-route label guard and a vegetation VM adapter missing the new actual render-cost helper; their repairs preserve the original assertions. Native rendering and final candidate checks remain pending. Targeted frame-cost behavior, meshopt consumer/corruption tests, asset-validation subprocess checks and accessibility materialization checks pass. No segmented run is reported as an uninterrupted pass.
 
 Predecessor `be452c594a3bdea5db8e9cf9f2df9ca22455041f` native evidence remains failed: ordinary Home canvas captures exceeded the deadline, unit contracts were stale, and production demo texture access was denied. Reduced-motion capture showed visible ground/shadow defects. These failures motivated the repairs; they do not certify this candidate. New native screenshots require inspection before art acceptance.
 

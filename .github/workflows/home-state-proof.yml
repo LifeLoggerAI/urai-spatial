@@ -6,6 +6,10 @@ on:
     paths:
       - 'scripts/capture-home-art-direction-proof.mjs'
       - 'urai-tier1/src/spatial/layout/**'
+      - 'urai-tier1/src/spatial/performance/homeRenderCostPolicy.ts'
+      - 'urai-tier1/src/spatial/performance/useAdaptiveSpatialQuality.ts'
+      - 'urai-tier1/tests/home-render-cost-behavior.test.mjs'
+      - 'urai-tier1/tests/home-vegetation-instancing-behavior.test.mjs'
       - 'urai-tier1/tests/home-sky-sampling.test.mjs'
       - 'urai-tier1/tests/home-sanctuary-geometry-behavior.test.mjs'
       - 'scripts/capture-home-state-proof.mjs'
@@ -62,7 +66,7 @@ jobs:
           node --test tests/home-state-proof-sampling.test.mjs tests/home-state-proof-companion-capture.test.mjs
           (cd urai-tier1 && node --test tests/visible-canvas-capture.test.mjs)
           (cd urai-tier1 && node --import tsx tests/continuous-spatial-restoration-contract.test.mjs)
-          (cd urai-tier1 && node --import tsx --test tests/home-sanctuary-geometry-behavior.test.mjs tests/home-sky-sampling.test.mjs tests/home-sky-interaction.test.mjs)
+          (cd urai-tier1 && node --import tsx --test tests/home-sanctuary-geometry-behavior.test.mjs tests/home-sky-sampling.test.mjs tests/home-sky-interaction.test.mjs tests/home-render-cost-behavior.test.mjs tests/home-vegetation-instancing-behavior.test.mjs)
           pnpm build:static
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
       - name: Capture exact Home state proof

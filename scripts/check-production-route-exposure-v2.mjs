@@ -105,7 +105,9 @@ for (const token of [
   "entryPortal: 'focus-memory-aperture'",
   'replayManifestId: memory.replayManifest.id',
   'requestUraiWorldReturn()',
-  "aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}",
+  "{...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')}",
+  "aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}",
+  '{memory ? <button type="button" className="primary"',
   'data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx"',
   'data-focus-spatial="inside-memory-star"',
   'No personal memory is displayed in this neutral stellar field.',
@@ -113,6 +115,7 @@ for (const token of [
 ]) {
   if (!focusClientSource.includes(token)) failures.push(`${focusClientPath} is missing: ${token}`)
 }
+if ((focusClientSource.match(/className="primary"/g) ?? []).length !== 1) failures.push(`${focusClientPath} must expose exactly one selected-memory primary Replay action`)
 for (const [label, pattern] of [
   ['memory identity', /data-memory-id=\{memory(?:\?\.)?id\}/],
   ['star identity', /data-star-id=\{memory(?:\?\.)?star\.id\}/],
