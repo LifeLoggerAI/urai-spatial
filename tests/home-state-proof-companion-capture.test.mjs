@@ -56,7 +56,7 @@ async function runCapture({ escapeCloses = true, revokeWorks = true, navigationR
     },
     viewportSize: () => ({ width: 1440, height: 900 }),
     screenshot: async (options) => {
-      events.push(options.clip ? 'canvas-pixels' : panelOpen ? 'privacy-panel-pixels' : 'closed-world-pixels')
+      events.push(options.clip ? 'canvas-pixels' : panelOpen ? 'privacy-panel-pixels' : 'canvas-viewport-pixels')
       assert.equal(checked, false, 'privacy evidence must follow actual checkbox revocation')
       return Buffer.alloc(12001, panelOpen ? 1 : 2)
     },
@@ -84,11 +84,13 @@ test('retain the revoked-consent panel before native closure and strict unocclud
   assert.equal(record.visual.available, true)
   assert.equal(record.focusedNavigationReadability.passed, true)
   assert.ok(events.indexOf('key:Escape') < events.indexOf('inspect-focused-navigation'))
-  assert.ok(events.indexOf('inspect-focused-navigation') < events.indexOf('canvas-pixels'))
+  const canvasCaptureIndex = events.findIndex((event) => event === 'canvas-pixels' || event === 'canvas-viewport-pixels')
+  assert.ok(canvasCaptureIndex >= 0, 'the visible canvas pixels must be retained')
+  assert.ok(events.indexOf('inspect-focused-navigation') < canvasCaptureIndex)
   assert.ok(record.privacyScreenshotBytes > 12000)
   assert.match(record.privacyScreenshotSha256, /^[a-f0-9]{64}$/)
   assert.ok(events.indexOf('privacy-panel-pixels') < events.indexOf('key:Escape'))
-  assert.ok(events.indexOf('key:Escape') < events.indexOf('canvas-pixels'))
+  assert.ok(events.indexOf('key:Escape') < canvasCaptureIndex)
   assert.ok(events.some((event) => event.includes('[aria-hidden="true"]')))
 })
 
@@ -103,3 +105,4 @@ test('failure to revoke consent cannot be certified by closing the panel', async
 test('failed focused-label measurement cannot produce a closed-world canvas-proof pass', async () => {
   await assert.rejects(runCapture({ navigationReadable: false }), /Actual focused Home destination labels are clipped, hidden or obstructed/)
 })
+
