@@ -209,10 +209,57 @@ test('settled mobile privacy navigation controls remain unobscured by the persis
     await page.setViewportSize(viewport)
     await openDemo(page)
     const expectedURL = page.url()
+    await assertSettledSanctuary(page, expectedURL)
+    await page.evaluate(async () => {
+      for (let frame = 0; frame < 4; frame += 1) {
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+      }
+    })
     const settled = await assertSettledSanctuary(page, expectedURL)
     const buttons = page.locator('.consentRealmNav button')
     await expect(buttons).toHaveCount(6)
 
+    const companionLayout = await page.evaluate(() => {
+      const shell = document.querySelector('[data-testid="urai-persistent-world-shell"]')
+      const companion = document.querySelector('.urai-world-companion')
+      const orb = document.querySelector('.urai-world-companion__orb')
+      const box = orb?.getBoundingClientRect()
+      const style = companion ? getComputedStyle(companion) : null
+      return {
+        destination: shell?.getAttribute('data-world-destination') ?? null,
+        transition: shell?.getAttribute('data-world-transition') ?? null,
+        companionPosition: style?.position ?? null,
+        companionLeft: style?.left ?? null,
+        companionRight: style?.right ?? null,
+        companionTop: style?.top ?? null,
+        companionBottom: style?.bottom ?? null,
+        companionWidth: style?.width ?? null,
+        companionTransform: style?.transform ?? null,
+        orbBox: box ? { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height } : null,
+      }
+    })
+
+    const headerSurfaces = await page.locator('.consentHeader > p, .consentHeader h1, .consentHeader .consentStatus, .consentHeader .consentDisclosure').evaluateAll(elements => {
+      const orb = document.querySelector('.urai-world-companion__orb')
+      const rect = orb?.getBoundingClientRect()
+      const halo = rect ? { left: rect.left - 17, right: rect.right + 17, top: rect.top - 17, bottom: rect.bottom + 17 } : null
+      return elements.map(element => {
+        const target = element as HTMLElement
+        const textRects: DOMRect[] = []
+        if (target.matches('p,h1')) {
+          const range = document.createRange()
+          range.selectNodeContents(target)
+          textRects.push(...Array.from(range.getClientRects()))
+        } else {
+          textRects.push(target.getBoundingClientRect())
+        }
+        const overlaps = halo ? textRects.some(box => box.width > 0 && box.height > 0
+          && box.left < halo.right && box.right > halo.left && box.top < halo.bottom && box.bottom > halo.top) : false
+        return { surface: target.className || target.tagName, text: target.textContent, overlapsOrbHalo: overlaps }
+      })
+    })
+
+    const buttons = page.locator('.consentRealmNav button')
     const initial = await buttons.evaluateAll(elements => {
       const overlays = '.consentSanctuary > .consentOrb, .urai-world-companion__orb, .urai-world-companion[data-open="true"] .urai-world-companion__menu, [data-urai-adam-launcher], [data-urai-adam-presence]'
       return elements.map(element => {
@@ -224,7 +271,10 @@ test('settled mobile privacy navigation controls remain unobscured by the persis
             if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false
           }
           const paint = candidate.getBoundingClientRect()
-          return paint.width > 0 && paint.height > 0 && rect.left < paint.right && rect.right > paint.left && rect.top < paint.bottom && rect.bottom > paint.top
+          const halo = candidate.matches('.urai-world-companion__orb')
+            ? { left: paint.left - 17, right: paint.right + 17, top: paint.top - 17, bottom: paint.bottom + 17 }
+            : paint
+          return halo.left < rect.right && halo.right > rect.left && halo.top < rect.bottom && halo.bottom > rect.top
         }).map(candidate => candidate.className || candidate.tagName) : []
         const centerX = rect.left + rect.width / 2
         const centerY = rect.top + rect.height / 2
@@ -236,13 +286,22 @@ test('settled mobile privacy navigation controls remain unobscured by the persis
       })
     })
     const initialVisible = initial.filter(button => button.onScreen)
-    expect(initialVisible.length).toBeGreaterThan(0)
-    expect(initialVisible.every(button => button.centerOwned && button.companionOverlaps.length === 0),
-      `${viewport.width}x${viewport.height}: settled visible domain navigation must be unobscured`).toBe(true)
+    const blocked = initialVisible.filter(button => !button.centerOwned || button.companionOverlaps.length > 0)
+    layouts.push({ viewport, settled, companionLayout, headerSurfaces, initialVisible })
     await page.screenshot({
-      path: path.join(evidenceRoot, `mobile-settled-nav-${viewport.width}x${viewport.height}.png`),
+      path: path.join(evidenceRoot, 'mobile-settled-nav-' + viewport.width + 'x' + viewport.height + '.png'),
       fullPage: false,
     })
+    await fs.writeFile(path.join(evidenceRoot, 'mobile-settled-nav-geometry.json'), JSON.stringify({
+      exactSha: process.env.EXACT_HEAD_SHA ?? null,
+      scope: 'synthetic-demo-settled-responsive-navigation-only',
+      layouts,
+    }, null, 2))
+    expect(initialVisible.length).toBeGreaterThan(0)
+    expect(headerSurfaces.filter(surface => surface.overlapsOrbHalo),
+      viewport.width + 'x' + viewport.height + ': visible header copy must clear the companion').toEqual([])
+    expect(blocked,
+      viewport.width + 'x' + viewport.height + ': visible domain navigation must clear the companion; geometry=' + JSON.stringify(companionLayout)).toEqual([])
 
     const scrolled: unknown[] = []
     for (const button of await buttons.all()) {
@@ -258,7 +317,10 @@ test('settled mobile privacy navigation controls remain unobscured by the persis
             if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false
           }
           const paint = candidate.getBoundingClientRect()
-          return paint.width > 0 && paint.height > 0 && rect.left < paint.right && rect.right > paint.left && rect.top < paint.bottom && rect.bottom > paint.top
+          const halo = candidate.matches('.urai-world-companion__orb')
+            ? { left: paint.left - 17, right: paint.right + 17, top: paint.top - 17, bottom: paint.bottom + 17 }
+            : paint
+          return halo.left < rect.right && halo.right > rect.left && halo.top < rect.bottom && halo.bottom > rect.top
         }).map(candidate => candidate.className || candidate.tagName)
         const samples = [[0.1, 0.1], [0.9, 0.1], [0.5, 0.5], [0.1, 0.9], [0.9, 0.9]].map(([x, y]) => {
           const hit = document.elementFromPoint(rect.left + rect.width * x, rect.top + rect.height * y)
@@ -267,23 +329,23 @@ test('settled mobile privacy navigation controls remain unobscured by the persis
         return { text: target.textContent, width: rect.width, height: rect.height,
           top: rect.top, bottom: rect.bottom, samples, companionOverlaps }
       })
-      expect(probe.width, `${probe.text}: navigation target width`).toBeGreaterThanOrEqual(48)
-      expect(probe.height, `${probe.text}: navigation target height`).toBeGreaterThanOrEqual(48)
+      expect(probe.width, probe.text + ': navigation target width').toBeGreaterThanOrEqual(48)
+      expect(probe.height, probe.text + ': navigation target height').toBeGreaterThanOrEqual(48)
       expect(probe.top).toBeGreaterThanOrEqual(0)
       expect(probe.bottom).toBeLessThanOrEqual(viewport.height)
-      expect(probe.samples.every(sample => sample.owned), `${probe.text}: painted navigation target must be unobscured`).toBe(true)
-      expect(probe.companionOverlaps, `${probe.text}: companion core rectangles must be clear`).toEqual([])
+      expect(probe.samples.every(sample => sample.owned), probe.text + ': painted navigation target must be unobscured').toBe(true)
+      expect(probe.companionOverlaps, probe.text + ': companion visual halo must be clear').toEqual([])
       scrolled.push(probe)
     }
 
-    layouts.push({ viewport, settled, initialVisible, scrolled })
+    layouts[layouts.length - 1] = { viewport, settled, companionLayout, headerSurfaces, initialVisible, scrolled }
+    await fs.writeFile(path.join(evidenceRoot, 'mobile-settled-nav-geometry.json'), JSON.stringify({
+      exactSha: process.env.EXACT_HEAD_SHA ?? null,
+      scope: 'synthetic-demo-settled-responsive-navigation-only',
+      layouts,
+    }, null, 2))
   }
 
-  await fs.writeFile(path.join(evidenceRoot, 'mobile-settled-nav-geometry.json'), JSON.stringify({
-    exactSha: process.env.EXACT_HEAD_SHA ?? null,
-    scope: 'synthetic-demo-settled-responsive-navigation-only',
-    layouts,
-  }, null, 2))
   await saveEvidence('mobile-settled-nav-runtime', runtime)
   expect(runtime.consoleErrors).toEqual([])
   expect(runtime.pageErrors).toEqual([])
