@@ -206,6 +206,24 @@ test('Escape closes and restores the exact external trigger before publishing id
   assert.equal(document.activeElement, f.trigger)
 })
 
+test('open Orb consumes Escape before an earlier realm return listener, then releases ownership when closed', t => {
+  let realmReturns = 0
+  const returnFromRealm = event => {
+    if (event.key === 'Escape' && !event.defaultPrevented) realmReturns += 1
+  }
+  // Consent Sanctuary's history listener exists before the Orb is opened.
+  window.addEventListener('keydown', returnFromRealm)
+  t.after(() => window.removeEventListener('keydown', returnFromRealm))
+  const f = fixture(t, { destination: 'privacy-controls' })
+  f.open()
+  f.key(f.first(), 'Escape')
+  assert.equal(realmReturns, 0, 'dismissing Orb must not also leave the current realm')
+  assert.equal(f.snapshot().open, 'false')
+  assert.equal(document.activeElement, f.trigger)
+  f.key(f.trigger, 'Escape')
+  assert.equal(realmReturns, 1, 'the closed Orb must not capture the realm return shortcut')
+})
+
 test('pointer toggle commits actual close and external focus before idle', t => {
   const f = fixture(t)
   f.open()

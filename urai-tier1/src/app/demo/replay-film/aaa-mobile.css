@@ -7,6 +7,9 @@
 .urai-replay-film-route h2 { font-size: clamp(2.7rem, 6vw, 6.5rem); line-height: 1.04; letter-spacing: -.035em; text-wrap: balance; }
 .urai-replay-film-route .demoFilmHeroCopy > p:not(.demoFilmDisclosure) { max-width: 48ch; color: #e5e6ef; font-size: clamp(1rem, 1.5vw, 1.2rem); line-height: 1.65; }
 .urai-replay-film-route a:focus-visible { outline: 3px solid #dcfaff; outline-offset: 5px; }
+.urai-replay-film-route .demoFilmActions { align-items: center; }
+.urai-replay-film-route .demoFilmActions > a { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; box-sizing: border-box; }
+.urai-replay-film-route .demoFilmActions > [data-urai-adam-launcher-slot] { margin: 0; }
 @media (max-width: 720px) {
   .urai-replay-film-route .demoFilmHero { min-height: 100svh; padding: 44px 22px 118px; }
   .urai-replay-film-route h1 { margin-top: 22px; font-size: clamp(3.1rem, 14vw, 5.8rem); line-height: 1.04; letter-spacing: -.04em; }
@@ -15,6 +18,9 @@
   .urai-replay-film-route h2 { font-size: clamp(2.6rem, 10vw, 4.5rem); line-height: 1.06; }
   .urai-replay-film-route article { padding: 26px; }
   .urai-replay-film-route #film + section { margin: 0 16px 110px; padding: 36px 24px; }
+  .urai-replay-film-route .demoFilmActions { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .urai-replay-film-route .demoFilmActions > a:first-child { grid-column: 1 / -1; }
+  .urai-replay-film-route .demoFilmActions > [data-urai-adam-launcher-slot] { justify-self: end; }
 }
 @media (max-height: 500px) and (min-width: 501px) {
   .urai-replay-film-route .demoFilmHero { padding-top: 28px; padding-bottom: 90px; }

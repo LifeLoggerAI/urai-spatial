@@ -161,10 +161,13 @@ export function PersistentWorldCompanion() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       event.preventDefault()
+      // The open overlay owns dismissal before the realm's history/return
+      // shortcut can act on the same key. Ownership ends when it closes.
+      event.stopPropagation()
       closeCompanionFromEvent(true)
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [closeCompanionFromEvent, open])
 
   const travel = useCallback((destination: UraiDestination) => {
