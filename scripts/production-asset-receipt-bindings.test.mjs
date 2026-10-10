@@ -120,8 +120,6 @@ test('malformed canonical manifests produce a retained rejection rather than an 
   assert.ok(codes(check()).includes('MANIFEST_INVALID'))
 }))
 
-
-
 test('malformed owner rows retain a manifest rejection instead of throwing', () => {
   for (const asset of [null, {}, { id: '', fixedPath }, { id: 'home', fixedPath: '../home.glb' }]) fixture(({ write, check }) => {
     write('operations/assets/launch-critical-assets.json', { assets: [asset] })
