@@ -10,6 +10,7 @@ const canonical = value => Array.isArray(value) ? '[' + value.map(canonical).joi
   : value && typeof value === 'object' ? '{' + Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([k,v]) => JSON.stringify(k) + ':' + canonical(v)).join(',') + '}' : JSON.stringify(value)
 const copy = value => value === undefined ? undefined : structuredClone(value)
 const source = readFileSync(process.env.OWNER_REVIEW_TEST_SOURCE || new URL('../apps/functions/src/privateLifeModelReview.ts', import.meta.url), 'utf8')
+const policyAuthority = stripTypeScriptTypes(readFileSync(new URL('../apps/functions/src/consentPolicyAuthority.ts', import.meta.url), 'utf8').replace(/^export /gm, ''))
 const producer = readFileSync(new URL('./fixtures/private-life-model-producer-5da7829.ts', import.meta.url), 'utf8')
 
 function database() {
@@ -56,7 +57,10 @@ async function fixture() {
     status: 'ACTIVE', synthetic: false, sourceEvidenceClass: request.sourceEvidenceClass, purposes: ['memory-index'], consent, ...resolved })
   d.put(transcriptPath, { schemaVersion: 'urai-private-source-transcript-v2', ownerUid: uid, sourceReceiptRef,
     status: 'CURRENT', synthetic: false, requestedPurpose: 'memory-index', transcriptRef: request.transcriptRef, provenanceRef: request.provenanceRef, ...resolved })
-  d.put(policyPath, { domains: { models: { mode: 'granted', modelContext: true }, identity: { mode: 'granted' } }, enforcement: { state: 'fully-enforced' } })
+  const domain = mode => ({ mode, retentionDays: null, precise: false, replayVisible: false, lifeMapVisible: false, modelContext: false, sharingEnabled: false, automationEnabled: false, likenessEnabled: false })
+  d.put(policyPath, { version: 2, revision: 1, ownerId: uid,
+    domains: { memory: domain('granted'), location: domain('denied'), models: { ...domain('granted'), modelContext: true }, exports: domain('denied'), workforce: domain('denied'), identity: domain('granted') },
+    enforcement: { state: 'fully-enforced', jobId: 'fixture-enforcement', affectedTargets: [], providerState: 'complete' } })
   const fieldValue = { serverTimestamp: () => 'test-time' }
   const producerCode = stripTypeScriptTypes(producer)
   const context = vm.createContext({ crypto, firestore: () => d.db, FieldValue: fieldValue, Buffer, process: { env: {
@@ -76,6 +80,7 @@ async function fixture() {
   class HttpsError extends Error { constructor(code, message) { super(message); this.code = code } }
   const callableCode = stripTypeScriptTypes(source.replace(/^import .*\n/gm, '').replace('export const reviewPrivateLifeModelCandidate', 'const reviewPrivateLifeModelCandidate'))
   const callableContext = vm.createContext({ admin: { apps: [{}], firestore }, functions: { region: () => ({ https: { onCall: fn => fn } }), https: { HttpsError } }, createHash: crypto.createHash, Buffer })
+  vm.runInContext(policyAuthority, callableContext)
   vm.runInContext(callableCode + '; globalThis.review = reviewPrivateLifeModelCandidate;', callableContext)
   const review = () => callableContext.review(input, { auth: { uid } })
   const amend = (path, change) => d.put(path, { ...d.records.get(path), ...change })
@@ -125,3 +130,4 @@ test('candidate source substitution with recomputed retained checksum is denied'
   f.amend(f.currentPath, { checksum: record.checksum }); f.input.checksum = record.checksum
   await assert.rejects(f.review(), /SOURCE_SUBSTITUTION/); assert.equal(f.canonicalPaths().length, 0)
 })
+
