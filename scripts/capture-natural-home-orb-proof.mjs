@@ -52,7 +52,7 @@ async function frames(page, count = 8) {
 async function imageEvidence(page, canvas, samplePoints) {
   const { buffer, capture } = await captureVisibleCanvasPng(page, canvas, 90_000, samplePoints)
   const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
-  const sample = await page.evaluate(async (url) => {
+  const sample = await page.evaluate(async ({ url, points }) => {
     const image = new Image()
     await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = url })
     const canvas = document.createElement('canvas')
@@ -61,7 +61,6 @@ async function imageEvidence(page, canvas, samplePoints) {
     const context = canvas.getContext('2d', { willReadFrequently: true })
     if (!context) return { luminanceRange: 0, visibleSamples: 0 }
     context.drawImage(image, 0, 0)
-    const points = capture.samplePoints
     const values = points.map(([xr, yr]) => {
       const x = Math.min(canvas.width - 1, Math.max(0, Math.floor(canvas.width * xr)))
       const y = Math.min(canvas.height - 1, Math.max(0, Math.floor(canvas.height * yr)))
@@ -69,7 +68,7 @@ async function imageEvidence(page, canvas, samplePoints) {
       return Math.round(pixel[0] * .2126 + pixel[1] * .7152 + pixel[2] * .0722)
     })
     return { luminanceRange: Math.max(...values) - Math.min(...values), visibleSamples: values.filter((value) => value >= 10).length }
-  }, dataUrl)
+  }, { url: dataUrl, points: capture.samplePoints })
   return { buffer, capture, ...sample }
 }
 
