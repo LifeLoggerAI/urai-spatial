@@ -3,6 +3,9 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import test from 'node:test'
 import ts from 'typescript'
+import * as THREE from 'three'
+import * as cameraMotion from '../src/spatial/canon/cameraMotion.ts'
+import * as lifeMapCameraFrame from '../src/components/lifemap/lifeMapCameraFrame.ts'
 
 // Execute the actual scene and canonical threshold with explicit synthetic
 // hook/router/Auth/WebGL adapters. This is component proof, not browser,
@@ -15,6 +18,9 @@ const compile = relative => ts.transpileModule(
 const sceneCode = compile('../src/components/lifemap/ComposedLifeMapScene.tsx')
 const canonicalCode = compile('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const homeCode = compile('../src/spatial/navigation/homeSkyInteraction.ts')
+const homeReturnCode = compile('../src/spatial/navigation/homeReturnCheckpoint.ts')
+const locationCode = compile('../src/lib/browserLocationStore.ts')
+const worldEventsCode = compile('../src/spatial/world/worldEvents.ts')
 const childNodes = node => [node?.props?.children].flat(Infinity)
 const nodes = tree => tree && typeof tree === 'object' ? [tree, ...childNodes(tree).flatMap(nodes)] : []
 const text = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tree === 'object' ? childNodes(tree).map(text).join('') : String(tree)
@@ -23,7 +29,7 @@ function fixture({ component = 'scene', sourceMode = 'signed-out', pathname = '/
   search = '', webgl = true, memoryNodes = [] } = {}) {
   let cursor = 0, dirty = true, tree
   const slots = [], queued = [], listeners = new Map()
-  const calls = { push: [], replace: [], worldReturn: 0 }
+  const calls = { push: [], replace: [], worldReturn: 0, worldTravel: [] }
   const suspense = Symbol('synthetic-Suspense')
   const params = new URLSearchParams(search)
   const profile = { tier: 'low', pixelRatioMax: 1, reducedMotion: true, documentVisible: true }
@@ -40,9 +46,14 @@ function fixture({ component = 'scene', sourceMode = 'signed-out', pathname = '/
   react.useCallback = (callback, deps) => react.useMemo(() => callback, deps)
   react.useLayoutEffect = react.useEffect
   const browser = {
-    location: { pathname, search },
+    location: { origin: 'https://synthetic.invalid', pathname, search, hash: '' },
+    history: {
+      pushState(_state, _title, href) { const next = new URL(href, browser.location.origin); Object.assign(browser.location, { pathname: next.pathname, search: next.search, hash: next.hash }) },
+      replaceState(_state, _title, href) { const next = new URL(href, browser.location.origin); Object.assign(browser.location, { pathname: next.pathname, search: next.search, hash: next.hash }) },
+    },
     addEventListener(name, callback) { const group = listeners.get(name) ?? new Set(); group.add(callback); listeners.set(name, group) },
     removeEventListener(name, callback) { listeners.get(name)?.delete(callback) },
+    dispatchEvent(event) { for (const callback of [...listeners.get(event.type) ?? []]) callback(event) },
     setTimeout() { throw new Error('Unexpected component timer in this settled synthetic fixture') },
     clearTimeout() {},
   }
@@ -50,12 +61,25 @@ function fixture({ component = 'scene', sourceMode = 'signed-out', pathname = '/
   const jsx = (type, props) => ({ type, props })
   const homeModule = { exports: {} }
   vm.runInNewContext(homeCode, { module: homeModule, exports: homeModule.exports, URL, URLSearchParams }, { filename: 'actual-homeSkyInteraction.ts' })
+  const homeReturnModule = { exports: {} }
+  vm.runInNewContext(homeReturnCode, { module: homeReturnModule, exports: homeReturnModule.exports, window: browser, URLSearchParams }, { filename: 'actual-homeReturnCheckpoint.ts' })
+  const locationModule = { exports: {} }
+  vm.runInNewContext(locationCode, { module: locationModule, exports: locationModule.exports, window: browser }, { filename: 'actual-browserLocationStore.ts' })
+  const worldEventsModule = { exports: {} }
+  vm.runInNewContext(worldEventsCode, {
+    module: worldEventsModule, exports: worldEventsModule.exports, window: browser, URL, URLSearchParams,
+    require(name) { assert.equal(name, '../store/useSceneStore'); return { useSceneStore: { getState: () => ({}) } } },
+  }, { filename: 'actual-worldEvents.ts' })
   const imports = {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: Symbol('synthetic-Fragment') },
     'next/navigation': { useRouter: () => ({ push: value => calls.push.push(value), replace: value => calls.replace.push(value) }), useSearchParams: () => params },
-    '@react-three/fiber': { Canvas: 'synthetic-Canvas' }, three: {},
+    '@react-three/fiber': { Canvas: 'synthetic-Canvas' }, three: THREE,
     '@/spatial/performance/useAdaptiveSpatialQuality': { useAdaptiveSpatialQuality: () => profile },
     '@/spatial/navigation/homeSkyInteraction': homeModule.exports,
+    '@/spatial/navigation/homeReturnCheckpoint': homeReturnModule.exports,
+    '@/lib/browserLocationStore': locationModule.exports,
+    '@/spatial/canon/cameraMotion': cameraMotion,
+    './lifeMapCameraFrame': lifeMapCameraFrame,
     './useLifeMapEvents': { useLifeMapEvents: () => ({ nodes: memoryNodes, loading: false, sourceMode }) },
     './LifeMapProductionWorld': { LifeMapProductionWorld: 'synthetic-production-world-boundary' },
     './lifeMapVisualSystem': { artifactFamilyLabel: () => 'Visual memory', resolveArtifactFamily: () => 'visual' },
@@ -65,7 +89,7 @@ function fixture({ component = 'scene', sourceMode = 'signed-out', pathname = '/
     '@/spatial/adam/AdamLauncherSlot': 'synthetic-founder-slot',
     '@/components/lifemap/LifeMapRouteBoundary': 'synthetic-scene-boundary',
     '@/components/lifemap/LifeMapSemanticNavigator': 'synthetic-semantic-boundary',
-    '@/spatial/world/worldEvents': { requestUraiWorldReturn: () => calls.worldReturn++ },
+    '@/spatial/world/worldEvents': { ...worldEventsModule.exports, requestUraiWorldReturn: () => calls.worldReturn++, requestUraiWorldTravel: request => calls.worldTravel.push(request) },
   }
   const module = { exports: {} }
   vm.runInNewContext(component === 'canonical' ? canonicalCode : sceneCode, {
@@ -88,9 +112,26 @@ function fixture({ component = 'scene', sourceMode = 'signed-out', pathname = '/
     calls, get tree() { return tree },
     canonicalThreshold() { const threshold = nodes(tree).find(node => typeof node.type === 'function' && node.type.name === 'SignedOutLifeMap'); assert.ok(threshold); return threshold.type(threshold.props) },
     changeWebGLState(state) { const bridge = nodes(tree).find(node => typeof node.type === 'function' && node.type.name === 'WebGLRecoveryBridge'); assert.ok(bridge); bridge.props.onStateChange(state); render() },
+    settleSelectedCamera() { const world = nodes(tree).find(node => node.type === 'synthetic-production-world-boundary'); const rig = world?.props.cameraRig; assert.equal(rig?.type.name, 'CameraRig'); assert.ok(rig.props.selected); rig.props.onSettledChange(rig.props.selected.id); render() },
+    finishHomeReturn() { render(); const world = nodes(tree).find(node => node.type === 'synthetic-production-world-boundary'); const rig = world?.props.cameraRig; assert.equal(rig?.type.name, 'CameraRig'); assert.ok(rig.props.homeReturn); assert.equal(tree.props['data-life-map-phase'], 'home-return'); rig.props.onHomeReturnComplete(rig.props.homeReturn); render() },
+    async navigate(href) { browser.history.pushState(null, '', href); await Promise.resolve(); render() },
     key({ key = 'Escape', claimed = false, editable = false } = {}) { const event = { key, defaultPrevented: claimed, target: new ElementAdapter(editable), preventDefault() { this.defaultPrevented = true } }; for (const callback of listeners.get('keydown') ?? []) callback(event); render(); return event },
     unmount() { for (const slot of slots) slot.cleanup?.() },
   }
+}
+
+function assertHomeTravel(f, demo = false) {
+  assert.deepEqual(f.calls.push, [], 'Home return uses the governed travel boundary')
+  assert.equal(f.calls.worldTravel.length, 1)
+  const request = f.calls.worldTravel[0]
+  assert.equal(request.destination, 'home')
+  assert.equal(request.entryPortal, 'home-sky')
+  assert.equal(request.cameraCheckpoint, 'home-sky-return')
+  const href = new URL(request.href, 'https://synthetic.invalid')
+  assert.equal(href.pathname, '/home')
+  assert.equal(href.searchParams.get('demo'), demo ? '1' : null)
+  assert.equal(href.searchParams.get('homeReturn'), 'descent')
+  assert.equal(href.searchParams.has('manifestId'), false)
 }
 
 test('signed-out scene leaves Home navigation solely to its canonical disclosure', () => {
@@ -110,7 +151,9 @@ for (const sourceMode of ['explicit-demo', 'private', 'empty', 'unavailable', 'e
     assert.equal(controls.length, 1)
     assert.equal(text(controls[0]), 'Return Home')
     controls[0].props.onClick()
-    assert.deepEqual(f.calls.push, [sourceMode === 'explicit-demo' ? '/home?demo=1' : '/home'])
+    assert.deepEqual(f.calls.worldTravel, [], 'the camera must finish before committing Home navigation')
+    f.finishHomeReturn()
+    assertHomeTravel(f, sourceMode === 'explicit-demo')
     f.unmount()
   })
 }
@@ -147,10 +190,12 @@ test('signed-out Escape keeps Home navigation and existing claimed/editable-key 
   f.key({ claimed: true }); f.key({ editable: true }); f.key({ key: 'Enter' })
   assert.deepEqual(f.calls.push, [])
   assert.equal(f.key().defaultPrevented, true)
-  assert.deepEqual(f.calls.push, ['/home'])
+  assert.deepEqual(f.calls.worldTravel, [])
+  f.finishHomeReturn()
+  assertHomeTravel(f)
   f.unmount()
   f.key()
-  assert.deepEqual(f.calls.push, ['/home'], 'unmount removes the actual keyboard listener')
+  assert.equal(f.calls.worldTravel.length, 1, 'unmount removes the actual keyboard listener')
 })
 
 test('signed-out WebGL recovery keeps its actual Home action and restores the overview', () => {
@@ -161,7 +206,7 @@ test('signed-out WebGL recovery keeps its actual Home action and restores the ov
   const controls = nodes(recovery).filter(node => node.type === 'button' && text(node) === 'Return Home')
   assert.equal(controls.length, 1)
   controls[0].props.onClick()
-  assert.deepEqual(f.calls.push, ['/home'])
+  assertHomeTravel(f)
   f.changeWebGLState('ready')
   assert.equal(nodes(f.tree).some(node => node.props?.className === 'life-map-recovery'), false)
   f.unmount()
@@ -172,9 +217,16 @@ test('selected disclosed memory keeps Focus/Replay identity and its separate Ove
   const f = fixture({ sourceMode: 'explicit-demo', search: '?demo=1&manifestId=synthetic-manifest&node=synthetic-memory', memoryNodes: [memory] })
   assert.equal(f.tree.props['data-life-map-mode'], 'selected')
   assert.equal(nodes(f.tree).some(node => node.props?.['data-life-map-overview-home-return'] === 'true'), false)
-  const actions = nodes(f.tree).find(node => node.props?.['aria-label'] === 'Selected memory actions')
+  let actions = nodes(f.tree).find(node => node.props?.['aria-label'] === 'Selected memory actions')
   assert.ok(actions)
-  const focus = nodes(actions).find(node => node.props?.className === 'focus-threshold')
+  let focus = nodes(actions).find(node => node.props?.className === 'focus-threshold')
+  assert.equal(focus.props.disabled, true, 'camera readiness must guard the actual selected-memory action')
+  focus.props.onClick()
+  assert.deepEqual(f.calls.push, [], 'an early callback must not bypass camera readiness')
+  f.settleSelectedCamera()
+  actions = nodes(f.tree).find(node => node.props?.['aria-label'] === 'Selected memory actions')
+  focus = nodes(actions).find(node => node.props?.className === 'focus-threshold')
+  assert.equal(focus.props.disabled, false)
   focus.props.onClick()
   const destination = new URL(f.calls.push[0], 'https://synthetic.invalid')
   assert.equal(destination.pathname, '/focus')

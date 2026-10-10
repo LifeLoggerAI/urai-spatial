@@ -4,6 +4,7 @@ import vm from 'node:vm'
 import test from 'node:test'
 import ts from 'typescript'
 import * as THREE from 'three'
+import * as cameraMotion from '../src/spatial/canon/cameraMotion.ts'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
 
 // Execute production vegetation with explicit hook/GLTF adapters and real Three
@@ -53,6 +54,7 @@ function mountVegetation(scene) {
   const runtime = { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }
   const adapters = {
     react, 'react/jsx-runtime': runtime, three: THREE,
+    '@/spatial/canon/cameraMotion': cameraMotion,
     '@react-three/fiber': {},
     '@react-three/drei': { useGLTF: Object.assign(() => ({ scene }), { preload() {} }) },
     'three/examples/jsm/geometries/RoundedBoxGeometry.js': { RoundedBoxGeometry },

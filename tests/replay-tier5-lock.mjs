@@ -1,4 +1,4 @@
-import { chromium } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
@@ -169,8 +169,8 @@ async function validateReplay(page, report, screenshotName) {
   const unwind = page.locator('.unwind').first();
 
   await proof.waitFor({ state: 'attached', timeout: 30000 });
-  await expectAttribute(proof, 'data-replay-phase', 'replay_playing');
-  await expectAttribute(proof, 'data-playing', 'true');
+  await expectAttribute(proof, 'data-replay-phase', 'replay_paused');
+  await expectAttribute(proof, 'data-playing', 'false');
   await expectVisible(client, 'cinematic Replay client');
   await expectAttribute(client, 'data-memory-status', 'demo');
   await expectAttribute(client, 'data-manifest-id', MANIFEST_ID);
@@ -189,15 +189,21 @@ async function validateReplay(page, report, screenshotName) {
 
   const play = page.getByRole('button', { name: 'Continue memory' }).first();
   await expectVisible(play, 'Continue memory control');
+  await expectAttribute(client, 'data-replay-interaction-ready', 'true');
+  await expect(play).toBeEnabled({ timeout: 30000 });
   await play.click();
   await expectAttribute(client, 'data-playing', 'true');
+  await expectAttribute(proof, 'data-replay-phase', 'replay_playing');
+  await expectAttribute(proof, 'data-playing', 'true');
 
   const pause = page.getByRole('button', { name: 'Pause memory' }).first();
   await expectVisible(pause, 'Pause memory control');
   await pause.click();
   await expectAttribute(client, 'data-playing', 'false');
+  await expectAttribute(proof, 'data-replay-phase', 'replay_paused');
+  await expectAttribute(proof, 'data-playing', 'false');
 
-  report.audits.push('route proof exposes replay_playing while authenticated demo client play and pause states are independently verified');
+  report.audits.push('route proof mirrors the actual paused, Continue, and Pause playback states after arrival readiness');
   await page.screenshot({ path: `${ARTIFACT_DIR}/${screenshotName}`, fullPage: true });
   report.screenshots.push(screenshotName);
 

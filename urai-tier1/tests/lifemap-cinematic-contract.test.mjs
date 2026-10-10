@@ -60,10 +60,14 @@ test('memory lenses select in place before Focus or Replay navigation', () => {
 test('Life Map keeps deterministic camera travel, Escape recovery, reduced motion, and safe routes', () => {
   includesAll(scene, [
     'type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival"',
-    'THREE.MathUtils.damp',
+    'cameraDampingAlpha(rate, delta)',
+    'cameraDampingAlpha(5.6, delta)',
+    'cameraDampingAlpha(4.6, delta)',
     'event.key !== "Escape"',
     'profile.reducedMotion',
-    'router.push(homeJourneyHref("/home", params.toString()))',
+    'href: homeReturnHref(params.toString())',
+    "requestUraiWorldTravel({ destination: 'home', href: flight.href, entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-return' })",
+    "shell.dataset.lifeMapCameraOwner = 'life-map-home-return'",
     'webglcontextlost',
     'webglcontextrestored',
   ])

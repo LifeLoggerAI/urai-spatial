@@ -8,9 +8,12 @@ import { useUraiWorldState } from './WorldStateProvider'
 import {
   URAI_WORLD_RETURN_EVENT,
   URAI_WORLD_TRAVEL_EVENT,
+  captureUraiWorldTravelCancellation,
   destinationSurfaceReady,
+  worldTravelLocationMatches,
 } from './worldEvents'
 import { previousDestinationForReturn } from './worldTypes'
+import { worldReturnCameraFrame } from './worldReturnCameraFrame'
 import type { UraiDestination, UraiOriginRealm, UraiWorldTravelRequest } from './worldTypes'
 
 const CONTEXT_KEYS = [
@@ -19,10 +22,15 @@ const CONTEXT_KEYS = [
   'thread',
   'personId',
   'placeId',
+  'eraId',
+  'era',
   'manifestId',
   'movieId',
   'chapterId',
   'privacyMode',
+  'originRealm',
+  'returnToken',
+  'fidelity',
   'demo',
 ] as const
 
@@ -42,6 +50,8 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
 
   const target = new URL(request.href ?? definition.href, window.location.origin)
   const current = new URLSearchParams(window.location.search)
+  const requestedMemoryId = request.context?.memoryId ?? target.searchParams.get('memoryId')
+  const explicitNode = target.searchParams.has('node')
 
   for (const key of CONTEXT_KEYS) {
     if (!target.searchParams.has(key) && current.has(key)) {
@@ -54,6 +64,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
+  if (context?.eraId) target.searchParams.set('eraId', context.eraId)
   if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
   if (context?.movieId) target.searchParams.set('movieId', context.movieId)
   if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
@@ -69,6 +80,9 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (context?.demo) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+  if (requestedMemoryId && !explicitNode && requestedMemoryId !== (current.get('memoryId') ?? current.get('node'))) {
+    target.searchParams.set('node', requestedMemoryId)
+  }
 
   const memoryId = target.searchParams.get('memoryId')
   const nodeId = target.searchParams.get('node')
@@ -79,10 +93,6 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   }
 
   return `${target.pathname}${target.search}${target.hash}`
-}
-
-function normalizedPathname(value: string) {
-  return value.replace(/\/+$/, '') || '/'
 }
 
 function isEditableTarget(target: EventTarget | null) {
@@ -99,13 +109,14 @@ function fallbackReturnDestination(destination: UraiDestination): UraiDestinatio
   if (destination === 'focus') return 'life-map'
   if (destination === 'replay') return 'focus'
   if (destination === 'life-movie') return 'replay'
+  if (destination === 'life-map') return 'home'
   if (destination === 'infrastructure-hub') return 'home'
   return 'infrastructure-hub'
 }
 
 export function WorldTransitionController() {
   const router = useRouter()
-  const { world, phase, beginTravel } = useUraiWorldState()
+  const { world, phase, pendingTravel, beginTravel, cancelTransition } = useUraiWorldState()
   const timer = useRef<number | null>(null)
   const navigationWatchdog = useRef<number | null>(null)
   const navigationGeneration = useRef(0)
@@ -113,13 +124,24 @@ export function WorldTransitionController() {
   const worldRef = useRef(world)
   const phaseRef = useRef(phase)
   const beginTravelRef = useRef(beginTravel)
+  const cancelTransitionRef = useRef(cancelTransition)
+  const activeTravel = useRef<{
+    request: UraiWorldTravelRequest
+    href: string
+    startingLocation: string
+    returning: boolean
+    cancelRecovery: () => void
+  } | null>(null)
 
-  useEffect(() => { worldRef.current = world }, [world])
-  useEffect(() => { phaseRef.current = phase }, [phase])
-  useEffect(() => { beginTravelRef.current = beginTravel }, [beginTravel])
+  useLayoutEffect(() => {
+    worldRef.current = world
+    phaseRef.current = phase
+    beginTravelRef.current = beginTravel
+    cancelTransitionRef.current = cancelTransition
+  }, [beginTravel, cancelTransition, phase, world])
 
   const clearTimer = useCallback(() => {
-    // Also invalidate callbacks already queued before their timer was cleared.
+    // Fence already queued callbacks as well as scheduled timers.
     navigationGeneration.current += 1
     if (timer.current !== null) {
       window.clearTimeout(timer.current)
@@ -133,48 +155,64 @@ export function WorldTransitionController() {
     stopNavigationObservation.current = null
   }, [])
 
-  const executeTravel = useCallback((request: UraiWorldTravelRequest) => {
+  const cancelActiveTravel = useCallback((restoreWorld = true) => {
+    const trip = activeTravel.current
+    activeTravel.current = null
     clearTimer()
+    trip?.cancelRecovery()
+    if (restoreWorld) cancelTransitionRef.current()
+  }, [clearTimer])
+
+  const executeTravel = useCallback((request: UraiWorldTravelRequest, returning = false) => {
+    const previous = activeTravel.current
+    previous?.cancelRecovery()
+    clearTimer()
+    const href = buildTravelHref(request)
+    const trip = {
+      request,
+      href,
+      startingLocation: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+      returning,
+      cancelRecovery: captureUraiWorldTravelCancellation(request),
+    }
+    activeTravel.current = trip
+    // Lock synchronously, before React commits BEGIN_TRAVEL, so duplicate realm
+    // and global Return handlers cannot start competing copies of one unwind.
+    phaseRef.current = 'travelling'
     const currentWorld = worldRef.current
     beginTravelRef.current(request)
 
     if (currentWorld.destination === 'home') {
-      window.sessionStorage.setItem('urai-world-home-checkpoint', JSON.stringify({
-        destination: currentWorld.destination,
-        entryPortal: request.entryPortal ?? 'ground-gateway',
-        cameraCheckpoint: currentWorld.cameraCheckpoint ?? 'home-threshold',
-        savedAt: Date.now(),
-      }))
+      try {
+        window.sessionStorage.setItem('urai-world-home-checkpoint', JSON.stringify({
+          destination: currentWorld.destination,
+          entryPortal: request.entryPortal ?? 'ground-gateway',
+          cameraCheckpoint: currentWorld.cameraCheckpoint ?? 'home-threshold',
+          savedAt: Date.now(),
+        }))
+      } catch {
+        // The route transaction remains usable when optional storage is blocked.
+      }
     }
 
-    const href = buildTravelHref(request)
-    const target = new URL(href, window.location.origin)
-    const targetPathname = normalizedPathname(target.pathname)
-    const targetLocation = `${targetPathname}${target.search}${target.hash}`
-    const locationKey = () => `${normalizedPathname(window.location.pathname)}${window.location.search}${window.location.hash}`
-    const startingLocation = locationKey()
     const generation = navigationGeneration.current
     let navigationStarted = false
     let reachedTarget = false
-
     const observeNavigation = () => {
-      if (generation !== navigationGeneration.current) return
-      const currentLocation = locationKey()
-      if (navigationStarted && currentLocation === targetLocation) {
+      if (generation !== navigationGeneration.current || activeTravel.current !== trip) return
+      if (navigationStarted && worldTravelLocationMatches(href)) {
         reachedTarget = true
-        if (destinationSurfaceReady(request.destination)) clearTimer()
+        if (destinationSurfaceReady(request.destination)) cancelActiveTravel(false)
         return
       }
-      // A later route (including returning to the origin after reaching the
-      // target) owns navigation now. This attempt may no longer recover it.
-      if (currentLocation !== startingLocation || reachedTarget) clearTimer()
+      // Browser navigation away, including Back after reaching this target,
+      // retires this trip before a queued recovery can reclaim its route.
+      if (!worldTravelLocationMatches(trip.startingLocation) || reachedTarget) cancelActiveTravel()
     }
     const unsubscribeLocation = subscribeBrowserLocation(observeNavigation)
     const surfaceObserver = new MutationObserver(observeNavigation)
     surfaceObserver.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
+      childList: true, subtree: true, attributes: true,
       attributeFilter: ['data-testid', 'data-route-owner'],
     })
     stopNavigationObservation.current = () => {
@@ -183,51 +221,75 @@ export function WorldTransitionController() {
     }
 
     timer.current = window.setTimeout(() => {
-      if (generation !== navigationGeneration.current) return
-      timer.current = null
-      navigationStarted = true
+      if (generation !== navigationGeneration.current || activeTravel.current !== trip) return
+      if (!worldTravelLocationMatches(trip.startingLocation)) { cancelActiveTravel(); return }
       // Use the governed client-router path for every realm transition, including
       // Mirror -> Replay. A prior Replay-only hard-document shortcut could stall
       // before navigation committed under the patched Next runtime.
+      timer.current = null
+      navigationStarted = true
       router.push(href)
-      if (generation !== navigationGeneration.current) return
 
       // Route ownership is not proven by pathname alone. If the router changes
       // the URL but the destination surface never mounts, force one deterministic
       // document handoff after the client-router grace period.
       navigationWatchdog.current = window.setTimeout(() => {
-        if (generation !== navigationGeneration.current) return
+        if (generation !== navigationGeneration.current || activeTravel.current !== trip) return
         observeNavigation()
-        if (generation !== navigationGeneration.current) return
+        if (generation !== navigationGeneration.current || activeTravel.current !== trip) return
         clearTimer()
+        if (!worldTravelLocationMatches(trip.startingLocation) && !worldTravelLocationMatches(href)) {
+          cancelActiveTravel()
+          return
+        }
         if (
-          normalizedPathname(window.location.pathname) !== targetPathname ||
+          !worldTravelLocationMatches(href) ||
           !destinationSurfaceReady(request.destination)
         ) {
-          window.location.assign(href)
+          if (worldTravelLocationMatches(href)) window.location.reload()
+          else window.location.assign(href)
         }
       }, 2500)
       observeNavigation()
     }, transitionDuration(request.destination))
-  }, [clearTimer, router])
+  }, [cancelActiveTravel, clearTimer, router])
+
+  useEffect(() => {
+    const trip = activeTravel.current
+    if (trip && phase === 'idle' && worldTravelLocationMatches(trip.href) && destinationSurfaceReady(trip.request.destination)) {
+      cancelActiveTravel(false)
+    }
+  }, [cancelActiveTravel, phase, world])
 
   const reverseTravel = useCallback(() => {
+    const trip = activeTravel.current
+    if (trip) {
+      // Repeated Escape/Return cannot restart or cancel the outward step it just
+      // requested. A forward trip can be cancelled before its route commits.
+      if (!trip.returning && worldTravelLocationMatches(trip.startingLocation)) cancelActiveTravel()
+      return
+    }
     const currentWorld = worldRef.current
     if (phaseRef.current !== 'idle') return
-    const destination = currentWorld.destination === 'possible-futures' && currentWorld.scenarioOrigin
-      ? destinationFromOriginRealm(currentWorld.scenarioOrigin)
-      : previousDestinationForReturn(currentWorld) ?? fallbackReturnDestination(currentWorld.destination)
+    if (currentWorld.destination === 'home') return
+    const destination = currentWorld.destination === 'replay'
+      ? 'focus'
+      : currentWorld.destination === 'possible-futures' && currentWorld.scenarioOrigin
+        ? destinationFromOriginRealm(currentWorld.scenarioOrigin)
+        : previousDestinationForReturn(currentWorld) ?? fallbackReturnDestination(currentWorld.destination)
     const definition = definitionForDestination(destination)
+    const returnFrame = worldReturnCameraFrame(destination, currentWorld, new URLSearchParams(window.location.search))
     executeTravel({
       destination,
-      href: definition.href,
+      href: returnFrame.href,
       entryPortal: currentWorld.entryPortal ?? definition.entryPortal,
-      cameraCheckpoint: destination === 'home' ? 'home-threshold' : definition.cameraCheckpoint,
+      cameraCheckpoint: returnFrame.cameraCheckpoint,
       context: {
         memoryId: currentWorld.memoryId,
         threadId: currentWorld.threadId,
         personId: currentWorld.personId,
         placeId: currentWorld.placeId,
+        eraId: currentWorld.eraId,
         replayManifestId: currentWorld.replayManifestId,
         movieId: currentWorld.movieId,
         chapterId: currentWorld.chapterId,
@@ -238,12 +300,17 @@ export function WorldTransitionController() {
         truthMode: destination === 'replay' || destination === 'life-movie' ? 'memory' : 'reality',
         demo: currentWorld.demo,
       },
-    })
-  }, [executeTravel])
+    }, true)
+  }, [cancelActiveTravel, executeTravel])
 
   useLayoutEffect(() => {
     const onTravel = (event: WindowEventMap[typeof URAI_WORLD_TRAVEL_EVENT]) => executeTravel(event.detail)
     const onReturn = () => reverseTravel()
+    const onPopState = () => cancelActiveTravel()
+    const stopLocationObservation = subscribeBrowserLocation(() => {
+      const trip = activeTravel.current
+      if (trip && !worldTravelLocationMatches(trip.startingLocation) && !worldTravelLocationMatches(trip.href)) cancelActiveTravel()
+    })
     const onKeyDown = (event: KeyboardEvent) => {
       const currentWorld = worldRef.current
       if (event.defaultPrevented || event.key !== 'Escape' || isEditableTarget(event.target)) return
@@ -253,26 +320,30 @@ export function WorldTransitionController() {
       // The global reverse-travel fallback must not race a realm-owned handler.
       if (currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map' || currentWorld.destination === 'privacy-controls') return
       event.preventDefault()
+      if (event.repeat) return
       reverseTravel()
     }
 
     window.addEventListener(URAI_WORLD_TRAVEL_EVENT, onTravel)
     window.addEventListener(URAI_WORLD_RETURN_EVENT, onReturn)
     window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('popstate', onPopState)
     return () => {
       window.removeEventListener(URAI_WORLD_TRAVEL_EVENT, onTravel)
       window.removeEventListener(URAI_WORLD_RETURN_EVENT, onReturn)
       window.removeEventListener('keydown', onKeyDown)
-      clearTimer()
+      window.removeEventListener('popstate', onPopState)
+      stopLocationObservation()
+      cancelActiveTravel(false)
     }
-  }, [clearTimer, executeTravel, reverseTravel])
+  }, [cancelActiveTravel, executeTravel, reverseTravel])
 
   return (
     <div
       className="urai-world-transition"
       data-phase={phase}
       data-from={world.destination}
-      data-to={world.destination}
+      data-to={pendingTravel?.destination ?? world.destination}
       aria-hidden="true"
     >
       <span className="urai-world-transition__surface" />

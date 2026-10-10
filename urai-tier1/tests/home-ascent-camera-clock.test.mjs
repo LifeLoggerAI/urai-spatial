@@ -4,6 +4,8 @@ import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
 import * as THREE from 'three'
+import * as homeReturn from '../src/spatial/navigation/homeReturnCheckpoint.ts'
+import { cameraDampingAlpha, cameraFrameDelta, dampCameraAngle } from '../src/spatial/canon/cameraMotion.ts'
 
 const source = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionPolished.tsx', import.meta.url), 'utf8')
 const ast = ts.createSourceFile('HomeWorldProductionPolished.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
@@ -21,7 +23,7 @@ function rig(reducedMotion = false) {
   let frame
   const output = {}
   vm.runInNewContext(code, {
-    exports: output, THREE,
+    exports: output, THREE, ...homeReturn, cameraDampingAlpha, cameraFrameDelta, dampCameraAngle, document: { visibilityState: 'visible' },
     useThree: () => ({ camera, size: { width: 1440, height: 900 }, invalidate() {}, gl: { domElement: { closest: () => null } } }),
     useRef: current => ({ current }), useCallback: callback => callback, useLayoutEffect: callback => callback(), useEffect() {},
     useFrame: callback => { frame = callback }, useSceneStore: { getState: () => state },
@@ -30,7 +32,7 @@ function rig(reducedMotion = false) {
   })
   output.PlayerRig({ input: { keys: { current: new Set() }, virtualX: { current: 0 }, virtualZ: { current: 0 } },
     yaw: { current: .055 }, pitch: { current: -.04 }, target: { current: null }, avatar: { current: null },
-    onNearby() {}, groundDescent: false, reducedMotion, onGroundComplete() {}, onTransitionSequence: value => sequences.push(value) })
+    ascentProgress: { current: 0 }, onRecoveryChange() {}, onNearby() {}, groundDescent: false, reducedMotion, onGroundComplete() {}, onTransitionSequence: value => sequences.push(value) })
   return { camera, state, travels, sequences, tick: (elapsedTime, delta) => frame({ clock: { elapsedTime } }, delta) }
 }
 const near = (actual, expected) => assert.ok(actual.distanceTo(expected) < 1e-9, `${actual.toArray()} != ${expected.toArray()}`)
@@ -49,7 +51,10 @@ test('same elapsed ascent position is independent of frame partition', () => {
   for (let n = 1; n <= 102; n++) regular.tick(n / 60, 1 / 60)
   delayed.tick(.1, .1); delayed.tick(1.7, 1.6)
   near(regular.camera.position, delayed.camera.position)
-  near(delayed.camera.position, start.clone().add(new THREE.Vector3(0, 44, -54)).multiplyScalar(.5))
+  const end = new THREE.Vector3(0, 44, -54)
+  const first = new THREE.Vector3(start.x, start.y + (end.y - start.y) * .35, start.z)
+  const second = new THREE.Vector3(end.x, end.y - (end.y - start.y) * .15, end.z)
+  near(delayed.camera.position, new THREE.CubicBezierCurve3(start, first, second, end).getPoint(.5))
   assert.equal(delayed.state.progress, .5)
 })
 
@@ -65,10 +70,10 @@ test('normal ascent retains its duration, endpoint and exactly one canonical adm
 test('reduced motion retains the existing .42-second duration', () => {
   const r = rig(true), start = r.camera.position.clone()
   r.tick(0, 5); r.tick(.21, .21)
-  near(r.camera.position, start.clone().add(new THREE.Vector3(0, 44, -54)).multiplyScalar(.5))
+  near(r.camera.position, start)
   assert.equal(r.travels.length, 0)
   r.tick(.42, .21)
-  near(r.camera.position, new THREE.Vector3(0, 44, -54))
+  near(r.camera.position, start)
   assert.equal(r.travels.length, 1)
 })
 
@@ -82,7 +87,8 @@ test('cancel and reentry recapture the current camera and restart admission time
   assert.equal(r.state.progress, 0)
   assert.equal(r.travels.length, 0)
   r.tick(21.7, 1.7)
-  near(r.camera.position, new THREE.Vector3(1, 23.5, -25))
+  const start = new THREE.Vector3(2, 3, 4), end = new THREE.Vector3(0, 44, -54)
+  near(r.camera.position, new THREE.CubicBezierCurve3(start, new THREE.Vector3(2, 3 + 41 * .35, 4), new THREE.Vector3(0, 44 - 41 * .15, -54), end).getPoint(.5))
 })
 
 test('position cannot outrun the existing look target and reverse its forward direction', () => {

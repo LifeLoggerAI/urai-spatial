@@ -24,7 +24,9 @@ function routeAllowed(pathname: string) {
 
 export function middleware(request: NextRequest) {
   if (request.nextUrl.pathname === '/home') {
-    return NextResponse.rewrite(new URL('/', request.url))
+    const home = new URL(request.url)
+    home.pathname = '/'
+    return NextResponse.rewrite(home)
   }
 
   if (routeAllowed(request.nextUrl.pathname)) return NextResponse.next()

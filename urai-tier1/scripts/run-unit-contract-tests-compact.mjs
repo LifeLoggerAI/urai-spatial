@@ -2,8 +2,29 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 
 const tests = [
+  'tests/world-transition-watchdog-lifecycle.test.mjs',
+  'tests/middleware-disclosed-memory-assets.test.mjs',
+  'tests/lifemap-signed-out-navigation-behavior.test.mjs',
+  'tests/camera-motion-behavior.test.mjs',
+  'tests/embodied-motion-behavior.test.mjs',
+  'tests/home-camera-motion-behavior.test.mjs',
+  'tests/home-ascent-camera-clock.test.mjs',
+  'tests/council-stage-composition.test.mjs',
+  'tests/privacy-return-keyboard.test.mjs',
+  'tests/home-return-checkpoint.test.mjs',
+  'tests/lifemap-home-return-generation.test.mjs',
+  'tests/home-ascent-atmosphere-behavior.test.mjs',
+  'tests/drag-look-lifecycle.test.mjs',
+  'tests/lifemap-camera-motion-behavior.test.mjs',
+  'tests/focus-camera-motion-behavior.test.mjs',
+  'tests/world-travel-lifecycle.test.mjs',
+  'tests/replay-motion-behavior.test.mjs',
+  'tests/replay-playback-lifecycle.test.mjs',
+  '../tests/motion-proof-observer.test.mjs',
+  '../tests/home-ascent-archive.test.mjs',
   'tests/council-conversation-lifecycle.test.mjs',
   'tests/glb-normal-repair-source-immutability.test.mjs',
+  '../tests/lossless-meshopt-glb.test.mjs',
   'tests/private-life-model-review-behavior.test.mjs',
   '../tests/private-life-model-owner-authority.test.mjs',
   'tests/private-life-model-owner-review-contract.test.mjs',
@@ -48,6 +69,7 @@ const tests = [
   'tests/life-model-kernel.test.mjs',
   'tests/scene-truth-life-model-compiler.test.mjs',
   'tests/replay-life-model-authority.test.mjs',
+  'tests/replay-life-model-authority-lifecycle.test.mjs',
   'tests/life-movie-life-model-binding.test.mjs',
   'tests/life-movie-runtime-contract.test.mjs',
   'tests/life-movie-runtime-binding-contract.test.mjs',
@@ -55,6 +77,7 @@ const tests = [
   'tests/focus-memory-appearance.test.mjs',
   'tests/world-return-destination.test.mjs',
   'tests/replay-transition-evidence-contract.test.mjs',
+  'tests/replay-browser-playback-proof-contract.test.mjs',
   'tests/dispatcher-transient-retry-contract.test.mjs',
   'tests/home-runtime-cursor-cleanup-contract.test.mjs',
   'tests/home-movement-lifecycle.test.mjs',
@@ -183,12 +206,22 @@ const tests = [
   '../tests/stripe-plan-gate.test.mjs',
 ]
 
+// These source fixtures register synchronous native module hooks. Node 22 must
+// load their erasable TypeScript natively rather than combine those hooks with
+// the asynchronous tsx loader. The fixture bodies and assertions are unchanged.
+const nativeSourceHookTests = new Set([
+  'tests/stripe-webhook-lifecycle.test.mjs',
+  'tests/stripe-session-authority.test.mjs',
+  '../tests/stripe-plan-gate.test.mjs',
+])
+
 for (const testPath of tests) {
   if (!fs.existsSync(testPath)) {
     console.error(`MISSING ${testPath}`)
     process.exit(1)
   }
-  const result = spawnSync(process.execPath, ['--import', 'tsx', '--test', testPath], { encoding: 'utf8' })
+  const loaderArgs = nativeSourceHookTests.has(testPath) ? ['--experimental-strip-types'] : ['--import', 'tsx']
+  const result = spawnSync(process.execPath, [...loaderArgs, '--test', testPath], { encoding: 'utf8' })
   if (result.status === 0) {
     console.log(`PASS ${testPath}`)
     continue

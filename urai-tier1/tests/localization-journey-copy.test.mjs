@@ -14,9 +14,15 @@ import { URAI_FOCUS_COMPATIBILITY_MESSAGES } from '../src/lib/i18n/focusCompatib
 import * as journeyControlCopy from '../src/lib/i18n/journeyControlCopy.ts'
 import { URAI_JOURNEY_MESSAGES } from '../src/lib/i18n/journeyMessages.ts'
 import { localizedMessage, localeNumber, localeDate } from '../src/lib/i18n/localePreference.ts'
+import * as homeReturn from '../src/spatial/navigation/homeReturnCheckpoint.ts'
 import { homeJourneyHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
 import * as homeGeometry from '../src/spatial/layout/HomeSanctuaryGeometry.ts'
 import * as focusMemoryAppearance from '../src/app/focus/focusMemoryAppearance.ts'
+import * as focusCameraFrame from '../src/app/focus/focusCameraFrame.ts'
+import * as lifeMapCameraFrame from '../src/components/lifemap/lifeMapCameraFrame.ts'
+import * as cameraMotion from '../src/spatial/canon/cameraMotion.ts'
+import * as replayMotion from '../src/app/replay/replayMotion.ts'
+import * as replayNarrativeClock from '../src/app/replay/replayNarrativeClock.ts'
 import { localizationMessageBindings } from '../../scripts/lib/localization-message-bindings.mjs'
 
 const require = createRequire(import.meta.url)
@@ -36,6 +42,9 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
   }
   const browser = new EventTarget()
   browser.navigator = {onLine:online}
+  browser.location = {search:''}
+  browser.innerWidth = 1440; browser.innerHeight = 900
+  browser.matchMedia = () => ({matches:quality.reducedMotion})
   const params = new URLSearchParams()
   const hooks = {...React,
     useState:initial => [stateIndex in states ? states[stateIndex++] : (stateIndex++, typeof initial==='function' ? initial() : initial),()=>{}],
@@ -56,6 +65,7 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(id.includes('replayServerTransport')) return {createAuthenticatedReplayTransport:()=>async()=>{throw new Error('INERT_NO_TRANSPORT')},readAuthenticatedReplayServerState:async()=>{throw new Error('INERT_NO_TRANSPORT')}}
     if(id.includes('useUraiLocale')) return {useUraiLocale:()=>locale}
     if(id.includes('JourneyOfflineNotice')) return {__esModule:true,default:load('../src/lib/i18n/JourneyOfflineNotice.tsx').default}
+    if(id.includes('homeReturnCheckpoint')) return homeReturn
     if(id.includes('homeSkyInteraction')) return {homeJourneyHref}
     if(id.includes('HomeSpatialCanvas')) return {useWebGLAvailable:()=>webgl}
     if(id.includes('useSelectedMemory')) return {useSelectedMemory:()=>({memory,status,message})}
@@ -79,6 +89,11 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(id.includes('HomeInterpretiveSplat')) return {resolveHomeInterpretiveSplatAsset:()=>null,HomeInterpretiveSplatEnvironment:()=>null}
     if(id.includes('HomeSanctuaryGeometry')) return homeGeometry
     if(id.includes('focusMemoryAppearance')) return focusMemoryAppearance
+    if(id.includes('focusCameraFrame')) return focusCameraFrame
+    if(id.includes('lifeMapCameraFrame')) return lifeMapCameraFrame
+    if(id.includes('canon/cameraMotion')) return cameraMotion
+    if(id.includes('replayMotion')) return replayMotion
+    if(id.includes('replayNarrativeClock')) return replayNarrativeClock
     if(id==='@react-three/drei') return {useGLTF:Object.assign(()=>({}),{preload:()=>{},clear:()=>{}})}
     if(id.endsWith('.module.css')) return {__esModule:true,default:new Proxy({},{get:(_target,key)=>String(key)})}
     return unknown
@@ -246,7 +261,7 @@ test('actual private Replay play/pause labels retain exact English and scoped Fr
   const memory={id:'private-fixture',occurredAt:'2026-01-01T12:00:00.000Z',title:'Private <script>title</script>',narrator:{replay:'Private caption'},privacy:'private',demo:false,visuals:{accent:'#fff',light:'#fff',sky:'#000',ground:'#000'},star:{id:'private-fixture'},replayManifest:{id:'manifest',durationMs:1000,segments:[]}}
   for(const requested of ['en','fr','ar']) for(const preview of [false,true]) for(const playing of [false,true]) {
     const preference={requested,preview}
-    const tree=fixture(preference,{memory,status:'ready',states:['unavailable',0,playing,0]}).render(replay)
+    const tree=fixture(preference,{memory,status:'ready',states:['unavailable',0,{playing,currentTimeMs:0}]}).render(replay)
     const button=elements(tree,n=>n.props.className==='memoryPulse')[0]
     const id=playing?'replay.pause':'replay.continue'
     const expected=localizedMessage(preference,id)

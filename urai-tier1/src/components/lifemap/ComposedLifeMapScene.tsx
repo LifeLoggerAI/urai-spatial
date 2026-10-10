@@ -5,11 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
-import { homeJourneyHref } from "@/spatial/navigation/homeSkyInteraction";
+import { homeReturnHref, peekHomeReturnCheckpoint } from "@/spatial/navigation/homeReturnCheckpoint";
+import { browserLocationSnapshot, subscribeBrowserLocation } from "@/lib/browserLocationStore";
+import { requestUraiWorldTravel, worldTravelLocationMatches } from "@/spatial/world/worldEvents";
 import { useLifeMapEvents, type LifeMapSourceMode } from "./useLifeMapEvents";
 import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
+import { cameraDampingAlpha } from "@/spatial/canon/cameraMotion";
+import { parseLifeMapCameraFrame, type LifeMapCameraFrame } from "./lifeMapCameraFrame";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
@@ -19,6 +23,7 @@ const PHASE_DURATION_MS = { departure: 280, travel: 720, approach: 820 } as cons
 
 type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type WebGLState = "ready" | "lost" | "recovering" | "failed";
+type HomeReturnFlight = { id: number; startingLocation: string; position: [number, number, number]; yaw: number; pitch: number; fov: number; href: string };
 type CameraGoal = { position: [number, number, number]; target: [number, number, number] };
 
 function safeToken(value: string | null, fallback = "") {
@@ -58,12 +63,24 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean):
   return { position: tuple(arrival), target: tuple(target) };
 }
 
-function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean; shellRef: RefObject<HTMLElement | null> }) {
-  const { camera, size } = useThree();
+function CameraRig({ selected, phase, reducedMotion, shellRef, onSettledChange, entryFrame, homeReturn, onHomeReturnComplete, active = true }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean; shellRef: RefObject<HTMLElement | null>; onSettledChange: (selectedId: string | null) => void; entryFrame: LifeMapCameraFrame | null; homeReturn?: HomeReturnFlight | null; onHomeReturnComplete?: (flight: HomeReturnFlight) => void; active?: boolean }) {
+  const { camera, size, scene } = useThree();
   const initialized = useRef(false);
   const positionGoal = useRef(new THREE.Vector3());
   const targetGoal = useRef(new THREE.Vector3());
   const lookTarget = useRef(new THREE.Vector3(...OVERVIEW_TARGET));
+  const renderedSubject = useRef(new THREE.Vector3());
+  const stageOffset = useRef(new THREE.Vector3());
+  const worldStage = useRef<THREE.Object3D | null>(null);
+  const settledId = useRef<string | null>(null);
+  const restoredId = useRef<string | null>(null);
+  const resumeHomeReturnClock = useRef(false);
+  useEffect(() => {
+    const pause = () => { resumeHomeReturnClock.current = true };
+    document.addEventListener("visibilitychange", pause);
+    return () => document.removeEventListener("visibilitychange", pause);
+  }, []);
+  const returning = useRef<{ id: number; elapsed: number; startedAt: number; start: THREE.Vector3; rotation: THREE.Quaternion; fov: number; done: boolean } | null>(null);
 
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
@@ -96,8 +113,68 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     initialized.current = true;
   }, [camera, phase, resolve]);
 
-  useFrame(({ pointer }, delta) => {
+  useLayoutEffect(() => {
+    if (!entryFrame || !selected || entryFrame.targetId !== selected.id || restoredId.current === selected.id) return;
+    restoredId.current = selected.id;
+    camera.position.set(...entryFrame.position);
+    lookTarget.current.set(...entryFrame.target);
+    camera.lookAt(lookTarget.current);
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.fov = entryFrame.fov;
+      camera.updateProjectionMatrix();
+    }
+  }, [camera, entryFrame, selected]);
+
+  useLayoutEffect(() => {
+    if (active) return;
+    settledId.current = null;
+    onSettledChange(null);
+    if (shellRef.current) {
+      shellRef.current.dataset.lifeMapCameraSettled = "false";
+      shellRef.current.dataset.lifeMapCameraOwner = "life-map-paused";
+    }
+  }, [active, onSettledChange, shellRef]);
+
+  useFrame(({ pointer, clock }, delta) => {
+    if (!active) return;
+    if (homeReturn) {
+      if (!returning.current || returning.current.id !== homeReturn.id) returning.current = { id: homeReturn.id, elapsed: 0, startedAt: clock.elapsedTime, start: camera.position.clone(), rotation: camera.quaternion.clone(), fov: camera instanceof THREE.PerspectiveCamera ? camera.fov : 46, done: false };
+      const flight = returning.current;
+      const duration = reducedMotion ? .26 : 1.1;
+      if (resumeHomeReturnClock.current || document.visibilityState !== 'visible') { flight.startedAt = clock.elapsedTime - flight.elapsed; resumeHomeReturnClock.current = false; }
+      if (document.visibilityState === 'visible' && Number.isFinite(clock.elapsedTime) && Number.isFinite(delta) && delta >= 0) {
+        const elapsed = Math.max(flight.elapsed, clock.elapsedTime - flight.startedAt);
+        flight.elapsed = elapsed >= duration - 1e-9 ? duration : Math.min(duration, elapsed);
+      }
+      const t = THREE.MathUtils.smootherstep(flight.elapsed / duration, 0, 1);
+      if (!reducedMotion) {
+        const end = new THREE.Vector3(...homeReturn.position);
+        const first = flight.start.clone().add(new THREE.Vector3(0, 24, 0));
+        const second = end.clone().add(new THREE.Vector3(0, 0, 18));
+        new THREE.CubicBezierCurve3(flight.start, first, second, end).getPoint(t, camera.position);
+        camera.quaternion.copy(flight.rotation).slerp(new THREE.Quaternion().setFromEuler(new THREE.Euler(homeReturn.pitch, homeReturn.yaw, 0, 'YXZ')), t);
+        if (camera instanceof THREE.PerspectiveCamera) { camera.fov = THREE.MathUtils.lerp(flight.fov, homeReturn.fov, t); camera.updateProjectionMatrix(); }
+      }
+      const shell = shellRef.current;
+      if (shell) {
+        shell.dataset.lifeMapCameraX = camera.position.x.toFixed(4); shell.dataset.lifeMapCameraY = camera.position.y.toFixed(4); shell.dataset.lifeMapCameraZ = camera.position.z.toFixed(4);
+        shell.dataset.lifeMapCameraQx = camera.quaternion.x.toFixed(6); shell.dataset.lifeMapCameraQy = camera.quaternion.y.toFixed(6); shell.dataset.lifeMapCameraQz = camera.quaternion.z.toFixed(6); shell.dataset.lifeMapCameraQw = camera.quaternion.w.toFixed(6);
+        shell.dataset.lifeMapFov = camera instanceof THREE.PerspectiveCamera ? camera.fov.toFixed(3) : '46';
+        shell.dataset.lifeMapCameraOwner = 'life-map-home-return'; shell.dataset.lifeMapCameraSettled = 'false'; shell.dataset.lifeMapHomeReturnProgress = t.toFixed(4);
+      }
+      if (flight.elapsed >= duration && !flight.done) { flight.done = true; onHomeReturnComplete?.(homeReturn); }
+      return;
+    }
     const portrait = resolve();
+    if (!worldStage.current?.parent) worldStage.current = scene.getObjectByName("life-map-world-stage") ?? null;
+    const stage = worldStage.current;
+    if (selected && stage) {
+      stage.updateWorldMatrix(true, false);
+      renderedSubject.current.set(...selected.position).applyMatrix4(stage.matrixWorld);
+      stageOffset.current.copy(renderedSubject.current).sub(targetGoal.current);
+      if (phase !== "departure") positionGoal.current.add(stageOffset.current);
+      targetGoal.current.copy(renderedSubject.current);
+    }
     if (phase === "overview" && !reducedMotion) {
       positionGoal.current.x += pointer.x * (portrait ? 0.45 : 1.05);
       positionGoal.current.y += pointer.y * (portrait ? 0.24 : 0.42);
@@ -110,27 +187,53 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
       lookTarget.current.copy(targetGoal.current);
     } else {
       const rate = phase === "travel" ? 1.9 : phase === "approach" ? 2.9 : phase === "arrival" ? 5.2 : 4.1;
-      camera.position.x = THREE.MathUtils.damp(camera.position.x, positionGoal.current.x, rate, delta);
-      camera.position.y = THREE.MathUtils.damp(camera.position.y, positionGoal.current.y, rate, delta);
-      camera.position.z = THREE.MathUtils.damp(camera.position.z, positionGoal.current.z, rate, delta);
-      lookTarget.current.x = THREE.MathUtils.damp(lookTarget.current.x, targetGoal.current.x, 5.6, delta);
-      lookTarget.current.y = THREE.MathUtils.damp(lookTarget.current.y, targetGoal.current.y, 5.6, delta);
-      lookTarget.current.z = THREE.MathUtils.damp(lookTarget.current.z, targetGoal.current.z, 5.6, delta);
+      camera.position.lerp(positionGoal.current, cameraDampingAlpha(rate, delta));
+      lookTarget.current.lerp(targetGoal.current, cameraDampingAlpha(5.6, delta));
     }
     camera.lookAt(lookTarget.current);
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = reducedMotion ? fov : THREE.MathUtils.damp(camera.fov, fov, 4.6, delta);
+      camera.fov = reducedMotion ? fov : THREE.MathUtils.lerp(camera.fov, fov, cameraDampingAlpha(4.6, delta));
       camera.updateProjectionMatrix();
+    }
+    const settled = phase === "arrival" && Boolean(selected)
+      && stage?.userData.motionSettled === true
+      && camera.position.distanceToSquared(positionGoal.current) < 0.01 ** 2
+      && lookTarget.current.distanceToSquared(targetGoal.current) < 0.01 ** 2
+      && (!(camera instanceof THREE.PerspectiveCamera) || Math.abs(camera.fov - fov) < 0.015);
+    if (settled) {
+      camera.position.copy(positionGoal.current);
+      lookTarget.current.copy(targetGoal.current);
+      camera.lookAt(lookTarget.current);
+      if (camera instanceof THREE.PerspectiveCamera && camera.fov !== fov) {
+        camera.fov = fov;
+        camera.updateProjectionMatrix();
+      }
+    }
+    const nextSettledId = settled ? selected!.id : null;
+    if (settledId.current !== nextSettledId) {
+      settledId.current = nextSettledId;
+      onSettledChange(nextSettledId);
     }
     const shell = shellRef.current;
     if (shell) {
       shell.dataset.lifeMapCameraX = camera.position.x.toFixed(4);
       shell.dataset.lifeMapCameraY = camera.position.y.toFixed(4);
       shell.dataset.lifeMapCameraZ = camera.position.z.toFixed(4);
+      shell.dataset.lifeMapCameraQx = camera.quaternion.x.toFixed(6);
+      shell.dataset.lifeMapCameraQy = camera.quaternion.y.toFixed(6);
+      shell.dataset.lifeMapCameraQz = camera.quaternion.z.toFixed(6);
+      shell.dataset.lifeMapCameraQw = camera.quaternion.w.toFixed(6);
       shell.dataset.lifeMapTargetX = lookTarget.current.x.toFixed(4);
       shell.dataset.lifeMapTargetY = lookTarget.current.y.toFixed(4);
       shell.dataset.lifeMapTargetZ = lookTarget.current.z.toFixed(4);
       shell.dataset.lifeMapFov = camera instanceof THREE.PerspectiveCamera ? camera.fov.toFixed(3) : "46";
+      shell.dataset.lifeMapCameraSettled = settled ? "true" : "false";
+      shell.dataset.lifeMapCameraOwner = phase === "overview" ? "life-map-overview" : settled ? "life-map-selected" : "life-map-acquisition";
+      if (selected) {
+        shell.dataset.lifeMapSelectedSubjectX = renderedSubject.current.x.toFixed(4);
+        shell.dataset.lifeMapSelectedSubjectY = renderedSubject.current.y.toFixed(4);
+        shell.dataset.lifeMapSelectedSubjectZ = renderedSubject.current.z.toFixed(4);
+      }
     }
   });
   return null;
@@ -245,9 +348,16 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const overviewRequested = params.get("overview") === "1";
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : authenticatedUserId ?? undefined);
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
+  const entryFrame = useMemo(() => parseLifeMapCameraFrame(new URLSearchParams(params.toString()), queryNode || null, "return"), [params, queryNode]);
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
   const [phase, setPhase] = useState<JourneyPhase>("overview");
+  const [homeReturn, setHomeReturn] = useState<HomeReturnFlight | null>(null);
+  const homeReturnId = useRef(0);
+  const homeReturnStarted = useRef(false);
+  const homeReturnCommitted = useRef<number | null>(null);
+  const homeReturnOrigin = useRef<string | null>(null);
+  const [settledSelectionId, setSettledSelectionId] = useState<string | null>(null);
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const journeyToken = useRef(0);
   const shellRef = useRef<HTMLElement | null>(null);
@@ -262,12 +372,55 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     return next;
   }, [explicitDemoRequested, manifestId]);
 
+  useLayoutEffect(() => {
+    const cancelSupersededReturn = () => {
+      if (!homeReturnStarted.current || !homeReturnOrigin.current || worldTravelLocationMatches(homeReturnOrigin.current)) return;
+      homeReturnId.current += 1;
+      journeyToken.current += 1;
+      homeReturnStarted.current = false;
+      homeReturnOrigin.current = null;
+      homeReturnCommitted.current = null;
+      setHomeReturn(null);
+    };
+    const stop = subscribeBrowserLocation(cancelSupersededReturn);
+    return () => {
+      stop();
+      // A detached camera's completion cannot navigate over its replacement.
+      homeReturnId.current += 1;
+      homeReturnStarted.current = false;
+      homeReturnOrigin.current = null;
+    };
+  }, []);
+
   const returnHome = useCallback(() => {
-    router.push(homeJourneyHref("/home", params.toString()));
-  }, [params, router]);
+    if (homeReturnStarted.current) return;
+    homeReturnStarted.current = true;
+    homeReturnOrigin.current = browserLocationSnapshot();
+    homeReturnCommitted.current = null;
+    journeyToken.current += 1;
+    const c = peekHomeReturnCheckpoint();
+    const end = new THREE.Vector3(0, 44, -54), look = new THREE.Vector3(0, 48, -62);
+    const rotation = new THREE.Euler().setFromRotationMatrix(new THREE.Matrix4().lookAt(end, look, new THREE.Vector3(0, 1, 0)), 'YXZ');
+    const flight: HomeReturnFlight = { id: ++homeReturnId.current, startingLocation: homeReturnOrigin.current, position: c?.endPosition ?? end.toArray() as [number, number, number], yaw: c?.endYaw ?? rotation.y, pitch: c?.endPitch ?? rotation.x, fov: c?.fov ?? 50, href: homeReturnHref(params.toString()) };
+    if (webglState !== 'ready') {
+      homeReturnCommitted.current = flight.id;
+      requestUraiWorldTravel({ destination: 'home', href: flight.href, entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-return' });
+      return;
+    }
+    setHomeReturn(flight);
+  }, [params, webglState]);
+  const finishHomeReturn = useCallback((flight: HomeReturnFlight) => {
+    if (!homeReturnStarted.current || flight.id !== homeReturnId.current || homeReturnCommitted.current === flight.id || !worldTravelLocationMatches(flight.startingLocation)) return;
+    homeReturnCommitted.current = flight.id;
+    requestUraiWorldTravel({ destination: 'home', href: flight.href, entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-return' });
+  }, []);
 
   useEffect(() => {
-    if (!selected || phase === "overview" || phase === "arrival") return;
+    if (homeReturn && webglState !== 'ready') finishHomeReturn(homeReturn);
+  }, [finishHomeReturn, homeReturn, webglState]);
+
+  useEffect(() => {
+    if (homeReturnStarted.current || !selected || phase === "overview" || phase === "arrival") return;
     if (profile.reducedMotion) {
       journeyToken.current += 1;
       setPhase("arrival");
@@ -284,10 +437,13 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   }, [phase, profile.reducedMotion, selected]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
+    if (homeReturnStarted.current) return;
+    if (localSelectionId.current === node.id) return;
     restoredRoutePending.current = false;
     overviewPending.current = false;
     localSelectionId.current = node.id;
     journeyToken.current += 1;
+    setSettledSelectionId(null);
     setSelectedId(node.id);
     if (profile.reducedMotion) setPhase("arrival");
     else setPhase("departure");
@@ -299,6 +455,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   }, [profile.reducedMotion, router, withIdentity]);
 
   const overview = useCallback(() => {
+    if (homeReturnStarted.current) return;
     const retainedId = selectedId || queryNode;
     restoredRoutePending.current = false;
     overviewPending.current = true;
@@ -323,12 +480,12 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     next.set("returnNode", selected.id);
     next.set("artifactFamily", resolveArtifactFamily(selected));
     next.set("from", "life-map");
-    if (route === "focus" && phase === "arrival") {
+    if (route === "focus" && phase === "arrival" && settledSelectionId === selected.id) {
       const shell = shellRef.current;
       const values = shell?.dataset;
       const camera = values ? [values.lifeMapCameraX, values.lifeMapCameraY, values.lifeMapCameraZ] : [];
       const target = values ? [values.lifeMapTargetX, values.lifeMapTargetY, values.lifeMapTargetZ] : [];
-      if (camera.every(Boolean) && target.every(Boolean)) {
+      if (camera.length === 3 && target.length === 3 && [...camera, ...target, values?.lifeMapFov].every(value => value !== undefined && value !== "" && Number.isFinite(Number(value)))) {
         next.set("entryCamera", camera.join(","));
         next.set("entryTarget", target.join(","));
         if (values?.lifeMapFov) next.set("entryFov", values.lifeMapFov);
@@ -336,7 +493,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       }
     }
     return `/${route}?${next.toString()}`;
-  }, [phase, selected, withIdentity]);
+  }, [phase, selected, settledSelectionId, withIdentity]);
 
   useEffect(() => {
     if (!overviewRequested) return;
@@ -373,8 +530,13 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.key !== "Escape" || (event.target instanceof HTMLElement && event.target.matches("input,textarea,select,[role='textbox']"))) return;
+      if (event.repeat) {
+        event.preventDefault();
+        return;
+      }
       if (document.querySelector('#life-map-navigator, [role="dialog"][aria-modal="true"], [data-urai-adam-presence]')) return;
       event.preventDefault();
+      if (homeReturnStarted.current) return;
       if (selectedId) overview(); else returnHome();
     };
     window.addEventListener("keydown", handler, true);
@@ -385,6 +547,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
 
   const recovery = webglState !== "ready";
   const thresholdsVisible = Boolean(selected);
+  const thresholdsReady = Boolean(!homeReturn && selected && phase === "arrival" && settledSelectionId === selected.id && !recovery);
   return <main
     ref={shellRef}
     className="life-map-root"
@@ -392,7 +555,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     data-testid="urai-true-3d-life-map"
     data-spatial-visible="true"
     data-life-map-source={sourceMode}
-    data-life-map-phase={phase}
+    data-life-map-phase={homeReturn ? "home-return" : phase}
     data-life-map-mode={selected ? "selected" : "overview"}
     data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"}
     data-life-map-production-world="true"
@@ -400,6 +563,8 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     data-software-renderer={softwareRenderer ? "true" : "false"}
     data-software-render-cadence={softwareRenderer ? "bounded-demand-10fps" : "continuous"}
     data-home-companion-owned="false"
+    data-life-map-interaction-ready={thresholdsReady ? "true" : "false"}
+    data-life-map-home-return={homeReturn ? "true" : "false"}
   >
     <h1 className="sr-only">URAI Life Map private universe</h1>
     <span className="life-map-depth-contract" data-depth-band="near" aria-hidden="true" />
@@ -428,7 +593,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
           phase={phase as LifeMapJourneyPhase}
           profile={profile}
           onSelect={selectNode}
-          cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} shellRef={shellRef} />}
+          cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} shellRef={shellRef} onSettledChange={setSettledSelectionId} entryFrame={entryFrame} homeReturn={homeReturn} onHomeReturnComplete={finishHomeReturn} active={webglState === "ready"} />}
           webglRecovery={null}
         />
       </Suspense>
@@ -446,22 +611,22 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     </div>
 
     {thresholdsVisible ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}>
-      <button className="focus-threshold" data-destination-href={destinationHref("focus")} onClick={() => router.push(destinationHref("focus"))}>
+      <button className="focus-threshold" disabled={!thresholdsReady} data-destination-href={destinationHref("focus")} onClick={() => { if (thresholdsReady) router.push(destinationHref("focus")); }}>
         <span>Inspect</span><strong>Enter Focus</strong>
       </button>
-      <button className="replay-threshold" data-destination-href={destinationHref("replay")} disabled={!selected!.replayAvailable || selected!.locked} onClick={() => router.push(destinationHref("replay"))}>
+      <button className="replay-threshold" data-destination-href={destinationHref("replay")} disabled={!thresholdsReady || !selected!.replayAvailable || selected!.locked} onClick={() => { if (thresholdsReady) router.push(destinationHref("replay")); }}>
         <span>Cross threshold</span><strong>Replay</strong>
       </button>
-      <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
+      <button className="overview-return" disabled={Boolean(homeReturn)} onClick={overview} aria-label="Return to Life Map overview">Overview</button>
     </nav> : null}
 
-    {!thresholdsVisible && sourceMode !== "signed-out" ? <button type="button" className="overview-home-return" data-life-map-overview-home-return="true" onClick={returnHome}>Return Home</button> : null}
+    {!thresholdsVisible && sourceMode !== "signed-out" ? <button type="button" className="overview-home-return" data-life-map-overview-home-return="true" disabled={Boolean(homeReturn)} onClick={returnHome}>Return Home</button> : null}
 
     {recovery ? <section className="life-map-recovery" role="status" aria-live="assertive">
       <h2>{webglState === "lost" ? "Visual field paused safely" : "Restoring visual field"}</h2>
       <p>Your selected memory, privacy state, and return position remain preserved.</p>
       <button onClick={overview}>Open semantic overview</button>
-      <button onClick={returnHome}>Return Home</button>
+      <button disabled={Boolean(homeReturn)} onClick={returnHome}>Return Home</button>
     </section> : null}
 
     <style jsx>{`

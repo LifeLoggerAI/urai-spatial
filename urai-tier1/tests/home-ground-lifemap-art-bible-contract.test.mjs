@@ -54,7 +54,7 @@ test('Home is one coherent authored natural 3D sanctuary with final physical ass
   assert.match(homeProduction, /data-home-provider-environment=\{HOME_PROVIDER_ENVIRONMENT\}/)
   assert.match(homeProduction, /data-home-provider-role="legacy-placeholder-metadata-only"/)
   assert.match(homeProduction, /data-home-provider-regions="not-rendered"/)
-  assert.match(homeProduction, /<HomeSkyGradient \/>/)
+  assert.match(homeProduction, /<HomeSkyGradient ascentUniform=\{[^}]+\} \/>/)
   assert.doesNotMatch(homeProduction, /data-home-provider-atmosphere=/)
   assert.doesNotMatch(homeProduction, /backgroundImage:[^\n]*HOME_PROVIDER_ENVIRONMENT/)
   assert.doesNotMatch(homeProduction, /HOME_PROVIDER_ENVIRONMENT = '\/assets\/urai\/replay\//)

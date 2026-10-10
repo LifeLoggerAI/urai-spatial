@@ -67,7 +67,7 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-shadow"',
     'data-home-movement="walk-keyboard-click-touch"',
-    "data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'}",
+    "data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : recovering ? 'return' : dragging ? 'look' : 'embodied-first-person'}",
     'data-home-orb-state={orbState}',
     'data-testid="home-visible-navigable-sanctuary-world"',
     'data-testid="urai-home-webgl-orb"',
@@ -190,7 +190,7 @@ test('travel infrastructure preserves fallback, route ownership and canonical as
   for (const marker of ['enterLifeMap: () => set({ mode: "ASCENT"', 'phase: "ASCENT"', 'isTransitioning: true', 'inputLocked: true', 'progress: 0']) has(sceneStore, marker)
   assert.match(worldTransitions, /currentWorld\.destination === 'life-map' \|\| currentWorld\.destination === 'location-map'/)
   assert.doesNotMatch(worldTransitions, /requiresHardDocumentNavigation/)
-  assert.match(worldTransitions, /normalizedPathname\(window\.location\.pathname\) !== targetPathname[\s\S]*!destinationSurfaceReady\(request\.destination\)[\s\S]*window\.location\.assign\(href\)/)
+  assert.match(worldTransitions, /activeTravel\.current !== trip[\s\S]*!worldTravelLocationMatches\(href\)[\s\S]*!destinationSurfaceReady\(request\.destination\)[\s\S]*window\.location\.assign\(href\)/)
 })
 
 test('embodied movement never removes semantic Focus and Replay exits', () => {

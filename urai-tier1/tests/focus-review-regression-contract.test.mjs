@@ -6,6 +6,7 @@ const worldEvents = fs.readFileSync(new URL('../src/spatial/world/worldEvents.ts
 const semanticNavigator = fs.readFileSync(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
 const telemetryBridge = fs.readFileSync(new URL('../src/app/HomeParallaxTelemetryBridge.tsx', import.meta.url), 'utf8')
 const focusClient = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
+const focusFrames = fs.readFileSync(new URL('../src/app/focus/focusCameraFrame.ts', import.meta.url), 'utf8')
 const lifeMapScene = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 
 test('deep-travel fallback cannot preempt the canonical transition controller', () => {
@@ -25,9 +26,10 @@ test('home telemetry synchronizes from mutations and input without perpetual doc
   assert.doesNotMatch(telemetryBridge, /const synchronize = \(\) =>/)
 })
 
-test('Focus keyboard readiness reflects installed input listeners and resets during teardown', () => {
-  assert.match(focusClient, /data-focus-input-ready="false"/)
-  assert.match(focusClient, /addEventListener\('keydown', down\)[\s\S]*dataset\.focusInputReady = 'true'/)
+test('Focus keyboard readiness waits for settled camera frames and resets during teardown', () => {
+  assert.match(focusClient, /data-focus-input-ready=\{inputReady \? 'true' : 'false'\}/)
+  assert.match(focusClient, /if \(!inputReady\.current\) return/)
+  assert.match(focusClient, /!entryBlendActive\.current && admittedFrames\.current >= 2/)
   assert.match(focusClient, /dataset\.focusInputReady = 'false'[\s\S]*removeEventListener\('keydown', down\)/)
   assert.match(focusClient, /@media\(forced-colors:active\)[\s\S]*outline:3px solid Highlight/)
 })
@@ -38,10 +40,11 @@ test('selected Memory Star arrival framing is carried into Focus without a hard 
   assert.match(lifeMapScene, /dataset\.lifeMapCameraX/)
   assert.match(lifeMapScene, /dataset\.lifeMapTargetX/)
   assert.match(focusClient, /parseEntryCameraFrame/)
-  assert.match(focusClient, /cameraCheckpoint.*startsWith\('life-map-arrival:'\)/)
+  assert.ok(focusFrames.includes('checkpoint === `life-map-arrival:${expectedStarId}`'))
+  assert.match(focusClient, /entryCameraFrameMatchesMemory\(entryFrame, memory\)/)
   assert.match(focusClient, /entryBlendActive/)
-  assert.match(focusClient, /THREE\.MathUtils\.damp\(camera\.position\.x, defaultCamera\.x/)
-  assert.match(focusClient, /reducedMotion.*DEFAULT_CAMERA|useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion/)
+  assert.match(focusClient, /camera\.position\.lerp\(defaultCamera, cameraDampingAlpha/)
+  assert.match(focusClient, /entryFrame && \(!reducedMotion \|\| returningFrame\)/)
 })
 
 test('hard travel fallback preserves canonical replay identity and context', () => {

@@ -11,8 +11,9 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
   let currentUrl = new URL('https://urai.test/focus/?demo=1')
   let world = { destination: 'focus', layer: 'infrastructure-world', demo: true }
   let phase = 'idle'
+  let pendingTravel = null
   const timers = new Map(), listeners = new Map(), observers = new Set()
-  const hooks = [], effects = [], pushes = [], assignments = [], travelRequests = []
+  const hooks = [], effects = [], pushes = [], assignments = [], reloads = [], travelRequests = [], cancellations = []
   const mountedSurfaces = new Set()
   const clock = {
     setTimeout(callback, delay) { const id = nextTimer++; timers.set(id, { callback, at: now + delay }); return id },
@@ -37,6 +38,7 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
       get search() { return currentUrl.search },
       get hash() { return currentUrl.hash },
       assign(href) { assignments.push(href) },
+      reload() { reloads.push(`${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`) },
     },
     history: {
       pushState(_state, _title, href) { currentUrl = new URL(href, currentUrl) },
@@ -73,13 +75,14 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     useLayoutEffect: effect,
   }
   const router = { push(href) { pushes.push(href); if (pushCommits) window.history.pushState(null, '', href) } }
-  const beginTravel = request => { travelRequests.push(request) }
+  const beginTravel = request => { travelRequests.push(request); pendingTravel = request; phase = 'travelling'; render() }
+  const cancelTransition = () => { cancellations.push(world.destination); pendingTravel = null; phase = 'idle'; render() }
   const jsx = (type, props) => ({ type, props })
   const modules = new Map([
     ['react', react],
     ['react/jsx-runtime', { jsx, jsxs: jsx }],
     ['next/navigation', { useRouter: () => router }],
-    ['./WorldStateProvider', { useUraiWorldState: () => ({ world, phase, beginTravel }) }],
+    ['./WorldStateProvider', { useUraiWorldState: () => ({ world, phase, pendingTravel, beginTravel, cancelTransition }) }],
     ['../store/useSceneStore', { useSceneStore: { getState: () => ({}) } }],
   ])
   const context = vm.createContext({ window, document, MutationObserver, HTMLElement: class {}, URL, URLSearchParams, console })
@@ -98,6 +101,10 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
   modules.set('@/lib/browserLocationStore', load('../src/lib/browserLocationStore.ts'))
   modules.set('./destinationRegistry', load('../src/spatial/world/destinationRegistry.ts'))
   modules.set('./worldTypes', load('../src/spatial/world/worldTypes.ts'))
+  modules.set('../../app/focus/focusCameraFrame', load('../src/app/focus/focusCameraFrame.ts'))
+  modules.set('../../components/lifemap/lifeMapCameraFrame', load('../src/components/lifemap/lifeMapCameraFrame.ts'))
+  modules.set('../navigation/homeReturnCheckpoint', load('../src/spatial/navigation/homeReturnCheckpoint.ts'))
+  modules.set('./worldReturnCameraFrame', load('../src/spatial/world/worldReturnCameraFrame.ts'))
   const events = load('../src/spatial/world/worldEvents.ts')
   modules.set('./worldEvents', events)
   const controller = load('../src/spatial/world/WorldTransitionController.tsx')
@@ -107,23 +114,32 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     while (effects.length) effects.shift()()
   }
   render()
+  const persistentLocationListenerCount = (listeners.get('popstate')?.size ?? 0) + (listeners.get('hashchange')?.size ?? 0)
   return {
-    pushes, assignments, travelRequests, clock,
+    pushes, assignments, reloads, travelRequests, cancellations, clock, persistentLocationListenerCount,
     get pathname() { return currentUrl.pathname },
     get pendingTimers() { return timers.size },
     get observerCount() { return observers.size },
+    get pendingDestination() { return pendingTravel?.destination ?? null },
+    get phase() { return phase },
     get locationListenerCount() { return (listeners.get('popstate')?.size ?? 0) + (listeners.get('hashchange')?.size ?? 0) },
     travel(destination, href) { window.dispatchEvent({ type: events.URAI_WORLD_TRAVEL_EVENT, detail: { destination, href } }) },
     async navigate(href, method = 'pushState') {
       window.history[method](null, '', href)
       await Promise.resolve() // browserLocationStore notifies after the framework commit.
     },
+    async back(href) {
+      window.history.replaceState(null, '', href)
+      window.dispatchEvent({ type: 'popstate' })
+      await Promise.resolve()
+    },
+    queuedSurfaceCallback() { assert.equal(observers.size, 1); return [...observers][0].callback },
     admit(destination) {
       if (destination === 'replay') mountedSurfaces.add('[data-testid="cinematic-replay-client"]')
       if (destination === 'passport') mountedSurfaces.add('main[data-route-owner="passport-ownership-vault"]')
       for (const observer of [...observers]) observer.callback()
     },
-    syncWorld(destination) { world = { ...world, destination }; phase = 'idle'; render() },
+    syncWorld(destination) { world = { ...world, destination }; phase = 'idle'; pendingTravel = null; render() },
     unmount() { for (const hook of [...hooks].reverse()) hook?.cleanup?.() },
   }
 }
@@ -139,7 +155,7 @@ test('reduced Focus → admitted Life Map → Home before 2500 ms cannot be reve
   page.syncWorld('life-map')
   assert.equal(page.pendingTimers, 0, 'destination admission retires the recovery timer immediately')
   assert.equal(page.observerCount, 0)
-  assert.equal(page.locationListenerCount, 0)
+  assert.equal(page.locationListenerCount, page.persistentLocationListenerCount, 'global Back/location cancellation remains until unmount')
   page.clock.tick(100)
   await page.navigate('/home/')
   page.syncWorld('home')
@@ -160,7 +176,7 @@ test('router never changing location still recovers once at the original 2500 ms
   assert.deepEqual(page.assignments, [page.pushes[0]])
   assert.equal(page.pendingTimers, 0)
   assert.equal(page.observerCount, 0)
-  assert.equal(page.locationListenerCount, 0)
+  assert.equal(page.locationListenerCount, page.persistentLocationListenerCount)
   page.clock.tick(5000)
   assert.equal(page.assignments.length, 1)
   page.unmount()
@@ -177,7 +193,10 @@ for (const destination of ['replay', 'passport']) {
     page.clock.tick(2499)
     assert.deepEqual(page.assignments, [])
     page.clock.tick(1)
-    assert.deepEqual(page.assignments, [page.pushes[0]])
+    assert.deepEqual(page.assignments, [], 'an already committed failed mount reloads its target, rather than assigning it again')
+    assert.deepEqual(page.reloads, [page.pushes[0]])
+    page.clock.tick(5000)
+    assert.equal(page.reloads.length, 1)
     assert.equal(page.observerCount, 0)
     page.unmount()
   })
@@ -286,7 +305,7 @@ test('synchronous successful router commit does not leave a newly installed watc
   await Promise.resolve()
   assert.equal(page.pendingTimers, 0)
   assert.equal(page.observerCount, 0)
-  assert.equal(page.locationListenerCount, 0)
+  assert.equal(page.locationListenerCount, page.persistentLocationListenerCount)
   page.clock.tick(3000)
   assert.deepEqual(page.assignments, [])
   page.unmount()
@@ -304,4 +323,52 @@ test('normal-motion Focus → Replay keeps its 1900 ms transition and 2500 ms re
   page.clock.tick(1)
   assert.deepEqual(page.assignments, [page.pushes[0]])
   page.unmount()
+})
+
+test('global Back cancellation remains usable after an earlier destination retires its own observer', async () => {
+  const page = mount()
+  page.travel('life-map', '/life-map')
+  page.clock.tick(260)
+  await page.navigate(page.pushes[0])
+  page.syncWorld('life-map')
+  assert.equal(page.pendingTimers, 0)
+  assert.equal(page.observerCount, 0)
+  assert.ok(page.persistentLocationListenerCount > 0)
+  assert.equal(page.locationListenerCount, page.persistentLocationListenerCount)
+  page.travel('replay', '/replay')
+  page.clock.tick(260)
+  const staleRecovery = page.clock.queuedCallback()
+  await page.navigate(page.pushes[1])
+  assert.equal(page.pendingDestination, 'replay')
+  await page.back(page.pushes[0])
+  assert.equal(page.pendingDestination, null)
+  assert.equal(page.phase, 'idle')
+  assert.ok(page.cancellations.length > 0)
+  assert.equal(page.pendingTimers, 0)
+  assert.equal(page.observerCount, 0)
+  staleRecovery()
+  page.clock.tick(3000)
+  assert.deepEqual(page.assignments, [])
+  assert.deepEqual(page.reloads, [])
+  page.unmount()
+  assert.equal(page.locationListenerCount, 0)
+})
+
+test('an already queued old surface observation cannot cancel a newer travel attempt', () => {
+  const page = mount()
+  page.travel('replay', '/replay')
+  const staleSurfaceObservation = page.queuedSurfaceCallback()
+  page.travel('passport', '/passport')
+  staleSurfaceObservation()
+  assert.equal(page.pendingDestination, 'passport')
+  assert.equal(page.pendingTimers, 1)
+  assert.equal(page.observerCount, 1)
+  assert.deepEqual(page.cancellations, [])
+  page.clock.tick(260)
+  assert.equal(page.pushes.length, 1)
+  assert.match(page.pushes[0], /^\/passport\?/)
+  page.unmount()
+  assert.equal(page.observerCount, 0)
+  assert.equal(page.pendingTimers, 0)
+  assert.equal(page.locationListenerCount, 0)
 })

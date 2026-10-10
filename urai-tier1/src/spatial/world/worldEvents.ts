@@ -15,14 +15,53 @@ const WORLD_TRAVEL_CONTEXT_KEYS = [
   'thread',
   'personId',
   'placeId',
+  'eraId',
+  'era',
   'manifestId',
   'movieId',
   'chapterId',
   'privacyMode',
+  'originRealm',
+  'returnToken',
+  'fidelity',
   'demo',
 ] as const
 let lastTravelFingerprint = ''
 let lastTravelAt = 0
+let travelGeneration = 0
+let pendingRecovery: {
+  request: UraiWorldTravelRequest
+  cancel: () => void
+} | undefined
+
+export function cancelUraiWorldTravel(request?: UraiWorldTravelRequest) {
+  if (request && pendingRecovery?.request !== request) return
+  travelGeneration += 1
+  pendingRecovery?.cancel()
+  pendingRecovery = undefined
+  // A cancelled trip can be retried immediately without the old debounce lock.
+  lastTravelFingerprint = ''
+  lastTravelAt = 0
+}
+
+export function captureUraiWorldTravelCancellation(request: UraiWorldTravelRequest): () => void {
+  const recovery = pendingRecovery
+  return () => {
+    // The same request object may be retried; an old owner cannot cancel the
+    // newer recovery token merely because both intents share that object.
+    if (recovery?.request === request && pendingRecovery === recovery) cancelUraiWorldTravel(request)
+  }
+}
+
+export function worldTravelLocationMatches(href: string, location = `${window.location.pathname}${window.location.search}${window.location.hash}`) {
+  const target = new URL(href, window.location.origin)
+  const current = new URL(location, window.location.origin)
+  target.searchParams.sort()
+  current.searchParams.sort()
+  return (target.pathname.replace(/\/+$/, '') || '/') === (current.pathname.replace(/\/+$/, '') || '/')
+    && target.search === current.search
+    && target.hash === current.hash
+}
 
 function dispatchSpatialAudioCue(cue: 'transition' | 'orb-confirm' | 'error') {
   window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue } }))
@@ -32,6 +71,8 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (!request.href || typeof window === 'undefined') return request.href
   const target = new URL(request.href, window.location.origin)
   const current = new URLSearchParams(window.location.search)
+  const requestedMemoryId = request.context?.memoryId ?? target.searchParams.get('memoryId')
+  const explicitNode = target.searchParams.has('node')
   for (const key of WORLD_TRAVEL_CONTEXT_KEYS) {
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
@@ -42,6 +83,7 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
+  if (context?.eraId) target.searchParams.set('eraId', context.eraId)
   if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
   if (context?.movieId) target.searchParams.set('movieId', context.movieId)
   if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
@@ -57,6 +99,9 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.demo) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+  if (requestedMemoryId && !explicitNode && requestedMemoryId !== (current.get('memoryId') ?? current.get('node'))) {
+    target.searchParams.set('node', requestedMemoryId)
+  }
 
   const memoryId = target.searchParams.get('memoryId')
   const nodeId = target.searchParams.get('node')
@@ -112,6 +157,7 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   if (typeof window === 'undefined') return
 
   if (shouldBeginHomeAscent(request)) {
+    cancelUraiWorldTravel()
     const scene = useSceneStore.getState()
     if (scene.phase !== 'ASCENT') scene.enterLifeMap()
     dispatchSpatialAudioCue('transition')
@@ -127,36 +173,56 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   const now = Date.now()
   const fingerprint = JSON.stringify(request)
   if (fingerprint === lastTravelFingerprint && now - lastTravelAt < WORLD_TRAVEL_DEBOUNCE_MS) return
+  cancelUraiWorldTravel()
   lastTravelFingerprint = fingerprint
   lastTravelAt = now
+  const generation = travelGeneration
   const startingLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  const recovery = { request, cancel: () => {} }
+  pendingRecovery = recovery
   dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request }))
 
   const fallbackHref = buildFallbackHref(request)
-  if (!fallbackHref) return
+  if (!fallbackHref || generation !== travelGeneration || pendingRecovery !== recovery) return
 
   let settled = false
   let observer = 0
-  const fallback = window.setTimeout(() => {
-    if (settled) return
+  let fallback = 0
+  const settle = () => {
     settled = true
+    if (fallback) window.clearTimeout(fallback)
     if (observer) window.clearInterval(observer)
+    window.removeEventListener('popstate', cancel)
+    window.removeEventListener('hashchange', cancel)
+    if (pendingRecovery === recovery) pendingRecovery = undefined
+  }
+  const cancel = () => cancelUraiWorldTravel(request)
+  recovery.cancel = settle
+  window.addEventListener('popstate', cancel)
+  window.addEventListener('hashchange', cancel)
+  const currentIntent = () => !settled && generation === travelGeneration && pendingRecovery === recovery
+  const leftTravelLocations = () => !worldTravelLocationMatches(startingLocation) && !worldTravelLocationMatches(fallbackHref)
+
+  fallback = window.setTimeout(() => {
+    if (!currentIntent()) return
+    if (leftTravelLocations()) { settle(); return }
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
+    settle()
     if (currentLocation === startingLocation || !destinationSurfaceReady(request.destination)) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
 
   observer = window.setInterval(() => {
-    const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation || !destinationSurfaceReady(request.destination)) return
-    settled = true
-    window.clearTimeout(fallback)
-    window.clearInterval(observer)
+    if (!currentIntent()) return
+    if (leftTravelLocations()) { settle(); return }
+    if (!worldTravelLocationMatches(fallbackHref) || !destinationSurfaceReady(request.destination)) return
+    settle()
   }, WORLD_TRAVEL_OBSERVE_MS)
 }
 
 export function requestUraiWorldReturn() {
   if (typeof window === 'undefined') return
+  cancelUraiWorldTravel()
   dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new Event(URAI_WORLD_RETURN_EVENT))
 }
