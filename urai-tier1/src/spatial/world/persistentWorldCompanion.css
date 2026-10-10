@@ -342,3 +342,32 @@
     transition-duration: 1ms !important;
   }
 }
+
+/* Keep the closed travel control outside the narrow consent domain lane. The
+ * menu must not size the grid container; otherwise its hidden 296px width centers
+ * the Orb over the fixed-width domain navigation. */
+@media (max-width: 700px) {
+  .urai-world-runtime[data-world-destination='privacy-controls'] .urai-world-companion {
+    position: absolute !important;
+    left: auto !important;
+    right: max(18px, env(safe-area-inset-right)) !important;
+    top: auto !important;
+    bottom: max(18px, env(safe-area-inset-bottom)) !important;
+    width: 64px !important;
+    justify-items: end !important;
+    transform: none !important;
+  }
+
+  .urai-world-runtime[data-world-destination='privacy-controls'] .urai-world-companion__menu {
+    position: absolute !important;
+    right: 0 !important;
+    bottom: calc(100% + 10px) !important;
+  }
+}
+
+@media (max-width: 340px), (max-width: 700px) and (max-height: 600px) {
+  .urai-world-runtime[data-world-destination='privacy-controls'] .consentRealmNav {
+    grid-template-columns: minmax(0,1fr) !important;
+    margin-right: max(100px, calc(env(safe-area-inset-right, 0px) + 84px)) !important;
+  }
+}
