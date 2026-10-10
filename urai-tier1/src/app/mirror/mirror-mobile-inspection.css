@@ -33,6 +33,48 @@ body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
 }
 
 @media (max-width: 760px) {
+  /* The inline Adam portal belongs to this header. Reserve its 48px row above
+     the inspector instead of trying to reposition the static launcher itself. */
+  .mirrorWorld:has(.mirrorInspection) .mirrorIdentity {
+    top: max(8px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    max-width: none;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mirrorWorld:has(.mirrorInspection) .mirrorIdentity > [data-urai-adam-launcher-slot] {
+    order: 2;
+    width: 80px;
+    margin-left: auto;
+  }
+
+  .mirrorWorld:has(.mirrorInspection) .mirrorIdentity > p {
+    flex: 1;
+    min-width: 0;
+    max-width: calc(100% - 92px);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  /* The inspector repeats the selected title and explains its evidence. Keep
+     the document heading/summary accessible without a second covered panel. */
+  .mirrorWorld:has(.mirrorInspection) .mirrorIdentity > h1,
+  .mirrorWorld:has(.mirrorInspection) .mirrorIdentity > span:not([data-urai-adam-launcher-slot]) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
   /* Keep Orb travel available apart from the local Mirror Orb, above both the
      reflection rail and world thresholds. The default global bottom-center
      dock covers the Passport label while the overview is visible. */
@@ -44,8 +86,7 @@ body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
     justify-items: end;
   }
 
-  /* Keep the global Founder launcher available in the reserved top strip.
-     Its default viewport-center position covers the inspector's controls. */
+  /* The floating fallback uses the same reserved row until its slot is ready. */
   body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
     left: auto;
     right: max(8px, env(safe-area-inset-right));

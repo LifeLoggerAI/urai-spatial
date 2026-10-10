@@ -5,8 +5,20 @@ const route = '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thr
 for (const width of [320, 390, 768, 1024, 1200, 1440]) {
   for (const noWebGL of [false, true]) {
     test(`Focus disclosure, labels and helper remain clear at ${width}px, noWebGL=${noWebGL}`, async ({ page }) => {
+      test.setTimeout(60_000)
       await page.setViewportSize({ width, height: width === 320 ? 700 : width === 390 ? 844 : width < 1200 ? 1024 : 900 })
       await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.addInitScript(() => {
+        const state = window as Window & { __focusReadinessViolations?: string[] }
+        state.__focusReadinessViolations = []
+        new MutationObserver(() => {
+          const owner = document.querySelector('[data-testid="urai-final-focus-chamber"]')
+          if (!owner?.querySelector('.focusStatus')?.textContent?.includes('Stellar memory field ready')) return
+          if (owner.getAttribute('data-focus-input-ready') !== 'true' || owner.getAttribute('data-focus-render-ready') !== 'true' || !owner.querySelector('canvas[data-focus-first-frame="true"]')) {
+            state.__focusReadinessViolations!.push('Ready status appeared before the rendered scene and input owner were ready')
+          }
+        }).observe(document, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-focus-input-ready', 'data-focus-render-ready', 'data-focus-first-frame'] })
+      })
       if (noWebGL) await page.addInitScript(() => {
         const original = HTMLCanvasElement.prototype.getContext
         HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...args: unknown[]) {
@@ -19,6 +31,19 @@ for (const width of [320, 390, 768, 1024, 1200, 1440]) {
       await expect(focus).toHaveCount(1)
       const helper = page.locator('[data-urai-adam-launcher]')
       await expect(helper).toBeVisible()
+      if (noWebGL) {
+        await expect(focus.locator('[data-focus-fallback="semantic"]')).toBeVisible()
+        await expect(focus).toHaveAttribute('data-focus-render-ready', 'false')
+        await expect(focus.locator('.focusStatus')).toContainText('The memory remains accessible through the controls and memory details.')
+        await expect(focus.locator('.focusStatus')).not.toContainText('Stellar memory field ready')
+      } else {
+        await expect(focus).toHaveAttribute('data-focus-render-ready', 'true', { timeout: 45_000 })
+        await expect(focus).toHaveAttribute('data-focus-input-ready', 'true')
+        await expect(focus.locator('canvas[data-focus-first-frame="true"]')).toBeVisible()
+        await expect(focus.locator('.focusFallback')).toHaveCount(0)
+        await expect(focus.locator('.focusStatus')).toContainText('Stellar memory field ready')
+      }
+      expect(await page.evaluate(() => (window as Window & { __focusReadinessViolations?: string[] }).__focusReadinessViolations)).toEqual([])
       const geometry = await focus.evaluate(owner => {
         const rect = (element: Element) => {
           const r = element.getBoundingClientRect()
@@ -64,7 +89,6 @@ for (const width of [320, 390, 768, 1024, 1200, 1440]) {
         for (const box of geometry.headingText) expect(overlaps(geometry.status.box, box)).toBe(false)
       }
       await expect(focus.locator('.focusStatus')).toHaveAttribute('aria-live', 'polite')
-      await expect(focus.locator('.focusStatus')).toContainText('Stellar memory field ready')
       expect(geometry.controls.length).toBeGreaterThanOrEqual(3)
       for (const { box, text, pointerReachable } of geometry.controls) {
         expect(pointerReachable).toBe(true)
