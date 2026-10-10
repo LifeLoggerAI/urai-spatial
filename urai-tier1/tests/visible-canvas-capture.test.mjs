@@ -136,6 +136,10 @@ test('Home/Orb proof binds its visual samples and receipt to guarded canvas pixe
   assert.match(source, /record\.canvasCapture = visual\.capture/)
   assert.match(source, /record\.canvasCapture\?\.canvasTopmostAfterCapture === true/)
   assert.match(source, /if \(await worldCanvas\.count\(\) !== 1\)/)
+  assert.match(source, /record\.semanticOpacity > 0 && record\.semanticOpacity <= \.02/)
+  const navigationSource = await readFile(new URL('../../scripts/home-orb-canvas-sampling.mjs', import.meta.url), 'utf8')
+  assert.match(navigationSource, /visible: style\.display !== 'none' && style\.visibility === 'visible' && opacity > 0/)
+  assert.doesNotMatch(navigationSource, /visible:.*opacity >= \.99/)
 })
 
 test('Home/Orb image sampler executes the shared guarded capture with the admitted points and unchanged deadline', async () => {

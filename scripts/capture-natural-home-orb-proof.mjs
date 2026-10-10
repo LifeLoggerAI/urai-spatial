@@ -167,7 +167,7 @@ for (const spec of cases) {
       && record.semanticVisibleActions === 3
       && record.semanticOwner === 'runtime-boundary'
       && record.semanticNonDominant === 'true'
-      && Number.isFinite(record.semanticOpacity) && record.semanticOpacity >= .99
+      && Number.isFinite(record.semanticOpacity) && record.semanticOpacity > 0 && record.semanticOpacity <= .02
       && record.semanticVisual?.passed === true
       && record.visiblePortals === 'false'
       && record.portalRequests.length === 0
