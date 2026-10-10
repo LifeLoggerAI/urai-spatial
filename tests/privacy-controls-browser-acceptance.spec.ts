@@ -259,7 +259,6 @@ test('settled mobile privacy navigation controls remain unobscured by the persis
       })
     })
 
-    const buttons = page.locator('.consentRealmNav button')
     const initial = await buttons.evaluateAll(elements => {
       const overlays = '.consentSanctuary > .consentOrb, .urai-world-companion__orb, .urai-world-companion[data-open="true"] .urai-world-companion__menu, [data-urai-adam-launcher], [data-urai-adam-presence]'
       return elements.map(element => {
