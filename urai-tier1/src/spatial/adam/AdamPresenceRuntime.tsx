@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { createPortal } from 'react-dom'
+import { currentSpeechTag } from '@/lib/i18n/localePreference'
+import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
+import { contentLanguage, contentLanguageProps, type UraiContentLanguageTag } from '@/lib/i18n/contentLanguage'
 import {
   AdamProviderError,
   requestAdamFounderVoice,
@@ -14,6 +18,7 @@ import styles from './AdamPresenceRuntime.module.css'
 
 type DisplayMessage = AdamConversationMessage & {
   id: string
+  locale: UraiContentLanguageTag
   requiresHumanFounder?: boolean
   handoffReason?: string
 }
@@ -56,14 +61,47 @@ function nextSpeakableChunk(buffer: string, final: boolean): [string | null, str
 }
 
 export default function AdamPresenceRuntime() {
-  const pathname = usePathname() ?? '/'
+  const pathname = (usePathname() ?? '/').replace(/\/+$/, '') || '/'
   const searchParams = useSearchParams()
   const requestedSurface = pathname === '/adam' ? searchParams.get('surface') : null
   const surface = resolveAdamSurface(pathname, requestedSurface)
+  const locale = useUraiLocale()
+  const surfaceKey = `${pathname}:${surface?.id ?? 'hidden'}`
+  const renderedSurfaceKey = useRef(surfaceKey)
+  renderedSurfaceKey.current = surfaceKey
+  const activeSurfaceKey = useRef(surfaceKey)
+  const conversationGeneration = useRef(0)
   const [open, setOpen] = useState(false)
+  const [launcherAnchor, setLauncherAnchor] = useState<HTMLElement | null>(null)
+  const launcherRef = useRef<HTMLButtonElement | null>(null)
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+  const restoreLauncherFocus = useRef(false)
+
+  useEffect(() => {
+    // Only the slot's own mounted effect may make it eligible for a portal.
+    // Inserting into streamed server markup before its hydration causes React #418.
+    const syncAnchor = () => {
+      // Canvas fallback children hydrate even while the canvas is rendering. They
+      // are semantic fallback content, not a visible place for an interactive UI.
+      const anchor = [...document.querySelectorAll<HTMLElement>('[data-urai-adam-launcher-slot][data-urai-adam-launcher-ready="true"]')].find(slot => {
+        if (slot.closest('canvas,[hidden],[inert],[aria-hidden="true"]')) return false
+        for (let parent: HTMLElement | null = slot; parent; parent = parent.parentElement) {
+          const style = getComputedStyle(parent)
+          if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse') return false
+        }
+        return true
+      }) ?? null
+      setLauncherAnchor(current => current === anchor ? current : anchor)
+    }
+    const observer = new MutationObserver(syncAnchor)
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-urai-adam-launcher-ready', 'hidden', 'inert', 'aria-hidden', 'class', 'style'] })
+    syncAnchor()
+    return () => observer.disconnect()
+  }, [pathname])
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<DisplayMessage[]>([])
   const [streamedText, setStreamedText] = useState('')
+  const [streamedLocale, setStreamedLocale] = useState<UraiContentLanguageTag>('en-US')
   const [busy, setBusy] = useState(false)
   const [listening, setListening] = useState(false)
   const [aiConsent, setAiConsent] = useState(false)
@@ -73,6 +111,7 @@ export default function AdamPresenceRuntime() {
   const conversationAborter = useRef<AbortController | null>(null)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const currentAudio = useRef<HTMLAudioElement | null>(null)
+  const finishCurrentAudio = useRef<(() => void) | null>(null)
   const voiceControllers = useRef(new Set<AbortController>())
   const voiceQueue = useRef(Promise.resolve())
   const voiceGeneration = useRef(0)
@@ -88,10 +127,14 @@ export default function AdamPresenceRuntime() {
       currentAudio.current.src = ''
       currentAudio.current = null
     }
+    finishCurrentAudio.current?.()
+    finishCurrentAudio.current = null
     streamingSpeechBuffer.current = ''
   }, [])
 
   const stopAll = useCallback(() => {
+    // Invalidate callbacks before abort(), which may synchronously dispatch events.
+    conversationGeneration.current += 1
     conversationAborter.current?.abort()
     conversationAborter.current = null
     recognitionRef.current?.abort()
@@ -102,29 +145,71 @@ export default function AdamPresenceRuntime() {
     setStatus('Stopped.')
   }, [stopVoice])
 
+  const closePresence = useCallback(() => {
+    restoreLauncherFocus.current = true
+    stopAll()
+    setOpen(false)
+  }, [stopAll])
+
+  useEffect(() => {
+    if (open) closeButtonRef.current?.focus()
+    else if (restoreLauncherFocus.current && launcherRef.current) {
+      restoreLauncherFocus.current = false
+      launcherRef.current.focus()
+    }
+  }, [open, launcherAnchor])
+
+  useEffect(() => {
+    if (!open) return
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      closePresence()
+    }
+    document.addEventListener('keydown', dismiss)
+    return () => document.removeEventListener('keydown', dismiss)
+  }, [open, closePresence])
+
   useEffect(() => () => stopAll(), [stopAll])
   useEffect(() => {
+    if (activeSurfaceKey.current !== surfaceKey) {
+      activeSurfaceKey.current = surfaceKey
+      stopAll()
+      setMessages([])
+      setMessage('')
+      setAiConsent(false)
+      setVoiceConsent(false)
+      setStatus('Adam is ready when you are.')
+    }
     stopVoice()
     setStreamedText('')
     if (pathname === '/adam') setOpen(true)
-  }, [pathname, stopVoice])
+  }, [pathname, surfaceKey, stopAll, stopVoice])
 
-  const playAudio = useCallback((blob: Blob, generation: number) => new Promise<void>((resolve) => {
+  const playAudio = useCallback((blob: Blob, generation: number, locale: UraiContentLanguageTag) => new Promise<void>((resolve) => {
     if (generation !== voiceGeneration.current) return resolve()
     const url = URL.createObjectURL(blob)
     const audio = new Audio(url)
+    // Captured content metadata does not approve provider language or private identity.
+    audio.lang = locale
     currentAudio.current = audio
+    let finished = false
     const finish = () => {
+      if (finished) return
+      finished = true
       URL.revokeObjectURL(url)
       if (currentAudio.current === audio) currentAudio.current = null
+      if (finishCurrentAudio.current === finish) finishCurrentAudio.current = null
       resolve()
     }
+    finishCurrentAudio.current = finish
     audio.onended = finish
     audio.onerror = finish
     void audio.play().catch(finish)
   }), [])
 
-  const enqueueSpeech = useCallback((text: string) => {
+  const enqueueSpeech = useCallback((text: string, locale: UraiContentLanguageTag) => {
     if (!voiceConsent || voiceMuted || !text.trim()) return
     const generation = voiceGeneration.current
     voiceQueue.current = voiceQueue.current.then(async () => {
@@ -134,6 +219,7 @@ export default function AdamPresenceRuntime() {
       try {
         const result = await requestAdamFounderVoice({
           text: text.trim(),
+          locale,
           externalProcessingConsent: true,
           signal: controller.signal,
         })
@@ -147,7 +233,7 @@ export default function AdamPresenceRuntime() {
           return
         }
         setStatus('Adam is speaking.')
-        await playAudio(result.blob, generation)
+        await playAudio(result.blob, generation, locale)
       } catch {
         if (!controller.signal.aborted) setStatus('Adam text is live. Voice is temporarily unavailable.')
       } finally {
@@ -156,7 +242,7 @@ export default function AdamPresenceRuntime() {
     })
   }, [playAudio, voiceConsent, voiceMuted])
 
-  const drainSpeechBuffer = useCallback((final: boolean) => {
+  const drainSpeechBuffer = useCallback((final: boolean, locale: UraiContentLanguageTag) => {
     if (!voiceConsent || voiceMuted) {
       streamingSpeechBuffer.current = ''
       return
@@ -166,7 +252,7 @@ export default function AdamPresenceRuntime() {
       const [chunk, rest] = nextSpeakableChunk(remaining, final)
       remaining = rest
       if (!chunk) break
-      enqueueSpeech(chunk)
+      enqueueSpeech(chunk, locale)
       if (!final) break
     }
     streamingSpeechBuffer.current = remaining
@@ -186,20 +272,28 @@ export default function AdamPresenceRuntime() {
     }
     recognitionRef.current?.abort()
     const recognition = new Constructor()
+    const generation = conversationGeneration.current
+    const recognitionSurfaceKey = surfaceKey
+    const isCurrentRecognition = () => recognitionRef.current === recognition
+      && conversationGeneration.current === generation
+      && renderedSurfaceKey.current === recognitionSurfaceKey
     recognition.continuous = false
     recognition.interimResults = true
-    recognition.lang = navigator.language || 'en-US'
+    recognition.lang = currentSpeechTag()
     recognition.onresult = (event) => {
+      if (!isCurrentRecognition()) return
       let text = ''
       for (let index = 0; index < event.results.length; index += 1) text += event.results[index][0]?.transcript ?? ''
       setMessage(text.trimStart())
     }
     recognition.onend = () => {
+      if (!isCurrentRecognition()) return
       setListening(false)
       recognitionRef.current = null
       setStatus('Voice captured. Send when ready.')
     }
     recognition.onerror = () => {
+      if (!isCurrentRecognition()) return
       setListening(false)
       recognitionRef.current = null
       setStatus('Voice input stopped. You can type instead.')
@@ -207,24 +301,39 @@ export default function AdamPresenceRuntime() {
     recognitionRef.current = recognition
     setListening(true)
     setStatus('Listening…')
-    recognition.start()
-  }, [stopVoice])
+    try {
+      recognition.start()
+    } catch {
+      recognitionRef.current = null
+      setListening(false)
+      setStatus('Voice input is not available in this browser. Type to Adam instead.')
+    }
+  }, [stopVoice, surfaceKey])
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     const text = message.trim()
-    if (!surface || !text || busy || !aiConsent) return
+    if (!surface || !text || busy || !aiConsent || activeSurfaceKey.current !== surfaceKey) return
+    const locale = contentLanguage(currentSpeechTag())?.speechTag
+    if (!locale) { setStatus('Choose a supported content language.'); return }
 
     stopVoice()
     const controller = new AbortController()
     conversationAborter.current = controller
+    const generation = conversationGeneration.current
+    const requestSurfaceKey = surfaceKey
+    const isCurrentRequest = () => conversationAborter.current === controller
+      && !controller.signal.aborted
+      && conversationGeneration.current === generation
+      && renderedSurfaceKey.current === requestSurfaceKey
     setBusy(true)
     setStreamedText('')
+    setStreamedLocale(locale)
     streamingSpeechBuffer.current = ''
     setStatus('Adam is thinking…')
 
     const priorContext = messages.slice(-10).map(({ role, content }) => ({ role, content }))
-    const userMessage: DisplayMessage = { id: uid(), role: 'user', content: text }
+    const userMessage: DisplayMessage = { id: uid(), role: 'user', content: text, locale }
     setMessages((current) => [...current, userMessage])
     setMessage('')
 
@@ -233,21 +342,23 @@ export default function AdamPresenceRuntime() {
         message: text,
         context: priorContext,
         surface: surface.id,
-        locale: typeof navigator !== 'undefined' ? navigator.language : 'en-US',
+        locale,
         aiProcessingConsent: true,
         signal: controller.signal,
         onEvent: (providerEvent) => {
-          if (providerEvent.type !== 'delta') return
+          if (!isCurrentRequest() || providerEvent.type !== 'delta') return
           setStreamedText((current) => current + providerEvent.text)
           streamingSpeechBuffer.current += providerEvent.text
-          drainSpeechBuffer(false)
+          drainSpeechBuffer(false, providerEvent.locale)
         },
       })
-      drainSpeechBuffer(true)
+      if (!isCurrentRequest()) return
+      drainSpeechBuffer(true, result.locale)
       const adamMessage: DisplayMessage = {
         id: uid(),
         role: 'assistant',
         content: result.caption,
+        locale: result.locale,
         requiresHumanFounder: result.requiresHumanFounder,
         handoffReason: result.handoffReason,
       }
@@ -255,6 +366,8 @@ export default function AdamPresenceRuntime() {
       setStreamedText('')
       setStatus(result.requiresHumanFounder ? 'This needs the human founder.' : voiceConsent && !voiceMuted ? 'Adam response complete.' : 'Adam responded.')
     } catch (error) {
+      if (!isCurrentRequest()) return
+      stopVoice()
       setStreamedText('')
       if (controller.signal.aborted) {
         setStatus('Stopped.')
@@ -264,18 +377,22 @@ export default function AdamPresenceRuntime() {
         setStatus('Adam is temporarily unavailable.')
       }
     } finally {
-      if (conversationAborter.current === controller) conversationAborter.current = null
-      setBusy(false)
+      if (isCurrentRequest()) {
+        conversationAborter.current = null
+        setBusy(false)
+      }
     }
   }
 
   if (!surface) return null
 
   if (!open) {
-    return (
+    const launcher = (
       <button
+        ref={launcherRef}
         type="button"
-        className={styles.launcher}
+        className={`${styles.launcher} ${launcherAnchor ? styles.inlineLauncher : ''}`}
+        data-adam-launcher-placement={launcherAnchor ? 'inline-slot' : 'spatial-overlay'}
         onClick={() => setOpen(true)}
         aria-label={`Talk with Adam in ${surface.label}`}
         data-urai-adam-launcher="true"
@@ -283,10 +400,12 @@ export default function AdamPresenceRuntime() {
         Adam
       </button>
     )
+    return launcherAnchor ? createPortal(launcher, launcherAnchor) : launcher
   }
 
-  const visibleMessages = streamedText
-    ? [...messages, { id: 'streaming', role: 'assistant' as const, content: streamedText }]
+  const contextCurrent = activeSurfaceKey.current === surfaceKey
+  const visibleMessages = !contextCurrent ? [] : streamedText
+    ? [...messages, { id: 'streaming', role: 'assistant' as const, content: streamedText, locale: streamedLocale }]
     : messages
 
   return (
@@ -301,9 +420,10 @@ export default function AdamPresenceRuntime() {
         <div className={styles.presence} aria-hidden="true">A</div>
         <div className={styles.identity}>
           <p className={styles.name}>Adam</p>
+          <p className={styles.surface} {...locale.props('founder.disclosure')}>{locale.text('founder.disclosure')}</p>
           <p className={styles.surface}>{surface.label} · {busy ? 'thinking' : listening ? 'listening' : 'present'}</p>
         </div>
-        <button type="button" className={styles.close} onClick={() => { stopAll(); setOpen(false) }} aria-label="Close Adam">×</button>
+        <button ref={closeButtonRef} type="button" className={styles.close} onClick={closePresence} aria-label="Close Adam">×</button>
       </header>
 
       <details className={styles.about}>
@@ -315,7 +435,7 @@ export default function AdamPresenceRuntime() {
         {visibleMessages.length ? visibleMessages.map((item) => (
           <div key={item.id} className={`${styles.message} ${item.role === 'user' ? styles.user : styles.adam}`}>
             <strong>{item.role === 'user' ? 'You' : 'Adam'}</strong>
-            <div>{item.content}</div>
+            <div {...contentLanguageProps(item.locale)}>{item.content}</div>
             {item.role === 'assistant' && item.requiresHumanFounder ? (
               <div className={styles.handoff}>Human founder required{item.handoffReason ? `: ${item.handoffReason}` : '.'}</div>
             ) : null}
@@ -331,7 +451,7 @@ export default function AdamPresenceRuntime() {
       <form className={styles.composer} onSubmit={submit}>
         <textarea
           className={styles.textarea}
-          value={message}
+          value={contextCurrent ? message : ''}
           rows={3}
           maxLength={2500}
           onChange={(event) => setMessage(event.target.value)}

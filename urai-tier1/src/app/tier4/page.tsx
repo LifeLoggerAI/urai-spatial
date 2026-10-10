@@ -1,3 +1,4 @@
+import InstitutionalPublicSurface from '../InstitutionalPublicSurface'
 import { getTier4SystemContract } from "@/lib/tier4-production-contract";
 
 export const metadata = {
@@ -9,18 +10,15 @@ export default function Tier4Page() {
   const contract = getTier4SystemContract();
 
   return (
-    <main className="min-h-screen bg-[#05030b] px-6 py-10 text-white">
-      <section className="mx-auto max-w-6xl">
-        <p className="text-sm uppercase tracking-[0.35em] text-cyan-200/80">URAI Spatial</p>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-6xl">
-          Tier 4 production gate
-        </h1>
-        <p className="mt-5 max-w-3xl text-lg leading-8 text-white/72">
-          Tier 4 is wired as a safe readiness layer: contracts, entitlement boundaries,
-          integration seams, fallback states, and release evidence stay visible without
-          claiming unavailable providers or live deployment.
-        </p>
-
+    <InstitutionalPublicSurface
+      eyebrow="UrAi · Availability"
+      title="Connected experiences"
+      lede="See which connected experiences still need verification. Availability, privacy, and provider checks remain required before use."
+      links={[{ href: '/status', label: 'Current release status', primary: true }, { href: '/home', label: 'Return Home' }]}
+    >
+      <p>These details are read-only. They do not enable features or certify a live deployment.</p>
+      <details>
+        <summary style={{ minHeight: 48, cursor: 'pointer', color: '#b9f4ff' }}>Tier 4 production gate · Review technical readiness</summary>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-5">
             <p className="text-sm text-white/55">Release status</p>
@@ -84,7 +82,7 @@ export default function Tier4Page() {
             ))}
           </ul>
         </section>
-      </section>
-    </main>
+      </details>
+    </InstitutionalPublicSurface>
   );
 }

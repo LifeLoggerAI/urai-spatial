@@ -1,16 +1,25 @@
 'use client'
 
-import StellarCorona from '@/spatial/stellar/StellarCorona'
+import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
+import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 
-import { Billboard, Html, OrbitControls, Sparkles, Stars, useTexture } from '@react-three/drei'
+import StellarPhotosphere, { FOCUS_STAR_POSITION, FOCUS_STAR_RADIUS } from '@/spatial/stellar/StellarPhotosphere'
+import FocusAtmosphere from '@/spatial/stellar/FocusAtmosphere'
+import type { StellarMemoryState } from '@/spatial/stellar/stellarMemoryReveal'
+import { getFocusFrame, rebaseFocusEntryFrame } from './focusComposition'
+
+import { OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets, replayAssets } from '@/spatial/assets/uraiAssets'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+import { focusMemoryAppearance } from './focusMemoryAppearance'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
+import MemoryMediaAttachment from '@/spatial/memory/MemoryMediaAttachment'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
 const focusAccessibilityCss = `
@@ -19,11 +28,13 @@ const focusAccessibilityCss = `
 .focusControls button{min-width:0;white-space:normal;line-height:1.2}
 .focusStatus{max-width:calc(100vw - 32px);text-align:center;white-space:normal}
 @media(max-width:380px),(max-height:500px){.focusHeading{max-height:40svh;overflow-y:auto}.focusNarration{font-size:14px}.focusHelp[open]{max-height:40svh;max-width:calc(100vw - 32px);overflow:auto}.memoryMeaning{max-height:22svh;overflow:auto}}
+@media(max-height:500px) and (min-width:501px){.focusHeading{left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));width:calc(50vw - 40px - env(safe-area-inset-left));max-height:calc(50svh - 32px);overflow:auto;pointer-events:auto;overscroll-behavior:contain}.focusHeading h2{font-size:1.65rem;line-height:1.05}.focusNarration{margin-top:10px;padding:8px 10px}.focusNarration strong{font-size:1rem}.memoryMeaning{left:max(16px,env(safe-area-inset-left));top:50svh;bottom:auto;width:calc(50vw - 40px - env(safe-area-inset-left));max-height:calc(50svh - 100px);box-sizing:border-box;overflow:auto;overscroll-behavior:contain}.focusControls{left:auto;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));bottom:auto;width:calc(50vw - 40px - env(safe-area-inset-right));box-sizing:border-box;justify-content:center}.focusControls button{flex:1;padding:0 8px}.focusHelp{right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));max-width:calc(50vw - 40px - env(safe-area-inset-right))}.focusStatus{width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}}
 @media(forced-colors:active){.focusControls button,.focusHelp,.neutralActions button,.webglRecovery button,.focus-spatial-aperture-button{background:Canvas;color:CanvasText;border:2px solid CanvasText}.focusControls button:focus-visible,.focusHelp summary:focus-visible,.neutralActions button:focus-visible,.webglRecovery button:focus-visible,.focus-spatial-aperture-button:focus-visible{outline:3px solid Highlight;outline-offset:3px}}
 `
 
-const DEFAULT_CAMERA: [number, number, number] = [0, 1.45, 8.2]
-const DEFAULT_TARGET: [number, number, number] = [0, 0.45, -1.3]
+const INITIAL_FRAME = getFocusFrame(16 / 9)
+const DEFAULT_CAMERA = INITIAL_FRAME.position
+const DEFAULT_TARGET = INITIAL_FRAME.target
 const CAMERA_LIMIT = 8.8
 
 type ChamberState = 'neutral' | 'loading' | 'ready' | 'unavailable' | 'unauthorized' | 'corrupt' | 'deleted'
@@ -43,12 +54,12 @@ function parseEntryCameraFrame(params: URLSearchParams): EntryCameraFrame | null
   const target = parseEntryVector(params.get('entryTarget'))
   const fov = Number(params.get('entryFov'))
   if (!position || !target || !Number.isFinite(fov)) return null
-  return { position, target, fov: THREE.MathUtils.clamp(fov, 36, 68) }
+  return rebaseFocusEntryFrame({ position, target, fov })
 }
 
-function dateLabel(value: string) {
+function dateLabel(value: string, locale: Pick<ReturnType<typeof useUraiLocale>, 'date'>) {
   try {
-    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+    return locale.date(value, { dateStyle: 'medium', timeStyle: 'short' })
   } catch {
     return value
   }
@@ -67,7 +78,14 @@ function useWebGLAvailable() {
   return available
 }
 
-function FirstFrame({ profile }: { profile: SpatialQualityProfile }) {
+function isSoftwareWebGLRenderer(renderer: THREE.WebGLRenderer) {
+  const context = renderer.getContext()
+  const debug = context.getExtension('WEBGL_debug_renderer_info')
+  const name = context.getParameter(debug?.UNMASKED_RENDERER_WEBGL ?? context.RENDERER)
+  return /swiftshader|llvmpipe|lavapipe|software/i.test(String(name ?? ''))
+}
+
+function FirstFrame({ profile, onReady }: { profile: SpatialQualityProfile; onReady: () => void }) {
   const marked = useRef(false)
   const renderedFrames = useRef(0)
   useFrame(({ gl }) => {
@@ -77,6 +95,7 @@ function FirstFrame({ profile }: { profile: SpatialQualityProfile }) {
     gl.domElement.dataset.focusFirstFrame = 'true'
     marked.current = true
     markFirstSpatialFrame('/focus', profile.tier)
+    onReady()
   })
   return null
 }
@@ -121,16 +140,18 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   return null
 }
 
-function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reducedMotion }: { controls: RefObject<OrbitControlsImpl | null>; recenterSignal: number; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; reducedMotion: boolean }) {
-  const { camera } = useThree()
+function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reducedMotion, onInputReadyChange }: { controls: RefObject<OrbitControlsImpl | null>; recenterSignal: number; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; reducedMotion: boolean; onInputReadyChange: (ready: boolean) => void }) {
+  const { camera, size } = useThree()
+  const frame = useMemo(() => getFocusFrame(size.width / size.height), [size.width, size.height])
   const keys = useRef(new Set<string>())
   const target = useMemo(() => new THREE.Vector3(...DEFAULT_TARGET), [])
-  const defaultTarget = useMemo(() => new THREE.Vector3(...DEFAULT_TARGET), [])
-  const defaultCamera = useMemo(() => new THREE.Vector3(...DEFAULT_CAMERA), [])
+  const defaultTarget = useMemo(() => new THREE.Vector3(...frame.target), [frame])
+  const defaultCamera = useMemo(() => new THREE.Vector3(...frame.position), [frame])
   const forward = useRef(new THREE.Vector3())
   const right = useRef(new THREE.Vector3())
   const movement = useRef(new THREE.Vector3())
   const entryBlendActive = useRef(false)
+  const entryFrameUsed = useRef(false)
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
@@ -151,18 +172,28 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
     window.addEventListener('focusin', focusChanged)
     const shell = shellRef.current
     if (shell) shell.dataset.focusInputReady = 'true'
+    onInputReadyChange(true)
     return () => {
       clearKeys()
       if (shell) shell.dataset.focusInputReady = 'false'
+      onInputReadyChange(false)
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
       window.removeEventListener('blur', clearKeys)
       window.removeEventListener('focusin', focusChanged)
     }
-  }, [])
+  }, [onInputReadyChange, shellRef])
 
-  useEffect(() => {
-    const useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion
+  useLayoutEffect(() => {
+    const orbit = controls.current
+    const damping = orbit?.enableDamping
+    // Flush a released drag before restoring the view. Otherwise OrbitControls
+    // applies its remaining momentum after Recenter and moves the camera again.
+    if (orbit) {
+      orbit.enableDamping = false
+      orbit.update()
+    }
+    const useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion && !entryFrameUsed.current
     if (useEntryFrame) {
       camera.position.set(...entryFrame.position)
       controls.current?.target.set(...entryFrame.target)
@@ -172,18 +203,21 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
       }
       entryBlendActive.current = true
     } else {
-      camera.position.set(...DEFAULT_CAMERA)
-      controls.current?.target.set(...DEFAULT_TARGET)
+      keys.current.clear()
+      camera.position.copy(defaultCamera)
+      controls.current?.target.copy(defaultTarget)
       if (camera instanceof THREE.PerspectiveCamera) {
-        camera.fov = 48
+        camera.fov = frame.fov
         camera.updateProjectionMatrix()
       }
       entryBlendActive.current = false
     }
     controls.current?.update()
-  }, [camera, controls, entryFrame, recenterSignal, reducedMotion])
+    if (orbit && damping !== undefined) orbit.enableDamping = damping
+  }, [camera, controls, defaultCamera, defaultTarget, entryFrame, frame.fov, recenterSignal, reducedMotion])
 
   useFrame((_, delta) => {
+    if (entryBlendActive.current) entryFrameUsed.current = true
     const moving = keys.current.size > 0
     if (!moving && entryBlendActive.current) {
       camera.position.x = THREE.MathUtils.damp(camera.position.x, defaultCamera.x, 2.4, delta)
@@ -195,7 +229,7 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
       target.z = THREE.MathUtils.damp(target.z, defaultTarget.z, 2.8, delta)
       controls.current?.target.copy(target)
       if (camera instanceof THREE.PerspectiveCamera) {
-        camera.fov = THREE.MathUtils.damp(camera.fov, 48, 2.6, delta)
+        camera.fov = THREE.MathUtils.damp(camera.fov, frame.fov, 2.6, delta)
         camera.updateProjectionMatrix()
       }
       controls.current?.update()
@@ -240,206 +274,6 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
   return null
 }
 
-function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; light: string; reducedMotion: boolean }) {
-  const corona = useRef<THREE.Group>(null)
-  const photosphere = useMemo(() => new THREE.ShaderMaterial({
-    uniforms: {
-      uTime: { value: 0 },
-      uAccent: { value: new THREE.Color(accent) },
-      uLight: { value: new THREE.Color(light) },
-    },
-    vertexShader: `
-      uniform float uTime;
-      varying vec3 vObjectPosition;
-      varying vec3 vNormalView;
-      void main() {
-        float macro = sin(position.x * 9.0 + position.y * 5.0 + uTime * .12) * sin(position.z * 11.0 - position.x * 4.0 - uTime * .08);
-        float grain = sin((position.x - position.z) * 23.0 + uTime * .18);
-        vec3 displaced = position + normal * (macro * .018 + grain * .006);
-        vObjectPosition = displaced;
-        vNormalView = normalize(normalMatrix * normal);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform float uTime;
-      uniform vec3 uAccent;
-      uniform vec3 uLight;
-      varying vec3 vObjectPosition;
-      varying vec3 vNormalView;
-
-      float hash(vec3 p) {
-        p = fract(p * .3183099 + .113);
-        p *= 17.0;
-        return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-      }
-
-      float noise(vec3 x) {
-        vec3 i = floor(x);
-        vec3 f = fract(x);
-        f = f * f * (3.0 - 2.0 * f);
-        return mix(
-          mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x),
-              mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
-          mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
-              mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
-          f.z
-        );
-      }
-
-      void main() {
-        vec3 p = normalize(vObjectPosition);
-        float t = uTime * .055;
-        // Keep the dominant signal at photospheric granule scale. Broad low-frequency
-        // bands read as planetary terrain, which is explicitly outside Focus canon.
-        float coarse = noise(p * 17.0 + vec3(t * .34, -t * .21, t * .15));
-        float medium = noise(p * 41.0 - vec3(t * .19, t * .14, -t * .11));
-        float fine = noise(p * 93.0 + vec3(-t * .11, t * .16, t * .07));
-        float micro = noise(p * 151.0 - vec3(t * .05, -t * .08, t * .04));
-        // The visible surface is intentionally dominated by small photospheric cells.
-        // Low-frequency continents/terrain are suppressed so Focus cannot read as a planet.
-        float cells = smoothstep(.40, .68, coarse * .18 + medium * .50 + fine * .32);
-        float intergranular = smoothstep(.10, .42, abs(medium - fine));
-        float faculae = smoothstep(.74, .94, noise(p * 57.0 + vec3(t * .07, -t * .05, t * .03)));
-        float pores = smoothstep(.86, .975, noise(p * 127.0 - vec3(t * .06, -t * .04, t * .03)));
-        float viewFacing = clamp(vNormalView.z * .5 + .5, 0.0, 1.0);
-        float limb = pow(viewFacing, .55);
-        vec3 solarOrange = vec3(1.0, .18, .012);
-        vec3 solarGold = vec3(1.0, .60, .085);
-        vec3 hotWhite = vec3(1.0, .93, .64);
-        vec3 surface = mix(solarOrange, solarGold, .42 + cells * .46);
-        surface = mix(surface, hotWhite, .10 + fine * .14 + micro * .08 + faculae * .22 + limb * .06);
-        surface = mix(surface, uLight, .012);
-        surface = mix(surface, uAccent, .004);
-        float radiance = (.48 + cells * .84 + micro * .18 + faculae * .34) * (.68 + limb * .32);
-        radiance *= .90 + intergranular * .12;
-        radiance *= 1.0 - pores * .12;
-        vec3 emitted = surface * radiance + hotWhite * (.022 + cells * .055 + faculae * .07);
-        gl_FragColor = vec4(clamp(emitted, 0.0, 1.0), 1.0);
-        #include <colorspace_fragment>
-      }
-    `,
-    toneMapped: false,
-  }), [accent, light])
-
-  useEffect(() => () => photosphere.dispose(), [photosphere])
-
-  useFrame(({ clock }) => {
-    photosphere.uniforms.uTime.value = reducedMotion ? 0 : clock.elapsedTime
-    if (!corona.current || reducedMotion) return
-    corona.current.rotation.y = clock.elapsedTime * 0.035
-    corona.current.rotation.z = Math.sin(clock.elapsedTime * 0.18) * 0.045
-  })
-
-  return (
-    <group
-      ref={corona}
-      name="focus-stellar-photosphere-corona"
-      userData={{ canon: 'memory-star-stellar-photosphere-corona', surface: 'procedural-granulation-filaments-limb-darkening' }}
-      position={[0, 0.35, -1.55]}
-    >
-      <mesh>
-        <sphereGeometry args={[1.15, 112, 96]} />
-        <primitive object={photosphere} attach="material" />
-      </mesh>
-      <StellarCorona radius={1.15} color={accent} reducedMotion={reducedMotion} intensity={1.75} />
-      <mesh name="focus-stellar-photosphere-luminance-floor" scale={1.012} renderOrder={3}>
-        <sphereGeometry args={[1.15, 96, 96]} />
-        <meshBasicMaterial color="#ffd66b" transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </mesh>
-      <mesh scale={1.075}>
-        <sphereGeometry args={[1.15, 80, 80]} />
-        <meshBasicMaterial color="#ffb53f" transparent opacity={0.045} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </mesh>
-      <mesh scale={1.22}>
-        <sphereGeometry args={[1.15, 64, 64]} />
-        <meshBasicMaterial color={light} transparent opacity={0.018} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </mesh>
-      <mesh scale={1.52}>
-        <sphereGeometry args={[1.15, 48, 48]} />
-        <meshBasicMaterial color={accent} transparent opacity={0.008} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </mesh>
-      <Sparkles count={reducedMotion ? 42 : 124} scale={[4.2, 4.2, 4.2]} size={reducedMotion ? 1.55 : 2.15} speed={reducedMotion ? 0 : 0.11} opacity={0.58} color="#ffd36c" />
-      <pointLight color="#fff0ba" intensity={15.5} distance={20} decay={2} />
-      <pointLight color={accent} intensity={4.8} distance={14} decay={2} />
-    </group>
-  )
-}
-
-function MemoryImprint({ url }: { url: string }) {
-  const texture = useTexture(url)
-  const material = useMemo(() => new THREE.ShaderMaterial({
-    uniforms: { uMemory: { value: texture } },
-    vertexShader: `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform sampler2D uMemory;
-      varying vec2 vUv;
-      void main() {
-        vec2 centered = vUv - vec2(.5);
-        float radius = length(centered);
-        float veil = 1.0 - smoothstep(.28, .53, radius);
-        float core = 1.0 - smoothstep(.04, .46, radius);
-        vec3 image = texture2D(uMemory, vUv).rgb;
-        float luminance = dot(image, vec3(.2126, .7152, .0722));
-        float localContrast = smoothstep(.08, .92, luminance);
-        vec3 warmMemory = mix(image, vec3(1.0, .48, .08), .06 + (1.0 - luminance) * .05);
-        vec3 revealedMemory = mix(warmMemory, image * (.92 + localContrast * .20), .80);
-        vec3 solarVeil = vec3(1.0, .34, .02) * (1.0 - core) * .08;
-        float alpha = veil * (.52 + luminance * .26 + core * .18);
-        gl_FragColor = vec4(revealedMemory + solarVeil, alpha);
-        #include <colorspace_fragment>
-      }
-    `,
-    transparent: true,
-    depthWrite: false,
-    depthTest: false,
-    toneMapped: false,
-    blending: THREE.NormalBlending,
-  }), [texture])
-
-  useEffect(() => {
-    texture.colorSpace = THREE.SRGBColorSpace
-    texture.wrapS = THREE.ClampToEdgeWrapping
-    texture.wrapT = THREE.ClampToEdgeWrapping
-    texture.needsUpdate = true
-    return () => material.dispose()
-  }, [material, texture])
-
-  return (
-    <Billboard follow position={[0, 0.35, -0.26]} name="focus-memory-imprint-billboard">
-      <mesh renderOrder={6} name="focus-memory-imprint">
-        <planeGeometry args={[2.08, 2.08]} />
-        <primitive object={material} attach="material" />
-      </mesh>
-    </Billboard>
-  )
-}
-
-function MemoryTraces({ memory, accent, reducedMotion }: { memory: SelectedMemory | null; accent: string; reducedMotion: boolean }) {
-  const count = memory ? Math.min(7, Math.max(3, memory.people.length + memory.emotionalArc.length + (memory.place ? 1 : 0))) : 5
-  const refs = useRef<Array<THREE.Group | null>>([])
-  const positions = useMemo(() => Array.from({ length: count }, (_, index) => {
-    const angle = (index / count) * Math.PI * 2 + 0.4
-    const radius = 3.5 + (index % 2) * 1.15
-    return [Math.cos(angle) * radius, -0.1 + (index % 3) * 0.75, -2.1 + Math.sin(angle) * radius * 0.44] as [number, number, number]
-  }), [count])
-  useFrame(({ clock }) => {
-    if (reducedMotion) return
-    refs.current.forEach((group, index) => {
-      if (!group) return
-      group.position.y = positions[index][1] + Math.sin(clock.elapsedTime * 0.62 + index * 0.7) * 0.08
-      group.rotation.y = clock.elapsedTime * 0.08 + index * 0.7
-    })
-  })
-  return <group name="focus-grounded-memory-traces">{positions.map((position, index) => <group key={index} ref={(value) => { refs.current[index] = value }} position={position}><mesh><sphereGeometry args={[0.045, 20, 20]} /><meshBasicMaterial color="#fff0b8" transparent opacity={0.86} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh><mesh><sphereGeometry args={[0.16, 18, 18]} /><meshBasicMaterial color={accent} transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh></group>)}</group>
-}
-
 function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivate }: { memory: SelectedMemory | null; accent: string; light: string; reducedMotion: boolean; onActivate: () => void }) {
   const group = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
@@ -459,55 +293,49 @@ function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivat
   }
 
   return (
-    <group ref={group} position={[0, 0.35, -1.55]} name="focus-memory-star-interaction">
+    <group ref={group} position={FOCUS_STAR_POSITION} name="focus-memory-star-interaction">
       <mesh
         onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }}
         onPointerOver={(event) => pointer(event, true)}
         onPointerOut={(event) => pointer(event, false)}
       >
-        <sphereGeometry args={[1.16, 96, 96]} />
-        <meshBasicMaterial color={light} transparent opacity={0.025} depthWrite={false} />
+        <sphereGeometry args={[FOCUS_STAR_RADIUS + 0.01, 56, 40]} />
+        <meshBasicMaterial color={light} transparent opacity={0} depthWrite={false} colorWrite={false} />
       </mesh>
-      <mesh scale={hovered ? 1.38 : 1.32}>
-        <sphereGeometry args={[1.16, 64, 64]} />
-        <meshBasicMaterial color={accent} transparent opacity={hovered ? 0.105 : 0.06} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </mesh>
-      <Html center position={[0, -2.25, 0]} transform distanceFactor={7.6}>
-        <button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Open Replay for ${memory.title}` : 'Select a memory in Life Map to open Replay'}>
-          {memory ? 'Enter Replay' : 'Awaiting a selected star'}
-        </button>
-      </Html>
+
     </group>
   )
 }
 
-function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null }) {
-  const accent = memory?.visuals.accent ?? '#79dfff'
-  const light = memory?.visuals.light ?? '#e7fbff'
-  const memoryImageUrl = memory?.sourceMedia.find((media) => media.kind === 'image')?.url ?? (memory?.demo ? replayAssets.primary.src : null)
+function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame, readinessKey, onFirstFrame, onInputReadyChange, onMemoryState }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; readinessKey: string; onFirstFrame: () => void; onInputReadyChange: (ready: boolean) => void; onMemoryState: (state: StellarMemoryState) => void }) {
+  const { accent, light, imageUrl: memoryImageUrl } = focusMemoryAppearance(memory, replayAssets.primary.src)
   return <>
-    <FirstFrame profile={profile} />
+    <FirstFrame key={readinessKey} profile={profile} onReady={onFirstFrame} />
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
-    <color attach="background" args={[memory?.visuals.sky ?? '#020712']} />
-    <fog attach="fog" args={[memory?.visuals.sky ?? '#020712', 7.5, 31]} />
-    <ambientLight intensity={0.32} color="#d8efff" />
-    <hemisphereLight args={[light, '#02030a', 0.75]} />
-    <directionalLight position={[5, 8, 7]} intensity={1.35} color={light} castShadow={profile.shadows} />
-    <pointLight position={[0, 1, -1.5]} intensity={3.4} color={accent} distance={14} />
-    <Stars radius={65} depth={45} count={profile.reducedMotion ? 500 : profile.particleCount * 3} factor={2.5} saturation={0.25} fade speed={profile.reducedMotion ? 0 : 0.12} />
-    <StellarPhotosphere accent={accent} light={light} reducedMotion={profile.reducedMotion} />
-    {memoryImageUrl ? <MemoryImprint url={memoryImageUrl} /> : null}
-    <MemoryTraces memory={memory} accent={accent} reducedMotion={profile.reducedMotion} />
+    <FocusAtmosphere profile={profile} sky={memory?.visuals.sky ?? '#020712'} accent={accent} light={light} />
+    <StellarPhotosphere accent={accent} light={light} reducedMotion={profile.reducedMotion} memoryImageUrl={memoryImageUrl} quality={profile.tier} onMemoryState={onMemoryState} />
     <MemoryStarInteraction memory={memory} accent={accent} light={light} reducedMotion={profile.reducedMotion} onActivate={onActivate} />
     <OrbitControls ref={controls} makeDefault enableDamping={!profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={3.4} maxDistance={11.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
-    <FocusCameraRig controls={controls} recenterSignal={recenterSignal} shellRef={shellRef} entryFrame={entryFrame} reducedMotion={profile.reducedMotion} />
+    <FocusCameraRig controls={controls} recenterSignal={recenterSignal} shellRef={shellRef} entryFrame={entryFrame} reducedMotion={profile.reducedMotion} onInputReadyChange={onInputReadyChange} />
   </>
 }
 
 export default function FocusChamberClient() {
+  const locale = useUraiLocale()
   const result = useSelectedMemory()
   const memory = result.memory
-  const profile = useAdaptiveSpatialQuality()
+  const adaptiveProfile = useAdaptiveSpatialQuality()
+  const [softwareRenderer, setSoftwareRenderer] = useState(false)
+  const profile: SpatialQualityProfile = useMemo(() => softwareRenderer ? {
+    ...adaptiveProfile,
+    tier: 'low',
+    pixelRatioMax: 1,
+    particleCount: 120,
+    shadows: false,
+    antialias: false,
+    postprocessing: false,
+    preloadSecondaryWorlds: false,
+  } : adaptiveProfile, [adaptiveProfile, softwareRenderer])
   const webglAvailable = useWebGLAvailable()
   const controls = useRef<OrbitControlsImpl | null>(null)
   const shellRef = useRef<HTMLElement | null>(null)
@@ -516,6 +344,15 @@ export default function FocusChamberClient() {
   const [directEntry, setDirectEntry] = useState<boolean | null>(null)
   const [entryFrame, setEntryFrame] = useState<EntryCameraFrame | null>(null)
   const [webglState, setWebglState] = useState<WebGLState>('ready')
+  const [renderedSceneKey, setRenderedSceneKey] = useState<string | null>(null)
+  const [inputReady, setInputReady] = useState(false)
+  const [renderEpoch, setRenderEpoch] = useState(0)
+  const [memoryReveal, setMemoryReveal] = useState<{ key: string; state: StellarMemoryState } | null>(null)
+  const onWebGLState = useCallback((state: WebGLState) => {
+    setRenderedSceneKey(null)
+    setRenderEpoch(value => value + 1)
+    setWebglState(state)
+  }, [])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -549,30 +386,49 @@ export default function FocusChamberClient() {
   }, [unwind])
 
   const chamberState: ChamberState = memory ? 'ready' : result.status === 'loading' ? 'loading' : result.status
-  const heading = memory?.title ?? (directEntry ? 'Focus Memory Star' : 'Memory star resting')
-  const description = memory?.narrator.focus ?? (directEntry ? 'Choose a star in Life Map to enter the stellar memory field where that memory is held.' : result.message)
-  const style = { '--memory-accent': memory?.visuals.accent ?? '#79dfff', '--memory-light': memory?.visuals.light ?? '#e7fbff', '--memory-sky': memory?.visuals.sky ?? '#020712', '--memory-ground': memory?.visuals.ground ?? '#07121c', '--focus-asset': assetCssStack(focusAssets.primary) } as CSSProperties
+  const headingId = directEntry ? 'focus.heading' : 'focus.resting'
+  const heading = memory?.title ?? locale.text(headingId)
+  const description = memory?.narrator.focus ?? (directEntry ? locale.text('focus.chooseMemory') : result.message)
+  const appearance = focusMemoryAppearance(memory, replayAssets.primary.src)
+  const style = { '--memory-accent': appearance.accent, '--memory-light': appearance.light, '--memory-sky': memory?.visuals.sky ?? '#020712', '--memory-ground': memory?.visuals.ground ?? '#07121c', '--focus-asset': assetCssStack(focusAssets.primary) } as CSSProperties
   const webglUsable = webglAvailable === true && webglState !== 'failed'
+  const readinessKey = JSON.stringify([memory?.ownerId, memory?.id, memory?.replayManifest.id, appearance.imageUrl, webglState, renderEpoch])
+  const onFirstFrame = useCallback(() => setRenderedSceneKey(readinessKey), [readinessKey])
+  const onMemoryState = useCallback((state: StellarMemoryState) => setMemoryReveal({ key: readinessKey, state }), [readinessKey])
+  const memoryRevealState = appearance.imageUrl ? memoryReveal?.key === readinessKey ? memoryReveal.state : 'loading' : 'absent'
+  const fieldReady = webglUsable && webglState === 'ready' && inputReady && renderedSceneKey === readinessKey
+  const semanticFallback = webglAvailable === false || webglState === 'failed'
+  const preparingField = Boolean(memory) && !semanticFallback && (!fieldReady || memoryRevealState === 'loading')
+  const fieldStatusId = semanticFallback || memoryRevealState === 'unavailable' ? 'common.spatialAccessible' : webglState === 'lost' ? 'focus.paused' : webglState === 'restoring' ? 'focus.restoring' : fieldReady ? memoryRevealState === 'loading' ? 'focus.openingSelected' : 'focus.ready' : 'focus.opening'
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
-    <h1 className="srOnly">URAI Focus stellar memory field</h1>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-memory-reveal-state={semanticFallback ? 'absent' : memoryRevealState} data-focus-render-ready={fieldReady ? 'true' : 'false'} data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x={DEFAULT_CAMERA[0].toFixed(3)} data-focus-camera-y={DEFAULT_CAMERA[1].toFixed(3)} data-focus-camera-z={DEFAULT_CAMERA[2].toFixed(3)} data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-renderer-mode={softwareRenderer ? 'software' : 'hardware-or-unknown'} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+    <h1 className="srOnly" {...locale.props('focus.title')}>{locale.text('focus.title')}</h1>
     <div className="focusBackdrop" aria-hidden="true" />
-    <div className="focusFog" aria-hidden="true" />
-    <div className="focusCanvas" aria-label="Focus memory star. Drag to orbit, scroll or pinch to move through depth, and use W A S D or arrow keys to travel.">
-      {webglAvailable === null ? <div className="focusFallback" role="status">Preparing stellar memory field…</div> : webglUsable ? <Suspense fallback={<div className="focusFallback" role="status">Opening stellar memory field…</div>}><Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'always' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }}><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={setWebglState} shellRef={shellRef} entryFrame={entryFrame} /></Canvas></Suspense> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong>Spatial view unavailable</strong><span>The memory remains accessible through the controls and memory details.</span></div>}
+    {!webglUsable ? <div className="focusFog" aria-hidden="true" /> : null}
+    <div className="focusCanvas" aria-label={locale.text('focus.canvasLabel')} {...locale.props('focus.canvasLabel')}>
+      {webglAvailable === null ? <div className="focusFallback" role="status" {...locale.props('focus.preparing')}>{locale.text('focus.preparing')}</div> : webglUsable ? <Suspense fallback={<div className="focusFallback" role="status" {...locale.props('focus.opening')}>{locale.text('focus.opening')}</div>}><Canvas camera={{ position: DEFAULT_CAMERA, fov: INITIAL_FRAME.fov, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'always' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => setSoftwareRenderer(isSoftwareWebGLRenderer(gl))}><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={onWebGLState} shellRef={shellRef} entryFrame={entryFrame} readinessKey={readinessKey} onFirstFrame={onFirstFrame} onInputReadyChange={setInputReady} onMemoryState={onMemoryState} /></Canvas></Suspense> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong {...locale.props('common.spatialUnavailable')}>{locale.text('common.spatialUnavailable')}</strong><span {...locale.props('common.spatialAccessible')}>{locale.text('common.spatialAccessible')}</span></div>}
     </div>
-    <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS MEMORY STAR'}</p><h2>{heading}</h2>{memory ? <span>{dateLabel(memory.occurredAt)}</span> : null}<div className="focusNarration"><small>{memory ? 'Selected memory' : 'Memory star threshold'}</small><strong>{description}</strong></div></header>
+    <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS MEMORY STAR'}</p><h2 {...(!memory ? locale.props(headingId) : {dir:'auto' as const})} style={{overflowWrap:'anywhere'}}>{heading}</h2>{memory ? <span {...(Number.isFinite(new Date(memory.occurredAt).getTime()) ? locale.formatProps : {dir:'auto'})}>{dateLabel(memory.occurredAt, locale)}</span> : null}<details className="focusNarration"><summary {...locale.props(memory ? 'focus.selectedMemory' : 'focus.threshold')}>{locale.text(memory ? 'focus.selectedMemory' : 'focus.threshold')}</summary><strong {...(!memory && directEntry ? locale.props('focus.chooseMemory') : {dir:'auto' as const})} style={{overflowWrap:'anywhere'}}>{description}</strong></details></header>
     {!webglUsable && <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral stellar Focus field'} data-focus-visual-owner="stellar-photosphere-corona" aria-hidden="true">
       <div className="focusPhotosphereVisual" />
     </section>}
-    <aside className="memoryMeaning" aria-label="Selected memory context"><p>{memory ? 'Held in context. Nothing leaves this memory field.' : result.status === 'loading' ? 'Opening the selected memory safely.' : 'No personal memory is displayed in this neutral stellar field.'}</p>{memory ? <dl><div><dt>Emotion</dt><dd>{memory.emotionalState}</dd></div><div><dt>Place</dt><dd>{memory.place?.label ?? 'Not recorded'}</dd></div><div><dt>People</dt><dd>{memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || 'Not recorded'}</dd></div><div><dt>Privacy</dt><dd>{memory.privacy}</dd></div></dl> : <div className="neutralActions"><button type="button" onClick={unwind}>Open Life Map</button><span>{result.status === 'loading' ? 'Loading' : result.message}</span></div>}</aside>
-    <nav className="focusControls" aria-label="Focus memory controls"><button type="button" onClick={() => setRecenterSignal((value) => value + 1)}>Recenter</button>{memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} aria-label={`Open Replay for ${memory.title}`}>{committed ? 'Opening…' : 'Enter Replay'}</button> : null}<button className="unwind" type="button" onClick={unwind}>← Life Map</button></nav>
-    <details className="focusHelp"><summary>Explore</summary><p>Drag to orbit. Scroll or pinch to move through depth. Use W A S D or arrow keys to travel. Recenter restores the arrival view. Escape returns to Life Map.</p></details>
-    {webglState !== 'ready' && webglState !== 'failed' ? <section className="webglRecovery" role="status" aria-live="assertive"><strong>{webglState === 'lost' ? 'Visual field paused safely' : 'Restoring visual field'}</strong><span>Your selected memory and privacy state remain preserved.</span><button type="button" onClick={() => setRecenterSignal((value) => value + 1)}>Recenter when restored</button></section> : null}
-    <div className="focusStatus" role={result.status === 'loading' ? 'status' : 'note'} aria-live="polite">{memory ? 'Stellar memory field ready' : result.status === 'loading' ? 'Opening selected memory' : directEntry ? 'Neutral stellar field' : result.message}</div>
+    <aside className="memoryMeaning" aria-labelledby="focus-memory-context-label"><span id="focus-memory-context-label" className="sr-only" {...locale.props('focus.selectedContext')}>{locale.text('focus.selectedContext')}</span><p {...locale.props(memory ? 'focus.heldContext' : result.status === 'loading' ? 'focus.openingSafely' : 'focus.emptyContext')}>{memory ? locale.text('focus.heldContext') : result.status === 'loading' ? locale.text('focus.openingSafely') : locale.locale === 'en' ? 'No personal memory is displayed in this neutral stellar field.' : locale.text('focus.emptyContext')}</p>{memory ? <dl><div><dt {...locale.props('focus.emotion')}>{locale.text('focus.emotion')}</dt><dd dir="auto">{memory.emotionalState}</dd></div><div><dt {...locale.props('focus.place')}>{locale.text('focus.place')}</dt><dd {...(memory.place?.label ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.place?.label ?? locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.people')}>{locale.text('focus.people')}</dt><dd {...(memory.people.length ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.privacy')}>{locale.text('focus.privacy')}</dt><dd dir="auto">{memory.privacy}</dd></div></dl> : <div className="neutralActions"><button type="button" onClick={unwind} {...locale.props('focus.openLifeMap')}>{locale.text('focus.openLifeMap')}</button><span {...(result.status === 'loading' ? locale.props('focus.loading') : {})}>{result.status === 'loading' ? locale.text('focus.loading') : result.message}</span></div>}{memory && !memory.demo && memory.privacy === 'private' && memory.authorization === 'owner' ? <MemoryMediaAttachment key={`${memory.ownerId}:${memory.id}`} memory={memory} /> : null}{memory && !semanticFallback && memoryRevealState === 'unavailable' ? <p role="status" {...locale.props('common.spatialAccessible')}>{locale.text('common.spatialAccessible')}</p> : null}<JourneyOfflineNotice /></aside>
+    <div className="focusControlDock">
+    <nav className="focusControls" aria-label={locale.text('focus.controls')} {...locale.props('focus.controls')}>
+      {memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} {...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')} aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}><span {...locale.props(committed ? 'common.loading' : 'focus.enterReplay')}>{committed ? locale.text('common.loading') : locale.text('focus.enterReplay')}</span></button> : null}
+      <button type="button" onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenter')}>{locale.text('focus.recenter')}</button>
+      <button className="unwind" type="button" onClick={unwind} {...locale.props('nav.lifeMap')}>← {locale.text('nav.lifeMap')}</button>
+    </nav>
+    <div className="focusUtilities">
+      <AdamLauncherSlot name="focus-memory-controls" as="div" />
+      <details className="focusHelp"><summary {...locale.props('focus.explore')}>{locale.text('focus.explore')}</summary><p {...locale.props('focus.instructions')}>{locale.text('focus.instructions')}</p></details>
+    </div>
+    </div>
+    {webglState !== 'ready' && webglState !== 'failed' ? <section className="webglRecovery" role="status" aria-live="assertive"><strong {...locale.props(webglState === 'lost' ? 'focus.paused' : 'focus.restoring')}>{locale.text(webglState === 'lost' ? 'focus.paused' : 'focus.restoring')}</strong><span {...locale.props('focus.preserved')}>{locale.text('focus.preserved')}</span><button type="button" onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenterRestored')}>{locale.text('focus.recenterRestored')}</button></section> : null}
+    <div className="focusStatus" role={result.status === 'loading' || preparingField ? 'status' : 'note'} aria-live="polite">{memory ? <span {...locale.props(fieldStatusId)}>{locale.text(fieldStatusId)}</span> : result.status === 'loading' ? <span {...locale.props('focus.openingSelected')}>{locale.text('focus.openingSelected')}</span> : directEntry ? <span {...locale.props('focus.neutral')}>{locale.text('focus.neutral')}</span> : result.message}</div>
     <style>{focusCss + focusAccessibilityCss}</style>
   </main>
 }
 
 
-const focusCss = `.focusWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:var(--memory-ground);isolation:isolate;font-family:Inter,system-ui,sans-serif}.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.focusBackdrop{position:absolute;inset:0;z-index:-4;background:radial-gradient(circle at 50% 44%,color-mix(in srgb,var(--memory-accent) 9%,transparent) 0 7%,transparent 34%),radial-gradient(circle at 50% 50%,rgba(8,27,43,.34),rgba(1,4,10,.96) 72%);opacity:1}.focusFog{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--memory-accent) 10%,transparent),transparent 28%),linear-gradient(180deg,rgba(1,4,10,.04),rgba(1,4,10,.25) 72%);mix-blend-mode:screen}.focusCanvas{position:absolute;inset:0;z-index:1}.focusCanvas canvas{touch-action:none}.focusFallback{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:8px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 42%,rgba(76,202,255,.14),transparent 32%),linear-gradient(180deg,#020712,#06101d);color:#fff}.focusFallback span{max-width:520px;color:rgba(235,247,255,.72)}.focusHeading{position:absolute;z-index:6;left:max(22px,env(safe-area-inset-left));top:max(24px,env(safe-area-inset-top));width:min(470px,42vw);pointer-events:none;text-shadow:0 8px 34px #000}.focusHeading>p{margin:0;color:var(--memory-light);font-size:10px;font-weight:900;letter-spacing:.24em;text-transform:uppercase}.focusHeading h2{max-width:11ch;margin:12px 0 8px;font:500 clamp(2.8rem,5.8vw,6.8rem)/.88 Georgia,serif;letter-spacing:-.06em;text-wrap:balance}.focusHeading>span{font-size:11px;color:rgba(255,255,255,.7)}.focusNarration{max-width:430px;margin-top:22px;padding:14px 16px;border-left:1px solid color-mix(in srgb,var(--memory-light) 58%,transparent);background:linear-gradient(90deg,rgba(2,7,12,.72),rgba(2,7,12,.06));backdrop-filter:blur(14px)}.focusNarration small{display:block;margin-bottom:6px;color:var(--memory-light);font-size:9px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.focusNarration strong{display:block;font:500 clamp(1rem,1.8vw,1.45rem)/1.3 Georgia,serif}.artifactStage{position:absolute;z-index:0;left:50%;top:46%;width:min(43vw,560px);aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none}.focusPhotosphereVisual{position:absolute;left:50%;top:50%;width:56%;aspect-ratio:1;transform:translate(-50%,-50%) rotate(-7deg) scaleY(.94);border-radius:52% 48% 46% 54%/44% 55% 45% 56%;background:radial-gradient(ellipse at 30% 28%,rgba(255,255,224,.9) 0 3%,transparent 14%),radial-gradient(ellipse at 69% 61%,rgba(255,244,170,.74) 0 7%,transparent 20%),radial-gradient(ellipse at 46% 74%,rgba(143,37,7,.72) 0 6%,transparent 19%),radial-gradient(ellipse at 49% 47%,#fff6bf 0 12%,#ffd261 34%,#ed861f 61%,#802607 100%);box-shadow:0 0 12px rgba(255,238,158,.72),0 0 38px rgba(255,178,56,.52),0 0 96px rgba(255,128,28,.32),0 0 166px color-mix(in srgb,var(--memory-accent) 22%,transparent);filter:saturate(1.12) contrast(1.05);mix-blend-mode:screen;opacity:.58}.focusPhotosphereVisual::before,.focusPhotosphereVisual::after{content:"";position:absolute;inset:-31%;border-radius:48% 52% 57% 43%/55% 43% 57% 45%;background:radial-gradient(ellipse at 50% 4%,rgba(255,224,128,.6) 0 4%,transparent 22%),radial-gradient(ellipse at 88% 41%,rgba(255,173,52,.48) 0 3%,transparent 19%),radial-gradient(ellipse at 18% 72%,rgba(255,126,24,.4) 0 4%,transparent 21%),radial-gradient(ellipse at 58% 94%,rgba(255,222,132,.48) 0 3%,transparent 20%);filter:blur(7px);opacity:.72}.focusPhotosphereVisual::after{inset:-8%;border-radius:57% 43% 48% 52%/46% 57% 43% 54%;background:radial-gradient(ellipse at 26% 63%,rgba(94,20,4,.68) 0 7%,transparent 20%),radial-gradient(ellipse at 63% 29%,rgba(255,250,195,.5) 0 4%,transparent 15%),radial-gradient(ellipse at 72% 75%,rgba(168,49,7,.52) 0 5%,transparent 19%);filter:blur(1px);mix-blend-mode:multiply;opacity:.55}.apertureOrbit{position:absolute;inset:3%;border:1px solid color-mix(in srgb,var(--memory-light) 14%,transparent);border-radius:50%;opacity:.12}.apertureOrbitInner{inset:22%;transform:rotate(22deg) scaleY(.72);border-color:color-mix(in srgb,var(--memory-accent) 20%,transparent)}.memoryMeaning{position:absolute;z-index:7;left:max(22px,env(safe-area-inset-left));bottom:max(22px,calc(env(safe-area-inset-bottom) + 8px));width:min(500px,40vw);padding:13px 15px;border:1px solid color-mix(in srgb,var(--memory-light) 18%,transparent);border-radius:18px;background:linear-gradient(135deg,rgba(2,7,12,.82),rgba(2,7,12,.38));backdrop-filter:blur(18px)}.memoryMeaning p{margin:0 0 10px;font-size:11px;font-weight:800}.memoryMeaning dl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0}.memoryMeaning dt{font-size:8px;text-transform:uppercase;letter-spacing:.15em;color:var(--memory-light)}.memoryMeaning dd{margin:3px 0 0;font-size:10px;line-height:1.35;color:rgba(255,255,255,.72)}.neutralActions{display:flex;align-items:center;gap:10px}.neutralActions button,.focusControls button,.webglRecovery button{min-height:48px;padding:0 17px;border-radius:999px;border:1px solid rgba(220,248,255,.24);background:rgba(6,20,31,.84);color:#fff;font-weight:850}.neutralActions span{font-size:10px;color:rgba(235,247,255,.68)}.focusControls{position:absolute;z-index:9;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));display:flex;gap:8px;padding:7px;border:1px solid rgba(215,246,255,.17);border-radius:999px;background:rgba(2,7,12,.68);backdrop-filter:blur(16px)}.focusControls .primary{background:linear-gradient(135deg,var(--memory-light),var(--memory-accent));color:#031019}.focusControls button:focus-visible,.neutralActions button:focus-visible,.focusHelp summary:focus-visible,.focus-spatial-aperture-button:focus-visible,.webglRecovery button:focus-visible{outline:3px solid var(--memory-light);outline-offset:3px}.focusHelp{position:absolute;z-index:9;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));max-width:min(380px,calc(100vw - 40px));border:1px solid rgba(215,246,255,.17);border-radius:18px;background:rgba(2,7,12,.72);backdrop-filter:blur(16px)}.focusHelp summary{min-height:48px;display:flex;align-items:center;padding:0 17px;font-weight:850;cursor:pointer}.focusHelp p{margin:0;padding:0 17px 16px;color:rgba(235,247,255,.78);font-size:12px;line-height:1.55}.focusStatus{position:absolute;z-index:8;left:50%;top:max(18px,env(safe-area-inset-top));transform:translateX(-50%);padding:8px 12px;border-radius:999px;background:rgba(2,7,12,.62);font-size:10px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.webglRecovery{position:absolute;z-index:15;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;padding:24px;text-align:center;background:rgba(1,5,12,.88)}.focus-spatial-aperture-button{min-width:170px;min-height:48px;border:1px solid rgba(220,248,255,.3);border-radius:999px;background:rgba(4,15,24,.86);color:#fff;font-weight:900;cursor:pointer}.focus-spatial-aperture-button:disabled{opacity:.55;cursor:not-allowed}@media(max-width:760px){.focusHeading{left:16px;top:16px;width:calc(100vw - 32px)}.focusHeading h2{font-size:clamp(2.25rem,12vw,4rem);max-width:9ch}.focusNarration{margin-top:12px;max-width:min(82vw,380px)}.memoryMeaning{left:16px;bottom:max(142px,calc(env(safe-area-inset-bottom) + 130px));width:calc(100vw - 32px);max-height:26vh;overflow:auto}.memoryMeaning dl{grid-template-columns:repeat(2,minmax(0,1fr))}.focusControls{left:16px;right:16px;top:auto;bottom:max(16px,env(safe-area-inset-bottom));justify-content:center}.focusControls button{flex:1;padding:0 10px}.focusHelp{right:16px;bottom:max(76px,calc(env(safe-area-inset-bottom) + 64px))}.focusStatus{top:auto;bottom:max(132px,calc(env(safe-area-inset-bottom) + 120px));white-space:nowrap}.artifactStage{top:42%;width:min(82vw,460px)}}@media(prefers-reduced-motion:reduce){.focusWorld *{animation:none!important;transition:none!important;scroll-behavior:auto!important}.focusBackdrop{transform:none}.focusPhotosphereVisual{filter:saturate(1.05) contrast(1.03);transform:translate(-50%,-50%) rotate(-7deg) scaleY(.94)}.focusNarration,.memoryMeaning,.focusControls,.focusHelp{backdrop-filter:none}}`
+const focusCss = `.focusWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:var(--memory-ground);isolation:isolate;font-family:Inter,system-ui,sans-serif}.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.focusBackdrop{position:absolute;inset:0;z-index:-4;background:radial-gradient(circle at 50% 44%,color-mix(in srgb,var(--memory-accent) 9%,transparent) 0 7%,transparent 34%),radial-gradient(circle at 50% 50%,rgba(8,27,43,.34),rgba(1,4,10,.96) 72%);opacity:1}.focusFog{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--memory-accent) 10%,transparent),transparent 28%),linear-gradient(180deg,rgba(1,4,10,.04),rgba(1,4,10,.25) 72%);mix-blend-mode:screen}.focusCanvas{position:absolute;inset:0;z-index:1}.focusCanvas canvas{touch-action:none}.focusFallback{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:8px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 42%,rgba(76,202,255,.14),transparent 32%),linear-gradient(180deg,#020712,#06101d);color:#fff}.focusFallback span{max-width:520px;color:rgba(235,247,255,.72)}.focusHeading{position:absolute;z-index:6;left:max(22px,env(safe-area-inset-left));top:max(24px,env(safe-area-inset-top));width:min(470px,42vw);pointer-events:none;text-shadow:0 8px 34px #000}.focusHeading>p{margin:0;color:var(--memory-light);font-size:10px;font-weight:900;letter-spacing:.24em;text-transform:uppercase}.focusHeading h2{max-width:11ch;margin:12px 0 8px;font:500 clamp(2.8rem,5.8vw,6.8rem)/.88 Georgia,serif;letter-spacing:-.06em;text-wrap:balance}.focusHeading>span{font-size:11px;color:rgba(255,255,255,.7)}.focusNarration{max-width:430px;margin-top:22px;padding:14px 16px;border-left:1px solid color-mix(in srgb,var(--memory-light) 58%,transparent);background:linear-gradient(90deg,rgba(2,7,12,.72),rgba(2,7,12,.06));backdrop-filter:blur(14px)}.focusNarration small{display:block;margin-bottom:6px;color:var(--memory-light);font-size:9px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.focusNarration strong{display:block;font:500 clamp(1rem,1.8vw,1.45rem)/1.3 Georgia,serif}.artifactStage{position:absolute;z-index:0;left:50%;top:46%;width:min(43vw,560px);aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none}.focusPhotosphereVisual{position:absolute;left:50%;top:50%;width:56%;aspect-ratio:1;transform:translate(-50%,-50%) rotate(-7deg) scaleY(.94);border-radius:52% 48% 46% 54%/44% 55% 45% 56%;background:radial-gradient(ellipse at 30% 28%,rgba(255,255,224,.9) 0 3%,transparent 14%),radial-gradient(ellipse at 69% 61%,rgba(255,244,170,.74) 0 7%,transparent 20%),radial-gradient(ellipse at 46% 74%,rgba(143,37,7,.72) 0 6%,transparent 19%),radial-gradient(ellipse at 49% 47%,#fff6bf 0 12%,#ffd261 34%,#ed861f 61%,#802607 100%);box-shadow:0 0 12px rgba(255,238,158,.72),0 0 38px rgba(255,178,56,.52),0 0 96px rgba(255,128,28,.32),0 0 166px color-mix(in srgb,var(--memory-accent) 22%,transparent);filter:saturate(1.12) contrast(1.05);mix-blend-mode:screen;opacity:.58}.focusPhotosphereVisual::before,.focusPhotosphereVisual::after{content:"";position:absolute;inset:-31%;border-radius:48% 52% 57% 43%/55% 43% 57% 45%;background:radial-gradient(ellipse at 50% 4%,rgba(255,224,128,.6) 0 4%,transparent 22%),radial-gradient(ellipse at 88% 41%,rgba(255,173,52,.48) 0 3%,transparent 19%),radial-gradient(ellipse at 18% 72%,rgba(255,126,24,.4) 0 4%,transparent 21%),radial-gradient(ellipse at 58% 94%,rgba(255,222,132,.48) 0 3%,transparent 20%);filter:blur(7px);opacity:.72}.focusPhotosphereVisual::after{inset:-8%;border-radius:57% 43% 48% 52%/46% 57% 43% 54%;background:radial-gradient(ellipse at 26% 63%,rgba(94,20,4,.68) 0 7%,transparent 20%),radial-gradient(ellipse at 63% 29%,rgba(255,250,195,.5) 0 4%,transparent 15%),radial-gradient(ellipse at 72% 75%,rgba(168,49,7,.52) 0 5%,transparent 19%);filter:blur(1px);mix-blend-mode:multiply;opacity:.55}.apertureOrbit{position:absolute;inset:3%;border:1px solid color-mix(in srgb,var(--memory-light) 14%,transparent);border-radius:50%;opacity:.12}.apertureOrbitInner{inset:22%;transform:rotate(22deg) scaleY(.72);border-color:color-mix(in srgb,var(--memory-accent) 20%,transparent)}.memoryMeaning{position:absolute;z-index:7;left:max(22px,env(safe-area-inset-left));bottom:max(22px,calc(env(safe-area-inset-bottom) + 8px));width:min(500px,40vw);padding:13px 15px;border:1px solid color-mix(in srgb,var(--memory-light) 18%,transparent);border-radius:18px;background:linear-gradient(135deg,rgba(2,7,12,.82),rgba(2,7,12,.38));backdrop-filter:blur(18px)}.memoryMeaning p{margin:0 0 10px;font-size:11px;font-weight:800}.memoryMeaning dl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0}.memoryMeaning dt{font-size:8px;text-transform:uppercase;letter-spacing:.15em;color:var(--memory-light)}.memoryMeaning dd{margin:3px 0 0;font-size:10px;line-height:1.35;color:rgba(255,255,255,.72)}.neutralActions{display:flex;align-items:center;gap:10px}.neutralActions button,.focusControls button,.webglRecovery button{min-height:48px;padding:0 17px;border-radius:999px;border:1px solid rgba(220,248,255,.24);background:rgba(6,20,31,.84);color:#fff;font-weight:850}.neutralActions span{font-size:10px;color:rgba(235,247,255,.68)}.focusControls{position:absolute;z-index:9;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));display:flex;gap:8px;padding:7px;border:1px solid rgba(215,246,255,.17);border-radius:999px;background:rgba(2,7,12,.68);backdrop-filter:blur(16px)}.focusControls .primary{background:linear-gradient(135deg,var(--memory-light),var(--memory-accent));color:#031019}.focusControls button:focus-visible,.neutralActions button:focus-visible,.focusHelp summary:focus-visible,.focus-spatial-aperture-button:focus-visible,.webglRecovery button:focus-visible{outline:3px solid var(--memory-light);outline-offset:3px}.focusHelp{position:absolute;z-index:9;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));max-width:min(380px,calc(100vw - 40px));border:1px solid rgba(215,246,255,.17);border-radius:18px;background:rgba(2,7,12,.72);backdrop-filter:blur(16px)}.focusHelp summary{min-height:48px;display:flex;align-items:center;padding:0 17px;font-weight:850;cursor:pointer}.focusHelp p{margin:0;padding:0 17px 16px;color:rgba(235,247,255,.78);font-size:12px;line-height:1.55}.focusStatus{position:absolute;z-index:8;left:50%;top:max(18px,env(safe-area-inset-top));transform:translateX(-50%);padding:8px 12px;border-radius:999px;background:rgba(2,7,12,.62);font-size:10px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.webglRecovery{position:absolute;z-index:15;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;padding:24px;text-align:center;background:rgba(1,5,12,.88)}.focus-spatial-aperture-button{min-width:170px;min-height:48px;border:1px solid rgba(220,248,255,.3);border-radius:999px;background:rgba(4,15,24,.86);color:#fff;font-weight:900;cursor:pointer}.focus-spatial-aperture-button:disabled{opacity:.55;cursor:not-allowed}@media(max-width:760px){.focusHeading{left:16px;top:16px;width:calc(100vw - 32px)}.focusHeading h2{font-size:clamp(2.25rem,12vw,4rem);max-width:9ch}.focusNarration{margin-top:12px;max-width:min(82vw,380px)}.memoryMeaning{left:16px;bottom:max(142px,calc(env(safe-area-inset-bottom) + 130px));width:calc(100vw - 32px);max-height:26vh;overflow:auto}.memoryMeaning dl{grid-template-columns:repeat(2,minmax(0,1fr))}.focusControls{left:16px;right:16px;top:auto;bottom:max(16px,env(safe-area-inset-bottom));justify-content:center}.focusControls button{flex:1;padding:0 10px}.focusHelp{right:16px;bottom:max(76px,calc(env(safe-area-inset-bottom) + 64px))}.focusStatus{width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}.artifactStage{top:42%;width:min(82vw,460px)}}@media(prefers-reduced-motion:reduce){.focusWorld *{animation:none!important;transition:none!important;scroll-behavior:auto!important}.focusBackdrop{transform:none}.focusPhotosphereVisual{filter:saturate(1.05) contrast(1.03);transform:translate(-50%,-50%) rotate(-7deg) scaleY(.94)}.focusNarration,.memoryMeaning,.focusControls,.focusHelp{backdrop-filter:none}}`

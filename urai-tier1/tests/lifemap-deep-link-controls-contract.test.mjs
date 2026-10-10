@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
 const root = process.cwd()
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
@@ -22,8 +23,10 @@ test('canonical Life Map has one spatial selected-memory action owner plus seman
   assert.match(scene, /router\.push\(destinationHref\("focus"\)\)/)
   assert.match(scene, /router\.push\(destinationHref\("replay"\)\)/)
   assert.match(navigator, /className="life-map-search-trigger"/)
-  assert.match(navigator, /aria-label="Search and navigate Life Map"/)
-  assert.match(navigator, /className="life-map-navigator" aria-label="Search and filter Life Map"/)
+  assert.match(navigator, /aria-label=\{locale.locale === 'en' \? 'Search and navigate Life Map'/)
+  assert.match(navigator, /className="life-map-navigator" aria-labelledby="life-map-navigator-label"/)
+  assert.match(navigator, /id="life-map-navigator-label"[^>]*locale.props\('lifeMap.searchRegion'\)[^>]*>\{locale.text\('lifeMap.searchRegion'\)\}/)
+  assert.equal(URAI_SOURCE_MESSAGES['lifeMap.searchRegion'].source, 'Search and filter Life Map')
   assert.doesNotMatch(navigator, /aria-label="Selected memory actions"/)
 })
 
@@ -31,9 +34,10 @@ test('selected-memory identity and Focus Replay destinations remain owned by the
   assert.match(scene, /function safeToken/)
   assert.match(scene, /slice\(0, 120\)/)
   assert.match(scene, /const queryNode = safeToken\(params\.get\("node"\) \|\| params\.get\("memoryId"\)\)/)
-  assert.match(scene, /const manifestId = safeToken\(params\.get\("manifestId"\), DEFAULT_MANIFEST_ID\)/)
+  assert.match(scene, /withLifeMapSelectionIdentity\(params, next, memoryId\)/)
+  assert.match(scene, /withIdentity\(new URLSearchParams\(\), selected\.id\)/)
+  assert.doesNotMatch(scene, /DEFAULT_MANIFEST_ID/)
   assert.match(scene, /next\.set\("memoryId", selected\.id\)/)
-  assert.match(scene, /next\.set\("manifestId", manifestId\)/)
   assert.match(scene, /next\.set\("node", selected\.id\)/)
   assert.match(scene, /next\.set\("returnNode", selected\.id\)/)
   assert.match(scene, /next\.set\("from", "life-map"\)/)
@@ -79,7 +83,9 @@ test('founder proof requires Focus Replay overview privacy fallback and recovery
 
 
 test('semantic fallback may continue to Focus and Replay without becoming a second spatial action owner', () => {
-  assert.match(navigator, /aria-label="Selected memory destinations"/)
+  assert.match(navigator, /aria-labelledby="semantic-thresholds-label"/)
+  assert.match(navigator, /id="semantic-thresholds-label"[^>]*locale.props\('lifeMap.destinations'\)[^>]*>\{locale.text\('lifeMap.destinations'\)\}/)
+  assert.equal(URAI_SOURCE_MESSAGES['lifeMap.destinations'].source, 'Selected memory destinations')
   assert.match(navigator, /destinationHref\('focus', selected\)/)
   assert.match(navigator, /destinationHref\('replay', selected\)/)
   assert.doesNotMatch(navigator, /aria-label="Selected memory actions"/)

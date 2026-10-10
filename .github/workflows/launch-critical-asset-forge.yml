@@ -10,6 +10,11 @@ on:
       - 'scripts/forge-launch-critical-assets.mjs'
       - 'scripts/normalize-launch-critical-assets.mjs'
       - 'scripts/repair-home-glb-pole-normals.mjs'
+      - 'scripts/lib/glb-normal-integrity.mjs'
+      - 'scripts/lib/home-normal-repair.mjs'
+      - 'scripts/vendor/meshopt_decoder.*'
+      - 'scripts/vendor/meshopt_encoder.*'
+      - 'urai-tier1/tests/glb-normal-repair-source-immutability.test.mjs'
       - 'scripts/repair-focus-glb-accessor-bounds.mjs'
       - 'scripts/verify-launch-critical-assets.mjs'
       - 'scripts/verify-governed-asset-promotion.mjs'
@@ -72,6 +77,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Verify bounded GLB repair and exact successor immutability
+        run: node --test --test-concurrency=1 urai-tier1/tests/glb-normal-repair-source-immutability.test.mjs
 
       - name: Repair exact Home GLB pole normals and emit successor when required
         id: home_repair
@@ -209,21 +217,22 @@ jobs:
         env:
           URAI_ASSET_PROMOTION_DECISION: operations/assets/promotion-rehearsal/spatial-particle-atlas-v1.json
         run: node scripts/verify-governed-asset-promotion.mjs
-      - name: Run governed Home production contract before candidate generation
+      - name: Verify exact governed Home source before candidate generation
         if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         working-directory: urai-tier1
         shell: bash
         run: |
           set -euo pipefail
           release_state="$(node -e "const fs=require('node:fs');const v=JSON.parse(fs.readFileSync('../operations/assets/launch-critical-assets.json','utf8'));const a=v.assets.find((entry)=>entry.id==='home-entry-chamber-v1');if(!a)process.exit(2);process.stdout.write(String(a.releaseState||''))")"
-          if [[ "$release_state" == "production-ready" ]]; then
-            node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs
-          elif [[ "$release_state" == "pending-final-review" ]]; then
-            echo 'Home is pending final review; production-only Home promotion contract remains deferred.'
-          else
-            echo "Unsupported Home releaseState: $release_state" >&2
-            exit 1
-          fi
+          case "$release_state" in
+            production-ready|pending-final-review)
+              node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs
+              ;;
+            *)
+              echo "Unsupported Home releaseState: $release_state" >&2
+              exit 1
+              ;;
+          esac
       - name: Forge deterministic launch candidates while retaining governed Passport candidate
         if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         shell: bash

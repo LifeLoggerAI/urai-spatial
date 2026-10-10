@@ -80,6 +80,17 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
 
+    // Owners receive immediate C1 withdrawal signals; clients never write consent authority.
+    match /consentRecords/{consentId} {
+      allow get: if isSignedIn()
+        && consentId == request.auth.uid + '_memory_storage'
+        && resource.data.uid == request.auth.uid
+        && resource.data.purpose == 'memory.storage'
+        && resource.data.consentTier == 'C1'
+        && resource.data.policyVersion == '1.0.0';
+      allow list, write: if false;
+    }
+
     match /features/{flagId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -170,6 +181,11 @@ service cloud.firestore {
         allow read: if isSelf(uid);
         allow write: if false;
       }
+      match /memoryMediaReceipts/{receiptId} {
+        // The producer is the only writer. Object locators never grant delivery.
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
 
       match /scenarios/{scenarioId} {
         allow read: if isSelf(uid) || isAdmin();
@@ -225,6 +241,10 @@ service cloud.firestore {
       match /knowledgeGaps/{docId} {
         allow read: if isSelf(uid);
         allow write: if false;
+      }
+      // Provider voice identifiers are server-owned, including for the subject.
+      match /personRenderBindings/{docId} {
+        allow read, write: if false;
       }
       match /personModelBundles/{docId} {
         allow read: if isSelf(uid);

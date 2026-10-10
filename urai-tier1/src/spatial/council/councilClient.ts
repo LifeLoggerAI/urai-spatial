@@ -1,5 +1,5 @@
-import { getAuth } from 'firebase/auth'
-import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { beginAIActorRequest, cancelAIResponse } from '@/lib/privacy/aiActorBoundary'
+import { firebasePublicEnvReady } from '@/lib/firebase/client'
 import { clientApiUrl } from '@/lib/clientApiUrl'
 import { buildOrbCompanionResponse } from '@/lib/orb-companion-contract'
 import type { OrbConversationMessage, OrbProviderResult } from '@/spatial/orb/openaiClient'
@@ -69,6 +69,7 @@ function councilFallback(message: string, disclosure: string): OrbProviderResult
     disclosure,
     suggestedActions: fallback.routeHint ? [`Open ${fallback.routeHint}`, 'Review privacy controls'] : ['Pause here', 'Review privacy controls'],
     provider: 'fallback',
+    locale: 'en-US',
   }
 }
 
@@ -108,40 +109,40 @@ export async function requestExternalCouncilProvider(input: {
   signal: AbortSignal
 }): Promise<ExternalCouncilProviderResult | null> {
   if (!input.aiProcessingConsent || !firebasePublicEnvReady || input.signal.aborted) return null
-  const user = getAuth(app).currentUser
-  if (!user) return null
-  const token = await user.getIdToken()
-  const requestId = await stableCouncilRequestId(input.provider, input.message, input.context)
-  if (!token || !requestId || input.signal.aborted) return null
+  const actor = beginAIActorRequest(input.signal)
+  if (!actor) return null
+  try {
+  const token = await actor.wait(actor.actor.getIdToken())
+  const requestId = await actor.wait(stableCouncilRequestId(input.provider, input.message, input.context))
+  if (!token || !requestId) return null
+  actor.check()
+  const body = JSON.stringify({ message: input.message, context: input.context.slice(-8), aiProcessingConsent: true, requestId })
+  actor.check()
 
   let response: Response
   try {
-    response = await fetch(clientApiUrl(ENDPOINTS[input.provider]), {
+    response = await actor.wait(fetch(clientApiUrl(ENDPOINTS[input.provider]), {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       cache: 'no-store',
-      signal: input.signal,
-      body: JSON.stringify({
-        message: input.message,
-        context: input.context.slice(-8),
-        aiProcessingConsent: true,
-        requestId,
-      }),
-    })
+      signal: actor.signal,
+      body,
+    }), cancelAIResponse)
   } catch (error) {
-    if (input.signal.aborted) throw error
+    if (!actor.isCurrent()) throw error
     throw new CouncilExternalProviderAttemptUncertainError(input.provider)
   }
 
   if (!response.ok) {
     let code = 'COUNCIL_PROVIDER_BOUNDARY_FAILURE'
     try {
-      const body = await response.json() as { error?: unknown }
+      const body = await actor.wait(response.json()) as { error?: unknown }
       if (body.error) code = String(body.error)
-    } catch {
+    } catch (error) {
+      if (!actor.isCurrent()) throw error
       // Preserve generic provider boundary.
     }
     if (PRE_EXTERNAL_FAILURE_CODES.has(code)) return null
@@ -151,7 +152,8 @@ export async function requestExternalCouncilProvider(input: {
     throw new CouncilExternalProviderAttemptUncertainError(input.provider)
   }
 
-  const result = await response.json() as Partial<ExternalCouncilProviderResult>
+  const result = await actor.wait(response.json()) as Partial<ExternalCouncilProviderResult>
+  actor.check()
   if (result.provider !== input.provider || !result.message || !result.caption || !result.disclosure || !result.model) {
     throw new Error('INVALID_COUNCIL_PROVIDER_RESPONSE')
   }
@@ -163,4 +165,5 @@ export async function requestExternalCouncilProvider(input: {
     provider: input.provider,
     model: String(result.model),
   }
+  } finally { actor.dispose() }
 }

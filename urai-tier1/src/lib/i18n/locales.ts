@@ -1,3 +1,10 @@
+import { URAI_CORE_CATALOGS, URAI_CORE_MESSAGES } from './coreMessages'
+import { URAI_JOURNEY_CATALOGS, URAI_JOURNEY_MESSAGES } from './journeyMessages'
+import { URAI_JOURNEY_CONTROL_CATALOGS, URAI_JOURNEY_CONTROL_MESSAGES } from './journeyControlMessages'
+import { URAI_GEOGRAPHIC_CATALOGS, URAI_GEOGRAPHIC_MESSAGES } from './geographicMessages'
+import { URAI_FOUNDER_CATALOGS, URAI_FOUNDER_MESSAGES } from './founderMessages'
+import { URAI_FOCUS_COMPATIBILITY_CATALOGS, URAI_FOCUS_COMPATIBILITY_MESSAGES } from './focusCompatibilityMessages'
+
 export const URAI_LAUNCH_LOCALES = [
   'en','zh-Hans','hi','es','fr','ar','bn','pt-BR','ru','ur',
   'id','de','ja','sw','tr','vi','fil','ko','it','fa',
@@ -61,6 +68,12 @@ export type UraiMessageDefinition = {
 }
 
 export const URAI_SOURCE_MESSAGES = {
+  ...URAI_CORE_MESSAGES,
+  ...URAI_JOURNEY_MESSAGES,
+  ...URAI_JOURNEY_CONTROL_MESSAGES,
+  ...URAI_GEOGRAPHIC_MESSAGES,
+  ...URAI_FOUNDER_MESSAGES,
+  ...URAI_FOCUS_COMPATIBILITY_MESSAGES,
   'nav.home': { id:'nav.home', source:'Home', sensitivity:'general', description:'Canonical Home navigation label' },
   'nav.lifeMap': { id:'nav.lifeMap', source:'Life Map', sensitivity:'general', description:'Canonical Life Map navigation label' },
   'nav.focus': { id:'nav.focus', source:'Focus', sensitivity:'general', description:'Canonical Focus navigation label' },
@@ -260,6 +273,8 @@ export const URAI_CATALOGS: Record<UraiLaunchLocale,UraiCatalog> = {
   },
 }
 
+for (const locale of URAI_LAUNCH_LOCALES) Object.assign(URAI_CATALOGS[locale], URAI_CORE_CATALOGS[locale], URAI_JOURNEY_CATALOGS[locale], URAI_JOURNEY_CONTROL_CATALOGS[locale], URAI_GEOGRAPHIC_CATALOGS[locale], URAI_FOUNDER_CATALOGS[locale], URAI_FOCUS_COMPATIBILITY_CATALOGS[locale])
+
 export function messageFor(locale: UraiLaunchLocale, id: UraiMessageId) {
   const admittedLocale = runtimeUraiLocale(locale)
   return URAI_CATALOGS[admittedLocale][id] ?? URAI_CATALOGS.en[id] ?? URAI_SOURCE_MESSAGES[id].source
@@ -267,11 +282,13 @@ export function messageFor(locale: UraiLaunchLocale, id: UraiMessageId) {
 
 export function localizationCompleteness(locale: UraiLaunchLocale) {
   const total = Object.keys(URAI_SOURCE_MESSAGES).length
-  const translated = Object.keys(URAI_CATALOGS[locale]).length
+  const missingMessageIds = (Object.keys(URAI_SOURCE_MESSAGES) as UraiMessageId[]).filter(id => !URAI_CATALOGS[locale][id]?.trim())
+  const translated = total - missingMessageIds.length
   return {
     locale,
     translated,
     total,
+    missingMessageIds,
     complete: translated === total,
     nativeReviewRequired: !URAI_NATIVE_REVIEWED_LOCALES.has(locale),
   }

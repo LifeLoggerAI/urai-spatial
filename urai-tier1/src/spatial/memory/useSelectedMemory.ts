@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
+import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import { buildNamedExplicitDemoMemory } from './explicitDemoMemory'
 import {
   isExplicitDemoRequest,
@@ -28,16 +29,13 @@ function asDemoMemoryId(memoryId: string | null) {
 }
 
 export function useSelectedMemory(): SelectedMemoryResult {
-  const [search, setSearch] = useState('')
-  useEffect(() => {
-    const hydrateSelection = () => setSearch(window.location.search)
-    hydrateSelection()
-    window.addEventListener('popstate', hydrateSelection)
-    return () => window.removeEventListener('popstate', hydrateSelection)
-  }, [])
+  const location = useBrowserLocation()
   const params = useMemo(
-    () => new URLSearchParams(search),
-    [search],
+    () => {
+      const address = location.split('#')[0]
+      return new URLSearchParams(address.includes('?') ? address.slice(address.indexOf('?') + 1) : '')
+    },
+    [location],
   )
   const memoryId = sanitizeMemoryId(params.get('memoryId') ?? params.get('node'))
   const manifestId = sanitizeMemoryId(params.get('manifestId'))

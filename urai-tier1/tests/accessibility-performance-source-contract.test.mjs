@@ -3,12 +3,35 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
+import { URAI_LAUNCH_LOCALES, URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
+import { localizedMessage } from '../src/lib/i18n/localePreference.ts'
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url))
 const read = (relativePath) => fs.readFileSync(path.resolve(testDirectory, '..', relativePath), 'utf8')
 const requireText = (source, marker, message = marker) => assert.equal(source.includes(marker), true, message)
 const normalizeSource = (source) => source.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ')
 const requireNormalizedPattern = (source, pattern, message) => assert.match(normalizeSource(source), pattern, message)
+
+function requireSinglePrimaryReplayAction(source) {
+  const parsed = ts.createSourceFile('FocusChamberClient.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  assert.equal(parsed.parseDiagnostics.length, 0, 'Focus must remain valid TSX')
+  const actions = []
+  const visit = node => {
+    if (ts.isJsxOpeningElement(node) && node.tagName.getText(parsed) === 'button'
+      && node.attributes.properties.some(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(parsed) === 'onClick'
+        && attribute.initializer && ts.isJsxExpression(attribute.initializer) && attribute.initializer.expression?.getText(parsed) === 'enterReplay')) actions.push(node)
+    ts.forEachChild(node, visit)
+  }
+  visit(parsed)
+  assert.equal(actions.length, 1, 'Focus must expose exactly one primary Replay action, without restoring the duplicate CTA')
+  const action = actions[0].getText(parsed)
+  requireText(action, 'className="primary"')
+  requireText(action, 'disabled={committed}')
+  requireNormalizedPattern(action, /\{\.\.\.locale\.props\(memory\s*\?\s*'focus\.openReplayFor'\s*:\s*'focus\.chooseReplay'\)\}/, 'Primary Replay action must carry memory-specific locale metadata')
+  requireNormalizedPattern(action, /aria-label=\{memory\s*\?\s*locale\.text\('focus\.openReplayFor',\s*\{\s*title:\s*memory\.title\s*\}\)\s*:\s*locale\.text\('focus\.chooseReplay'\)\}/, 'Primary Replay aria-label must interpolate the selected memory through the locale owner')
+  return actions[0].parent.getText(parsed)
+}
 
 test('accessibility and performance implementation contracts are present', () => {
   const reducedMotion = read('src/spatial/hooks/useReducedMotion.ts')
@@ -29,9 +52,24 @@ test('accessibility and performance implementation contracts are present', () =>
   const accessibilityEvidence = read('tests/accessibility-performance-evidence.spec.ts')
   const embodiedEvidence = read('tests/accessibility-performance-embodied-exploration.spec.ts')
   requireText(reducedMotion, 'prefers-reduced-motion: reduce')
-  requireText(reducedMotion, "addEventListener?.('change', update)")
-  requireText(reducedMotion, "removeEventListener?.('change', update)")
+  requireText(reducedMotion, "if (query?.addEventListener) query.addEventListener('change', update)")
+  requireText(reducedMotion, "else query?.addListener(update)")
+  requireText(reducedMotion, "if (query?.removeEventListener) query.removeEventListener('change', update)")
+  requireText(reducedMotion, "else query?.removeListener(update)")
+  requireText(reducedMotion, "if (!disposed) setReducedMotion(Boolean(query?.matches || sensorySafe))")
+  requireText(reducedMotion, "disposed = true")
+  requireText(reducedMotion, "window.addEventListener(URAI_SENSORY_SAFE_EVENT, sensoryChange)")
+  requireText(reducedMotion, "window.removeEventListener(URAI_SENSORY_SAFE_EVENT, sensoryChange)")
+  requireText(reducedMotion, "window.addEventListener('storage', storageChange)")
+  requireText(reducedMotion, "window.removeEventListener('storage', storageChange)")
   for (const marker of ['saveData', 'deviceMemory', 'effectiveType', 'visibilitychange', 'markFirstSpatialFrame']) requireText(adaptiveQuality, marker)
+  requireText(adaptiveQuality, "const [reducedMotion, setReducedMotion] = useState(false)")
+  requireText(adaptiveQuality, "const [documentVisible, setDocumentVisible] = useState(true)")
+  requireText(adaptiveQuality, "const [tier, setTier] = useState<SpatialQualityTier>('medium')")
+  requireText(adaptiveQuality, 'updateMotion()')
+  requireText(adaptiveQuality, 'updateVisibility()')
+  requireText(adaptiveQuality, 'updateTier()')
+  assert.doesNotMatch(adaptiveQuality, /useState<SpatialQualityTier>\(\(\) => deriveTier/, 'Adaptive quality must not derive browser-only hints during hydration')
   requireText(companion, "open ? 'Close Orb travel controls' : 'Open Orb travel controls'")
   requireText(companion, 'aria-expanded={open}')
   requireText(companion, 'aria-controls="urai-world-companion-menu"')
@@ -41,9 +79,9 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companion, 'const focusTarget = externalTrigger?.isConnected ? externalTrigger : homeSemanticOrb ?? orbRef.current')
   requireText(companion, 'focusTarget?.focus()')
   requireText(companion, "event.key !== 'Escape'")
-  requireText(companion, "event.key !== 'Enter' && event.key !== ' '")
-  requireText(companion, 'event.stopPropagation()')
   requireText(companion, 'onClick={toggleCompanion}')
+  assert.doesNotMatch(companion, /event\.key !== 'Enter' && event\.key !== ' '/, 'Orb button must rely on native button keyboard activation instead of double-toggling on keydown')
+  assert.doesNotMatch(companion, /event\.stopPropagation\(\)\s*\n\s*toggleCompanion\(\)/, 'Orb button must not run a second keyboard toggle alongside native click activation')
   requireText(companion, 'const [hydrated, setHydrated] = useState(false)')
   requireText(companion, 'setHydrated(true)')
   requireText(companion, "disabled={!hydrated || phase !== 'idle'}")
@@ -97,10 +135,12 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(homeRuntime, '.urai-asset-home-world[data-home-primary-owner="asset-driven"], .urai-final-home-world')
   requireText(homeRuntime, 'querySelectorAll<HTMLElement>(HOME_TELEMETRY_SELECTOR)')
   requireText(homeRuntime, 'record.target.matches(HOME_TELEMETRY_SELECTOR)')
-  requireText(embodiedEvidence, "element.style.getPropertyValue('--home-parallax-y')")
-  requireText(embodiedEvidence, 'Math.abs(Number.parseFloat(value))')
-  requireText(embodiedEvidence, 'toBeGreaterThan(0.1)')
-  assert.doesNotMatch(embodiedEvidence, /\.not\.toBe\('0\.0px'\)/, 'Parallax evidence must use numeric magnitude rather than a transient string-negation poll')
+  requireText(embodiedEvidence, "data-home-telemetry-owner', 'embodied-motion-kernel'")
+  requireText(embodiedEvidence, "data-home-distance")
+  requireText(embodiedEvidence, "data-home-player-z")
+  requireText(embodiedEvidence, 'Math.abs(afterZ - beforeZ)')
+  requireText(embodiedEvidence, 'toBeGreaterThan(1.2)')
+  assert.doesNotMatch(embodiedEvidence, /getPropertyValue\('--home-parallax-y'\)/, 'Accessibility movement evidence must use canonical displacement telemetry rather than non-authoritative style telemetry')
   requireText(ground, 'event.currentTarget.scrollIntoView')
   requireNormalizedPattern(ground, /block:\s*'nearest'/, 'Ground focus reveal must use the nearest block boundary')
   requireNormalizedPattern(ground, /inline:\s*'nearest'/, 'Ground focus reveal must use the nearest inline boundary')
@@ -115,7 +155,16 @@ test('accessibility and performance implementation contracts are present', () =>
   assert.doesNotMatch(routeOwnerCss, /ground-spatial-root canvas[\s\S]{0,220}transform:\s*scale\(/, 'Ground canvas must not exceed the mobile viewport through CSS scaling')
   requireText(routeOwnerCss, 'max-width: 100vw !important;')
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
-  requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
+  requireSinglePrimaryReplayAction(focus)
+  requireText(read('src/lib/i18n/journeyControlMessages.ts'), '"focus.openReplayFor": {id:"focus.openReplayFor",source:"Open Replay for {title}"')
+  assert.equal(URAI_SOURCE_MESSAGES['focus.openReplayFor'].source, 'Open Replay for {title}')
+  for (const requested of URAI_LAUNCH_LOCALES) {
+    const label = localizedMessage({ requested, preview: false }, 'focus.openReplayFor', { title: 'Synthetic owned memory' })
+    assert.equal(label.text, 'Open Replay for Synthetic owned memory')
+    assert.equal(label.locale, 'en')
+    assert.equal(label.direction, 'ltr')
+    assert.equal(label.preview, false)
+  }
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
   requireText(focus, 'min-height:48px')
   requireText(focus, 'env(safe-area-inset-left)')
@@ -126,4 +175,13 @@ test('accessibility and performance implementation contracts are present', () =>
   assert.equal(playwrightConfig.includes('next dev'), false, 'Performance evidence must not use a development server')
   for (const marker of ['DESKTOP_FRAME_P95_BUDGET_MS = 20', 'MOBILE_FRAME_P95_BUDGET_MS = 33.3', 'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024', 'JOURNEY_CYCLES = 5', "serverMode: 'static-export'", 'WEBGL_debug_renderer_info', 'NOT_AVAILABLE_HARDWARE_RENDERER', 'hardwareAcceleration']) requireText(performanceMetrics, marker)
   for (const marker of ['[data-urai-audit-action="orb-controls"]', 'toHaveAccessibleName(/close orb travel controls/i)', 'hasScrollableAncestor', 'scrollableGroundRail']) requireText(accessibilityEvidence, marker)
+})
+
+test('Focus Replay action contract rejects a duplicated action or missing memory label', () => {
+  const focus = read('src/app/focus/FocusChamberClient.tsx')
+  const action = requireSinglePrimaryReplayAction(focus)
+  assert.throws(() => requireSinglePrimaryReplayAction(focus.replace(action, `<>${action}${action}</>`)), /exactly one primary Replay action/)
+  assert.throws(() => requireSinglePrimaryReplayAction(focus.replace("locale.text('focus.openReplayFor', {title:memory.title})", "locale.text('focus.enterReplay')")), /aria-label/)
+  assert.throws(() => requireSinglePrimaryReplayAction(focus.replace("locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')", "locale.props('focus.enterReplay')")), /locale metadata/)
+  assert.throws(() => requireSinglePrimaryReplayAction(focus.replace('disabled={committed} onClick={enterReplay}', 'onClick={enterReplay}')), /disabled/)
 })

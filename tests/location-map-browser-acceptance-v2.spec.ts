@@ -44,6 +44,8 @@ async function openDemo(page: Page) {
   await page.goto(route, { waitUntil: 'networkidle' })
   await expect(page.getByRole('heading', { name: 'Your places stay closed until you open them.' })).toBeVisible()
   await page.getByRole('button', { name: 'Open disclosed sample' }).click()
+  await page.waitForURL(url => url.pathname.replace(/\/$/, '') === '/location-map' && url.searchParams.get('demo') === '1')
+  await page.waitForLoadState('networkidle')
   await expect(page.locator('[data-location-map-source="disclosed-demo"]')).toBeVisible()
 }
 
@@ -69,11 +71,25 @@ async function gestureAnchor(page: Page): Promise<ScreenPoint> {
 async function nativeHitPoint(target: Locator): Promise<ScreenPoint> {
   let hitPoint: ScreenPoint | null = null
   await expect.poll(async () => {
-    hitPoint = await target.evaluate(element => {
-      const rect = element.getBoundingClientRect()
-      const x = rect.left + rect.width * .5
-      const y = rect.top + rect.height * .5
-      if (rect.width <= 0 || rect.height <= 0 || x < 0 || y < 0 || x >= window.innerWidth || y >= window.innerHeight) return null
+    hitPoint = await target.evaluate(async element => {
+      const point = () => {
+        const rect = element.getBoundingClientRect()
+        return { x: rect.left + rect.width * .5, y: rect.top + rect.height * .5, width: rect.width, height: rect.height }
+      }
+      // Semantic camera state can update before its 900ms transform finishes.
+      // Use measured browser actionability, without disabling motion or retrying a tap.
+      const before = point()
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+      const middle = point()
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+      const after = point()
+      const same = (a: typeof before, b: typeof before) => Math.abs(a.x - b.x) <= .25 && Math.abs(a.y - b.y) <= .25 && Math.abs(a.width - b.width) <= .25 && Math.abs(a.height - b.height) <= .25
+      if (!same(before, middle) || !same(middle, after)) return null
+      for (let ancestor: Element | null = element; ancestor; ancestor = ancestor.parentElement) {
+        if (ancestor.getAnimations().some(animation => animation.playState === 'running' && animation.effect?.getComputedTiming().iterations !== Infinity)) return null
+      }
+      const { x, y, width, height } = after
+      if (width <= 0 || height <= 0 || x < 0 || y < 0 || x >= window.innerWidth || y >= window.innerHeight) return null
       const hit = document.elementFromPoint(x, y)
       if (!(hit instanceof Node) || (hit !== element && !element.contains(hit))) return null
       return { x, y }
@@ -86,10 +102,10 @@ async function nativeHitPoint(target: Locator): Promise<ScreenPoint> {
 async function nativeTouchTap(page: Page, target: Locator) {
   await target.scrollIntoViewIfNeeded()
   await expect(target).toBeVisible()
-  const { x, y } = await nativeHitPoint(target)
   const cdp = await page.context().newCDPSession(page)
   try {
     await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
+    const { x, y } = await nativeHitPoint(target)
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1, radiusX: 6, radiusY: 6, force: 1 }] })
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   } finally {
@@ -361,6 +377,25 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await nativeTouchTap(page, page.locator('.locationAtlasBeacon').nth(viewportBeaconIndex))
     await expect(page.locator('.locationAtlasSelection')).toBeVisible({ timeout: 15_000 })
     await expect(page).toHaveURL(/placeId=/, { timeout: 15_000 })
+    const founder = page.locator('[data-urai-adam-launcher]')
+    await expect(founder).toHaveAttribute('data-adam-launcher-placement', 'inline-slot')
+    const founderGeometry = await founder.evaluate(element => {
+      const r = element.getBoundingClientRect()
+      const card = document.querySelector('.locationAtlasSelection')!.getBoundingClientRect()
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      return { width: r.width, height: r.height, cardClear: r.bottom + 8 <= card.top || card.bottom + 8 <= r.top || r.right + 8 <= card.left || card.right + 8 <= r.left, pointerReachable: hit === element || element.contains(hit) }
+    })
+    expect(founderGeometry.width).toBeGreaterThanOrEqual(48)
+    expect(founderGeometry.height).toBeGreaterThanOrEqual(48)
+    expect(founderGeometry.cardClear).toBe(true)
+    expect(founderGeometry.pointerReachable).toBe(true)
+    await nativeTouchTap(page, founder)
+    const about = page.getByText('About Adam', { exact: true })
+    const aboutBox = await about.boundingBox()
+    expect(aboutBox!.height).toBeGreaterThanOrEqual(48)
+    await nativeTouchTap(page, page.getByRole('button', { name: 'Close Adam', exact: true }))
+    await expect(founder).toHaveAttribute('data-adam-launcher-placement', 'inline-slot')
+    await attachJson(testInfo, 'founder-atlas-clearance', founderGeometry)
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-selected.png'), fullPage: true })
 
     const selection = page.locator('.locationAtlasSelection')

@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
+import { paidSpatialFetch, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -80,9 +82,11 @@ async function requireProviderConsent(uid: string, provider: CouncilProvider, ex
   ])
   if (!policySnapshot.exists) throw new CouncilProviderError(403, 'CONSENT_POLICY_REQUIRED', 'A saved privacy policy is required.')
   const policy = policySnapshot.data() ?? {}
-  const domains = isRecord(policy.domains) ? policy.domains : {}
-  const models = isRecord(domains.models) ? domains.models : {}
-  const enforcement = isRecord(policy.enforcement) ? policy.enforcement : {}
+  if (!isCanonicalStoredPolicy(policy, uid)) {
+    throw new CouncilProviderError(403, 'CONSENT_POLICY_REQUIRED', 'A canonical owner privacy policy is required.')
+  }
+  const models = policy.domains.models
+  const enforcement = policy.enforcement
   if (models.mode !== 'granted' || models.modelContext !== true) {
     throw new CouncilProviderError(403, 'MODEL_PROCESSING_NOT_AUTHORIZED', 'Model processing is not authorized.')
   }
@@ -202,8 +206,8 @@ function validateProviderText(value: string) {
   return message
 }
 
-async function callAnthropic(apiKey: string, model: string, message: string, context: ConversationTurn[], signal: AbortSignal) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+async function callAnthropic(uid: string, sourceInput: JsonMap, apiKey: string, model: string, message: string, context: ConversationTurn[], signal: AbortSignal) {
+  const response = await paidSpatialFetch(db, uid, 'council-anthropic', 'anthropic', model, sourceInput, 'https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
@@ -226,9 +230,9 @@ async function callAnthropic(apiKey: string, model: string, message: string, con
   return { message: validateProviderText(textFromAnthropic(payload)), requestId: response.headers.get('request-id') ?? response.headers.get('x-request-id') }
 }
 
-async function callGemini(apiKey: string, model: string, message: string, context: ConversationTurn[], signal: AbortSignal) {
+async function callGemini(uid: string, sourceInput: JsonMap, apiKey: string, model: string, message: string, context: ConversationTurn[], signal: AbortSignal) {
   const endpoint = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`)
-  const response = await fetch(endpoint, {
+  const response = await paidSpatialFetch(db, uid, 'council-gemini', 'gemini', model, sourceInput, endpoint, {
     method: 'POST',
     headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -240,7 +244,8 @@ async function callGemini(apiKey: string, model: string, message: string, contex
         })),
         { role: 'user', parts: [{ text: message }] },
       ],
-      generationConfig: { maxOutputTokens: 700, temperature: 0.4 },
+      // Use provider sampling/thinking defaults; newer Gemini models reject custom sampling.
+      generationConfig: { maxOutputTokens: 700 },
     }),
     signal,
   })
@@ -249,11 +254,11 @@ async function callGemini(apiKey: string, model: string, message: string, contex
   return { message: validateProviderText(textFromGemini(payload)), requestId: response.headers.get('x-request-id') }
 }
 
-async function callCompatible(provider: 'xai' | 'mistral', apiKey: string, model: string, message: string, context: ConversationTurn[], signal: AbortSignal) {
+async function callCompatible(uid: string, sourceInput: JsonMap, provider: 'xai' | 'mistral', apiKey: string, model: string, message: string, context: ConversationTurn[], signal: AbortSignal) {
   const endpoint = provider === 'xai'
     ? 'https://api.x.ai/v1/chat/completions'
     : 'https://api.mistral.ai/v1/chat/completions'
-  const response = await fetch(endpoint, {
+  const response = await paidSpatialFetch(db, uid, `council-${provider}`, provider, model, sourceInput, endpoint, {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -302,10 +307,10 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       const timeout = setTimeout(() => controller.abort(), 30_000)
       response.on('close', () => { if (!response.writableEnded) controller.abort() })
       const result = await (provider === 'anthropic'
-        ? callAnthropic(apiKey, model, message, context, controller.signal)
+        ? callAnthropic(uid, body, apiKey, model, message, context, controller.signal)
         : provider === 'gemini'
-          ? callGemini(apiKey, model, message, context, controller.signal)
-          : callCompatible(provider, apiKey, model, message, context, controller.signal)
+          ? callGemini(uid, body, apiKey, model, message, context, controller.signal)
+          : callCompatible(uid, body, provider, apiKey, model, message, context, controller.signal)
       ).finally(() => clearTimeout(timeout))
 
       response.status(200)
@@ -334,7 +339,7 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       })
     } catch (error) {
       if (uid) await recordTelemetry({ uid, provider, outcome: 'failure', inputUnits, latencyMs: Date.now() - startedAt, model })
-      const boundary = error instanceof CouncilProviderError
+      const boundary = error instanceof CouncilProviderError || error instanceof SpatialSpendError
         ? error
         : new CouncilProviderError(500, 'COUNCIL_PROVIDER_BOUNDARY_FAILURE', 'Council provider boundary is unavailable.')
       if (!response.headersSent) response.status(boundary.status).json({ error: boundary.code, message: boundary.message })
@@ -348,7 +353,7 @@ export const anthropicCouncilProvider = onRequest({
   timeoutSeconds: 45,
   memory: '256MiB',
   cors: WEB_CLIENT_ORIGINS,
-  secrets: [ANTHROPIC_API_KEY],
+  secrets: [ANTHROPIC_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON],
 }, providerHandler('anthropic', ANTHROPIC_API_KEY))
 
 export const geminiCouncilProvider = onRequest({
@@ -356,7 +361,7 @@ export const geminiCouncilProvider = onRequest({
   timeoutSeconds: 45,
   memory: '256MiB',
   cors: WEB_CLIENT_ORIGINS,
-  secrets: [GEMINI_API_KEY],
+  secrets: [GEMINI_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON],
 }, providerHandler('gemini', GEMINI_API_KEY))
 
 export const xaiCouncilProvider = onRequest({
@@ -364,7 +369,7 @@ export const xaiCouncilProvider = onRequest({
   timeoutSeconds: 45,
   memory: '256MiB',
   cors: WEB_CLIENT_ORIGINS,
-  secrets: [XAI_API_KEY],
+  secrets: [XAI_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON],
 }, providerHandler('xai', XAI_API_KEY))
 
 export const mistralCouncilProvider = onRequest({
@@ -372,5 +377,5 @@ export const mistralCouncilProvider = onRequest({
   timeoutSeconds: 45,
   memory: '256MiB',
   cors: WEB_CLIENT_ORIGINS,
-  secrets: [MISTRAL_API_KEY],
+  secrets: [MISTRAL_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON],
 }, providerHandler('mistral', MISTRAL_API_KEY))

@@ -1,15 +1,21 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import MemoryExperienceState from '@/spatial/memory/MemoryExperienceState'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { collection, doc, getDoc, getDocs, limit, query } from 'firebase/firestore'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
+import { useOwnedMemoryMediaPlayback } from '@/spatial/memory/useOwnedMemoryMediaPlayback'
+import { useReplayMemoryVisibility } from '@/spatial/memory/useReplayMemoryVisibility'
+import { createReplayMediaSession, initialReplayVideoSnapshot, type ReplayVideoSession } from '../replay/replayMediaSession'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { lifeMovieReplayHref, type LifeMovieRuntimeChapter } from '@/spatial/life-movie/lifeMovieRuntimeContract'
 import { useLifeMovieRuntimeManifest } from '@/spatial/life-movie/useLifeMovieRuntimeManifest'
 import { revokeLifeMovieManifest, saveLifeMovieManifest } from '@/spatial/life-movie/lifeMovieManifestOperations'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { sensorySafeEnabled, URAI_SENSORY_SAFE_EVENT, URAI_SENSORY_SAFE_STORAGE_KEY } from '@/spatial/accessibility/SensorySafeRuntime'
 
 type MovieState =
   | { kind: 'auth-loading'; message: string }
@@ -43,6 +49,11 @@ export default function LifeMovieClient() {
   const [state, setState] = useState<MovieState>({ kind: 'auth-loading', message: 'Checking private identity…' })
   const [activeIndex, setActiveIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
+  const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null)
+  const imageRef = useRef<HTMLImageElement | null>(null)
+  const mediaSession = useRef<ReplayVideoSession | null>(null)
+  const [mediaSnapshot, setMediaSnapshot] = useState(initialReplayVideoSnapshot)
+  const attachMedia = useCallback((element: HTMLVideoElement | HTMLAudioElement | null) => { mediaRef.current = element }, [])
   const [manifestAction, setManifestAction] = useState<{ kind: 'idle' | 'working' | 'error'; message: string }>({ kind: 'idle', message: '' })
 
   useEffect(() => {
@@ -133,10 +144,46 @@ export default function LifeMovieClient() {
   }, [identityReady, requestedMemoryId, requestedMovieId, runtimeManifest, user])
 
   const active = memories[activeIndex] ?? null
+  const visibility = useReplayMemoryVisibility(active)
   const activeChapter = requestedMovieId && active && runtimeManifest.status === 'ready' && runtimeManifest.manifest
     ? runtimeManifest.manifest.chapters.find((chapter) => chapter.memoryId === active.id) ?? null
     : null
-  const media = active ? mediaFor(active) : null
+  const ownedPlayback = useOwnedMemoryMediaPlayback(visibility !== 'visible' || (requestedMovieId && runtimeManifest.status !== 'ready') ? null : active, () => {
+    setPlaying(false)
+    mediaSession.current?.dispose()
+    if (imageRef.current) { imageRef.current.style.visibility = 'hidden'; imageRef.current.removeAttribute('src') }
+  })
+  const expectsPrivateSource = Boolean(active?.sourceMediaReceipts?.length)
+  const media = active ? mediaFor(expectsPrivateSource ? { ...active, sourceMedia: ownedPlayback.media } : active) : null
+  const timedSource = media?.kind === 'video' || media?.kind === 'audio'
+  useEffect(() => {
+    setMediaSnapshot(initialReplayVideoSnapshot())
+    if (!timedSource || !media || !mediaRef.current) return
+    const session = createReplayMediaSession(mediaRef.current, media.url, snapshot => {
+      setMediaSnapshot(snapshot)
+      setPlaying(snapshot.playing)
+    }, { nativeControls: true, audioAllowed: () => !sensorySafeEnabled() })
+    const refreshPolicy = () => session.refreshAudioPolicy()
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === URAI_SENSORY_SAFE_STORAGE_KEY || event.key === null) refreshPolicy()
+    }
+    window.addEventListener(URAI_SENSORY_SAFE_EVENT, refreshPolicy)
+    window.addEventListener('storage', onStorage)
+    mediaSession.current = session
+    return () => {
+      window.removeEventListener(URAI_SENSORY_SAFE_EVENT, refreshPolicy)
+      window.removeEventListener('storage', onStorage)
+      mediaSession.current = null
+      session.dispose()
+    }
+  }, [media?.url, timedSource])
+  const togglePlayback = useCallback(() => {
+    if (expectsPrivateSource && ownedPlayback.status !== 'ready') return
+    if (timedSource) {
+      if (playing) mediaSession.current?.pause()
+      else void mediaSession.current?.play()
+    } else setPlaying(value => !value)
+  }, [expectsPrivateSource, ownedPlayback.status, playing, timedSource])
   const chapterDurationMs = useMemo(() => {
     if (!active) return 8000
     const derived = Math.round(active.replayManifest.durationMs / Math.max(1, active.replayManifest.segments.length))
@@ -144,7 +191,7 @@ export default function LifeMovieClient() {
   }, [active])
 
   useEffect(() => {
-    if (!playing || !active || memories.length < 1) return
+    if (!playing || !active || memories.length < 1 || timedSource || (expectsPrivateSource && ownedPlayback.status !== 'ready')) return
     const timer = window.setTimeout(() => {
       setActiveIndex((index) => {
         if (index >= memories.length - 1) {
@@ -155,14 +202,20 @@ export default function LifeMovieClient() {
       })
     }, reducedMotion ? Math.max(9000, chapterDurationMs) : chapterDurationMs)
     return () => window.clearTimeout(timer)
-  }, [active, chapterDurationMs, memories.length, playing, reducedMotion])
+  }, [active, chapterDurationMs, expectsPrivateSource, memories.length, ownedPlayback.status, playing, reducedMotion, timedSource])
+
+  useEffect(() => {
+    if (!timedSource || mediaSnapshot.status !== 'ended') return
+    setPlaying(false)
+    setActiveIndex(index => Math.min(memories.length - 1, index + 1))
+  }, [mediaSnapshot.status, memories.length, timedSource])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.target instanceof Element && event.target.closest('button,a,input,textarea,select,video,audio')) return
       if (event.key === ' ' && memories.length) {
         event.preventDefault()
-        setPlaying((value) => !value)
+        togglePlayback()
       }
       if (event.key === 'ArrowRight' && memories.length) {
         event.preventDefault()
@@ -177,18 +230,21 @@ export default function LifeMovieClient() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [memories.length])
+  }, [memories.length, togglePlayback])
 
   if (!identityReady || user === undefined || state.kind === 'auth-loading' || state.kind === 'loading') {
-    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state={state.kind}><p role="status">{state.message}</p><style>{css}</style></main>
+    return <main data-testid="life-movie-runtime" data-state={state.kind}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Your private sequence will open after identity and memory access are checked."><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-loading" as="div" /></MemoryExperienceState></main>
   }
 
   if (!user || state.kind === 'unauthenticated') {
-    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state="unauthenticated"><section><h1>Life Movie</h1><p>{state.message}</p><a href="/login?returnTo=%2Flife-movie">Continue securely</a></section><style>{css}</style></main>
+    return <main data-testid="life-movie-runtime" data-state="unauthenticated"><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Sign in to open a sequence of your own memories. No personal memory content is displayed here."><a href="/login?returnTo=%2Flife-movie">Continue securely</a><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-unavailable" as="div" /></MemoryExperienceState></main>
+  }
+  if (active && visibility !== 'visible') {
+    return <main data-testid="life-movie-runtime" data-state={visibility === 'loading' ? 'loading' : 'unavailable'}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message="This Replay memory is currently unavailable." guidance="Return to Life Map to choose an available memory. This sequence cannot display the unavailable chapter."><a href="/life-map">Return to Life Map</a></MemoryExperienceState></main>
   }
 
   if (!active) {
-    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state={state.kind}><section><h1>Life Movie</h1><p>{state.message}</p><div className="lifeMovieStateActions"><a href="/life-map">Open Life Map</a><a href="/home">Return Home</a></div></section><style>{css}</style></main>
+    return <main data-testid="life-movie-runtime" data-state={state.kind}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Choose an available memory in Life Map, then continue from Replay to build your private sequence."><a href="/life-map">Open Life Map</a><a href="/home">Return Home</a><AdamLauncherSlot name="life-movie-empty" /></MemoryExperienceState></main>
   }
 
   const enterReplay = () => {
@@ -273,9 +329,11 @@ export default function LifeMovieClient() {
 
       <section className="lifeMovieStage" aria-label="Current Life Movie chapter">
         <div className="lifeMovieMedia">
-          {media?.kind === 'image' ? <img src={media.url} alt={media.caption || active.title} /> : null}
-          {media?.kind === 'video' ? <video key={media.url} src={media.url} controls playsInline preload="metadata" aria-label={media.caption || active.title} /> : null}
-          {media?.kind === 'audio' ? <div className="lifeMovieAudio"><div aria-hidden="true" className="lifeMovieAudioField" /><audio key={media.url} src={media.url} controls preload="metadata" aria-label={media.caption || active.title} /></div> : null}
+          {media?.kind === 'image' ? <img key={media.url} ref={imageRef} src={media.url} alt={media.caption || active.title} /> : null}
+          {media?.kind === 'video' ? <video key={media.url} ref={attachMedia} controls playsInline preload="metadata" aria-label={media.caption || active.title} /> : null}
+          {media?.kind === 'audio' ? <div className="lifeMovieAudio"><div aria-hidden="true" className="lifeMovieAudioField" /><audio key={media.url} ref={attachMedia} controls preload="metadata" aria-label={media.caption || active.title} /></div> : null}
+          {expectsPrivateSource && ownedPlayback.status === 'loading' ? <p role="status">Opening private source…</p> : expectsPrivateSource && ownedPlayback.status === 'unavailable' ? <p role="status">The private source is currently unavailable.</p> : null}
+          {timedSource && mediaSnapshot.error ? <p role="status">{mediaSnapshot.error}</p> : null}
           {!media ? <div className="lifeMovieMemoryField" aria-hidden="true"><span /><span /><span /></div> : null}
         </div>
         <div className="lifeMovieCaption" aria-live="polite">
@@ -290,7 +348,7 @@ export default function LifeMovieClient() {
 
       <section className="lifeMovieControls" aria-label="Life Movie playback controls">
         <button type="button" onClick={() => { setPlaying(false); setActiveIndex((index) => Math.max(0, index - 1)) }} disabled={activeIndex === 0}>Previous</button>
-        <button type="button" aria-pressed={playing} onClick={() => setPlaying((value) => !value)}>{playing ? 'Pause film' : 'Play film'}</button>
+        <button type="button" aria-pressed={playing} onClick={togglePlayback} disabled={expectsPrivateSource && ownedPlayback.status !== 'ready'}>{playing ? 'Pause film' : 'Play film'}</button>
         <button type="button" onClick={() => { setPlaying(false); setActiveIndex((index) => Math.min(memories.length - 1, index + 1)) }} disabled={activeIndex === memories.length - 1}>Next</button>
         <button type="button" onClick={() => void saveSequence()} disabled={manifestAction.kind === 'working'}>{requestedMovieId ? 'Update sequence' : 'Save sequence'}</button>
         {requestedMovieId ? <button type="button" onClick={() => void revokeSequence()} disabled={manifestAction.kind === 'working'}>Remove saved sequence</button> : null}

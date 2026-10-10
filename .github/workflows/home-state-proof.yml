@@ -2,12 +2,17 @@ name: Home State Proof
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, 'repair/release-closure-integration-20261007']
     paths:
       - 'scripts/capture-home-state-proof.mjs'
+      - 'scripts/capture-visible-canvas-png.mjs'
+      - 'tests/home-state-proof-sampling.test.mjs'
+      - 'tests/home-state-proof-companion-capture.test.mjs'
+      - 'urai-tier1/tests/visible-canvas-capture.test.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - '.github/workflows/home-state-proof.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
+      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/home/**'
   workflow_dispatch:
 
@@ -49,7 +54,9 @@ jobs:
           pnpm install --frozen-lockfile 2>&1 | tee artifacts/home-state-proof/install.log
       - name: Verify state-proof contract and build
         run: |
-          (cd urai-tier1 && node tests/continuous-spatial-restoration-contract.test.mjs)
+          node --test tests/home-state-proof-sampling.test.mjs tests/home-state-proof-companion-capture.test.mjs
+          (cd urai-tier1 && node --test tests/visible-canvas-capture.test.mjs)
+          (cd urai-tier1 && node --import tsx tests/continuous-spatial-restoration-contract.test.mjs)
           pnpm build:static
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
       - name: Capture exact Home state proof
@@ -66,3 +73,5 @@ jobs:
           path: artifacts/home-state-proof
           if-no-files-found: error
           retention-days: 365
+
+

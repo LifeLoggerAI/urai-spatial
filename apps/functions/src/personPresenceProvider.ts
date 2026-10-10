@@ -2,6 +2,9 @@ import { createHash } from 'node:crypto'
 import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
+import { loadPersonPresenceAuthority, PersonPresenceAuthorityError } from './personPresenceAuthority'
+import { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS } from '../../../packages/localization/src/contentLanguage'
+import { paidSpatialFetch, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -10,8 +13,6 @@ const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY')
 const REGION = 'us-central1'
 const RATE_WINDOW_MS = 60_000
 const MAX_CONTEXT_MESSAGES = 10
-const MAX_EVIDENCE_CLAIMS = 40
-const MAX_EVIDENCE_CHARS = 14_000
 
 const WEB_CLIENT_ORIGINS = [
   'https://urai.app',
@@ -42,9 +43,14 @@ function bearerToken(value: unknown) {
 }
 
 async function authenticatedUid(request: { headers: Record<string, unknown> }) {
-  const decoded = await admin.auth().verifyIdToken(bearerToken(request.headers.authorization), true)
-  if (!decoded.uid) throw new PresenceError(401, 'UNAUTHORIZED', 'Authentication is required.')
-  return decoded.uid
+  try {
+    const decoded = await admin.auth().verifyIdToken(bearerToken(request.headers.authorization), true)
+    if (!decoded.uid) throw new PresenceError(401, 'UNAUTHORIZED', 'Authentication is required.')
+    return decoded.uid
+  } catch (error) {
+    if (error instanceof PresenceError) throw error
+    throw new PresenceError(401, 'UNAUTHORIZED', 'Authentication is required.')
+  }
 }
 
 function readBody(request: { body?: unknown }, maximumBytes: number) {
@@ -113,8 +119,8 @@ function requireRequestId(value: unknown) {
   return requestId
 }
 
-function personPresenceIdempotencyKey(uid:string, sessionId:string, requestId:string) {
-  return createHash('sha256').update(`urai-person-presence-provider:${uid}:${sessionId}:${requestId}`).digest('hex')
+function personPresenceIdempotencyKey(uid:string, sessionId:string, requestId:string, locale:string) {
+  return createHash('sha256').update(`urai-person-presence-provider:${uid}:${sessionId}:${requestId}:${locale}`).digest('hex')
 }
 
 function boundedContext(value: unknown) {
@@ -134,85 +140,24 @@ function boundedContext(value: unknown) {
 }
 
 async function loadSessionAuthority(uid: string, sessionId: string) {
-  const session = await db.doc(`users/${uid}/simulationSessions/${sessionId}`).get()
-  if (
-    !session.exists
-    || session.get('ownerId') !== uid
-    || session.get('state') !== 'active'
-    || session.get('presentationClass') !== 'SIMULATED'
-    || session.get('historicalSourceAuthority') !== false
-    || session.get('syntheticOutputMayBecomeHistoricalSource') !== false
-  ) throw new PresenceError(409, 'PRESENCE_SESSION_UNAVAILABLE', 'Person presence session is unavailable.')
-
-  const bundleId = String(session.get('bundleId') ?? '')
-  const personId = String(session.get('personId') ?? '')
-  const mode = String(session.get('mode') ?? '') as SessionMode
-  const [bundle, person] = await Promise.all([
-    db.doc(`users/${uid}/personModelBundles/${bundleId}`).get(),
-    db.doc(`users/${uid}/lifeEntities/${personId}`).get(),
-  ])
-  if (
-    !bundle.exists
-    || bundle.get('ownerId') !== uid
-    || bundle.get('schemaVersion') !== 'urai-life-model-v1'
-    || bundle.get('state') !== 'current'
-    || bundle.get('synthetic') !== false
-  ) throw new PresenceError(409, 'PERSON_MODEL_STALE', 'Person model must be recompiled.')
-  if (
-    !person.exists
-    || person.get('ownerId') !== uid
-    || person.get('kind') !== 'person'
-    || person.get('revoked') === true
-  ) throw new PresenceError(409, 'PERSON_AUTHORITY_UNAVAILABLE', 'Person authority is unavailable.')
-
-  const acceptedClaimIds = Array.isArray(bundle.get('acceptedClaimIds'))
-    ? bundle.get('acceptedClaimIds').filter((value: unknown): value is string => typeof value === 'string').slice(0, MAX_EVIDENCE_CLAIMS)
-    : []
-  const claimSnapshots = acceptedClaimIds.length
-    ? await db.getAll(...acceptedClaimIds.map((id: string) => db.doc(`users/${uid}/lifeClaims/${id}`)))
-    : []
-
-  const evidence: Array<{ id: string; predicate: string; value: unknown; evidenceClass: string; confidence: string }> = []
-  let evidenceChars = 0
-  for (const claim of claimSnapshots) {
-    if (
-      !claim.exists
-      || claim.get('ownerId') !== uid
-      || claim.get('status') !== 'accepted'
-      || claim.get('synthetic') === true
-      || claim.get('evidenceClass') === 'UNKNOWN'
-    ) continue
-    const row = {
-      id: claim.id,
-      predicate: String(claim.get('predicate') ?? ''),
-      value: claim.get('value'),
-      evidenceClass: String(claim.get('evidenceClass') ?? ''),
-      confidence: String(claim.get('confidence') ?? ''),
-    }
-    const size = Buffer.byteLength(JSON.stringify(row), 'utf8')
-    if (evidenceChars + size > MAX_EVIDENCE_CHARS) break
-    evidenceChars += size
-    evidence.push(row)
+  try { return await loadPersonPresenceAuthority(db, uid, sessionId) }
+  catch (error) {
+    if (error instanceof PersonPresenceAuthorityError) throw new PresenceError(409, error.code, 'Person Presence source authority must be refreshed.')
+    throw error
   }
-
-  return {
-    sessionId,
-    bundleId,
-    personId,
-    mode,
-    canonicalLabel: String(person.get('canonicalLabel') ?? 'this person').slice(0, 180),
-    asOf: String(bundle.get('asOf') ?? ''),
-    knowledgeCutoff: typeof bundle.get('knowledgeCutoff') === 'string' ? bundle.get('knowledgeCutoff') : null,
-    negativeConstraints: Array.isArray(bundle.get('negativeConstraints')) ? bundle.get('negativeConstraints').slice(0, 64) : [],
-    evidence,
-  }
+}
+async function recheckSessionAuthority(uid: string, sessionId: string, expectedDigest: string) {
+  await requireProviderConsent(uid, true)
+  const authority = await loadSessionAuthority(uid, sessionId)
+  if (authority.authorityDigest !== expectedDigest) throw new PresenceError(409, 'PRESENCE_AUTHORITY_CHANGED', 'Person Presence source authority changed.')
 }
 
 const RESPONSE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['message','caption','evidenceClaimIds','uncertainty','simulationLabel'],
+  required: ['locale','message','caption','evidenceClaimIds','uncertainty','simulationLabel'],
   properties: {
+    locale: { type: 'string', enum: URAI_CONTENT_LANGUAGE_TAGS },
     message: { type: 'string', minLength: 1, maxLength: 1800 },
     caption: { type: 'string', minLength: 1, maxLength: 1800 },
     evidenceClaimIds: { type: 'array', maxItems: 12, items: { type: 'string', minLength: 1, maxLength: 160 } },
@@ -221,52 +166,25 @@ const RESPONSE_SCHEMA = {
   },
 } as const
 
-function partialJsonStringField(raw: string, field: string) {
-  const marker = JSON.stringify(field)
-  const keyIndex = raw.indexOf(marker)
-  if (keyIndex < 0) return null
-  let index = keyIndex + marker.length
-  while (index < raw.length && /\s/.test(raw[index])) index += 1
-  if (raw[index] !== ':') return null
-  index += 1
-  while (index < raw.length && /\s/.test(raw[index])) index += 1
-  if (raw[index] !== '"') return null
-  index += 1
-  let value = ''
-  while (index < raw.length) {
-    const character = raw[index]
-    if (character === '"') return { value, complete: true }
-    if (character !== '\\') { value += character; index += 1; continue }
-    if (index + 1 >= raw.length) break
-    const escape = raw[index + 1]
-    if (escape === 'u') {
-      if (index + 5 >= raw.length) break
-      const hex = raw.slice(index + 2, index + 6)
-      if (!/^[0-9a-fA-F]{4}$/.test(hex)) return null
-      value += String.fromCharCode(Number.parseInt(hex, 16)); index += 6; continue
-    }
-    const escapes: Record<string,string> = { '"':'"', '\\':'\\', '/':'/', b:'\b', f:'\f', n:'\n', r:'\r', t:'\t' }
-    if (!(escape in escapes)) return null
-    value += escapes[escape]; index += 2
-  }
-  return { value, complete: false }
-}
 
-function parseOutput(raw: string, validClaimIds: Set<string>) {
+function parseOutput(raw: string, validClaimIds: Set<string>, locale: string) {
   let value: unknown
   try { value = JSON.parse(raw) } catch { throw new PresenceError(502, 'INVALID_PROVIDER_RESPONSE', 'Person presence returned invalid output.') }
   if (!isRecord(value)) throw new PresenceError(502, 'INVALID_PROVIDER_RESPONSE', 'Person presence returned invalid output.')
   const message = String(value.message ?? '').trim()
   const caption = String(value.caption ?? '').trim()
-  const evidenceClaimIds = Array.isArray(value.evidenceClaimIds)
-    ? value.evidenceClaimIds.map(String).filter((id) => validClaimIds.has(id)).slice(0, 12)
-    : []
-  const uncertainty = String(value.uncertainty ?? '').trim().slice(0, 320)
-  const simulationLabel = String(value.simulationLabel ?? '').trim().slice(0, 120)
-  if (!message || !caption || !simulationLabel || message.length > 1800 || caption.length > 1800) {
+  if (!Array.isArray(value.evidenceClaimIds) || value.evidenceClaimIds.length > 12 || value.evidenceClaimIds.some((id) => typeof id !== 'string')) {
     throw new PresenceError(502, 'INVALID_PROVIDER_RESPONSE', 'Person presence returned invalid output.')
   }
-  return { message, caption, evidenceClaimIds, uncertainty, simulationLabel, provider: 'openai' as const }
+  const evidenceClaimIds = value.evidenceClaimIds as string[]
+  const uncertainty = String(value.uncertainty ?? '').trim().slice(0, 320)
+  const simulationLabel = String(value.simulationLabel ?? '').trim().slice(0, 120)
+  if (value.locale !== locale || typeof value.message !== 'string' || typeof value.caption !== 'string'
+    || !message || !caption || caption !== message || !simulationLabel || message.length > 1800 || caption.length > 1800
+    || evidenceClaimIds.some((id) => !validClaimIds.has(id))) {
+    throw new PresenceError(502, 'INVALID_PROVIDER_RESPONSE', 'Person presence returned invalid output.')
+  }
+  return { message, caption, locale, evidenceClaimIds, uncertainty, simulationLabel, provider: 'openai' as const }
 }
 
 export const personPresenceProvider = onRequest({
@@ -274,9 +192,10 @@ export const personPresenceProvider = onRequest({
   timeoutSeconds: 60,
   memory: '512MiB',
   cors: WEB_CLIENT_ORIGINS,
-  secrets: [OPENAI_API_KEY],
+  secrets: [OPENAI_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON],
 }, async (request, response) => {
-  let uid = ''
+  let uid = '', timeout: ReturnType<typeof setTimeout> | undefined, monitor: ReturnType<typeof setInterval> | undefined
+  let controller: AbortController | undefined
   try {
     if (process.env.PERSON_PRESENCE_ENABLED !== 'true') {
       throw new PresenceError(503, 'PERSON_PRESENCE_DISABLED', 'Person presence is not enabled in this environment.')
@@ -289,16 +208,19 @@ export const personPresenceProvider = onRequest({
     const sessionId = String(body.sessionId ?? '').trim()
     if (!/^presence:[A-Za-z0-9-]{16,80}$/.test(sessionId)) throw new PresenceError(400, 'INVALID_SESSION', 'Presence session is invalid.')
     const requestId = requireRequestId(body.requestId)
-    const upstreamIdempotencyKey = personPresenceIdempotencyKey(uid, sessionId, requestId)
-    const locale = String(body.locale ?? 'en-US').trim().slice(0, 35) || 'en-US'
+    const language = contentLanguage(body.locale)
+    if (!language) throw new PresenceError(400, 'INVALID_LOCALE', 'Person Presence language is not supported.')
+    const locale = language.speechTag
+    const upstreamIdempotencyKey = personPresenceIdempotencyKey(uid, sessionId, requestId, locale)
     const context = boundedContext(body.context)
     await requireProviderConsent(uid, body.aiProcessingConsent === true)
     await consumeRateLimit(uid)
     const authority = await loadSessionAuthority(uid, sessionId)
+    const spendInput = { request: body, authority_digest: authority.authorityDigest }
 
     const moderationController = new AbortController()
     const moderationTimeout = setTimeout(() => moderationController.abort(), 8_000)
-    const moderation = await fetch('https://api.openai.com/v1/moderations', {
+    const moderation = await paidSpatialFetch(db, uid, 'person-moderation', 'openai', 'omni-moderation-latest', spendInput, 'https://api.openai.com/v1/moderations', {
       method: 'POST',
       headers: { Authorization: `Bearer ${OPENAI_API_KEY.value()}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'omni-moderation-latest', input: message }),
@@ -310,10 +232,14 @@ export const personPresenceProvider = onRequest({
 
     const evidenceJson = JSON.stringify(authority.evidence)
     const recent = context.map((item, index) => `${index + 1}. ${item.role}: ${item.content}`).join('\n')
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 32_000)
-    response.on('close', () => { if (!response.writableEnded) controller.abort() })
-    const upstream = await fetch('https://api.openai.com/v1/responses', {
+    controller = new AbortController()
+    const upstreamController = controller
+    timeout = setTimeout(() => upstreamController.abort(), 32_000)
+    monitor = setInterval(() => { recheckSessionAuthority(uid, sessionId, authority.authorityDigest).catch(() => upstreamController.abort()) }, 5_000)
+    await recheckSessionAuthority(uid, sessionId, authority.authorityDigest)
+    response.on('close', () => { if (!response.writableEnded) upstreamController.abort() })
+    const model = process.env.OPENAI_PERSON_PRESENCE_MODEL || process.env.OPENAI_ADAM_MODEL || 'gpt-5'
+    const upstream = await paidSpatialFetch(db, uid, 'person-reasoning', 'openai', model, spendInput, 'https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY.value()}`,
@@ -322,7 +248,7 @@ export const personPresenceProvider = onRequest({
         'Idempotency-Key': upstreamIdempotencyKey,
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_PERSON_PRESENCE_MODEL || process.env.OPENAI_ADAM_MODEL || 'gpt-5',
+        model,
         instructions: [
           `You are an evidence-grounded simulated representation of ${authority.canonicalLabel} inside UrAi.`,
           'You are not the literal person and must never imply consciousness, survival, or a real-time action by that human.',
@@ -338,8 +264,10 @@ export const personPresenceProvider = onRequest({
           'evidenceClaimIds must contain only supplied claim IDs that directly support the answer.',
           'Caption must be text-equivalent to message.',
           'simulationLabel must clearly and briefly indicate this is a reconstruction/simulation.',
-          `Locale hint: ${locale}.`,
+          `Respond in content language ${locale}. Set locale to exactly ${locale}.`,
           `Negative constraints: ${JSON.stringify(authority.negativeConstraints)}`,
+          `Scene unknowns: ${JSON.stringify(authority.sceneUnknowns)}`,
+          `Forbidden scene assertions: ${JSON.stringify(authority.forbiddenAssertions)}`,
           `Evidence claims: ${evidenceJson}`,
           'Return only the required JSON schema.',
         ].join(' '),
@@ -356,28 +284,20 @@ export const personPresenceProvider = onRequest({
         safety_identifier: createHash('sha256').update(`urai-person-presence:${uid}:${authority.personId}`).digest('hex'),
         text: { format: { type: 'json_schema', name: 'urai_person_presence_response', strict: true, schema: RESPONSE_SCHEMA } },
       }),
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timeout))
+      signal: upstreamController.signal,
+    })
     if (!upstream.ok || !upstream.body) throw new PresenceError(upstream.status === 429 ? 429 : 503, 'OPENAI_REQUEST_FAILED', 'Person presence reasoning is unavailable.')
-
-    response.status(200)
-    response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8')
-    response.setHeader('Cache-Control', 'private, no-store, max-age=0')
-    response.setHeader('X-Content-Type-Options', 'nosniff')
-    response.setHeader('X-URAI-Provider', 'openai')
-    response.setHeader('X-URAI-Presence', 'person-simulation')
-    response.write(`${JSON.stringify({ type:'status', status:'streaming', sessionId, mode:authority.mode })}\n`)
 
     const reader = upstream.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
     let output = ''
-    let emittedMessageLength = 0
     let completed = false
     while (true) {
       const { value, done } = await reader.read()
       if (done) break
       buffer += decoder.decode(value, { stream:true })
+      if (buffer.length > 64_000) throw new PresenceError(502, 'OPENAI_RESPONSE_LIMIT', 'Person Presence output exceeded its bound.')
       const frames = buffer.split('\n\n')
       buffer = frames.pop() ?? ''
       for (const frame of frames) {
@@ -389,12 +309,7 @@ export const personPresenceProvider = onRequest({
         try { event = JSON.parse(payload) as JsonMap } catch { continue }
         if (event.type === 'response.output_text.delta') {
           output += String(event.delta ?? '')
-          const partial = partialJsonStringField(output, 'message')
-          if (partial && partial.value.length > emittedMessageLength) {
-            const text = partial.value.slice(emittedMessageLength)
-            emittedMessageLength = partial.value.length
-            response.write(`${JSON.stringify({ type:'delta', text })}\n`)
-          }
+          if (output.length > 32_000) throw new PresenceError(502, 'OPENAI_RESPONSE_LIMIT', 'Person Presence output exceeded its bound.')
         }
         if (event.type === 'response.completed') completed = true
         if (event.type === 'response.failed' || event.type === 'error') {
@@ -403,16 +318,23 @@ export const personPresenceProvider = onRequest({
       }
     }
     if (!completed || !output) throw new PresenceError(502, 'OPENAI_RESPONSE_INCOMPLETE', 'Person presence returned incomplete output.')
-    const result = parseOutput(output, new Set(authority.evidence.map((claim) => claim.id)))
-    if (result.message.length > emittedMessageLength) {
-      response.write(`${JSON.stringify({ type:'delta', text:result.message.slice(emittedMessageLength) })}\n`)
-    }
-    response.end(`${JSON.stringify({ type:'done', ...result, historicalSourceAuthority:false, syntheticOutputMayBecomeHistoricalSource:false })}\n`)
+    const result = parseOutput(output, new Set(authority.evidence.map((claim) => claim.id)), locale)
+    await recheckSessionAuthority(uid, sessionId, authority.authorityDigest)
+    if (upstreamController.signal.aborted) throw new PresenceError(409, 'PRESENCE_AUTHORITY_UNAVAILABLE', 'Person Presence source authority is unavailable.')
+    response.status(200)
+    response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8')
+    response.setHeader('Cache-Control', 'private, no-store, max-age=0')
+    response.setHeader('X-Content-Type-Options', 'nosniff')
+    response.setHeader('X-URAI-Provider', 'openai')
+    response.setHeader('X-URAI-Presence', 'person-simulation')
+    response.write(`${JSON.stringify({ type:'status', status:'validated', sessionId, mode:authority.mode, locale })}\n`)
+    response.write(`${JSON.stringify({ type:'delta', text:result.message, locale })}\n`)
+    response.end(`${JSON.stringify({ type:'done', ...result, authorityDigest:authority.authorityDigest, sceneTruthPacketId:authority.sceneTruthPacketId, historicalSourceAuthority:false, syntheticOutputMayBecomeHistoricalSource:false })}\n`)
   } catch (error) {
-    const boundary = error instanceof PresenceError
+    const boundary = error instanceof PresenceError || error instanceof SpatialSpendError
       ? error
       : new PresenceError(500, 'PERSON_PRESENCE_FAILURE', 'Person presence is temporarily unavailable.')
     if (!response.headersSent) response.status(boundary.status).json({ error:boundary.code, message:boundary.message })
     else response.end(`${JSON.stringify({ type:'error', code:boundary.code, message:boundary.message })}\n`)
-  }
+  } finally { if (timeout) clearTimeout(timeout); if (monitor) clearInterval(monitor); controller?.abort() }
 })

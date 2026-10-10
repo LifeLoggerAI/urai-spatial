@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import { createHash, randomUUID } from 'node:crypto'
 import { scenarioProviderState } from './scenarioProvider'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 const db = admin.firestore()
@@ -50,27 +51,28 @@ function safeContextId(value: unknown) {
   return /^[A-Za-z0-9:_-]{1,160}$/.test(id) ? id : ''
 }
 
-async function resolveAuthorizedScenarioEvidence(ownerId: string, value: unknown) {
+async function resolveAuthorizedScenarioEvidence(ownerId: string, value: unknown, transaction: FirebaseFirestore.Transaction) {
   const context = value && typeof value === 'object' ? value as Record<string, unknown> : {}
   const memoryId = safeContextId(context.memoryId)
   const personId = safeContextId(context.personId)
   const placeId = safeContextId(context.placeId)
   if (!memoryId && !personId && !placeId) return { evidenceRefs: [], permissionReceiptIds: [] as string[] }
 
-  const policySnapshot = await db.doc(`users/${ownerId}/privacyPolicy/current`).get()
+  const policySnapshot = await transaction.get(db.doc(`users/${ownerId}/privacyPolicy/current`))
   if (!policySnapshot.exists) return { evidenceRefs: [], permissionReceiptIds: [] as string[] }
-  const policy = policySnapshot.data() ?? {}
-  const domains = typeof policy.domains === 'object' && policy.domains ? policy.domains as Record<string, unknown> : {}
-  const enforcement = typeof policy.enforcement === 'object' && policy.enforcement ? policy.enforcement as Record<string, unknown> : {}
-  const memoryPolicy = typeof domains.memory === 'object' && domains.memory ? domains.memory as Record<string, unknown> : {}
-  const modelPolicy = typeof domains.models === 'object' && domains.models ? domains.models as Record<string, unknown> : {}
+  const policy = policySnapshot.data()
+  if (!isCanonicalStoredPolicy(policy, ownerId)) return { evidenceRefs: [], permissionReceiptIds: [] as string[] }
+  const domains = policy.domains
+  const enforcement = policy.enforcement
+  const memoryPolicy = domains.memory
+  const modelPolicy = domains.models
   if (enforcement.state !== 'fully-enforced') return { evidenceRefs: [], permissionReceiptIds: [] as string[] }
 
   const evidenceRefs: Record<string, unknown>[] = []
-  const revision = Number(policy.revision ?? 0)
+  const revision = policy.revision
 
   if (memoryId && memoryPolicy.modelContext === true && ['granted', 'limited'].includes(String(memoryPolicy.mode ?? ''))) {
-    const memory = await db.doc(`users/${ownerId}/memories/${memoryId}`).get()
+    const memory = await transaction.get(db.doc(`users/${ownerId}/memories/${memoryId}`))
     if (memory.exists) {
       evidenceRefs.push({
         id: `evr_memory_${createHash('sha256').update(memoryId).digest('hex').slice(0, 24)}`,
@@ -87,7 +89,7 @@ async function resolveAuthorizedScenarioEvidence(ownerId: string, value: unknown
   if (modelPolicy.modelContext === true && ['granted', 'limited'].includes(String(modelPolicy.mode ?? ''))) {
     for (const [kind, entityId] of [['person', personId], ['place', placeId]] as const) {
       if (!entityId) continue
-      const entity = await db.doc(`users/${ownerId}/lifeEntities/${entityId}`).get()
+      const entity = await transaction.get(db.doc(`users/${ownerId}/lifeEntities/${entityId}`))
       if (!entity.exists) continue
       evidenceRefs.push({
         id: `evr_${kind}_${createHash('sha256').update(entityId).digest('hex').slice(0, 24)}`,
@@ -117,12 +119,7 @@ export const createPossibleFuture = functions.https.onCall(async (data, context)
   if (Array.isArray(data?.evidenceRefs) && data.evidenceRefs.length) {
     throw new functions.https.HttpsError('permission-denied', 'CLIENT_SCENARIO_EVIDENCE_REFS_FORBIDDEN')
   }
-  const resolvedEvidence = await resolveAuthorizedScenarioEvidence(ownerId, data?.sourceContext)
-  const evidenceRefs = resolvedEvidence.evidenceRefs
-  const assumptionOnly = evidenceRefs.length === 0 ? data?.assumptionOnly === true : false
-  if (!evidenceRefs.length && !assumptionOnly) {
-    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_REQUIRES_AUTHORIZED_EVIDENCE_OR_EXPLICIT_ASSUMPTION_ONLY')
-  }
+  let assumptionOnly = false
   const scenarioId = opaque('scn_')
   const basisId = opaque('basis_')
   const returnToken = String(data?.returnToken ?? opaque('return_')).slice(0, 120)
@@ -130,7 +127,6 @@ export const createPossibleFuture = functions.https.onCall(async (data, context)
   if (Array.isArray(data?.permissionReceiptIds) && data.permissionReceiptIds.length) {
     throw new functions.https.HttpsError('permission-denied', 'CLIENT_SCENARIO_PERMISSION_RECEIPTS_FORBIDDEN')
   }
-  const permissionReceiptIds = resolvedEvidence.permissionReceiptIds
   const now = fv.serverTimestamp()
   const ref = scenarioRef(ownerId, scenarioId)
   const receiptId = stableReceipt(ownerId, op, 'scenario-create')
@@ -138,6 +134,13 @@ export const createPossibleFuture = functions.https.onCall(async (data, context)
     const receiptRef = db.doc(`users/${ownerId}/privacyReceipts/${receiptId}`)
     const existing = await tx.get(receiptRef)
     if (existing.exists) throw new functions.https.HttpsError('already-exists', 'Operation already completed.', { receiptId })
+    const resolvedEvidence = await resolveAuthorizedScenarioEvidence(ownerId, data?.sourceContext, tx)
+    const evidenceRefs = resolvedEvidence.evidenceRefs
+    const permissionReceiptIds = resolvedEvidence.permissionReceiptIds
+    assumptionOnly = evidenceRefs.length === 0 ? data?.assumptionOnly === true : false
+    if (!evidenceRefs.length && !assumptionOnly) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_REQUIRES_AUTHORIZED_EVIDENCE_OR_EXPLICIT_ASSUMPTION_ONLY')
+    }
     tx.create(ref, {
       schemaVersion: 1, id: scenarioId, ownerId, question, status: 'awaiting-assumptions', originRealm,
       returnToken, cameraCheckpoint: typeof data?.cameraCheckpoint === 'string' ? data.cameraCheckpoint : null,
@@ -209,6 +212,10 @@ export const getPossibleFuture = functions.https.onCall(async (data, context) =>
 export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data, context) => {
   const ownerId = uid(context)
   const scenarioId = ensureScenarioId(data?.scenarioId)
+  const requestedBranchId = safeContextId(data?.branchId)
+  if (data?.branchId !== undefined && (typeof data.branchId !== 'string' || !requestedBranchId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid Scenario branch ID.')
+  }
   const ref = scenarioRef(ownerId, scenarioId)
   const [scenarioSnap, basisSnap, branchesSnap] = await Promise.all([
     ref.get(),
@@ -217,9 +224,10 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
   ])
   if (!scenarioSnap.exists || !basisSnap.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
   const scenario = scenarioSnap.data() ?? {}
-  const requestedBranchId = safeContextId(data?.branchId)
   const activeBranchId = requestedBranchId || String(scenario.activeBranchId ?? '')
-  const branch = branchesSnap.docs.find((doc) => doc.id === activeBranchId) ?? branchesSnap.docs[0] ?? null
+  const branch = requestedBranchId
+    ? branchesSnap.docs.find((doc) => doc.id === requestedBranchId) ?? null
+    : branchesSnap.docs.find((doc) => doc.id === activeBranchId) ?? branchesSnap.docs[0] ?? null
   if (requestedBranchId && !branch) throw new functions.https.HttpsError('not-found', 'Scenario branch not found.')
   const basis = basisSnap.data() ?? {}
   const evidenceRefs = Array.isArray(basis.evidenceRefs) ? basis.evidenceRefs : []
@@ -286,3 +294,4 @@ export const deletePossibleFuture = functions.https.onCall(async (data, context)
   await db.recursiveDelete(ref)
   return { scenarioId, deleted: true }
 })
+

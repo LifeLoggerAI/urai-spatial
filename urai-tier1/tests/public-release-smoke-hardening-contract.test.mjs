@@ -8,7 +8,7 @@ const publicProof = fs.readFileSync(new URL('../../.github/workflows/public-inst
 
 const publicRoutes = ['/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug']
 const fullVisionRoutes = ['/life-movie', '/council', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr']
-const directCriticalRoutes = ['/terms', '/login', '/account-deletion', '/privacy-policy', '/xr', '/settings', '/launch']
+const directCriticalRoutes = ['/privacy', '/terms', '/login', '/account-deletion', '/privacy-policy', '/xr', '/settings', '/settings/communications', '/sms-opt-in', '/launch']
 
 test('post-deploy parity includes current Focus, Replay and institutional public owners', () => {
   assert.ok(postDeploy.includes("'URAI Focus stellar memory field'"))
@@ -23,9 +23,14 @@ test('post-deploy parity includes current Focus, Replay and institutional public
 
   assert.ok(postDeploy.includes("schemaVersion: 'urai-live-content-parity-6'"))
   const compatibilityRoutes = postDeploy.match(/browserCompatibilityRoutes:\s*\[([^\]]*)\]/)?.[1] || ''
-  for (const route of ['/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind']) {
+  for (const route of ['/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind']) {
     assert.ok(compatibilityRoutes.includes("'" + route + "'"), 'missing static post-deploy compatibility route ' + route)
   }
+})
+
+test('post-deploy communications smoke matches the rendered SMS disclosure', () => {
+  assert.match(postDeploy, /\['\/settings\/communications', \['communication-settings', 'SMS preferences', 'Message and data rates may apply', 'Reply STOP to opt out or HELP for help'\], \[\]\]/)
+  assert.doesNotMatch(postDeploy, /\['\/settings\/communications', \[[^\]]*'Reply STOP', 'Reply HELP'[^\]]*\], \[\]\]/)
 })
 
 test('release-control browser smoke covers public routes and compatibility redirects', () => {
@@ -33,7 +38,6 @@ test('release-control browser smoke covers public routes and compatibility redir
     assert.ok(releaseControl.includes(`'${route}'`), `missing browser release route ${route}`)
   }
 
-  assert.ok(releaseControl.includes("['/privacy', { pathname: '/privacy-controls', searchEntries: [['from', 'privacy']] }]"))
   assert.ok(releaseControl.includes("['/ascent/life-map', { pathname: '/life-map', searchEntries: [['from', 'ascent-life-map']] }]"))
   assert.ok(releaseControl.includes("['/waitlist', { pathname: '/status', searchEntries: [['from', 'waitlist']] }]"))
   assert.ok(releaseControl.includes("['/system', { pathname: '/status', searchEntries: [['from', 'system']] }]"))

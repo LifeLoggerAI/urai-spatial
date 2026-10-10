@@ -279,7 +279,7 @@ async function captureViewportScreenshot(page, filePath, caseDeadline) {
         fullPage: false,
         animations: 'disabled',
         caret: 'hide',
-        timeout: Math.min(30_000, remaining()),
+        timeout: Math.min(60_000, remaining()),
       }),
       retried: true,
     }
@@ -322,10 +322,11 @@ try {
     const id = `${spec.route.split('/').filter(Boolean).join('-') || 'root'}--${spec.state}--${captureProfile.id}`
     const representative = spec.coverage === 'representative-tablet-or-wide'
     const homeCase = ['/', '/home'].includes(spec.route) && !captureProfile.noWebGL
+    // Exact-head synchronization: the wide Home retry remains inside the existing case budget.
     // The matrix records real GPU-backed browser pixels. Budgets must cover navigation,
     // route stabilization, retained screenshot readback, and context shutdown without
     // treating a slow CI GPU readback as missing product evidence.
-    const caseBudgetMs = representative ? homeCase ? 100_000 : 75_000 : homeCase ? 130_000 : 90_000
+    const caseBudgetMs = homeCase ? 130_000 : representative ? 75_000 : 90_000
     const caseDeadline = Date.now() + caseBudgetMs
     const record = { id, exactHead, route: spec.route, requestedState: spec.state, profile: captureProfile.id, profileMetadata: { ...captureProfile, deviceScaleFactor: 1 }, coverage: spec.coverage, sessionState: 'fresh-unsigned-initial-entry', returningSession: 'not-exercised', caseBudgetMs, startedAt: new Date().toISOString(), response: null, finalUrl: null, dom: null, readiness: null, image: null, events: [], eventCount: 0, omittedEvents: 0, technicalDefects: [] }
     receipt.captures.push(record)
@@ -443,12 +444,18 @@ try {
         }
       }
       record.observedState = classifyState(spec, dom)
+      if (spec.route === '/status' || spec.route === '/waitlist') {
+        const embedded = await page.getByTestId('urai-embedded-build-identity').getAttribute('data-preview-build-identity')
+        if (embedded !== exactHead) defect('embedded-preview-build-identity-mismatch', { expected: exactHead, actual: embedded })
+      }
       record.dom = dom
       record.readiness = readinessEvidence(dom, captureProfile.noWebGL)
       if (dom.globalLoading) defect('unsettled-global-opening-your-world', {})
       if (dom.visibleLoadingText.length) defect('unsettled-visible-source-or-renderer', { messages: dom.visibleLoadingText })
       if (dom.pendingStates.length) defect('unsettled-route-state', { states: dom.pendingStates })
-      // A no-WebGL capture intentionally disables the render owner; its semantic fallback is the authoritative owner for that profile.\n      // Do not convert the expected render-owner-unavailable state into a false technical defect.\n      if (!captureProfile.noWebGL && dom.readiness.some(marker => marker.applicability === 'render-owner' && marker.value !== 'true')) defect('unsettled-observable-owner', { markers: dom.readiness.filter(marker => marker.applicability === 'render-owner' && marker.value !== 'true') })
+      // A no-WebGL capture intentionally disables the render owner; its semantic fallback is the authoritative owner for that profile.
+      // Do not convert the expected render-owner-unavailable state into a false technical defect.
+      if (!captureProfile.noWebGL && dom.readiness.some(marker => marker.applicability === 'render-owner' && marker.value !== 'true')) defect('unsettled-observable-owner', { markers: dom.readiness.filter(marker => marker.applicability === 'render-owner' && marker.value !== 'true') })
       if (pendingAssets.size) defect('unsettled-document-or-assets', { requests: [...pendingAssets].map(request => ({ url: safeUrl(request.url()), resourceType: request.resourceType() })).slice(0, 32) })
       if (dom.fonts === 'loading') defect('unsettled-fonts', {})
       if (dom.geometry.horizontalOverflow > 1) defect('actual-horizontal-overflow', { pixels: dom.geometry.horizontalOverflow, geometry: dom.geometry })

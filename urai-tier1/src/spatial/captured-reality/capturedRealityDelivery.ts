@@ -1,4 +1,52 @@
-/** Probe the same GET operation authorized by the private signed URL.
+export type CapturedRealityStreamAuthority = {
+  requestHeaders: () => Promise<Record<string, string>>
+  expectedByteLength: number
+  expectedSha256: string
+}
+
+export type CapturedRealityRuntimeDelivery = {
+  assetId: string
+  accessMode: 'runtime' | 'proof'
+  deviceTier: 'desktop' | 'mobile'
+  url: string
+  expiresAt: string
+  truthLabel: string
+  requiresAuthorization: true
+  runtimeSha256: string
+  runtimeByteLength: number
+  storageGeneration: string
+}
+
+/** A private token must never be sent to a URL outside the expected project endpoint. */
+export function validateCapturedRealityRuntimeDelivery(
+  delivery: CapturedRealityRuntimeDelivery,
+  expected: { assetId: string; accessMode: 'runtime' | 'proof'; deviceTier: 'desktop' | 'mobile'; projectId: string; maxRuntimeBytes: number; now?: number },
+) {
+  if (!delivery || delivery.assetId !== expected.assetId || delivery.accessMode !== expected.accessMode
+    || delivery.deviceTier !== expected.deviceTier
+    || delivery.requiresAuthorization !== true || !/^[a-f0-9]{64}$/i.test(delivery.runtimeSha256)
+    || !Number.isSafeInteger(delivery.runtimeByteLength) || delivery.runtimeByteLength < 32
+    || delivery.runtimeByteLength % 32 !== 0 || delivery.runtimeByteLength > expected.maxRuntimeBytes
+    || typeof delivery.storageGeneration !== 'string' || !/^\d{1,32}$/.test(delivery.storageGeneration)
+    || !/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/.test(expected.projectId)) return false
+  const expires = Date.parse(delivery.expiresAt)
+  const now = expected.now ?? Date.now()
+  if (!Number.isFinite(expires) || expires <= now || expires - now > 11 * 60_000) return false
+  try {
+    const url = new URL(delivery.url)
+    return url.protocol === 'https:' && !url.username && !url.password && !url.hash && !url.port
+      && url.hostname === `us-central1-${expected.projectId}.cloudfunctions.net`
+      && url.pathname === '/streamCapturedRealityRuntime'
+      && url.searchParams.get('assetId') === expected.assetId
+      && url.searchParams.get('accessMode') === expected.accessMode
+      && url.searchParams.get('deviceTier') === expected.deviceTier
+      && /^[a-f0-9]{64}$/.test(url.searchParams.get('deliveryId') ?? '')
+      && [...url.searchParams.keys()].length === 4
+      && [...url.searchParams.keys()].every(key => ['assetId', 'deviceTier', 'accessMode', 'deliveryId'].includes(key))
+  } catch { return false }
+}
+
+/** Probe the same current-token GET operation used by the private renderer.
  * Cancel the body after headers so the renderer remains the only consumer.
  */
 export async function capturedRealityContentLengthAvailable(
@@ -6,14 +54,19 @@ export async function capturedRealityContentLengthAvailable(
   maxRuntimeBytes: number,
   signal?: AbortSignal,
   fetcher: typeof fetch = fetch,
+  authority?: CapturedRealityStreamAuthority,
 ) {
   if (!Number.isSafeInteger(maxRuntimeBytes) || maxRuntimeBytes < 32) return false
+  signal?.throwIfAborted()
+  const headers = authority ? await authority.requestHeaders() : undefined
+  signal?.throwIfAborted()
   const response = await fetcher(url, {
     method: 'GET',
     cache: 'no-store',
     credentials: 'omit',
     redirect: 'error',
     signal,
+    headers,
   })
   try {
     if (!response.ok || response.status !== 200 || !response.body) return false
@@ -25,6 +78,7 @@ export async function capturedRealityContentLengthAvailable(
     const raw = response.headers.get('content-length')
     const length = raw && /^\d+$/.test(raw) ? Number(raw) : NaN
     return Number.isSafeInteger(length) && length > 0 && length % 32 === 0 && length <= maxRuntimeBytes
+      && (!authority || length === authority.expectedByteLength)
   } finally {
     await response.body?.cancel()
   }

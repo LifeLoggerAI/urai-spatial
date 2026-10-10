@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const client = fs.readFileSync('src/app/replay/CinematicReplayClient.tsx', 'utf8')
 const controls = fs.readFileSync('src/app/replay/ReplayProductControls.tsx', 'utf8')
+const catalog=fs.readFileSync('src/lib/i18n/journeyControlMessages.ts','utf8')
 const transport = fs.readFileSync('src/spatial/replay/replayServerTransport.ts', 'utf8')
 const operations = fs.readFileSync('src/spatial/replay/replayOperations.ts', 'utf8')
 const rules = fs.readFileSync('../firebase/firestore.rules', 'utf8')
@@ -12,16 +13,16 @@ test('Replay preserves cinematic identity while keeping Save Hide Correct and Hi
   for (const marker of ['replayVisualAdmission', 'replayAssets', 'data-node={memory.star.id}', 'data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined}', '<ReplayProductControls memory={memory} />']) {
     assert.ok(client.includes(marker), `missing current-main Replay marker: ${marker}`)
   }
-  for (const marker of ['<details className="replayProduct"', 'aria-label="Replay memory controls">Memory controls</summary>', 'replayProductActions', "operations.saved ? 'Saved' : 'Save'", "operations.hidden ? 'Unhide' : 'Hide'", "pendingCorrection ? 'Correcting…' : 'Correct'", '>History<', 'data-replay-saved', 'data-replay-hidden', 'data-pending-operations']) {
+  for (const marker of ['<details className="replayProduct"', "aria-label={locale.text('replay.controls')}", 'replayProductActions', "operations.saved ? 'replay.saved' : 'replay.save'", "operations.hidden ? 'replay.unhide' : 'replay.hide'", "pendingCorrection ? 'replay.correcting' : 'replay.correct'", "locale.text('common.history')", 'data-replay-saved', 'data-replay-hidden', 'data-pending-operations']) {
     assert.ok(controls.includes(marker), `missing Replay product marker: ${marker}`)
   }
 })
 
 test('Replay controls expose truthful accessible pending offline error and recovery states', () => {
   assert.match(controls, /role="status" aria-live="polite"/)
-  assert.match(controls, /queued offline/)
-  assert.match(controls, /Retrying pending Replay changes/)
-  assert.match(controls, />Retry<\/button>/)
+  assert.match(controls, /id:'replay.queuedOffline'/);assert.match(catalog,/queued offline/)
+  assert.match(controls, /id:'replay.retryingChanges'/);assert.match(catalog,/Retrying pending Replay changes/)
+  assert.match(controls, /locale.text\('common.retry'\)/);assert.match(catalog,/source:"Retry"/)
   assert.match(controls, /next\.error/)
   assert.match(controls, /aria-pressed=\{operations\.saved\}/)
   assert.match(controls, /aria-pressed=\{operations\.hidden\}/)
@@ -31,7 +32,9 @@ test('Replay controls expose truthful accessible pending offline error and recov
   assert.match(controls, /forced-colors:active/)
   assert.match(client, /<header>.*className="unwind".*<\/header>/s)
   assert.match(client, /\.memoryPulse\{min-height:48px/)
-  assert.match(client, /\.memorySeek:focus-visible\{position:relative/)
+  assert.match(client, /\.memorySeek:focus-visible\{position:absolute;left:0;top:0;width:100%;height:48px/)
+  assert.match(client, /className="memorySeekTrack"[\s\S]*className="memorySeek" type="range"/)
+  assert.match(client, /\.memorySeekTrack\{[^}]*position:relative[^}]*height:48px/)
   assert.match(controls, /\.replayProduct>summary\{[^}]*min-height:48px/)
   assert.match(controls, /\.replayProductActions\{[^}]*bottom:54px/)
   assert.match(controls, /data-attention=\{operations\.pending\.length \|\| operations\.error \? 'true' : 'false'\}/)
@@ -39,13 +42,13 @@ test('Replay controls expose truthful accessible pending offline error and recov
 
 test('correction workflow preserves original history and unsent owner-scoped drafts', () => {
   assert.match(controls, /role="dialog" aria-modal="true"/)
-  assert.match(controls, /The original memory remains unchanged/)
+  assert.match(controls, /locale.text\('replay.correctionDescription'\)/);assert.match(catalog,/The original memory remains unchanged/)
   assert.match(controls, /previousValue: memory\.summary/)
-  assert.match(controls, /Original: \{String\(item\.correction\.previousValue \?\? ''\)\}/)
-  assert.match(controls, /Corrected: \{String\(item\.correction\.nextValue \?\? ''\)\}/)
+  assert.match(controls,/locale.text\('replay.originalValue'\)/);assert.match(controls, /String\(item\.correction\.previousValue \?\? ''\)/)
+  assert.match(controls,/locale.text\('replay.correctedValue'\)/);assert.match(controls, /String\(item\.correction\.nextValue \?\? ''\)/)
   assert.match(controls, /urai-replay-correction-draft-v1:/)
   assert.match(controls, /encodeURIComponent\(ownerId\).*encodeURIComponent\(memoryId\)/)
-  assert.match(controls, /Keep draft and close/)
+  assert.match(controls,/locale.text\('replay.closeDraft'\)/);assert.match(catalog,/Keep draft and close/)
   assert.match(controls, /maxLength=\{1000\}/)
   assert.doesNotMatch(controls, /String\([^)]*\?\? undefined\)/)
 })

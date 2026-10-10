@@ -1,9 +1,11 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { localizationMessageBindings } from './lib/localization-message-bindings.mjs'
 import {
   URAI_LAUNCH_LOCALES,
   URAI_NATIVE_REVIEWED_LOCALES,
   URAI_RTL_LOCALES,
+  URAI_SOURCE_MESSAGES,
   localizationCompleteness,
   runtimeUraiLocale,
   uraiTextDirection,
@@ -33,6 +35,7 @@ const locales = URAI_LAUNCH_LOCALES.map((locale) => {
     locale,
     direction: uraiTextDirection(locale),
     translated: completeness.translated,
+    missingMessageIds: completeness.missingMessageIds,
     total: completeness.total,
     complete: completeness.complete,
     nativeReviewed,
@@ -45,10 +48,36 @@ const locales = URAI_LAUNCH_LOCALES.map((locale) => {
       ? 'authoritative-source'
       : completeness.complete
         ? 'machine-prepared-native-review-required'
-        : 'not-yet-provided',
+        : completeness.translated > 0 ? 'machine-prepared-partial-native-review-required' : 'not-yet-provided',
     blockingReasons,
   }
 })
+
+// Catalog coverage is measured only against registered strings. It is not a
+// percentage of the product. Record the real scoped UI consumers separately.
+const consumerPaths = [
+  'src/app/HomeSpatialRuntimeLayer.tsx',
+  'src/spatial/layout/HomeWorldProductionPolished.tsx',
+  'src/lib/i18n/JourneyOfflineNotice.tsx',
+  'src/app/settings/DeviceSettingsClient.tsx',
+  'src/components/settings/LanguageSettings.tsx',
+  'src/components/lifemap/LifeMapSemanticNavigator.tsx',
+  'src/app/focus/FocusChamberClient.tsx',
+  'src/app/focus/session/FocusSessionUnavailable.tsx',
+  'src/app/replay/CinematicReplayClient.tsx',
+  'src/app/replay/ReplayProductControls.tsx',
+  'src/spatial/memory/MemoryMediaAttachment.tsx',
+  'src/lib/i18n/journeyControlCopy.ts',
+  'src/app/location-map/geographic/GeographicLocationClient.tsx',
+  'src/lib/i18n/geographicCopy.ts',
+  'src/spatial/adam/AdamPresenceRuntime.tsx',
+]
+const consumers = await Promise.all(consumerPaths.map(async (file) => {
+  const source = await readFile(new URL(`../urai-tier1/${file}`, import.meta.url), 'utf8')
+  const messageIds = localizationMessageBindings(source, URAI_SOURCE_MESSAGES, file)
+  return {file, messageIds, numberFormatter:source.includes('locale.number('), dateFormatter:source.includes('locale.date(')}
+}))
+const wiredMessageIds = [...new Set(consumers.flatMap(consumer => consumer.messageIds))].sort()
 
 const receipt = {
   schemaVersion: 'urai-localization-readiness-1',
@@ -58,6 +87,17 @@ const receipt = {
   governedLocaleCount: URAI_LAUNCH_LOCALES.length,
   runtimeAdmittedLocales: locales.filter((locale) => locale.runtimeAdmitted).map((locale) => locale.locale),
   preparationOnlyLocales: locales.filter((locale) => !locale.runtimeAdmitted).map((locale) => locale.locale),
+  uiCoverage: {
+    scope:'CORE_JOURNEY_GEOGRAPHIC_AND_FOUNDER_DISCLOSURE_EXPLICIT_WORKING_PREVIEW',
+    registeredMessageCount:Object.keys(URAI_SOURCE_MESSAGES).length,
+    wiredMessageCount:wiredMessageIds.length,
+    wiredMessageIds,
+    unwiredMessageIds:Object.keys(URAI_SOURCE_MESSAGES).filter(id => !wiredMessageIds.includes(id)),
+    consumers,
+    wholeProductTranslated:false,
+    sensitiveFallback:'reviewed locale only',
+    remaining:'Registered core journey, selected-memory controls and owned file attachment and geographic control copy plus persistent digital-Founder disclosure are governed. Missing preparation entries use reviewed English with matching language/direction; the per-locale missingMessageIds are unresolved translations, not native acceptance. Other product routes, private values, policy copy and provider-generated language remain outside this scope. Native linguistic, RTL visual, speech, AT and device acceptance remain pending.',
+  },
   locales,
 }
 

@@ -11,7 +11,7 @@ import {
 } from './councilClient'
 
 export type CouncilProviderId = 'openai' | ExternalCouncilProviderId | 'local-fallback'
-export type CouncilProviderRuntimeState = 'live' | 'source-ready' | 'not-connected' | 'local-fallback'
+export type CouncilProviderRuntimeState = 'unverified' | 'source-ready' | 'not-connected' | 'local-fallback'
 export type CouncilProviderResult =
   | OrbProviderResult
   | ExternalCouncilProviderResult
@@ -20,19 +20,22 @@ export type CouncilProviderDescriptor = {
   id: CouncilProviderId
   label: string
   externalProcessing: boolean
+  requestEnabled: boolean
   runtimeState: CouncilProviderRuntimeState
   modelVersionRequiredForCertification: boolean
 }
 
-const PUBLIC_PROVIDER_ADMISSION = {
+// Public flags permit a request attempt. They cannot attest to protected
+// credentials, the selected model, deployment parity or a live canary.
+const PUBLIC_PROVIDER_REQUESTS = {
   anthropic: process.env.NEXT_PUBLIC_URAI_COUNCIL_ANTHROPIC_ENABLED === 'true',
   gemini: process.env.NEXT_PUBLIC_URAI_COUNCIL_GEMINI_ENABLED === 'true',
   xai: process.env.NEXT_PUBLIC_URAI_COUNCIL_XAI_ENABLED === 'true',
   mistral: process.env.NEXT_PUBLIC_URAI_COUNCIL_MISTRAL_ENABLED === 'true',
 } as const
 
-function sourceReadyState(provider: ExternalCouncilProviderId): CouncilProviderRuntimeState {
-  return PUBLIC_PROVIDER_ADMISSION[provider] ? 'live' : 'source-ready'
+function providerRequestState(provider: ExternalCouncilProviderId): CouncilProviderRuntimeState {
+  return PUBLIC_PROVIDER_REQUESTS[provider] ? 'unverified' : 'source-ready'
 }
 
 export const COUNCIL_PROVIDER_REGISTRY: Readonly<Record<CouncilProviderId, CouncilProviderDescriptor>> = {
@@ -40,61 +43,71 @@ export const COUNCIL_PROVIDER_REGISTRY: Readonly<Record<CouncilProviderId, Counc
     id: 'openai',
     label: 'OpenAI',
     externalProcessing: true,
-    runtimeState: 'live',
+    requestEnabled: true,
+    runtimeState: 'unverified',
     modelVersionRequiredForCertification: true,
   },
   anthropic: {
     id: 'anthropic',
     label: 'Anthropic',
     externalProcessing: true,
-    runtimeState: sourceReadyState('anthropic'),
+    requestEnabled: PUBLIC_PROVIDER_REQUESTS.anthropic,
+    runtimeState: providerRequestState('anthropic'),
     modelVersionRequiredForCertification: true,
   },
   gemini: {
     id: 'gemini',
     label: 'Google Gemini',
     externalProcessing: true,
-    runtimeState: sourceReadyState('gemini'),
+    requestEnabled: PUBLIC_PROVIDER_REQUESTS.gemini,
+    runtimeState: providerRequestState('gemini'),
     modelVersionRequiredForCertification: true,
   },
   xai: {
     id: 'xai',
     label: 'xAI',
     externalProcessing: true,
-    runtimeState: sourceReadyState('xai'),
+    requestEnabled: PUBLIC_PROVIDER_REQUESTS.xai,
+    runtimeState: providerRequestState('xai'),
     modelVersionRequiredForCertification: true,
   },
   mistral: {
     id: 'mistral',
     label: 'Mistral',
     externalProcessing: true,
-    runtimeState: sourceReadyState('mistral'),
+    requestEnabled: PUBLIC_PROVIDER_REQUESTS.mistral,
+    runtimeState: providerRequestState('mistral'),
     modelVersionRequiredForCertification: true,
   },
   'local-fallback': {
     id: 'local-fallback',
     label: 'Local fallback',
     externalProcessing: false,
+    requestEnabled: false,
     runtimeState: 'local-fallback',
     modelVersionRequiredForCertification: false,
   },
 }
 
-export const LIVE_COUNCIL_PROVIDER_IDS = Object.freeze(
+export const REQUESTABLE_COUNCIL_PROVIDER_IDS = Object.freeze(
   Object.values(COUNCIL_PROVIDER_REGISTRY)
-    .filter((provider) => provider.runtimeState === 'live')
+    .filter((provider) => provider.requestEnabled)
     .map((provider) => provider.id),
 )
 
+// This client registry has no protected runtime acceptance evidence. Preserve
+// the legacy attribution surface as empty rather than promoting configuration.
+export const LIVE_COUNCIL_PROVIDER_IDS: readonly CouncilProviderId[] = Object.freeze([])
+
 export const PENDING_COUNCIL_PROVIDER_IDS = Object.freeze(
   Object.values(COUNCIL_PROVIDER_REGISTRY)
-    .filter((provider) => provider.runtimeState === 'source-ready' || provider.runtimeState === 'not-connected')
+    .filter((provider) => provider.externalProcessing && !provider.requestEnabled)
     .map((provider) => provider.id),
 )
 
 export class CouncilProviderNotConnectedError extends Error {
   constructor(readonly provider: CouncilProviderId) {
-    super(`${COUNCIL_PROVIDER_REGISTRY[provider].label} is not connected to the Council runtime.`)
+    super(`${COUNCIL_PROVIDER_REGISTRY[provider].label} is not enabled for Council requests.`)
     this.name = 'CouncilProviderNotConnectedError'
   }
 }
@@ -108,7 +121,7 @@ export async function requestCouncilProvider(input: {
   onEvent?: (event: OrbProviderEvent) => void
 }): Promise<CouncilProviderResult | null> {
   const descriptor = COUNCIL_PROVIDER_REGISTRY[input.provider]
-  if (descriptor.runtimeState !== 'live') throw new CouncilProviderNotConnectedError(input.provider)
+  if (!descriptor.requestEnabled) throw new CouncilProviderNotConnectedError(input.provider)
 
   if (input.provider === 'openai') {
     return requestOpenAIOrb({

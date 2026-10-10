@@ -1,0 +1,15 @@
+{
+  "schema": "urai.vendored-encoder-provenance.v1",
+  "source": "https://github.com/zeux/meshoptimizer/blob/v1.0/js/meshopt_encoder.js",
+  "sourceGitBlob": "86668360034289f901e3c54082e3b6f432bbc107",
+  "meshoptimizerVersion": "1.0",
+  "localInstalledPackageVersion": "1.0.1",
+  "bytes": 24381,
+  "sha256": "e79ba4a73a758f315ab153dc50c389c7b0bea2b5c1fdcfcaa62ad6d0c27cb25c",
+  "license": "MIT",
+  "licensePath": "scripts/vendor/meshopt_decoder.LICENSE.MIT",
+  "licenseSource": "https://github.com/zeux/meshoptimizer/blob/v1.0/LICENSE.md",
+  "licenseGitBlob": "a5c3b1ccca7bbe958d17644bde2ec1fc6f14c19d",
+  "localPinnedDependencyMatch": true,
+  "modifications": "None; only extension changed.js to.mjs for explicit standalone Node ESM. No runtime dependency installation."
+}

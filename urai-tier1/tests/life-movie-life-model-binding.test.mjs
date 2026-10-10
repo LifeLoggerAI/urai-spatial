@@ -24,5 +24,7 @@ test('synthetic-memory firewall is retained on Life Movie manifests', () => {
 })
 
 test('truth corrections can invalidate dependent Life Movies directly', () => {
-  assert.match(lifeModel, /'renderManifests','lifeMovies'/)
+  const authority=fs.readFileSync(new URL('../../apps/functions/src/personPresenceAuthority.ts',import.meta.url),'utf8')
+  assert.match(lifeModel, /invalidateLifeModelDependencies\(db, uid, dependencyId, reasonId, revoked/)
+  assert.match(authority, /'renderManifests','lifeMovies'/)
 })

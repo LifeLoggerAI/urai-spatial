@@ -2,7 +2,10 @@
 
 import { collection, limit, onSnapshot, orderBy, query, type DocumentData, type Unsubscribe } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
-import { functions, getFirebaseDb } from '@/lib/firebase/client'
+import { getAuth } from 'firebase/auth'
+import { app, firebasePublicEnvReady, functions, getFirebaseDb } from '@/lib/firebase/client'
+import { fetchAuthorizedOperationalExport, validateOperationalExportDescriptor, type OperationalExportRequest } from './authorizedExportDownload'
+import { notifyManualWeatherRevocation } from '@/lib/uraiEmotion/manualWeatherSession'
 
 export type PrivacyRow = DocumentData & { id: string }
 export type PrivacyCallableResult = Record<string, unknown>
@@ -42,19 +45,38 @@ export async function callOperationalPrivacyFunction<T extends PrivacyCallableRe
 }
 
 export function applyOperationalConsentPolicy(payload: { domain: string; next: Record<string, unknown>; expectedRevision: number; operationId?: string }) {
+  notifyManualWeatherRevocation()
   return callOperationalPrivacyFunction('applyConsentPolicy', { ...payload, operationId: payload.operationId ?? operationId('consent') })
 }
 
 export function getOperationalPassportSnapshot() { return callOperationalPrivacyFunction('getPassportSnapshot') }
 export function createOperationalExportRequest(scopes: string[], suppliedOperationId?: string) {
-  return callOperationalPrivacyFunction('createExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })
+  return callOperationalPrivacyFunction('createSpatialExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })
 }
-export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' | 'runtime'; assetId?: string }) { return callOperationalPrivacyFunction('getExportDownloadUrl', payload) }
-export function cancelOperationalExportRequest(jobId: string) { return callOperationalPrivacyFunction('cancelExportRequest', { jobId }) }
+// Operational Spatial jobs remain users/{uid}/exportJobs. Privacy root jobs and
+// downloadExportPackage have a separate authority and are never selected here.
+export async function getOperationalExportDownloadUrl(payload: OperationalExportRequest) {
+  const value = await callOperationalPrivacyFunction('getOperationalExportDownloadUrl', payload)
+  return validateOperationalExportDescriptor(value, payload, app.options.projectId ?? '')
+}
+export async function downloadOperationalExportBytes(payload: OperationalExportRequest, lifecycle: { signal: AbortSignal; isCurrent: () => boolean }) {
+  const auth = getAuth(app)
+  const owner = auth.currentUser
+  if (!firebasePublicEnvReady || !owner) throw new Error('AUTH_REQUIRED')
+  const isCurrent = () => !lifecycle.signal.aborted && lifecycle.isCurrent() && auth.currentUser === owner
+  if (!isCurrent()) throw new DOMException('Export transfer stopped.', 'AbortError')
+  const descriptor = await getOperationalExportDownloadUrl(payload)
+  if (!isCurrent()) throw new DOMException('Export transfer stopped.', 'AbortError')
+  if (descriptor.ownerId !== owner.uid) throw new Error('AUTH_REQUIRED')
+  return fetchAuthorizedOperationalExport({ descriptor, request: payload, projectId: app.options.projectId ?? '',
+    signal: lifecycle.signal, isCurrent, getIdToken: () => owner.getIdToken(true) })
+}
+export function cancelOperationalExportRequest(jobId: string) { return callOperationalPrivacyFunction('cancelSpatialExportRequest', { jobId }) }
 export function createOperationalDeletionRequest(payload: { scope: string; confirmation: string; reason?: string; operationId?: string }) {
-  return callOperationalPrivacyFunction('createDeletionRequest', { ...payload, operationId: payload.operationId ?? operationId('deletion') })
+  notifyManualWeatherRevocation()
+  return callOperationalPrivacyFunction('createSpatialDeletionRequest', { ...payload, operationId: payload.operationId ?? operationId('deletion') })
 }
-export function cancelOperationalDeletionRequest(jobId: string) { return callOperationalPrivacyFunction('cancelDeletionRequest', { jobId }) }
+export function cancelOperationalDeletionRequest(jobId: string) { return callOperationalPrivacyFunction('cancelSpatialDeletionRequest', { jobId }) }
 
 export function subscribeOperationalUserCollection(collectionName: string, uid: string, onRows: (rows: PrivacyRow[]) => void, onError: (error: Error) => void): Unsubscribe {
   requireUserCollection(collectionName)

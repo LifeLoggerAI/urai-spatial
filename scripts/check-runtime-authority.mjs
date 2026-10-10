@@ -65,7 +65,9 @@ requireIncludes(files.appTemplate, '<HomeSpatialRuntimeLayer />', 'Home runtime 
 
 requireIncludes(files.homeRuntime, "normalizedPathname === '/' || normalizedPathname === '/home'", 'Home-only pathname authority')
 requireIncludes(files.homeRuntime, 'AssetDrivenHomeWorld', 'asset-driven primary Home owner')
-requireIncludes(files.homeRuntime, 'HomeSpatialWorldFinal', 'no-WebGL/failure fallback owner')
+requireIncludes(files.homeRuntime, '<HomeAccessibleSanctuaryFallback />', 'no-WebGL/failure sanctuary fallback owner')
+requireIncludes(files.homeRuntime, 'data-home-fallback-canon="inhabited-natural-sanctuary"', 'inhabited natural sanctuary fallback canon')
+requireNotIncludes(files.homeRuntime, '<HomeSpatialWorldFinal />', 'retired no-WebGL/failure shell')
 requireIncludes(files.homeRuntime, 'data-webgl-ready="false"', 'explicit no-WebGL/failure runtime state')
 requireIncludes(files.homeRuntime, 'data-urai-home-runtime=', 'Home runtime authority marker')
 

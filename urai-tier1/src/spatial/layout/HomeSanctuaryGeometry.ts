@@ -48,11 +48,25 @@ export function projectHomeTerrainGeometry(source: THREE.BufferGeometry, worldTr
   // A clone keeps useGLTF's shared source and receipts untouched. Both retained
   // topology and the terrain extension now use one elevation and material field.
   const geometry = source.clone()
-  const position = geometry.attributes.position as THREE.BufferAttribute
+  // Runtime deformation needs logical floats. Quantized accessors and normal
+  // accumulators must not be rewritten through their encoded integer storage.
+  const originalPosition = geometry.getAttribute('position')
+  const logicalPositions = new Float32Array(originalPosition.count * 3)
+  for (let index = 0; index < originalPosition.count; index += 1) {
+    logicalPositions.set([originalPosition.getX(index), originalPosition.getY(index), originalPosition.getZ(index)], index * 3)
+  }
+  const position = new THREE.Float32BufferAttribute(logicalPositions, 3)
+  geometry.setAttribute('position', position)
+  geometry.deleteAttribute('normal')
   const inverse = worldTransform.clone().invert()
+  const worldNormalToLocal = new THREE.Matrix3().setFromMatrix4(worldTransform).transpose()
+  const orientation = Math.sign(worldTransform.determinant())
+  if (!orientation || !Number.isFinite(worldTransform.determinant())) throw new Error('Finite invertible terrain transform required')
   const point = new THREE.Vector3()
   const color = new THREE.Color()
   const colors = new Float32Array(position.count * 3)
+  const normals = new Float32Array(position.count * 3)
+  const normal = new THREE.Vector3()
   const uv = new Float32Array(position.count * 2)
   for (let index = 0; index < position.count; index += 1) {
     point.fromBufferAttribute(position, index).applyMatrix4(worldTransform)
@@ -63,10 +77,37 @@ export function projectHomeTerrainGeometry(source: THREE.BufferGeometry, worldTr
     homeTerrainColor(x, z, color)
     colors.set([color.r, color.g, color.b], index * 3)
     uv.set([x, z], index * 2)
+    // Retained GLB surfaces contain split vertices. Recomputing triangle normals
+    // gives each copy a different light response and exposes every old facet.
+    // Sample the shared height field in world meters so duplicate vertices and
+    // the extension receive the same smooth surface normal, even after scaling.
+    const step = .025
+    normal.set(
+      -(homeTerrainHeight(x + step, z) - homeTerrainHeight(x - step, z)) / (2 * step),
+      1,
+      -(homeTerrainHeight(x, z + step) - homeTerrainHeight(x, z - step)) / (2 * step),
+    ).applyMatrix3(worldNormalToLocal).normalize()
+    normals.set([normal.x, normal.y, normal.z], index * 3)
   }
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
   geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
-  geometry.computeVertexNormals()
+  const priorIndex = geometry.getIndex()
+  const count = priorIndex?.count ?? position.count
+  const surfaceIndices: number[] = []
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3()
+  // Closed retained ground meshes have top, underside and vertical side faces.
+  // Projection collapses them onto one height field. Keep its rendered upward
+  // faces so opposite surfaces cannot overlap and zero-area sides cannot cancel
+  // the rebuilt normals. Reflected transforms retain Three's front-face rule.
+  for (let triangle = 0; triangle < count; triangle += 3) {
+    const ids = [0, 1, 2].map(offset => priorIndex?.getX(triangle + offset) ?? triangle + offset)
+    a.fromBufferAttribute(position, ids[0]).applyMatrix4(worldTransform)
+    b.fromBufferAttribute(position, ids[1]).applyMatrix4(worldTransform)
+    c.fromBufferAttribute(position, ids[2]).applyMatrix4(worldTransform)
+    if (new THREE.Vector3().crossVectors(b.sub(a), c.sub(a)).y * orientation > 0) surfaceIndices.push(...ids)
+  }
+  geometry.setIndex(surfaceIndices)
+  geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
   return geometry
@@ -109,7 +150,7 @@ export function makeHomeRibbonGeometry(points: readonly HomePathPoint[], width: 
     const length = Math.max(.001, Math.hypot(dx, dz))
     const nx = -dz / length
     const nz = dx / length
-    const half = width * (.46 + Math.sin(index * 1.71) * .028)
+    const half = width * (.46 + Math.sin(x * .62 + z * .47) * .018)
     for (let column = 0; column < columns; column += 1) {
       const offset = (1 - column / (columns - 1) * 2) * half
       const edgeX = x + nx * offset
@@ -213,6 +254,9 @@ export const HOME_NAVIGATION_OBSTACLES = [-1, 1].flatMap((side) => {
   footprints.push({ ...homeCourtyardPoint(side, -side * .65, 1.82), radius: .54 })
   return footprints
 }).concat([
+  // Covers the retained Orb's 0.534756m animated vertex envelope at its
+  // existing maximum core scale. Its off-path physical body is not walk-through.
+  { x: 1.8, z: -9.5, radius: .54 },
   { x: -2.85, z: -6.15, radius: .98 },
   { x: 2.75, z: -6.35, radius: .94 },
   { x: -7, z: -7, radius: .93 },

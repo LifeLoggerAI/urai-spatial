@@ -1,5 +1,7 @@
 'use client'
 
+import MemoryExperienceState from '@/spatial/memory/MemoryExperienceState'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot, type Unsubscribe } from 'firebase/firestore'
@@ -13,8 +15,15 @@ import {
   capturedRealityDeviceTier,
   CAPTURED_REALITY_QUALITY_PROFILES,
 } from '@/spatial/captured-reality/capturedRealityRuntime'
-import { capturedRealityContentLengthAvailable, capturedRealityWebGL2Available } from '@/spatial/captured-reality/capturedRealityDelivery'
+import {
+  capturedRealityContentLengthAvailable, capturedRealityWebGL2Available,
+  validateCapturedRealityRuntimeDelivery,
+  type CapturedRealityRuntimeDelivery, type CapturedRealityStreamAuthority,
+} from '@/spatial/captured-reality/capturedRealityDelivery'
+import { capturedRealityJourneyReturnHref } from '@/spatial/captured-reality/capturedRealityJourney'
 import type { CapturedRealityRenderDecision } from '@/spatial/captured-reality/capturedReality'
+import { useCapturedRealityReplayLookup } from '@/spatial/captured-reality/useCapturedRealityReplayEntry'
+import { sanitizeMemoryId } from '@/spatial/memory/selectedMemoryContract'
 
 type AssetMetadata = {
   assetId: string
@@ -29,13 +38,7 @@ type AssetMetadata = {
   updatedAt: unknown
 }
 
-type RuntimeDelivery = {
-  assetId: string
-  accessMode: 'runtime' | 'proof'
-  url: string
-  expiresAt: string
-  truthLabel: string
-}
+type RuntimeDelivery = CapturedRealityRuntimeDelivery
 
 type RouteState =
   | { kind: 'auth-loading' }
@@ -93,6 +96,13 @@ function modeAllowed(mode: string) {
   return mode === 'granted' || mode === 'limited'
 }
 
+function policyAuthorityActive(snapshot: { get(field: string): unknown }, uid: string) {
+  const revision = snapshot.get('revision')
+  return snapshot.get('ownerId') === uid && snapshot.get('version') === 2
+    && typeof revision === 'number' && Number.isSafeInteger(revision) && revision >= 1
+    && snapshot.get('enforcement.state') === 'fully-enforced'
+}
+
 function assetAuthorityActive(snapshot: { exists(): boolean; get(field: string): unknown }, uid: string, accessMode: 'runtime' | 'proof') {
   if (!snapshot.exists() || snapshot.get('ownerId') !== uid) return false
   const state = String(snapshot.get('state') ?? '')
@@ -119,9 +129,11 @@ function localBrowserPrerequisites() {
   }
 }
 
-async function contentLengthAvailable(url: string, signal?: AbortSignal) {
+async function contentLengthAvailable(delivery: RuntimeDelivery, requestHeaders: CapturedRealityStreamAuthority['requestHeaders'], signal?: AbortSignal) {
   const tier = capturedRealityDeviceTier(navigator.userAgent)
-  return capturedRealityContentLengthAvailable(url, CAPTURED_REALITY_QUALITY_PROFILES[tier].maxRuntimeBytes, signal)
+  return capturedRealityContentLengthAvailable(delivery.url, CAPTURED_REALITY_QUALITY_PROFILES[tier].maxRuntimeBytes, signal, fetch, {
+    requestHeaders, expectedSha256: delivery.runtimeSha256, expectedByteLength: delivery.runtimeByteLength,
+  })
 }
 
 async function loadAssetMetadata(assetId: string) {
@@ -134,6 +146,9 @@ async function loadRuntimeDelivery(assetId: string, accessMode: 'runtime' | 'pro
   const deviceTier = capturedRealityDeviceTier(navigator.userAgent)
   const callable = httpsCallable<{ assetId: string; deviceTier: 'desktop' | 'mobile'; accessMode: 'runtime' | 'proof' }, RuntimeDelivery>(functions, 'getCapturedRealityRuntimeUrl')
   const result = await callable({ assetId, deviceTier, accessMode })
+  if (!validateCapturedRealityRuntimeDelivery(result.data, {
+    assetId, accessMode, deviceTier, projectId: app.options.projectId ?? '', maxRuntimeBytes: CAPTURED_REALITY_QUALITY_PROFILES[deviceTier].maxRuntimeBytes,
+  })) throw new Error('PRIVATE_DELIVERY_DESCRIPTOR_INVALID')
   return result.data
 }
 
@@ -145,6 +160,12 @@ export default function CapturedRealityRouteClient() {
   const rawAssetId = searchParams.get('assetId') ?? ''
   const assetId = SAFE_ASSET_ID.test(rawAssetId) ? rawAssetId : null
   const accessMode: 'runtime' | 'proof' = searchParams.get('proof') === '1' ? 'proof' : 'runtime'
+  const rawMemoryId = searchParams.get('memoryId')
+  const memoryId = sanitizeMemoryId(rawMemoryId)
+  const replayWithdrawal = useRef<() => void>(() => {})
+  const replayLookup = useCapturedRealityReplayLookup(memoryId, () => replayWithdrawal.current())
+  const memoryEntryActive = rawMemoryId === null || (Boolean(memoryId) && replayLookup.status === 'available' && replayLookup.entry?.assetId === assetId)
+  const returnHref = capturedRealityJourneyReturnHref(memoryId)
   const reducedMotion = useReducedMotion()
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [metadata, setMetadata] = useState<AssetMetadata | null>(null)
@@ -155,6 +176,7 @@ export default function CapturedRealityRouteClient() {
   const revokedRef = useRef(false)
   const truthLabelRef = useRef<string | undefined>(undefined)
   const renewedDeliveryRef = useRef<RuntimeDelivery | null>(null)
+  const activeLoadAbort = useRef<AbortController | null>(null)
 
   const exit = useCallback(() => {
     // Revoke before scheduling navigation: a pending callable may resolve while
@@ -165,9 +187,20 @@ export default function CapturedRealityRouteClient() {
     setDelivery(null)
     renewedDeliveryRef.current = null
     setDecision(suppressedDecision(truthLabelRef.current))
-    if (window.history.length > 1) router.back()
-    else router.push('/replay')
-  }, [router])
+    router.push(returnHref)
+  }, [router, returnHref])
+
+  const requestHeaders = useCallback(async () => {
+    const current = getAuth(app).currentUser
+    if (!current || current !== user || revokedRef.current) throw new Error('PRIVATE_IDENTITY_UNAVAILABLE')
+    const token = await current.getIdToken()
+    if (getAuth(app).currentUser !== current || revokedRef.current) throw new Error('PRIVATE_IDENTITY_CHANGED')
+    return { Authorization: `Bearer ${token}` }
+  }, [user])
+
+  const streamAuthority = useMemo<CapturedRealityStreamAuthority | undefined>(() => delivery ? {
+    requestHeaders, expectedSha256: delivery.runtimeSha256, expectedByteLength: delivery.runtimeByteLength,
+  } : undefined, [delivery, requestHeaders])
 
   const suppress = useCallback((message: string) => {
     revokedRef.current = true
@@ -179,6 +212,10 @@ export default function CapturedRealityRouteClient() {
     setDecision(suppressedDecision())
     setState({ kind: 'suppressed', message })
   }, [])
+  replayWithdrawal.current = () => {
+    activeLoadAbort.current?.abort()
+    suppress('Captured Reality closed because the selected Replay memory is unavailable.')
+  }
 
   useEffect(() => {
     if (!assetId) {
@@ -206,19 +243,25 @@ export default function CapturedRealityRouteClient() {
 
   useEffect(() => {
     if (!user || !assetId) return
+    if (!memoryEntryActive) {
+      suppress('Captured Reality closed because the selected Replay memory is unavailable.')
+      return
+    }
 
     revokedRef.current = false
     setState({ kind: 'loading' })
     setDelivery(null)
 
     let disposed = false
-    const identityCurrent = () => getAuth(app).currentUser?.uid === user.uid
+    const identityCurrent = () => getAuth(app).currentUser === user
     const abort = new AbortController()
+    activeLoadAbort.current = abort
     const stops: Unsubscribe[] = []
 
     const stopForPrivacy = (message: string) => {
       if (disposed) return
       abort.abort()
+      if (activeLoadAbort.current === abort) activeLoadAbort.current = null
       suppress(message)
     }
 
@@ -257,7 +300,8 @@ export default function CapturedRealityRouteClient() {
       (snapshot) => {
         const memoryMode = policyMode(snapshot, 'memory')
         const locationMode = policyMode(snapshot, 'location')
-        if (!modeAllowed(memoryMode) || !modeAllowed(locationMode)) {
+        if (!policyAuthorityActive(snapshot, user.uid) || !modeAllowed(memoryMode) || !modeAllowed(locationMode)
+          || (rawMemoryId !== null && snapshot.get('domains.memory.replayVisible') !== true)) {
           stopForPrivacy('Captured Reality closed because memory or location consent is no longer active.')
         }
       },
@@ -299,7 +343,7 @@ export default function CapturedRealityRouteClient() {
         const nextDelivery = await loadRuntimeDelivery(assetId, accessMode)
         if (disposed || revokedRef.current || !identityCurrent()) return
 
-        const hasLength = await contentLengthAvailable(nextDelivery.url, abort.signal)
+        const hasLength = await contentLengthAvailable(nextDelivery, requestHeaders, abort.signal)
         if (disposed || revokedRef.current || !identityCurrent()) return
 
         const capability = capturedRealityBrowserCapability({
@@ -327,17 +371,18 @@ export default function CapturedRealityRouteClient() {
       disposed = true
       window.clearTimeout(assetAuthorityTimeout)
       abort.abort()
+      if (activeLoadAbort.current === abort) activeLoadAbort.current = null
       for (const stop of stops) stop()
       setDelivery(null)
     }
-  }, [accessMode, assetId, suppress, user])
+  }, [accessMode, assetId, memoryEntryActive, rawMemoryId, suppress, user, requestHeaders])
 
   useEffect(() => {
     if (!user || !assetId || !delivery || state.kind !== 'ready') return
     let cancelled = false
     let timer: number | null = null
     let activeAbort: AbortController | null = null
-    const identityCurrent = () => getAuth(app).currentUser?.uid === user.uid
+    const identityCurrent = () => getAuth(app).currentUser === user
 
     const scheduleRenewal = (expiresAt: string) => {
       const expires = Date.parse(expiresAt)
@@ -345,22 +390,26 @@ export default function CapturedRealityRouteClient() {
         suppress('Captured Reality closed because the private delivery expiry was invalid.')
         return
       }
-      const refreshIn = Math.max(5_000, expires - Date.now() - 60_000)
+      const refreshIn = Math.min(30_000, Math.max(5_000, expires - Date.now() - 60_000))
       timer = window.setTimeout(() => {
         void (async () => {
           const renewalAbort = new AbortController()
           activeAbort = renewalAbort
+          activeLoadAbort.current = renewalAbort
           try {
             const next = await loadRuntimeDelivery(assetId, accessMode)
             if (cancelled || revokedRef.current || !identityCurrent()) return
+            if (next.runtimeSha256 !== delivery.runtimeSha256
+              || next.runtimeByteLength !== delivery.runtimeByteLength
+              || next.storageGeneration !== delivery.storageGeneration) throw new Error('PRIVATE_ARTIFACT_REVISION_CHANGED')
             const prerequisites = localBrowserPrerequisites()
-            const hasLength = await contentLengthAvailable(next.url, renewalAbort.signal)
+            const hasLength = await contentLengthAvailable(next, requestHeaders, renewalAbort.signal)
             if (cancelled || revokedRef.current || !identityCurrent()) return
             const capability = capturedRealityBrowserCapability({ ...prerequisites, contentLengthAvailable: hasLength })
             if (!capability.supported) throw new Error('browser capability changed')
 
             // Do not swap the active URL: the already-loaded GPU resource remains
-            // valid after its signed fetch URL expires. Cache the renewed authority
+            // valid while current authority is observed. Cache the renewed descriptor
             // only for a future recovery/new fetch so URL rotation cannot remount a
             // 160 MiB splat in the middle of an open memory.
             renewedDeliveryRef.current = next
@@ -377,9 +426,10 @@ export default function CapturedRealityRouteClient() {
     return () => {
       cancelled = true
       activeAbort?.abort()
+      if (activeLoadAbort.current === activeAbort) activeLoadAbort.current = null
       if (timer !== null) window.clearTimeout(timer)
     }
-  }, [accessMode, assetId, delivery, state.kind, suppress, user])
+  }, [accessMode, assetId, delivery, state.kind, suppress, user, requestHeaders])
 
   const stateMessage = useMemo(() => {
     if (state.kind === 'auth-loading') return 'Checking private identity…'
@@ -391,12 +441,12 @@ export default function CapturedRealityRouteClient() {
 
   if (!assetId || user === undefined || !user || state.kind === 'loading' || state.kind === 'error') {
     return (
-      <main data-testid="captured-reality-private-route" data-state={state.kind} style={{ minHeight: '100svh', display: 'grid', placeItems: 'center', padding: 24, background: '#05070b', color: '#f7f7f5' }}>
-        <section aria-live="polite" style={{ maxWidth: 560, textAlign: 'center' }}>
-          <p>{stateMessage}</p>
+      <main data-testid="captured-reality-private-route" data-state={state.kind}>
+        <MemoryExperienceState title="Captured place" journey="Replay · Captured Reality" message={stateMessage} guidance="A captured place opens from an available memory with an authorized reconstruction. Return to your memory to see its available experiences.">
           {state.kind === 'unauthenticated' ? <a href="/login">Continue securely</a> : null}
-          <button type="button" onClick={exit}>Return to Replay</button>
-        </section>
+          <button type="button" onClick={exit}>Return to memory</button>
+          <AdamLauncherSlot name="captured-reality-fallback" as="div" />
+        </MemoryExperienceState>
       </main>
     )
   }
@@ -409,10 +459,11 @@ export default function CapturedRealityRouteClient() {
         </p>
       ) : null}
       <CapturedRealityPrivateScene
-        decision={decision}
+        decision={memoryEntryActive ? decision : suppressedDecision()}
         reducedMotion={reducedMotion}
         onExit={exit}
         onOpenProvenance={() => setShowProvenance((value) => !value)}
+        authority={memoryEntryActive ? streamAuthority : undefined}
       />
       {showProvenance && metadata ? (
         <aside

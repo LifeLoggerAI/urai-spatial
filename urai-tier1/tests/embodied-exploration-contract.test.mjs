@@ -5,6 +5,7 @@ import fs from 'node:fs'
 const read = (relativePath) => fs.readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8')
 const kernel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
+const journeyMessages = read('src/lib/i18n/journeyMessages.ts')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
@@ -43,10 +44,12 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
     'data-home-ground-affordance="home-ground-environmental-threshold"',
     'data-home-life-map-affordance="home-life-map-sky-lookout"',
     'data-home-context-owner="world-local-context-only"',
-    'aria-label="Open URAI Orb companion"',
-    'aria-label="Open Ground directly"',
-    'aria-label="Open Life Map directly"',
+    "aria-label={locale.text('home.orbAction')}",
+    "aria-label={locale.text('home.groundAction')}",
+    "aria-label={locale.text('home.lifeMapAction')}",
   ]) has(homeRuntime, marker)
+  has(journeyMessages, "'home.orbAction': { id:'home.orbAction', source:\"Open URAI Orb companion\"")
+  has(journeyMessages, "'home.groundAction': { id:'home.groundAction', source:\"Open Ground directly\"")
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld|data-home-ground-portal=|data-home-life-map-portal=/)
 
   has(assetHome, 'HomeWorldProduction')
@@ -109,7 +112,10 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
     'home-visible-navigable-sanctuary-world',
   ]) has(finalHome, marker)
   assert.match(homeRuntime, /accessible-fallback-after-renderer-failure/)
-  assert.match(homeRuntime, /<HomeSpatialWorldFinal \/>/)
+  assert.match(homeRuntime, /data-home-fallback-canon="inhabited-natural-sanctuary"/)
+  assert.match(homeRuntime, /data-home-fallback-retired-shell="absent"/)
+  assert.match(homeRuntime, /<HomeAccessibleSanctuaryFallback \/>/)
+  assert.doesNotMatch(homeRuntime, /<HomeSpatialWorldFinal \/>/)
 })
 
 test('Home keeps one physical stateful Orb owner and semantic access parity', () => {
@@ -124,11 +130,11 @@ test('Home keeps one physical stateful Orb owner and semantic access parity', ()
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
   assert.match(routeOwner, /background:\s*transparent\s*!important/)
   assert.match(homeRuntime, /data-testid="home-semantic-ground"/)
-  assert.match(homeRuntime, /<a[\s\S]{0,220}href="\/ground\/\?entryPortal=home-ground&cameraCheckpoint=home-ground-descent"/)
+  assert.match(homeRuntime, /<a[\s\S]{0,220}href=\{homeJourneyHref\('\/ground\/\?entryPortal=home-ground&cameraCheckpoint=home-ground-descent', currentSearch\)\}/)
   assert.match(homeRuntime, /data-testid="home-semantic-ground"/)
   assert.doesNotMatch(homeRuntime, /data-testid="home-semantic-ground"[\s\S]{0,180}onClick=/)
   assert.match(homeRuntime, /data-testid="home-semantic-life-map"/)
-  assert.match(homeRuntime, /href="\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete"/)
+  assert.match(homeRuntime, /href=\{homeJourneyHref\('\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete', currentSearch\)\}/)
 })
 
 test('Ground remains walkable infrastructure with paths, boundaries and semantic exits', () => {
@@ -152,7 +158,9 @@ test('Ground remains walkable infrastructure with paths, boundaries and semantic
     'const BOUNDS =',
     'obstacles:',
   ]) has(groundGraph, marker)
-  assert.match(ground, /onEscape:\s*\(\) => router\.push\("\/home\?returnFrom=ground"\)/)
+  assert.match(ground, /onEscape:\s*requestUraiWorldReturn/)
+  assert.match(ground, /className="ground-home-return"[^\n]*onClick=\{requestUraiWorldReturn\}/)
+  assert.doesNotMatch(ground, /router\.push\("\/home\?returnFrom=ground"\)/)
   assert.match(ground, /onFocus=\{\(event\) => event\.currentTarget\.scrollIntoView\(\{ block: "nearest", inline: "nearest" \}\)\}/)
   assert.match(ground, /min-height:48px/)
   assert.match(embodiedLayout, /data-world-destination='infrastructure-hub'[\s\S]*\.urai-movement-help/)
@@ -171,10 +179,18 @@ test('Life Map keeps independent non-Orb travel, semantic depth and overview rec
 })
 
 test('travel infrastructure preserves fallback, route ownership and canonical ascent capability', () => {
-  for (const marker of ['URAI_WORLD_TRAVEL_EVENT', 'buildFallbackHref', 'commitHardFallback', 'WORLD_TRAVEL_FALLBACK_MS', 'markHomeAscentClosing']) has(worldEvents, marker)
-  for (const marker of ['beginTravelRef.current(request)', 'transitionDuration(request.destination)', 'router.push(href)', 'navigationWatchdog']) has(worldTransitions, marker)
+  for (const marker of ['URAI_WORLD_TRAVEL_EVENT', 'buildFallbackHref', 'commitHardFallback', 'WORLD_TRAVEL_FALLBACK_MS', 'markHomeAscentClosing', 'destinationSurfaceReady']) has(worldEvents, marker)
+  assert.match(worldEvents, /window\.location\.reload\(\)/)
+  assert.match(worldEvents, /current === targetLocation/)
+
+  assert.match(worldEvents, /destination === 'replay'[\s\S]*cinematic-replay-client/)
+  assert.match(worldEvents, /destination === 'passport'[\s\S]*passport-ownership-vault/)
+  assert.match(worldEvents, /currentLocation === startingLocation \|\| !destinationSurfaceReady\(request\.destination\)/)
+  for (const marker of ['beginTravelRef.current(request)', 'transitionDuration(request.destination)', 'router.push(href)', 'navigationWatchdog', 'destinationSurfaceReady(request.destination)']) has(worldTransitions, marker)
   for (const marker of ['enterLifeMap: () => set({ mode: "ASCENT"', 'phase: "ASCENT"', 'isTransitioning: true', 'inputLocked: true', 'progress: 0']) has(sceneStore, marker)
   assert.match(worldTransitions, /currentWorld\.destination === 'life-map' \|\| currentWorld\.destination === 'location-map'/)
+  assert.doesNotMatch(worldTransitions, /requiresHardDocumentNavigation/)
+  assert.match(worldTransitions, /normalizedPathname\(window\.location\.pathname\) !== targetPathname[\s\S]*!destinationSurfaceReady\(request\.destination\)[\s\S]*window\.location\.assign\(href\)/)
 })
 
 test('embodied movement never removes semantic Focus and Replay exits', () => {

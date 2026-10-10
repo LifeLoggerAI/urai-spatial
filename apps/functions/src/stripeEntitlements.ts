@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
+import { assertCheckoutSubscriptionMatch, invoiceSubscriptionId, invoiceBelongsToSubscription, settledStripeSubscriptionStatus } from './stripeEntitlementEvent'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -38,6 +39,8 @@ const WEBHOOK_EVENTS = new Set([
   'customer.subscription.created',
   'customer.subscription.updated',
   'customer.subscription.deleted',
+  'invoice.paid',
+  'invoice.payment_failed',
   'charge.refunded',
   'charge.dispute.created',
   'charge.dispute.closed',
@@ -176,7 +179,11 @@ async function findByCustomer(customerId: string): Promise<StoredEntitlement | n
   return { ...defaultEntitlement(doc.id), ...(doc.data() as Partial<StoredEntitlement>), userId: doc.id }
 }
 
-async function applyOrderedEntitlement(record: StoredEntitlement, event: Stripe.Event) {
+async function applyOrderedEntitlement(
+  record: StoredEntitlement,
+  event: Stripe.Event,
+  resolveCurrentSubscription?: () => Promise<StoredEntitlement>,
+) {
   const ref = admin.firestore().collection(ENTITLEMENT_COLLECTION).doc(record.userId)
   return admin.firestore().runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref)
@@ -186,12 +193,50 @@ async function applyOrderedEntitlement(record: StoredEntitlement, event: Stripe.
 
     if (current.stripeLastEventId === event.id) return { applied: false, reason: 'duplicate-event' }
     if ((current.stripeLastEventCreated ?? 0) > event.created) return { applied: false, reason: 'stale-event' }
-    if ((current.stripeLastEventCreated ?? 0) === event.created && current.stripeLastEventId && current.stripeLastEventId > event.id) {
-      return { applied: false, reason: 'equal-time-precedence' }
+    let nextRecord = record
+    let currentProviderResolved = false
+    if (
+      (current.stripeLastEventCreated ?? 0) === event.created
+      && current.subscriptionStatus !== 'canceled' && record.subscriptionStatus !== 'canceled'
+      && current.stripeSubscriptionId && record.stripeSubscriptionId
+      && (current.subscriptionStatus !== record.subscriptionStatus || current.planId !== record.planId)
+    ) {
+      const sameBinding = Boolean(current.stripeCustomerId
+        && current.stripeCustomerId === record.stripeCustomerId
+        && current.stripeSubscriptionId === record.stripeSubscriptionId)
+      try {
+        if (!sameBinding || !resolveCurrentSubscription) throw new Error('Unresolved Stripe subscription authority')
+        const latest = await resolveCurrentSubscription()
+        if (latest.userId !== record.userId || latest.planId !== record.planId
+          || latest.stripeCustomerId !== record.stripeCustomerId
+          || latest.stripeSubscriptionId !== record.stripeSubscriptionId) {
+          throw new Error('Stripe subscription authority mismatch')
+        }
+        nextRecord = latest
+        currentProviderResolved = true
+      } catch {
+        const currentPaid = current.subscriptionStatus === 'active' || current.subscriptionStatus === 'trialing'
+        const incomingPaid = record.subscriptionStatus === 'active' || record.subscriptionStatus === 'trialing'
+        if (sameBinding && currentPaid && !incomingPaid) {
+          transaction.set(ref, { ...current, subscriptionStatus: record.subscriptionStatus, updatedAt: Date.now() }, { merge: true })
+        }
+        return { applied: false, reason: 'provider-state-unresolved', retryable: true }
+      }
+    }
+    if ((current.stripeLastEventCreated ?? 0) === event.created) {
+      const precedence: Record<SubscriptionStatus, number> = {
+        trialing: 20, active: 30, none: 40, incomplete: 50, past_due: 60, canceled: 70,
+      }
+      if (
+        !currentProviderResolved && (precedence[nextRecord.subscriptionStatus] < precedence[current.subscriptionStatus]
+        || (precedence[nextRecord.subscriptionStatus] === precedence[current.subscriptionStatus]
+          && current.stripeLastEventId && current.stripeLastEventId > event.id)
+        )
+      ) return { applied: false, reason: 'equal-time-precedence' }
     }
 
     transaction.set(ref, {
-      ...record,
+      ...nextRecord,
       stripeLastEventCreated: event.created,
       stripeLastEventId: event.id,
       updatedAt: Date.now(),
@@ -222,7 +267,7 @@ async function resolveIdentity(metadata: Stripe.Metadata | undefined, customer: 
   return { userId, planId }
 }
 
-async function resolveSubscriptionEvent(stripe: Stripe, event: Stripe.Event): Promise<ResolvedEvent> {
+async function resolveSubscriptionEvent(stripe: Stripe, event: Stripe.Event): Promise<ResolvedEvent | null> {
   const type = event.type
   let metadata: Stripe.Metadata | undefined
   let resolvedCustomer: string | null = null
@@ -244,16 +289,32 @@ async function resolveSubscriptionEvent(stripe: Stripe, event: Stripe.Event): Pr
 
     if (resolvedSubscription) {
       const subscription = await stripe.subscriptions.retrieve(resolvedSubscription)
+      assertCheckoutSubscriptionMatch(session, subscription)
       metadata = { ...(subscription.metadata ?? {}), ...(metadata ?? {}) }
       resolvedCustomer = resolvedCustomer ?? customerId(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer)
-      status = mapStatus(subscription.status)
+      status = await settledStripeSubscriptionStatus({ ...subscription, status: mapStatus(subscription.status) }, (id) => stripe.invoices.retrieve(id))
     }
+  } else if (type === 'invoice.paid' || type === 'invoice.payment_failed') {
+    const invoice = event.data.object as Stripe.Invoice
+    const id = invoiceSubscriptionId(invoice)
+    if (!id) return null
+    const subscription = await stripe.subscriptions.retrieve(id)
+    if (!invoiceBelongsToSubscription(invoice, subscription)) return null
+    metadata = subscription.metadata ?? undefined
+    resolvedCustomer = customerId(subscription.customer)
+    resolvedSubscription = subscription.id
+    status = await settledStripeSubscriptionStatus(
+      { ...subscription, status: mapStatus(subscription.status) },
+      (latestId) => stripe.invoices.retrieve(latestId),
+      type === 'invoice.payment_failed',
+    )
   } else {
     const subscription = event.data.object as Stripe.Subscription
     metadata = subscription.metadata ?? undefined
     resolvedCustomer = customerId(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer)
     resolvedSubscription = subscription.id
-    status = type === 'customer.subscription.deleted' ? 'canceled' : mapStatus(subscription.status)
+    status = type === 'customer.subscription.deleted' ? 'canceled'
+      : await settledStripeSubscriptionStatus({ ...subscription, status: mapStatus(subscription.status) }, (id) => stripe.invoices.retrieve(id))
   }
 
   return {
@@ -323,15 +384,36 @@ export const createStripeCheckout = functions.https.onRequest(async (req, res) =
   const stripe = stripeClient()
   const priceId = process.env[PRICE_ENV_BY_PLAN[planId]]
   const redirectBase = approvedReturnUrl(req.body?.returnUrl)
-  if (!stripe || !priceId || !redirectBase) {
+  const mode = runtimeMode()
+  if (!stripe || !priceId || !redirectBase || !mode) {
     res.status(503).json({ error: 'Stripe environment is not configured for this request.' })
     return
   }
 
   const existing = await readEntitlement(uid)
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+  let price: Stripe.Price
+  try {
+    price = await stripe.prices.retrieve(priceId)
+  } catch {
+    res.status(502).json({ error: 'Configured Stripe Price could not be verified.' })
+    return
+  }
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+  if (price.id !== priceId || price.active !== true || price.livemode !== (mode === 'production')) {
+    res.status(500).json({ error: 'Configured Stripe Price authority mismatch.' })
+    return
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: planId === 'founder' ? 'payment' : 'subscription',
-    line_items: [{ price: priceId, quantity: 1 }],
+    line_items: [{ price: price.id, quantity: 1 }],
     success_url: withStripeResult(redirectBase, 'success', planId),
     cancel_url: withStripeResult(redirectBase, 'cancelled', planId),
     customer: existing.stripeCustomerId || undefined,
@@ -341,6 +423,10 @@ export const createStripeCheckout = functions.https.onRequest(async (req, res) =
     subscription_data: planId === 'founder' ? undefined : { metadata: { planId, userId: uid } },
   })
 
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
   res.status(200).json({ url: session.url })
 })
 
@@ -362,6 +448,10 @@ export const createStripeCustomerPortal = functions.https.onRequest(async (req, 
 
   const stripe = stripeClient()
   const entitlement = await readEntitlement(uid)
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
   const returnUrl = approvedReturnUrl(req.body?.returnUrl)
   const mode = runtimeMode()
   if (!stripe || !returnUrl || !mode) {
@@ -390,11 +480,39 @@ export const createStripeCustomerPortal = functions.https.onRequest(async (req, 
     return
   }
 
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+  const configuration = process.env.STRIPE_BILLING_PORTAL_CONFIGURATION
+  if (configuration) {
+    let portalConfiguration: Stripe.BillingPortal.Configuration
+    try {
+      portalConfiguration = await stripe.billingPortal.configurations.retrieve(configuration)
+    } catch {
+      res.status(502).json({ error: 'Stripe portal configuration could not be verified.' })
+      return
+    }
+    if (await authenticatedUid(req) !== uid) {
+      res.status(401).json({ error: 'Unauthorized' })
+      return
+    }
+    if (portalConfiguration.id !== configuration || portalConfiguration.active !== true
+      || portalConfiguration.livemode !== (mode === 'production')) {
+      res.status(500).json({ error: 'Stripe portal configuration authority mismatch.' })
+      return
+    }
+  }
+
   const session = await stripe.billingPortal.sessions.create({
     customer: customer.id,
     return_url: returnUrl.toString(),
-    configuration: process.env.STRIPE_BILLING_PORTAL_CONFIGURATION || undefined,
+    configuration: configuration || undefined,
   })
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
   res.status(200).json({ url: session.url })
 })
 
@@ -411,7 +529,12 @@ export const getStripeEntitlement = functions.https.onRequest(async (req, res) =
     return
   }
 
-  res.status(200).json({ entitlement: await readEntitlement(uid) })
+  const entitlement = await readEntitlement(uid)
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+  res.status(200).json({ entitlement })
 })
 
 export const handleStripeWebhook = functions.https.onRequest(async (req, res) => {
@@ -486,7 +609,27 @@ export const handleStripeWebhook = functions.https.onRequest(async (req, res) =>
     stripeLastEventCreated: event.created,
     stripeLastEventId: event.id,
     updatedAt: Date.now(),
-  }, event)
+  }, event, async () => {
+    if (!resolved.subscriptionId) throw new Error('Missing Stripe subscription authority')
+    const current = await stripe.subscriptions.retrieve(resolved.subscriptionId)
+    const resolvedCustomer = customerId(current.customer)
+    const identity = await resolveIdentity(current.metadata ?? undefined, resolvedCustomer)
+    return {
+      ...defaultEntitlement(identity.userId ?? ''),
+      userId: identity.userId ?? '', planId: identity.planId ?? 'free',
+      stripeCustomerId: resolvedCustomer, stripeSubscriptionId: current.id,
+      subscriptionStatus: await settledStripeSubscriptionStatus(
+        { ...current, status: mapStatus(current.status) }, (id) => stripe.invoices.retrieve(id),
+        event.type === 'invoice.payment_failed',
+      ),
+    }
+  })
+
+  if ('retryable' in application && application.retryable) {
+    res.status(500).json({ error: 'Stripe provider state could not be resolved' })
+    return
+  }
 
   res.status(200).json({ received: true, ...application })
 })
+

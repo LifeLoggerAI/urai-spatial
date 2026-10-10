@@ -1,0 +1,83 @@
+name: Focus Responsive Header Proof
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/focus-responsive-header-proof.yml'
+      - 'urai-tier1/src/app/focus/**'
+      - 'urai-tier1/tests/accessibility-performance-focus-mobile-layout.spec.ts'
+      - 'playwright.accessibility.config.ts'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: focus-responsive-header-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+  NEXT_PUBLIC_URAI_BUILD_SHA: ${{ github.event.pull_request.head.sha }}
+  NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
+  PLAYWRIGHT_BROWSERS_PATH: '0'
+
+jobs:
+  responsive-header:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact isolated donor
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Verify clean exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Build the isolated donor without provider credentials
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm build:static
+          pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+      - name: Verify disclosure and control separation at six viewport widths
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/focus-responsive-header
+          set +e
+          FORCE_COLOR=0 pnpm exec playwright test --config playwright.accessibility.config.ts \
+            urai-tier1/tests/accessibility-performance-focus-mobile-layout.spec.ts \
+            2>&1 | tee artifacts/focus-responsive-header/browser.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if grep -Eq '(^|[[:space:]])[1-9][0-9]* flaky([[:space:]]|$)' artifacts/focus-responsive-header/browser.log; then
+            echo 'Recovered browser flake is a release failure.' >&2
+            exit 86
+          fi
+          exit "$status"
+      - name: Retain exact donor browser geometry and screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: focus-responsive-header-${{ env.URAI_EXACT_HEAD }}
+          path: |
+            artifacts/focus-responsive-header
+            artifacts/accessibility-performance/playwright-report
+            artifacts/accessibility-performance/test-results
+          if-no-files-found: error
+          retention-days: 90

@@ -1,7 +1,10 @@
 .urai-world-atmosphere {
   position: fixed;
   inset: 0;
-  z-index: 2;
+  /* The isolated world shell keeps this above its background and below route
+     stacking contexts. Each scene owns effects that should cover its canvas;
+     shared weather and depth must never paint over route text or controls. */
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
   isolation: isolate;
@@ -23,7 +26,7 @@
   mix-blend-mode: screen;
 }
 
-.urai-world-atmosphere__horizon {
+.urai-world-atmosphere > span.urai-world-atmosphere__horizon {
   top: auto;
   height: 42vh;
   background: linear-gradient(180deg, transparent, rgba(60, 205, 196, .08) 48%, rgba(0, 0, 0, .28));
@@ -50,6 +53,16 @@
 
 .urai-world-atmosphere__depth {
   box-shadow: inset 0 0 130px rgba(0,0,0,.42), inset 0 -16vh 120px rgba(0,0,0,.34);
+}
+
+/* Reading surfaces own their contrast; atmospheric overlays belong behind them. */
+.urai-world-runtime:has([data-document-scroll-owner='true']) > .urai-world-atmosphere {
+  display: none;
+}
+
+/* Home already renders its sky, haze, stars and lighting in the actual scene. */
+.urai-world-atmosphere[data-realm='home'] {
+  display: none;
 }
 
 .urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__sky {
@@ -102,7 +115,7 @@
 }
 
 @media (max-width: 560px) {
-  .urai-world-atmosphere__horizon { height: 34vh; }
+  .urai-world-atmosphere > span.urai-world-atmosphere__horizon { height: 34vh; }
   .urai-world-atmosphere__threshold { inset-inline: 12vw; }
 }
 

@@ -12,9 +12,9 @@
   "bytes": 612,
   "sha256": "7034eabf693fdd6701b648750cff183d104fba78adef68c9bd92ef545a574046",
   "measured": {
-    "bytes": 612
+    "format": "json"
   },
-  "compressionStatus": "json",
+  "compressionStatus": "uncompressed-candidate",
   "requiredCompression": "json",
   "fallback": "accessible-static-loading-state",
   "source": "URAI deterministic candidate forge",
@@ -22,5 +22,12 @@
   "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
   "generatedAt": "2026-07-23T21:41:50.580Z",
   "releaseState": "candidate-not-production-ready",
-  "absolutePath": "urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json"
+  "absolutePath": "urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json",
+  "measurementReconciliation": {
+    "sourceSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
+    "observedAt": "2026-10-06T17:20:57.488712+00:00",
+    "method": "audit-launch-critical-artifact.mjs actual-byte inspection",
+    "assetBytesChanged": false,
+    "finalReviewGranted": false
+  }
 }

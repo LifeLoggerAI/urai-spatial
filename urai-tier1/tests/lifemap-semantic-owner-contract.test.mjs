@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { URAI_LAUNCH_LOCALES, URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
+import { localizedMessage } from '../src/lib/i18n/localePreference.ts'
 
 const navigator = await readFile(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
 const scene = await readFile(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
@@ -64,10 +66,19 @@ test('pointer keyboard and touch semantic paths converge on one single-fire sele
 test('semantic navigator is opt-in, semantically controlled, and keyboard accessible without a permanent rail', () => {
   assert.match(navigator, /const \[open, setOpen\] = useState\(false\)/)
   assert.match(navigator, /className="life-map-search-trigger"/)
-  assert.match(navigator, /aria-label="Search and navigate Life Map"/)
+  assert.match(navigator, /aria-label=\{locale.locale === 'en' \? 'Search and navigate Life Map' : `\$\{locale.text\('common.search'\)\} · \$\{locale.text\('nav.lifeMap'\)\}`\}/)
   assert.match(navigator, /aria-expanded=\{open\}/)
   assert.match(navigator, /onClick=\{\(\) => \{ setOpen\(\(value\) => !value\)/)
-  assert.match(navigator, /\{open \? <section className="life-map-navigator" aria-label="Search and filter Life Map" id="life-map-navigator">/)
+  assert.match(navigator, /\{open \? <section className="life-map-navigator" aria-labelledby="life-map-navigator-label" id="life-map-navigator">/)
+  assert.match(navigator, /<span id="life-map-navigator-label" className="sr-only" \{\.\.\.locale.props\('lifeMap.searchRegion'\)\}>\{locale.text\('lifeMap.searchRegion'\)\}<\/span>/)
+  assert.equal(URAI_SOURCE_MESSAGES['lifeMap.searchRegion'].source, 'Search and filter Life Map')
+  for (const requested of URAI_LAUNCH_LOCALES) {
+    const label = localizedMessage({ requested, preview: false }, 'lifeMap.searchRegion')
+    assert.equal(label.text, 'Search and filter Life Map')
+    assert.equal(label.locale, 'en')
+    assert.equal(label.direction, 'ltr')
+    assert.equal(label.preview, false)
+  }
   assert.match(navigator, /if \(event\.key === '\/'\)|if \(event\.key === "\/"\)/)
   assert.match(navigator, /setOpen\(true\)/)
   assert.match(navigator, /event\.key === 'Escape' && open|event\.key === "Escape" && open/)

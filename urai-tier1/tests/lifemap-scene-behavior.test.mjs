@@ -10,6 +10,8 @@ const world = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProducti
 const visualSystem = fs.readFileSync(new URL('../src/components/lifemap/lifeMapVisualSystem.ts', import.meta.url), 'utf8')
 const demo = fs.readFileSync(new URL('../src/components/lifemap/canonicalLifeMapDemoNodes.ts', import.meta.url), 'utf8')
 const navigator = fs.readFileSync(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
+const journeyMessages = fs.readFileSync(new URL('../src/lib/i18n/journeyMessages.ts', import.meta.url), 'utf8')
+const journeyControlMessages = fs.readFileSync(new URL('../src/lib/i18n/journeyControlMessages.ts', import.meta.url), 'utf8')
 const events = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts', import.meta.url), 'utf8')
 const shell = fs.readFileSync(new URL('../src/spatial/world/UraiWorldShell.tsx', import.meta.url), 'utf8')
 const isolation = fs.readFileSync(new URL('../src/spatial/world/lifeMapProductionIsolation.css', import.meta.url), 'utf8')
@@ -116,13 +118,15 @@ test('Selection Focus Replay Overview and Escape preserve artifact identity', ()
   assert.ok(source.includes('next.set("artifactFamily", resolveArtifactFamily(selected))'))
   assert.ok(source.includes('router.push(destinationHref("focus"))'))
   assert.ok(source.includes('router.push(destinationHref("replay"))'))
-  assert.ok(source.includes('if (selectedId) overview(); else router.push("/home")'))
+  assert.ok(source.includes('if (selectedId) overview(); else returnHome()'))
+  assert.ok(source.includes('router.push(homeJourneyHref("/home", params.toString()))'))
   assert.ok(source.includes('next.set("overview", "1")'))
   assert.match(source, /aria-label="Selected memory actions"/)
 })
 
 test('Semantic navigator supports search filters keyboard travel and connected destinations', () => {
-  assert.match(navigator, /Search memories, people, dates, places, themes, and eras/)
+  assert.ok(navigator.includes("placeholder={locale.text('lifeMap.searchHint')}"))
+  assert.ok(journeyMessages.includes("'lifeMap.searchHint': { id:'lifeMap.searchHint', source:\"Search memories, people, places…\""))
   assert.match(navigator, /TYPE_FILTERS/)
   assert.match(navigator, /typeFilter === 'all' \|\| node\.type === typeFilter|typeFilter === "all" \|\| node\.type === typeFilter/)
   assert.match(navigator, /eraFilter === 'all' \|\| node\.eraId === eraFilter|eraFilter === "all" \|\| node\.eraId === eraFilter/)
@@ -132,7 +136,8 @@ test('Semantic navigator supports search filters keyboard travel and connected d
   assert.match(navigator, /event\.key === '\/'|event\.key === "\/"/)
   assert.match(navigator, /selected\.connectedTo\.includes\(node\.id\)/)
   assert.match(navigator, /node\.connectedTo\.includes\(selected\.id\)/)
-  assert.match(navigator, /Connected/)
+  assert.match(navigator, /locale.text\('lifeMap.connected'\)/)
+  assert.match(journeyControlMessages, /"lifeMap.connected": \{id:"lifeMap.connected",source:"Connected"/)
   assert.doesNotMatch(navigator, /destinationHref\("timeline"\)|destinationHref\("location-map"\)/)
   assert.match(navigator, /data-visible-count=/)
   assert.match(navigator, /min-height:48px/)
@@ -142,7 +147,7 @@ test('Semantic navigator supports search filters keyboard travel and connected d
 test('Only explicit demo identity can load the coherent disclosed sample universe', () => {
   assert.ok(source.includes('const explicitDemoRequested = params.get("demo") === "1"'))
   assert.ok(source.includes('useLifeMapEvents(explicitDemoRequested ? "demo-user" : authenticatedUserId ?? undefined)'))
-  assert.ok(source.includes('if (explicitDemoRequested) next.set("demo", "1")'))
+  assert.ok(source.includes('withLifeMapSelectionIdentity(params, next, memoryId)'))
   assert.match(navigator, /const explicitDemo = params\.get\('demo'\) === '1'|const explicitDemo = params\.get\("demo"\) === "1"/)
   assert.match(navigator, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)|useLifeMapEvents\(explicitDemo \? "demo-user" : authenticatedUserId \?\? undefined\)/)
   assert.match(events, /function explicitDemoEnabled\(explicitUserId\?: string\) \{\s*return explicitUserId === "demo-user";/)
@@ -176,6 +181,7 @@ test('Reduced motion portrait adaptive quality and high contrast retain equivale
   assert.match(source, /size\.height > size\.width/)
   assert.match(source, /positionGoal\.current\.set\(0, 2\.15, 16\.6\)/)
   assert.match(source, /@media\(max-width:700px\)/)
+  assert.match(isolation, /\.life-map-status \{ width: 1px !important; height: 1px !important;[\s\S]*clip-path: inset\(50%\) !important;/)
   assert.match(source, /@media\(prefers-reduced-motion:reduce\)/)
   assert.match(source, /@media\(forced-colors:active\)/)
   assert.ok(source.includes('min-height:58px'))
@@ -203,4 +209,13 @@ test('WebGL context loss preserves truthful semantic recovery', () => {
   assert.ok(source.includes('Open semantic overview'))
   assert.ok(canonical.includes('data-testid="urai-life-map-authored-fallback"'))
   assert.ok(canonical.includes('requestUraiWorldReturn()'))
+})
+
+
+test('Life Map search recalculates translated type matching on locale and preview changes', () => {
+  // Search type labels come from the selected locale and preview preference.
+  // Without all three dependencies React can retain obsolete results when a
+  // user switches languages while the search panel remains mounted.
+  assert.match(navigator, /const searchLocale=locale\.locale/)
+  assert.match(navigator, /const visibleNodes = useMemo\([\s\S]*?\[eraFilter, nodes, search, typeFilter, requestedLocale, previewLocale, searchLocale\]/)
 })

@@ -143,9 +143,25 @@ async function poll(label, sample, predicate, timeout = 30_000, interval = 75) {
   throw new Error(`${label} timed out after ${timeout}ms; last=${JSON.stringify(last)}`)
 }
 
+async function waitForDocumentStylesheets(page, timeout = 60_000) {
+  await page.waitForLoadState('load', { timeout })
+  return poll('complete document stylesheets', () => page.evaluate(() => {
+    const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+    return {
+      readyState: document.readyState,
+      stylesheets: links.map((link) => ({ href: link.href, loaded: link.sheet !== null })),
+    }
+  }), (state) => state?.readyState === 'complete'
+    && state.stylesheets.length > 0
+    && state.stylesheets.every((sheet) => sheet.loaded), timeout)
+}
+
 async function goto(page, route, selector = ROOT) {
+  // Complete the current document before deliberate navigation can cancel its CSS.
+  if (page.url() !== 'about:blank') await waitForDocumentStylesheets(page)
   const response = await page.goto(new URL(route, base).toString(), { waitUntil: 'domcontentloaded', timeout: 60_000 })
   if (!response || response.status() !== 200) throw new Error(`${route} returned ${response?.status()}`)
+  await waitForDocumentStylesheets(page)
   if (selector === ROOT) {
     await page.locator('[data-testid="urai-r3f-canonical-lifemap"]').first().waitFor({ state: 'visible', timeout: 45_000 })
     const scene = page.locator(selector).first()
@@ -476,8 +492,13 @@ async function selectQuietReset(page, options = {}) {
   if (trigger.ariaLabel !== 'Search and navigate Life Map') throw new Error(`Life Map search trigger semantic label drifted: ${trigger.ariaLabel}`)
   await activateCanonicalControl(page, triggerSelector, trigger, options.touch ? 'touch' : options.keyboard ? 'keyboard' : 'pointer')
 
-  const navigatorSelector = 'section.life-map-navigator[aria-label="Search and filter Life Map"]'
-  await poll('canonical Life Map semantic navigator', () => page.evaluate((selector) => Boolean(document.querySelector(selector)), navigatorSelector), Boolean, 20_000, 50)
+  const navigatorSelector = 'section.life-map-navigator[aria-labelledby="life-map-navigator-label"]'
+  await poll('canonical Life Map semantic navigator', () => page.evaluate((selector) => {
+    const region = document.querySelector(selector)
+    const labelId = region?.getAttribute('aria-labelledby')
+    const label = labelId ? document.getElementById(labelId) : null
+    return Boolean(region && label && region.contains(label) && label.textContent === 'Search and filter Life Map')
+  }, navigatorSelector), Boolean, 20_000, 50)
 
   const resultSelector = `${navigatorSelector} button[data-life-map-semantic-result][data-life-map-node-id="quiet-reset"]`
   const result = await canonicalControlGeometry(page, resultSelector, 'canonical Quiet Reset semantic result')
@@ -511,8 +532,41 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
   if (!geometry.text.includes(name)) throw new Error(`${name} action text drifted: ${geometry.text}`)
   await activateCanonicalControl(page, selector, geometry, 'pointer')
   await waitForPath(page, destinationPath)
+  await waitForDocumentStylesheets(page)
   await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
   await stable(page)
+}
+
+async function waitForReplayRenderedWorld(page, timeout = 60_000) {
+  const destination = new URL(page.url())
+  const memoryId = destination.searchParams.get('memoryId') || destination.searchParams.get('node')
+  const manifestId = destination.searchParams.get('manifestId')
+  if (destination.pathname.replace(/\/$/, '') !== '/replay' || destination.searchParams.get('demo') !== '1' || !memoryId || !manifestId) {
+    throw new Error('Replay rendered proof requires the selected memory and manifest route identity')
+  }
+  // Match useSelectedMemory's exact disclosed-fixture namespace, not the public route token.
+  const resolvedMemoryId = memoryId.startsWith('demo:') ? memoryId : `demo:${memoryId}`
+  return poll('selected Replay media and first rendered frame', () => page.evaluate(() => {
+    const root = document.querySelector('[data-testid="cinematic-replay-client"]')
+    if (!(root instanceof HTMLElement)) return null
+    const canvas = root.querySelector('canvas')
+    return {
+      memoryId: root.dataset.memoryId,
+      manifestId: root.dataset.manifestId,
+      mediaStatus: root.dataset.replayMediaStatus,
+      mediaReady: root.dataset.replayMediaReady,
+      webgl: root.dataset.webglState,
+      admission: root.dataset.replayEnvironmentFallback,
+      firstFrame: canvas instanceof HTMLCanvasElement && canvas.dataset.replayFirstFrame === 'true',
+    }
+  }), (state) => Boolean(state
+    && state.memoryId === resolvedMemoryId
+    && state.manifestId === manifestId
+    && state.mediaStatus === 'ready'
+    && state.mediaReady === 'true'
+    && state.webgl === 'ready'
+    && state.admission === 'disclosed-demo'
+    && state.firstFrame), timeout, 75)
 }
 
 function assertVisualSanity() {
@@ -745,7 +799,8 @@ async function desktopActionsAndKeyboard() {
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
     await clickRouteAction(page, 'Replay', '/replay', 'main')
-    await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset' })
+    const replayRenderProof = await waitForReplayRenderedWorld(page)
+    await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset', replayRenderProof })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)

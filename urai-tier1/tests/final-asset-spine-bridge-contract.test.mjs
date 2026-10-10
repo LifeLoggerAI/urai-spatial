@@ -41,4 +41,20 @@ test('final asset spine manifest remains present and route tiered', () => {
     assert.ok(manifest.routes[route], `missing route ${route}`)
   }
   assert.ok(manifest.shared['shared/orb'])
+  assert.equal(manifest.routes.focus.canon, 'Focus Memory Star')
+  assert.equal(manifest.routes.replay.canon, 'Replay')
+
+  const focusDesktop = fs.readFileSync(path.join(root, 'public/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg'), 'utf8')
+  const focusMobile = fs.readFileSync(path.join(root, 'public/assets/urai/final/tier2/focus/focus-memory-chamber-mobile.svg'), 'utf8')
+  const replayDesktop = fs.readFileSync(path.join(root, 'public/assets/urai/final/tier2/replay/replay-cinematic-stage-desktop.svg'), 'utf8')
+  const replayMobile = fs.readFileSync(path.join(root, 'public/assets/urai/final/tier2/replay/replay-cinematic-stage-mobile.svg'), 'utf8')
+
+  for (const focusAsset of [focusDesktop, focusMobile]) {
+    assert.match(focusAsset, /Focus Memory Star/)
+    assert.doesNotMatch(focusAsset, /Focus Chamber/)
+  }
+  for (const replayAsset of [replayDesktop, replayMobile]) {
+    assert.match(replayAsset, />Replay<\/text>/)
+    assert.doesNotMatch(replayAsset, /Replay Realm/)
+  }
 })

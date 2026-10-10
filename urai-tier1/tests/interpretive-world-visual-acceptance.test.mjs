@@ -17,10 +17,16 @@ function run(receipt) {
   return result
 }
 
-test('checked-in visual receipt truthfully remains pending', () => {
+test('checked-in visual receipt retains the inspected motion rejection without granting acceptance', () => {
   const result = spawnSync(process.execPath, [validator.pathname, currentReceipt.pathname], { encoding: 'utf8' })
   assert.equal(result.status, 0, result.stderr || result.stdout)
-  assert.match(result.stdout, /PENDING_LITERAL_REVIEW/)
+  assert.match(result.stdout, /REJECTED/)
+  const receipt = JSON.parse(fs.readFileSync(currentReceipt, 'utf8'))
+  assert.equal(receipt.review.overallAccepted, false)
+  assert.equal(receipt.review.geometryConsistencyAccepted, false)
+  assert.equal(receipt.items.filter(item => item.status === 'accepted').length, 0)
+  assert.equal(receipt.items.find(item => item.id === 'S06_CCW_ARC').status, 'rejected')
+  assert.match(receipt.items.find(item => item.id === 'S06_CCW_ARC').notes, /duplicated suns/)
 })
 
 test('visual acceptance requires every generated item to be accepted by a named reviewer', () => {

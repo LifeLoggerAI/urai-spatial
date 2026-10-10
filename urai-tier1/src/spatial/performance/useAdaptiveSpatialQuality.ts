@@ -56,9 +56,11 @@ function initialDocumentVisible() {
 }
 
 export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
-  const [reducedMotion, setReducedMotion] = useState(initialReducedMotion)
-  const [documentVisible, setDocumentVisible] = useState(initialDocumentVisible)
-  const [tier, setTier] = useState<SpatialQualityTier>(() => deriveTier(initialReducedMotion()))
+  // SSR and the browser's first hydration render must share one deterministic
+  // profile. Device/browser hints are applied immediately after hydration.
+  const [reducedMotion, setReducedMotion] = useState(false)
+  const [documentVisible, setDocumentVisible] = useState(true)
+  const [tier, setTier] = useState<SpatialQualityTier>('medium')
 
   useEffect(() => {
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -68,6 +70,10 @@ export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
     const updateMotion = () => setReducedMotion(motion.matches)
     const updateVisibility = () => setDocumentVisible(document.visibilityState === 'visible')
     const updateTier = () => setTier(deriveTier(motion.matches))
+
+    updateMotion()
+    updateVisibility()
+    updateTier()
 
     motion.addEventListener('change', updateMotion)
     motion.addEventListener('change', updateTier)

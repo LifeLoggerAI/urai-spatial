@@ -23,7 +23,7 @@ const destinations = [
     params: {
       from: 'home-sky',
       entryPortal: 'home-sky',
-      cameraCheckpoint: 'home-sky-ascent',
+      cameraCheckpoint: 'home-sky-ascent-complete',
     },
   },
 ] as const
@@ -124,12 +124,11 @@ async function waitForAuthorizedSettledIdentity(page: Page, destination: Destina
 }
 
 async function activate(page: Page, destination: Destination, activation: Activation) {
-  const navigation = page.getByRole('navigation', { name: 'Direct Home destinations' })
+  const navigation = page.getByRole('navigation', { name: 'Accessible Home destinations' })
   await expect(navigation).toBeVisible({ timeout: 30_000 })
-  const target = navigation.getByRole('button', { name: destination.label, exact: true })
+  const target = navigation.getByRole('link', { name: destination.label, exact: true })
   await expect(target).toBeVisible()
   await expect(target).toBeEnabled()
-  await target.scrollIntoViewIfNeeded()
 
   if (activation.method === 'keyboard') {
     await target.focus()
@@ -174,8 +173,6 @@ async function proveCanonicalTravel(
 ) {
   const page = await context.newPage()
   await page.goto('/home/', { waitUntil: 'domcontentloaded' })
-  await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
-
   await activate(page, destination, activation)
 
   const expected = expectedSignature(destination)

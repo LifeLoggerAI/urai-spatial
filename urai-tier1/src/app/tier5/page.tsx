@@ -1,3 +1,4 @@
+import InstitutionalPublicSurface from '../InstitutionalPublicSurface'
 import { getTier5SystemContract } from "@/lib/tier5-production-contract";
 
 export const metadata = {
@@ -10,18 +11,15 @@ export default function Tier5Page() {
   const contract = getTier5SystemContract();
 
   return (
-    <main className="min-h-screen bg-[#04020a] px-6 py-10 text-white">
-      <section className="mx-auto max-w-6xl">
-        <p className="text-sm uppercase tracking-[0.35em] text-fuchsia-200/80">URAI Spatial</p>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-6xl">
-          Tier 5 final release gate
-        </h1>
-        <p className="mt-5 max-w-3xl text-lg leading-8 text-white/72">
-          Tier 5 is a final release readiness layer. It shows what is locally verified,
-          what is contract-gated, what needs credentials, and what cannot be called active
-          until deploy, smoke, consent, and browser evidence exist.
-        </p>
-
+    <InstitutionalPublicSurface
+      eyebrow="UrAi · Availability"
+      title="Release readiness"
+      lede="A release is ready only when its required checks are complete. Review the current boundaries and the evidence still needed."
+      links={[{ href: '/status', label: 'Current release status', primary: true }, { href: '/home', label: 'Return Home' }]}
+    >
+      <p>These details are read-only. They do not enable features or certify a live deployment.</p>
+      <details>
+        <summary style={{ minHeight: 48, cursor: 'pointer', color: '#b9f4ff' }}>Tier 5 final release gate · Review technical readiness</summary>
         <div className="mt-8 grid gap-4 md:grid-cols-4">
           <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-5">
             <p className="text-sm text-white/55">Release status</p>
@@ -91,7 +89,7 @@ export default function Tier5Page() {
             ))}
           </ul>
         </section>
-      </section>
-    </main>
+      </details>
+    </InstitutionalPublicSurface>
   );
 }

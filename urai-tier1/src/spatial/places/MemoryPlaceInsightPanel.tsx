@@ -27,13 +27,13 @@ export function MemoryPlaceInsightPanel({ place, selectedObject }: { place: Memo
         <div className="rounded-2xl border border-cyan-100/10 bg-cyan-100/5 p-3">
           <p className="font-semibold text-cyan-100">Why visible</p>
           <p className="mt-1">{explanation.reason}</p>
-          <p className="mt-1">Confidence: {explanation.confidence} · Privacy: {explanation.privacyLevel}</p>
+          <p className="mt-1">{place.privacyLevel === 'demo' ? 'This is an illustrative sample, not an inference about you.' : `Visibility: ${explanation.privacyLevel}.`}</p>
         </div>
       ) : null}
       <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
         <p className="font-semibold text-slate-100">Export status</p>
-        <p className="mt-1">{exportDecision.allowed ? 'Safe redacted export available.' : 'Export requires review or confirmation.'}</p>
-        <p className="mt-1">Mode: {exportDecision.privacyMode}</p>
+        <p className="mt-1">{exportDecision.allowed ? 'This sample permits a redacted view.' : 'Sharing requires review or confirmation.'}</p>
+        <p className="mt-1">Names and exact coordinates are omitted from this view.</p>
       </div>
       <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
         <p className="font-semibold text-slate-100">Sensory cues</p>

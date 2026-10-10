@@ -81,19 +81,23 @@
   padding: .46rem .74rem;
   border: 1px solid rgba(232, 240, 234, .1);
   border-radius: 999px;
-  background: rgba(9, 21, 17, .2);
-  color: rgba(246, 249, 247, .76);
+  background: rgba(9, 21, 17, .92);
+  color: #f6f9f7;
   backdrop-filter: blur(10px);
-  font-size: .58rem;
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: min(360px, calc(100vw - 184px));
+  text-align: center;
+  overflow-wrap: anywhere;
   font-weight: 650;
   letter-spacing: .07em;
-  opacity: .74;
+  opacity: 1;
 }
 
 .world :global(.urai-mobile-movement) {
   display: none;
   z-index: 14;
-  opacity: .34;
+  opacity: 1;
   transition: opacity .2s ease;
 }
 
@@ -101,7 +105,7 @@
   position: relative;
   border-color: transparent !important;
   border-radius: 50% !important;
-  background: rgba(10, 26, 20, .18) !important;
+  background: rgba(10, 26, 20, .9) !important;
   color: transparent !important;
   font-size: 0 !important;
   box-shadow: none !important;
@@ -115,8 +119,8 @@
   top: 50%;
   width: 8px;
   height: 8px;
-  border-top: 1.5px solid rgba(232, 248, 241, .72);
-  border-right: 1.5px solid rgba(232, 248, 241, .72);
+  border-top: 1.5px solid rgb(232, 248, 241);
+  border-right: 1.5px solid rgb(232, 248, 241);
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
@@ -126,7 +130,7 @@
 
 .world :global(.urai-mobile-movement:focus-within),
 .world :global(.urai-mobile-movement:hover) {
-  opacity: .86;
+  opacity: 1;
 }
 
 .world :global(.urai-mobile-movement button:focus-visible),
@@ -163,13 +167,10 @@
   .worldHint {
     bottom: max(16px, env(safe-area-inset-bottom));
     max-width: calc(100vw - 184px);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: .54rem;
+    white-space: normal;
   }
   .world :global(.urai-mobile-movement) {
-    opacity: .38;
+    opacity: 1;
   }
 }
 

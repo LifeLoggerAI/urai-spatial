@@ -103,15 +103,32 @@ jobs:
           test "$NEXT_PUBLIC_URAI_API_ORIGIN" = "https://urai.app"
           [[ "$ANDROID_VERSION_CODE" =~ ^[1-9][0-9]*$ ]]
 
+      - name: Validate optional canonical Android Google sign-in configuration
+        env:
+          ANDROID_FIREBASE_GOOGLE_SERVICES_JSON: ${{ secrets.ANDROID_FIREBASE_GOOGLE_SERVICES_JSON }}
+        run: |
+          node scripts/prepare-android-native-google-auth.mjs --optional \
+            --config-output "$RUNNER_TEMP/urai-google-services.json" \
+            --receipt-output android-native-auth-receipt.json
+
       - name: Build governed static export
+        env:
+          VERCEL_GIT_COMMIT_SHA: ${{ env.URAI_EXACT_HEAD }}
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
         run: corepack pnpm build:static
+
+      - name: Bind and verify exact native static identity
+        run: node scripts/prepare-native-static-provenance.mjs --directory urai-tier1/out --source-sha "$URAI_EXACT_HEAD" --platform android --workflow-run-id "$GITHUB_RUN_ID"
 
       - name: Generate and sync Android project
         working-directory: distribution/android-shell
         run: |
           rm -rf android
           corepack pnpm exec cap add android
+          node ../../scripts/prepare-native-links.mjs --android-project android
+          node ../../scripts/prepare-android-native-google-auth.mjs --optional --apply-project android
           corepack pnpm exec cap sync android
+          node ../../scripts/prepare-native-static-provenance.mjs --directory android/app/src/main/assets/public --source-sha "$URAI_EXACT_HEAD" --platform android --workflow-run-id "$GITHUB_RUN_ID" --verify-only
 
       - name: Apply governed Android version
         working-directory: distribution/android-shell/android
@@ -149,8 +166,21 @@ jobs:
             echo "version_name=$ANDROID_VERSION_NAME"
             echo "api_origin=$NEXT_PUBLIC_URAI_API_ORIGIN"
             echo "firebase_project=$NEXT_PUBLIC_FIREBASE_PROJECT_ID"
+            echo "native_google_auth_configured=$URAI_ANDROID_NATIVE_GOOGLE_AUTH_READY"
             echo "aab_path=$AAB"
           } | tee android-package-receipt.txt
+
+      - name: Prepare bounded independently verifiable AAB transport
+        id: aab-transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/android-aab-transport.mjs split \
+            --bundle distribution/android-shell/android/app/build/outputs/bundle/release/app-release.aab \
+            --directory android-aab-transport \
+            --source-sha "$URAI_EXACT_HEAD" \
+            --expected-sha256 "$(cut -d ' ' -f1 android-aab.sha256)"
+          node --input-type=module -e 'import fs from "node:fs"; const receipt=JSON.parse(fs.readFileSync("android-aab-transport/android-aab-transport.json", "utf8")); fs.appendFileSync(process.env.GITHUB_OUTPUT, `part_count=${receipt.partCount}\n`);'
 
       - name: Retain unsigned package evidence
         uses: actions/upload-artifact@v4
@@ -160,4 +190,97 @@ jobs:
             distribution/android-shell/android/app/build/outputs/bundle/release/app-release.aab
             android-aab.sha256
             android-package-receipt.txt
+            android-native-auth-receipt.json
+          retention-days: 30
+
+      - name: Retain AAB transport identity and original receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-aab-transport-${{ env.URAI_EXACT_HEAD }}
+          path: |
+            android-aab-transport/android-aab-transport.json
+            android-aab.sha256
+            android-package-receipt.txt
+            android-native-auth-receipt.json
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Retain AAB transport part 01
+        if: ${{ fromJSON(steps.aab-transport.outputs.part_count) >= 1 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-aab-part-01-${{ env.URAI_EXACT_HEAD }}
+          path: android-aab-transport/app-release.aab.part-01
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Retain AAB transport part 02
+        if: ${{ fromJSON(steps.aab-transport.outputs.part_count) >= 2 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-aab-part-02-${{ env.URAI_EXACT_HEAD }}
+          path: android-aab-transport/app-release.aab.part-02
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Retain AAB transport part 03
+        if: ${{ fromJSON(steps.aab-transport.outputs.part_count) >= 3 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-aab-part-03-${{ env.URAI_EXACT_HEAD }}
+          path: android-aab-transport/app-release.aab.part-03
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Retain AAB transport part 04
+        if: ${{ fromJSON(steps.aab-transport.outputs.part_count) >= 4 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-aab-part-04-${{ env.URAI_EXACT_HEAD }}
+          path: android-aab-transport/app-release.aab.part-04
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Retain AAB transport part 05
+        if: ${{ fromJSON(steps.aab-transport.outputs.part_count) >= 5 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-aab-part-05-${{ env.URAI_EXACT_HEAD }}
+          path: android-aab-transport/app-release.aab.part-05
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Retain AAB transport part 06
+        if: ${{ fromJSON(steps.aab-transport.outputs.part_count) >= 6 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-aab-part-06-${{ env.URAI_EXACT_HEAD }}
+          path: android-aab-transport/app-release.aab.part-06
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Retain AAB transport part 07
+        if: ${{ fromJSON(steps.aab-transport.outputs.part_count) >= 7 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-aab-part-07-${{ env.URAI_EXACT_HEAD }}
+          path: android-aab-transport/app-release.aab.part-07
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Retain AAB transport part 08
+        if: ${{ fromJSON(steps.aab-transport.outputs.part_count) >= 8 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-aab-part-08-${{ env.URAI_EXACT_HEAD }}
+          path: android-aab-transport/app-release.aab.part-08
+          compression-level: 0
+          if-no-files-found: error
           retention-days: 30

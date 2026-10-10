@@ -1,13 +1,18 @@
+import { inspectFocusedHomeNavigation } from './lib/home-ui-readability.mjs'
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { captureVisibleCanvasPng } from './capture-visible-canvas-png.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/home-state-proof')
+const MAX_CANVAS_EVIDENCE_FILES = 64
+const HOME_CANVAS_SAMPLE_POINTS = [[.18,.2],[.5,.2],[.82,.2],[.18,.5],[.5,.5],[.82,.5],[.18,.8],[.5,.8],[.82,.8]]
+let canvasEvidenceCount = 0
 const ownerSelector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"]'
 const states = [
   { id: 'permission-limited', query: 'homeState=permission-limited' },
@@ -23,6 +28,9 @@ const receipt = {
   runtimeContract: 'natural-home-live-owner-orb-lifecycle-stability-accessibility-and-retained-canvas-evidence',
   visualGate: {
     source: 'retained-canvas-png',
+    pixelSource: 'unmodified-browser-composite',
+    guard: 'fully-visible-stable-bounds-topmost-at-each-sampled-point-before-and-after',
+    maximumRetainedImages: MAX_CANVAS_EVIDENCE_FILES,
     sampling: 'distributed-3x3-neighborhood',
     minimumViewportCoverage: 0.82,
     minimumLuminanceRange: 12,
@@ -57,30 +65,20 @@ async function settleAnimationFrames(page, frameCount, timeoutMs = 15_000) {
 }
 
 async function readVisualEvidence(page) {
-  const canvas = page.locator('.urai-asset-home-world canvas').first()
-  await canvas.waitFor({ state: 'visible', timeout: 45_000 })
-  const bounds = await page.evaluate(() => {
-    const element = document.querySelector('.urai-asset-home-world canvas')
-    if (!element) return null
-    const rect = element.getBoundingClientRect()
-    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
-  })
-  const viewport = page.viewportSize()
-  if (!bounds || !viewport) return { available: false, reason: 'missing-canvas-bounds' }
-  const clipX = Math.max(0, bounds.x)
-  const clipY = Math.max(0, bounds.y)
-  const visibleWidth = Math.max(0, Math.min(bounds.x + bounds.width, viewport.width) - clipX)
-  const visibleHeight = Math.max(0, Math.min(bounds.y + bounds.height, viewport.height) - clipY)
-  const viewportCoverage = visibleWidth * visibleHeight / Math.max(1, viewport.width * viewport.height)
-  if (visibleWidth < 1 || visibleHeight < 1) return { available: false, reason: 'canvas-outside-viewport', viewportCoverage }
-  const png = await page.screenshot({
-    animations: 'disabled',
-    caret: 'hide',
-    timeout: 90_000,
-    clip: { x: clipX, y: clipY, width: visibleWidth, height: visibleHeight },
-  })
+  const canvas = page.locator('.urai-asset-home-world canvas')
+  if (await canvas.count() !== 1) throw new Error('Home visual evidence requires exactly one world canvas')
+  if (canvasEvidenceCount >= MAX_CANVAS_EVIDENCE_FILES) throw new Error('Home canvas evidence image budget exhausted')
+  const { buffer: png, capture } = await captureVisibleCanvasPng(page, canvas, 90_000, HOME_CANVAS_SAMPLE_POINTS)
+  if (!Buffer.isBuffer(png) || png.length < 1 || png.length > 16 * 1024 * 1024) {
+    throw new Error('Home canvas PNG exceeds its finite image byte budget')
+  }
+  const sequence = ++canvasEvidenceCount
+  const prefix = String(exactHead).slice(0, 12).replace(/[^a-zA-Z0-9_-]/g, '_')
+  const canvasPngFile = `home-canvas-${prefix}-${String(sequence).padStart(3, '0')}.png`
+  await writeFile(path.join(outputDir, canvasPngFile), png, { flag: 'wx' })
+  const canvasPngSha256 = createHash('sha256').update(png).digest('hex')
   const dataUrl = `data:image/png;base64,${png.toString('base64')}`
-  const sample = await page.evaluate(async ({ dataUrl }) => {
+  const sample = await page.evaluate(async ({ dataUrl, samplePoints }) => {
     const image = new Image()
     const loaded = new Promise((resolve, reject) => {
       image.onload = resolve
@@ -94,11 +92,7 @@ async function readVisualEvidence(page) {
     const context = surface.getContext('2d', { willReadFrequently: true })
     if (!context) return { available: false, reason: 'missing-2d-sampler' }
     context.drawImage(image, 0, 0)
-    const points = [
-      [0.18, 0.2], [0.5, 0.2], [0.82, 0.2],
-      [0.18, 0.5], [0.5, 0.5], [0.82, 0.5],
-      [0.18, 0.8], [0.5, 0.8], [0.82, 0.8],
-    ]
+    const points = samplePoints
     const luminance = points.map(([xRatio, yRatio]) => {
       const x = Math.max(0, Math.min(surface.width - 3, Math.round(surface.width * xRatio) - 1))
       const y = Math.max(0, Math.min(surface.height - 3, Math.round(surface.height * yRatio) - 1))
@@ -119,8 +113,9 @@ async function readVisualEvidence(page) {
       luminanceRange: Math.max(...luminance) - Math.min(...luminance),
       visibleSamples: luminance.filter((value) => value >= 8).length,
     }
-  }, { dataUrl })
-  return { ...sample, viewportCoverage, bounds: { width: bounds.width, height: bounds.height }, canvasPngBytes: png.length }
+  }, { dataUrl, samplePoints: HOME_CANVAS_SAMPLE_POINTS })
+  return { ...sample, viewportCoverage: capture.viewportCoverage, bounds: capture.bounds,
+    capture, canvasPngFile, canvasPngSha256, canvasPngBytes: png.length }
 }
 
 async function waitForVisualEvidence(page, frameBudget = 240) {
@@ -452,18 +447,30 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.privacyClip = await owner.getAttribute('data-home-orb-clip')
     record.privacyAnimation = await owner.getAttribute('data-home-orb-animation')
 
+    // Retain the actual privacy UI while it is open. It intentionally covers
+    // the world and cannot satisfy the unobstructed-canvas evidence contract.
+    stage = 'capture-revoked-consent-ui'
+    record.privacyScreenshot = `${id}-privacy-${exactHead.slice(0, 12)}.png`
+    const privacyScreenshot = await page.screenshot({ path: path.join(outputDir, record.privacyScreenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+    record.privacyScreenshotBytes = privacyScreenshot.length
+    record.privacyScreenshotSha256 = createHash('sha256').update(privacyScreenshot).digest('hex')
+
+    stage = 'close-companion'
+    await page.keyboard.press('Escape')
+    await page.locator('#urai-world-companion-menu[aria-hidden="true"]').waitFor({ state: 'attached', timeout: 20_000 })
+    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'idle', ownerSelector)
+    record.closedState = await owner.getAttribute('data-home-orb-state')
+    record.closedClip = await owner.getAttribute('data-home-orb-clip')
+    record.closedAnimation = await owner.getAttribute('data-home-orb-animation')
+
+    stage = 'capture-closed-world'
+    record.focusedNavigationReadability = await inspectFocusedHomeNavigation(page)
+    if (!record.focusedNavigationReadability.passed) throw new Error('Actual focused Home destination labels are clipped, hidden or obstructed')
     record.visual = await waitForVisualEvidence(page)
     record.screenshot = `${id}-${exactHead.slice(0, 12)}.png`
     const screenshot = await page.screenshot({ path: path.join(outputDir, record.screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
     record.screenshotBytes = screenshot.length
     record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
-
-    stage = 'close-companion'
-    await page.keyboard.press('Escape')
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'idle', ownerSelector)
-    record.closedState = await owner.getAttribute('data-home-orb-state')
-    record.closedClip = await owner.getAttribute('data-home-orb-clip')
-    record.closedAnimation = await owner.getAttribute('data-home-orb-animation')
 
     const expectedAnimation = reducedMotion === 'reduce' ? 'orb-state-static' : null
     record.voiceQualificationPassed = record.voicePlayback?.available === true
@@ -489,6 +496,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       && record.privacyState === 'privacy'
       && record.privacyClip === 'Orb_Privacy'
       && record.privacyAnimation === (expectedAnimation ?? 'orb-privacy')
+      && record.privacyScreenshotBytes > 12_000
       && record.closedState === 'idle'
       && record.closedClip === 'Orb_Idle'
       && record.closedAnimation === (expectedAnimation ?? 'orb-breathe')
@@ -700,3 +708,4 @@ try {
 
 await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 if (receipt.errors.length) process.exit(1)
+

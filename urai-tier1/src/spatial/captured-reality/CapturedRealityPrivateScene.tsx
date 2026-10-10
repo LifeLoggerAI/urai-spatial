@@ -7,6 +7,7 @@ import type { CapturedRealityRenderDecision } from './capturedReality'
 import { CAPTURED_REALITY_QUALITY_PROFILES, capturedRealityDeviceTier } from './capturedRealityRuntime'
 import CapturedRealitySplat from './CapturedRealitySplat'
 import { CapturedRealityRenderBoundary } from './CapturedRealityRenderBoundary'
+import type { CapturedRealityStreamAuthority } from './capturedRealityDelivery'
 
 export type CapturedRealityPrivateSceneProps = {
   decision: CapturedRealityRenderDecision
@@ -14,6 +15,7 @@ export type CapturedRealityPrivateSceneProps = {
   onExit: () => void
   onOpenProvenance?: () => void
   userAgent?: string
+  authority?: CapturedRealityStreamAuthority
 }
 
 export function CapturedRealityPrivateScene({
@@ -22,6 +24,7 @@ export function CapturedRealityPrivateScene({
   onExit,
   onOpenProvenance,
   userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent,
+  authority,
 }: CapturedRealityPrivateSceneProps) {
   const tier = useMemo(() => capturedRealityDeviceTier(userAgent), [userAgent])
   const quality = CAPTURED_REALITY_QUALITY_PROFILES[tier]
@@ -55,8 +58,8 @@ export function CapturedRealityPrivateScene({
     >
       <header style={{ display: 'flex', flexWrap: 'wrap', gap: '.75rem', alignItems: 'center', padding: '1rem', zIndex: 2 }}>
         <p aria-live="polite" style={{ margin: 0, flex: '1 1 18rem' }}>{decision.truthLabel}</p>
-        <button type="button" onClick={onExit}>Exit captured place</button>
-        {onOpenProvenance ? <button type="button" onClick={onOpenProvenance}>View source and provenance</button> : null}
+        <button type="button" onClick={onExit} style={{ minWidth: 48, minHeight: 48 }}>Exit captured place</button>
+        {onOpenProvenance ? <button type="button" onClick={onOpenProvenance} style={{ minWidth: 48, minHeight: 48 }}>View source and provenance</button> : null}
       </header>
 
       {decision.mode === 'gaussian-splat' ? (
@@ -70,6 +73,7 @@ export function CapturedRealityPrivateScene({
                   chunkSize={quality.chunkSize}
                   alphaHash={quality.alphaHash}
                   onRenderReady={(src) => setRenderReadyFor({ generation, src })}
+                  authority={authority}
                 />
               </Suspense>
               <OrbitControls

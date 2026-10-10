@@ -9,6 +9,18 @@ export const URAI_HOME_ASCENT_EVENT = 'urai:home-ascent'
 const WORLD_TRAVEL_DEBOUNCE_MS = 1500
 const WORLD_TRAVEL_FALLBACK_MS = 2400
 const WORLD_TRAVEL_OBSERVE_MS = 50
+const WORLD_TRAVEL_CONTEXT_KEYS = [
+  'memoryId',
+  'node',
+  'thread',
+  'personId',
+  'placeId',
+  'manifestId',
+  'movieId',
+  'chapterId',
+  'privacyMode',
+  'demo',
+] as const
 let lastTravelFingerprint = ''
 let lastTravelAt = 0
 
@@ -19,9 +31,12 @@ function dispatchSpatialAudioCue(cue: 'transition' | 'orb-confirm' | 'error') {
 function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (!request.href || typeof window === 'undefined') return request.href
   const target = new URL(request.href, window.location.origin)
-  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
-  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
-
+  const current = new URLSearchParams(window.location.search)
+  for (const key of WORLD_TRAVEL_CONTEXT_KEYS) {
+    if (!target.searchParams.has(key) && current.has(key)) {
+      target.searchParams.set(key, current.get(key) ?? '')
+    }
+  }
   const context = request.context
   if (context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
@@ -39,15 +54,39 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.scenarioBasisRevision !== undefined) target.searchParams.set('basisRevision', String(context.scenarioBasisRevision))
   if (context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
   if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
+  if (context?.demo) target.searchParams.set('demo', '1')
+  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
+  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+
+  const memoryId = target.searchParams.get('memoryId')
+  const nodeId = target.searchParams.get('node')
+  if (request.destination === 'life-map') {
+    if (!nodeId && memoryId) target.searchParams.set('node', memoryId)
+  } else if (!memoryId && nodeId) {
+    target.searchParams.set('memoryId', nodeId)
+  }
 
   return `${target.pathname}${target.search}${target.hash}`
 }
 
 function commitHardFallback(href: string) {
-  // Commit exactly one browser-history entry. The previous pushState + reload
-  // sequence could race the client router and leave duplicate destination
-  // entries, causing one Back action to remain on the destination route.
+  // Commit exactly one browser-history entry. If the client router already moved
+  // the URL but failed to mount the destination surface, assigning the same URL
+  // may not create a fresh document. Force a reload only in that stalled case.
+  const target = new URL(href, window.location.origin)
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  const targetLocation = `${target.pathname}${target.search}${target.hash}`
+  if (current === targetLocation) {
+    window.location.reload()
+    return
+  }
   window.location.assign(href)
+}
+
+export function destinationSurfaceReady(destination: UraiWorldTravelRequest['destination']) {
+  if (destination === 'replay') return Boolean(document.querySelector('[data-testid="cinematic-replay-client"]'))
+  if (destination === 'passport') return Boolean(document.querySelector('main[data-route-owner="passport-ownership-vault"]'))
+  return true
 }
 
 function shouldBeginHomeAscent(request: UraiWorldTravelRequest) {
@@ -104,12 +143,12 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
     settled = true
     if (observer) window.clearInterval(observer)
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) commitHardFallback(fallbackHref)
+    if (currentLocation === startingLocation || !destinationSurfaceReady(request.destination)) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
 
   observer = window.setInterval(() => {
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) return
+    if (currentLocation === startingLocation || !destinationSurfaceReady(request.destination)) return
     settled = true
     window.clearTimeout(fallback)
     window.clearInterval(observer)

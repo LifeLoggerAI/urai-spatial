@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { spatialLaunchBoundary } from '@/lib/spatial-launch-boundaries';
 
 export const dynamic = 'force-static';
 export const revalidate = false;
@@ -16,7 +17,6 @@ const publicRoutes = [
   '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread',
   '/life-movie',
   '/council',
-  '/xr',
   '/mirror',
   '/passport',
   '/privacy',
@@ -32,7 +32,6 @@ const publicRoutes = [
   '/waitlist',
   '/system',
   '/status',
-  '/spatial/ar-vr',
 ] as const;
 
 const forbiddenLiveCopy = [
@@ -67,10 +66,17 @@ export async function GET() {
     sourceSurface,
     publicRoutes,
     requiredSmokeRoutes: publicRoutes,
+    conditionalRoutes: ['/xr', '/spatial/ar-vr'].map((route) => ({
+      route,
+      enabled: spatialLaunchBoundary.liveArWebXrEnabled,
+      expectedStatus: spatialLaunchBoundary.liveArWebXrEnabled ? 200 : 404,
+    })),
     forbiddenLiveCopy,
     claimBoundaries: {
       spatialWebPreview: 'live-preview',
-      webxr: 'progressive-enhancement',
+      webxr: spatialLaunchBoundary.liveArWebXrEnabled
+        ? 'source-enabled-pending-device-and-release-proof'
+        : 'governed-post-launch-gated',
       questBrowser: 'unverified-until-device-proof',
       lifeMapData: 'authenticated-private-firestore-or-explicit-demo-only',
       lifeMovieData: 'authenticated-owner-memories',

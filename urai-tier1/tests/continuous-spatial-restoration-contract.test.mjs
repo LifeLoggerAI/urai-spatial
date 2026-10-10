@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
 const root = process.cwd()
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
@@ -106,7 +107,7 @@ test('Home remains one embodied authored natural sanctuary 3D environment with a
 test('Home telemetry and continuous proof stay aligned to the polished interaction geometry', () => {
   const runtimeMarkers = [
     "const SPAWN = new THREE.Vector3(-0.85, 0, 8.4)",
-    "const ORB = new THREE.Vector3(0, 0.82, -4.25)",
+    "const ORB = new THREE.Vector3(1.8, 0.82, -9.5)",
     "const GROUND_THRESHOLD = new THREE.Vector3(-5.4, 0, -10.8)",
     "const LIFE_MAP_LOOKOUT = new THREE.Vector3(5.4, 0, -10.8)",
     "['orb', ORB, 2.4]",
@@ -117,7 +118,7 @@ test('Home telemetry and continuous proof stay aligned to the polished interacti
 
   for (const marker of [
     "HOME_SPAWN = { x: -0.85, z: 8.4 }",
-    "HOME_ORB = { x: 0, z: -4.25 }",
+    "HOME_ORB = { x: 1.8, z: -9.5 }",
     "HOME_GROUND = { x: -5.4, z: -10.8 }",
     "HOME_LIFE_MAP = { x: 5.4, z: -10.8 }",
   ]) assert.ok(includesCanonical(assetHome, marker), `stale AssetDrivenHomeWorld telemetry: ${marker}`)
@@ -125,13 +126,13 @@ test('Home telemetry and continuous proof stay aligned to the polished interacti
   for (const marker of [
     "const spawnX = -0.85",
     "const spawnZ = 8.4",
-    "position.z + 4.25",
+    "position.x - 1.8, position.z + 9.5",
     "position.x + 5.4, position.z + 10.8",
     "position.x - 5.4, position.z + 10.8",
   ]) assert.ok(includesCanonical(embodiedNavigation, marker), `stale movement telemetry: ${marker}`)
 
   for (const marker of [
-    "orb: { x: 0, z: -4.25, radius: 2.4",
+    "orb: { x: 1.8, z: -9.5, radius: 2.4",
     "ground: { x: -5.4, z: -10.8, radius: 2.8",
     "'life-map': { x: 5.4, z: -10.8, radius: 2.8",
     "result.orbClip === orbClips[expected.orbState]",
@@ -220,7 +221,9 @@ test('Home environmental thresholds and generated manifest filter remain observa
   assert.match(homeProduction, /home-life-map-sky-lookout/)
   assert.ok(includesCanonical(homeProduction, "destination: 'infrastructure-hub'"))
   assert.ok(includesCanonical(homeProduction, "destination: 'life-map'"))
-  assert.match(homeProduction, /Look to the sky/)
+  assert.match(homeProduction, /nearby === 'life-map' \? 'home.skyNearby'/)
+  assert.match(homeProduction, /locale.text\(contextId\)/)
+  assert.equal(URAI_SOURCE_MESSAGES['home.skyNearby'].source, 'Look to the sky')
   assert.ok(hostStableProof.includes('const manifestRegexSource = String.raw`&& /^\\/assets\\/urai'))
   assert.ok(hostStableProof.includes('const escapedManifestRegexSource = String.raw`&& /^\\\\/assets\\\\/urai'))
   assert.ok(hostStableProof.includes('.replace(manifestRegexSource, escapedManifestRegexSource)'))

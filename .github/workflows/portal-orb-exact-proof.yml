@@ -2,16 +2,21 @@ name: Portal and Orb Exact Proof
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, repair/release-closure-integration-20261007]
     paths:
       - 'scripts/capture-natural-home-orb-proof.mjs'
+      - 'scripts/capture-visible-canvas-png.mjs'
+      - 'urai-tier1/tests/visible-canvas-capture.test.mjs'
       - 'scripts/run-with-ci-webgl.mjs'
       - '.github/workflows/portal-orb-exact-proof.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProduction.module.css'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeSanctuaryGeometry.ts'
       - 'urai-tier1/src/spatial/assets/**'
+      - 'urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb'
       - 'urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb'
       - 'urai-tier1/public/assets/urai/replay/replay-memory-film-main.webp'
       - 'urai-tier1/public/assets/urai/replay/replay-memory-film-mobile.webp'
@@ -31,6 +36,7 @@ jobs:
     env:
       URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
       PLAYWRIGHT_BROWSERS_PATH: '0'
+      NEXT_TELEMETRY_DISABLED: '1'
       NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -66,6 +72,7 @@ jobs:
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
           node --check scripts/run-with-ci-webgl.mjs
           node --check scripts/capture-natural-home-orb-proof.mjs
+          node --test urai-tier1/tests/visible-canvas-capture.test.mjs
       - name: Capture exact desktop, mobile, reduced-motion, natural-threshold and Orb proof
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/urai-portal-orb-http.log 2>&1 &
