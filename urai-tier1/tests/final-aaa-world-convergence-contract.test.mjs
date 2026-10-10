@@ -62,7 +62,7 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true, reducedStimulation\)/)
   assert.match(companion, /<OrbConversationPanel active=\{open && phase === 'idle'\} \/>/)
   assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT,\s*onOrbState\)/)
-  assert.match(homeProduction, /setOrbState\(event\.detail\.state\)/)
+  assert.match(homeProduction, /setOrbState\(reviewOrbState\.current \?\? event\.detail\.state\)/)
   assert.match(homeProduction, /window\.removeEventListener\(URAI_ORB_STATE_EVENT,\s*onOrbState\)/)
   assert.match(homeProduction, /data-home-orb-state=\{orbState\}/)
   assert.match(homeProduction, /data-home-orb-clip=\{ORB_CLIPS\[orbState\]\}/)
