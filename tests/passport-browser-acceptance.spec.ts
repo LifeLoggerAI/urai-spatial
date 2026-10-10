@@ -72,6 +72,28 @@ async function expectReadableExportScopes(page: Page, captureName: string) {
     })
   })
   expect(actionHits, 'the export action must scroll above the persistent companion').toEqual([true, true, true])
+  const companionClearance = await page.evaluate(() => {
+    const panel = document.querySelector<HTMLElement>('.passportPanel')
+    const orb = document.querySelector<HTMLElement>('.urai-world-companion__orb')
+    if (!panel || !orb) return { complete: false, overlaps: false, panelOwnsOverlap: false, hit: null }
+    const panelBox = panel.getBoundingClientRect()
+    const orbBox = orb.getBoundingClientRect()
+    const left = Math.max(panelBox.left, orbBox.left)
+    const right = Math.min(panelBox.right, orbBox.right)
+    const top = Math.max(panelBox.top, orbBox.top)
+    const bottom = Math.min(panelBox.bottom, orbBox.bottom)
+    const overlaps = right > left && bottom > top
+    if (!overlaps) return { complete: true, overlaps: false, panelOwnsOverlap: true, hit: null }
+    const hit = document.elementFromPoint((left + right) / 2, (top + bottom) / 2)
+    return {
+      complete: true,
+      overlaps: true,
+      panelOwnsOverlap: Boolean(hit && panel.contains(hit)),
+      hit: hit instanceof HTMLElement ? hit.className || hit.tagName : null,
+    }
+  })
+  expect(companionClearance.complete, 'Passport panel and companion must both be measurable').toBe(true)
+  expect(companionClearance.panelOwnsOverlap, `persistent companion covered Passport controls: ${JSON.stringify(companionClearance)}`).toBe(true)
   await fs.mkdir(evidenceRoot, { recursive: true })
   await fs.writeFile(path.join(evidenceRoot, `${captureName}.json`), JSON.stringify(geometry, null, 2))
   // The viewport capture is the relevant evidence for visible controls; fullPage rasterizes the large WebGL world and can exceed the 30 s proof budget.
