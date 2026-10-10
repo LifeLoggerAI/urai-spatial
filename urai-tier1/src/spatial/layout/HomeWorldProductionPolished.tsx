@@ -26,6 +26,7 @@ const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const HOME_SCANNED_COMPOSITION_V1 = 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'
 const HOME_INTERPRETIVE_SPLAT_ASSET = resolveHomeInterpretiveSplatAsset(process.env.NEXT_PUBLIC_URAI_HOME_INTERPRETIVE_SPLAT_ASSET)
 const HOME_BOUNDS = { minX: -14, maxX: 14, minZ: -18, maxZ: 12 }
+const HOME_GROUND_COLOR = '#52654c'
 const SPAWN = new THREE.Vector3(-0.85, 0, 8.4)
 const ORB = new THREE.Vector3(1.8, 0.82, -9.5)
 const GROUND_THRESHOLD = new THREE.Vector3(-5.4, 0, -10.8)
@@ -99,8 +100,10 @@ function cloneNaturalSanctuaryMaterial(material: THREE.Material, grounded: boole
       clone.aoMap = null
       clone.roughness = .96
       clone.envMapIntensity = .32
-      clone.color.set('#ffffff')
-      clone.vertexColors = true
+      // All retained patches share one world-space material field. Their coarse
+      // vertex grids interpolate color differently at overlaps and expose seams.
+      clone.color.set(HOME_GROUND_COLOR)
+      clone.vertexColors = false
       clone.normalMap = null
       clone.emissive.set('#000000')
       clone.emissiveIntensity = 0
@@ -275,7 +278,7 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
   return <group name="home-authored-terrain" userData={{ geometryOwner: 'retained-glb-ground-topology-plus-original-terrain-extension', materialOwner: 'original-procedural-detail-not-photographic-pbr', sharedElevation: true }}>
     <primitive object={authored} />
     <mesh name="home-natural-terrain" geometry={extension} receiveShadow onClick={onWalk}>
-      <HomeSurfaceMaterial kind="ground" color="#ffffff" vertexColors roughness={.96} metalness={0} envMapIntensity={.32} />
+      <HomeSurfaceMaterial kind="ground" color={HOME_GROUND_COLOR} roughness={.96} metalness={0} envMapIntensity={.32} />
     </mesh>
     <mesh name="home-walkable-navigation-surface" rotation={[-Math.PI / 2, 0, 0]} position={[0, .7, -2]} onClick={onWalk}>
       <planeGeometry args={[28, 34]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
@@ -688,6 +691,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
   const velocity = useRef(new THREE.Vector3())
   const lastNearby = useRef<Nearby>(null)
   const transitionStarted = useRef<number | null>(null)
+  const transitionOrigin = useRef(new THREE.Vector3())
   const transitionIssued = useRef(false)
   const lastTransitionSequence = useRef<TransitionSequence>('idle')
   const desired = useRef(new THREE.Vector3())
@@ -746,7 +750,10 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     const store = useSceneStore.getState()
     const ascending = store.phase === 'ASCENT'
     if (groundDescent || ascending) {
-      if (transitionStarted.current === null) transitionStarted.current = clock.elapsedTime
+      if (transitionStarted.current === null) {
+        transitionStarted.current = clock.elapsedTime
+        transitionOrigin.current.copy(camera.position)
+      }
       const duration = reducedMotion ? .42 : ascending ? ASCENT_DURATION_SECONDS : GROUND_DESCENT_DURATION_SECONDS
       const t = THREE.MathUtils.smootherstep(THREE.MathUtils.clamp((clock.elapsedTime - transitionStarted.current) / duration, 0, 1), 0, 1)
       const sequence: TransitionSequence = ascending
@@ -754,7 +761,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
         : t < .16 ? 'ground:opening' : t < .84 ? 'ground:traversal' : 'ground:closing'
       if (sequence !== lastTransitionSequence.current) { lastTransitionSequence.current = sequence; onTransitionSequence(sequence) }
       if (ascending) {
-        camera.position.lerp(new THREE.Vector3(0, 44, -54), 1 - Math.pow(.0018, delta))
+        camera.position.lerpVectors(transitionOrigin.current, new THREE.Vector3(0, 44, -54), t)
         camera.lookAt(0, 20 + t * 28, -38 - t * 24)
         store.setProgress(t)
         if (t >= 1 && !transitionIssued.current) { transitionIssued.current = true; requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' }) }

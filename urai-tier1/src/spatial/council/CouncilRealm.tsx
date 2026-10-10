@@ -30,22 +30,30 @@ const HUMAN_MODELS = [
   `${HUMAN_ROOT}/council-trickster-human-makehuman-v4.glb`,
 ] as const
 
+const COUNCIL_FLOOR_Y = 0.05
+const COUNCIL_ENTRY: [number, number, number] = [-1.4, 1.66, 6]
+const COUNCIL_NARROW_ENTRY_X = -2
+const COUNCIL_ENTRY_PITCH = -0.1
+const COUNCIL_FOV = 46
+
+// Keep the selected presence in the open part of the initial view. All six
+// remain around the far side of the table, with no near-side backs hiding them.
 const POSITIONS: [number, number, number][] = [
-  [-2.55, 0, -0.65],
-  [-1.45, 0, -2.5],
-  [1.45, 0, -2.5],
-  [2.55, 0, -0.65],
-  [1.35, 0, 0.15],
-  [-1.35, 0, 0.15],
+  [-0.6, COUNCIL_FLOOR_Y, -3.15],
+  [-1.75, COUNCIL_FLOOR_Y, -2.55],
+  [0.65, COUNCIL_FLOOR_Y, -3.15],
+  [2.65, COUNCIL_FLOOR_Y, -1.4],
+  [1.8, COUNCIL_FLOOR_Y, -2.55],
+  [-2.65, COUNCIL_FLOOR_Y, -1.4],
 ]
 
 const ROTATIONS: [number, number, number][] = [
-  [0, 0.72, 0],
-  [0, 0.34, 0],
-  [0, -0.34, 0],
-  [0, -0.72, 0],
-  [0, -2.65, 0],
-  [0, 2.65, 0],
+  [0, 0.08, 0],
+  [0, 0.28, 0],
+  [0, -0.08, 0],
+  [0, -0.6, 0],
+  [0, -0.28, 0],
+  [0, 0.6, 0],
 ]
 
 const COUNCIL_BOUNDS = { minX: -5.2, maxX: 5.2, minZ: -4.6, maxZ: 6.2 }
@@ -67,8 +75,8 @@ function CouncilCamera({
   reducedMotion: boolean
   ownerRef: MutableRefObject<HTMLDivElement | null>
 }) {
-  const { camera } = useThree()
-  const position = useRef(new THREE.Vector3(0, 0, 5.4))
+  const { camera, size } = useThree()
+  const position = useRef(new THREE.Vector3(size.width <= 900 ? COUNCIL_NARROW_ENTRY_X : COUNCIL_ENTRY[0], 0, COUNCIL_ENTRY[2]))
   const velocity = useRef(new THREE.Vector3())
   const target = useRef<THREE.Vector3 | null>(null)
   const direction = useRef(new THREE.Vector3())
@@ -89,7 +97,7 @@ function CouncilCamera({
       arrivalRadius: 0.3,
     })
 
-    camera.position.set(position.current.x, 1.66, position.current.z)
+    camera.position.set(position.current.x, COUNCIL_ENTRY[1], position.current.z)
     direction.current.set(
       -Math.sin(yaw.current) * Math.cos(pitch.current),
       Math.sin(pitch.current),
@@ -144,24 +152,10 @@ function RiggedCouncilHuman({
     })
   }, [model.scene])
 
-  useEffect(() => {
-    // The adopted idle owns hips/chest and listening owns the head. Rest the
-    // unanimated arms without replacing those existing animation layers.
-    const joints = [['L_shoulder', .48], ['R_shoulder', -.48], ['L_elbow', .12], ['R_elbow', -.12]] as const
-    const poses = joints.flatMap(([name, angle]) => {
-      const joint = model.scene.getObjectByName(name)
-      if (!joint) return []
-      const before = joint.quaternion.clone()
-      joint.rotateZ(angle)
-      return [{ joint, before }]
-    })
-    return () => { poses.forEach(({ joint, before }) => joint.quaternion.copy(before)) }
-  }, [model.scene])
-
-  useFrame(({ clock }) => {
+  useFrame(() => {
     if (!root.current) return
     root.current.rotation.y = ROTATIONS[index]?.[1] ?? 0
-    root.current.position.y = reducedMotion ? 0 : Math.sin((clock.elapsedTime + index * 0.77) * 0.8) * 0.004
+    root.current.position.y = COUNCIL_FLOOR_Y
     if (ownerRef.current) {
       const body = model.scene.getObjectByName('hips')
       const head = model.scene.getObjectByName('head')
@@ -200,7 +194,7 @@ function CouncilChamber() {
       <mesh position={[0, 2.3, 0]} castShadow><boxGeometry args={[.09, 4.5, .12]} /><meshStandardMaterial color="#957956" roughness={.5} metalness={.18} /></mesh>
       <mesh position={[.22, 2.1, -.02]}><boxGeometry args={[.035, 2.9, .08]} /><meshBasicMaterial color="#e5cba2" toneMapped={false} /></mesh>
     </group>)}
-    <mesh position={[0, .05, -.6]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow><circleGeometry args={[4.75, 96]} /><meshStandardMaterial color="#454c46" roughness={.98} /></mesh>
+    <mesh position={[0, COUNCIL_FLOOR_Y, -.6]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow><circleGeometry args={[4.75, 96]} /><meshStandardMaterial color="#454c46" roughness={.98} /></mesh>
     <mesh position={[0, .3, -1.15]} castShadow><cylinderGeometry args={[.46, .58, .6, 48]} /><meshStandardMaterial color="#302a24" roughness={.78} /></mesh>
     <mesh position={[0, .756, -1.15]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[1.12, 1.15, 96]} /><meshStandardMaterial color="#b69b70" metalness={.5} roughness={.45} /></mesh>
   </group>
@@ -265,7 +259,7 @@ function CouncilStage() {
   const environmentIntensity = quality.tier === 'high' ? 0.55 : quality.tier === 'medium' ? 0.42 : 0.28
   const shellRef = useRef<HTMLDivElement | null>(null)
   const yaw = useRef(0)
-  const pitch = useRef(-0.025)
+  const pitch = useRef(COUNCIL_ENTRY_PITCH)
   const input = useMovementInput({ onEscape: () => requestUraiWorldReturn() })
   const dragLook = useDragLook({
     yaw,
@@ -305,7 +299,7 @@ function CouncilStage() {
           <Suspense fallback={null}>
             <color attach="background" args={['#253337']} />
             <fog attach="fog" args={['#253337', 12, 30]} />
-            <PerspectiveCamera makeDefault position={[0, 1.66, 5.4]} fov={42} />
+            <PerspectiveCamera makeDefault position={COUNCIL_ENTRY} fov={COUNCIL_FOV} />
             <CouncilCamera input={input} yaw={yaw} pitch={pitch} reducedMotion={reducedMotion} ownerRef={shellRef} />
 
             <ambientLight intensity={0.48} color="#dfe8ea" />

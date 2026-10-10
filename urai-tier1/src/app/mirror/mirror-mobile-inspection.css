@@ -18,7 +18,7 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
 .mirrorWorld .mirrorOrb span { width: 20px; height: 20px; flex: 0 0 20px; }
 .mirrorWorld .mirrorPatternRail { scrollbar-width: thin; scrollbar-color: #84c9cf #132f3a; padding-bottom: 10px; scroll-snap-type: x proximity; }
 .mirrorWorld .mirrorPatternRail button { flex: 0 0 auto; scroll-snap-align: start; }
-.mirrorWorld .mirrorPatternRail::after { content: '↔ Swipe patterns'; flex: 0 0 76px; align-self: center; color: #b9dfe3; font-size: 10px; }
+.mirrorWorld .mirrorPatternHint { position: absolute; z-index: 18; left: 20px; bottom: max(96px, calc(env(safe-area-inset-bottom) + 90px)); margin: 0; color: #c9e8eb; font-size: 10px; line-height: 1.4; text-shadow: 0 1px 4px #000; pointer-events: none; }
 
 @media (min-width: 761px) {
   /* Reserve the center-bottom travel control's actual footprint. */
@@ -33,6 +33,7 @@ body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
 }
 
 @media (max-width: 760px) {
+  .mirrorWorld .mirrorPatternHint { left: 18px; bottom: max(176px, calc(env(safe-area-inset-bottom) + 170px)); }
   /* The closed travel Orb owns a fixed bottom dock. Clip the entry/error scroll
      surface above its halo so initial content cannot paint beneath navigation. */
   main.mirrorBareEntry,
