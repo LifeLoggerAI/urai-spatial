@@ -62,10 +62,10 @@ async function waitStableLifeMapCamera(root, journey, id) {
   const start = Date.now()
   let previous = null, stable = 0, last = null
   while (Date.now() - start < 60_000) {
-    last = await root.evaluate((node) => [
+    last = await root.evaluateAll((nodes) => [
       'lifeMapCameraX', 'lifeMapCameraY', 'lifeMapCameraZ',
       'lifeMapTargetX', 'lifeMapTargetY', 'lifeMapTargetZ', 'lifeMapFov',
-    ].map((key) => node.dataset[key] === undefined ? NaN : Number(node.dataset[key])))
+    ].map((key) => nodes.length !== 1 || nodes[0].dataset[key] === undefined ? NaN : Number(nodes[0].dataset[key])))
     const valid = last.every(Number.isFinite)
     stable = valid && previous && last.every((value, index) => Math.abs(value - previous[index]) < 0.01) ? stable + 1 : 0
     if (stable >= 3) {
@@ -128,7 +128,9 @@ async function activate(page, locator, mode) {
     return page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2)
   }
   if (mode === 'keyboard') {
-    const focusable = await locator.evaluate((node) => {
+    const focusable = await locator.evaluateAll((nodes) => {
+      if (nodes.length !== 1) return false
+      const node=nodes[0]
       if (!(node instanceof HTMLElement)) return false
       const tag = node.tagName.toLowerCase()
       const native = tag === 'button' || tag === 'a' || tag === 'input' || tag === 'select' || tag === 'textarea'
@@ -321,13 +323,17 @@ async function lifeMapToHome(page, journey, mode, root) {
   const settledHome = []
   const settleStarted = Date.now()
   do {
-    const sample = await home.evaluate((node) => ({
+    const sample = await home.evaluateAll((nodes) => {
+      if (nodes.length !== 1) throw new Error('Return observation requires exactly one actual Home owner')
+      const node=nodes[0]
+      return {
       phase: node.getAttribute('data-home-scene-phase'),
       locked: node.getAttribute('data-home-input-locked'),
       camera: node.getAttribute('data-home-camera-mode'),
       height: Number(node.getAttribute('data-home-camera-height')),
       pathname: window.location.pathname,
-    }))
+      }
+    })
     assert.equal(sample.pathname.replace(/\/+$/, ''), '/home', 'return must remain Home')
     assert.equal(sample.phase, 'HOME', 'return must not resume ascent')
     assert.equal(sample.locked, 'false', 'returned Home must accept input')

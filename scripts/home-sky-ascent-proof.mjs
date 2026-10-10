@@ -54,7 +54,7 @@ export async function proveHomeSkyAscent(page, home, { mode = 'pointer', capture
   await waitAttribute(home, 'data-home-scene-phase', 'HOME')
   await waitAttribute(home, 'data-home-camera-mode', 'embodied-first-person')
   await waitAttribute(home, 'data-home-input-locked', 'false')
-  assert.equal(await home.getAttribute('data-home-embodied-self'), 'privacy-preserving-shadow')
+  assert.equal(await home.evaluateAll(nodes => nodes.length === 1 ? nodes[0].getAttribute('data-home-embodied-self') : null), 'privacy-preserving-shadow')
   assert.equal(await page.getByTestId('urai-home-avatar-enter-first-person').count(), 0, 'superseded Avatar activation gate must not exist in ordinary Home')
   const canvas = home.locator('canvas').first()
   await canvas.waitFor({ state:'visible', timeout:45_000 })
@@ -64,10 +64,12 @@ export async function proveHomeSkyAscent(page, home, { mode = 'pointer', capture
     return {x:rect.x,y:rect.y,width:rect.width,height:rect.height}
   })
   assert.ok(box && box.width > 200 && box.height > 200, 'Home canvas must expose broad visible-sky interaction')
-  startingHeight = await home.evaluate(node => Number(node.getAttribute('data-home-camera-height')))
+  startingHeight = await home.evaluateAll(nodes => nodes.length === 1 ? Number(nodes[0].getAttribute('data-home-camera-height')) : NaN)
   assert.ok(Number.isFinite(startingHeight) && startingHeight > 0, 'actual PlayerRig camera height must be available')
 
-  await home.evaluate((node, key) => {
+  await home.evaluateAll((nodes, key) => {
+    if (nodes.length !== 1) throw new Error('Ascent observation requires exactly one actual Home owner')
+    const node=nodes[0]
     window[key]?.observer?.disconnect()
     const state = { samples:[], observer:null }
     const sample = () => {
