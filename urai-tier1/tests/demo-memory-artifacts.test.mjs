@@ -33,7 +33,7 @@ test('manifest renderer allows same-origin demo public assets without allowing s
   assert.match(rendererSource, /parsed\.protocol === 'https:' \|\| parsed\.protocol === 'http:'/)
 })
 
-test('production middleware serves only the disclosed demo memory asset directory without opening demo routes', () => {
+test('production middleware serves only the disclosed demo memory assets without opening demo routes', () => {
   const assetAllowance = 'PUBLIC_DEMO_MEMORY_ASSETS.has(pathname)'
   const routeGate = "pathname.startsWith('/demo')"
   for (const asset of requiredDemoAssets) {
