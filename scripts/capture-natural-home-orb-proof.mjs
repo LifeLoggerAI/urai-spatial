@@ -20,9 +20,12 @@ const orbBytes = await readFile(path.resolve('urai-tier1/public', orbPath.slice(
 const orbSha256 = createHash('sha256').update(orbBytes).digest('hex')
 if (orbBytes.length !== orbReceipt.bytes || orbSha256 !== orbReceipt.sha256) throw new Error('Orb binary identity mismatch')
 
+const mobileCanvasEvidencePoints = [[.12,.18],[.36,.18],[.64,.18],[.88,.18],[.12,.5],[.36,.5],[.64,.5],[.88,.5],[.5,.82]]
 const cases = [
   { id: 'desktop', viewport: { width: 1440, height: 900 } },
-  { id: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+  // The bottom corners intentionally belong to touch navigation. Sample the
+  // uncovered canvas across the upper/middle field and the center path.
+  { id: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, canvasEvidencePoints: mobileCanvasEvidencePoints },
   { id: 'reduced-motion', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' },
 ]
 
@@ -46,10 +49,10 @@ async function frames(page, count = 8) {
   }), count)
 }
 
-async function imageEvidence(page, canvas) {
-  const { buffer, capture } = await captureVisibleCanvasPng(page, canvas)
+async function imageEvidence(page, canvas, samplePoints) {
+  const { buffer, capture } = await captureVisibleCanvasPng(page, canvas, 90_000, samplePoints)
   const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
-  const sample = await page.evaluate(async (url) => {
+  const sample = await page.evaluate(async ({ url, points }) => {
     const image = new Image()
     await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = url })
     const canvas = document.createElement('canvas')
@@ -58,7 +61,6 @@ async function imageEvidence(page, canvas) {
     const context = canvas.getContext('2d', { willReadFrequently: true })
     if (!context) return { luminanceRange: 0, visibleSamples: 0 }
     context.drawImage(image, 0, 0)
-    const points = [[.12,.18],[.36,.18],[.64,.18],[.88,.18],[.12,.5],[.36,.5],[.64,.5],[.88,.5],[.12,.82],[.36,.82],[.64,.82],[.88,.82]]
     const values = points.map(([xr, yr]) => {
       const x = Math.min(canvas.width - 1, Math.max(0, Math.floor(canvas.width * xr)))
       const y = Math.min(canvas.height - 1, Math.max(0, Math.floor(canvas.height * yr)))
@@ -66,7 +68,7 @@ async function imageEvidence(page, canvas) {
       return Math.round(pixel[0] * .2126 + pixel[1] * .7152 + pixel[2] * .0722)
     })
     return { luminanceRange: Math.max(...values) - Math.min(...values), visibleSamples: values.filter((value) => value >= 10).length }
-  }, dataUrl)
+  }, { url: dataUrl, points: capture.samplePoints })
   return { buffer, capture, ...sample }
 }
 
@@ -125,7 +127,7 @@ for (const spec of cases) {
     })
     const worldCanvas = owner.locator('canvas')
     if (await worldCanvas.count() !== 1) throw new Error('Home/Orb visual proof requires exactly one world canvas')
-    const visual = await imageEvidence(page, worldCanvas)
+    const visual = await imageEvidence(page, worldCanvas, spec.canvasEvidencePoints)
     record.canvasCapture = visual.capture
     record.screenshot = `${spec.id}-${exactHead.slice(0, 12)}.png`
     await writeFile(path.join(outputDir, record.screenshot), visual.buffer)
