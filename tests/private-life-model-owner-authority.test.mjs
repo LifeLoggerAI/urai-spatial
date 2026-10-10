@@ -130,4 +130,3 @@ test('candidate source substitution with recomputed retained checksum is denied'
   f.amend(f.currentPath, { checksum: record.checksum }); f.input.checksum = record.checksum
   await assert.rejects(f.review(), /SOURCE_SUBSTITUTION/); assert.equal(f.canonicalPaths().length, 0)
 })
-
