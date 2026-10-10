@@ -490,8 +490,11 @@ async function capturePointerLook(browser) {
   await waitForAssetHome(page)
   const owner = page.locator(ownerSelector)
   const canvas = owner.locator('canvas').first()
-  const box = await canvas.boundingBox()
-  if (!box) throw new Error('Home canvas missing for pointer-look proof')
+  const box = await canvas.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  })
+  if (!(box.width > 0 && box.height > 0)) throw new Error('Home canvas missing for pointer-look proof')
   await canvas.dispatchEvent('pointerdown', { pointerId: 31, pointerType: 'mouse', button: 0, clientX: box.x + box.width * 0.5, clientY: box.y + box.height * 0.5 })
   await canvas.dispatchEvent('pointermove', { pointerId: 31, pointerType: 'mouse', buttons: 1, clientX: box.x + box.width * 0.64, clientY: box.y + box.height * 0.42 })
   const cameraMode = await owner.getAttribute('data-home-camera-mode')
