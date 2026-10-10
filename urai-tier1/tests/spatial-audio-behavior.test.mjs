@@ -75,7 +75,7 @@ function loadOwner(relative, imports, globals = {}) {
   return module.exports
 }
 
-function controllerHarness() {
+function controllerHarness({ playResult } = {}) {
   const driver = hookDriver()
   const elements = []
   const frames = new Map()
@@ -88,7 +88,7 @@ function controllerHarness() {
     paused = true
     playCount = 0
     constructor(src = '') { this.src = src; elements.push(this) }
-    play() { this.paused = false; this.playCount += 1; return Promise.resolve() }
+    play() { this.paused = false; this.playCount += 1; return playResult?.(this) ?? Promise.resolve() }
     pause() { this.paused = true }
   }
   const owner = loadOwner('useAudioController.ts', {
@@ -198,6 +198,110 @@ function positionedHarness({ delayedDecode = false } = {}) {
 
 async function settleCue() { for (let index = 0; index < 12; index += 1) await Promise.resolve() }
 
+function deferred() {
+  let resolve
+  const promise = new Promise((accept) => { resolve = accept })
+  return { promise, resolve }
+}
+
+// The actual voice owner runs with synthetic network/media adapters. No provider
+// request or private audio is used to exercise interrupted response-body reads.
+function narratorHarness({ response, playFailure = false, autoEnd = true } = {}) {
+  const driver = hookDriver()
+  const elements = [], created = [], revoked = [], fallback = []
+  class Media {
+    paused = true
+    constructor(src) { this.src = src; elements.push(this) }
+    play() {
+      this.paused = false
+      if (playFailure) return Promise.reject(new Error('media playback denied'))
+      if (autoEnd) queueMicrotask(() => this.onended?.())
+      return Promise.resolve()
+    }
+    pause() { this.paused = true }
+  }
+  const owner = loadOwner('useAudioController.ts', {
+    react: driver.react,
+    '@/lib/clientApiUrl': { clientApiUrl: (url) => url },
+  }, {
+    Audio: Media, AbortController, DOMException,
+    CustomEvent: class { constructor(type) { this.type = type } },
+    SpeechSynthesisUtterance: class { constructor(text) { this.text = text } },
+    URL: {
+      createObjectURL(blob) { const url = `blob:synthetic-${blob.id}`; created.push(url); return url },
+      revokeObjectURL(url) { revoked.push(url) },
+    },
+    fetch: async () => response ?? { ok: true, blob: async () => ({ id: 'voice' }) },
+    window: {
+      dispatchEvent() {},
+      speechSynthesis: {
+        cancel() {},
+        speak(utterance) { fallback.push(utterance.text); queueMicrotask(() => utterance.onend?.()) },
+      },
+    },
+  })
+  return { audio: driver.render(owner.useAudioController), elements, created, revoked, fallback, unmount: driver.unmount }
+}
+
+for (const stop of ['stopAllAudio', 'unmount']) test(`${stop} during a voice body read prevents late media playback`, async () => {
+  const body = deferred()
+  const h = narratorHarness({ response: { ok: true, blob: () => body.promise } })
+  const speaking = h.audio.speak({ id: 'interrupted', text: 'Synthetic narration' })
+  await settleCue()
+  if (stop === 'unmount') h.unmount()
+  else h.audio.stopAllAudio()
+  body.resolve({ id: 'interrupted' })
+  await speaking
+  assert.equal(h.elements.length, 0)
+  assert.equal(h.created.length, 0)
+  assert.equal(h.fallback.length, 0)
+  assert.equal(h.audio.getAudioState().isSpeaking, false)
+})
+
+test('a superseded voice body cannot replace or play after the current narration', async () => {
+  const first = deferred()
+  let reads = 0
+  const h = narratorHarness({ response: { ok: true, blob: () => ++reads === 1 ? first.promise : Promise.resolve({ id: 'current' }) } })
+  const previous = h.audio.speak({ id: 'previous', text: 'Previous synthetic narration' })
+  await settleCue()
+  await h.audio.speak({ id: 'current', text: 'Current synthetic narration' })
+  first.resolve({ id: 'previous' })
+  await previous
+  assert.deepEqual(h.created, ['blob:synthetic-current'])
+  assert.deepEqual(h.revoked, ['blob:synthetic-current'])
+  assert.equal(h.fallback.length, 0)
+})
+
+test('successful voice completion releases its blob exactly once even after stop', async () => {
+  const h = narratorHarness()
+  await h.audio.speak({ id: 'complete', text: 'Synthetic narration' })
+  h.audio.stopAllAudio()
+  assert.deepEqual(h.revoked, h.created)
+  assert.equal(h.elements[0].src, '')
+})
+
+test('rejected media playback releases the blob before the existing speech fallback', async () => {
+  const h = narratorHarness({ playFailure: true })
+  await h.audio.speak({ id: 'denied', text: 'Synthetic narration' })
+  assert.deepEqual(h.revoked, h.created)
+  assert.equal(h.elements[0].paused, true)
+  assert.equal(h.elements[0].src, '')
+  assert.deepEqual(h.fallback, ['Synthetic narration'])
+})
+
+test('stopping active narration releases its blob and never invokes speech fallback', async () => {
+  const h = narratorHarness({ autoEnd: false })
+  const speaking = h.audio.speak({ id: 'playing', text: 'Synthetic narration' })
+  await settleCue()
+  assert.equal(h.elements.length, 1)
+  h.audio.stopAllAudio()
+  await speaking
+  assert.deepEqual(h.revoked, h.created)
+  assert.equal(h.elements[0].paused, true)
+  assert.equal(h.elements[0].src, '')
+  assert.equal(h.fallback.length, 0)
+})
+
 test('returning Home during a Focus crossfade leaves Home as the sole active ambience', () => {
   const h = controllerHarness()
   h.audio.setAmbientPhase('HOME')
@@ -210,6 +314,34 @@ test('returning Home during a Focus crossfade leaves Home as the sole active amb
   assert.equal(active.length, 1)
   assert.ok(active[0].src.endsWith('/home-ambient-v1.opus'))
   assert.equal(h.frames.size, 0)
+})
+
+test('rejected ambience can retry the same route without leaving a stale crossfade', async () => {
+  let attempts = 0
+  const h = controllerHarness({ playResult: () => ++attempts === 1 ? Promise.reject(new Error('playback denied')) : Promise.resolve() })
+  h.audio.setAmbientPhase('HOME')
+  await settleCue()
+  assert.equal(h.frames.size, 0)
+  assert.ok(h.elements.every((element) => element.paused && element.src === ''))
+  h.audio.setAmbientPhase('HOME')
+  h.advance(2000)
+  assert.equal(attempts, 2)
+  const active = h.elements.filter((element) => !element.paused && element.src)
+  assert.equal(active.length, 1)
+  assert.ok(active[0].src.endsWith('/home-ambient-v1.opus'))
+})
+
+test('a retired ambience rejection cannot silence a newer destination', async () => {
+  let rejectOld, attempts = 0
+  const h = controllerHarness({ playResult: () => ++attempts === 1 ? new Promise((_, reject) => { rejectOld = reject }) : Promise.resolve() })
+  h.audio.setAmbientPhase('HOME')
+  h.audio.setAmbientPhase('FOCUS')
+  rejectOld(new Error('retired playback denied'))
+  await settleCue()
+  h.advance(2000)
+  const active = h.elements.filter((element) => !element.paused && element.src)
+  assert.equal(active.length, 1)
+  assert.ok(active[0].src.endsWith('/focus-ambient-v1.opus'))
 })
 
 test('repeated phase requests preserve the ongoing crossfade and mute cancels it', () => {
