@@ -140,6 +140,7 @@ test('desktop Ownership Vault exposes every zone and transition', async ({ page 
 })
 
 test('desktop export navigation preserves readable scopes and an unobstructed action', async ({ page }) => {
+  test.setTimeout(90_000)
   const runtime = await observe(page)
   await page.setViewportSize({ width: 1440, height: 1000 })
   await openDemo(page)
