@@ -252,7 +252,7 @@ async function inspectDomWithinBudget(page, caseDeadline) {
   }
 }
 
-async function captureViewportScreenshot(page, filePath, caseDeadline) {
+async function captureViewportScreenshot(page, filePath, caseDeadline, retryTimeoutMs = 60_000) {
   const remaining = () => Math.max(1_000, caseDeadline - Date.now())
   try {
     return {
@@ -279,7 +279,7 @@ async function captureViewportScreenshot(page, filePath, caseDeadline) {
         fullPage: false,
         animations: 'disabled',
         caret: 'hide',
-        timeout: Math.min(60_000, remaining()),
+        timeout: Math.min(retryTimeoutMs, remaining()),
       }),
       retried: true,
     }
@@ -321,12 +321,14 @@ try {
     const captureProfile = spec.profile
     const id = `${spec.route.split('/').filter(Boolean).join('-') || 'root'}--${spec.state}--${captureProfile.id}`
     const representative = spec.coverage === 'representative-tablet-or-wide'
-    const homeCase = ['/', '/home'].includes(spec.route) && !captureProfile.noWebGL
+    const homeRenderCase = ['/', '/home', '/ascent', '/onboarding', '/spatial'].includes(spec.route) && !captureProfile.noWebGL
+    const wideHomeCase = representative && spec.route === '/home'
+      && captureProfile.width === 2560 && captureProfile.height === 1440
     // Exact-head synchronization: budgets cover navigation, route stabilization,
     // retained screenshot readback, bounded post-retry DOM resampling, and context
     // shutdown. The readiness assertions below remain unchanged.
-    const caseBudgetMs = representative && homeCase ? 160_000
-      : homeCase ? 130_000
+    const caseBudgetMs = wideHomeCase ? 220_000
+      : homeRenderCase ? 165_000
       : representative ? 75_000
       : 110_000
     const caseDeadline = Date.now() + caseBudgetMs
@@ -400,11 +402,11 @@ try {
         if (!response) defect('missing-document-response', {})
       } catch (error) { defect('navigation-error', { message: String(error) }) }
 
-      const settleBudgetMs = representative ? homeCase ? 32_000 : 20_000 : homeCase ? 60_000 : 25_000
-      // Wide Home captures are the heaviest compositor readback in the matrix.
-      // Preserve enough of its bounded case budget for the existing 12s first
-      // capture, 60s compositor retry, and post-retry readiness resampling.
-      const screenshotReserveMs = representative && homeCase ? 100_000 : 30_000
+      const settleBudgetMs = representative ? homeRenderCase ? 32_000 : 20_000 : homeRenderCase ? 60_000 : 25_000
+      // Home-rendering routes can require a compositor retry even after their
+      // strict readiness predicate is satisfied. Preserve the complete first
+      // capture, bounded retry, three-sample resynchronization, and closure budget.
+      const screenshotReserveMs = wideHomeCase ? 140_000 : homeRenderCase ? 100_000 : 30_000
       const settleDeadline = Math.min(Date.now() + settleBudgetMs, caseDeadline - screenshotReserveMs)
       let stableSamples = 0
       let previousSignature = null
@@ -444,7 +446,7 @@ try {
         }
       }
       const filename = `${id}--${exactHead.slice(0, 12)}.png`
-      const captured = await captureViewportScreenshot(page, path.join(outputDir, filename), caseDeadline)
+      const captured = await captureViewportScreenshot(page, path.join(outputDir, filename), caseDeadline, wideHomeCase ? 90_000 : 60_000)
       const screenshot = captured.buffer
       if (captured.retried) events({ type: 'screenshot-retry', reason: 'transient-compositor-timeout' })
       record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-viewport-png', fullPage: false, captureRetried: captured.retried }
