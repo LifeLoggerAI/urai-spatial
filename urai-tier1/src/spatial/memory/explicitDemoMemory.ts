@@ -4,6 +4,8 @@ import { canonicalLifeMapDemoNodes } from '../../components/lifemap/canonicalLif
 
 const QUIET_RESET_ID = 'demo:quiet-reset'
 const QUIET_RESET_MANIFEST_ID = 'replay-recovery-thread'
+// Keep the short route alias aligned with the canonical Life Map sample node.
+const QUIET_RESET_OCCURRED_AT = '2026-05-09T12:00:00.000Z'
 
 export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
   const memory = buildExplicitDemoMemory(id)
@@ -38,7 +40,7 @@ export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
       star: { ...memory.star, id: star.id },
     }
   }
-  if (id !== QUIET_RESET_ID) {
+  if (id !== QUIET_RESET_ID && id !== 'quiet-reset') {
     // Only declared, unlocked nodes in the disclosed Life Map sample feed own
     // this metadata. Unknown IDs and protected samples keep the generic fallback.
     const sample = starId ? canonicalLifeMapDemoNodes.find((node) => node.id === starId && !node.locked) : null
@@ -73,6 +75,7 @@ export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
   return {
     ...memory,
     title: 'The Quiet Reset',
+    occurredAt: QUIET_RESET_OCCURRED_AT,
     summary: 'A disclosed demonstration of a quiet reset after sustained pressure. This is not personal data.',
     emotionalState: 'relief',
     emotionalArc: ['pressure', 'permission', 'reset', 'return'],
