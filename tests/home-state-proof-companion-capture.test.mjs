@@ -56,7 +56,12 @@ async function runCapture({ escapeCloses = true, revokeWorks = true, navigationR
     },
     viewportSize: () => ({ width: 1440, height: 900 }),
     screenshot: async (options) => {
-      events.push(options.clip ? 'canvas-pixels' : panelOpen ? 'privacy-panel-pixels' : 'closed-world-pixels')
+      if (panelOpen) events.push('privacy-panel-pixels')
+      else {
+        assert.equal(options.fullPage, false, 'full-viewport canvas capture must stay viewport-bound')
+        assert.equal(options.clip, undefined, 'full-viewport canvas capture must avoid redundant clipping')
+        events.push('canvas-pixels')
+      }
       assert.equal(checked, false, 'privacy evidence must follow actual checkbox revocation')
       return Buffer.alloc(12001, panelOpen ? 1 : 2)
     },
