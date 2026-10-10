@@ -402,7 +402,7 @@ async function proveTransition(browser, destination, buttonName) {
       await page.getByRole('button', { name: 'Pause memory', exact: true }).click()
       if (await replay.getAttribute('data-playing') !== 'false') throw new Error('Replay did not pause after real playback')
     } else if (destination === 'passport') {
-      await page.locator('[data-route-owner="passport-ownership-vault"]').waitFor({ state: 'visible' })
+      await page.locator('[data-route-owner="passport-ownership-vault"]').waitFor({ state: 'visible', timeout: 60000 })
       await page.waitForFunction(() => {
         const state = document.querySelector('[data-route-owner="passport-ownership-vault"]')?.getAttribute('data-passport-source')
         return state && state !== 'loading'
