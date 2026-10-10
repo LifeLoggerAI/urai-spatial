@@ -3,7 +3,7 @@
   "worldId": "URAI-IW-001-QUIET-RESET",
   "truthClass": "interpretive",
   "autobiographical": false,
-  "classification": "REJECTED_MOTION_CONSISTENCY",
+  "classification": "REJECTED",
   "review": {
     "overallAccepted": false,
     "geometryConsistencyAccepted": false,
