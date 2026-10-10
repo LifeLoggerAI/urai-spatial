@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import fs from 'node:fs'
 import vm from 'node:vm'
 import ts from 'typescript'
+import { createHomeGpuSubmissionGate } from '../src/spatial/performance/homeGpuSubmissionGate.ts'
 import { createHomeRenderCostMonitor, resolveHomeRenderQuality } from '../src/spatial/performance/homeRenderCostPolicy.ts'
 
 const running = { ready: true, visible: true, continuous: true }
@@ -60,31 +61,78 @@ test('invalid or reset frame clocks restart sampling safely', () => {
   assert.equal(monitor.observe(16, running), false)
 })
 
-test('actual Home frame subscriber invokes fallback from measured cost and resets when its renderer pauses', () => {
+test('actual Home render owner measures completed work while keeping normal callbacks and paused-state resets', () => {
   const source = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionPolished.tsx', import.meta.url), 'utf8')
   const start = source.indexOf('function HomeRenderCostMonitor(')
   const end = source.indexOf('\nfunction SceneReady(', start)
-  assert.ok(start >= 0 && end > start, 'ordinary Home needs an actual render-cost subscriber')
-  let frame, cached, now = 0, downgrades = 0
-  const sandbox = { createHomeRenderCostMonitor,
-    useMemo: factory => cached ??= factory(), useEffect: effect => effect(), useFrame: callback => { frame = callback },
+  assert.ok(start >= 0 && end > start)
+  let frame, cached, now = 0, downgrades = 0, renders = 0, invalidations = 0
+  let complete = true, contextLost = false
+  const owner = { dataset: {} }, listeners = new Map(), cleanups = []
+  const context = { SYNC_GPU_COMMANDS_COMPLETE: 1, TIMEOUT_EXPIRED: 2, CONDITION_SATISFIED: 3,
+    ALREADY_SIGNALED: 4, WAIT_FAILED: 5, SAMPLES: 6,
+    isContextLost: () => contextLost, fenceSync: () => ({}), deleteSync: () => {}, flush: () => {},
+    clientWaitSync: (_fence, flags, timeout) => { assert.equal(flags, 0); assert.equal(timeout, 0); return complete ? 3 : 2 },
+    getContextAttributes: () => ({ antialias: true }), getParameter: value => { assert.equal(value, 6); return 4 } }
+  const gl = { getContext: () => context, render: () => { renders++ }, domElement: {
+    closest: () => owner, addEventListener: (name, callback) => listeners.set(name, callback),
+    removeEventListener: name => listeners.delete(name) } }
+  const sandbox = { createHomeRenderCostMonitor, createHomeGpuSubmissionGate,
+    useThree: () => ({ gl, invalidate: () => { invalidations++ } }),
+    useMemo: factory => cached ??= factory(), useEffect: effect => { const cleanup = effect(); if (cleanup) cleanups.push(cleanup) },
+    useFrame: (callback, priority) => { assert.equal(priority, 1, 'this component owns only the final main-scene render'); frame = callback },
     performance: { now: () => now }, document: { visibilityState: 'visible' } }
   const compiled = ts.transpileModule(source.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
   vm.runInNewContext(`${compiled}\nglobalThis.subscribe = HomeRenderCostMonitor`, sandbox)
   const props = { ready: true, continuous: true, visible: true, onSlowRendering: () => { downgrades++ } }
+  const state = { scene: {}, camera: {} }
   sandbox.subscribe(props)
-  for (now = 0; now <= 1600; now += 80) frame()
+  for (now = 0; now <= 1760; now += 80) frame(state)
   assert.equal(downgrades, 1)
-  for (now = 1680; now < 2400; now += 80) frame()
-  assert.equal(downgrades, 1)
-  // Another mount verifies a paused renderer does not retain a pre-hide streak.
-  cached = undefined; downgrades = 0; now = 0; sandbox.subscribe(props); frame()
-  now = 1000; frame(); now = 1016; frame()
-  for (let i = 1; i < 8; i++) { now = 1016 + i * 80; frame() }
-  sandbox.subscribe({ ...props, visible: false })
-  sandbox.subscribe(props)
-  now = 60000; frame(); now = 60016; frame()
-  assert.equal(downgrades, 0)
+  assert.equal(owner.dataset.homeContextAntialias, 'true')
+  assert.equal(owner.dataset.homeContextSamples, '4')
+  assert.equal(Number(owner.dataset.homeRenderedFrames), renders)
+  assert.equal(owner.dataset.homeReady, 'true')
+  complete = false
+  const before = renders, completionsBefore = owner.dataset.homeRenderCompletions
+  for (let i = 0; i < 50; i++) { now += 16; owner.dataset.homeRenderedFrames = '1000'; frame(state) }
+  assert.equal(renders, before, 'busy GPU must not accumulate duplicate render submissions')
+  assert.equal(Number(owner.dataset.homeRenderedFrames), before, 'movement callbacks must not fabricate rendered frames')
+  assert.equal(owner.dataset.homeRenderCompletions, completionsBefore, 'RAF callbacks are not completed GPU frames')
+  assert.equal(invalidations, 0, 'ordinary always-loop is retained')
+  sandbox.subscribe({ ...props, continuous: false }); frame(state)
+  assert.equal(invalidations, 1, 'a pending requested demand frame must be retried')
+  sandbox.subscribe({ ...props, visible: false }); frame(state)
+  assert.equal(renders, before)
+  contextLost = true; listeners.get('webglcontextlost')(); frame(state)
+  assert.equal(owner.dataset.homeGpuSubmissionMode, 'context-lost')
+  assert.equal(owner.dataset.homeReady, 'false')
+  contextLost = false; listeners.get('webglcontextrestored')(); complete = true
+  sandbox.subscribe(props); now = 60000; frame(state)
+  assert.equal(renders, before + 1)
+  assert.equal(owner.dataset.homeReady, 'false', 'restored context needs fresh real submissions')
+  frame(state); frame(state)
+  assert.equal(owner.dataset.homeReady, 'true')
+  cleanups.at(-1)()
+  assert.equal(listeners.size, 0)
+  // Slow demand-mode startup must schedule its third real draw after the first
+  // completed fence. Callback counts alone cannot establish canvas readiness.
+  cached = undefined; invalidations = 0; complete = false
+  sandbox.subscribe({ ...props, continuous: false }); frame(state)
+  assert.equal(owner.dataset.homeRenderSubmissions, '1')
+  assert.equal(owner.dataset.homeReady, 'false')
+  assert.equal(invalidations, 1, 'startup schedules another real demand draw')
+  for (let i = 0; i < 5; i++) frame(state)
+  assert.equal(owner.dataset.homeRenderSubmissions, '1')
+  complete = true; frame(state)
+  assert.equal(owner.dataset.homeRenderSubmissions, '2')
+  assert.equal(owner.dataset.homeReady, 'false')
+  assert.equal(invalidations, 7, 'successful second draw must still schedule readiness draw')
+  frame(state)
+  assert.equal(owner.dataset.homeRenderSubmissions, '3')
+  assert.equal(owner.dataset.homeReady, 'true')
+  assert.equal(invalidations, 7, 'settled demand mode stops requesting idle frames')
+  cleanups.at(-1)()
   assert.match(source, /frameloop=\{quality\.documentVisible \? \(reducedMotion \? 'demand' : 'always'\) : 'never'\}/)
   assert.match(source, /HomeRenderCostMonitor ready=\{sceneReady\} continuous=\{!reducedMotion\} visible=\{quality\.documentVisible\}/)
 })

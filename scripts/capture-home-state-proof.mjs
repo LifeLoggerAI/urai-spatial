@@ -1,6 +1,6 @@
 import { inspectFocusedHomeNavigation } from './lib/home-ui-readability.mjs'
 import { createHash } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, rename, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { captureVisibleCanvasPng } from './capture-visible-canvas-png.mjs'
@@ -42,6 +42,15 @@ const receipt = {
   assetFailureContract: 'real-loader-http-503-degraded-unready-native-retry-and-fresh-successful-load',
   errors: [],
 }
+
+// Diagnostic progress only. Acceptance continues to require the unchanged final
+// receipt.json and every original assertion after the complete case sequence.
+async function checkpointIncompleteReceipt() {
+  const file = path.join(outputDir, 'receipt.in-progress.json')
+  await writeFile(`${file}.tmp`, `${JSON.stringify({ ...receipt, complete: false, acceptance: 'not-evaluated', checkpointAt: new Date().toISOString() }, null, 2)}\n`)
+  await rename(`${file}.tmp`, file)
+}
+await checkpointIncompleteReceipt()
 
 async function settleAnimationFrames(page, frameCount, timeoutMs = 15_000) {
   return page.evaluate(({ frames, timeoutMs }) => new Promise((resolve) => {
@@ -213,6 +222,7 @@ async function capture(state, options = {}) {
     if (!record.passed) receipt.errors.push(record)
     await context.close().catch(() => {})
     await browser.close().catch(() => {})
+    await checkpointIncompleteReceipt()
   }
 }
 
@@ -527,6 +537,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     if (!record.passed) receipt.errors.push(record)
     await context.close().catch(() => {})
     await browser.close().catch(() => {})
+    await checkpointIncompleteReceipt()
   }
 }
 
@@ -658,6 +669,7 @@ async function captureHomeAssetFailure(fixture) {
     if (!record.passed) receipt.errors.push(record)
     await context.close().catch(() => {})
     await browser.close().catch(() => {})
+    await checkpointIncompleteReceipt()
   }
 }
 

@@ -14,6 +14,7 @@ import { HomeInterpretiveSplatEnvironment, resolveHomeInterpretiveSplatAsset } f
 import { sensorySafeEnabled, URAI_SENSORY_SAFE_EVENT, URAI_SENSORY_SAFE_STORAGE_KEY } from '@/spatial/accessibility/SensorySafeRuntime'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { createHomeRenderCostMonitor, resolveHomeRenderQuality } from '@/spatial/performance/homeRenderCostPolicy'
+import { createHomeGpuSubmissionGate } from '@/spatial/performance/homeGpuSubmissionGate'
 import { HOME_COURTYARD, HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL, homeCourtyardFloorHeight, homeTerrainHeight, homeWalkSurfaceHeight, makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, resolveHomeSolidPenetration } from './HomeSanctuaryGeometry'
 import { applyOriginalHomeSurfaceDetail, HomeSkyGradient, HomeSurfaceMaterial } from './HomeSanctuaryMaterials'
 import { classifyRetainedHomeMesh } from './HomeSanctuaryAssetPolicy'
@@ -411,21 +412,36 @@ function GroundDetail() {
   </group>
 }
 
+const HOME_MOON_HALO_FRAGMENT = `
+varying vec3 vHomeMoonNormal;
+varying vec3 vHomeMoonView;
+float homeMoonHaloAlpha(float facing) {
+  return pow(clamp(facing, 0.0, 1.0), 3.0) * .065;
+}
+void main() {
+  float facing = dot(normalize(vHomeMoonNormal), normalize(vHomeMoonView));
+  gl_FragColor = vec4(vec3(.70, .80, .89), homeMoonHaloAlpha(facing));
+  #include <colorspace_fragment>
+}`
+
 function Horizon() {
   return <group name="home-mountain-horizon" userData={{ source: 'original-three-dimensional-runtime-landform', photographicEvidence: false }}>
-    <mesh geometry={RIDGE_FAR} position={[0, -1.2, -56]}><meshStandardMaterial color="#6d817b" roughness={1} metalness={0} envMapIntensity={.12} /></mesh>
-    <mesh geometry={RIDGE_MID} position={[0, -1.48, -48]}><meshStandardMaterial color="#5d7469" roughness={1} metalness={0} envMapIntensity={.14} /></mesh>
-    <mesh geometry={RIDGE_NEAR} position={[0, -1.78, -40]}><meshStandardMaterial color="#506557" roughness={1} metalness={0} envMapIntensity={.16} /></mesh>
+    <mesh geometry={RIDGE_FAR} position={[0, -1.2, -56]}><meshStandardMaterial color="#455563" roughness={1} metalness={0} envMapIntensity={.12} /></mesh>
+    <mesh geometry={RIDGE_MID} position={[0, -1.48, -48]}><meshStandardMaterial color="#374b55" roughness={1} metalness={0} envMapIntensity={.14} /></mesh>
+    <mesh geometry={RIDGE_NEAR} position={[0, -1.78, -40]}><meshStandardMaterial color="#30464b" roughness={1} metalness={0} envMapIntensity={.16} /></mesh>
     <mesh position={[0, 2.5, -36]} renderOrder={-1}>
       <planeGeometry args={[92, 12]} />
       <shaderMaterial transparent depthWrite={false} fog={false}
         vertexShader={`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`}
-        fragmentShader={`varying vec2 vUv; void main(){ float band=sin(3.14159265*vUv.y); float edge=smoothstep(.0,.16,vUv.x)*smoothstep(.0,.16,1.0-vUv.x); gl_FragColor=vec4(vec3(.31,.41,.38), band*edge*.16); }`}
+        fragmentShader={`varying vec2 vUv; void main(){ float band=sin(3.14159265*vUv.y); float edge=smoothstep(.0,.16,vUv.x)*smoothstep(.0,.16,1.0-vUv.x); gl_FragColor=vec4(vec3(.22,.30,.39), band*edge*.10); }`}
       />
     </mesh>
     <group position={[-17, 13.5, -52]}>
       <mesh><sphereGeometry args={[1.5, 32, 32]} /><meshBasicMaterial color="#e5eee4" toneMapped={false} /></mesh>
-      <mesh scale={1.7}><sphereGeometry args={[1.5, 24, 24]} /><meshBasicMaterial color="#d9ede4" transparent opacity={.035} depthWrite={false} toneMapped={false} /></mesh>
+      <mesh scale={1.7}><sphereGeometry args={[1.5, 24, 24]} /><shaderMaterial transparent depthWrite={false} toneMapped={false} fog={false}
+        vertexShader={`varying vec3 vHomeMoonNormal; varying vec3 vHomeMoonView; void main(){ vec4 viewPoint=modelViewMatrix*vec4(position,1.0); vHomeMoonNormal=normalMatrix*normal; vHomeMoonView=-viewPoint.xyz; gl_Position=projectionMatrix*viewPoint; }`}
+        fragmentShader={HOME_MOON_HALO_FRAGMENT}
+      /></mesh>
     </group>
   </group>
 }
@@ -547,6 +563,19 @@ function Water() {
   </group>
 }
 
+const ORB_MOTE_ALPHA_GLSL = `
+float homeOrbMoteAlpha(vec2 point) {
+  vec2 centered = point * 2.0 - 1.0;
+  return 1.0 - smoothstep(.64, 1.0, dot(centered, centered));
+}`
+
+function compileOrbMoteCircle(shader: Parameters<THREE.PointsMaterial['onBeforeCompile']>[0]) {
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', `#include <common>\n${ORB_MOTE_ALPHA_GLSL}`)
+    .replace('#include <map_particle_fragment>', '#include <map_particle_fragment>\ndiffuseColor.a *= homeOrbMoteAlpha(gl_PointCoord);')
+}
+const orbMoteProgramKey = () => 'urai-home-orb-motes-circle-v1'
+
 function OrbMotes({ reducedMotion, color }: { reducedMotion: boolean; color: string }) {
   const ref = useRef<THREE.Points>(null)
   const geometry = useMemo(() => {
@@ -564,7 +593,7 @@ function OrbMotes({ reducedMotion, color }: { reducedMotion: boolean; color: str
   }, [])
   useEffect(() => () => geometry.dispose(), [geometry])
   useFrame((_, delta) => { if (!reducedMotion && ref.current) ref.current.rotation.y += delta * .065 })
-  return <points ref={ref} geometry={geometry}><pointsMaterial color={color} size={.024} transparent opacity={.38} depthWrite={false} toneMapped={false} /></points>
+  return <points ref={ref} geometry={geometry}><pointsMaterial color={color} size={.024} transparent opacity={.38} depthWrite={false} toneMapped={false} onBeforeCompile={compileOrbMoteCircle} customProgramCacheKey={orbMoteProgramKey} /></points>
 }
 
 function OrbGroundGlow({ state }: { state: OrbState }) {
@@ -835,11 +864,57 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
 }
 
 function HomeRenderCostMonitor({ ready, continuous, visible, onSlowRendering }: { ready: boolean; continuous: boolean; visible: boolean; onSlowRendering: () => void }) {
-  const monitor = useMemo(() => createHomeRenderCostMonitor(), [])
-  useEffect(() => monitor.reset(), [monitor, ready, continuous, visible])
-  useFrame(() => {
-    if (monitor.observe(performance.now(), { ready, continuous, visible: visible && document.visibilityState === 'visible' })) onSlowRendering()
-  })
+  const { gl, invalidate } = useThree()
+  const runtime = useMemo(() => ({ monitor: createHomeRenderCostMonitor(), gate: createHomeGpuSubmissionGate(gl.getContext()), submitted: 0, completed: 0, readySubmissions: 0 }), [gl])
+  useEffect(() => runtime.monitor.reset(), [runtime, ready, continuous, visible])
+  useEffect(() => {
+    // React may reconnect effects in development; restore a disposed gate before
+    // subscribing, without replacing the real renderer, camera or scene.
+    runtime.gate.activate()
+    const lost = () => { runtime.gate.contextLost(); runtime.readySubmissions = 0; runtime.monitor.reset() }
+    const restored = () => { runtime.gate.contextRestored(); runtime.monitor.reset(); invalidate() }
+    gl.domElement.addEventListener('webglcontextlost', lost)
+    gl.domElement.addEventListener('webglcontextrestored', restored)
+    const owner = gl.domElement.closest<HTMLElement>('[data-home-primary-owner="asset-driven"]')
+    const context = gl.getContext()
+    if (owner) {
+      try {
+        owner.dataset.homeContextAntialias = String(context.getContextAttributes()?.antialias ?? 'unknown')
+        owner.dataset.homeContextSamples = String(context.getParameter(context.SAMPLES))
+      } catch {
+        owner.dataset.homeContextAntialias = 'unknown'
+        owner.dataset.homeContextSamples = 'unknown'
+      }
+    }
+    return () => {
+      gl.domElement.removeEventListener('webglcontextlost', lost)
+      gl.domElement.removeEventListener('webglcontextrestored', restored)
+      runtime.gate.dispose()
+    }
+  }, [gl, invalidate, runtime])
+  useFrame(({ scene, camera }) => {
+    const documentVisible = visible && document.visibilityState === 'visible'
+    const result = runtime.gate.submit(() => gl.render(scene, camera), documentVisible)
+    if (result.submitted) { runtime.submitted += 1; runtime.readySubmissions += 1 }
+    if (result.completionObserved) runtime.completed += 1
+    if (result.cadenceObserved) {
+      if (runtime.monitor.observe(performance.now(), { ready, continuous, visible: documentVisible })) onSlowRendering()
+    }
+    const owner = gl.domElement.closest<HTMLElement>('[data-home-primary-owner="asset-driven"]')
+    if (owner) {
+      // The movement kernel counts callbacks. Report actual main-world render
+      // submissions here so skipped GPU work never inflates frame evidence.
+      owner.dataset.homeRenderedFrames = String(runtime.submitted)
+      owner.dataset.homeReady = ready && runtime.readySubmissions >= 3 && runtime.gate.mode !== 'context-lost' && runtime.gate.mode !== 'disposed' ? 'true' : 'false'
+      owner.dataset.homeRenderSubmissions = String(runtime.submitted)
+      owner.dataset.homeRenderCompletions = String(runtime.completed)
+      owner.dataset.homeGpuSubmissionMode = runtime.gate.mode
+      owner.dataset.homeRenderCadenceSource = runtime.gate.mode === 'fenced' ? 'gpu-completion' : runtime.gate.mode === 'unavailable' ? 'render-submission' : 'paused'
+    }
+    // A requested demand frame must eventually render after the prior GPU work
+    // completes. Ordinary motion keeps its existing always-loop and callbacks.
+    if (documentVisible && !continuous && ((runtime.gate.mode === 'fenced' && !result.submitted) || (ready && runtime.readySubmissions < 3 && runtime.gate.mode !== 'context-lost' && runtime.gate.mode !== 'disposed'))) invalidate()
+  }, 1)
   return null
 }
 

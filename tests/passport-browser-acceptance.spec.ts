@@ -74,7 +74,8 @@ async function expectReadableExportScopes(page: Page, captureName: string) {
   expect(actionHits, 'the export action must scroll above the persistent companion').toEqual([true, true, true])
   await fs.mkdir(evidenceRoot, { recursive: true })
   await fs.writeFile(path.join(evidenceRoot, `${captureName}.json`), JSON.stringify(geometry, null, 2))
-  await page.screenshot({ path: path.join(evidenceRoot, `${captureName}.png`), fullPage: true })
+  // The viewport capture is the relevant evidence for visible controls; fullPage rasterizes the large WebGL world and can exceed the 30 s proof budget.
+  await page.screenshot({ path: path.join(evidenceRoot, `${captureName}.png`), fullPage: false })
 }
 
 test('desktop Ownership Vault exposes every zone and transition', async ({ page }) => {

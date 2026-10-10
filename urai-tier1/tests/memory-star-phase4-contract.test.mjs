@@ -207,6 +207,8 @@ test('existing quiet-reset and generic explicit fixtures retain their disclosed 
   assert.equal(quiet.replayManifest.id, 'replay-recovery-thread')
   assert.equal(quiet.replayManifest.durationMs, 12_000)
   assert.equal(quiet.demo, true)
+  const routeAlias = buildNamedExplicitDemoMemory('quiet-reset')
+  assert.equal(routeAlias.occurredAt, '2026-05-09T12:00:00.000Z')
   const generic = buildNamedExplicitDemoMemory('demo:existing-generic-fixture')
   assert.equal(generic.id, 'demo:existing-generic-fixture')
   assert.equal(generic.title, 'Demonstration Memory')

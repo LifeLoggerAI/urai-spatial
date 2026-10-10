@@ -7,6 +7,11 @@ on:
       - 'scripts/capture-home-art-direction-proof.mjs'
       - 'urai-tier1/src/spatial/layout/**'
       - 'urai-tier1/src/spatial/performance/homeRenderCostPolicy.ts'
+      - 'urai-tier1/src/spatial/performance/homeGpuSubmissionGate.ts'
+      - 'urai-tier1/tests/home-gpu-submission-behavior.test.mjs'
+      - 'urai-tier1/tests/home-moon-halo.test.mjs'
+      - 'urai-tier1/tests/home-orb-mote-alpha.test.mjs'
+      - 'urai-tier1/tests/home-star-distribution.test.mjs'
       - 'urai-tier1/src/spatial/performance/useAdaptiveSpatialQuality.ts'
       - 'urai-tier1/tests/home-render-cost-behavior.test.mjs'
       - 'urai-tier1/tests/home-vegetation-instancing-behavior.test.mjs'
@@ -66,7 +71,7 @@ jobs:
           node --test tests/home-state-proof-sampling.test.mjs tests/home-state-proof-companion-capture.test.mjs
           (cd urai-tier1 && node --test tests/visible-canvas-capture.test.mjs)
           (cd urai-tier1 && node --import tsx tests/continuous-spatial-restoration-contract.test.mjs)
-          (cd urai-tier1 && node --import tsx --test tests/home-sanctuary-geometry-behavior.test.mjs tests/home-sky-sampling.test.mjs tests/home-sky-interaction.test.mjs tests/home-render-cost-behavior.test.mjs tests/home-vegetation-instancing-behavior.test.mjs)
+          (cd urai-tier1 && node --import tsx --test tests/home-sanctuary-geometry-behavior.test.mjs tests/home-sky-sampling.test.mjs tests/home-sky-interaction.test.mjs tests/home-render-cost-behavior.test.mjs tests/home-gpu-submission-behavior.test.mjs tests/home-vegetation-instancing-behavior.test.mjs tests/home-moon-halo.test.mjs tests/home-orb-mote-alpha.test.mjs tests/home-star-distribution.test.mjs)
           pnpm build:static
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
       - name: Capture exact Home state proof
@@ -76,8 +81,52 @@ jobs:
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 60); do curl -fsS http://127.0.0.1:4173/home/ >/dev/null && break; sleep 1; done
           URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR=artifacts/home-state-proof node scripts/capture-home-state-proof.mjs
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: home-state-proof-${{ env.URAI_EXACT_HEAD }}
+          path: artifacts/home-state-proof
+          if-no-files-found: error
+          retention-days: 365
+
+  art-direction:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      PLAYWRIGHT_BROWSERS_PATH: '0'
+      NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install exact lockfile
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/home-state-proof
+          pnpm install --frozen-lockfile 2>&1 | tee artifacts/home-state-proof/install.log
+      - name: Verify state-proof contract and build
+        id: verify_build
+        run: |
+          node --test tests/home-state-proof-sampling.test.mjs tests/home-state-proof-companion-capture.test.mjs
+          (cd urai-tier1 && node --test tests/visible-canvas-capture.test.mjs)
+          (cd urai-tier1 && node --import tsx tests/continuous-spatial-restoration-contract.test.mjs)
+          (cd urai-tier1 && node --import tsx --test tests/home-sanctuary-geometry-behavior.test.mjs tests/home-sky-sampling.test.mjs tests/home-sky-interaction.test.mjs tests/home-render-cost-behavior.test.mjs tests/home-gpu-submission-behavior.test.mjs tests/home-vegetation-instancing-behavior.test.mjs tests/home-moon-halo.test.mjs tests/home-orb-mote-alpha.test.mjs tests/home-star-distribution.test.mjs)
+          pnpm build:static
+          pnpm --dir urai-tier1 exec playwright install --with-deps chromium
       - name: Capture independent Home art-direction evidence
-        if: ${{ !cancelled() && steps.verify_build.outcome == 'success' }}
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/urai-home-art-http.log 2>&1 &
           server_pid=$!
@@ -87,9 +136,7 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: home-state-proof-${{ env.URAI_EXACT_HEAD }}
+          name: home-art-direction-proof-${{ env.URAI_EXACT_HEAD }}
           path: artifacts/home-state-proof
           if-no-files-found: error
           retention-days: 365
-
-

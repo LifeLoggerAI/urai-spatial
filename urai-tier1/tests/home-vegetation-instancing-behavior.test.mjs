@@ -5,6 +5,7 @@ import test from 'node:test'
 import ts from 'typescript'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
+import * as homeGpuSubmissionGate from '../src/spatial/performance/homeGpuSubmissionGate.ts'
 
 // Execute production vegetation with explicit hook/GLTF adapters and real Three
 // geometry. This tests scene construction, never browser/GPU timing or pixels.
@@ -68,6 +69,7 @@ function mountVegetation(scene) {
     '@/spatial/world/worldEvents': {}, '@/spatial/accessibility/SensorySafeRuntime': {},
     '@/spatial/performance/useAdaptiveSpatialQuality': {}, '@/lib/i18n/useUraiLocale': {},
     '@/spatial/performance/homeRenderCostPolicy': renderCostModule.exports,
+    '@/spatial/performance/homeGpuSubmissionGate': homeGpuSubmissionGate,
     '@/spatial/home/HomeInterpretiveSplat': { resolveHomeInterpretiveSplatAsset: () => null },
   }
   const module = { exports: {} }
