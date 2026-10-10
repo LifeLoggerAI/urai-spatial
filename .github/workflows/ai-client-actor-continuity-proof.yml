@@ -13,6 +13,7 @@ on:
       - 'urai-tier1/src/spatial/orb/**'
       - 'urai-tier1/src/spatial/narrator/**'
       - 'urai-tier1/tests/ai-client-actor-continuity.test.mjs'
+      - 'urai-tier1/tests/council-conversation-lifecycle.test.mjs'
       - 'urai-tier1/tests/council-provider-registry-contract.test.mjs'
       - 'urai-tier1/package.json'
       - 'pnpm-lock.yaml'
@@ -78,7 +79,7 @@ jobs:
           const root = process.cwd(), require = createRequire(path.join(root, 'package.json'))
           const files = ['src/lib/privacy/aiActorBoundary.ts', 'src/spatial/council/councilClient.ts', 'src/spatial/orb/openaiClient.ts', 'src/spatial/council/CouncilConversationPanel.tsx', 'src/spatial/orb/OrbConversationPanel.tsx'].map(file => path.join(root, file))
           files.push(require.resolve('next/types/global.d.ts'))
-          const config = { compilerOptions: { target: 'ES2017', lib: ['dom', 'dom.iterable', 'esnext'], module: 'esnext', moduleResolution: 'bundler', jsx: 'preserve', strict: true, skipLibCheck: true, noEmit: true, incremental: false, esModuleInterop: true, resolveJsonModule: true, types: ['node', 'react'], typeRoots: [path.join(root, 'node_modules/@types')], paths: { '@/*': [path.join(root, 'src/*')] } }, files }
+          const config = { compilerOptions: { target: 'ES2017', lib: ['dom', 'dom.iterable', 'esnext'], module: 'esnext', moduleResolution: 'bundler', jsx: 'preserve', strict: true, skipLibCheck: true, noEmit: true, incremental: false, esModuleInterop: true, resolveJsonModule: true, types: ['node', 'react'], typeRoots: [...new Set(['@types/node', '@types/react'].map(name => path.dirname(path.dirname(require.resolve(name + '/package.json')))))], paths: { '@/*': [path.join(root, 'src/*')] } }, files }
           fs.writeFileSync(path.join(process.env.RUNNER_TEMP, 'ai-actor-proof', 'strict-types.json'), JSON.stringify(config, null, 2))
           NODE
           pnpm --dir urai-tier1 exec tsc -p "$RUNNER_TEMP/ai-actor-proof/strict-types.json" 2>&1 | tee "$RUNNER_TEMP/ai-actor-proof/strict-types.log"
@@ -87,6 +88,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm --dir urai-tier1 exec node --test tests/ai-client-actor-continuity.test.mjs 2>&1 | tee "$RUNNER_TEMP/ai-actor-proof/actor-tests.tap"
+          pnpm --dir urai-tier1 exec node --test tests/council-conversation-lifecycle.test.mjs 2>&1 | tee "$RUNNER_TEMP/ai-actor-proof/council-lifecycle-tests.tap"
           pnpm --dir urai-tier1 exec node --import tsx --test tests/council-provider-registry-contract.test.mjs 2>&1 | tee "$RUNNER_TEMP/ai-actor-proof/registry-tests.tap"
       - name: Bind retained proof to unchanged source
         shell: bash
@@ -105,9 +107,9 @@ jobs:
             if (!(counts.tests >= minimum) || counts.pass !== counts.tests || ['fail', 'cancelled', 'skipped', 'todo'].some(key => counts[key] !== 0)) throw new Error('Missing or incomplete ' + name)
             return counts
           }
-          const files = ['urai-tier1/src/lib/privacy/aiActorBoundary.ts', 'urai-tier1/src/spatial/council/councilClient.ts', 'urai-tier1/src/spatial/orb/openaiClient.ts', 'urai-tier1/src/spatial/council/CouncilConversationPanel.tsx', 'urai-tier1/src/spatial/orb/OrbConversationPanel.tsx', 'urai-tier1/src/spatial/council/councilProviderRegistry.ts', 'urai-tier1/src/spatial/scenario/ScenarioCouncilPanel.tsx', 'urai-tier1/src/lib/firebase/client.ts', 'urai-tier1/src/lib/clientApiUrl.ts', 'urai-tier1/src/lib/orb-companion-contract.ts', 'urai-tier1/src/lib/i18n/localePreference.ts', 'packages/localization/src/contentLanguage.ts', 'urai-tier1/tests/ai-client-actor-continuity.test.mjs', 'urai-tier1/tests/council-provider-registry-contract.test.mjs', 'urai-tier1/package.json', 'urai-tier1/tsconfig.json', 'pnpm-lock.yaml', '.github/workflows/ai-client-actor-continuity-proof.yml']
+          const files = ['urai-tier1/src/lib/privacy/aiActorBoundary.ts', 'urai-tier1/src/spatial/council/councilClient.ts', 'urai-tier1/src/spatial/orb/openaiClient.ts', 'urai-tier1/src/spatial/council/CouncilConversationPanel.tsx', 'urai-tier1/src/spatial/orb/OrbConversationPanel.tsx', 'urai-tier1/src/spatial/council/councilProviderRegistry.ts', 'urai-tier1/src/spatial/scenario/ScenarioCouncilPanel.tsx', 'urai-tier1/src/lib/firebase/client.ts', 'urai-tier1/src/lib/clientApiUrl.ts', 'urai-tier1/src/lib/orb-companion-contract.ts', 'urai-tier1/src/lib/i18n/localePreference.ts', 'packages/localization/src/contentLanguage.ts', 'urai-tier1/tests/ai-client-actor-continuity.test.mjs', 'urai-tier1/tests/council-conversation-lifecycle.test.mjs', 'urai-tier1/tests/council-provider-registry-contract.test.mjs', 'urai-tier1/package.json', 'urai-tier1/tsconfig.json', 'pnpm-lock.yaml', '.github/workflows/ai-client-actor-continuity-proof.yml']
           const sources = Object.fromEntries(files.map(file => [file, createHash('sha256').update(fs.readFileSync(file)).digest('hex')]))
-          const receipt = { schema: 'urai-ai-client-actor-continuity-proof-1', sourceHead: process.env.URAI_EXACT_HEAD, workflowRun: process.env.GITHUB_RUN_ID, runAttempt: process.env.GITHUB_RUN_ATTEMPT, node: process.version, actorTests: readCounts('actor-tests.tap', 45), registryTests: readCounts('registry-tests.tap', 8), sources, transport: 'synthetic SDK identity events and HTTP terminals; actual existing client/panel source', mountedBrowserAcceptance: false, deployedProviderAcceptance: false, remoteCancellationProof: false, wholePrivacyCertification: false, releaseCertification: false }
+          const receipt = { schema: 'urai-ai-client-actor-continuity-proof-1', sourceHead: process.env.URAI_EXACT_HEAD, workflowRun: process.env.GITHUB_RUN_ID, runAttempt: process.env.GITHUB_RUN_ATTEMPT, node: process.version, actorTests: readCounts('actor-tests.tap', 45), councilLifecycleTests: readCounts('council-lifecycle-tests.tap', 10), registryTests: readCounts('registry-tests.tap', 8), sources, transport: 'synthetic SDK identity events and HTTP terminals; actual existing client/panel source', mountedBrowserAcceptance: false, deployedProviderAcceptance: false, remoteCancellationProof: false, wholePrivacyCertification: false, releaseCertification: false }
           fs.writeFileSync(path.join(output, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
           NODE
       - name: Retain complete scoped evidence
