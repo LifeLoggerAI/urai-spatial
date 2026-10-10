@@ -90,8 +90,10 @@ for (const spec of [{ id: 'desktop', width: 1440, height: 900 }, { id: 'mobile',
     await drag(0, -Math.min(240, spec.height*.3))
     await drag(0, -Math.min(240, spec.height*.3))
     await capture('sky', 'two native upward drags toward supported pitch limit')
-    await drag(0, Math.min(450, spec.height*.45)); await capture('detail', 'native downward look')
-    await drag(0, -Math.min(210, spec.height*.15))
+    await drag(0, Math.min(450, spec.height*.45))
+    await drag(0, Math.min(450, spec.height*.45))
+    await capture('detail', 'two native downward drags toward supported ground pitch limit')
+    await drag(0, -260)
     // Move through the same keyboard input path used by users; never set the camera or owner attributes.
     await page.keyboard.down('w')
     let movementMs = 0
