@@ -14,6 +14,7 @@ async function disableWebGL(page: Page) {
 
 test.describe('Replay source ownership and accessible transport', () => {
   test('missing private selection cannot inherit demonstration art or a playing receipt', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 })
     const demoAssetRequests: string[] = []
     page.on('request', (request) => {
       if (/replay-memory-film|replay-cinematic-stage/.test(request.url())) demoAssetRequests.push(request.url())
@@ -26,6 +27,13 @@ test.describe('Replay source ownership and accessible transport', () => {
     await expect(replay.locator('canvas, img, video')).toHaveCount(0)
     await expect(replay).not.toHaveAttribute('data-canonical-asset', /.+/)
     await expect(replay.getByRole('button', { name: 'Choose a memory', exact: true })).toBeEnabled()
+    const adam = replay.locator('[data-urai-adam-launcher-slot="replay-memory-horizon"] [data-urai-adam-launcher]')
+    await expect(adam).toHaveAttribute('data-adam-launcher-placement', 'inline-slot')
+    const choice = await replay.getByRole('button', { name: 'Choose a memory', exact: true }).boundingBox()
+    const adamBounds = await adam.boundingBox()
+    expect(choice).not.toBeNull()
+    expect(adamBounds).not.toBeNull()
+    expect(adamBounds!.y).toBeGreaterThanOrEqual(choice!.y + choice!.height)
     await expect(page.locator('[data-replay-phase="replay_playing"], [data-playing="true"]')).toHaveCount(0)
     expect(demoAssetRequests).toEqual([])
   })
