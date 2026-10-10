@@ -31,7 +31,7 @@ async function expectReadableExportScopes(page: Page, captureName: string) {
   await expect(labels).toHaveCount(5)
   const geometry = []
   for (const label of await labels.all()) {
-    await label.scrollIntoViewIfNeeded()
+    await label.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }))
     const measured = await label.evaluate(element => {
       const box = element.getBoundingClientRect()
       const input = element.querySelector('input[type="checkbox"]')!
