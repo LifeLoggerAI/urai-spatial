@@ -88,7 +88,11 @@ export default function HomeSpatialRuntimeLayer() {
   const [assetLoadFailed, setAssetLoadFailed] = useState(false)
 
   const synchronizeAssetsReady = useCallback((ready: boolean) => {
-    runtimeRef.current?.setAttribute('data-home-assets-ready', ready ? 'true' : 'false')
+    const runtime = runtimeRef.current
+    const nextReady = ready ? 'true' : 'false'
+    if (runtime?.getAttribute('data-home-assets-ready') !== nextReady) {
+      runtime?.setAttribute('data-home-assets-ready', nextReady)
+    }
     setAssetsReady(ready)
   }, [])
 

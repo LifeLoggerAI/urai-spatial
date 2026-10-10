@@ -21,7 +21,10 @@ test('asset-owner observer covers the readiness transition without polling or fa
 
 test('the enclosing runtime consumes exact child asset readiness', () => {
   assert.match(runtime, /const synchronizeAssetsReady = useCallback\(\(ready: boolean\) => \{/)
-  assert.match(runtime, /runtimeRef\.current\?\.setAttribute\('data-home-assets-ready', ready \? 'true' : 'false'\)/)
+  assert.match(runtime, /const nextReady = ready \? 'true' : 'false'/)
+  assert.match(runtime, /runtime\?\.getAttribute\('data-home-assets-ready'\) !== nextReady/)
+  assert.match(runtime, /runtime\?\.setAttribute\('data-home-assets-ready', nextReady\)/)
+  assert.doesNotMatch(runtime, /runtimeRef\.current\?\.setAttribute\('data-home-assets-ready'/)
   assert.match(runtime, /setAssetsReady\(ready\)/)
   assert.match(runtime, /onAssetsReadyChange=\{synchronizeAssetsReady\}/)
   assert.match(runtime, /data-home-assets-ready=\{assetsReady \? 'true' : 'false'\}/)
