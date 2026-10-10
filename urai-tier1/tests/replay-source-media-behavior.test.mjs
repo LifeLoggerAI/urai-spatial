@@ -618,3 +618,17 @@ async function staleReleaseScenario(source,phase,settlement="resolve"){
 for(const phase of ['callable','token']) test('obsolete private playback '+phase+' settlement preserves the newer consumer', async()=>{ const source=fs.readFileSync(new URL('../src/spatial/memory/useOwnedMemoryMediaPlayback.ts',import.meta.url),'utf8');const r=await staleReleaseScenario(source,phase);assert.equal(r.newRelease,0,JSON.stringify(r));assert.equal(r.oldRelease,1);assert.equal(r.timers,0) })
 
 for(const phase of ["callable","post-download-authority"])for(const settlement of ["resolve","reject"])test("canceled "+phase+" stops waiting before late SDK "+settlement,async()=>{const source=fs.readFileSync(new URL("../src/spatial/memory/useOwnedMemoryMediaPlayback.ts",import.meta.url),"utf8");const r=await staleReleaseScenario(source,phase,settlement);assert.equal(r.timersAfterCancel,0,"obsolete authority deadline still active before SDK settlement");assert.equal(r.oldRelease,1);assert.equal(r.newRelease,0);assert.equal(r.timers,0)});
+
+test('media session keeps video inline without adding video-only properties to audio', () => {
+  const video = new FakeVideo()
+  video.playsInline = false
+  const videoControls = createReplayVideoSession(video, 'https://example.invalid/inline.mp4', () => {})
+  assert.equal(video.playsInline, true)
+  assert.equal(video.muted, true)
+  videoControls.dispose()
+  const audio = new FakeVideo()
+  const audioControls = createReplayMediaSession(audio, 'https://example.invalid/sound.ogg', () => {})
+  assert.equal(Object.hasOwn(audio, 'playsInline'), false)
+  assert.equal(audio.muted, true)
+  audioControls.dispose()
+})

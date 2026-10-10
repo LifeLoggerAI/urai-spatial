@@ -7,14 +7,14 @@ import test from 'node:test'
 
 const validator = readFileSync('scripts/validate-assets.mjs', 'utf8')
 
-function validateFixture(status, payload) {
+function validateFixture(status, payload, { manifestSource, writeManifest = true } = {}) {
   const root = mkdtempSync(path.join(tmpdir(), 'urai-asset-validation-'))
   const app = path.join(root, 'app')
   try {
     for (const dir of ['public', 'scripts', 'src/spatial/assets']) mkdirSync(path.join(app, dir), { recursive: true })
     writeFileSync(path.join(app, 'scripts/validate-assets.mjs'), validator.replace('assetManifest.ts', 'assetManifest.mjs'))
     const entry = { id: 'fixture', type: 'audio', targetSurface: 'home', status, priority: 'critical', path: '/fixture.opus' }
-    writeFileSync(path.join(app, 'src/spatial/assets/assetManifest.mjs'), `export const uraiSpatialAssetManifest = ${JSON.stringify([entry])}`)
+    if (writeManifest) writeFileSync(path.join(app, 'src/spatial/assets/assetManifest.mjs'), manifestSource ?? `export const uraiSpatialAssetManifest = ${JSON.stringify([entry])}`)
     if (payload !== null) writeFileSync(path.join(app, 'public/fixture.opus'), payload)
     const result = spawnSync(process.execPath, ['scripts/validate-assets.mjs'], { cwd: app, encoding: 'utf8' })
     assert.equal(result.error, undefined)
@@ -30,6 +30,32 @@ test('asset gate rejects empty ready and fallback files', () => {
     assert.equal(result.status, 1, result.output)
     assert.match(result.output, /Empty ready\/fallback files: 1/)
     assert.match(result.output, /Blocking ready\/fallback asset failures: 1/)
+  }
+})
+
+test('asset gate rejects a missing, empty, or absent exported registry', () => {
+  for (const options of [
+    { writeManifest: false },
+    { manifestSource: 'export const uraiSpatialAssetManifest = []' },
+    { manifestSource: 'export const unrelatedRegistry = []' },
+  ]) {
+    const result = validateFixture('ready', 'fixture bytes', options)
+    assert.equal(result.status, 1, result.output)
+    assert.match(result.output, /FAIL: asset manifest/)
+    assert.doesNotMatch(result.output, /PASS: every ready\/fallback asset/)
+  }
+})
+
+test('asset gate rejects malformed and non-array registries with a manifest failure', () => {
+  for (const manifestSource of [
+    'export const uraiSpatialAssetManifest = [',
+    'export const uraiSpatialAssetManifest = { entries: [] }',
+    'export const uraiSpatialAssetManifest = null',
+  ]) {
+    const result = validateFixture('ready', 'fixture bytes', { manifestSource })
+    assert.equal(result.status, 1, result.output)
+    assert.match(result.output, /FAIL: asset manifest/)
+    assert.doesNotMatch(result.output, /PASS: every ready\/fallback asset/)
   }
 })
 

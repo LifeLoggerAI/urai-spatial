@@ -2,6 +2,7 @@ import { chromium } from 'playwright'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
+import { patternScrollRequest, armPatternScrollEnd, disarmPatternScrollEnd } from './lib/pattern-scroll-proof.mjs'
 
 const exactSha = String(process.env.URAI_PROOF_SOURCE_SHA || process.env.URAI_EXACT_HEAD || '').trim()
 const baseUrl = String(process.env.URAI_AUDIT_BASE_URL || 'http://127.0.0.1:4173').replace(/\/$/, '')
@@ -173,21 +174,27 @@ try {
     // Wheel input scrolls the real overflow rail; no style, dimensions, selection,
     // or scroll position is rewritten by the proof.
     for (let attempt = 0; attempt < 8; attempt++) {
-      const delta = await button.evaluate(element => {
+      const metrics = await button.evaluate(element => {
         const rect = element.getBoundingClientRect()
         const rail = element.closest('.mirrorPatternRail')
         const bounds = rail.getBoundingClientRect()
         const left = bounds.left + rail.clientLeft
         const right = left + rail.clientWidth
-        return rect.left < left ? rect.left - left - 8 : rect.right > right ? rect.right - right + 8 : 0
+        return { left: rect.left, right: rect.right, viewportLeft: left, viewportRight: right,
+          scrollLeft: rail.scrollLeft, scrollWidth: rail.scrollWidth, clientWidth: rail.clientWidth }
       })
+      const delta = patternScrollRequest(metrics)
       if (!delta) break
       const box = await rail.boundingBox()
       if (!box) throw new Error('reflection rail has no rendered bounds')
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-      const before = await rail.evaluate(element => element.scrollLeft)
-      await page.mouse.wheel(delta, 0)
-      await page.waitForFunction(before => document.querySelector('.mirrorPatternRail')?.scrollLeft !== before, before)
+      await rail.evaluate(armPatternScrollEnd)
+      try {
+        await page.mouse.wheel(delta, 0)
+        await page.waitForFunction(() => document.querySelector('.mirrorPatternRail')?.[Symbol.for('urai:mirror-proof-scrollend')]?.done === true, null, { timeout: 30000 })
+      } finally {
+        await rail.evaluate(disarmPatternScrollEnd)
+      }
     }
     reflectionPatternReachability.push({ pattern, geometry: await reachableGeometry(button, `${pattern} reflection tab`, true),
       scrollLeft: await rail.evaluate(element => element.scrollLeft), screenshot: await retainScreenshot(`mobile-mirror-reflection-tab-${pattern.toLowerCase()}`) })

@@ -8,7 +8,7 @@ on:
         required: true
         type: string
   pull_request:
-    branches: [main, 'converge/**', 'repair/release-closure-integration-20261007']
+    branches: [main, 'converge/**', 'repair/release-closure-integration-20261007', 'codex/visual-product-completion-20261009']
     paths:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
       - 'scripts/capture-continuous-spatial-proof-v18.mjs'

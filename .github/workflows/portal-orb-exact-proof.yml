@@ -2,7 +2,7 @@ name: Portal and Orb Exact Proof
 
 on:
   pull_request:
-    branches: [main, repair/release-closure-integration-20261007]
+    branches: [main, repair/release-closure-integration-20261007, codex/visual-product-completion-20261009]
     paths:
       - 'scripts/capture-natural-home-orb-proof.mjs'
       - 'scripts/capture-visible-canvas-png.mjs'

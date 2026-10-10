@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { captureVisibleCanvasPng } from './capture-visible-canvas-png.mjs'
+import { CANVAS_EVIDENCE_SAMPLE_POINTS, captureVisibleCanvasPng } from './capture-visible-canvas-png.mjs'
+import { inspectHomeOrbCanvasSamples, inspectVisibleHomeNavigation } from './home-orb-canvas-sampling.mjs'
 import { attachHomeOrbFailureProbe, captureHomeOrbFailure } from './home-orb-failure-diagnostics.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
@@ -46,10 +47,10 @@ async function frames(page, count = 8) {
   }), count)
 }
 
-async function imageEvidence(page, canvas) {
-  const { buffer, capture } = await captureVisibleCanvasPng(page, canvas)
+async function imageEvidence(page, canvas, samplePoints) {
+  const { buffer, capture } = await captureVisibleCanvasPng(page, canvas, 90_000, samplePoints)
   const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
-  const sample = await page.evaluate(async (url) => {
+  const sample = await page.evaluate(async ({ url, points }) => {
     const image = new Image()
     await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = url })
     const canvas = document.createElement('canvas')
@@ -58,7 +59,6 @@ async function imageEvidence(page, canvas) {
     const context = canvas.getContext('2d', { willReadFrequently: true })
     if (!context) return { luminanceRange: 0, visibleSamples: 0 }
     context.drawImage(image, 0, 0)
-    const points = [[.12,.18],[.36,.18],[.64,.18],[.88,.18],[.12,.5],[.36,.5],[.64,.5],[.88,.5],[.12,.82],[.36,.82],[.64,.82],[.88,.82]]
     const values = points.map(([xr, yr]) => {
       const x = Math.min(canvas.width - 1, Math.max(0, Math.floor(canvas.width * xr)))
       const y = Math.min(canvas.height - 1, Math.max(0, Math.floor(canvas.height * yr)))
@@ -66,7 +66,7 @@ async function imageEvidence(page, canvas) {
       return Math.round(pixel[0] * .2126 + pixel[1] * .7152 + pixel[2] * .0722)
     })
     return { luminanceRange: Math.max(...values) - Math.min(...values), visibleSamples: values.filter((value) => value >= 10).length }
-  }, dataUrl)
+  }, { url: dataUrl, points: samplePoints })
   return { buffer, capture, ...sample }
 }
 
@@ -119,13 +119,20 @@ for (const spec of cases) {
     }).length)
     record.semanticOwner = await semanticNav.getAttribute('data-home-navigation-owner')
     record.semanticNonDominant = await semanticNav.getAttribute('data-home-navigation-non-dominant')
+    record.semanticVisual = await semanticNav.evaluate(inspectVisibleHomeNavigation)
     record.semanticOpacity = await page.evaluate(() => {
       const element = document.querySelector('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
       return element ? Number.parseFloat(getComputedStyle(element).opacity || '1') : null
     })
     const worldCanvas = owner.locator('canvas')
     if (await worldCanvas.count() !== 1) throw new Error('Home/Orb visual proof requires exactly one world canvas')
-    const visual = await imageEvidence(page, worldCanvas)
+    record.canvasSamplingBefore = await worldCanvas.evaluate(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS)
+    if (!record.canvasSamplingBefore.accepted) throw new Error(`Home world sampling rejected an occlusion: ${JSON.stringify(record.canvasSamplingBefore)}`)
+    const visual = await imageEvidence(page, worldCanvas, record.canvasSamplingBefore.samplePoints)
+    record.canvasSamplingAfter = await worldCanvas.evaluate(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS)
+    if (!record.canvasSamplingAfter.accepted || JSON.stringify(record.canvasSamplingAfter) !== JSON.stringify(record.canvasSamplingBefore)) {
+      throw new Error('Home world sampling or its exact Ground HUD exception changed during capture')
+    }
     record.canvasCapture = visual.capture
     record.screenshot = `${spec.id}-${exactHead.slice(0, 12)}.png`
     await writeFile(path.join(outputDir, record.screenshot), visual.buffer)
@@ -158,7 +165,8 @@ for (const spec of cases) {
       && record.semanticVisibleActions === 3
       && record.semanticOwner === 'runtime-boundary'
       && record.semanticNonDominant === 'true'
-      && Number.isFinite(record.semanticOpacity) && record.semanticOpacity <= .02
+      && Number.isFinite(record.semanticOpacity) && record.semanticOpacity >= .99
+      && record.semanticVisual?.passed === true
       && record.visiblePortals === 'false'
       && record.portalRequests.length === 0
       && record.canvasCapture?.source === 'visible-canvas-viewport-clip'

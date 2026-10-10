@@ -58,13 +58,33 @@ html.urai-route-life-map[dir='rtl'] .life-map-semantic-inspector {
   right: max(18px, env(safe-area-inset-right)) !important;
 }
 
+@media (min-width: 761px) {
+  /* Keep the caption inside the viewport and the open panel beside Adam. */
+  html.urai-route-life-map .life-map-search-trigger {
+    bottom: max(48px, calc(env(safe-area-inset-bottom) + 40px)) !important;
+  }
+  html.urai-route-life-map body #life-map-navigator {
+    right: max(112px, calc(env(safe-area-inset-right) + 100px)) !important;
+    bottom: max(96px, calc(env(safe-area-inset-bottom) + 84px)) !important;
+    max-height: min(70vh, calc(100svh - 116px)) !important;
+  }
+  html.urai-route-life-map[dir='rtl'] body #life-map-navigator {
+    right: auto !important;
+    left: max(112px, calc(env(safe-area-inset-left) + 100px)) !important;
+  }
+}
+
 @media (max-width: 760px) {
   html.urai-route-life-map body #life-map-navigator {
+    --life-map-control-reserve: max(96px, calc(env(safe-area-inset-bottom) + 84px));
     top: max(68px, calc(env(safe-area-inset-top) + 58px)) !important;
     right: max(12px, env(safe-area-inset-right)) !important;
     bottom: auto !important;
     width: calc(100vw - max(12px, env(safe-area-inset-left)) - max(12px, env(safe-area-inset-right))) !important;
-    max-height: calc(100svh - max(68px, calc(env(safe-area-inset-top) + 58px)) - max(16px, env(safe-area-inset-bottom))) !important;
+    max-height: calc(100svh - max(68px, calc(env(safe-area-inset-top) + 58px)) - var(--life-map-control-reserve)) !important;
+  }
+  html.urai-route-life-map:has([data-life-map-mode='selected']) body #life-map-navigator {
+    --life-map-control-reserve: max(164px, calc(env(safe-area-inset-bottom) + 152px));
   }
   html.urai-route-life-map[dir='rtl'] .life-map-search-trigger,
   html.urai-route-life-map[dir='rtl'] .life-map-navigator { left: max(12px, env(safe-area-inset-left)) !important; }

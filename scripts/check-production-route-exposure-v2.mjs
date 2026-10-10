@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
+import { rendersCanonicalDemoOwner } from './production-route-render-contract.mjs'
 
 const root = process.cwd()
 const appRoot = path.join(root, 'urai-tier1', 'src', 'app')
@@ -41,8 +42,10 @@ for (const file of walk(appRoot)) {
 requireTokens('urai-tier1/src/app/demo/page.tsx', [
   "import CutOneReplayFilmPage from './replay-film/page'",
   'without exposing personal data',
-  'return <CutOneReplayFilmPage />',
 ])
+if (!rendersCanonicalDemoOwner(read('urai-tier1/src/app/demo/page.tsx'))) {
+  failures.push('urai-tier1/src/app/demo/page.tsx must render its canonical Replay Film owner directly or inside its route layout')
+}
 requireTokens('urai-tier1/src/app/demo/replay-film/page.tsx', [
   "export const dynamic = 'force-static'",
   'memoryId=demo%3Aquiet-reset',

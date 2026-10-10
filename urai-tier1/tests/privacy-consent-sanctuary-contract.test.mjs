@@ -117,8 +117,8 @@ class TestElement {
   closest() { return this.isContentEditable ? this : null }
 }
 
-function escapeHarness({ pending = null, showAudit = false, historyLength = 2, destination = 'privacy-controls', phase = 'idle' } = {}) {
-  const effects = { pending: [], mutations: [], audit: [], historyBack: 0, locations: [], reverseTravel: 0, domains: [], focus: 0 }
+function escapeHarness({ pending = null, showAudit = false, historyLength = 2, destination = 'privacy-controls', phase = 'idle', previousDestination } = {}) {
+  const effects = { pending: [], mutations: [], audit: [], historyBack: 0, locations: [], reverseTravel: 0, worldReturns: 0, worldTravels: [], domains: [], focus: 0 }
   const reverseTravel = () => { effects.reverseTravel += 1 }
   const elementBindings = { HTMLElement: TestElement, Element: TestElement }
   const global = sourceCallback(controllerPath, 'onKeyDown', {
@@ -126,7 +126,9 @@ function escapeHarness({ pending = null, showAudit = false, historyLength = 2, d
     isEditableTarget: sourceCallback(controllerPath, 'isEditableTarget', elementBindings, true),
   })
   const consent = sourceCallback(sanctuaryPath, 'onKeyDown', {
-    ...elementBindings, pending, showAudit,
+    ...elementBindings, pending, showAudit, phase, world: { previousDestination },
+    requestUraiWorldReturn: () => { effects.worldReturns += 1 },
+    requestUraiWorldTravel: request => effects.worldTravels.push({ ...request }),
     setPending: value => effects.pending.push(value),
     setMutationState: value => effects.mutations.push(value),
     setShowAudit: value => effects.audit.push(value),
@@ -151,6 +153,8 @@ for (const order of ['global-first', 'consent-first']) {
     for (const handler of order === 'global-first' ? [global, consent] : [consent, global]) handler(event)
     assert.deepEqual(effects.audit, [false])
     assert.equal(effects.reverseTravel, 0)
+    assert.equal(effects.worldReturns, 0)
+    assert.deepEqual(effects.worldTravels, [])
     assert.equal(effects.historyBack, 0)
     assert.deepEqual(effects.locations, [])
     assert.equal(event.defaultPrevented, true)
@@ -165,28 +169,34 @@ test('pending-consent Escape cancels only the preview, before audit dismissal or
   assert.deepEqual(effects.mutations, ['idle'])
   assert.deepEqual(effects.audit, [])
   assert.equal(effects.reverseTravel, 0)
+  assert.equal(effects.worldReturns, 0)
+  assert.deepEqual(effects.worldTravels, [])
   assert.equal(effects.historyBack, 0)
   assert.deepEqual(effects.locations, [])
   assert.equal(event.defaultPrevented, true)
 })
 
-test('unhandled sanctuary Escape preserves the existing history return exactly once', () => {
-  const { global, consent, event, effects } = escapeHarness({ historyLength: 2 })
+test('unhandled sanctuary Escape delegates its known in-app origin to world return exactly once', () => {
+  const { global, consent, event, effects } = escapeHarness({ previousDestination: 'mirror', historyLength: 2 })
   global(event)
   consent(event)
-  assert.equal(effects.historyBack, 1)
+  assert.equal(effects.historyBack, 0)
   assert.equal(effects.reverseTravel, 0)
+  assert.equal(effects.worldReturns, 1)
+  assert.deepEqual(effects.worldTravels, [])
   assert.deepEqual(effects.locations, [])
   assert.equal(event.defaultPrevented, true)
 })
 
-test('direct-entry sanctuary Escape preserves the existing Passport return exactly once', () => {
+test('direct-entry sanctuary Escape delegates Passport travel exactly once', () => {
   const { global, consent, event, effects } = escapeHarness({ historyLength: 1 })
   global(event)
   consent(event)
   assert.equal(effects.historyBack, 0)
   assert.equal(effects.reverseTravel, 0)
-  assert.deepEqual(effects.locations, ['/passport'])
+  assert.equal(effects.worldReturns, 0)
+  assert.deepEqual(effects.worldTravels, [{ destination: 'passport', href: '/passport' }])
+  assert.deepEqual(effects.locations, [])
   assert.equal(event.defaultPrevented, true)
 })
 
@@ -200,6 +210,8 @@ test('an already claimed Escape neither cancels consent nor adds a second return
   assert.deepEqual(effects.audit, [])
   assert.equal(effects.historyBack, 0)
   assert.equal(effects.reverseTravel, 0)
+  assert.equal(effects.worldReturns, 0)
+  assert.deepEqual(effects.worldTravels, [])
 })
 
 test('global Escape still defers to all existing realm-owned contracts', () => {

@@ -16,6 +16,7 @@ import { URAI_JOURNEY_MESSAGES } from '../src/lib/i18n/journeyMessages.ts'
 import { localizedMessage, localeNumber, localeDate } from '../src/lib/i18n/localePreference.ts'
 import { homeJourneyHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
 import * as homeGeometry from '../src/spatial/layout/HomeSanctuaryGeometry.ts'
+import * as homeRenderCostPolicy from '../src/spatial/performance/homeRenderCostPolicy.ts'
 import * as focusMemoryAppearance from '../src/app/focus/focusMemoryAppearance.ts'
 import { localizationMessageBindings } from '../../scripts/lib/localization-message-bindings.mjs'
 
@@ -62,6 +63,7 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(id.includes('useReplayMemoryVisibility')) return {useReplayMemoryVisibility:()=>memory ? 'visible' : 'unavailable'}
     if(id.includes('useOwnedMemoryMediaPlayback')) return {useOwnedMemoryMediaPlayback:()=>({status:'absent',media:[]})}
     if(id.includes('useAdaptiveSpatialQuality')) return {useAdaptiveSpatialQuality:()=>quality}
+    if(id.includes('homeRenderCostPolicy')) return homeRenderCostPolicy
     if(id.includes('useReducedMotion')) return {useReducedMotion:()=>true}
     if(id.includes('useReplayLifeModelAuthority')) return {useReplayLifeModelAuthority:()=>({available:false,status:'blocked',decision:'fixture',people:[]})}
     if(id.includes('useCapturedRealityReplayEntry')) return {useCapturedRealityReplayLookup:()=>({entry:null,status:'unavailable'})}
@@ -243,7 +245,7 @@ test('offline notice follows actual browser events, preserves SSR truth and remo
 })
 
 test('actual private Replay play/pause labels retain exact English and scoped French/Arabic preview',()=>{
-  const memory={id:'private-fixture',title:'Private <script>title</script>',narrator:{replay:'Private caption'},privacy:'private',demo:false,visuals:{accent:'#fff',light:'#fff',sky:'#000',ground:'#000'},star:{id:'private-fixture'},replayManifest:{id:'manifest',durationMs:1000,segments:[]}}
+  const memory={id:'private-fixture',occurredAt:'2026-01-01T12:00:00.000Z',title:'Private <script>title</script>',narrator:{replay:'Private caption'},privacy:'private',demo:false,visuals:{accent:'#fff',light:'#fff',sky:'#000',ground:'#000'},star:{id:'private-fixture'},replayManifest:{id:'manifest',durationMs:1000,segments:[]}}
   for(const requested of ['en','fr','ar']) for(const preview of [false,true]) for(const playing of [false,true]) {
     const preference={requested,preview}
     const tree=fixture(preference,{memory,status:'ready',states:['unavailable',0,playing,0]}).render(replay)
@@ -256,6 +258,10 @@ test('actual private Replay play/pause labels retain exact English and scoped Fr
     assert.equal(text(button),(playing?'Ⅱ':'›')+expected.text)
     assert.equal(elements(tree,n=>n.type==='main')[0].props.lang,undefined)
     assert.equal(text(elements(tree,n=>n.type==='h1')[0]),memory.title)
+    const occurredAt=elements(tree,n=>n.type==='time')[0]
+    assert.equal(occurredAt.props.dateTime,memory.occurredAt)
+    assert.equal(text(occurredAt),localeDate(preference,memory.occurredAt,{dateStyle:'medium'}))
+    assert.equal(elements(tree,n=>n.props.className==='replayMemoryOrigin')[0].props.children.filter(Boolean).length,1)
     assert.ok(renderToStaticMarkup(tree).includes('&lt;script&gt;title&lt;/script&gt;'))
   }
 })

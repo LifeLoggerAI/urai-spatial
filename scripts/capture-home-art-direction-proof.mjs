@@ -11,12 +11,12 @@ const output = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/home-art-di
 const budgets = JSON.parse(await readFile('operations/performance/spatial-performance-budget.json', 'utf8'))
 const receipt = { schema: 'urai.home-art-direction-observation.v1', exactHead, base, capturedAt: new Date().toISOString(), budgets,
   limitations: ['Browser emulation and software WebGL do not certify physical-device performance.', 'Triangle submissions include all render passes; these are not unique scene polygons.', 'Camera views use native input; detail and Orb labels describe intended inspection, not verified content.', 'No private fixture, visual approval, release acceptance or deployment authorization.'], cases: [], errors: [] }
-receipt.sourceIdentity = await Promise.all(['urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx', 'urai-tier1/src/spatial/layout/HomeSanctuaryGeometry.ts', 'urai-tier1/src/spatial/layout/HomeSanctuaryMaterials.tsx', 'scripts/capture-home-art-direction-proof.mjs'].map(async file => {
+receipt.sourceIdentity = await Promise.all(['urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx', 'urai-tier1/src/spatial/layout/HomeSanctuaryGeometry.ts', 'urai-tier1/src/spatial/layout/HomeSanctuaryMaterials.tsx', 'urai-tier1/src/spatial/performance/homeRenderCostPolicy.ts', 'urai-tier1/src/spatial/performance/useAdaptiveSpatialQuality.ts', 'scripts/capture-visible-canvas-png.mjs', 'scripts/capture-home-art-direction-proof.mjs'].map(async file => {
   const bytes = await readFile(file)
   return { file, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') }
 }))
 await mkdir(output, { recursive: true })
-for (const spec of [{ id: 'desktop', width: 1440, height: 900 }, { id: 'mobile', width: 390, height: 844 }, { id: 'reduced-motion', width: 1440, height: 900, reducedMotion: 'reduce' }]) {
+for (const spec of [{ id: 'reduced-motion', width: 1440, height: 900, reducedMotion: 'reduce' }, { id: 'desktop', width: 1440, height: 900 }, { id: 'mobile', width: 390, height: 844 }]) {
   const browser = await chromium.launch({ headless: true, executablePath: process.env.URAI_CHROMIUM_EXECUTABLE || undefined, args: ['--enable-unsafe-swiftshader'] })
   const context = await browser.newContext({ viewport: { width: spec.width, height: spec.height }, isMobile: spec.id === 'mobile', hasTouch: spec.id === 'mobile', reducedMotion: spec.reducedMotion })
   const page = await context.newPage()
@@ -30,7 +30,8 @@ for (const spec of [{ id: 'desktop', width: 1440, height: 900 }, { id: 'mobile',
       const gl = original.call(this, type, ...args)
       if (!gl || !['webgl', 'webgl2', 'experimental-webgl'].includes(type) || gl.__uraiObserved) return gl
       gl.__uraiObserved = true
-      state.contexts.push({ type, attributes: gl.getContextAttributes() })
+      const rendererInfo = gl.getExtension('WEBGL_debug_renderer_info')
+      state.contexts.push({ type, attributes: gl.getContextAttributes(), renderer: rendererInfo ? gl.getParameter(rendererInfo.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER) })
       for (const name of ['drawElements', 'drawArrays', 'drawElementsInstanced', 'drawArraysInstanced']) {
         if (typeof gl[name] !== 'function') continue
         const draw = gl[name]
@@ -68,13 +69,19 @@ for (const spec of [{ id: 'desktop', width: 1440, height: 900 }, { id: 'mobile',
       requestAnimationFrame(tick)
     }))
     const after = await page.evaluate(() => ({ ...window.__uraiArtDirectionObservation, at: performance.now() }))
-    const { buffer, capture: evidence } = await captureVisibleCanvasPng(page, canvas)
-    const file = `${spec.id}-${id}.png`
-    await writeFile(path.join(output, file), buffer)
-    record.views.push({ id, input, image: { file, bytes: buffer.length, sha256: createHash('sha256').update(buffer).digest('hex') }, evidence,
+    const attempt = { id, input, captured: false,
       ownerAttributes: await owner.evaluate(node => Object.fromEntries([...node.attributes].filter(a => a.name.startsWith('data-home-')).map(a => [a.name, a.value]))),
       renderObservation: { firstDrawMs: after.firstDrawMs, elapsedMs: after.at-before.at, calls: after.calls-before.calls, triangleSubmissions: after.triangleSubmissions-before.triangleSubmissions, animationFrameIntervalsMs: samples, contexts: after.contexts },
-      drawingBuffer: await canvas.evaluate(node => ({ width: node.width, height: node.height, cssWidth: node.getBoundingClientRect().width, cssHeight: node.getBoundingClientRect().height })) })
+      drawingBuffer: await canvas.evaluate(node => ({ width: node.width, height: node.height, cssWidth: node.getBoundingClientRect().width, cssHeight: node.getBoundingClientRect().height })) }
+    record.views.push(attempt)
+    // Keep measured observations even if the strict canvas capture fails.
+    await writeFile(path.join(output, `${spec.id}-observations.json`), `${JSON.stringify(record, null, 2)}\n`)
+    try {
+      const { buffer, capture: evidence } = await captureVisibleCanvasPng(page, canvas)
+      const file = `${spec.id}-${id}.png`
+      await writeFile(path.join(output, file), buffer)
+      Object.assign(attempt, { captured: true, image: { file, bytes: buffer.length, sha256: createHash('sha256').update(buffer).digest('hex') }, evidence })
+    } catch (error) { attempt.captureError = String(error); throw error }
   }
   try {
     const response = await page.goto(`${base}/home/`, { waitUntil: 'domcontentloaded', timeout: 60000 })

@@ -46,7 +46,7 @@ on:
         required: true
         type: string
   pull_request:
-    branches: [main, repair/release-closure-integration-20261007]
+    branches: [main, repair/release-closure-integration-20261007, codex/visual-product-completion-20261009]
     paths:
       - '.github/workflows/accessibility-performance-evidence.yml'
       - 'scripts/visual-proof-transport.mjs'

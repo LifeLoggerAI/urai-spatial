@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import vm from 'node:vm'
 import test from 'node:test'
-import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
+import { URAI_LAUNCH_LOCALES, URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
+import { localizedMessage } from '../src/lib/i18n/localePreference.ts'
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n')
 const readRoot = (path) => fs.readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n')
@@ -115,7 +117,8 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
   assert.doesNotMatch(focus, /color="#ffe8a8" transparent opacity=\{0\.48\}/)
   assert.doesNotMatch(focus, /aria-label="Focus chamber controls"/)
   assert.match(focus, /<button type="button" onClick=\{\(\) => setRecenterSignal/)
-  assert.ok(focus.includes("aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}"), 'Primary Replay control must retain captured-title English labeling and localized fallback')
+  assert.ok(focus.includes("{...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')}"), 'Primary Replay control must retain selected-memory locale metadata')
+  assert.ok(focus.includes("aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}"), 'Primary Replay control must interpolate the captured title through its locale owner')
   assert.equal((focus.match(/className="primary"/g) ?? []).length, 1, 'Focus exposes one semantic primary Replay control')
   assert.doesNotMatch(focus, /<button[^>]*className="focus-spatial-aperture-button"/, 'The world must not expose a duplicate Replay button')
   assert.match(focus, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); if \(memory\) onActivate\(\) \}\}/, 'The stellar hit area retains the same selected-memory activation')
@@ -132,6 +135,29 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
 
   assert.doesNotMatch(focus, /className="artifactImage"/, 'the retired static artifact-image owner must not return')
   assert.doesNotMatch(focus, /\.artifactImage\{/, 'the retired static artifact-image CSS owner must not return')
+})
+
+test('actual primary Replay label retains the captured title and reviewed fallback for every governed locale', () => {
+  const action = focus.match(/<button type="button" className="primary"[\s\S]*?<\/button>/)?.[0]
+  assert.ok(action, 'the existing primary Replay action remains present')
+  const label = action.match(/aria-label=\{([\s\S]*?)\}><span/)?.[1]
+  assert.ok(label, 'read the actual primary action accessible-name expression')
+  const memory = { title: 'Private family title · العائلة' }
+  for (const requested of URAI_LAUNCH_LOCALES) {
+    for (const preview of [false, true]) {
+      const preference = { requested, preview }
+      const locale = { text: (id, values) => localizedMessage(preference, id, values).text }
+      const actual = vm.runInNewContext(`(${label})`, { memory, locale })
+      const expected = localizedMessage(preference, 'focus.openReplayFor', { title: memory.title })
+      assert.equal(actual, expected.text, `${requested}:${preview} must use the actual locale owner`)
+      assert.ok(actual.includes(memory.title), 'the private captured title must not be translated or replaced')
+      if (!preview || requested === 'en') {
+        assert.equal(actual, `Open Replay for ${memory.title}`)
+        assert.equal(expected.locale, 'en', 'unreviewed preferences retain the reviewed English label')
+        assert.equal(expected.preview, false)
+      }
+    }
+  }
 })
 
 test('selected Memory Star copy rejects the retired chamber language', () => {
@@ -211,7 +237,8 @@ test('Focus retains adaptive quality, reduced motion, visibility pausing, and We
 
 test('public demo is disclosed by default and retains an explicit production kill switch', () => {
   assert.match(demoPage, /import CutOneReplayFilmPage from '\.\/replay-film\/page'/)
-  assert.match(demoPage, /return <CutOneReplayFilmPage \/>/)
+  assert.match(demoPage, /import '\.\/replay-film\/aaa-mobile\.css'/)
+  assert.match(demoPage, /return <div className="urai-replay-film-route"><CutOneReplayFilmPage \/><\/div>/)
   assert.match(demoPage, /publicDemoRouteExplicitlyDisabled/)
   assert.match(demoPage, /NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === 'false'/)
   assert.match(demoPage, /URAI_ALLOW_PUBLIC_DEMO_ROUTES === 'false'/)

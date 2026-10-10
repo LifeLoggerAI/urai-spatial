@@ -51,6 +51,10 @@ test('full v5 materialization preserves the audited current Life Map proof byte-
     assert.match(result.stdout, /Materialized atomic Focus camera telemetry proof/)
     const embodied = await readFile(path.join(fixture, 'urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts'), 'utf8')
     const visual = await readFile(path.join(fixture, 'urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts'), 'utf8')
+    const evidence = await readFile(path.join(fixture, 'urai-tier1/tests/accessibility-performance-evidence.spec.ts'), 'utf8')
+    assert.match(evidence, /await expect\(fallback\)\.toHaveAttribute\('role', 'main'\)/)
+    assert.match(evidence, /await expect\(fallback\)\.toHaveAccessibleName\('Spatial Home fallback'\)/)
+    assert.doesNotMatch(evidence, /URAI Home World threshold/)
     const exactRegion = "page.getByRole('region', { name: 'Search and filter Life Map', exact: true })"
     assert.equal(embodied.split(exactRegion).length - 1, 2)
     assert.equal(visual.split(exactRegion).length - 1, 1)

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { subscribeBrowserLocation } from '@/lib/browserLocationStore'
 import { definitionForDestination } from './destinationRegistry'
 import { useUraiWorldState } from './WorldStateProvider'
 import {
@@ -107,6 +108,8 @@ export function WorldTransitionController() {
   const { world, phase, beginTravel } = useUraiWorldState()
   const timer = useRef<number | null>(null)
   const navigationWatchdog = useRef<number | null>(null)
+  const navigationGeneration = useRef(0)
+  const stopNavigationObservation = useRef<(() => void) | null>(null)
   const worldRef = useRef(world)
   const phaseRef = useRef(phase)
   const beginTravelRef = useRef(beginTravel)
@@ -116,6 +119,8 @@ export function WorldTransitionController() {
   useEffect(() => { beginTravelRef.current = beginTravel }, [beginTravel])
 
   const clearTimer = useCallback(() => {
+    // Also invalidate callbacks already queued before their timer was cleared.
+    navigationGeneration.current += 1
     if (timer.current !== null) {
       window.clearTimeout(timer.current)
       timer.current = null
@@ -124,6 +129,8 @@ export function WorldTransitionController() {
       window.clearTimeout(navigationWatchdog.current)
       navigationWatchdog.current = null
     }
+    stopNavigationObservation.current?.()
+    stopNavigationObservation.current = null
   }, [])
 
   const executeTravel = useCallback((request: UraiWorldTravelRequest) => {
@@ -141,19 +148,58 @@ export function WorldTransitionController() {
     }
 
     const href = buildTravelHref(request)
-    const targetPathname = normalizedPathname(new URL(href, window.location.origin).pathname)
+    const target = new URL(href, window.location.origin)
+    const targetPathname = normalizedPathname(target.pathname)
+    const targetLocation = `${targetPathname}${target.search}${target.hash}`
+    const locationKey = () => `${normalizedPathname(window.location.pathname)}${window.location.search}${window.location.hash}`
+    const startingLocation = locationKey()
+    const generation = navigationGeneration.current
+    let navigationStarted = false
+    let reachedTarget = false
+
+    const observeNavigation = () => {
+      if (generation !== navigationGeneration.current) return
+      const currentLocation = locationKey()
+      if (navigationStarted && currentLocation === targetLocation) {
+        reachedTarget = true
+        if (destinationSurfaceReady(request.destination)) clearTimer()
+        return
+      }
+      // A later route (including returning to the origin after reaching the
+      // target) owns navigation now. This attempt may no longer recover it.
+      if (currentLocation !== startingLocation || reachedTarget) clearTimer()
+    }
+    const unsubscribeLocation = subscribeBrowserLocation(observeNavigation)
+    const surfaceObserver = new MutationObserver(observeNavigation)
+    surfaceObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-testid', 'data-route-owner'],
+    })
+    stopNavigationObservation.current = () => {
+      unsubscribeLocation()
+      surfaceObserver.disconnect()
+    }
+
     timer.current = window.setTimeout(() => {
+      if (generation !== navigationGeneration.current) return
+      timer.current = null
+      navigationStarted = true
       // Use the governed client-router path for every realm transition, including
       // Mirror -> Replay. A prior Replay-only hard-document shortcut could stall
       // before navigation committed under the patched Next runtime.
       router.push(href)
-      timer.current = null
+      if (generation !== navigationGeneration.current) return
 
       // Route ownership is not proven by pathname alone. If the router changes
       // the URL but the destination surface never mounts, force one deterministic
       // document handoff after the client-router grace period.
       navigationWatchdog.current = window.setTimeout(() => {
-        navigationWatchdog.current = null
+        if (generation !== navigationGeneration.current) return
+        observeNavigation()
+        if (generation !== navigationGeneration.current) return
+        clearTimer()
         if (
           normalizedPathname(window.location.pathname) !== targetPathname ||
           !destinationSurfaceReady(request.destination)
@@ -161,6 +207,7 @@ export function WorldTransitionController() {
           window.location.assign(href)
         }
       }, 2500)
+      observeNavigation()
     }, transitionDuration(request.destination))
   }, [clearTimer, router])
 

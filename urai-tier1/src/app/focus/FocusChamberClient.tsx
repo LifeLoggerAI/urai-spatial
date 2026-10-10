@@ -314,10 +314,12 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
         float pores = smoothstep(.86, .975, noise(p * 127.0 - vec3(t * .06, -t * .04, t * .03)));
         float viewFacing = clamp(vNormalView.z * .5 + .5, 0.0, 1.0);
         float limb = pow(viewFacing, .55);
-        vec3 solarOrange = vec3(1.0, .18, .012);
-        vec3 solarGold = vec3(1.0, .60, .085);
-        vec3 hotWhite = vec3(1.0, .93, .64);
-        vec3 surface = mix(solarOrange, solarGold, .42 + cells * .46);
+        // The selected memory owns the stellar palette. Fixed gold previously
+        // overwhelmed the passed accent and made distinct memories look alike.
+        vec3 coolGranule = uAccent * .32;
+        vec3 brightGranule = uAccent;
+        vec3 hotWhite = mix(uLight, vec3(1.0), .10);
+        vec3 surface = mix(coolGranule, brightGranule, .42 + cells * .46);
         surface = mix(surface, hotWhite, .10 + fine * .14 + micro * .08 + faculae * .22 + limb * .06);
         surface = mix(surface, uLight, .08);
         surface = mix(surface, uAccent * (.65 + cells * .45), .32);
@@ -594,7 +596,7 @@ export default function FocusChamberClient() {
     <aside className="memoryMeaning" aria-labelledby="focus-memory-context-label"><span id="focus-memory-context-label" className="sr-only" {...locale.props('focus.selectedContext')}>{locale.text('focus.selectedContext')}</span><p {...locale.props(memory ? 'focus.heldContext' : result.status === 'loading' ? 'focus.openingSafely' : 'focus.emptyContext')}>{memory ? locale.text('focus.heldContext') : result.status === 'loading' ? locale.text('focus.openingSafely') : locale.locale === 'en' ? 'No personal memory is displayed in this neutral stellar field.' : locale.text('focus.emptyContext')}</p>{memory ? <dl><div><dt {...locale.props('focus.emotion')}>{locale.text('focus.emotion')}</dt><dd dir="auto">{memory.emotionalState}</dd></div><div><dt {...locale.props('focus.place')}>{locale.text('focus.place')}</dt><dd {...(memory.place?.label ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.place?.label ?? locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.people')}>{locale.text('focus.people')}</dt><dd {...(memory.people.length ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.privacy')}>{locale.text('focus.privacy')}</dt><dd dir="auto">{memory.privacy}</dd></div></dl> : <div className="neutralActions"><button type="button" onClick={unwind} {...locale.props('focus.openLifeMap')}>{locale.text('focus.openLifeMap')}</button><span {...(result.status === 'loading' ? locale.props('focus.loading') : {})}>{result.status === 'loading' ? locale.text('focus.loading') : result.message}</span></div>}{memory && !memory.demo && memory.privacy === 'private' && memory.authorization === 'owner' ? <MemoryMediaAttachment key={`${memory.ownerId}:${memory.id}`} memory={memory} /> : null}<JourneyOfflineNotice /></aside>
     <div className="focusControlDock">
     <nav className="focusControls" aria-label={locale.text('focus.controls')} {...locale.props('focus.controls')}>
-      {memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} {...locale.props('focus.enterReplay')} aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}><span {...locale.props(committed ? 'common.loading' : 'focus.enterReplay')}>{committed ? locale.text('common.loading') : locale.text('focus.enterReplay')}</span></button> : null}
+      {memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} {...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')} aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}><span {...locale.props(committed ? 'common.loading' : 'focus.enterReplay')}>{committed ? locale.text('common.loading') : locale.text('focus.enterReplay')}</span></button> : null}
       <button type="button" onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenter')}>{locale.text('focus.recenter')}</button>
       <button className="unwind" type="button" onClick={unwind} {...locale.props('nav.lifeMap')}>← {locale.text('nav.lifeMap')}</button>
     </nav>
