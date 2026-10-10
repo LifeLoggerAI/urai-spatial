@@ -87,6 +87,11 @@ export default function HomeSpatialRuntimeLayer() {
   const [assetsReady, setAssetsReady] = useState(false)
   const [assetLoadFailed, setAssetLoadFailed] = useState(false)
 
+  const synchronizeAssetsReady = useCallback((ready: boolean) => {
+    runtimeRef.current?.setAttribute('data-home-assets-ready', ready ? 'true' : 'false')
+    setAssetsReady(ready)
+  }, [])
+
   const onSceneFailure = useCallback((error: Error) => {
     setAssetLoadFailed(isHomeAssetLoadError(error))
     setAssetsReady(false)
@@ -156,10 +161,10 @@ export default function HomeSpatialRuntimeLayer() {
         attachedCanvas.addEventListener('webglcontextrestored', onContextRestored)
       }
       const owner = root.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
-      setAssetsReady(owner?.getAttribute('data-home-assets-ready') === 'true')
+      synchronizeAssetsReady(owner?.getAttribute('data-home-assets-ready') === 'true')
     }
 
-    setAssetsReady(false)
+    synchronizeAssetsReady(false)
     attach()
     const observer = new MutationObserver(attach)
     observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-home-assets-ready'] })
@@ -170,7 +175,7 @@ export default function HomeSpatialRuntimeLayer() {
       attachedCanvas?.removeEventListener('webglcontextlost', onContextLost)
       attachedCanvas?.removeEventListener('webglcontextrestored', onContextRestored)
     }
-  }, [homeRuntimeActive, recoveryKey, rendererState])
+  }, [homeRuntimeActive, recoveryKey, rendererState, synchronizeAssetsReady])
 
   useEffect(() => {
     if (!homeRuntimeActive || rendererState === 'failed') return
@@ -283,7 +288,7 @@ export default function HomeSpatialRuntimeLayer() {
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only" {...locale.props('home.restoring')}>{locale.text('home.restoring')}</div> : null}
       {!assetsReady ? <div className="home-runtime-loading" role="status" aria-label={locale.text('home.forming')} aria-live="polite"><span aria-hidden="true" /><strong {...locale.props('home.forming')}>{locale.text('home.forming')}</strong><JourneyOfflineNotice /></div> : null}
       <HomeSceneRenderBoundary key={recoveryKey} onFailure={onSceneFailure}>
-        <AssetDrivenHomeWorld webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} onSceneFailure={onSceneFailure} onAssetsReadyChange={setAssetsReady} />
+        <AssetDrivenHomeWorld webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} onSceneFailure={onSceneFailure} onAssetsReadyChange={synchronizeAssetsReady} />
       </HomeSceneRenderBoundary>
       <style jsx global>{`.home-adam-launcher-slot{position:fixed;z-index:2147483646;right:max(8px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));width:64px;min-height:48px}.urai-home-spatial-runtime-layer .urai-final-home-doorways,.urai-home-spatial-runtime-layer .urai-asset-home-world>.home-semantic-navigation{display:none!important}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]{position:fixed;z-index:2147483647;right:max(10px,env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:grid;gap:8px;width:48px;pointer-events:auto;opacity:.015}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]:focus-within{opacity:1;width:min(240px,calc(100vw - 100px));grid-template-columns:minmax(0,1fr)}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]:focus-within :is(button,a){box-sizing:border-box;width:100%;height:auto;min-height:48px;padding:8px 12px;border-radius:14px;font:700 12px/1.25 system-ui;text-align:center;white-space:normal;overflow-wrap:anywhere}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"] :is(button,a){display:flex;align-items:center;justify-content:center;width:48px;height:48px;min-width:48px;min-height:48px;padding:0;border:1px solid rgba(230,246,240,.32);border-radius:50%;background:rgba(6,18,19,.92);color:#f3fbf8;font:700 0/1 system-ui;cursor:pointer;pointer-events:auto;touch-action:manipulation}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"] :is(button,a):focus-visible{font-size:10px;outline:2px solid #fff;outline-offset:2px}.urai-home-spatial-runtime-layer>.home-runtime-loading{position:absolute;inset:0;z-index:45;display:grid;place-content:center;gap:14px;text-align:center;background:radial-gradient(circle at 50% 52%,rgba(80,139,119,.2),rgba(8,25,22,.94) 48%,#081b18 100%);color:#eef8f3;font:600 13px/1.3 system-ui;letter-spacing:.03em;pointer-events:none}.urai-home-spatial-runtime-layer>.home-runtime-loading span{width:52px;height:52px;margin:auto;border:1px solid rgba(190,232,218,.34);border-radius:50%;box-shadow:0 0 34px rgba(109,201,174,.2),inset 0 0 22px rgba(109,201,174,.12);animation:home-runtime-forming-breath 1.8s ease-in-out infinite}@keyframes home-runtime-forming-breath{50%{transform:scale(1.08);opacity:.68}}@media(max-width:700px){.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]{right:max(80px,calc(env(safe-area-inset-right) + 80px));top:max(12px,env(safe-area-inset-top));transform:none;grid-template-columns:48px;width:48px}.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]:focus-within{grid-template-columns:minmax(0,1fr)}}@media(prefers-reduced-motion:reduce){.urai-home-spatial-runtime-layer>.home-runtime-loading span{animation:none}}`}</style>
       </section>
