@@ -17,6 +17,7 @@ import { localizedMessage, localeNumber, localeDate } from '../src/lib/i18n/loca
 import { homeJourneyHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
 import * as homeGeometry from '../src/spatial/layout/HomeSanctuaryGeometry.ts'
 import * as focusMemoryAppearance from '../src/app/focus/focusMemoryAppearance.ts'
+import * as focusComposition from '../src/app/focus/focusComposition.ts'
 import { localizationMessageBindings } from '../../scripts/lib/localization-message-bindings.mjs'
 
 const require = createRequire(import.meta.url)
@@ -79,6 +80,7 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(id.includes('HomeInterpretiveSplat')) return {resolveHomeInterpretiveSplatAsset:()=>null,HomeInterpretiveSplatEnvironment:()=>null}
     if(id.includes('HomeSanctuaryGeometry')) return homeGeometry
     if(id.includes('focusMemoryAppearance')) return focusMemoryAppearance
+    if(id.includes('focusComposition')) return focusComposition
     if(id==='@react-three/drei') return {useGLTF:Object.assign(()=>({}),{preload:()=>{},clear:()=>{}})}
     if(id.endsWith('.module.css')) return {__esModule:true,default:new Proxy({},{get:(_target,key)=>String(key)})}
     return unknown
@@ -159,7 +161,7 @@ for(const requested of URAI_LAUNCH_LOCALES) {
   })
   test(`${requested}: actual core TSX copy branches use scoped working preview and preserve navigation`,()=>{
     const pref={requested,preview:true}
-    const f=fixture(pref,{states:[false,0,false,true,null,'ready']})
+    const f=fixture(pref,{states:[false,false,0,false,true,null,'ready']})
     const focusTree=f.render(focus)
     const heading=elements(focusTree,n=>n.type==='h2')[0]
     assert.equal(text(heading),localizedMessage(pref,'focus.heading').text)
@@ -199,7 +201,7 @@ test('missing prepared entry falls back with matching English language and direc
   const previous=URAI_CATALOGS.ar['focus.heading']
   try {
     delete URAI_CATALOGS.ar['focus.heading']
-    const f=fixture({requested:'ar',preview:true},{states:[false,0,false,true,null,'ready']})
+    const f=fixture({requested:'ar',preview:true},{states:[false,false,0,false,true,null,'ready']})
     const h=elements(f.render(focus),n=>n.type==='h2')[0]
     assert.equal(text(h),'Focus Memory Star');assert.equal(h.props.lang,'en');assert.equal(h.props.dir,'ltr')
   } finally {URAI_CATALOGS.ar['focus.heading']=previous}
@@ -208,7 +210,7 @@ test('missing prepared entry falls back with matching English language and direc
 test('actual Focus text leaves preserve long RTL/private strings and React escapes markup',()=>{
   const malicious='<img src=x onerror="alert(1)"> & private <script>identity</script>'
   const memory={id:'private-fixture',title:malicious,narrator:{focus:malicious},privacy:'private',demo:false,occurredAt:'2026-10-07T00:00:00Z',visuals:{accent:'#fff',light:'#fff',sky:'#000',ground:'#000'},star:{id:'private-fixture'},replayManifest:{id:'manifest'},people:[],emotionalState:'fixture',place:null,sourceMedia:[]}
-  const rendered=fixture({requested:'ar',preview:true},{memory,states:[false,0,false,true,null,'ready']}).render(focus)
+  const rendered=fixture({requested:'ar',preview:true},{memory,states:[false,false,0,false,true,null,'ready']}).render(focus)
   const heading=elements(rendered,n=>n.type==='h2')[0]
   assert.equal(text(heading),malicious);assert.equal(heading.props.lang,undefined);assert.equal(heading.props.dir,'auto')
   const html=renderToStaticMarkup(rendered)
@@ -217,11 +219,40 @@ test('actual Focus text leaves preserve long RTL/private strings and React escap
   const long='ذاكرة '.repeat(600)+'<svg onload=alert(1)>'
   try {
     URAI_CATALOGS.ar['focus.heading']=long
-    const h=elements(fixture({requested:'ar',preview:true},{states:[false,0,false,true,null,'ready']}).render(focus),n=>n.type==='h2')[0]
+    const h=elements(fixture({requested:'ar',preview:true},{states:[false,false,0,false,true,null,'ready']}).render(focus),n=>n.type==='h2')[0]
     assert.equal(text(h),long);assert.equal(h.props.dir,'rtl');assert.equal(h.props.style.overflowWrap,'anywhere')
     const markup=renderToStaticMarkup(h)
     assert.ok(markup.includes('&lt;svg'));assert.ok(!markup.includes('<svg onload'))
   } finally {URAI_CATALOGS.ar['focus.heading']=previous}
+})
+
+test('actual Focus Replay name retains its private title in reviewed fallback and every scoped locale preview',()=>{
+  const title='ذاكرة خاصة <script>title</script> {title}'
+  const memory={id:'private-fixture',title,narrator:{focus:title},privacy:'private',demo:false,occurredAt:'2026-10-07T00:00:00Z',visuals:{accent:'#fff',light:'#fff',sky:'#000',ground:'#000'},star:{id:'private-fixture'},replayManifest:{id:'manifest'},people:[],emotionalState:'fixture',place:null,sourceMedia:[]}
+  for(const requested of URAI_LAUNCH_LOCALES) for(const preview of [false,true]) {
+    const preference={requested,preview}
+    const f=fixture(preference,{memory,status:'ready',states:[false,false,0,false,true,null,'ready']})
+    const tree=f.render(focus)
+    const button=elements(tree,n=>n.type==='button' && n.props.className==='primary')[0]
+    const expected=localizedMessage(preference,'focus.openReplayFor',{title})
+    assert.equal(button.props['aria-label'],expected.text)
+    assert.equal(button.props.lang,expected.locale)
+    assert.equal(button.props.dir,expected.direction)
+    assert.equal(button.props['data-urai-translation-preview'],String(expected.preview))
+    assert.ok(expected.text.includes(title),'selected private title must be preserved literally')
+    assert.ok(!renderToStaticMarkup(button).includes('<script>title</script>'))
+    button.props.onClick()
+    const request=f.travels[0]
+    assert.equal(request.destination,'replay')
+    assert.equal(request.context.memoryId,memory.id)
+    assert.equal(request.context.replayManifestId,memory.replayManifest.id)
+    assert.equal(request.context.privacyMode,'held-private')
+    const destination=new URL(request.href,'https://fixture.invalid')
+    assert.equal(destination.searchParams.get('memoryId'),memory.id)
+    assert.equal(destination.searchParams.get('manifestId'),memory.replayManifest.id)
+    assert.equal(destination.searchParams.get('node'),memory.star.id)
+    assert.equal(destination.searchParams.has('demo'),false)
+  }
 })
 
 test('offline notice follows actual browser events, preserves SSR truth and removes subscriptions',()=>{

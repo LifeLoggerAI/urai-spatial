@@ -206,9 +206,10 @@ function deferred() {
 
 // The actual voice owner runs with synthetic network/media adapters. No provider
 // request or private audio is used to exercise interrupted response-body reads.
-function narratorHarness({ response, playFailure = false, autoEnd = true } = {}) {
+function narratorHarness({ response, playFailure = false, autoEnd = true, speechAutoEnd = true, onSpeechConstruct } = {}) {
   const driver = hookDriver()
-  const elements = [], created = [], revoked = [], fallback = []
+  const elements = [], created = [], revoked = [], fallback = [], utterances = []
+  let speechCancels = 0
   class Media {
     paused = true
     constructor(src) { this.src = src; elements.push(this) }
@@ -226,7 +227,7 @@ function narratorHarness({ response, playFailure = false, autoEnd = true } = {})
   }, {
     Audio: Media, AbortController, DOMException,
     CustomEvent: class { constructor(type) { this.type = type } },
-    SpeechSynthesisUtterance: class { constructor(text) { this.text = text } },
+    SpeechSynthesisUtterance: class { constructor(text) { this.text = text; onSpeechConstruct?.() } },
     URL: {
       createObjectURL(blob) { const url = `blob:synthetic-${blob.id}`; created.push(url); return url },
       revokeObjectURL(url) { revoked.push(url) },
@@ -235,12 +236,12 @@ function narratorHarness({ response, playFailure = false, autoEnd = true } = {})
     window: {
       dispatchEvent() {},
       speechSynthesis: {
-        cancel() {},
-        speak(utterance) { fallback.push(utterance.text); queueMicrotask(() => utterance.onend?.()) },
+        cancel() { speechCancels += 1 },
+        speak(utterance) { utterances.push(utterance); fallback.push(utterance.text); if (speechAutoEnd) queueMicrotask(() => utterance.onend?.()) },
       },
     },
   })
-  return { audio: driver.render(owner.useAudioController), elements, created, revoked, fallback, unmount: driver.unmount }
+  return { audio: driver.render(owner.useAudioController), elements, created, revoked, fallback, utterances, speechCancels: () => speechCancels, unmount: driver.unmount }
 }
 
 for (const stop of ['stopAllAudio', 'unmount']) test(`${stop} during a voice body read prevents late media playback`, async () => {
@@ -466,3 +467,39 @@ test('unmount cancels a pending cue decode before it can create a sound source',
   assert.equal(h.sources.filter((source) => source.started).length, 0)
 })
 
+
+test('completed browser narration releases its abort listener and media callbacks', async () => {
+  const h = narratorHarness()
+  h.audio.setVoiceEngine('google')
+  await h.audio.speak({ id: 'completed-google', text: 'Synthetic browser narration' })
+  const cancellations = h.speechCancels()
+  h.audio.stopAllAudio()
+  assert.equal(h.speechCancels(), cancellations)
+  assert.equal(h.utterances[0].onend, null)
+  assert.equal(h.utterances[0].onerror, null)
+})
+
+test('stopped browser narration settles once and releases its handlers', async () => {
+  const h = narratorHarness({ speechAutoEnd: false })
+  h.audio.setVoiceEngine('google')
+  const speaking = h.audio.speak({ id: 'stopped-google', text: 'Synthetic browser narration' })
+  await settleCue()
+  const cancellations = h.speechCancels()
+  h.audio.stopAllAudio()
+  await speaking
+  assert.equal(h.speechCancels(), cancellations + 1)
+  assert.equal(h.utterances[0].onend, null)
+  assert.equal(h.utterances[0].onerror, null)
+  assert.equal(h.audio.getAudioState().isSpeaking, false)
+})
+
+test('speech aborted before dispatch never cancels another speech owner', async () => {
+  let stop
+  const h = narratorHarness({ onSpeechConstruct: () => stop() })
+  stop = () => h.audio.stopAllAudio()
+  h.audio.setVoiceEngine('google')
+  await h.audio.speak({ id: 'pre-aborted-google', text: 'Never dispatch' })
+  assert.equal(h.speechCancels(), 0)
+  assert.equal(h.utterances.length, 0)
+  assert.equal(h.audio.getAudioState().isSpeaking, false)
+})

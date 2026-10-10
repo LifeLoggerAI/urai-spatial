@@ -3,11 +3,14 @@
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 
-import StellarCorona from '@/spatial/stellar/StellarCorona'
+import StellarPhotosphere, { FOCUS_STAR_POSITION, FOCUS_STAR_RADIUS } from '@/spatial/stellar/StellarPhotosphere'
+import FocusAtmosphere from '@/spatial/stellar/FocusAtmosphere'
+import type { StellarMemoryState } from '@/spatial/stellar/stellarMemoryReveal'
+import { getFocusFrame, rebaseFocusEntryFrame } from './focusComposition'
 
-import { Billboard, OrbitControls, Sparkles, Stars, useTexture } from '@react-three/drei'
+import { OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets, replayAssets } from '@/spatial/assets/uraiAssets'
@@ -29,8 +32,9 @@ const focusAccessibilityCss = `
 @media(forced-colors:active){.focusControls button,.focusHelp,.neutralActions button,.webglRecovery button,.focus-spatial-aperture-button{background:Canvas;color:CanvasText;border:2px solid CanvasText}.focusControls button:focus-visible,.focusHelp summary:focus-visible,.neutralActions button:focus-visible,.webglRecovery button:focus-visible,.focus-spatial-aperture-button:focus-visible{outline:3px solid Highlight;outline-offset:3px}}
 `
 
-const DEFAULT_CAMERA: [number, number, number] = [0, 1.45, 8.2]
-const DEFAULT_TARGET: [number, number, number] = [0, 0.45, -1.3]
+const INITIAL_FRAME = getFocusFrame(16 / 9)
+const DEFAULT_CAMERA = INITIAL_FRAME.position
+const DEFAULT_TARGET = INITIAL_FRAME.target
 const CAMERA_LIMIT = 8.8
 
 type ChamberState = 'neutral' | 'loading' | 'ready' | 'unavailable' | 'unauthorized' | 'corrupt' | 'deleted'
@@ -50,7 +54,7 @@ function parseEntryCameraFrame(params: URLSearchParams): EntryCameraFrame | null
   const target = parseEntryVector(params.get('entryTarget'))
   const fov = Number(params.get('entryFov'))
   if (!position || !target || !Number.isFinite(fov)) return null
-  return { position, target, fov: THREE.MathUtils.clamp(fov, 36, 68) }
+  return rebaseFocusEntryFrame({ position, target, fov })
 }
 
 function dateLabel(value: string, locale: Pick<ReturnType<typeof useUraiLocale>, 'date'>) {
@@ -72,6 +76,13 @@ function useWebGLAvailable() {
     }
   }, [])
   return available
+}
+
+function isSoftwareWebGLRenderer(renderer: THREE.WebGLRenderer) {
+  const context = renderer.getContext()
+  const debug = context.getExtension('WEBGL_debug_renderer_info')
+  const name = context.getParameter(debug?.UNMASKED_RENDERER_WEBGL ?? context.RENDERER)
+  return /swiftshader|llvmpipe|lavapipe|software/i.test(String(name ?? ''))
 }
 
 function FirstFrame({ profile, onReady }: { profile: SpatialQualityProfile; onReady: () => void }) {
@@ -130,15 +141,17 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
 }
 
 function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reducedMotion, onInputReadyChange }: { controls: RefObject<OrbitControlsImpl | null>; recenterSignal: number; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; reducedMotion: boolean; onInputReadyChange: (ready: boolean) => void }) {
-  const { camera } = useThree()
+  const { camera, size } = useThree()
+  const frame = useMemo(() => getFocusFrame(size.width / size.height), [size.width, size.height])
   const keys = useRef(new Set<string>())
   const target = useMemo(() => new THREE.Vector3(...DEFAULT_TARGET), [])
-  const defaultTarget = useMemo(() => new THREE.Vector3(...DEFAULT_TARGET), [])
-  const defaultCamera = useMemo(() => new THREE.Vector3(...DEFAULT_CAMERA), [])
+  const defaultTarget = useMemo(() => new THREE.Vector3(...frame.target), [frame])
+  const defaultCamera = useMemo(() => new THREE.Vector3(...frame.position), [frame])
   const forward = useRef(new THREE.Vector3())
   const right = useRef(new THREE.Vector3())
   const movement = useRef(new THREE.Vector3())
   const entryBlendActive = useRef(false)
+  const entryFrameUsed = useRef(false)
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
@@ -171,8 +184,16 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
     }
   }, [onInputReadyChange, shellRef])
 
-  useEffect(() => {
-    const useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion
+  useLayoutEffect(() => {
+    const orbit = controls.current
+    const damping = orbit?.enableDamping
+    // Flush a released drag before restoring the view. Otherwise OrbitControls
+    // applies its remaining momentum after Recenter and moves the camera again.
+    if (orbit) {
+      orbit.enableDamping = false
+      orbit.update()
+    }
+    const useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion && !entryFrameUsed.current
     if (useEntryFrame) {
       camera.position.set(...entryFrame.position)
       controls.current?.target.set(...entryFrame.target)
@@ -182,18 +203,21 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
       }
       entryBlendActive.current = true
     } else {
-      camera.position.set(...DEFAULT_CAMERA)
-      controls.current?.target.set(...DEFAULT_TARGET)
+      keys.current.clear()
+      camera.position.copy(defaultCamera)
+      controls.current?.target.copy(defaultTarget)
       if (camera instanceof THREE.PerspectiveCamera) {
-        camera.fov = 48
+        camera.fov = frame.fov
         camera.updateProjectionMatrix()
       }
       entryBlendActive.current = false
     }
     controls.current?.update()
-  }, [camera, controls, entryFrame, recenterSignal, reducedMotion])
+    if (orbit && damping !== undefined) orbit.enableDamping = damping
+  }, [camera, controls, defaultCamera, defaultTarget, entryFrame, frame.fov, recenterSignal, reducedMotion])
 
   useFrame((_, delta) => {
+    if (entryBlendActive.current) entryFrameUsed.current = true
     const moving = keys.current.size > 0
     if (!moving && entryBlendActive.current) {
       camera.position.x = THREE.MathUtils.damp(camera.position.x, defaultCamera.x, 2.4, delta)
@@ -205,7 +229,7 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
       target.z = THREE.MathUtils.damp(target.z, defaultTarget.z, 2.8, delta)
       controls.current?.target.copy(target)
       if (camera instanceof THREE.PerspectiveCamera) {
-        camera.fov = THREE.MathUtils.damp(camera.fov, 48, 2.6, delta)
+        camera.fov = THREE.MathUtils.damp(camera.fov, frame.fov, 2.6, delta)
         camera.updateProjectionMatrix()
       }
       controls.current?.update()
@@ -250,217 +274,6 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
   return null
 }
 
-function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; light: string; reducedMotion: boolean }) {
-  const corona = useRef<THREE.Group>(null)
-  const photosphere = useMemo(() => new THREE.ShaderMaterial({
-    uniforms: {
-      uTime: { value: 0 },
-      uAccent: { value: new THREE.Color(accent) },
-      uLight: { value: new THREE.Color(light) },
-    },
-    vertexShader: `
-      uniform float uTime;
-      varying vec3 vObjectPosition;
-      varying vec3 vNormalView;
-      void main() {
-        float macro = sin(position.x * 9.0 + position.y * 5.0 + uTime * .12) * sin(position.z * 11.0 - position.x * 4.0 - uTime * .08);
-        float grain = sin((position.x - position.z) * 23.0 + uTime * .18);
-        vec3 displaced = position + normal * (macro * .018 + grain * .006);
-        vObjectPosition = displaced;
-        vNormalView = normalize(normalMatrix * normal);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform float uTime;
-      uniform vec3 uAccent;
-      uniform vec3 uLight;
-      varying vec3 vObjectPosition;
-      varying vec3 vNormalView;
-
-      float hash(vec3 p) {
-        p = fract(p * .3183099 + .113);
-        p *= 17.0;
-        return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-      }
-
-      float noise(vec3 x) {
-        vec3 i = floor(x);
-        vec3 f = fract(x);
-        f = f * f * (3.0 - 2.0 * f);
-        return mix(
-          mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x),
-              mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
-          mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
-              mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
-          f.z
-        );
-      }
-
-      void main() {
-        vec3 p = normalize(vObjectPosition);
-        float t = uTime * .055;
-        // Keep the dominant signal at photospheric granule scale. Broad low-frequency
-        // bands read as planetary terrain, which is explicitly outside Focus canon.
-        float coarse = noise(p * 17.0 + vec3(t * .34, -t * .21, t * .15));
-        float medium = noise(p * 41.0 - vec3(t * .19, t * .14, -t * .11));
-        float fine = noise(p * 93.0 + vec3(-t * .11, t * .16, t * .07));
-        float micro = noise(p * 151.0 - vec3(t * .05, -t * .08, t * .04));
-        // The visible surface is intentionally dominated by small photospheric cells.
-        // Low-frequency continents/terrain are suppressed so Focus cannot read as a planet.
-        float cells = smoothstep(.40, .68, coarse * .18 + medium * .50 + fine * .32);
-        float intergranular = smoothstep(.10, .42, abs(medium - fine));
-        float faculae = smoothstep(.74, .94, noise(p * 57.0 + vec3(t * .07, -t * .05, t * .03)));
-        float pores = smoothstep(.86, .975, noise(p * 127.0 - vec3(t * .06, -t * .04, t * .03)));
-        float viewFacing = clamp(vNormalView.z * .5 + .5, 0.0, 1.0);
-        float limb = pow(viewFacing, .55);
-        // The selected memory owns the stellar palette. Fixed gold previously
-        // overwhelmed the passed accent and made distinct memories look alike.
-        vec3 coolGranule = uAccent * .32;
-        vec3 brightGranule = uAccent;
-        vec3 hotWhite = mix(uLight, vec3(1.0), .10);
-        vec3 surface = mix(coolGranule, brightGranule, .42 + cells * .46);
-        surface = mix(surface, hotWhite, .10 + fine * .14 + micro * .08 + faculae * .22 + limb * .06);
-        surface = mix(surface, uLight, .08);
-        surface = mix(surface, uAccent * (.65 + cells * .45), .32);
-        float radiance = (.48 + cells * .84 + micro * .18 + faculae * .34) * (.68 + limb * .32);
-        radiance *= .90 + intergranular * .12;
-        radiance *= 1.0 - pores * .12;
-        vec3 emitted = surface * radiance + hotWhite * (.022 + cells * .055 + faculae * .07);
-        gl_FragColor = vec4(clamp(emitted, 0.0, 1.0), 1.0);
-        #include <colorspace_fragment>
-      }
-    `,
-    toneMapped: false,
-  }), [accent, light])
-
-  useEffect(() => () => photosphere.dispose(), [photosphere])
-
-  useFrame(({ clock }) => {
-    photosphere.uniforms.uTime.value = reducedMotion ? 0 : clock.elapsedTime
-    if (!corona.current || reducedMotion) return
-    corona.current.rotation.y = clock.elapsedTime * 0.035
-    corona.current.rotation.z = Math.sin(clock.elapsedTime * 0.18) * 0.045
-  })
-
-  return (
-    <group
-      ref={corona}
-      name="focus-stellar-photosphere-corona"
-      userData={{ canon: 'memory-star-stellar-photosphere-corona', surface: 'procedural-granulation-filaments-limb-darkening' }}
-      position={[0, 0.35, -1.55]}
-    >
-      <mesh>
-        <sphereGeometry args={[1.15, 112, 96]} />
-        <primitive object={photosphere} attach="material" />
-      </mesh>
-      <StellarCorona radius={1.15} color={accent} reducedMotion={reducedMotion} intensity={1.75} />
-      <mesh name="focus-stellar-photosphere-luminance-floor" scale={1.012} renderOrder={3}>
-        <sphereGeometry args={[1.15, 96, 96]} />
-        <meshBasicMaterial color="#ffd66b" transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </mesh>
-      <Sparkles count={reducedMotion ? 42 : 124} scale={[4.2, 4.2, 4.2]} size={reducedMotion ? 1.55 : 2.15} speed={reducedMotion ? 0 : 0.11} opacity={0.58} color="#ffd36c" />
-      <pointLight color="#fff0ba" intensity={15.5} distance={20} decay={2} />
-      <pointLight color={accent} intensity={4.8} distance={14} decay={2} />
-    </group>
-  )
-}
-
-function MemoryImprint({ url }: { url: string }) {
-  const texture = useTexture(url)
-  const aperture = useRef<THREE.Group>(null)
-  const starCenter = useMemo(() => new THREE.Vector3(0, 0.35, -1.55), [])
-  const facingSurface = useMemo(() => new THREE.Vector3(), [])
-  const material = useMemo(() => new THREE.ShaderMaterial({
-    uniforms: { uMemory: { value: texture } },
-    vertexShader: `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform sampler2D uMemory;
-      varying vec2 vUv;
-      void main() {
-        vec2 centered = vUv - vec2(.5);
-        float radius = length(centered);
-        float veil = 1.0 - smoothstep(.28, .53, radius);
-        float core = 1.0 - smoothstep(.04, .46, radius);
-        vec3 image = texture2D(uMemory, vUv).rgb;
-        float luminance = dot(image, vec3(.2126, .7152, .0722));
-        float localContrast = smoothstep(.08, .92, luminance);
-        vec3 warmMemory = mix(image, vec3(1.0, .48, .08), .06 + (1.0 - luminance) * .05);
-        vec3 revealedMemory = mix(warmMemory, image * (.92 + localContrast * .20), .72);
-        vec3 solarVeil = vec3(1.0, .34, .02) * (1.0 - core) * .12;
-        vec3 stellarizedMemory = mix(revealedMemory, vec3(1.0, .62, .12), (1.0 - luminance) * .08 + (1.0 - core) * .10);
-        float alpha = veil * (.36 + luminance * .22 + core * .20);
-        gl_FragColor = vec4(stellarizedMemory + solarVeil, alpha);
-        #include <colorspace_fragment>
-      }
-    `,
-    transparent: true,
-    depthWrite: false,
-    depthTest: true,
-    toneMapped: false,
-    blending: THREE.NormalBlending,
-  }), [texture])
-
-  useEffect(() => {
-    texture.colorSpace = THREE.SRGBColorSpace
-    texture.wrapS = THREE.ClampToEdgeWrapping
-    texture.wrapT = THREE.ClampToEdgeWrapping
-    texture.needsUpdate = true
-    return () => material.dispose()
-  }, [material, texture])
-
-  useFrame(({ camera }) => {
-    if (!aperture.current) return
-    facingSurface
-      .copy(camera.position)
-      .sub(starCenter)
-      .normalize()
-      .multiplyScalar(1.19)
-      .add(starCenter)
-    aperture.current.position.copy(facingSurface)
-  })
-
-  return (
-    <group
-      ref={aperture}
-      name="focus-memory-imprint-anchor"
-      userData={{ canon: 'memory-reveal-within-photosphere', apertureRadius: 0.68, surfaceWrap: false }}
-    >
-      <Billboard follow name="focus-memory-imprint-billboard">
-        <mesh renderOrder={6} name="focus-memory-imprint">
-          <circleGeometry args={[0.68, 96]} />
-          <primitive object={material} attach="material" />
-        </mesh>
-      </Billboard>
-    </group>
-  )
-}
-
-function MemoryTraces({ memory, accent, reducedMotion }: { memory: SelectedMemory | null; accent: string; reducedMotion: boolean }) {
-  const count = memory ? Math.min(7, Math.max(3, memory.people.length + memory.emotionalArc.length + (memory.place ? 1 : 0))) : 5
-  const refs = useRef<Array<THREE.Group | null>>([])
-  const positions = useMemo(() => Array.from({ length: count }, (_, index) => {
-    const angle = (index / count) * Math.PI * 2 + 0.4
-    const radius = 3.5 + (index % 2) * 1.15
-    return [Math.cos(angle) * radius, -0.1 + (index % 3) * 0.75, -2.1 + Math.sin(angle) * radius * 0.44] as [number, number, number]
-  }), [count])
-  useFrame(({ clock }) => {
-    if (reducedMotion) return
-    refs.current.forEach((group, index) => {
-      if (!group) return
-      group.position.y = positions[index][1] + Math.sin(clock.elapsedTime * 0.62 + index * 0.7) * 0.08
-      group.rotation.y = clock.elapsedTime * 0.08 + index * 0.7
-    })
-  })
-  return <group name="focus-grounded-memory-traces">{positions.map((position, index) => <group key={index} ref={(value) => { refs.current[index] = value }} position={position}><mesh><sphereGeometry args={[0.045, 20, 20]} /><meshBasicMaterial color="#fff0b8" transparent opacity={0.86} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh><mesh><sphereGeometry args={[0.16, 18, 18]} /><meshBasicMaterial color={accent} transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh></group>)}</group>
-}
-
 function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivate }: { memory: SelectedMemory | null; accent: string; light: string; reducedMotion: boolean; onActivate: () => void }) {
   const group = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
@@ -480,35 +293,27 @@ function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivat
   }
 
   return (
-    <group ref={group} position={[0, 0.35, -1.55]} name="focus-memory-star-interaction">
+    <group ref={group} position={FOCUS_STAR_POSITION} name="focus-memory-star-interaction">
       <mesh
         onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }}
         onPointerOver={(event) => pointer(event, true)}
         onPointerOut={(event) => pointer(event, false)}
       >
-        <sphereGeometry args={[1.16, 96, 96]} />
-        <meshBasicMaterial color={light} transparent opacity={0.025} depthWrite={false} />
+        <sphereGeometry args={[FOCUS_STAR_RADIUS + 0.01, 56, 40]} />
+        <meshBasicMaterial color={light} transparent opacity={0} depthWrite={false} colorWrite={false} />
       </mesh>
 
     </group>
   )
 }
 
-function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame, readinessKey, onFirstFrame, onInputReadyChange }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; readinessKey: string; onFirstFrame: () => void; onInputReadyChange: (ready: boolean) => void }) {
+function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame, readinessKey, onFirstFrame, onInputReadyChange, onMemoryState }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; readinessKey: string; onFirstFrame: () => void; onInputReadyChange: (ready: boolean) => void; onMemoryState: (state: StellarMemoryState) => void }) {
   const { accent, light, imageUrl: memoryImageUrl } = focusMemoryAppearance(memory, replayAssets.primary.src)
   return <>
     <FirstFrame key={readinessKey} profile={profile} onReady={onFirstFrame} />
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
-    <color attach="background" args={[memory?.visuals.sky ?? '#020712']} />
-    <fog attach="fog" args={[memory?.visuals.sky ?? '#020712', 7.5, 31]} />
-    <ambientLight intensity={0.32} color="#d8efff" />
-    <hemisphereLight args={[light, '#02030a', 0.75]} />
-    <directionalLight position={[5, 8, 7]} intensity={1.35} color={light} castShadow={profile.shadows} />
-    <pointLight position={[0, 1, -1.5]} intensity={3.4} color={accent} distance={14} />
-    <Stars radius={65} depth={45} count={profile.reducedMotion ? 500 : profile.particleCount * 3} factor={2.5} saturation={0.25} fade speed={profile.reducedMotion ? 0 : 0.12} />
-    <StellarPhotosphere accent={accent} light={light} reducedMotion={profile.reducedMotion} />
-    {memoryImageUrl ? <MemoryImprint url={memoryImageUrl} /> : null}
-    <MemoryTraces memory={memory} accent={accent} reducedMotion={profile.reducedMotion} />
+    <FocusAtmosphere profile={profile} sky={memory?.visuals.sky ?? '#020712'} accent={accent} light={light} />
+    <StellarPhotosphere accent={accent} light={light} reducedMotion={profile.reducedMotion} memoryImageUrl={memoryImageUrl} quality={profile.tier} onMemoryState={onMemoryState} />
     <MemoryStarInteraction memory={memory} accent={accent} light={light} reducedMotion={profile.reducedMotion} onActivate={onActivate} />
     <OrbitControls ref={controls} makeDefault enableDamping={!profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={3.4} maxDistance={11.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
     <FocusCameraRig controls={controls} recenterSignal={recenterSignal} shellRef={shellRef} entryFrame={entryFrame} reducedMotion={profile.reducedMotion} onInputReadyChange={onInputReadyChange} />
@@ -519,7 +324,18 @@ export default function FocusChamberClient() {
   const locale = useUraiLocale()
   const result = useSelectedMemory()
   const memory = result.memory
-  const profile = useAdaptiveSpatialQuality()
+  const adaptiveProfile = useAdaptiveSpatialQuality()
+  const [softwareRenderer, setSoftwareRenderer] = useState(false)
+  const profile: SpatialQualityProfile = useMemo(() => softwareRenderer ? {
+    ...adaptiveProfile,
+    tier: 'low',
+    pixelRatioMax: 1,
+    particleCount: 120,
+    shadows: false,
+    antialias: false,
+    postprocessing: false,
+    preloadSecondaryWorlds: false,
+  } : adaptiveProfile, [adaptiveProfile, softwareRenderer])
   const webglAvailable = useWebGLAvailable()
   const controls = useRef<OrbitControlsImpl | null>(null)
   const shellRef = useRef<HTMLElement | null>(null)
@@ -531,6 +347,7 @@ export default function FocusChamberClient() {
   const [renderedSceneKey, setRenderedSceneKey] = useState<string | null>(null)
   const [inputReady, setInputReady] = useState(false)
   const [renderEpoch, setRenderEpoch] = useState(0)
+  const [memoryReveal, setMemoryReveal] = useState<{ key: string; state: StellarMemoryState } | null>(null)
   const onWebGLState = useCallback((state: WebGLState) => {
     setRenderedSceneKey(null)
     setRenderEpoch(value => value + 1)
@@ -577,23 +394,25 @@ export default function FocusChamberClient() {
   const webglUsable = webglAvailable === true && webglState !== 'failed'
   const readinessKey = JSON.stringify([memory?.ownerId, memory?.id, memory?.replayManifest.id, appearance.imageUrl, webglState, renderEpoch])
   const onFirstFrame = useCallback(() => setRenderedSceneKey(readinessKey), [readinessKey])
+  const onMemoryState = useCallback((state: StellarMemoryState) => setMemoryReveal({ key: readinessKey, state }), [readinessKey])
+  const memoryRevealState = appearance.imageUrl ? memoryReveal?.key === readinessKey ? memoryReveal.state : 'loading' : 'absent'
   const fieldReady = webglUsable && webglState === 'ready' && inputReady && renderedSceneKey === readinessKey
   const semanticFallback = webglAvailable === false || webglState === 'failed'
-  const preparingField = Boolean(memory) && !semanticFallback && !fieldReady
-  const fieldStatusId = semanticFallback ? 'common.spatialAccessible' : webglState === 'lost' ? 'focus.paused' : webglState === 'restoring' ? 'focus.restoring' : fieldReady ? 'focus.ready' : 'focus.opening'
+  const preparingField = Boolean(memory) && !semanticFallback && (!fieldReady || memoryRevealState === 'loading')
+  const fieldStatusId = semanticFallback || memoryRevealState === 'unavailable' ? 'common.spatialAccessible' : webglState === 'lost' ? 'focus.paused' : webglState === 'restoring' ? 'focus.restoring' : fieldReady ? memoryRevealState === 'loading' ? 'focus.openingSelected' : 'focus.ready' : 'focus.opening'
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-render-ready={fieldReady ? 'true' : 'false'} data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-memory-reveal-state={semanticFallback ? 'absent' : memoryRevealState} data-focus-render-ready={fieldReady ? 'true' : 'false'} data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x={DEFAULT_CAMERA[0].toFixed(3)} data-focus-camera-y={DEFAULT_CAMERA[1].toFixed(3)} data-focus-camera-z={DEFAULT_CAMERA[2].toFixed(3)} data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-renderer-mode={softwareRenderer ? 'software' : 'hardware-or-unknown'} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
     <h1 className="srOnly" {...locale.props('focus.title')}>{locale.text('focus.title')}</h1>
     <div className="focusBackdrop" aria-hidden="true" />
-    <div className="focusFog" aria-hidden="true" />
+    {!webglUsable ? <div className="focusFog" aria-hidden="true" /> : null}
     <div className="focusCanvas" aria-label={locale.text('focus.canvasLabel')} {...locale.props('focus.canvasLabel')}>
-      {webglAvailable === null ? <div className="focusFallback" role="status" {...locale.props('focus.preparing')}>{locale.text('focus.preparing')}</div> : webglUsable ? <Suspense fallback={<div className="focusFallback" role="status" {...locale.props('focus.opening')}>{locale.text('focus.opening')}</div>}><Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'always' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }}><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={onWebGLState} shellRef={shellRef} entryFrame={entryFrame} readinessKey={readinessKey} onFirstFrame={onFirstFrame} onInputReadyChange={setInputReady} /></Canvas></Suspense> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong {...locale.props('common.spatialUnavailable')}>{locale.text('common.spatialUnavailable')}</strong><span {...locale.props('common.spatialAccessible')}>{locale.text('common.spatialAccessible')}</span></div>}
+      {webglAvailable === null ? <div className="focusFallback" role="status" {...locale.props('focus.preparing')}>{locale.text('focus.preparing')}</div> : webglUsable ? <Suspense fallback={<div className="focusFallback" role="status" {...locale.props('focus.opening')}>{locale.text('focus.opening')}</div>}><Canvas camera={{ position: DEFAULT_CAMERA, fov: INITIAL_FRAME.fov, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'always' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => setSoftwareRenderer(isSoftwareWebGLRenderer(gl))}><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={onWebGLState} shellRef={shellRef} entryFrame={entryFrame} readinessKey={readinessKey} onFirstFrame={onFirstFrame} onInputReadyChange={setInputReady} onMemoryState={onMemoryState} /></Canvas></Suspense> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong {...locale.props('common.spatialUnavailable')}>{locale.text('common.spatialUnavailable')}</strong><span {...locale.props('common.spatialAccessible')}>{locale.text('common.spatialAccessible')}</span></div>}
     </div>
     <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS MEMORY STAR'}</p><h2 {...(!memory ? locale.props(headingId) : {dir:'auto' as const})} style={{overflowWrap:'anywhere'}}>{heading}</h2>{memory ? <span {...(Number.isFinite(new Date(memory.occurredAt).getTime()) ? locale.formatProps : {dir:'auto'})}>{dateLabel(memory.occurredAt, locale)}</span> : null}<details className="focusNarration"><summary {...locale.props(memory ? 'focus.selectedMemory' : 'focus.threshold')}>{locale.text(memory ? 'focus.selectedMemory' : 'focus.threshold')}</summary><strong {...(!memory && directEntry ? locale.props('focus.chooseMemory') : {dir:'auto' as const})} style={{overflowWrap:'anywhere'}}>{description}</strong></details></header>
     {!webglUsable && <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral stellar Focus field'} data-focus-visual-owner="stellar-photosphere-corona" aria-hidden="true">
       <div className="focusPhotosphereVisual" />
     </section>}
-    <aside className="memoryMeaning" aria-labelledby="focus-memory-context-label"><span id="focus-memory-context-label" className="sr-only" {...locale.props('focus.selectedContext')}>{locale.text('focus.selectedContext')}</span><p {...locale.props(memory ? 'focus.heldContext' : result.status === 'loading' ? 'focus.openingSafely' : 'focus.emptyContext')}>{memory ? locale.text('focus.heldContext') : result.status === 'loading' ? locale.text('focus.openingSafely') : locale.locale === 'en' ? 'No personal memory is displayed in this neutral stellar field.' : locale.text('focus.emptyContext')}</p>{memory ? <dl><div><dt {...locale.props('focus.emotion')}>{locale.text('focus.emotion')}</dt><dd dir="auto">{memory.emotionalState}</dd></div><div><dt {...locale.props('focus.place')}>{locale.text('focus.place')}</dt><dd {...(memory.place?.label ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.place?.label ?? locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.people')}>{locale.text('focus.people')}</dt><dd {...(memory.people.length ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.privacy')}>{locale.text('focus.privacy')}</dt><dd dir="auto">{memory.privacy}</dd></div></dl> : <div className="neutralActions"><button type="button" onClick={unwind} {...locale.props('focus.openLifeMap')}>{locale.text('focus.openLifeMap')}</button><span {...(result.status === 'loading' ? locale.props('focus.loading') : {})}>{result.status === 'loading' ? locale.text('focus.loading') : result.message}</span></div>}{memory && !memory.demo && memory.privacy === 'private' && memory.authorization === 'owner' ? <MemoryMediaAttachment key={`${memory.ownerId}:${memory.id}`} memory={memory} /> : null}<JourneyOfflineNotice /></aside>
+    <aside className="memoryMeaning" aria-labelledby="focus-memory-context-label"><span id="focus-memory-context-label" className="sr-only" {...locale.props('focus.selectedContext')}>{locale.text('focus.selectedContext')}</span><p {...locale.props(memory ? 'focus.heldContext' : result.status === 'loading' ? 'focus.openingSafely' : 'focus.emptyContext')}>{memory ? locale.text('focus.heldContext') : result.status === 'loading' ? locale.text('focus.openingSafely') : locale.locale === 'en' ? 'No personal memory is displayed in this neutral stellar field.' : locale.text('focus.emptyContext')}</p>{memory ? <dl><div><dt {...locale.props('focus.emotion')}>{locale.text('focus.emotion')}</dt><dd dir="auto">{memory.emotionalState}</dd></div><div><dt {...locale.props('focus.place')}>{locale.text('focus.place')}</dt><dd {...(memory.place?.label ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.place?.label ?? locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.people')}>{locale.text('focus.people')}</dt><dd {...(memory.people.length ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.privacy')}>{locale.text('focus.privacy')}</dt><dd dir="auto">{memory.privacy}</dd></div></dl> : <div className="neutralActions"><button type="button" onClick={unwind} {...locale.props('focus.openLifeMap')}>{locale.text('focus.openLifeMap')}</button><span {...(result.status === 'loading' ? locale.props('focus.loading') : {})}>{result.status === 'loading' ? locale.text('focus.loading') : result.message}</span></div>}{memory && !memory.demo && memory.privacy === 'private' && memory.authorization === 'owner' ? <MemoryMediaAttachment key={`${memory.ownerId}:${memory.id}`} memory={memory} /> : null}{memory && !semanticFallback && memoryRevealState === 'unavailable' ? <p role="status" {...locale.props('common.spatialAccessible')}>{locale.text('common.spatialAccessible')}</p> : null}<JourneyOfflineNotice /></aside>
     <div className="focusControlDock">
     <nav className="focusControls" aria-label={locale.text('focus.controls')} {...locale.props('focus.controls')}>
       {memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} {...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')} aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}><span {...locale.props(committed ? 'common.loading' : 'focus.enterReplay')}>{committed ? locale.text('common.loading') : locale.text('focus.enterReplay')}</span></button> : null}

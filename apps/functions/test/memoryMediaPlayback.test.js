@@ -369,3 +369,38 @@ test('actual backend and browser adapter agree on private descriptor, full immut
       isCurrent: () => true, requestHeaders: async () => ({ Authorization: 'Bearer fictional-token' }) }, fetcher), /PRIVATE_MEDIA_BYTES_UNAVAILABLE/)
   } finally { server.closeAllConnections(); await new Promise(done => server.close(done)) }
 })
+
+// Uploading a new source must obey the same owner fence as playback; otherwise
+// an account deletion planning lease can be bypassed by adding bytes mid-plan.
+for (const [label, markerPath, marker] of [
+  ['deletion planning lease', `privacyDeletionTombstones/${uid}`, { uid, active: false, deletionPlanningLeaseToken: 'fictional-lease' }],
+  ['malformed central tombstone', `privacyDeletionTombstones/${uid}`, { uid }],
+  ['malformed permanent owner fence', `uraiPrivateLifeModelOwnerFences/${sha(uid)}`, { deleted: false }],
+  ['foreign permanent owner fence', `uraiPrivateLifeModelOwnerFences/${sha(uid)}`, { ownerHash: sha('fictional-foreign'), deleted: false, deletionEpoch: 0 }],
+  ['foreign inactive consent block', `jobConsentBlocks/${sha(uid + '\n' + 'memory.storage')}`, { ownerUid: 'fictional-foreign', purpose: 'memory.storage', active: false }],
+  ['malformed inactive consent block', `jobConsentBlocks/${sha(uid + '\n' + 'memory.storage')}`, { active: false }],
+]) test(label + ' denies actual upload preflight before accepting a new source', async () => {
+  const f = fixture(); f.docs.set(markerPath, marker)
+  await assert.rejects(f.handler.getMemoryMediaUploadAuthority({ memoryId }, f.context), /CURRENT_AUTHORITY_REQUIRED/)
+  assert.equal(f.stats.objectMetadata, 0); assert.equal(f.stats.streams, 0)
+})
+
+for (const [label, marker] of [
+  ['explicit inactive tombstone', { uid, active: false }],
+  ['canonical released tombstone', { uid, updatedAt: 'released-timestamp' }],
+]) test(label + ' preserves actual source upload preflight', async () => {
+  const f = fixture()
+  f.docs.set(`privacyDeletionTombstones/${uid}`, marker.updatedAt ? { uid, updatedAt: new f.Timestamp(f.clock.value) } : marker)
+  f.docs.set(`uraiPrivateLifeModelOwnerFences/${sha(uid)}`, { ownerHash: sha(uid), deleted: false, deletionEpoch: 0 })
+  f.docs.set(`jobConsentBlocks/${sha(uid + '\n' + 'memory.storage')}`, { ownerUid: uid, purpose: 'memory.storage', active: false })
+  const result = await f.handler.getMemoryMediaUploadAuthority({ memoryId }, f.context)
+  assert.equal(result.ownerId, uid); assert.equal(result.memoryId, memoryId); assert.equal(result.consentRevision, f.policy.revision)
+})
+
+for (const status of ['granted', 'revoked']) test('canonical C7 ' + status + ' projection preserves independent C1 upload and playback', async () => {
+  const f = fixture()
+  f.docs.set(`privacyDeletionTombstones/${uid}`, { uid, exportConsentStatus: status, exportConsentReceiptHash: 'e'.repeat(64),
+    exportConsentPolicyVersion: '1.0.0', exportConsentExpiresAt: new f.Timestamp(f.clock.value + 60_000) })
+  const result = await f.handler.getMemoryMediaUploadAuthority({ memoryId }, f.context)
+  assert.equal(result.ownerId, uid); const playback = await f.descriptor(); assert.equal(playback.memoryId, memoryId)
+})

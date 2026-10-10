@@ -1,5 +1,6 @@
 import { buildExplicitDemoMemory, type SelectedMemory } from './selectedMemoryContract'
 import { DEMO_MEMORY_STAR_NODE_BY_ID } from './memoryStarSchema'
+import { canonicalLifeMapDemoNodes } from '../../components/lifemap/canonicalLifeMapDemoNodes'
 
 const QUIET_RESET_ID = 'demo:quiet-reset'
 const QUIET_RESET_MANIFEST_ID = 'replay-recovery-thread'
@@ -39,7 +40,37 @@ export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
       star: { ...memory.star, id: star.id },
     }
   }
-  if (id !== QUIET_RESET_ID && id !== 'quiet-reset') return memory
+  if (id !== QUIET_RESET_ID && id !== 'quiet-reset') {
+    // Only declared, unlocked nodes in the disclosed Life Map sample feed own
+    // this metadata. Unknown IDs and protected samples keep the generic fallback.
+    const sample = starId ? canonicalLifeMapDemoNodes.find((node) => node.id === starId && !node.locked) : null
+    if (!sample) return memory
+    return {
+      ...memory,
+      title: sample.title,
+      occurredAt: sample.occurredAt ?? memory.occurredAt,
+      summary: `Disclosed Life Map sample. ${sample.summary} This is not personal data.`,
+      people: [],
+      place: undefined,
+      emotionalState: 'not recorded',
+      emotionalArc: [],
+      replayManifest: {
+        ...memory.replayManifest,
+        id: sample.id,
+        transcript: `Demonstration memory: ${sample.title}. ${sample.summary} No personal inference is made.`,
+        segments: memory.replayManifest.segments.map((segment) => ({
+          ...segment,
+          caption: segment.id === 'memory' ? sample.summary : 'This sequence belongs to the disclosed demonstration sample.',
+          narratorLine: segment.id === 'memory' ? `Demonstration memory: ${sample.title}.` : 'No personal inference is being made.',
+        })),
+      },
+      narrator: {
+        focus: `Demonstration memory: ${sample.title}. This is not personal data.`,
+        replay: `Replay the disclosed ${sample.title} sample. No personal inference is made.`,
+      },
+      star: { ...memory.star, id: sample.id },
+    }
+  }
 
   return {
     ...memory,

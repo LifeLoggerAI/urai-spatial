@@ -1,0 +1,187 @@
+{
+  "schemaVersion": "urai-interpretive-survey-inspection-v1",
+  "worldId": "URAI-IW-001-QUIET-RESET",
+  "inspectedAt": "2026-10-10T03:52:41.951734Z",
+  "truthClass": "interpretive",
+  "autobiographical": false,
+  "generationPerformed": false,
+  "independentAcceptance": false,
+  "sourceHead": "448bb4d",
+  "media": [
+    {
+      "id": "S01",
+      "taskId": "613f748d-5c8f-49fa-baa7-e8366ce94270",
+      "bytes": 7969458,
+      "sha256": "78cc032d3f997359120a2e2112dcdbca18ea0177545ccc2713944a2b1303148c",
+      "duration": "6.041667",
+      "streams": [
+        {
+          "codec": "h264",
+          "width": 1280,
+          "height": 720,
+          "frames": "145"
+        }
+      ]
+    },
+    {
+      "id": "S02",
+      "taskId": "894905a7-9c8a-4955-94b1-1be38ce12869",
+      "bytes": 7566500,
+      "sha256": "5ec59c2c55d2733824a8c704127c50edc860c22f3f5d1c98e4e00b1c2781c405",
+      "duration": "6.041667",
+      "streams": [
+        {
+          "codec": "h264",
+          "width": 1280,
+          "height": 720,
+          "frames": "145"
+        }
+      ]
+    },
+    {
+      "id": "S03",
+      "taskId": "c4d0c381-336a-41d4-aa76-7139e7921992",
+      "bytes": 6505670,
+      "sha256": "d7f874dd1b3761620b1d606076965530aa8ae2edc6a11ff425f31a5833bb7c7e",
+      "duration": "6.041667",
+      "streams": [
+        {
+          "codec": "h264",
+          "width": 1280,
+          "height": 720,
+          "frames": "145"
+        }
+      ]
+    },
+    {
+      "id": "S04",
+      "taskId": "67b988f1-aaaf-4b1f-afe0-f003bebf10c4",
+      "bytes": 6887567,
+      "sha256": "73d15eb8a928df274741683626585b4822ca125bbac09cf52f352c3722ed1ac9",
+      "duration": "6.041667",
+      "streams": [
+        {
+          "codec": "h264",
+          "width": 1280,
+          "height": 720,
+          "frames": "145"
+        }
+      ]
+    },
+    {
+      "id": "S05",
+      "taskId": "3be52a25-dfa0-45c7-abdf-3ccc02aacbe7",
+      "bytes": 8433877,
+      "sha256": "2fb1424df92595e133c0fd63ba1f8cdf068f72acdf85d456ef7893f65768b633",
+      "duration": "7.041667",
+      "streams": [
+        {
+          "codec": "h264",
+          "width": 1280,
+          "height": 720,
+          "frames": "169"
+        }
+      ]
+    },
+    {
+      "id": "S06",
+      "taskId": "77a33ac6-f598-4b56-98fd-0386e4e4719b",
+      "bytes": 8413062,
+      "sha256": "7c441028172c52b2ab57e26ec525628915be44e475fa3affd7c5d7295a367f0f",
+      "duration": "7.041667",
+      "streams": [
+        {
+          "codec": "h264",
+          "width": 1280,
+          "height": 720,
+          "frames": "169"
+        }
+      ]
+    },
+    {
+      "id": "S07",
+      "taskId": "4b0d49a6-4f24-4b56-9585-933b481a66ce",
+      "bytes": 8165420,
+      "sha256": "d16ee52a47eab0877540bfc2ec8680172b35344e05ed17be5787d52e2ec1a5d7",
+      "duration": "6.041667",
+      "streams": [
+        {
+          "codec": "h264",
+          "width": 1280,
+          "height": 720,
+          "frames": "145"
+        }
+      ]
+    },
+    {
+      "id": "S08",
+      "taskId": "32ffb018-6f5c-4d50-b1c6-7a572abd7e50",
+      "bytes": 7727845,
+      "sha256": "7a4018b66ad2148d3f43c24e9cbdaac318b8deb81972efad576a2a174ee3f8ea",
+      "duration": "6.041667",
+      "streams": [
+        {
+          "codec": "h264",
+          "width": 1280,
+          "height": 720,
+          "frames": "145"
+        }
+      ]
+    }
+  ],
+  "inspection": {
+    "method": "Actual retained MP4 byte retrieval, ffprobe codec/frame count, ffmpeg one-frame-per-second bins plus final frame for all eight surveys; S06 dense four-frame-per-second bins reviewed literally. Contact sheets are execution evidence, not reconstruction input or independent acceptance.",
+    "reviewer": "OpenAI execution visual QA (machine-assisted; non-independent)",
+    "rejectedTaskId": "77a33ac6-f598-4b56-98fd-0386e4e4719b",
+    "rejection": "S06_CCW_ARC: two simultaneous distinct bright sun discs and separate vertical water reflections appear in late frames (~4.5 seconds bin onward); violates fixed sun direction and no duplicate/morphing world features.",
+    "reconstructionAuthorized": false,
+    "allowedClaim": "All eight retained surveys were retrieved and decoded. Literal sampled motion review rejects S06 lighting consistency. Overall acceptance and reconstruction remain closed."
+  },
+  "evidenceFiles": [
+    {
+      "filename": "S01-contact.jpg",
+      "sha256": "8bf118ad0301e5ed08e1374b4ec06d0c25f49f3e5f52ea3f6a04a50ef9b6597c",
+      "bytes": 385401
+    },
+    {
+      "filename": "S02-contact.jpg",
+      "sha256": "85df81a5077fed63bd5c15a0c3453ec1a98201157a2c845aa1d4215b6d6a08d3",
+      "bytes": 324634
+    },
+    {
+      "filename": "S03-contact.jpg",
+      "sha256": "e13b3f902e02d0c8a7a217a80c93f954db478d226f45b1e904781fd99510cb56",
+      "bytes": 379259
+    },
+    {
+      "filename": "S04-contact.jpg",
+      "sha256": "93523b35850eb1e2534579f201808a18df2ec325162b4f68f9f966fa69ef36a5",
+      "bytes": 331518
+    },
+    {
+      "filename": "S05-contact.jpg",
+      "sha256": "da91eba1a652a881ddc4fc76c036d87be4176783c88236e277068f0e51eaf126",
+      "bytes": 312196
+    },
+    {
+      "filename": "S06-contact.jpg",
+      "sha256": "e06a352617b94735695f6513c7e4dab0a4cee0e55fe27bbb90c85d00f140c910",
+      "bytes": 334784
+    },
+    {
+      "filename": "S07-contact.jpg",
+      "sha256": "7219f61c34cea6f29acea41a76d02e99eb81794ad57c2737768e64edaeb882e2",
+      "bytes": 319698
+    },
+    {
+      "filename": "S08-contact.jpg",
+      "sha256": "57646c0ae0d281dfa5c39bb8cb1fc58560cae53c482e968e48b942e2459a842f",
+      "bytes": 323972
+    },
+    {
+      "filename": "S06-dense-review.jpg",
+      "sha256": "3fa1d3a30f780b25350525b2e5dd2816189770bc6107b4b8b6634fc8eaf0f384",
+      "bytes": 692087
+    }
+  ]
+}

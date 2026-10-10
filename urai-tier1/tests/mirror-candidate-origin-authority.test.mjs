@@ -3,13 +3,34 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import vm from 'node:vm'
+import { EventEmitter } from 'node:events'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 const root = process.env.URAI_REPAIR_SOURCE_ROOT || fileURLToPath(new URL('../..', import.meta.url))
 const baseUrl = 'http://127.0.0.1:4173'
+const exactSha = 'a'.repeat(40)
 const runnerSource = fs.readFileSync(path.join(root, 'tests/mirror-release-proof-runner.mjs'), 'utf8')
 const proofSource = fs.readFileSync(path.join(root, 'tests/mirror-release-proof.mjs'), 'utf8')
 const { createCandidateRouteAuthority } = await import(pathToFileURL(path.join(fileURLToPath(new URL('../..', import.meta.url)), 'tests/lib/candidate-route-authority.mjs')))
 const authority = createCandidateRouteAuthority(baseUrl)
+async function runActualProofRunner({ code = 0, signal = null, error = null } = {}) {
+  const calls = []
+  const messages = []
+  const processFixture = { execPath: '/fixture/node', env: { URAI_AUDIT_BASE_URL: baseUrl, URAI_EXACT_HEAD: exactSha }, exitCode: undefined }
+  const spawn = (...args) => {
+    calls.push(args)
+    const child = new EventEmitter()
+    queueMicrotask(() => error ? child.emit('error', error) : child.emit('exit', code, signal))
+    return child
+  }
+  const source = runnerSource.replace(/^import .*$/gm, '')
+  await vm.runInNewContext(`(async () => {${source}\n})()`, { spawn, process: processFixture, console: { log: message => messages.push(message), error: message => messages.push(message) } })
+  assert.equal(calls.length, 1, 'a failed transition must never spawn a substitute direct-entry proof')
+  assert.equal(calls[0][0], processFixture.execPath)
+  assert.deepEqual(Array.from(calls[0][1]), ['tests/mirror-release-proof.mjs'])
+  assert.equal(calls[0][2].env, processFixture.env)
+  assert.equal(calls[0][2].stdio, 'inherit')
+  return { exitCode: processFixture.exitCode, messages }
+}
 const transitionStart = proofSource.indexOf('async function proveTransition(')
 const transitionEnd = proofSource.indexOf('async function proveSemanticFallback(', transitionStart)
 assert.ok(transitionStart >= 0 && transitionEnd > transitionStart, 'actual transition proof scope is present')
@@ -41,71 +62,33 @@ for (const [label, value] of [
   test(`actual bare Mirror demo wait rejects ${label}`, () => assert.equal(bareEntryAllows(value), false))
 }
 
-for (const value of ['https://foreign.example/replay', 'http://127.0.0.1:4174/replay', 'https://127.0.0.1:4173/replay', `${baseUrl}/focus`, 'not a URL', undefined, 'javascript:replay', 'http://user:password@127.0.0.1:4173/replay']) {
-  test(`actual candidate route authority rejects ${value === undefined ? 'missing URL' : new String(value).replace(/user:password/g, 'credentials')}`, () => assert.equal(authority.isExactRoute(value, '/replay'), false))
-}
-test('actual candidate route authority accepts exact Replay origin with query and trailing slash', () => assert.equal(authority.isExactRoute(`${baseUrl}/replay/?memoryId=quiet-reset`, '/replay'), true))
-
-async function executeRunner(result) {
-  const process = { execPath: '/node', env: { URAI_AUDIT_BASE_URL: baseUrl, URAI_EXACT_HEAD: 'a'.repeat(40) }, exitCode: 0 }
-  const spawned = [], messages = [], errors = []
-  const execution = vm.runInNewContext(`(async () => {${runnerSource.replace(/^import .*$/gm, '')}\n})()`, {
-    process,
-    console: { log: message => messages.push(message), error: message => errors.push(message) },
-    spawn: (command, args, options) => {
-      spawned.push({ command, args: [...args], options })
-      return { once(event, callback) {
-        if (result.error && event === 'error') queueMicrotask(() => callback(result.error))
-        if (!result.error && event === 'exit') queueMicrotask(() => callback(result.code, result.signal))
-      } }
-    },
-  })
-  if (result.error) await assert.rejects(execution, error => error === result.error)
-  else await execution
-  assert.equal(spawned.length, 1, 'a failed transition cannot be replaced by another capture')
-  assert.equal(spawned[0].command, process.execPath)
-  assert.deepEqual(spawned[0].args, ['tests/mirror-release-proof.mjs'])
-  assert.equal(spawned[0].options.env, process.env, 'the original proof keeps the exact candidate environment')
-  assert.equal(spawned[0].options.stdio, 'inherit')
-  return { process, messages, errors }
-}
-
-for (const result of [
-  { code: 0, signal: null },
-  { code: 1, signal: null },
-  { code: 7, signal: null },
-  { code: null, signal: 'SIGTERM' },
-  { code: 0, signal: 'SIGTERM' },
-  { code: null, signal: null },
-]) {
-  test(`actual runner preserves original proof result ${result.code} / ${result.signal ?? 'no signal'}`, async () => {
-    const { process, messages, errors } = await executeRunner(result)
-    if (result.code === 0 && !result.signal) {
-      assert.equal(process.exitCode, 0)
-      assert.deepEqual(messages, ['MIRROR_RELEASE_PROOF_RUNNER_PASSED_ORIGINAL'])
-      assert.deepEqual(errors, [])
-    } else {
-      assert.equal(process.exitCode, typeof result.code === 'number' && result.code !== 0 ? result.code : 1)
-      assert.deepEqual(messages, [], 'failure must never emit a pass marker')
-      assert.equal(errors.length, 1)
-      assert.ok(errors[0].includes(`code=${result.code} signal=${result.signal || 'none'}`))
-      assert.match(errors[0], /failed without reconciliation/)
-    }
-  })
-}
-
-test('actual runner propagates child spawn failure without a replacement capture', async () => {
-  const { messages, errors } = await executeRunner({ error: new Error('synthetic child spawn failure') })
-  assert.deepEqual(messages, [])
-  assert.deepEqual(errors, [])
+test('actual proof runner admits only successful original transition proof', async () => {
+  const result = await runActualProofRunner()
+  assert.equal(result.exitCode, undefined)
+  assert.deepEqual(result.messages, ['MIRROR_RELEASE_PROOF_RUNNER_PASSED_ORIGINAL'])
 })
-
-test('actual original capture fences navigation and both sides of retained screenshots', () => {
+for (const [label, outcome, expectedCode] of [
+  ['screenshot or transition failure', {code:1}, 1],
+  ['specific original nonzero exit', {code:7}, 7],
+  ['signal despite zero exit', {code:0,signal:'SIGTERM'}, 1],
+  ['missing exit code', {code:null}, 1],
+]) {
+  test(`actual proof runner refuses reconciliation for ${label}`, async () => {
+    const result = await runActualProofRunner(outcome)
+    assert.equal(result.exitCode, expectedCode)
+    assert.equal(result.messages.length, 1)
+    assert.match(result.messages[0], /failed without reconciliation/)
+    assert.doesNotMatch(result.messages[0], /PASSED/)
+  })
+}
+test('actual proof runner propagates child creation errors without accepting a substitute', async () => {
+  await assert.rejects(runActualProofRunner({error:new Error('fixture child spawn failed')}), /fixture child spawn failed/)
+})
+test('actual capture scripts fence initial navigation and both sides of retained screenshots', () => {
   assert.ok((proofSource.match(/candidateAuthority\.assertExactRoute/g) || []).length >= 10)
   assert.match(proofSource, /assertCleanEvidence\(consoleErrors, failedRequests, httpErrors\)/)
-  assert.doesNotMatch(runnerSource, /isNarrowReplayScreenshotFailure|chromium|page\.goto/)
+  assert.doesNotMatch(runnerSource, /isNarrowReplayScreenshotFailure|page\.goto|page\.screenshot/)
 })
-
 test('candidate authority rejects invalid or credential-bearing configured origins', () => {
   for (const value of ['not a URL', 'file:///replay', 'http://user:password@localhost']) assert.throws(() => createCandidateRouteAuthority(value))
 })

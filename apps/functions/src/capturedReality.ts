@@ -88,7 +88,18 @@ async function requireLocationRuntimeConsent(uid: string, transaction: FirebaseF
     const marker = central.data() ?? {}, keys = Object.keys(marker)
     const stamp = marker.updatedAt
     const released = !keys.includes('active') && keys.every(key => ['uid','updatedAt'].includes(key)) && stamp instanceof admin.firestore.Timestamp
-    if (marker.uid !== uid || keys.some(key => key.startsWith('deletionPlanningLease')) || (marker.active !== false && !released)) {
+    const expiry = marker.exportConsentExpiresAt
+    const projectionExpiry = expiry instanceof admin.firestore.Timestamp ? expiry.toMillis()
+      : typeof expiry === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(expiry)
+        && Number.isFinite(Date.parse(expiry)) && new Date(expiry).toISOString() === expiry ? Date.parse(expiry) : Number.NaN
+    // Export consent shares this document with deletion authority. A canonical
+    // C7 projection neither grants nor withdraws memory/location source consent.
+    const exportProjection = !keys.includes('active') && keys.every(key => ['uid','updatedAt','exportConsentStatus',
+      'exportConsentReceiptHash','exportConsentPolicyVersion','exportConsentExpiresAt'].includes(key))
+      && ['granted','revoked'].includes(String(marker.exportConsentStatus))
+      && SHA256.test(String(marker.exportConsentReceiptHash)) && marker.exportConsentPolicyVersion === '1.0.0'
+      && Number.isSafeInteger(projectionExpiry)
+    if (marker.uid !== uid || keys.some(key => key.startsWith('deletionPlanningLease')) || (marker.active !== false && !released && !exportProjection)) {
       throw new functions.https.HttpsError('permission-denied', 'CAPTURED_REALITY_OWNER_DELETED')
     }
   }
