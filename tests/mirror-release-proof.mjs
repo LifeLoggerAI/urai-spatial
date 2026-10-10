@@ -339,9 +339,9 @@ async function proveOverview(browser, deviceName) {
       if (await fragmentButtons.count()) await fragmentButtons.last().click()
     }
 
-    const orb = page.getByRole('button', { name: /Ask the Orb to explain Body rhythm/ })
-    if (deviceName === 'desktop') await orb.click()
-    else await orb.waitFor({ state: 'hidden' })
+    const reflectionAction = page.getByRole('button', { name: 'Inspect Body rhythm evidence', exact: true })
+    if (deviceName === 'desktop') await reflectionAction.click()
+    else await reflectionAction.waitFor({ state: 'hidden' })
 
     candidateAuthority.assertExactRoute(page.url(), '/mirror')
     const shot = await screenshot(page, `${deviceName}-mirror-selected-body-rhythm`)

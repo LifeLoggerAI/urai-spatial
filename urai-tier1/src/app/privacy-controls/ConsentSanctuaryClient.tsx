@@ -1,11 +1,13 @@
 'use client'
 
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-import { Canvas } from '@react-three/fiber'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
+import { Canvas, useThree } from '@react-three/fiber'
 import { Float, Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot } from 'firebase/firestore'
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import {
   applyOperationalConsentPolicy,
@@ -113,6 +115,18 @@ function Chamber({ domain, policy, index, selected, onSelect, reducedMotion }: {
   )
 }
 
+function ConsentCameraFraming() {
+  const { camera, size, invalidate } = useThree()
+  useLayoutEffect(() => {
+    const scale = Math.max(1, Math.min(1.9, 1.6 / (size.width / size.height)))
+    camera.position.set(0, 7.2 * scale, 11.8 * scale)
+    camera.lookAt(0, 0, 0)
+    camera.updateProjectionMatrix()
+    invalidate()
+  }, [camera, size.width, size.height, invalidate])
+  return null
+}
+
 function SanctuaryWorld({ policy, selectedDomain, onSelect, reducedMotion }: {
   policy: ConsentPolicy
   selectedDomain: ConsentDomain
@@ -123,6 +137,7 @@ function SanctuaryWorld({ policy, selectedDomain, onSelect, reducedMotion }: {
   const interrupted = policy.enforcement.state === 'failed' || policy.enforcement.state === 'partially-enforced'
   return (
     <Canvas camera={{ position: [0, 7.2, 11.8], fov: 48 }} dpr={[1, 1.6]} gl={{ antialias: true, alpha: false }}>
+      <ConsentCameraFraming />
       <color attach="background" args={['#02070c']} />
       <fog attach="fog" args={['#02070c', 10, 24]} />
       <ambientLight intensity={0.42} />
@@ -167,7 +182,7 @@ function SanctuaryWorld({ policy, selectedDomain, onSelect, reducedMotion }: {
           </mesh>
         </Float>
       </group>
-      <OrbitControls enablePan enableZoom minDistance={7} maxDistance={17} maxPolarAngle={Math.PI * 0.48} minPolarAngle={Math.PI * 0.18} enableDamping={!reducedMotion} dampingFactor={0.08} />
+      <OrbitControls enablePan enableZoom minDistance={7} maxDistance={30} maxPolarAngle={Math.PI * 0.48} minPolarAngle={Math.PI * 0.18} enableDamping={!reducedMotion} dampingFactor={0.08} />
     </Canvas>
   )
 }
@@ -496,6 +511,7 @@ export default function ConsentSanctuaryClient() {
         <p>UrAi Consent Sanctuary</p>
         <h1>Choose what the world may hold.</h1>
         <div className="consentStatus" role="status" aria-live="polite">{message}</div>
+        <button className="consentTravel" type="button" onClick={requestUraiWorldOrbOpen}>Open Orb travel controls</button>
         {loadState === 'demo' && <span className="consentDisclosure">DEMONSTRATION — no personal data</span>}
         {!webglAvailable && <div className="consentFallbackNotice" role="note">Semantic controls remain fully available without WebGL.</div>}
       </header>
@@ -535,7 +551,7 @@ export default function ConsentSanctuaryClient() {
         <ol>{deletions.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {String(job.scope)} {['queued', 'awaiting-grace'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalDeletionRequest(job.id)}>Cancel</button>}</li>)}</ol>
       </section>
 
-      <aside className="consentOrb" aria-label="Enforcement status"><strong>{policy.enforcement.state}</strong><p>{policy.enforcement.affectedTargets.length ? `${policy.enforcement.affectedTargets.length} connected targets` : 'No active propagation job'}</p><small>Animations reflect the server state; they never prove backend completion.</small></aside>
+      <aside className="consentOrb" aria-label="Enforcement status"><strong>{policy.enforcement.state}</strong><p>{policy.enforcement.affectedTargets.length ? `${policy.enforcement.affectedTargets.length} connected targets` : 'No active propagation job'}</p><small>Animations reflect the server state; they never prove backend completion.</small><div className="consentCompanion"><AdamLauncherSlot name="privacy-enforcement" /></div></aside>
 
       {showAudit && <section className="consentAudit" aria-label="Privacy audit receipts"><div><h2>Append-only receipts</h2><button type="button" onClick={() => setShowAudit(false)}>Close</button></div><ol>{receipts.length ? receipts.map((entry) => <li key={entry.id}><strong>{String(entry.kind ?? 'privacy')}</strong><span>{String(entry.result ?? 'recorded')}</span><small>{entry.id.slice(0, 12)}</small></li>) : <li>No receipts exist for this owner.</li>}</ol></section>}
 

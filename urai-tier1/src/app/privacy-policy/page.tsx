@@ -1,3 +1,4 @@
+import DocumentScrollArea from '@/components/public/DocumentScrollArea'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 
 export const metadata = {
@@ -7,7 +8,7 @@ export const metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <main aria-labelledby="privacy-policy-heading" style={{ minHeight: '100dvh', padding: 'clamp(32px,7vw,80px) 20px', background: '#020713', color: '#f8fbff' }}>
+    <DocumentScrollArea aria-labelledby="privacy-policy-heading" style={{ minHeight: '100dvh', padding: 'clamp(32px,7vw,80px) 20px', background: '#020713', color: '#f8fbff' }}>
       <article style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gap: 24, lineHeight: 1.75 }}>
         <p style={{ margin: 0, letterSpacing: '.16em', textTransform: 'uppercase', color: '#7defff' }}>URAI · Privacy policy candidate</p>
         <h1 id="privacy-policy-heading" style={{ margin: 0, fontSize: 'clamp(42px,8vw,72px)', lineHeight: .98 }}>Your life data stays governed by your choices.</h1>
@@ -40,6 +41,6 @@ export default function PrivacyPolicyPage() {
           <AdamLauncherSlot name="privacy-policy" />
         </nav>
       </article>
-    </main>
+    </DocumentScrollArea>
   )
 }

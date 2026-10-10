@@ -112,3 +112,16 @@ body:has(.passportVault) [data-urai-adam-launcher]{top:max(8px,env(safe-area-ins
     overflow: visible;
   }
 }
+/* Keep the ownership state and controls in view alongside the actual vault. */
+.passportHeader h1 { font-size: clamp(38px,5vw,64px); line-height: .98; max-width: 14ch; margin-block: 10px 16px; }
+.passportEnvironmentArt { display: none; }
+.passportZones button { font-size: 13px; line-height: 1.3; }
+@media(max-width:920px) {
+  .passportWorld { height: 48svh; }
+  .passportHeader { padding-bottom: 12px; }
+  .passportHeader h1 { font-size: clamp(34px,10vw,48px); }
+  .passportZones { display: flex; gap: 8px; overflow-x: auto; margin-top: 12svh; padding: 6px 2px 10px; scrollbar-width: thin; scrollbar-color: #b49e70 #132331; scroll-snap-type: x proximity; }
+  .passportZones button { flex: 0 0 152px; min-height: 52px; scroll-snap-align: start; }
+  .passportPanel { padding: 20px; margin-top: 12px; }
+  .passportPanelHeading h2 { font-size: 28px; }
+}

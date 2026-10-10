@@ -1,3 +1,4 @@
+import DocumentScrollArea from '@/components/public/DocumentScrollArea'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 
 import Link from 'next/link'
@@ -11,7 +12,7 @@ const disclosure = 'I agree to receive SMS messages from UrAi, including account
 
 export default function SmsOptInProofPage() {
   return (
-    <main data-route-owner="sms-opt-in-proof" style={{ minHeight: '100dvh', background: 'linear-gradient(180deg,#071326,#020713)', color: '#f8fbff', padding: 'clamp(28px,6vw,72px) 20px' }}>
+    <DocumentScrollArea data-route-owner="sms-opt-in-proof" style={{ minHeight: '100dvh', background: 'linear-gradient(180deg,#071326,#020713)', color: '#f8fbff', padding: 'clamp(28px,6vw,72px) 20px' }}>
       <article style={{ maxWidth: 820, margin: '0 auto', display: 'grid', gap: 22, lineHeight: 1.65 }}>
         <header>
           <p style={{ letterSpacing: '.18em', textTransform: 'uppercase', color: '#7defff', fontSize: 12 }}>UrAi · A2P compliance proof</p>
@@ -63,6 +64,6 @@ export default function SmsOptInProofPage() {
         </section>
         <AdamLauncherSlot name="sms-opt-in" />
       </article>
-    </main>
+    </DocumentScrollArea>
   )
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import MemoryExperienceState from '@/spatial/memory/MemoryExperienceState'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
@@ -440,13 +441,12 @@ export default function CapturedRealityRouteClient() {
 
   if (!assetId || user === undefined || !user || state.kind === 'loading' || state.kind === 'error') {
     return (
-      <main data-testid="captured-reality-private-route" data-state={state.kind} style={{ minHeight: '100svh', display: 'grid', placeItems: 'center', padding: 24, background: '#05070b', color: '#f7f7f5' }}>
-        <section aria-live="polite" style={{ maxWidth: 560, textAlign: 'center' }}>
-          <p>{stateMessage}</p>
+      <main data-testid="captured-reality-private-route" data-state={state.kind}>
+        <MemoryExperienceState title="Captured place" journey="Replay · Captured Reality" message={stateMessage} guidance="A captured place opens from an available memory with an authorized reconstruction. Return to your memory to see its available experiences.">
           {state.kind === 'unauthenticated' ? <a href="/login">Continue securely</a> : null}
-          <button type="button" onClick={exit} style={{ minWidth: 48, minHeight: 48 }}>Return to memory</button>
-              <AdamLauncherSlot name="captured-reality-fallback" as="div" />
-        </section>
+          <button type="button" onClick={exit}>Return to memory</button>
+          <AdamLauncherSlot name="captured-reality-fallback" as="div" />
+        </MemoryExperienceState>
       </main>
     )
   }

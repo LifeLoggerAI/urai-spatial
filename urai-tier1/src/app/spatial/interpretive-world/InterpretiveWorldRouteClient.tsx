@@ -1,5 +1,6 @@
 'use client'
 
+import MemoryExperienceState from '@/spatial/memory/MemoryExperienceState'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
@@ -353,13 +354,11 @@ export default function InterpretiveWorldRouteClient() {
       {user && decision.mode === 'interpretive-gaussian-splat'
         ? <InterpretiveWorldScene decision={decision} reducedMotion={reducedMotion} onExit={exit} />
         : (
-          <section style={{ minHeight: '100svh', display: 'grid', placeItems: 'center', padding: 24, textAlign: 'center' }}>
-            <div>
-              <p>{message}</p>
-              <button type="button" onClick={exit}>Return to Replay</button>
-              <AdamLauncherSlot name="interpretive-world-fallback" as="div" />
-            </div>
-          </section>
+          <MemoryExperienceState title="Interpretive world" journey="Replay · Interpretive world" message={message} guidance="This experience is generated interpretation, not recorded history. Open it from an available Replay when its world and access are ready.">
+            <button type="button" onClick={exit}>Return to Replay</button>
+            <a href="/life-map">Open Life Map</a>
+            <AdamLauncherSlot name="interpretive-world-fallback" as="div" />
+          </MemoryExperienceState>
         )}
     </main>
   )

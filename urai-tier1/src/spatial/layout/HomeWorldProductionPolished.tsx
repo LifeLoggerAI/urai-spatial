@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { ContactShadows, Environment, Lightformer, Stars, useAnimations, useGLTF } from '@react-three/drei'
+import { ContactShadows, Environment, Html, Lightformer, Stars, useAnimations, useGLTF } from '@react-three/drei'
 import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
@@ -175,7 +175,7 @@ function makeRidgeGeometry(width: number, amplitude: number, salt: number, segme
   return makeHomeHorizonGeometry(width, amplitude, salt, segments)
 }
 
-function makeAuthoredBoulderGeometry(salt: number, rings = 9, segments = 18) {
+function makeAuthoredBoulderGeometry(salt: number, rings = 20, segments = 40) {
   const positions: number[] = []
   const indices: number[] = []
   for (let ring = 0; ring <= rings; ring += 1) {
@@ -184,11 +184,11 @@ function makeAuthoredBoulderGeometry(salt: number, rings = 9, segments = 18) {
     for (let segment = 0; segment < segments; segment += 1) {
       const u = segment / segments
       const theta = u * Math.PI * 2
-      const radialNoise = .82
-        + seeded(ring * segments + segment, salt) * .23
-        + Math.sin(theta * 3 + salt) * .045
-        + Math.cos(phi * 2.6 + salt * .7) * .04
-      const squash = .86 + seeded(segment, salt + 19) * .16
+      const radialNoise = .9
+        + Math.sin(theta * 3 + salt) * Math.sin(phi) * .065
+        + Math.sin(phi * 3 + salt * .7) * .045
+        + Math.cos(theta * 5 - phi * 2 + salt) * Math.sin(phi) * .018
+      const squash = .94 + Math.sin(theta * 2 + salt + 19) * .055
       positions.push(
         Math.sin(phi) * Math.cos(theta) * radialNoise * squash,
         Math.cos(phi) * radialNoise,
@@ -203,7 +203,8 @@ function makeAuthoredBoulderGeometry(salt: number, rings = 9, segments = 18) {
       const b = ring * segments + next
       const c = (ring + 1) * segments + segment
       const d = (ring + 1) * segments + next
-      indices.push(a, c, b, b, c, d)
+      // Outward winding keeps the lit exterior visible, including the upper face.
+      indices.push(a, b, c, b, d, c)
     }
   }
   const geometry = new THREE.BufferGeometry()
@@ -215,9 +216,10 @@ function makeAuthoredBoulderGeometry(salt: number, rings = 9, segments = 18) {
 
 const SANCTUARY_BOULDER_LEFT = makeAuthoredBoulderGeometry(131)
 const SANCTUARY_BOULDER_RIGHT = makeAuthoredBoulderGeometry(173)
-const SANCTUARY_BOULDER_CENTER = makeAuthoredBoulderGeometry(211, 8, 16)
-const COURTYARD_MASONRY_GEOMETRY = new RoundedBoxGeometry(.42, .218, .402, 1, .014)
-const COURTYARD_SEAT_GEOMETRY = new RoundedBoxGeometry(.195, .075, 2.78, 1, .009)
+const SANCTUARY_BOULDER_CENTER = makeAuthoredBoulderGeometry(211, 14, 28)
+const COURTYARD_MASONRY_GEOMETRY = new RoundedBoxGeometry(.42, .218, .402, 3, .018)
+const COURTYARD_SEAT_GEOMETRY = new RoundedBoxGeometry(.195, .075, 2.78, 3, .014)
+const COURTYARD_BACK_GEOMETRY = new RoundedBoxGeometry(.075, .16, 2.76, 3, .014)
 
 const MAIN_PATH_GEOMETRY = makeRibbonGeometry(makePathPoints(SPAWN, new THREE.Vector3(0, 0, -5.4), -.72, 30), 1.05)
 const GROUND_PATH_GEOMETRY = makeRibbonGeometry(makePathPoints(new THREE.Vector3(-.2, 0, -5.15), GROUND_THRESHOLD, -.48, 18), .76)
@@ -483,7 +485,7 @@ function RooflessCourtyard() {
           <HomeSurfaceMaterial kind="timber" color="#654d35" roughness={.88} />
         </mesh>)}
         {[.73, .91].map((y) => <mesh key={y} position={[side * .29, y, 0]} castShadow receiveShadow>
-          <boxGeometry args={[.075, .16, 2.76]} />
+          <primitive attach="geometry" object={COURTYARD_BACK_GEOMETRY} />
           <HomeSurfaceMaterial kind="timber" color="#876748" roughness={.88} />
         </mesh>)}
       </group>
@@ -664,9 +666,14 @@ function EmbodiedPresence({ root }: { root: MutableRefObject<THREE.Group | null>
 }
 
 function Thresholds({ onGround, onLifeMap }: { onGround: () => void; onLifeMap: () => void }) {
+  const locale = useUraiLocale()
+  const phase = useSceneStore((state) => state.phase)
   return <>
     <group name="home-ground-environmental-threshold" position={GROUND_THRESHOLD}><mesh position={[0,.8,0]} onClick={(e) => { e.stopPropagation(); onGround() }}><boxGeometry args={[4.2,2.8,4.2]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh></group>
     <group name="home-life-map-sky-lookout" position={LIFE_MAP_LOOKOUT}><mesh position={[0,.8,0]} onClick={(e) => { e.stopPropagation(); onLifeMap() }}><boxGeometry args={[4.2,2.8,4.2]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh></group>
+    {phase === 'HOME' ? [[GROUND_THRESHOLD, 'nav.ground'], [LIFE_MAP_LOOKOUT, 'nav.lifeMap']].map(([position, label]) => <Html key={String(label)} position={(position as THREE.Vector3).clone().add(new THREE.Vector3(0, 1.25, 0))} center distanceFactor={14} zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
+      <span aria-hidden="true" style={{ display: 'block', whiteSpace: 'nowrap', padding: '7px 11px', borderBottom: '1px solid #a9c9d399', borderRadius: 3, background: '#09151dcc', color: '#e2edf3', font: '500 14px/1.35 system-ui', letterSpacing: '.05em' }}>{locale.text(label as 'nav.ground' | 'nav.lifeMap')}</span>
+    </Html>) : null}
   </>
 }
 
@@ -826,14 +833,14 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
   const phase = useSceneStore((state) => state.phase)
   const cosmic = phase === 'ASCENT'
   return <>
-    <color attach="background" args={[cosmic ? '#01050b' : '#304f4b']} />
+    <color attach="background" args={[cosmic ? '#01050b' : '#101d30']} />
     {!cosmic ? <HomeSkyGradient /> : null}
-    <Stars radius={190} depth={90} count={cosmic ? 2200 : 220} factor={cosmic ? 2.7 : .58} saturation={.12} fade speed={props.reducedMotion ? 0 : .02} />
-    <fogExp2 attach="fog" args={[cosmic ? '#050b14' : '#2a4540', cosmic ? .0017 : .0058]} />
-    <ambientLight intensity={cosmic ? .13 : .28} color="#d9e7dc" />
-    <hemisphereLight args={['#c8dddc','#273126',cosmic ? .22 : .62]} />
-    <directionalLight position={[8,18,7]} intensity={cosmic ? .34 : 1.85} color="#f2ecd8" castShadow shadow-mapSize={[1024,1024]} shadow-camera-left={-18} shadow-camera-right={18} shadow-camera-top={18} shadow-camera-bottom={-18} shadow-camera-near={1} shadow-camera-far={60} shadow-normalBias={.025} shadow-bias={-.00015} />
-    <directionalLight position={[-10,7,-8]} intensity={cosmic ? .1 : .22} color="#bacac4" />
+    <Stars radius={190} depth={90} count={cosmic ? 2200 : 700} factor={cosmic ? 2.7 : 1.1} saturation={.12} fade speed={props.reducedMotion ? 0 : .02} />
+    <fogExp2 attach="fog" args={[cosmic ? '#050b14' : '#172a38', cosmic ? .0017 : .006]} />
+    <ambientLight intensity={cosmic ? .13 : .26} color="#bdcadc" />
+    <hemisphereLight args={['#aec7e8','#292b25',cosmic ? .22 : .48]} />
+    <directionalLight position={[8,18,7]} intensity={cosmic ? .34 : 1.12} color="#e4eafa" castShadow shadow-mapSize={[1024,1024]} shadow-camera-left={-18} shadow-camera-right={18} shadow-camera-top={18} shadow-camera-bottom={-18} shadow-camera-near={1} shadow-camera-far={60} shadow-normalBias={.025} shadow-bias={-.00015} />
+    <directionalLight position={[-10,7,-8]} intensity={cosmic ? .1 : .28} color="#b4c7e8" />
     {!cosmic ? <Environment resolution={128} frames={1} background={false}>
       <Lightformer form="rect" intensity={1.7} color="#f0dfbd" position={[0,8,5]} scale={[18,8,1]} />
       <Lightformer form="rect" intensity={1.15} color="#8fbeb7" position={[-8,4,-6]} rotation={[0,Math.PI/3,0]} scale={[10,5,1]} />

@@ -1,3 +1,4 @@
+import DocumentScrollArea from '@/components/public/DocumentScrollArea'
 import type { ReactNode } from 'react'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import styles from './InstitutionalPublicSurface.module.css'
@@ -26,7 +27,7 @@ export default function InstitutionalPublicSurface({
   children,
 }: InstitutionalPublicSurfaceProps) {
   return (
-    <main className={styles.shell}>
+    <DocumentScrollArea className={styles.shell}>
       <div className={styles.aurora} aria-hidden="true" />
       <div className={styles.grid} aria-hidden="true" />
       <section className={styles.card}>
@@ -54,6 +55,6 @@ export default function InstitutionalPublicSurface({
         <a href="/support">Support</a>
         <a href="/status">Status</a>
       </footer>
-    </main>
+    </DocumentScrollArea>
   )
 }

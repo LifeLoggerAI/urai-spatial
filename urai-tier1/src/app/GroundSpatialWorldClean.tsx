@@ -61,6 +61,14 @@ function prepareModel(source: THREE.Object3D) {
     object.material = Array.isArray(object.material)
       ? object.material.map(liftedMaterial)
       : liftedMaterial(object.material);
+    if (object.name === "ground-sacred-black-glass") {
+      for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+        if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+        material.color.set("#34494b");
+        material.roughness = .82;
+        material.metalness = .12;
+      }
+    }
     object.castShadow = true;
     object.receiveShadow = true;
     object.frustumCulled = false;
@@ -389,6 +397,7 @@ export default function GroundSpatialWorldClean() {
       </header>
       <button className="ground-home-return" type="button" onClick={requestUraiWorldReturn} aria-label="Return Home">Home</button>
       <div className="ground-prompt" role="status" aria-live="polite">{nearby ? `Enter ${nearby.label}` : "Walk deeper. Approach a chamber."}</div>
+      {nearby ? <button className="ground-enter" type="button" onClick={() => enter(nearby)}>Enter {nearby.label}</button> : null}
       <nav className="ground-directory ground-destination-compass" aria-label="Ground destinations">
         {DESTINATIONS.map((destination) => (
           <button
@@ -439,6 +448,15 @@ export default function GroundSpatialWorldClean() {
         .ground-destination-compass :is(a,button) strong{transition:max-width .2s ease,opacity .2s ease}
         @media(max-width:760px){.ground-brand{left:14px;top:14px;max-width:62vw}.ground-brand strong{font-size:10px}.ground-home-return{right:12px;top:12px}.ground-directory{left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));transform:none;max-width:none;padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right));scroll-padding-inline-start:max(14px,env(safe-area-inset-left));scroll-padding-inline-end:max(14px,env(safe-area-inset-right));mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent)}.ground-directory button{flex:0 0 48px}.ground-directory button:is(:hover,:focus-visible,[aria-current="location"]){flex-basis:auto}.ground-prompt{bottom:78px;max-width:calc(100vw - 28px);overflow:hidden;text-overflow:ellipsis}}
         @media(prefers-reduced-motion:reduce){.ground-directory strong{font-size:9px;transition:none}.ground-destination-compass :is(a,button) strong{transition:none}.ground-directory button{transition:none}}
+        .ground-directory{gap:6px;background:rgba(5,19,24,.88);border:1px solid #d4eeee38;border-radius:20px;scrollbar-width:thin;mask-image:none;scroll-padding:10px}
+        .ground-spatial-root .ground-directory button{width:auto!important;border-radius:14px!important;flex:0 0 auto;gap:8px;padding:0 13px;border-color:#d4eeee24;background:#173239}
+        .ground-directory strong{max-width:160px;opacity:1;font-size:11px}
+        .ground-directory button[aria-current="location"]{background:#d4eeee;color:#102b38}
+        .ground-directory button[aria-current="location"] strong{opacity:1}
+        .ground-prompt{color:#f0faf8;background:#0c222de8;font-size:11px;letter-spacing:.02em}
+        .ground-enter{position:absolute;z-index:14;left:50%;bottom:144px;transform:translateX(-50%);min-height:48px;max-width:calc(100vw - 32px);padding:10px 20px;border:1px solid #e7ffff80;border-radius:16px;background:#d9eeeb;color:#122b31;font:700 13px/1.3 system-ui;cursor:pointer}
+        .ground-enter:focus-visible{outline:3px solid white;outline-offset:4px}
+        @media(max-width:760px){.ground-directory button{flex-basis:auto}.ground-directory strong{font-size:11px}.ground-prompt{max-width:calc(100vw - 40px);font-size:10px}.ground-enter{bottom:142px}}
       `}</style>
     </main>
   );

@@ -120,6 +120,68 @@ async function assertCanonicalFounderPaint(page: Page, viewport: { width: number
   await test.info().attach(`founder-adam-closed-${viewport.width}x${viewport.height}.png`, { body: await page.screenshot(), contentType: 'image/png' })
 }
 
+
+async function assertSettingsStatusPaint(page: Page, info: TestInfo, viewport: { width: number; height: number }) {
+  const main = page.locator('main[data-route-owner="device-settings"]:visible')
+  await expect(main, 'The rendered Settings page must have exactly one visible owner').toHaveCount(1)
+  const status = main.locator('#language-review-status:visible')
+  await expect(status).toHaveCount(1)
+  await expect(status).toHaveText('English source language. Other languages are available as working translation previews.')
+  expect(await status.evaluate(element => Boolean(element.closest('[hidden], [inert], canvas'))), 'Settings copy must not come from streamed or inactive fallback markup').toBe(false)
+  const geometry = await assertCopyIsUnobstructed(status)
+  const paint = await status.evaluate(element => {
+    const owner = element.closest('main[data-route-owner="device-settings"]')!
+    const runtime = owner.closest('.urai-world-runtime')
+    const atmosphere = runtime?.querySelector(':scope > .urai-world-atmosphere')
+    const rgba = (value: string) => {
+      const channels = value.match(/[\d.]+/g)?.map(Number) ?? []
+      return { rgb: channels.slice(0, 3), alpha: channels[3] ?? 1 }
+    }
+    const luminance = (rgb: number[]) => rgb.map(channel => {
+      const value = channel / 255
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+    }).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0)
+    const mainStyle = getComputedStyle(owner)
+    const foreground = rgba(getComputedStyle(element).color)
+    const stops = [...mainStyle.backgroundImage.matchAll(/rgba?\(([^)]+)\)/g)].map(match => rgba(match[0]))
+    const backing: { color: ReturnType<typeof rgba>; image: string }[] = []
+    const ancestors: { opacity: number; filter: string; blend: string }[] = []
+    for (let node: Element | null = element; node; node = node.parentElement) {
+      const style = getComputedStyle(node)
+      ancestors.push({ opacity: Number(style.opacity), filter: style.filter, blend: style.mixBlendMode })
+      if (node === owner) break
+      backing.push({ color: rgba(style.backgroundColor), image: style.backgroundImage })
+    }
+    const contrasts = stops.map(stop => {
+      const background = [...backing].reverse().reduce((rgb, layer) => layer.color.rgb.map((channel, index) => channel * layer.color.alpha + rgb[index] * (1 - layer.color.alpha)), stop.rgb)
+      const composite = foreground.rgb.map((channel, index) => channel * foreground.alpha + background[index] * (1 - foreground.alpha))
+      const a = luminance(composite), b = luminance(background)
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+    })
+    return {
+      ownership: { mainOwnedByRuntime: owner.parentElement === runtime, atmosphereOwnedByRuntime: atmosphere?.parentElement === runtime },
+      main: { position: mainStyle.position, zIndex: Number(mainStyle.zIndex), backgroundImage: mainStyle.backgroundImage },
+      atmosphere: { zIndex: atmosphere ? Number(getComputedStyle(atmosphere).zIndex) : Number.NaN, isolation: atmosphere ? getComputedStyle(atmosphere).isolation : null },
+      foreground, stops, backing, ancestors, contrasts,
+      contrastBasis: 'Actual status RGBA and intermediate panel backgrounds over all opaque Settings gradient stops, after asserting the actual main paints above its atmosphere; literal after-image inspection remains required',
+    }
+  })
+  expect(paint.ownership.mainOwnedByRuntime).toBe(true)
+  expect(paint.ownership.atmosphereOwnedByRuntime).toBe(true)
+  expect(paint.main.position).not.toBe('static')
+  expect(Number.isFinite(paint.main.zIndex)).toBe(true)
+  expect(Number.isFinite(paint.atmosphere.zIndex)).toBe(true)
+  expect(paint.main.zIndex, 'The actual language review disclosure must paint above its decorative atmosphere').toBeGreaterThan(paint.atmosphere.zIndex)
+  expect(paint.atmosphere.isolation).toBe('isolate')
+  expect(paint.ancestors.every(style => style.opacity === 1 && style.filter === 'none' && style.blend === 'normal')).toBe(true)
+  expect(paint.foreground.rgb).toHaveLength(3)
+  expect(paint.stops.length).toBeGreaterThan(0)
+  expect(paint.stops.every(stop => stop.rgb.length === 3 && stop.alpha === 1)).toBe(true)
+  expect(paint.backing.every(layer => layer.color.rgb.length === 3 && layer.color.alpha >= 0 && layer.color.alpha <= 1 && layer.image === 'none')).toBe(true)
+  for (const contrast of paint.contrasts) expect(contrast, 'The real Settings status must retain at least 4.5:1 contrast on every declared backing').toBeGreaterThanOrEqual(4.5)
+  await attachPlacement(page, info, `settings-language-status-paint-${viewport.width}x${viewport.height}`, { route: '/settings/', geometry, paint })
+}
+
 async function assertInlineLauncher(page: Page, slot: string) {
   const launcher = page.locator('[data-urai-adam-launcher]')
   const anchor = page.locator(`[data-urai-adam-launcher-slot="${slot}"]:visible`)
@@ -295,6 +357,7 @@ for (const viewport of placementViewports) {
       body: JSON.stringify({ serverHtmlSha256: createHash('sha256').update(serverHtml).digest('hex'), deniedServerText, streamedBoundaryIds: [...serverHtml.matchAll(/id="(S:\d+)"/g)].map(match => match[1]), clientText: await weatherStatus.innerText(), clientEnabled: await weatherToggle.isEnabled(), clientChecked: await weatherToggle.isChecked(), pageErrors: [...errors] }),
       contentType: 'application/json',
     })
+    await assertSettingsStatusPaint(page, info, viewport)
     const initial = await assertInlineLauncher(page, 'device-settings')
     const privacyCopy = page.getByText('Local sensory preferences live on this device. Private data permissions remain in the Consent Sanctuary, and ownership controls remain in Passport.', { exact: true })
     const privacy = await assertCopyIsUnobstructed(privacyCopy)

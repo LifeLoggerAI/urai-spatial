@@ -144,6 +144,20 @@ function RiggedCouncilHuman({
     })
   }, [model.scene])
 
+  useEffect(() => {
+    // The adopted idle owns hips/chest and listening owns the head. Rest the
+    // unanimated arms without replacing those existing animation layers.
+    const joints = [['L_shoulder', .48], ['R_shoulder', -.48], ['L_elbow', .12], ['R_elbow', -.12]] as const
+    const poses = joints.flatMap(([name, angle]) => {
+      const joint = model.scene.getObjectByName(name)
+      if (!joint) return []
+      const before = joint.quaternion.clone()
+      joint.rotateZ(angle)
+      return [{ joint, before }]
+    })
+    return () => { poses.forEach(({ joint, before }) => joint.quaternion.copy(before)) }
+  }, [model.scene])
+
   useFrame(({ clock }) => {
     if (!root.current) return
     root.current.rotation.y = ROTATIONS[index]?.[1] ?? 0
@@ -176,6 +190,20 @@ function RiggedCouncilHuman({
       </mesh>
     </group>
   )
+}
+
+function CouncilChamber() {
+  return <group name="council-inhabitable-chamber">
+    <mesh position={[0, 2.3, -5.4]} receiveShadow><boxGeometry args={[12, 4.8, .3]} /><meshStandardMaterial color="#374344" roughness={.94} /></mesh>
+    {[-5.7, 5.7].map((x) => <mesh key={x} position={[x, 2.3, .2]} receiveShadow><boxGeometry args={[.3, 4.8, 11.4]} /><meshStandardMaterial color="#293638" roughness={.9} /></mesh>)}
+    {[-4.8, -3.2, -1.6, 0, 1.6, 3.2, 4.8].map((x) => <group key={x} position={[x, 0, -5.16]}>
+      <mesh position={[0, 2.3, 0]} castShadow><boxGeometry args={[.09, 4.5, .12]} /><meshStandardMaterial color="#957956" roughness={.5} metalness={.18} /></mesh>
+      <mesh position={[.22, 2.1, -.02]}><boxGeometry args={[.035, 2.9, .08]} /><meshBasicMaterial color="#e5cba2" toneMapped={false} /></mesh>
+    </group>)}
+    <mesh position={[0, .05, -.6]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow><circleGeometry args={[4.75, 96]} /><meshStandardMaterial color="#454c46" roughness={.98} /></mesh>
+    <mesh position={[0, .3, -1.15]} castShadow><cylinderGeometry args={[.46, .58, .6, 48]} /><meshStandardMaterial color="#302a24" roughness={.78} /></mesh>
+    <mesh position={[0, .756, -1.15]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[1.12, 1.15, 96]} /><meshStandardMaterial color="#b69b70" metalness={.5} roughness={.45} /></mesh>
+  </group>
 }
 
 function CouncilFallback({ reason = 'WebGL is unavailable on this device.' }: { reason?: string }) {
@@ -272,18 +300,19 @@ function CouncilStage() {
           shadows={quality.shadows}
           dpr={[1, quality.pixelRatioMax]}
           frameloop={quality.documentVisible ? 'always' : 'never'}
-          gl={{ antialias: quality.antialias, alpha: true, premultipliedAlpha: false, powerPreference: 'high-performance' }}
+          gl={{ antialias: quality.antialias, alpha: false, powerPreference: 'high-performance' }}
         >
           <Suspense fallback={null}>
-            <fog attach="fog" args={['#20272a', 9, 25]} />
+            <color attach="background" args={['#253337']} />
+            <fog attach="fog" args={['#253337', 12, 30]} />
             <PerspectiveCamera makeDefault position={[0, 1.66, 5.4]} fov={42} />
             <CouncilCamera input={input} yaw={yaw} pitch={pitch} reducedMotion={reducedMotion} ownerRef={shellRef} />
 
-            <ambientLight intensity={0.32} color="#dfe8ea" />
-            <hemisphereLight intensity={0.68} color="#dcecf0" groundColor="#50483e" />
+            <ambientLight intensity={0.48} color="#dfe8ea" />
+            <hemisphereLight intensity={0.85} color="#dcecf0" groundColor="#50483e" />
             <directionalLight
               position={[-4.5, 7.5, 4.5]}
-              intensity={2.8}
+              intensity={1.9}
               color="#fff5e6"
               castShadow={quality.shadows}
               shadow-mapSize-width={shadowMapSize}
@@ -292,6 +321,7 @@ function CouncilStage() {
             />
             <directionalLight position={[4.2, 4.8, -3.8]} intensity={0.9} color="#b8d9f2" />
             <pointLight position={[0, 2.3, -2.4]} intensity={18} distance={8} decay={2} color="#e2b984" />
+            <CouncilChamber />
 
             <mesh position={[0, -0.04, -0.6]} receiveShadow>
               <cylinderGeometry args={[5.6, 5.9, 0.12, 96]} />
@@ -323,6 +353,7 @@ function CouncilStage() {
         </Canvas>
       </div>
 
+      <div className="absolute left-4 top-4 z-30"><AdamLauncherSlot name="council-world" /></div>
       <section className="council-conversation pointer-events-none absolute bottom-5 left-5 z-10 w-[min(430px,calc(100vw-40px))] rounded-3xl border border-white/15 bg-black/45 p-5 shadow-2xl backdrop-blur-xl md:bottom-8 md:left-8">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/55">URAI Council</p>
         <h1 className="mt-2 text-3xl font-medium tracking-tight md:text-4xl">{selectedAgent.name}</h1>
@@ -339,6 +370,8 @@ function CouncilStage() {
       <MovementHelp realm="Council" summary="Walk around the chamber and choose a Council presence." controls="WASD or arrows move. Drag to look. Tap a Council person to select them. Escape returns. Mobile movement controls appear on touch devices." />
       <MobileMovementPad input={input} label="Move through Council" />
       <style jsx global>{`
+        html.urai-v5-assets-ready [data-council-embodied="true"]{background-image:none}
+        html.urai-v5-assets-ready [data-council-embodied="true"]::after{display:none}
         [data-council-embodied="true"] .urai-mobile-movement { left: auto; right: max(12px,env(safe-area-inset-right)); bottom: max(12px,env(safe-area-inset-bottom)); }
         @media(max-width:900px),(pointer:coarse) {
           [data-council-embodied="true"] .council-conversation { bottom: calc(130px + env(safe-area-inset-bottom)); max-height: calc(100svh - 210px); overflow-y: auto; pointer-events: auto; }

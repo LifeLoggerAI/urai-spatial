@@ -1,3 +1,4 @@
+import DocumentScrollArea from '@/components/public/DocumentScrollArea'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 
 import Link from 'next/link'
@@ -18,7 +19,7 @@ const linkStyle = { color: '#b9f4ff', textUnderlineOffset: 4 } as const
 
 export default function PrivacyPolicyPage() {
   return (
-    <main aria-labelledby="privacy-policy-heading" style={{ minHeight: '100dvh', padding: 'clamp(32px,7vw,80px) 20px', background: 'linear-gradient(180deg,#071326,#020713)', color: '#f8fbff' }}>
+    <DocumentScrollArea aria-labelledby="privacy-policy-heading" style={{ minHeight: '100dvh', padding: 'clamp(32px,7vw,80px) 20px', background: 'linear-gradient(180deg,#071326,#020713)', color: '#f8fbff' }}>
       <article style={{ maxWidth: 920, margin: '0 auto', display: 'grid', gap: 20, lineHeight: 1.72 }}>
         <header style={{ display: 'grid', gap: 12, marginBottom: 8 }}>
           <p style={{ margin: 0, letterSpacing: '.18em', textTransform: 'uppercase', color: '#7defff', fontSize: 12 }}>UrAi · Legal</p>
@@ -79,6 +80,6 @@ export default function PrivacyPolicyPage() {
           <AdamLauncherSlot name="privacy-legal" />
         </nav>
       </article>
-    </main>
+    </DocumentScrollArea>
   )
 }

@@ -1,3 +1,4 @@
+import DocumentScrollArea from '@/components/public/DocumentScrollArea'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 
 export const metadata = {
@@ -7,7 +8,7 @@ export const metadata = {
 
 export default function AccountDeletionPage() {
   return (
-    <main
+    <DocumentScrollArea
       aria-labelledby="account-deletion-heading"
       style={{
         minHeight: '100dvh',
@@ -67,6 +68,6 @@ export default function AccountDeletionPage() {
           <AdamLauncherSlot name="account-deletion" />
         </nav>
       </section>
-    </main>
+    </DocumentScrollArea>
   )
 }

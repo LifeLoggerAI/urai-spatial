@@ -3,6 +3,29 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
   pointer-events: none !important;
 }
 
+.mirrorWorld .mirrorOrb {
+  width: auto;
+  min-height: 48px;
+  height: auto;
+  padding: 10px 16px;
+  gap: 10px;
+  display: flex;
+  border-radius: 16px;
+  color: #e7fcff;
+  box-shadow: 0 6px 24px #0008;
+}
+.mirrorWorld .mirrorOrb strong { font-size: 12px; white-space: nowrap; }
+.mirrorWorld .mirrorOrb span { width: 20px; height: 20px; flex: 0 0 20px; }
+.mirrorWorld .mirrorPatternRail { scrollbar-width: thin; scrollbar-color: #84c9cf #132f3a; padding-bottom: 10px; scroll-snap-type: x proximity; }
+.mirrorWorld .mirrorPatternRail button { flex: 0 0 auto; scroll-snap-align: start; }
+.mirrorWorld .mirrorPatternRail::after { content: '↔ Swipe patterns'; flex: 0 0 76px; align-self: center; color: #b9dfe3; font-size: 10px; }
+
+@media (min-width: 761px) {
+  /* Reserve the center-bottom travel control's actual footprint. */
+  .mirrorWorld .mirrorPatternRail { max-width: min(640px, calc(50vw - 88px)); }
+  .mirrorWorld .mirrorOrb { bottom: max(116px, calc(env(safe-area-inset-bottom) + 108px)); }
+}
+
 /* The desktop inspector occupies the right edge. Keep global help outside it. */
 body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
   left: max(18px, env(safe-area-inset-left));

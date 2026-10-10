@@ -3,8 +3,8 @@ import fs from 'node:fs'
 import test from 'node:test'
 import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
-const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
-const readRoot = (path) => fs.readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8')
+const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n')
+const readRoot = (path) => fs.readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n')
 const contract = read('src/spatial/memory/selectedMemoryContract.ts')
 const hook = read('src/spatial/memory/useSelectedMemory.ts')
 const focus = read('src/app/focus/FocusChamberClient.tsx')
@@ -116,7 +116,9 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
   assert.doesNotMatch(focus, /aria-label="Focus chamber controls"/)
   assert.match(focus, /<button type="button" onClick=\{\(\) => setRecenterSignal/)
   assert.ok(focus.includes("aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}"), 'Primary Replay control must retain captured-title English labeling and localized fallback')
-  assert.ok(focus.includes("{...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')} aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}"), 'Stellar Replay control must retain selected-versus-neutral labeling and locale properties')
+  assert.equal((focus.match(/className="primary"/g) ?? []).length, 1, 'Focus exposes one semantic primary Replay control')
+  assert.doesNotMatch(focus, /<button[^>]*className="focus-spatial-aperture-button"/, 'The world must not expose a duplicate Replay button')
+  assert.match(focus, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); if \(memory\) onActivate\(\) \}\}/, 'The stellar hit area retains the same selected-memory activation')
   assert.equal(URAI_SOURCE_MESSAGES['focus.openReplayFor'].source,'Open Replay for {title}')
   assert.match(focus, /<details className="focusHelp">/)
   assert.match(focus, /data-focus-fallback="semantic"/)
@@ -147,7 +149,7 @@ test('direct Focus entry remains a truthful neutral stellar field and never moun
   assert.match(focus, /locale.text\('focus.chooseMemory'\)/)
   assert.equal(URAI_SOURCE_MESSAGES['focus.chooseMemory'].source, 'Choose a star in Life Map to enter the stellar memory field where that memory is held.')
   assert.match(focus,/locale.text\('focus.openLifeMap'\)/);assert.equal(URAI_SOURCE_MESSAGES['focus.openLifeMap'].source,'Open Life Map')
-  assert.match(focus,/locale.text\(memory \? 'focus.enterReplay' : 'focus.awaitingStar'\)/);assert.equal(URAI_SOURCE_MESSAGES['focus.awaitingStar'].source,'Awaiting a selected star')
+  assert.match(focus, /\{memory \? <button type="button" className="primary"/, 'A neutral field cannot expose a Replay primary without a selected memory')
   assert.doesNotMatch(focus, /buildExplicitDemoMemory|buildNamedExplicitDemoMemory|URAI_SPATIAL_DEMO_DATA/)
 })
 

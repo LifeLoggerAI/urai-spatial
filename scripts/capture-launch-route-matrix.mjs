@@ -453,7 +453,9 @@ try {
       if (dom.globalLoading) defect('unsettled-global-opening-your-world', {})
       if (dom.visibleLoadingText.length) defect('unsettled-visible-source-or-renderer', { messages: dom.visibleLoadingText })
       if (dom.pendingStates.length) defect('unsettled-route-state', { states: dom.pendingStates })
-      // A no-WebGL capture intentionally disables the render owner; its semantic fallback is the authoritative owner for that profile.\n      // Do not convert the expected render-owner-unavailable state into a false technical defect.\n      if (!captureProfile.noWebGL && dom.readiness.some(marker => marker.applicability === 'render-owner' && marker.value !== 'true')) defect('unsettled-observable-owner', { markers: dom.readiness.filter(marker => marker.applicability === 'render-owner' && marker.value !== 'true') })
+      // A no-WebGL capture intentionally disables the render owner; its semantic fallback is the authoritative owner for that profile.
+      // Do not convert the expected render-owner-unavailable state into a false technical defect.
+      if (!captureProfile.noWebGL && dom.readiness.some(marker => marker.applicability === 'render-owner' && marker.value !== 'true')) defect('unsettled-observable-owner', { markers: dom.readiness.filter(marker => marker.applicability === 'render-owner' && marker.value !== 'true') })
       if (pendingAssets.size) defect('unsettled-document-or-assets', { requests: [...pendingAssets].map(request => ({ url: safeUrl(request.url()), resourceType: request.resourceType() })).slice(0, 32) })
       if (dom.fonts === 'loading') defect('unsettled-fonts', {})
       if (dom.geometry.horizontalOverflow > 1) defect('actual-horizontal-overflow', { pixels: dom.geometry.horizontalOverflow, geometry: dom.geometry })

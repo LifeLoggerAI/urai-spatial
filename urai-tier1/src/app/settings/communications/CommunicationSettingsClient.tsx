@@ -1,5 +1,8 @@
 'use client'
 
+import DocumentScrollArea from '@/components/public/DocumentScrollArea'
+
+
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import Link from 'next/link'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
@@ -151,7 +154,7 @@ export default function CommunicationSettingsClient() {
   const enabled = saved?.consented === true
 
   return (
-    <main data-route-owner="communication-settings" style={{ minHeight: '100dvh', background: 'linear-gradient(180deg,#071326,#020713)', color: '#f8fbff', padding: 'clamp(28px,6vw,72px) 20px' }}>
+    <DocumentScrollArea data-route-owner="communication-settings" style={{ minHeight: '100dvh', background: 'linear-gradient(180deg,#071326,#020713)', color: '#f8fbff', padding: 'clamp(28px,6vw,72px) 20px' }}>
       <div style={{ maxWidth: 820, margin: '0 auto', display: 'grid', gap: 22 }}>
         <nav aria-label="Communication settings navigation" style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
           <Link href="/settings" style={{ color: '#b9f4ff', minHeight: 48, display: 'inline-flex', alignItems: 'center' }}>← Settings</Link>
@@ -232,6 +235,6 @@ export default function CommunicationSettingsClient() {
           <p>Account notifications, service updates, user-requested reminders, and customer-care messages. This setting does not authorize purchased-list marketing or SMS authentication codes.</p>
         </aside>
       </div>
-    </main>
+    </DocumentScrollArea>
   )
 }

@@ -31,8 +31,9 @@ test('Ownership Vault is spatial and directly accessible without WebGL', () => {
   assert.match(world, /OrbitControls/)
   assert.match(client, /assetCssStack, passportAssets/)
   assert.match(client, /data-passport-environment-role="governed-visual-support"/)
-  assert.match(world, /alpha: true/)
-  assert.doesNotMatch(world, /<color attach="background"/)
+  // V15: actual vault geometry replaces the competing flat lock/library image.
+  assert.match(world, /alpha: false/)
+  assert.match(world, /<color attach="background"/)
   assert.match(world, /frameloop=\{quality.documentVisible \? "demand" : "never"\}/)
   assert.match(world, /VaultAmbientFrames enabled=\{quality.documentVisible && !reducedMotion\}/)
   assert.match(client, /Skip to vault controls/)

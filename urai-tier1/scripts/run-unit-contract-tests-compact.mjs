@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 
 const tests = [
+  'tests/council-conversation-lifecycle.test.mjs',
   'tests/glb-normal-repair-source-immutability.test.mjs',
   'tests/private-life-model-review-behavior.test.mjs',
   '../tests/private-life-model-owner-authority.test.mjs',
@@ -51,6 +52,7 @@ const tests = [
   'tests/life-movie-runtime-contract.test.mjs',
   'tests/life-movie-runtime-binding-contract.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
+  'tests/focus-memory-appearance.test.mjs',
   'tests/world-return-destination.test.mjs',
   'tests/replay-transition-evidence-contract.test.mjs',
   'tests/dispatcher-transient-retry-contract.test.mjs',

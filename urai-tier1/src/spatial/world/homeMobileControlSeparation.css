@@ -1,3 +1,34 @@
+/* The existing semantic destinations stay discoverable when the 3D lookout is
+ * outside a narrow camera's field of view. These use the same route owners. */
+body.urai-home-webgl-active .home-semantic-navigation[data-home-navigation-owner='runtime-boundary'] {
+  top: 90px !important;
+  right: 20px !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  width: 136px !important;
+  grid-template-columns: minmax(0,1fr) !important;
+  gap: 8px !important;
+  opacity: 1 !important;
+}
+body.urai-home-webgl-active .home-semantic-navigation[data-home-navigation-owner='runtime-boundary'] :is(button,a) {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 48px !important;
+  padding: 9px 12px !important;
+  border-radius: 24px !important;
+  font: 500 12px/1.35 system-ui !important;
+  white-space: normal !important;
+}
+@media(max-width:700px) {
+  body.urai-home-webgl-active .home-semantic-navigation[data-home-navigation-owner='runtime-boundary'] {
+    top: auto !important;
+    right: 12px !important;
+    bottom: max(80px,calc(env(safe-area-inset-bottom) + 70px)) !important;
+    width: 126px !important;
+  }
+}
+
 /* Mobile Home owns two independent interaction regions: movement stays in the
  * lower-left safe-area band, while ambience and provenance controls remain in
  * the upper-right. This prevents either operable surface from covering the

@@ -21,6 +21,31 @@ const sourceVector = (name) => {
 }
 const actualOrb = sourceVector('ORB')
 
+test('actual Home boulders have outward faces rather than hollow inverted shells', () => {
+  const start = homeSource.indexOf('function makeAuthoredBoulderGeometry(')
+  const end = homeSource.indexOf('const SANCTUARY_BOULDER_LEFT', start)
+  assert.ok(start >= 0 && end > start)
+  const compiled = ts.transpileModule(homeSource.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
+  const context = vm.createContext({ THREE })
+  vm.runInContext(compiled, context)
+  for (const salt of [131, 173, 211]) {
+    const geometry = vm.runInContext(`makeAuthoredBoulderGeometry(${salt})`, context)
+    const p = geometry.getAttribute('position'), indices = geometry.index.array
+    let faces = 0
+    for (let i = 0; i < indices.length; i += 3) {
+      const a = new THREE.Vector3().fromBufferAttribute(p, indices[i])
+      const b = new THREE.Vector3().fromBufferAttribute(p, indices[i + 1])
+      const c = new THREE.Vector3().fromBufferAttribute(p, indices[i + 2])
+      const normal = b.clone().sub(a).cross(c.clone().sub(a))
+      if (normal.lengthSq() < 1e-14) continue
+      assert.ok(normal.dot(a.clone().add(b).add(c)) > 0, `rock ${salt} face ${i / 3} points inward`)
+      faces += 1
+    }
+    assert.ok(faces > 1000)
+    geometry.dispose()
+  }
+})
+
 function retainedOrbGeometry() {
   // Geometry and authored animation measurement only. No texture surrogate,
   // image rendering or visual acceptance is supplied by this loader.

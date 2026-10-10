@@ -52,6 +52,16 @@
   box-shadow: inset 0 0 130px rgba(0,0,0,.42), inset 0 -16vh 120px rgba(0,0,0,.34);
 }
 
+/* Reading surfaces own their contrast; atmospheric overlays belong behind them. */
+.urai-world-runtime:has([data-document-scroll-owner='true']) > .urai-world-atmosphere {
+  display: none;
+}
+
+/* Home already renders its sky, haze, stars and lighting in the actual scene. */
+.urai-world-atmosphere[data-realm='home'] {
+  display: none;
+}
+
 .urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__sky {
   background:
     radial-gradient(circle at 50% 38%, rgba(94, 234, 212, .12), transparent 22rem),

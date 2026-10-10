@@ -30,6 +30,7 @@ import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/
 import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
 import { ReplayProductControls } from './ReplayProductControls'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 import { ReplayPersonPresence } from './ReplayPersonPresence'
 import { ReplayRecordedSource, type ReplayImageState } from './ReplayRecordedSource'
@@ -572,7 +573,9 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       {mediaStatus === 'error' ? <button type="button" onClick={retryMedia}>Retry {demoEnvironment ? 'demonstration environment' : 'recorded source'}</button> : null}
       {webgl.state !== 'ready' && admission.kind !== 'recorded-source' ? <div className="replaySpatialNotice"><span {...locale.props(webgl.state === 'checking' ? 'replay.checkingSpatial' : 'replay.spatialUnavailable')}>{locale.text(webgl.state === 'checking' ? 'replay.checkingSpatial' : 'replay.spatialUnavailable')}</span>{webgl.state !== 'checking' ? <button type="button" onClick={webgl.retry} {...locale.props('replay.retrySpatial')}>{locale.text('replay.retrySpatial')}</button> : null}</div> : null}
       <JourneyOfflineNotice />
-    </section> : null}</header>
+    </section> : null}
+    {memory.replayManifest.transcript ? <details className="transcript"><summary {...locale.props('replay.transcript')}>{locale.text('replay.transcript')}</summary><p dir="auto">{memory.replayManifest.transcript}</p></details> : null}
+    </header>
     <section className="caption" aria-live="polite"><small>{active?.label ?? 'Replay'}</small><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>
     <section className="memoryTempo" aria-label={locale.text('replay.memoryTime')}>
       <button type="button" className="memoryPulse" onClick={togglePlayback} disabled={!canPlay && !playing} {...locale.props(playing ? 'replay.pause' : 'replay.continue')} aria-label={locale.text(playing ? 'replay.pause' : 'replay.continue')} aria-pressed={playing}>
@@ -581,11 +584,11 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       <span className="memoryTrace" aria-hidden="true"><i style={{ width: `${percent}%` }} /></span>
       <input className="memorySeek" type="range" min={0} max={duration} step={100} value={progressMs} disabled={video && !videoSnapshot.durationMs} onChange={(event) => seek(Number(event.currentTarget.value))} {...locale.props('replay.seekTime')} aria-label={locale.locale === 'en' ? `Move through memory time, ${percent} percent complete` : locale.text('replay.seekTime',{percent:new Intl.NumberFormat(locale.props('replay.seekTime').lang).format(percent)})} aria-valuetext={locale.text('replay.timeValue',{elapsed:replayTimeLabel(progressMs),duration:replayTimeLabel(duration)})} />
       <output className="srOnly">{percent}% through memory</output>
+      <AdamLauncherSlot name="replay-memory-controls" as="div" />
       {video ? <button className="memoryAudio" type="button" disabled={!videoSnapshot.audioAllowed} onClick={() => videoSession.current?.setMuted(!videoSnapshot.muted)} aria-label={!videoSnapshot.audioAllowed ? 'Recorded audio is off while low stimulation is on' : videoSnapshot.muted ? 'Enable recorded audio' : 'Mute recorded audio'} aria-pressed={!videoSnapshot.muted}>{!videoSnapshot.audioAllowed ? 'Audio off: low stimulation' : videoSnapshot.muted ? 'Enable audio' : 'Mute audio'}</button> : null}
     </section>
     <ReplayProductControls memory={memory} />
     {lifeModelAuthority.available ? <ReplayPersonPresence people={lifeModelAuthority.people} sceneTruthPacketId={lifeModelAuthority.sceneTruthPacketId} /> : null}
-    {memory.replayManifest.transcript ? <details className="transcript"><summary {...locale.props('replay.transcript')}>{locale.text('replay.transcript')}</summary><p dir="auto">{memory.replayManifest.transcript}</p></details> : null}
     <style>{replayCss}</style>
   </main>
 }

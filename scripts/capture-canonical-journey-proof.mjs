@@ -287,6 +287,28 @@ async function lifeMapToHome(page, journey, mode, root) {
   const home = ownedHome(page)
   await home.waitFor({ state: 'visible', timeout: 90_000 })
   await waitAttr(home, 'data-home-assets-ready', 'true', 90_000)
+  await waitAttr(home, 'data-home-scene-phase', 'HOME', 20_000)
+  await waitAttr(home, 'data-home-input-locked', 'false', 20_000)
+  await waitAttr(home, 'data-home-camera-mode', 'embodied-first-person', 20_000)
+  const settledHome = []
+  const settleStarted = Date.now()
+  do {
+    const sample = await home.evaluate((node) => ({
+      phase: node.getAttribute('data-home-scene-phase'),
+      locked: node.getAttribute('data-home-input-locked'),
+      camera: node.getAttribute('data-home-camera-mode'),
+      height: Number(node.getAttribute('data-home-camera-height')),
+      pathname: window.location.pathname,
+    }))
+    assert.equal(sample.pathname.replace(/\/+$/, ''), '/home', 'return must remain Home')
+    assert.equal(sample.phase, 'HOME', 'return must not resume ascent')
+    assert.equal(sample.locked, 'false', 'returned Home must accept input')
+    assert.equal(sample.camera, 'embodied-first-person', 'returned Home must be first person')
+    assert.ok(Number.isFinite(sample.height) && sample.height > 0 && sample.height < 3, 'returned camera must remain at walking height')
+    settledHome.push({ elapsedMs: Date.now() - settleStarted, ...sample })
+    await sleep(250)
+  } while (Date.now() - settleStarted < 5_000)
+  journey.settledHome = settledHome
   await capture(page, journey, 'return-home')
 }
 

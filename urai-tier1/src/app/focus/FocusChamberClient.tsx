@@ -5,7 +5,7 @@ import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 
 import StellarCorona from '@/spatial/stellar/StellarCorona'
 
-import { Billboard, Html, OrbitControls, Sparkles, Stars, useTexture } from '@react-three/drei'
+import { Billboard, OrbitControls, Sparkles, Stars, useTexture } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import * as THREE from 'three'
@@ -13,6 +13,8 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets, replayAssets } from '@/spatial/assets/uraiAssets'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+import { focusMemoryAppearance } from './focusMemoryAppearance'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import MemoryMediaAttachment from '@/spatial/memory/MemoryMediaAttachment'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
@@ -314,8 +316,8 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
         vec3 hotWhite = vec3(1.0, .93, .64);
         vec3 surface = mix(solarOrange, solarGold, .42 + cells * .46);
         surface = mix(surface, hotWhite, .10 + fine * .14 + micro * .08 + faculae * .22 + limb * .06);
-        surface = mix(surface, uLight, .012);
-        surface = mix(surface, uAccent, .004);
+        surface = mix(surface, uLight, .08);
+        surface = mix(surface, uAccent * (.65 + cells * .45), .32);
         float radiance = (.48 + cells * .84 + micro * .18 + faculae * .34) * (.68 + limb * .32);
         radiance *= .90 + intergranular * .12;
         radiance *= 1.0 - pores * .12;
@@ -455,7 +457,6 @@ function MemoryTraces({ memory, accent, reducedMotion }: { memory: SelectedMemor
 }
 
 function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivate }: { memory: SelectedMemory | null; accent: string; light: string; reducedMotion: boolean; onActivate: () => void }) {
-  const locale = useUraiLocale()
   const group = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
 
@@ -483,19 +484,13 @@ function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivat
         <sphereGeometry args={[1.16, 96, 96]} />
         <meshBasicMaterial color={light} transparent opacity={0.025} depthWrite={false} />
       </mesh>
-      <Html center position={[0, -2.25, 0]} transform distanceFactor={7.6}>
-        <button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} {...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')} aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}>
-          {locale.text(memory ? 'focus.enterReplay' : 'focus.awaitingStar')}
-        </button>
-      </Html>
+
     </group>
   )
 }
 
 function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null }) {
-  const accent = memory?.visuals.accent ?? '#79dfff'
-  const light = memory?.visuals.light ?? '#e7fbff'
-  const memoryImageUrl = memory?.sourceMedia.find((media) => media.kind === 'image')?.url ?? (memory?.demo ? replayAssets.primary.src : null)
+  const { accent, light, imageUrl: memoryImageUrl } = focusMemoryAppearance(memory, replayAssets.primary.src)
   return <>
     <FirstFrame profile={profile} />
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
@@ -564,7 +559,8 @@ export default function FocusChamberClient() {
   const headingId = directEntry ? 'focus.heading' : 'focus.resting'
   const heading = memory?.title ?? locale.text(headingId)
   const description = memory?.narrator.focus ?? (directEntry ? locale.text('focus.chooseMemory') : result.message)
-  const style = { '--memory-accent': memory?.visuals.accent ?? '#79dfff', '--memory-light': memory?.visuals.light ?? '#e7fbff', '--memory-sky': memory?.visuals.sky ?? '#020712', '--memory-ground': memory?.visuals.ground ?? '#07121c', '--focus-asset': assetCssStack(focusAssets.primary) } as CSSProperties
+  const appearance = focusMemoryAppearance(memory, replayAssets.primary.src)
+  const style = { '--memory-accent': appearance.accent, '--memory-light': appearance.light, '--memory-sky': memory?.visuals.sky ?? '#020712', '--memory-ground': memory?.visuals.ground ?? '#07121c', '--focus-asset': assetCssStack(focusAssets.primary) } as CSSProperties
   const webglUsable = webglAvailable === true && webglState !== 'failed'
 
   return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
@@ -574,13 +570,18 @@ export default function FocusChamberClient() {
     <div className="focusCanvas" aria-label={locale.text('focus.canvasLabel')} {...locale.props('focus.canvasLabel')}>
       {webglAvailable === null ? <div className="focusFallback" role="status" {...locale.props('focus.preparing')}>{locale.text('focus.preparing')}</div> : webglUsable ? <Suspense fallback={<div className="focusFallback" role="status" {...locale.props('focus.opening')}>{locale.text('focus.opening')}</div>}><Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'always' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }}><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={setWebglState} shellRef={shellRef} entryFrame={entryFrame} /></Canvas></Suspense> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong {...locale.props('common.spatialUnavailable')}>{locale.text('common.spatialUnavailable')}</strong><span {...locale.props('common.spatialAccessible')}>{locale.text('common.spatialAccessible')}</span></div>}
     </div>
-    <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS MEMORY STAR'}</p><h2 {...(!memory ? locale.props(headingId) : {dir:'auto' as const})} style={{overflowWrap:'anywhere'}}>{heading}</h2>{memory ? <span {...(Number.isFinite(new Date(memory.occurredAt).getTime()) ? locale.formatProps : {dir:'auto'})}>{dateLabel(memory.occurredAt, locale)}</span> : null}<div className="focusNarration"><small {...locale.props(memory ? 'focus.selectedMemory' : 'focus.threshold')}>{locale.text(memory ? 'focus.selectedMemory' : 'focus.threshold')}</small><strong {...(!memory && directEntry ? locale.props('focus.chooseMemory') : {dir:'auto' as const})} style={{overflowWrap:'anywhere'}}>{description}</strong></div></header>
+    <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS MEMORY STAR'}</p><h2 {...(!memory ? locale.props(headingId) : {dir:'auto' as const})} style={{overflowWrap:'anywhere'}}>{heading}</h2>{memory ? <span {...(Number.isFinite(new Date(memory.occurredAt).getTime()) ? locale.formatProps : {dir:'auto'})}>{dateLabel(memory.occurredAt, locale)}</span> : null}<details className="focusNarration"><summary {...locale.props(memory ? 'focus.selectedMemory' : 'focus.threshold')}>{locale.text(memory ? 'focus.selectedMemory' : 'focus.threshold')}</summary><strong {...(!memory && directEntry ? locale.props('focus.chooseMemory') : {dir:'auto' as const})} style={{overflowWrap:'anywhere'}}>{description}</strong></details></header>
     {!webglUsable && <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral stellar Focus field'} data-focus-visual-owner="stellar-photosphere-corona" aria-hidden="true">
       <div className="focusPhotosphereVisual" />
     </section>}
     <aside className="memoryMeaning" aria-labelledby="focus-memory-context-label"><span id="focus-memory-context-label" className="sr-only" {...locale.props('focus.selectedContext')}>{locale.text('focus.selectedContext')}</span><p {...locale.props(memory ? 'focus.heldContext' : result.status === 'loading' ? 'focus.openingSafely' : 'focus.emptyContext')}>{memory ? locale.text('focus.heldContext') : result.status === 'loading' ? locale.text('focus.openingSafely') : locale.locale === 'en' ? 'No personal memory is displayed in this neutral stellar field.' : locale.text('focus.emptyContext')}</p>{memory ? <dl><div><dt {...locale.props('focus.emotion')}>{locale.text('focus.emotion')}</dt><dd dir="auto">{memory.emotionalState}</dd></div><div><dt {...locale.props('focus.place')}>{locale.text('focus.place')}</dt><dd {...(memory.place?.label ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.place?.label ?? locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.people')}>{locale.text('focus.people')}</dt><dd {...(memory.people.length ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.privacy')}>{locale.text('focus.privacy')}</dt><dd dir="auto">{memory.privacy}</dd></div></dl> : <div className="neutralActions"><button type="button" onClick={unwind} {...locale.props('focus.openLifeMap')}>{locale.text('focus.openLifeMap')}</button><span {...(result.status === 'loading' ? locale.props('focus.loading') : {})}>{result.status === 'loading' ? locale.text('focus.loading') : result.message}</span></div>}{memory && !memory.demo && memory.privacy === 'private' && memory.authorization === 'owner' ? <MemoryMediaAttachment key={`${memory.ownerId}:${memory.id}`} memory={memory} /> : null}<JourneyOfflineNotice /></aside>
-    <nav className="focusControls" aria-label={locale.text('focus.controls')} {...locale.props('focus.controls')}><button type="button" onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenter')}>{locale.text('focus.recenter')}</button>{memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} {...locale.props('focus.enterReplay')} aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}><span {...locale.props(committed ? 'common.loading' : 'focus.enterReplay')}>{committed ? locale.text('common.loading') : locale.text('focus.enterReplay')}</span></button> : null}<button className="unwind" type="button" onClick={unwind} {...locale.props('nav.lifeMap')}>← {locale.text('nav.lifeMap')}</button></nav>
-    <details className="focusHelp"><summary {...locale.props('focus.explore')}>{locale.text('focus.explore')}</summary><p {...locale.props('focus.instructions')}>{locale.text('focus.instructions')}</p></details>
+    <nav className="focusControls" aria-label={locale.text('focus.controls')} {...locale.props('focus.controls')}>
+      {memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} {...locale.props('focus.enterReplay')} aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}><span {...locale.props(committed ? 'common.loading' : 'focus.enterReplay')}>{committed ? locale.text('common.loading') : locale.text('focus.enterReplay')}</span></button> : null}
+      <AdamLauncherSlot name="focus-memory-controls" as="div" />
+      <button type="button" onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenter')}>{locale.text('focus.recenter')}</button>
+      <button className="unwind" type="button" onClick={unwind} {...locale.props('nav.lifeMap')}>← {locale.text('nav.lifeMap')}</button>
+      <details className="focusHelp"><summary {...locale.props('focus.explore')}>{locale.text('focus.explore')}</summary><p {...locale.props('focus.instructions')}>{locale.text('focus.instructions')}</p></details>
+    </nav>
     {webglState !== 'ready' && webglState !== 'failed' ? <section className="webglRecovery" role="status" aria-live="assertive"><strong {...locale.props(webglState === 'lost' ? 'focus.paused' : 'focus.restoring')}>{locale.text(webglState === 'lost' ? 'focus.paused' : 'focus.restoring')}</strong><span {...locale.props('focus.preserved')}>{locale.text('focus.preserved')}</span><button type="button" onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenterRestored')}>{locale.text('focus.recenterRestored')}</button></section> : null}
     <div className="focusStatus" role={result.status === 'loading' ? 'status' : 'note'} aria-live="polite">{memory ? <span {...locale.props('focus.ready')}>{locale.text('focus.ready')}</span> : result.status === 'loading' ? <span {...locale.props('focus.openingSelected')}>{locale.text('focus.openingSelected')}</span> : directEntry ? <span {...locale.props('focus.neutral')}>{locale.text('focus.neutral')}</span> : result.message}</div>
     <style>{focusCss + focusAccessibilityCss}</style>

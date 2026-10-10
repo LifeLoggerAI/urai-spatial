@@ -1,5 +1,6 @@
 'use client'
 
+import MemoryExperienceState from '@/spatial/memory/MemoryExperienceState'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
@@ -232,18 +233,18 @@ export default function LifeMovieClient() {
   }, [memories.length, togglePlayback])
 
   if (!identityReady || user === undefined || state.kind === 'auth-loading' || state.kind === 'loading') {
-    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state={state.kind}><section><p role="status">{state.message}</p><AdamLauncherSlot name="life-movie-loading" as="div" /></section><style>{css}</style></main>
+    return <main data-testid="life-movie-runtime" data-state={state.kind}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Your private sequence will open after identity and memory access are checked."><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-loading" as="div" /></MemoryExperienceState></main>
   }
 
   if (!user || state.kind === 'unauthenticated') {
-    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state="unauthenticated"><section><h1>Life Movie</h1><p>{state.message}</p><a href="/login?returnTo=%2Flife-movie">Continue securely</a><AdamLauncherSlot name="life-movie-unavailable" as="div" /></section><style>{css}</style></main>
+    return <main data-testid="life-movie-runtime" data-state="unauthenticated"><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Sign in to open a sequence of your own memories. No personal memory content is displayed here."><a href="/login?returnTo=%2Flife-movie">Continue securely</a><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-unavailable" as="div" /></MemoryExperienceState></main>
   }
   if (active && visibility !== 'visible') {
-    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state={visibility === 'loading' ? 'loading' : 'unavailable'}><section><h1>Life Movie</h1><p>This Replay memory is currently unavailable.</p><a href="/life-map">Return to Life Map</a></section><style>{css}</style></main>
+    return <main data-testid="life-movie-runtime" data-state={visibility === 'loading' ? 'loading' : 'unavailable'}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message="This Replay memory is currently unavailable." guidance="Return to Life Map to choose an available memory. This sequence cannot display the unavailable chapter."><a href="/life-map">Return to Life Map</a></MemoryExperienceState></main>
   }
 
   if (!active) {
-    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state={state.kind}><section><h1>Life Movie</h1><p>{state.message}</p><div className="lifeMovieStateActions"><a href="/life-map">Open Life Map</a><a href="/home">Return Home</a><AdamLauncherSlot name="life-movie-empty" /></div></section><style>{css}</style></main>
+    return <main data-testid="life-movie-runtime" data-state={state.kind}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Choose an available memory in Life Map, then continue from Replay to build your private sequence."><a href="/life-map">Open Life Map</a><a href="/home">Return Home</a><AdamLauncherSlot name="life-movie-empty" /></MemoryExperienceState></main>
   }
 
   const enterReplay = () => {

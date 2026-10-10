@@ -303,7 +303,7 @@ export default function UraiQuestEntryWorldV2() {
       />
 
       <header className={styles.hud}>
-        <p>URAI XR ENTRY · LIVE 3D</p>
+        <p>URAI XR ENTRY{rendererReady ? ' · LIVE 3D' : ''}</p>
         <strong>Explorable entry chamber</strong>
         <span aria-live="polite">{message}</span>
       </header>

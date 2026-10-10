@@ -1,5 +1,6 @@
 'use client'
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Stars } from '@react-three/drei'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
@@ -86,7 +87,7 @@ function ChamberArchitecture({ reducedMotion }: { reducedMotion: boolean }) {
   return <group ref={breath} name="mirror-chamber-architecture">
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 1.1]} receiveShadow>
       <circleGeometry args={[8.4, 96]} />
-      <meshPhysicalMaterial color="#07141d" roughness={0.2} metalness={0.38} clearcoat={0.85} />
+      <meshPhysicalMaterial color="#1b333f" roughness={0.38} metalness={0.3} clearcoat={0.55} />
     </mesh>
     {[2.15, 3.8, 5.5, 7.15].map((radius, index) => <mesh key={radius} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.025 + index * 0.004, 1.1]}>
       <ringGeometry args={[radius - 0.035, radius, 96]} />
@@ -101,7 +102,7 @@ function ChamberArchitecture({ reducedMotion }: { reducedMotion: boolean }) {
     </group>)}
     <mesh position={[0, 3.25, -6.9]} receiveShadow>
       <boxGeometry args={[15.6, 6.5, 0.42]} />
-      <meshPhysicalMaterial color="#07131b" roughness={0.24} metalness={0.5} clearcoat={0.75} />
+      <meshPhysicalMaterial color="#1b303b" roughness={0.42} metalness={0.3} clearcoat={0.5} />
     </mesh>
     <mesh position={[0, 1.9, -6.64]}>
       <planeGeometry args={[12.8, 3.9]} />
@@ -133,11 +134,11 @@ function PatternInstrument({ selected, onSelect, reducedMotion }: { selected: Mi
     core.current.rotation.x = Math.sin(clock.elapsedTime * 0.31) * 0.08
   })
   return <group position={[0, 1.4, 0.85]} name="mirror-reflection-instrument" onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (selected) onSelect(null) }}>
-    <mesh ref={core} castShadow>
+    <mesh ref={core} castShadow scale={[.72, 1.2, .32]}>
       <icosahedronGeometry args={[0.85, 4]} />
       <meshPhysicalMaterial color={selected?.accent ?? '#c8fbff'} emissive={selected?.accent ?? '#63dbe5'} emissiveIntensity={selected ? 0.75 : 0.42} transmission={0.58} thickness={1.2} roughness={0.08} clearcoat={1} transparent opacity={0.94} />
     </mesh>
-    {[1.35, 1.72, 2.05].map((radius, index) => <mesh key={radius} rotation={[Math.PI / 2, index * 0.6, index * 0.32]}><torusGeometry args={[radius, 0.025, 12, 80]} /><meshBasicMaterial color={selected?.accent ?? '#a8f4f8'} transparent opacity={0.22 - index * 0.035} /></mesh>)}
+    {[1.12, 1.34].map((radius, index) => <mesh key={radius} rotation={[Math.PI / 2, index * 0.6, index * 0.32]}><torusGeometry args={[radius, 0.018, 12, 80]} /><meshBasicMaterial color={selected?.accent ?? '#a8f4f8'} transparent opacity={0.18 - index * 0.035} /></mesh>)}
     <pointLight color={selected?.accent ?? '#9df3f8'} intensity={selected ? 1.65 : 1.05} distance={8} decay={2} />
   </group>
 }
@@ -172,7 +173,7 @@ function FragmentObject({ fragment, accent, active, onSelect }: { fragment: Mirr
 function MirrorScene({ patterns, selected, activeFragment, temporalIndex, onSelect, onFragment, ...cameraProps }: CameraProps & { patterns: MirrorPattern[]; activeFragment: MirrorFragment | null; onSelect: (pattern: MirrorPattern | null) => void; onFragment: (fragment: MirrorFragment | null) => void }) {
   return <>
     <fog attach="fog" args={[selected ? '#07131c' : '#041019', 5.5, 25]} />
-    <ambientLight intensity={0.46} />
+    <ambientLight intensity={0.6} />
     <hemisphereLight intensity={0.74} color="#e8fbff" groundColor="#06131b" />
     <directionalLight position={[4.5, 9, 5]} intensity={1.5} color="#f6fbff" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
     <Stars radius={56} depth={28} count={cameraProps.reducedMotion ? 160 : 520} factor={1.8} fade speed={cameraProps.reducedMotion ? 0 : 0.018} />
@@ -312,6 +313,7 @@ useEffect(() => {
     </Canvas>
 
     <header className="mirrorIdentity">
+      <AdamLauncherSlot name="mirror-world" />
       <p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} reflection`}</p>
       <h1>{selected?.label ?? 'Mirror'}</h1>
       <span>{offline ? 'Offline · existing permitted evidence only' : selected?.summary ?? 'A private chamber for inspecting evidence without turning life into a score.'}</span>
@@ -319,7 +321,7 @@ useEffect(() => {
 
     {empty ? <section className="mirrorEmpty" role="status"><h2>No reflection is available yet.</h2><p>Mirror will not invent a pattern. Return after more permitted memories exist, or review permissions in Passport.</p></section> : null}
 
-    <section className="mirrorPatternRail" aria-label="Reflection patterns">
+    <section className="mirrorPatternRail" aria-label="Reflection patterns" aria-description="Swipe or scroll horizontally to reach every pattern.">
       {patterns.map((pattern) => <button key={pattern.id} type="button" aria-pressed={selected?.id === pattern.id} onClick={() => selectPattern(pattern)}><strong>{pattern.shortLabel}</strong><span>{pattern.confidenceLabel}</span></button>)}
     </section>
 
@@ -333,7 +335,7 @@ useEffect(() => {
     </aside> : null}
 
     <nav className="mirrorThresholds" aria-label="Mirror world transitions"><button type="button" onClick={goReplay}>Replay threshold</button><button type="button" onClick={goPassport}>Passport threshold</button><button type="button" onClick={unwind}>{selected ? 'Overview' : 'Previous realm'}</button></nav>
-    <button className="mirrorOrb" type="button" onClick={() => { if (selected) setActiveFragment(selected.fragments[0] ?? null); else selectPattern(patterns[0] ?? null) }} aria-label={selected ? `Ask the Orb to explain ${selected.label}` : 'Ask the Orb to guide this reflection'}><span aria-hidden="true" /></button>
+    <button className="mirrorOrb" type="button" onClick={() => { if (selected) setActiveFragment(selected.fragments[0] ?? null); else selectPattern(patterns[0] ?? null) }} aria-label={selected ? `Inspect ${selected.label} evidence` : 'Inspect this reflection'}><span aria-hidden="true" /><strong>Inspect reflection</strong></button>
     <p className="mirrorAnnouncement" role="status" aria-live="polite">{activeFragment ? `${activeFragment.label}, ${activeFragment.certainty} evidence.` : selected ? `${selected.label} selected. ${selected.confidenceLabel}.` : 'Mirror overview.'}</p>
     <MovementHelp realm="Mirror" summary="Mirror is a calm evidence-aware reflection chamber." controls="Use WASD, arrows, touch movement, drag to look, Enter to inspect, Escape to return, and R or Home to reset." />
     <MobileMovementPad input={input} label="Mirror movement controls" />
