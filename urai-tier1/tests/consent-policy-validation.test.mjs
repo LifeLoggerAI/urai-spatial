@@ -109,8 +109,8 @@ class Element {
   closest(selector) { return selector.split(',').some(s => s.trim() === this.tag.toLowerCase() || (this.role && s.trim() === '[role="' + this.role + '"]')) ? this : null }
 }
 class HTMLElement extends Element { constructor(tag = 'DIV', role = null, rich = false) { super(tag, role); this.isContentEditable = rich } }
-const runKey = (event = {}) => {
-  const effects = [], state = { pending: null, showAudit: false, phase: 'idle', world: { previousDestination: null }, Element, HTMLElement, setSelectedDomain: d => effects.push(['selected', d]), setPending: () => effects.push(['pending']), setMutationState: () => effects.push(['mutation']), setShowAudit: () => effects.push(['audit']), document: { getElementById: id => ({ focus: () => effects.push(['focus', id]) }) }, window: { history: { length: 1 }, location: { assign: url => effects.push(['navigate', url]) } }, event: { key: 'Home', target: new HTMLElement(), preventDefault: () => effects.push(['preventDefault']), ...event } }
+const runKey = (event = {}, previousDestination = null) => {
+  const effects = [], state = { pending: null, showAudit: false, phase: 'idle', world: { previousDestination }, requestUraiWorldReturn: () => effects.push(['world-return']), requestUraiWorldTravel: options => effects.push(['world-travel', options.destination, options.href]), Element, HTMLElement, setSelectedDomain: d => effects.push(['selected', d]), setPending: () => effects.push(['pending']), setMutationState: () => effects.push(['mutation']), setShowAudit: () => effects.push(['audit']), document: { getElementById: id => ({ focus: () => effects.push(['focus', id]) }) }, window: { history: { length: 1 }, location: { assign: url => effects.push(['navigate', url]) } }, event: { key: 'Home', target: new HTMLElement(), preventDefault: () => effects.push(['preventDefault']), ...event } }
   vm.runInNewContext(compile('const callback = (event: KeyboardEvent) => {' + handlerBody + '}; callback(event)'), state)
   return effects
 }
@@ -119,7 +119,7 @@ test('actual Home shortcut preserves inherited contenteditable', () => assert.de
 for (const key of ['defaultPrevented', 'altKey', 'ctrlKey', 'metaKey', 'shiftKey']) test('actual Home shortcut preserves ' + key, () => assert.deepEqual(runKey({ [key]: true }), []))
 test('plain Home retains canonical direct-controls focus and Escape claims its canonical return', () => {
   assert.deepEqual(runKey(), [['preventDefault'], ['selected', 'memory'], ['focus', 'consent-controls']])
-  assert.deepEqual(runKey({ key: 'Escape' }), [['preventDefault'], ['navigate', '/passport']])
+  assert.deepEqual(runKey({ key: 'Escape' }), [['preventDefault'], ['world-travel', 'passport', '/passport']])\n  assert.deepEqual(runKey({ key: 'Escape' }, 'ground'), [['preventDefault'], ['world-return']])
 })
 test('an already consumed Escape adds no second return', () => {
   assert.deepEqual(runKey({ key: 'Escape', defaultPrevented: true }), [])
