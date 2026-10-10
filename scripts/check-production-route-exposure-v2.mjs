@@ -40,8 +40,9 @@ for (const file of walk(appRoot)) {
 
 requireTokens('urai-tier1/src/app/demo/page.tsx', [
   "import CutOneReplayFilmPage from './replay-film/page'",
+  "import './replay-film/aaa-mobile.css'",
   'without exposing personal data',
-  'return <CutOneReplayFilmPage />',
+  'return <div className="urai-replay-film-route"><CutOneReplayFilmPage /></div>',
 ])
 requireTokens('urai-tier1/src/app/demo/replay-film/page.tsx', [
   "export const dynamic = 'force-static'",
