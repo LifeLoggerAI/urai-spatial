@@ -3,6 +3,8 @@ import { DEMO_MEMORY_STAR_NODE_BY_ID } from './memoryStarSchema'
 
 const QUIET_RESET_ID = 'demo:quiet-reset'
 const QUIET_RESET_MANIFEST_ID = 'replay-recovery-thread'
+// Keep the short route alias aligned with the canonical Life Map sample node.
+const QUIET_RESET_OCCURRED_AT = '2026-05-09T12:00:00.000Z'
 
 export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
   const memory = buildExplicitDemoMemory(id)
@@ -37,11 +39,12 @@ export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
       star: { ...memory.star, id: star.id },
     }
   }
-  if (id !== QUIET_RESET_ID) return memory
+  if (id !== QUIET_RESET_ID && id !== 'quiet-reset') return memory
 
   return {
     ...memory,
     title: 'The Quiet Reset',
+    occurredAt: QUIET_RESET_OCCURRED_AT,
     summary: 'A disclosed demonstration of a quiet reset after sustained pressure. This is not personal data.',
     emotionalState: 'relief',
     emotionalArc: ['pressure', 'permission', 'reset', 'return'],
