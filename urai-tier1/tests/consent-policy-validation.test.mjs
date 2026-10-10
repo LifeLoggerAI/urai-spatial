@@ -110,7 +110,7 @@ class Element {
 }
 class HTMLElement extends Element { constructor(tag = 'DIV', role = null, rich = false) { super(tag, role); this.isContentEditable = rich } }
 const runKey = (event = {}) => {
-  const effects = [], state = { pending: null, showAudit: false, Element, HTMLElement, setSelectedDomain: d => effects.push(['selected', d]), setPending: () => effects.push(['pending']), setMutationState: () => effects.push(['mutation']), setShowAudit: () => effects.push(['audit']), document: { getElementById: id => ({ focus: () => effects.push(['focus', id]) }) }, window: { history: { length: 1 }, location: { assign: url => effects.push(['navigate', url]) } }, event: { key: 'Home', target: new HTMLElement(), preventDefault: () => effects.push(['preventDefault']), ...event } }
+  const effects = [], state = { pending: null, showAudit: false, phase: 'idle', world: { previousDestination: null }, Element, HTMLElement, setSelectedDomain: d => effects.push(['selected', d]), setPending: () => effects.push(['pending']), setMutationState: () => effects.push(['mutation']), setShowAudit: () => effects.push(['audit']), document: { getElementById: id => ({ focus: () => effects.push(['focus', id]) }) }, window: { history: { length: 1 }, location: { assign: url => effects.push(['navigate', url]) } }, event: { key: 'Home', target: new HTMLElement(), preventDefault: () => effects.push(['preventDefault']), ...event } }
   vm.runInNewContext(compile('const callback = (event: KeyboardEvent) => {' + handlerBody + '}; callback(event)'), state)
   return effects
 }
