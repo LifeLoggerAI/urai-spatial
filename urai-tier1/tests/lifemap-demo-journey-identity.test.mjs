@@ -17,6 +17,7 @@ const source = fs.readFileSync(process.env.URAI_LIFEMAP_NAVIGATOR_SOURCE ?? 'src
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
 const sceneSource = fs.readFileSync(process.env.URAI_LIFEMAP_SCENE_SOURCE ?? 'src/components/lifemap/ComposedLifeMapScene.tsx', 'utf8')
 const sceneCompiled = ts.transpileModule(sceneSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
+const adamSlotCompiled = ts.transpileModule(fs.readFileSync('src/spatial/adam/AdamLauncherSlot.tsx', 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
 const selectedMemoryCompiled = ts.transpileModule(fs.readFileSync('src/spatial/memory/useSelectedMemory.ts', 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
 const node = { id:'quiet-reset', title:'The Quiet Reset', type:'recovery', eraId:'threshold-return', connectedTo:[], summary:'Disclosed test memory', dateLabel:'Now', replayAvailable:true }
 function descendants(tree) {
@@ -66,6 +67,9 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     './selectedMemoryContract':selectedMemoryContract,
     './explicitDemoMemory':{buildNamedExplicitDemoMemory},
   }
+  const adamSlotModule = {exports:{}}
+  vm.runInNewContext(adamSlotCompiled,{exports:adamSlotModule.exports,module:adamSlotModule,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]}},{filename:'actual-AdamLauncherSlot.tsx'})
+  imports['@/spatial/adam/AdamLauncherSlot'] = adamSlotModule.exports
   const module = {exports:{}}
   vm.runInNewContext(component==='memory'?selectedMemoryCompiled:component==='scene'?sceneCompiled:compiled,{exports:module.exports,module,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]},window:browser,document:{body:{style:{}},querySelector:()=>null},URLSearchParams,HTMLElement:class {},Element:class {}},{filename:component==='memory'?'actual-useSelectedMemory.ts':component==='scene'?'actual-ComposedLifeMapScene.tsx':'actual-LifeMapSemanticNavigator.tsx'})
   const render = () => {
@@ -91,6 +95,19 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     assert.ok(control);control.props.onClick();render();return browser.location.searchParams
   }}
 }
+
+test('actual scene overview groups Founder with Return Home without changing its destination',()=>{
+  const f=fixture('?demo=1&overview=1',{component:'scene'})
+  const group=descendants(f.render()).find(el=>el.type==='nav' && el.props['aria-label']==='Life Map overview controls')
+  assert.ok(group)
+  const returnHome=descendants(group).find(el=>el.props['data-life-map-overview-home-return']===true)
+  const founder=descendants(group).find(el=>typeof el.type==='function' && el.type.name==='AdamLauncherSlot')
+  assert.ok(returnHome);assert.ok(founder)
+  assert.equal(founder.props.name,'life-map-overview-controls')
+  returnHome.props.onClick()
+  assert.equal(f.calls.at(-1).kind,'destination')
+  assert.equal(f.calls.at(-1).destination,'/home')
+})
 
 for (const [activation,detail] of [['pointer',1],['keyboard',0],['touch',1]]) test('actual '+activation+' selection after disclosed Home Ascent binds the demo movie manifest',()=>{
   const f=fixture('?demo=1&from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete')
