@@ -100,7 +100,7 @@ test('actual scene overview groups Founder with Return Home without changing its
   const f=fixture('?demo=1&overview=1',{component:'scene'})
   const group=descendants(f.render()).find(el=>el.type==='nav' && el.props['aria-label']==='Life Map overview controls')
   assert.ok(group)
-  const returnHome=descendants(group).find(el=>el.props['data-life-map-overview-home-return']===true)
+  const returnHome=descendants(group).find(el=>el.props['data-life-map-overview-home-return']==='true')
   const founder=descendants(group).find(el=>typeof el.type==='function' && el.type.name==='AdamLauncherSlot')
   assert.ok(returnHome);assert.ok(founder)
   assert.equal(founder.props.name,'life-map-overview-controls')
