@@ -196,6 +196,99 @@ test('portrait mobile remains usable without spatial movement', async ({ page })
   expect(runtime.pageErrors).toEqual([])
 })
 
+test('settled mobile privacy navigation controls remain unobscured by the persistent companion', async ({ page }) => {
+  const runtime = await captureRuntime(page)
+  const layouts: unknown[] = []
+  const viewports = [
+    { width: 320, height: 568 },
+    { width: 320, height: 700 },
+    { width: 390, height: 844 },
+  ]
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport)
+    await openDemo(page)
+    const expectedURL = page.url()
+    const settled = await assertSettledSanctuary(page, expectedURL)
+    const buttons = page.locator('.consentRealmNav button')
+    await expect(buttons).toHaveCount(6)
+
+    const initial = await buttons.evaluateAll(elements => {
+      const overlays = '.consentSanctuary > .consentOrb, .urai-world-companion__orb, .urai-world-companion[data-open="true"] .urai-world-companion__menu, [data-urai-adam-launcher], [data-urai-adam-presence]'
+      return elements.map(element => {
+        const rect = element.getBoundingClientRect()
+        const onScreen = rect.width > 0 && rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0
+        const companionOverlaps = onScreen ? [...document.querySelectorAll(overlays)].filter(candidate => {
+          for (let node: Element | null = candidate; node; node = node.parentElement) {
+            const style = getComputedStyle(node)
+            if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false
+          }
+          const paint = candidate.getBoundingClientRect()
+          return paint.width > 0 && paint.height > 0 && rect.left < paint.right && rect.right > paint.left && rect.top < paint.bottom && rect.bottom > paint.top
+        }).map(candidate => candidate.className || candidate.tagName) : []
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+        const hit = centerX >= 0 && centerX <= window.innerWidth && centerY >= 0 && centerY <= window.innerHeight
+          ? document.elementFromPoint(centerX, centerY)
+          : null
+        return { text: element.textContent, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
+          onScreen, centerOwned: !onScreen || hit === element || element.contains(hit), companionOverlaps }
+      })
+    })
+    const initialVisible = initial.filter(button => button.onScreen)
+    expect(initialVisible.length).toBeGreaterThan(0)
+    expect(initialVisible.every(button => button.centerOwned && button.companionOverlaps.length === 0),
+      `${viewport.width}x${viewport.height}: settled visible domain navigation must be unobscured`).toBe(true)
+    await page.screenshot({
+      path: path.join(evidenceRoot, `mobile-settled-nav-${viewport.width}x${viewport.height}.png`),
+      fullPage: false,
+    })
+
+    const scrolled: unknown[] = []
+    for (const button of await buttons.all()) {
+      await button.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'nearest' }))
+      await expect(button).toBeVisible()
+      const probe = await button.evaluate(element => {
+        const target = element as HTMLElement
+        const rect = target.getBoundingClientRect()
+        const overlays = '.consentSanctuary > .consentOrb, .urai-world-companion__orb, .urai-world-companion[data-open="true"] .urai-world-companion__menu, [data-urai-adam-launcher], [data-urai-adam-presence]'
+        const companionOverlaps = [...document.querySelectorAll(overlays)].filter(candidate => {
+          for (let node: Element | null = candidate; node; node = node.parentElement) {
+            const style = getComputedStyle(node)
+            if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false
+          }
+          const paint = candidate.getBoundingClientRect()
+          return paint.width > 0 && paint.height > 0 && rect.left < paint.right && rect.right > paint.left && rect.top < paint.bottom && rect.bottom > paint.top
+        }).map(candidate => candidate.className || candidate.tagName)
+        const samples = [[0.1, 0.1], [0.9, 0.1], [0.5, 0.5], [0.1, 0.9], [0.9, 0.9]].map(([x, y]) => {
+          const hit = document.elementFromPoint(rect.left + rect.width * x, rect.top + rect.height * y)
+          return { x, y, owned: hit === target || target.contains(hit) }
+        })
+        return { text: target.textContent, width: rect.width, height: rect.height,
+          top: rect.top, bottom: rect.bottom, samples, companionOverlaps }
+      })
+      expect(probe.width, `${probe.text}: navigation target width`).toBeGreaterThanOrEqual(48)
+      expect(probe.height, `${probe.text}: navigation target height`).toBeGreaterThanOrEqual(48)
+      expect(probe.top).toBeGreaterThanOrEqual(0)
+      expect(probe.bottom).toBeLessThanOrEqual(viewport.height)
+      expect(probe.samples.every(sample => sample.owned), `${probe.text}: painted navigation target must be unobscured`).toBe(true)
+      expect(probe.companionOverlaps, `${probe.text}: companion core rectangles must be clear`).toEqual([])
+      scrolled.push(probe)
+    }
+
+    layouts.push({ viewport, settled, initialVisible, scrolled })
+  }
+
+  await fs.writeFile(path.join(evidenceRoot, 'mobile-settled-nav-geometry.json'), JSON.stringify({
+    exactSha: process.env.EXACT_HEAD_SHA ?? null,
+    scope: 'synthetic-demo-settled-responsive-navigation-only',
+    layouts,
+  }, null, 2))
+  await saveEvidence('mobile-settled-nav-runtime', runtime)
+  expect(runtime.consoleErrors).toEqual([])
+  expect(runtime.pageErrors).toEqual([])
+})
+
 test('narrow direct controls and lower privacy copy remain reachable above the companion', async ({ page }) => {
   const runtime = await captureRuntime(page)
   const surfaces: unknown[] = []
