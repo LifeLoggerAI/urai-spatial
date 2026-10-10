@@ -3,6 +3,10 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
   pointer-events: none !important;
 }
 
+/* Inspection can leave bright pattern facets behind the identity. Keep the
+   real title and disclosure readable throughout camera movement and return. */
+.mirrorWorld .mirrorIdentity { background: #03101bed; border-radius: 8px; }
+
 .mirrorWorld .mirrorOrb {
   width: auto;
   min-height: 48px;

@@ -98,3 +98,48 @@ body:has(.replayWorld) [data-urai-adam-launcher] {
   .replayWorld .memoryTempo { gap: 6px; }
   .replayWorld .memoryTempo .memoryPulse { min-width: 0; padding: 0 8px; font-size: 11px; letter-spacing: 0; flex-shrink: 0; }
 }
+
+
+/* Bound Replay's independent scroll areas to the header and transport docks. */
+@media (max-width: 700px) and (min-height: 541px) {
+  .replayWorld .replayProductActions {
+    max-height: calc(100svh - 238px - min(40svh, 270px) - env(safe-area-inset-top, 0px));
+  }
+}
+@media (max-width: 500px) and (max-height: 540px) {
+  .replayWorld.replayWorld header {
+    left: auto;
+    right: 14px;
+    width: calc(50vw - 21px);
+    max-height: calc(100svh - 230px - env(safe-area-inset-top, 0px));
+    align-content: flex-start;
+    background: #02070e;
+    overscroll-behavior: contain;
+  }
+  .replayWorld.replayWorld header > .unwind,
+  .replayWorld.replayWorld header > .replayLifeMovieEntry,
+  .replayWorld.replayWorld header > .replayImmersiveEntry,
+  .replayWorld.replayWorld header > .transcript {
+    flex-basis: 100%;
+    flex-shrink: 0;
+  }
+  .replayWorld .replayProductActions {
+    position: fixed;
+    left: 14px;
+    right: auto;
+    top: max(18px, env(safe-area-inset-top, 0px));
+    bottom: auto;
+    width: calc(50vw - 21px);
+    max-height: calc(100svh - 230px - env(safe-area-inset-top, 0px));
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .replayWorld .caption {
+    left: 14px;
+    right: auto;
+    top: max(18px, env(safe-area-inset-top, 0px));
+    bottom: auto;
+    width: calc(50vw - 21px);
+    transform: none;
+    max-height: calc(100svh - 230px - env(safe-area-inset-top, 0px));
+  }
+}
