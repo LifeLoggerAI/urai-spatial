@@ -5,6 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import StellarCorona from "@/spatial/stellar/StellarCorona";
+import { cameraDampingAlpha } from "@/spatial/canon/cameraMotion";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import type { LifeMapNode } from "./lifeMapData";
@@ -813,7 +814,29 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
   const portrait = size.height > size.width;
   const stageScale: Point3 = selected ? (portrait ? [0.92, 0.96, 0.92] : [1.12, 1.12, 1.08]) : portrait ? [0.54, 0.96, 0.78] : [1.12, 1.18, 1.08];
   const stagePosition: Point3 = selected ? (portrait ? [0, -0.08, 0.9] : [0, -0.16, 0.62]) : portrait ? [0, -0.18, 1.1] : [0, 0.05, 0.9];
+  const initialStage = useRef({ scale: stageScale, position: stagePosition });
+  const stage = useRef<THREE.Group>(null);
+  const stageScaleGoal = useMemo(() => new THREE.Vector3(...stageScale), [portrait, Boolean(selected)]);
+  const stagePositionGoal = useMemo(() => new THREE.Vector3(...stagePosition), [portrait, Boolean(selected)]);
   const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;
+
+  // Keep the authored overview and selected layouts, but move the shared stage
+  // between them continuously. The camera follows this actual transformed
+  // subject rather than acquiring a different position on the selection frame.
+  useFrame((_, delta) => {
+    if (!stage.current) return;
+    const alpha = profile.reducedMotion ? 1 : cameraDampingAlpha(6, delta);
+    stage.current.scale.lerp(stageScaleGoal, alpha);
+    stage.current.position.lerp(stagePositionGoal, alpha);
+    const settled = stage.current.scale.distanceToSquared(stageScaleGoal) < 0.0005 ** 2
+      && stage.current.position.distanceToSquared(stagePositionGoal) < 0.0005 ** 2;
+    if (settled) {
+      stage.current.scale.copy(stageScaleGoal);
+      stage.current.position.copy(stagePositionGoal);
+    }
+    stage.current.userData.motionSettled = settled;
+    stage.current.updateMatrixWorld(true);
+  }, -2);
 
   useEffect(() => {
     const handleSelectionRequest = (event: Event) => {
@@ -848,7 +871,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
           <FieldParticles seed={1771} count={profile.tier === "low" ? 90 : 260} radius={35} depth={11} height={3.4} color={VIOLET} opacity={0.24} size={0.058} />
         </group>
         <EmotionalTerrain reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
-        <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
+        <group ref={stage} name="life-map-world-stage" scale={initialStage.current.scale} position={initialStage.current.position}>
           <LifeCore hidden={Boolean(selected)} reducedMotion={profile.reducedMotion} tier={profile.tier} />
           <group name="life-map-light-bridges"><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /></group>
           <ChapterTerritories selected={selected} />

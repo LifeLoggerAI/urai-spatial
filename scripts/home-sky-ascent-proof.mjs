@@ -5,9 +5,10 @@ async function waitAttribute(locator, name, expected, timeout = 45_000) {
   const started = Date.now()
   let last = null
   while (Date.now() - started < timeout) {
-    if (await locator.count()) {
-      try { last = await locator.getAttribute(name, { timeout:Math.min(10_000, timeout - (Date.now() - started)) }); if (last === expected) return } catch {}
-    }
+    // Read the live attribute in one browser round-trip. A count()+getAttribute()
+    // sequence can time out under a constrained software renderer even while the
+    // attribute is true; that is an observation failure, not a camera failure.
+    try { last = await locator.evaluateAll((nodes, name) => nodes[0]?.getAttribute(name) ?? null, name); if (last === expected) return } catch {}
     await pause(Math.min(100, Math.max(0, timeout - (Date.now() - started))))
   }
   throw new Error(`timeout waiting for ${name}=${expected}; lastValue=${JSON.stringify(last)}`)
@@ -57,7 +58,11 @@ export async function proveHomeSkyAscent(page, home, { mode = 'pointer', capture
   assert.equal(await page.getByTestId('urai-home-avatar-enter-first-person').count(), 0, 'superseded Avatar activation gate must not exist in ordinary Home')
   const canvas = home.locator('canvas').first()
   await canvas.waitFor({ state:'visible', timeout:45_000 })
-  const box = await canvas.boundingBox()
+  const box = await canvas.evaluateAll(nodes => {
+    if (nodes.length !== 1) return null
+    const rect = nodes[0].getBoundingClientRect()
+    return {x:rect.x,y:rect.y,width:rect.width,height:rect.height}
+  })
   assert.ok(box && box.width > 200 && box.height > 200, 'Home canvas must expose broad visible-sky interaction')
   startingHeight = await home.evaluate(node => Number(node.getAttribute('data-home-camera-height')))
   assert.ok(Number.isFinite(startingHeight) && startingHeight > 0, 'actual PlayerRig camera height must be available')

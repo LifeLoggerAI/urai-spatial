@@ -9,6 +9,7 @@ const require = createRequire(import.meta.url)
 const three = require('three')
 const componentPath = new URL('../src/app/GroundSpatialWorldClean.tsx', import.meta.url)
 const movementPath = new URL('../src/spatial/navigation/EmbodiedNavigation.tsx', import.meta.url)
+const cameraMotionPath = new URL('../src/spatial/canon/cameraMotion.ts', import.meta.url)
 const eventsPath = new URL('../src/spatial/world/worldEvents.ts', import.meta.url)
 
 // Exercise the actual component callbacks and the actual movement hook against
@@ -105,6 +106,7 @@ function mount({ webgl = false } = {}) {
   }
   const events = load(eventsPath)
   modules.set('@/spatial/world/worldEvents', events)
+  modules.set('../canon/cameraMotion', load(cameraMotionPath))
   const movement = load(movementPath)
   modules.set('@/spatial/navigation/EmbodiedNavigation', {
     ...movement,

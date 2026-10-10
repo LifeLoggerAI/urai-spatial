@@ -7,7 +7,7 @@ import StellarCorona from '@/spatial/stellar/StellarCorona'
 
 import { Billboard, OrbitControls, Sparkles, Stars, useTexture } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets, replayAssets } from '@/spatial/assets/uraiAssets'
@@ -18,6 +18,10 @@ import { focusMemoryAppearance } from './focusMemoryAppearance'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import MemoryMediaAttachment from '@/spatial/memory/MemoryMediaAttachment'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
+import { cameraDampingAlpha, cameraFrameDelta } from '@/spatial/canon/cameraMotion'
+import { appendFocusCameraFrame, entryCameraFrameMatchesMemory, focusCameraPoseSettled, parseEntryCameraFrame, type EntryCameraFrame } from './focusCameraFrame'
+import { retainLifeMapCameraFrame } from '@/components/lifemap/lifeMapCameraFrame'
 
 const focusAccessibilityCss = `
 .focusControls button:focus-visible,.focusHelp summary:focus-visible,.neutralActions button:focus-visible,.webglRecovery button:focus-visible,.focus-spatial-aperture-button:focus-visible{outline:3px solid #e7fbff;outline-offset:3px}
@@ -35,23 +39,6 @@ const CAMERA_LIMIT = 8.8
 
 type ChamberState = 'neutral' | 'loading' | 'ready' | 'unavailable' | 'unauthorized' | 'corrupt' | 'deleted'
 type WebGLState = 'ready' | 'lost' | 'restoring' | 'failed'
-type EntryCameraFrame = { position: [number, number, number]; target: [number, number, number]; fov: number }
-
-function parseEntryVector(value: string | null): [number, number, number] | null {
-  if (!value) return null
-  const numbers = value.split(',').map(Number)
-  if (numbers.length !== 3 || numbers.some((number) => !Number.isFinite(number))) return null
-  return [numbers[0], numbers[1], numbers[2]]
-}
-
-function parseEntryCameraFrame(params: URLSearchParams): EntryCameraFrame | null {
-  if (!params.get('cameraCheckpoint')?.startsWith('life-map-arrival:')) return null
-  const position = parseEntryVector(params.get('entryCamera'))
-  const target = parseEntryVector(params.get('entryTarget'))
-  const fov = Number(params.get('entryFov'))
-  if (!position || !target || !Number.isFinite(fov)) return null
-  return { position, target, fov: THREE.MathUtils.clamp(fov, 36, 68) }
-}
 
 function dateLabel(value: string, locale: Pick<ReturnType<typeof useUraiLocale>, 'date'>) {
   try {
@@ -129,7 +116,7 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   return null
 }
 
-function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reducedMotion, onInputReadyChange }: { controls: RefObject<OrbitControlsImpl | null>; recenterSignal: number; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; reducedMotion: boolean; onInputReadyChange: (ready: boolean) => void }) {
+function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reducedMotion, active, onInputReadyChange }: { controls: RefObject<OrbitControlsImpl | null>; recenterSignal: number; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; reducedMotion: boolean; active: boolean; onInputReadyChange: (ready: boolean) => void }) {
   const { camera } = useThree()
   const keys = useRef(new Set<string>())
   const target = useMemo(() => new THREE.Vector3(...DEFAULT_TARGET), [])
@@ -139,9 +126,23 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
   const right = useRef(new THREE.Vector3())
   const movement = useRef(new THREE.Vector3())
   const entryBlendActive = useRef(false)
+  const inputReady = useRef<boolean | null>(null)
+  const admittedFrames = useRef(0)
+
+  const publishInputReady = useCallback((ready: boolean) => {
+    if (inputReady.current === ready) return
+    inputReady.current = ready
+    if (shellRef.current) shellRef.current.dataset.focusInputReady = ready ? 'true' : 'false'
+    if (controls.current) {
+      controls.current.enabled = ready
+      controls.current.enableDamping = ready && !reducedMotion
+    }
+    onInputReadyChange(ready)
+  }, [controls, onInputReadyChange, reducedMotion, shellRef])
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
+      if (!inputReady.current) return
       if (event.defaultPrevented || (event.target instanceof Element && event.target.closest('button,a,input,textarea,select,summary,[role="button"],[role="dialog"],[role="menu"],[contenteditable="true"]'))) return
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
         keys.current.add(event.code)
@@ -157,12 +158,11 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
     window.addEventListener('keyup', up)
     window.addEventListener('blur', clearKeys)
     window.addEventListener('focusin', focusChanged)
-    const shell = shellRef.current
-    if (shell) shell.dataset.focusInputReady = 'true'
-    onInputReadyChange(true)
     return () => {
       clearKeys()
+      const shell = shellRef.current
       if (shell) shell.dataset.focusInputReady = 'false'
+      inputReady.current = false
       onInputReadyChange(false)
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
@@ -171,8 +171,19 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
     }
   }, [onInputReadyChange, shellRef])
 
-  useEffect(() => {
-    const useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion
+  useLayoutEffect(() => {
+    keys.current.clear()
+    admittedFrames.current = 0
+    publishInputReady(false)
+    // OrbitControls also updates on each frame. Clear its damping residuals
+    // while it owns no input so it cannot write a second camera trajectory.
+    if (controls.current) {
+      controls.current.enabled = false
+      controls.current.enableDamping = false
+      controls.current.update()
+    }
+    const returningFrame = recenterSignal === 0 && entryFrame?.source === 'focus-return'
+    const useEntryFrame = recenterSignal === 0 && entryFrame && (!reducedMotion || returningFrame)
     if (useEntryFrame) {
       camera.position.set(...entryFrame.position)
       controls.current?.target.set(...entryFrame.target)
@@ -180,6 +191,8 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
         camera.fov = entryFrame.fov
         camera.updateProjectionMatrix()
       }
+      entryBlendActive.current = !returningFrame
+    } else if (recenterSignal > 0 && !reducedMotion) {
       entryBlendActive.current = true
     } else {
       camera.position.set(...DEFAULT_CAMERA)
@@ -190,27 +203,50 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
       }
       entryBlendActive.current = false
     }
-    controls.current?.update()
-  }, [camera, controls, entryFrame, recenterSignal, reducedMotion])
+    camera.lookAt(controls.current?.target ?? defaultTarget)
+  }, [camera, controls, defaultTarget, entryFrame, publishInputReady, recenterSignal, reducedMotion])
+
+  useLayoutEffect(() => {
+    admittedFrames.current = 0
+    if (active) return
+    keys.current.clear()
+    publishInputReady(false)
+    if (controls.current) {
+      controls.current.enabled = false
+      controls.current.enableDamping = false
+    }
+    if (shellRef.current) {
+      shellRef.current.dataset.focusCameraOwner = 'focus-suspended'
+      shellRef.current.dataset.focusCameraSettled = 'false'
+    }
+  }, [active, controls, publishInputReady, shellRef])
 
   useFrame((_, delta) => {
-    const moving = keys.current.size > 0
-    if (!moving && entryBlendActive.current) {
-      camera.position.x = THREE.MathUtils.damp(camera.position.x, defaultCamera.x, 2.4, delta)
-      camera.position.y = THREE.MathUtils.damp(camera.position.y, defaultCamera.y, 2.4, delta)
-      camera.position.z = THREE.MathUtils.damp(camera.position.z, defaultCamera.z, 2.4, delta)
+    if (!active) return
+    admittedFrames.current += 1
+    const moving = inputReady.current && keys.current.size > 0
+    if (entryBlendActive.current) {
+      camera.position.lerp(defaultCamera, cameraDampingAlpha(2.4, delta))
       target.copy(controls.current?.target ?? defaultTarget)
-      target.x = THREE.MathUtils.damp(target.x, defaultTarget.x, 2.8, delta)
-      target.y = THREE.MathUtils.damp(target.y, defaultTarget.y, 2.8, delta)
-      target.z = THREE.MathUtils.damp(target.z, defaultTarget.z, 2.8, delta)
+      target.lerp(defaultTarget, cameraDampingAlpha(2.8, delta))
       controls.current?.target.copy(target)
       if (camera instanceof THREE.PerspectiveCamera) {
-        camera.fov = THREE.MathUtils.damp(camera.fov, 48, 2.6, delta)
+        camera.fov = THREE.MathUtils.lerp(camera.fov, 48, cameraDampingAlpha(2.6, delta))
         camera.updateProjectionMatrix()
       }
-      controls.current?.update()
-      if (camera.position.distanceTo(defaultCamera) < 0.035 && target.distanceTo(defaultTarget) < 0.035) entryBlendActive.current = false
+      camera.lookAt(target)
+      if (focusCameraPoseSettled({ position: camera.position.toArray() as [number, number, number], target: target.toArray() as [number, number, number], fov: camera instanceof THREE.PerspectiveCamera ? camera.fov : 48 }, { position: DEFAULT_CAMERA, target: DEFAULT_TARGET, fov: 48 })) {
+        camera.position.copy(defaultCamera)
+        controls.current?.target.copy(defaultTarget)
+        if (camera instanceof THREE.PerspectiveCamera) {
+          camera.fov = 48
+          camera.updateProjectionMatrix()
+        }
+        camera.lookAt(defaultTarget)
+        entryBlendActive.current = false
+      }
     }
+    if (!entryBlendActive.current && admittedFrames.current >= 2) publishInputReady(true)
     if (moving) {
       const forwardVector = forward.current
       camera.getWorldDirection(forwardVector)
@@ -224,7 +260,7 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
         if (keys.current.has('KeyD') || keys.current.has('ArrowRight')) movementVector.add(rightVector)
         if (keys.current.has('KeyA') || keys.current.has('ArrowLeft')) movementVector.sub(rightVector)
         if (movementVector.lengthSq()) {
-          movementVector.normalize().multiplyScalar(2.15 * Math.min(delta, 0.05))
+          movementVector.normalize().multiplyScalar(2.15 * cameraFrameDelta(delta, 0.05))
           camera.position.add(movementVector)
           camera.position.x = THREE.MathUtils.clamp(camera.position.x, -CAMERA_LIMIT, CAMERA_LIMIT)
           camera.position.y = THREE.MathUtils.clamp(camera.position.y, -1.2, 5.5)
@@ -243,8 +279,19 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
       shell.dataset.focusCameraX = camera.position.x.toFixed(3)
       shell.dataset.focusCameraY = camera.position.y.toFixed(3)
       shell.dataset.focusCameraZ = camera.position.z.toFixed(3)
+      shell.dataset.focusCameraQx = camera.quaternion.x.toFixed(6)
+      shell.dataset.focusCameraQy = camera.quaternion.y.toFixed(6)
+      shell.dataset.focusCameraQz = camera.quaternion.z.toFixed(6)
+      shell.dataset.focusCameraQw = camera.quaternion.w.toFixed(6)
       shell.dataset.focusDistance = camera.position.distanceTo(defaultCamera).toFixed(3)
       shell.dataset.focusMoving = moving ? 'true' : 'false'
+      const lookTarget = controls.current?.target ?? defaultTarget
+      shell.dataset.focusTargetX = lookTarget.x.toFixed(4)
+      shell.dataset.focusTargetY = lookTarget.y.toFixed(4)
+      shell.dataset.focusTargetZ = lookTarget.z.toFixed(4)
+      shell.dataset.focusFov = camera instanceof THREE.PerspectiveCamera ? camera.fov.toFixed(3) : '48'
+      shell.dataset.focusCameraOwner = entryBlendActive.current ? 'focus-arrival' : inputReady.current ? 'focus-interaction' : 'focus-preparing'
+      shell.dataset.focusCameraSettled = entryBlendActive.current ? 'false' : 'true'
     }
   })
   return null
@@ -459,7 +506,7 @@ function MemoryTraces({ memory, accent, reducedMotion }: { memory: SelectedMemor
   return <group name="focus-grounded-memory-traces">{positions.map((position, index) => <group key={index} ref={(value) => { refs.current[index] = value }} position={position}><mesh><sphereGeometry args={[0.045, 20, 20]} /><meshBasicMaterial color="#fff0b8" transparent opacity={0.86} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh><mesh><sphereGeometry args={[0.16, 18, 18]} /><meshBasicMaterial color={accent} transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh></group>)}</group>
 }
 
-function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivate }: { memory: SelectedMemory | null; accent: string; light: string; reducedMotion: boolean; onActivate: () => void }) {
+function MemoryStarInteraction({ memory, accent, light, reducedMotion, ready, onActivate }: { memory: SelectedMemory | null; accent: string; light: string; reducedMotion: boolean; ready: boolean; onActivate: () => void }) {
   const group = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
 
@@ -474,13 +521,13 @@ function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivat
   const pointer = (event: ThreeEvent<PointerEvent>, state: boolean) => {
     event.stopPropagation()
     setHovered(state)
-    document.body.style.cursor = state && memory ? 'pointer' : ''
+    document.body.style.cursor = state && memory && ready ? 'pointer' : ''
   }
 
   return (
     <group ref={group} position={[0, 0.35, -1.55]} name="focus-memory-star-interaction">
       <mesh
-        onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }}
+        onClick={(event) => { event.stopPropagation(); if (memory && ready) onActivate() }}
         onPointerOver={(event) => pointer(event, true)}
         onPointerOut={(event) => pointer(event, false)}
       >
@@ -492,7 +539,7 @@ function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivat
   )
 }
 
-function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame, readinessKey, onFirstFrame, onInputReadyChange }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; readinessKey: string; onFirstFrame: () => void; onInputReadyChange: (ready: boolean) => void }) {
+function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame, readinessKey, inputReady, interactionReady, active, onFirstFrame, onInputReadyChange }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; readinessKey: string; inputReady: boolean; interactionReady: boolean; active: boolean; onFirstFrame: () => void; onInputReadyChange: (ready: boolean) => void }) {
   const { accent, light, imageUrl: memoryImageUrl } = focusMemoryAppearance(memory, replayAssets.primary.src)
   return <>
     <FirstFrame key={readinessKey} profile={profile} onReady={onFirstFrame} />
@@ -507,9 +554,9 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
     <StellarPhotosphere accent={accent} light={light} reducedMotion={profile.reducedMotion} />
     {memoryImageUrl ? <MemoryImprint url={memoryImageUrl} /> : null}
     <MemoryTraces memory={memory} accent={accent} reducedMotion={profile.reducedMotion} />
-    <MemoryStarInteraction memory={memory} accent={accent} light={light} reducedMotion={profile.reducedMotion} onActivate={onActivate} />
-    <OrbitControls ref={controls} makeDefault enableDamping={!profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={3.4} maxDistance={11.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
-    <FocusCameraRig controls={controls} recenterSignal={recenterSignal} shellRef={shellRef} entryFrame={entryFrame} reducedMotion={profile.reducedMotion} onInputReadyChange={onInputReadyChange} />
+    <MemoryStarInteraction memory={memory} accent={accent} light={light} reducedMotion={profile.reducedMotion} ready={interactionReady} onActivate={onActivate} />
+    <OrbitControls ref={controls} makeDefault enabled={active && inputReady} enableDamping={active && inputReady && !profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={3.4} maxDistance={11.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
+    <FocusCameraRig key={memory?.star.id ?? 'neutral'} controls={controls} recenterSignal={recenterSignal} shellRef={shellRef} entryFrame={entryFrame} reducedMotion={profile.reducedMotion} active={active} onInputReadyChange={onInputReadyChange} />
   </>
 }
 
@@ -517,12 +564,16 @@ export default function FocusChamberClient() {
   const locale = useUraiLocale()
   const result = useSelectedMemory()
   const memory = result.memory
+  const { world, phase: worldPhase, pendingTravel } = useUraiWorldState()
   const profile = useAdaptiveSpatialQuality()
   const webglAvailable = useWebGLAvailable()
   const controls = useRef<OrbitControlsImpl | null>(null)
   const shellRef = useRef<HTMLElement | null>(null)
   const [recenterSignal, setRecenterSignal] = useState(0)
   const [committed, setCommitted] = useState(false)
+  const replayCommitted = useRef(false)
+  const replayTransitionObserved = useRef(false)
+  const replayReady = useRef(false)
   const [directEntry, setDirectEntry] = useState<boolean | null>(null)
   const [entryFrame, setEntryFrame] = useState<EntryCameraFrame | null>(null)
   const [webglState, setWebglState] = useState<WebGLState>('ready')
@@ -535,10 +586,23 @@ export default function FocusChamberClient() {
     setWebglState(state)
   }, [])
 
+  useLayoutEffect(() => {
+    if (!committed) {
+      replayTransitionObserved.current = false
+      return
+    }
+    if (pendingTravel?.destination === 'replay' && worldPhase !== 'idle') replayTransitionObserved.current = true
+    if (replayTransitionObserved.current && worldPhase === 'idle' && !pendingTravel && world.destination === 'focus') {
+      replayTransitionObserved.current = false
+      replayCommitted.current = false
+      setCommitted(false)
+    }
+  }, [committed, pendingTravel, world.destination, worldPhase])
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setDirectEntry(!params.get('memoryId') && !params.get('node'))
-    setEntryFrame(parseEntryCameraFrame(params))
+    setEntryFrame(parseEntryCameraFrame(params, params.get('node') || params.get('memoryId')))
     return () => { document.body.style.cursor = '' }
   }, [])
 
@@ -550,10 +614,19 @@ export default function FocusChamberClient() {
   }, [memory])
 
   const enterReplay = useCallback(() => {
-    if (!memory || !replayHref || committed) return
+    if (!memory || !replayHref || replayCommitted.current || !replayReady.current) return
+    replayCommitted.current = true
     setCommitted(true)
-    requestUraiWorldTravel({ destination: 'replay', href: replayHref, entryPortal: 'focus-memory-aperture', cameraCheckpoint: `focus:${memory.star.id}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
-  }, [committed, memory, replayHref])
+    const next = new URLSearchParams(replayHref.split('?')[1])
+    const current = new URLSearchParams(window.location.search)
+    const returnNode = current.get('returnNode') || current.get('node') || memory.id
+    if (returnNode === memory.id || returnNode === memory.star.id) {
+      next.set('returnNode', returnNode)
+      retainLifeMapCameraFrame(next, current, returnNode)
+    }
+    appendFocusCameraFrame(next, shellRef.current?.dataset, memory.star.id)
+    requestUraiWorldTravel({ destination: 'replay', href: `/replay?${next.toString()}`, entryPortal: 'focus-memory-aperture', cameraCheckpoint: `focus:${memory.star.id}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
+  }, [memory, replayHref])
   const unwind = useCallback(() => requestUraiWorldReturn(), [])
 
   useEffect(() => {
@@ -577,15 +650,17 @@ export default function FocusChamberClient() {
   const onFirstFrame = useCallback(() => setRenderedSceneKey(readinessKey), [readinessKey])
   const fieldReady = webglUsable && webglState === 'ready' && inputReady && renderedSceneKey === readinessKey
   const semanticFallback = webglAvailable === false || webglState === 'failed'
+  const admittedEntryFrame = entryCameraFrameMatchesMemory(entryFrame, memory) ? entryFrame : null
+  replayReady.current = (fieldReady || semanticFallback) && !committed
   const preparingField = Boolean(memory) && !semanticFallback && !fieldReady
   const fieldStatusId = semanticFallback ? 'common.spatialAccessible' : webglState === 'lost' ? 'focus.paused' : webglState === 'restoring' ? 'focus.restoring' : fieldReady ? 'focus.ready' : 'focus.opening'
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-render-ready={fieldReady ? 'true' : 'false'} data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready={inputReady ? 'true' : 'false'} data-focus-render-ready={fieldReady ? 'true' : 'false'} data-focus-pointer-lock="false" data-focus-entry-continuity={admittedEntryFrame?.source === 'life-map' ? 'life-map-arrival' : admittedEntryFrame?.source ?? 'default'} data-focus-camera-owner="focus-preparing" data-focus-camera-settled="false" data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
     <h1 className="srOnly" {...locale.props('focus.title')}>{locale.text('focus.title')}</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     <div className="focusFog" aria-hidden="true" />
     <div className="focusCanvas" aria-label={locale.text('focus.canvasLabel')} {...locale.props('focus.canvasLabel')}>
-      {webglAvailable === null ? <div className="focusFallback" role="status" {...locale.props('focus.preparing')}>{locale.text('focus.preparing')}</div> : webglUsable ? <Suspense fallback={<div className="focusFallback" role="status" {...locale.props('focus.opening')}>{locale.text('focus.opening')}</div>}><Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'always' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }}><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={onWebGLState} shellRef={shellRef} entryFrame={entryFrame} readinessKey={readinessKey} onFirstFrame={onFirstFrame} onInputReadyChange={setInputReady} /></Canvas></Suspense> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong {...locale.props('common.spatialUnavailable')}>{locale.text('common.spatialUnavailable')}</strong><span {...locale.props('common.spatialAccessible')}>{locale.text('common.spatialAccessible')}</span></div>}
+      {webglAvailable === null ? <div className="focusFallback" role="status" {...locale.props('focus.preparing')}>{locale.text('focus.preparing')}</div> : webglUsable ? <Suspense fallback={<div className="focusFallback" role="status" {...locale.props('focus.opening')}>{locale.text('focus.opening')}</div>}><Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'always' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }}><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={onWebGLState} shellRef={shellRef} entryFrame={admittedEntryFrame} readinessKey={readinessKey} inputReady={inputReady} interactionReady={fieldReady && !committed} active={!committed && webglState === 'ready'} onFirstFrame={onFirstFrame} onInputReadyChange={setInputReady} /></Canvas></Suspense> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong {...locale.props('common.spatialUnavailable')}>{locale.text('common.spatialUnavailable')}</strong><span {...locale.props('common.spatialAccessible')}>{locale.text('common.spatialAccessible')}</span></div>}
     </div>
     <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS MEMORY STAR'}</p><h2 {...(!memory ? locale.props(headingId) : {dir:'auto' as const})} style={{overflowWrap:'anywhere'}}>{heading}</h2>{memory ? <span {...(Number.isFinite(new Date(memory.occurredAt).getTime()) ? locale.formatProps : {dir:'auto'})}>{dateLabel(memory.occurredAt, locale)}</span> : null}<details className="focusNarration"><summary {...locale.props(memory ? 'focus.selectedMemory' : 'focus.threshold')}>{locale.text(memory ? 'focus.selectedMemory' : 'focus.threshold')}</summary><strong {...(!memory && directEntry ? locale.props('focus.chooseMemory') : {dir:'auto' as const})} style={{overflowWrap:'anywhere'}}>{description}</strong></details></header>
     {!webglUsable && <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral stellar Focus field'} data-focus-visual-owner="stellar-photosphere-corona" aria-hidden="true">
@@ -594,8 +669,8 @@ export default function FocusChamberClient() {
     <aside className="memoryMeaning" aria-labelledby="focus-memory-context-label"><span id="focus-memory-context-label" className="sr-only" {...locale.props('focus.selectedContext')}>{locale.text('focus.selectedContext')}</span><p {...locale.props(memory ? 'focus.heldContext' : result.status === 'loading' ? 'focus.openingSafely' : 'focus.emptyContext')}>{memory ? locale.text('focus.heldContext') : result.status === 'loading' ? locale.text('focus.openingSafely') : locale.locale === 'en' ? 'No personal memory is displayed in this neutral stellar field.' : locale.text('focus.emptyContext')}</p>{memory ? <dl><div><dt {...locale.props('focus.emotion')}>{locale.text('focus.emotion')}</dt><dd dir="auto">{memory.emotionalState}</dd></div><div><dt {...locale.props('focus.place')}>{locale.text('focus.place')}</dt><dd {...(memory.place?.label ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.place?.label ?? locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.people')}>{locale.text('focus.people')}</dt><dd {...(memory.people.length ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.privacy')}>{locale.text('focus.privacy')}</dt><dd dir="auto">{memory.privacy}</dd></div></dl> : <div className="neutralActions"><button type="button" onClick={unwind} {...locale.props('focus.openLifeMap')}>{locale.text('focus.openLifeMap')}</button><span {...(result.status === 'loading' ? locale.props('focus.loading') : {})}>{result.status === 'loading' ? locale.text('focus.loading') : result.message}</span></div>}{memory && !memory.demo && memory.privacy === 'private' && memory.authorization === 'owner' ? <MemoryMediaAttachment key={`${memory.ownerId}:${memory.id}`} memory={memory} /> : null}<JourneyOfflineNotice /></aside>
     <div className="focusControlDock">
     <nav className="focusControls" aria-label={locale.text('focus.controls')} {...locale.props('focus.controls')}>
-      {memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} {...locale.props('focus.enterReplay')} aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}><span {...locale.props(committed ? 'common.loading' : 'focus.enterReplay')}>{committed ? locale.text('common.loading') : locale.text('focus.enterReplay')}</span></button> : null}
-      <button type="button" onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenter')}>{locale.text('focus.recenter')}</button>
+      {memory ? <button type="button" className="primary" disabled={committed || (!fieldReady && !semanticFallback)} onClick={enterReplay} {...locale.props('focus.enterReplay')} aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}><span {...locale.props(committed ? 'common.loading' : 'focus.enterReplay')}>{committed ? locale.text('common.loading') : locale.text('focus.enterReplay')}</span></button> : null}
+      <button type="button" disabled={!fieldReady && !semanticFallback} onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenter')}>{locale.text('focus.recenter')}</button>
       <button className="unwind" type="button" onClick={unwind} {...locale.props('nav.lifeMap')}>← {locale.text('nav.lifeMap')}</button>
     </nav>
     <div className="focusUtilities">
@@ -603,7 +678,7 @@ export default function FocusChamberClient() {
       <details className="focusHelp"><summary {...locale.props('focus.explore')}>{locale.text('focus.explore')}</summary><p {...locale.props('focus.instructions')}>{locale.text('focus.instructions')}</p></details>
     </div>
     </div>
-    {webglState !== 'ready' && webglState !== 'failed' ? <section className="webglRecovery" role="status" aria-live="assertive"><strong {...locale.props(webglState === 'lost' ? 'focus.paused' : 'focus.restoring')}>{locale.text(webglState === 'lost' ? 'focus.paused' : 'focus.restoring')}</strong><span {...locale.props('focus.preserved')}>{locale.text('focus.preserved')}</span><button type="button" onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenterRestored')}>{locale.text('focus.recenterRestored')}</button></section> : null}
+    {webglState !== 'ready' && webglState !== 'failed' ? <section className="webglRecovery" role="status" aria-live="assertive"><strong {...locale.props(webglState === 'lost' ? 'focus.paused' : 'focus.restoring')}>{locale.text(webglState === 'lost' ? 'focus.paused' : 'focus.restoring')}</strong><span {...locale.props('focus.preserved')}>{locale.text('focus.preserved')}</span><button type="button" disabled={!fieldReady && !semanticFallback} onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenterRestored')}>{locale.text('focus.recenterRestored')}</button></section> : null}
     <div className="focusStatus" role={result.status === 'loading' || preparingField ? 'status' : 'note'} aria-live="polite">{memory ? <span {...locale.props(fieldStatusId)}>{locale.text(fieldStatusId)}</span> : result.status === 'loading' ? <span {...locale.props('focus.openingSelected')}>{locale.text('focus.openingSelected')}</span> : directEntry ? <span {...locale.props('focus.neutral')}>{locale.text('focus.neutral')}</span> : result.message}</div>
     <style>{focusCss + focusAccessibilityCss}</style>
   </main>

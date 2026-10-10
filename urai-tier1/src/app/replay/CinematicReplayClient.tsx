@@ -15,6 +15,7 @@ const replayProofSurfaceStyle = {
 } as const
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { cameraDampingAlpha, cameraFrameDelta } from '@/spatial/canon/cameraMotion'
 import { replayAssets } from '@/spatial/assets/uraiAssets'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
@@ -26,7 +27,7 @@ import { useInterpretiveWorldReplayEntry } from '@/spatial/interpretive-world/us
 import { memoryWorldReplayHref } from '@/spatial/memory-world/memoryWorldReplay'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
-import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { requestUraiWorldReturn, requestUraiWorldTravel, URAI_WORLD_RETURN_EVENT, URAI_WORLD_TRAVEL_EVENT } from '@/spatial/world/worldEvents'
 import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
 import { ReplayProductControls } from './ReplayProductControls'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
@@ -36,20 +37,72 @@ import { ReplayPersonPresence } from './ReplayPersonPresence'
 import { ReplayRecordedSource, type ReplayImageState } from './ReplayRecordedSource'
 import { initialReplayVideoSnapshot, type ReplayVideoSession, type ReplayVideoSnapshot } from './replayMediaSession'
 import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmission'
+import { REPLAY_ARRIVAL_SETTLE, replayCameraFrame, replayEntryCameraFrame, type ReplayCameraFrame } from './replayMotion'
+import { createReplayNarrativeClock, type ReplayNarrativeClock, type ReplayNarrativeSnapshot } from './replayNarrativeClock'
 
-function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
-
-function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reducedMotion: boolean }) {
-  const target = useRef(new THREE.Vector3(0, 0.16, -6.8))
+function ReplayCameraRig({ timeMs, durationMs, reducedMotion, entryFrame, onArrivalReady }: { timeMs: number; durationMs: number; reducedMotion: boolean; entryFrame: ReplayCameraFrame | null; onArrivalReady: () => void }) {
+  const target = useRef(new THREE.Vector3(...(entryFrame?.target ?? [0, 0.16, -6.8])))
   const desired = useRef(new THREE.Vector3())
+  const desiredTarget = useRef(new THREE.Vector3())
+  const firstFrame = useRef(true)
+  const beforePosition = useRef(new THREE.Vector3())
+  const arrivalAnnounced = useRef(false)
+  const settledFrames = useRef(0)
+  const releaseElapsedMs = useRef(0)
 
-  useFrame(({ camera, clock }, delta) => {
-    const breathe = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.22) * 0.028
-    const arc = reducedMotion ? 0 : (progress - 0.5) * 0.22
-    desired.current.set(arc, 0.28 + breathe, 7.25 - progress * 0.48)
-    if (reducedMotion) camera.position.copy(desired.current)
-    else camera.position.lerp(desired.current, Math.min(1, delta * 2.4))
+  useFrame(({ camera, gl }, delta) => {
+    const frame = replayCameraFrame(timeMs, durationMs, reducedMotion)
+    beforePosition.current.copy(camera.position)
+    const alpha = firstFrame.current ? 0 : cameraDampingAlpha(2.4, delta)
+    firstFrame.current = false
+    desired.current.set(...frame.position)
+    desiredTarget.current.set(...frame.target)
+    if (reducedMotion) {
+      camera.position.copy(desired.current)
+      target.current.copy(desiredTarget.current)
+    } else {
+      camera.position.lerp(desired.current, alpha)
+      target.current.lerp(desiredTarget.current, alpha)
+      // Stop residual floating-point drift after a paused/arrived camera settles.
+      if (camera.position.distanceToSquared(desired.current) < 1e-10) camera.position.copy(desired.current)
+      if (target.current.distanceToSquared(desiredTarget.current) < 1e-10) target.current.copy(desiredTarget.current)
+    }
     camera.lookAt(target.current)
+    if (camera instanceof THREE.PerspectiveCamera) {
+      const fov = reducedMotion ? frame.fov : THREE.MathUtils.lerp(camera.fov, frame.fov, alpha)
+      if (Math.abs(camera.fov - fov) > 1e-7) { camera.fov = fov; camera.updateProjectionMatrix() }
+    }
+    const positionError = camera.position.distanceTo(desired.current)
+    const lookError = target.current.distanceTo(desiredTarget.current)
+    const dt = cameraFrameDelta(delta)
+    const velocity = dt > 0 ? camera.position.distanceTo(beforePosition.current) / dt : 0
+    const fovError = camera instanceof THREE.PerspectiveCamera ? Math.abs(camera.fov - frame.fov) : 0
+    const settled = positionError <= REPLAY_ARRIVAL_SETTLE.positionError && lookError <= REPLAY_ARRIVAL_SETTLE.lookError
+      && velocity <= REPLAY_ARRIVAL_SETTLE.velocityMagnitude && fovError <= 0.05
+      && camera.quaternion.toArray().every(Number.isFinite)
+    if (!arrivalAnnounced.current) {
+      if (!settled) { settledFrames.current = 0; releaseElapsedMs.current = 0 }
+      else {
+        settledFrames.current += 1
+        if (settledFrames.current >= REPLAY_ARRIVAL_SETTLE.framesRequired) releaseElapsedMs.current += dt * 1000
+        // Static/reduced-motion paths have no incoming camera travel to settle.
+        // Release from their measured first frame, including demand-mode canvases.
+        if (!entryFrame || reducedMotion || (settledFrames.current >= REPLAY_ARRIVAL_SETTLE.framesRequired && releaseElapsedMs.current >= REPLAY_ARRIVAL_SETTLE.interactionReleaseDelayMs)) {
+          arrivalAnnounced.current = true
+          onArrivalReady()
+        }
+      }
+    }
+    const canvas = gl.domElement
+    canvas.dataset.replayCameraOwner = 'replay-presentation'
+    canvas.dataset.replayCameraPosition = camera.position.toArray().map((value) => value.toFixed(6)).join(',')
+    canvas.dataset.replayCameraQuaternion = camera.quaternion.toArray().map((value) => value.toFixed(6)).join(',')
+    canvas.dataset.replayCameraTarget = target.current.toArray().map((value) => value.toFixed(6)).join(',')
+    canvas.dataset.replayCameraFov = camera instanceof THREE.PerspectiveCamera ? camera.fov.toFixed(6) : ''
+    canvas.dataset.replayCameraTimeMs = String(timeMs)
+    canvas.dataset.replayCameraSettled = camera.position.distanceToSquared(desired.current) < 1e-6 && target.current.distanceToSquared(desiredTarget.current) < 1e-6 ? 'true' : 'false'
+    canvas.dataset.replayArrivalReady = arrivalAnnounced.current ? 'true' : 'false'
+    canvas.dataset.replayCameraVelocity = velocity.toFixed(6)
   })
 
   return null
@@ -351,7 +404,7 @@ function ReplayTimelineField({ memory, progress }: { memory: SelectedMemory; pro
   )
 }
 
-function ReplaySpatialScene({ memory, progressMs, onMediaState }: { memory: SelectedMemory; progressMs: number; onMediaState: (state: ReplayImageState) => void }) {
+function ReplaySpatialScene({ memory, progressMs, entryFrame, onMediaState, onArrivalReady }: { memory: SelectedMemory; progressMs: number; entryFrame: ReplayCameraFrame | null; onMediaState: (state: ReplayImageState) => void; onArrivalReady: () => void }) {
   const reducedMotion = useReducedMotion()
   const progress = memory.replayManifest.durationMs > 0 ? progressMs / memory.replayManifest.durationMs : 0
 
@@ -370,12 +423,14 @@ function ReplaySpatialScene({ memory, progressMs, onMediaState }: { memory: Sele
       {memory.demo ? <DemoMemoryLandscape memory={memory} /> : null}
       <ReplayMemoryAtmosphere memory={memory} reducedMotion={reducedMotion} />
       <ReplayTimelineField memory={memory} progress={progress} />
-      <ReplayCameraRig progress={progress} reducedMotion={reducedMotion} />
+      <ReplayCameraRig timeMs={progressMs} durationMs={memory.replayManifest.durationMs} reducedMotion={reducedMotion} entryFrame={entryFrame} onArrivalReady={onArrivalReady} />
     </>
   )
 }
 
-function ReplayNeutralSpatialScene() {
+const ignoreReplayArrival = () => {}
+
+function ReplayNeutralSpatialScene({ entryFrame = null, onArrivalReady = ignoreReplayArrival }: { entryFrame?: ReplayCameraFrame | null; onArrivalReady?: () => void }) {
   return (
     <>
       <color attach="background" args={['#02060d']} />
@@ -391,7 +446,7 @@ function ReplayNeutralSpatialScene() {
         <sphereGeometry args={[24, 48, 32]} />
         <meshBasicMaterial color="#70dcec" transparent opacity={0.025} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
-      <ReplayCameraRig progress={0} reducedMotion />
+      <ReplayCameraRig timeMs={0} durationMs={0} reducedMotion={entryFrame === null} entryFrame={entryFrame} onArrivalReady={onArrivalReady} />
     </>
   )
 }
@@ -434,7 +489,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const ownedPlayback = useOwnedMemoryMediaPlayback(memory, () => { sourceRelease.current?.(); videoSession.current?.dispose() })
   const expectsPrivateSource = Boolean(memory.sourceMediaReceipts?.length)
   const playableMemory = useMemo(() => expectsPrivateSource ? { ...memory, sourceMedia: ownedPlayback.media } : memory, [expectsPrivateSource, memory, ownedPlayback.media])
-  const { world } = useUraiWorldState()
+  const { world, phase } = useUraiWorldState()
   const lifeModelAuthority = useReplayLifeModelAuthority(memory.id, memory.demo === true)
   const governedMemoryId = lifeModelAuthority.available ? memory.id : null
   const capturedRealityLookup = useCapturedRealityReplayLookup(governedMemoryId)
@@ -447,47 +502,76 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const video = media?.kind === 'video' || media?.kind === 'audio'
   const webgl = useReplayWebGL()
   const reducedMotion = useReducedMotion()
-  const [narrativePlaying, setNarrativePlaying] = useState(false)
-  const [narrativeProgressMs, setNarrativeProgressMs] = useState(0)
+  const narrativeClock = useRef<ReplayNarrativeClock | null>(null)
+  const departurePending = useRef(false)
+  const [narrativeSnapshot, setNarrativeSnapshot] = useState<ReplayNarrativeSnapshot>({ currentTimeMs: 0, playing: false })
   const [imageState, setImageState] = useState<ReplayImageState>({ status: 'loading', error: null })
   const [videoSnapshot, setVideoSnapshot] = useState(initialReplayVideoSnapshot)
   const [mediaAttempt, setMediaAttempt] = useState(0)
+  const [cameraArrived, setCameraArrived] = useState(false)
+  const onArrivalReady = useCallback(() => setCameraArrived(true), [])
   const onImageState = useCallback((state: ReplayImageState) => setImageState(state), [])
   const onVideoSnapshot = useCallback((state: ReplayVideoSnapshot) => setVideoSnapshot(state), [])
   const onVideoSession = useCallback((session: ReplayVideoSession | null) => { videoSession.current = session }, [])
   const mediaStatus = video ? videoSnapshot.status : admission.kind === 'neutral' ? 'absent' : imageState.status
   const mediaReady = video ? videoSnapshot.ready : admission.kind !== 'neutral' && imageState.status === 'ready'
   const canPlay = (!expectsPrivateSource || ownedPlayback.status === 'ready') && (video ? videoSnapshot.durationMs !== null && videoSnapshot.status !== 'loading' && videoSnapshot.status !== 'error' : admission.kind === 'neutral' || imageState.status === 'ready')
-  const playing = video ? videoSnapshot.playing : narrativePlaying
-  const progressMs = video ? videoSnapshot.currentTimeMs : narrativeProgressMs
+  const playing = video ? videoSnapshot.playing : narrativeSnapshot.playing
+  const progressMs = video ? videoSnapshot.currentTimeMs : narrativeSnapshot.currentTimeMs
   const duration = video ? videoSnapshot.durationMs ?? memory.replayManifest.durationMs : memory.replayManifest.durationMs
   const segments = memory?.replayManifest.segments ?? []
   const active = useMemo(() => segments.find((segment) => progressMs >= segment.startsAtMs && progressMs < segment.startsAtMs + segment.durationMs) ?? segments.at(-1), [progressMs, segments])
   const unwind = useCallback(() => requestUraiWorldReturn(), [])
-  const pauseMemory = useCallback(() => { setNarrativePlaying(false); videoSession.current?.pause() }, [])
+  const pauseMemory = useCallback(() => { narrativeClock.current?.pause(); videoSession.current?.pause() }, [])
+  const arrivalReady = admission.kind === 'recorded-source' ? mediaReady || playing
+    : webgl.state === 'ready' ? cameraArrived
+    : webgl.state === 'unavailable' || webgl.state === 'failed'
+  const interactionReady = phase === 'idle' && world.destination === 'replay' && quality.documentVisible && arrivalReady
+  const entryFrame = useMemo(() => {
+    if (typeof window === 'undefined' || reducedMotion) return null
+    return replayEntryCameraFrame(new URLSearchParams(window.location.search), memory.star.id)
+  }, [memory.star.id, reducedMotion])
+  const initialCameraFrame = entryFrame ?? replayCameraFrame(0, duration, reducedMotion || admission.kind === 'neutral')
+  useEffect(() => {
+    // Elapsed monotonic time owns narrative playback; delayed ticks cannot slow
+    // memory time, and a disposed clock cannot publish into a newer selection.
+    const clock = createReplayNarrativeClock({
+      durationMs: memory.replayManifest.durationMs,
+      onSnapshot: setNarrativeSnapshot,
+      now: () => performance.now(),
+      schedule: (tick) => window.setInterval(tick, 100),
+      cancel: (handle) => window.clearInterval(handle),
+    })
+    narrativeClock.current = clock
+    return () => { clock.dispose(); if (narrativeClock.current === clock) narrativeClock.current = null }
+  }, [memory.replayManifest.durationMs])
   useEffect(() => { if (expectsPrivateSource && ownedPlayback.status !== 'ready') pauseMemory() }, [expectsPrivateSource, ownedPlayback.status, pauseMemory])
   const togglePlayback = useCallback(() => {
-    if (!canPlay) return
+    if (!canPlay || !interactionReady || departurePending.current) return
     if (video) {
       if (playing) videoSession.current?.pause()
       else void videoSession.current?.play()
     } else {
-      if (progressMs >= duration) setNarrativeProgressMs(0)
-      setNarrativePlaying((current) => !current)
+      narrativeClock.current?.toggle()
     }
-  }, [canPlay, duration, playing, progressMs, video])
+  }, [canPlay, interactionReady, playing, video])
   const seek = useCallback((timeMs: number) => {
+    if (!canPlay || !interactionReady || departurePending.current) return
     if (video) videoSession.current?.seek(timeMs)
-    else setNarrativeProgressMs(clamp(timeMs, duration))
-  }, [duration, video])
+    else narrativeClock.current?.seek(timeMs)
+  }, [canPlay, interactionReady, video])
   const retryMedia = useCallback(() => {
     pauseMemory()
+    setCameraArrived(false)
     setImageState({ status: 'loading', error: null })
     setVideoSnapshot(initialReplayVideoSnapshot())
-    setNarrativeProgressMs(0)
+    narrativeClock.current?.seek(0)
     setMediaAttempt((current) => current + 1)
   }, [pauseMemory])
+  const retrySpatial = useCallback(() => { pauseMemory(); setCameraArrived(false); webgl.retry() }, [pauseMemory, webgl.retry])
+  const onSpatialFailure = useCallback(() => { pauseMemory(); setCameraArrived(false); webgl.fail() }, [pauseMemory, webgl.fail])
   const continueLifeMovie = useCallback(() => {
+    if (!interactionReady || departurePending.current) return
     pauseMemory()
     const params = new URLSearchParams({ memoryId: memory.id, from: 'replay-life-movie' })
     if (world.movieId) params.set('movieId', world.movieId)
@@ -505,36 +589,46 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
         privacyMode: memory.privacy === 'private' ? 'held-private' : 'private',
       },
     })
-  }, [memory, pauseMemory, world.chapterId, world.movieId])
+  }, [interactionReady, memory, pauseMemory, world.chapterId, world.movieId])
 
   useEffect(() => {
-    // Images and memory text have a narrative timeline. Video time is exclusively
-    // supplied by the actual media session and cannot advance during buffering.
-    if (video || !narrativePlaying || !canPlay || !quality.documentVisible) return
-    const tick = window.setInterval(() => setNarrativeProgressMs((current) => {
-      const next = clamp(current + (reducedMotion ? 250 : 100), duration)
-      if (next >= duration) setNarrativePlaying(false)
-      return next
-    }), reducedMotion ? 250 : 100)
-    return () => window.clearInterval(tick)
-  }, [canPlay, duration, narrativePlaying, quality.documentVisible, reducedMotion, video])
+    departurePending.current = !interactionReady
+    if (!interactionReady || mediaStatus === 'error') pauseMemory()
+  }, [interactionReady, mediaStatus, pauseMemory])
 
   useEffect(() => {
-    if (!quality.documentVisible || mediaStatus === 'error') pauseMemory()
-  }, [mediaStatus, pauseMemory, quality.documentVisible])
+    // Stop playback in the event turn, before the route/transition render commits.
+    const onDeparture = () => { departurePending.current = true; pauseMemory() }
+    const onHidden = () => { if (document.visibilityState !== 'visible') pauseMemory() }
+    window.addEventListener(URAI_WORLD_TRAVEL_EVENT, onDeparture)
+    window.addEventListener(URAI_WORLD_RETURN_EVENT, onDeparture)
+    document.addEventListener('visibilitychange', onHidden)
+    window.addEventListener('pagehide', pauseMemory)
+    return () => {
+      window.removeEventListener(URAI_WORLD_TRAVEL_EVENT, onDeparture)
+      window.removeEventListener(URAI_WORLD_RETURN_EVENT, onDeparture)
+      document.removeEventListener('visibilitychange', onHidden)
+      window.removeEventListener('pagehide', pauseMemory)
+    }
+  }, [pauseMemory])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null
-      const interactive = Boolean(target?.closest('button, input, textarea, select, summary, a, [role="button"]'))
-      if (event.key === 'Escape') { pauseMemory(); event.preventDefault(); unwind(); return }
+      const interactive = Boolean(target?.closest('button, input, textarea, select, summary, a, [role="button"]')) || Boolean(target?.closest('[role="dialog"], [role="textbox"], [contenteditable="true"]'))
+      if (event.key === 'Escape') {
+        pauseMemory()
+        if (event.defaultPrevented || target?.closest('[role="dialog"], input, textarea, select, [role="textbox"], [contenteditable="true"]')) return
+        event.preventDefault(); unwind(); return
+      }
+      if (event.defaultPrevented) return
       if (!interactive && (event.key === ' ' || event.key === 'Enter')) { event.preventDefault(); togglePlayback() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [pauseMemory, togglePlayback, unwind])
 
-  const percent = Math.round((progressMs / duration) * 100)
+  const percent = duration > 0 ? Math.max(0, Math.min(100, Math.round((progressMs / duration) * 100))) : 0
   const demoEnvironment = admission.kind === 'disclosed-demo'
   const visualOwner = admission.kind === 'recorded-source' ? 'recorded-source-original-framing' : demoEnvironment && webgl.state === 'ready' ? 'r3f-immersive-memory-field' : demoEnvironment ? 'disclosed-demo-asset-fallback' : 'neutral-memory-horizon'
   const mediaError = video ? videoSnapshot.error : imageState.error
@@ -546,10 +640,10 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
-    {admission.kind !== 'recorded-source' && webgl.state === 'ready' ? <ReplayCanvasBoundary key={`${webgl.attempt}:${mediaAttempt}`} onFailure={webgl.fail}>
-      <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? (quality.reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position: [0, 0.28, 7.25], fov: 50, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
-        {demoEnvironment ? <ReplaySpatialScene memory={memory} progressMs={progressMs} onMediaState={onImageState} /> : <ReplayNeutralSpatialScene />}
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-replay-arrival-ready={arrivalReady ? 'true' : 'false'} data-replay-interaction-ready={interactionReady ? 'true' : 'false'} data-replay-entry-camera={entryFrame ? 'selected-focus-checkpoint' : 'canonical-replay'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
+    {admission.kind !== 'recorded-source' && webgl.state === 'ready' ? <ReplayCanvasBoundary key={`${webgl.attempt}:${mediaAttempt}`} onFailure={onSpatialFailure}>
+      <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? (reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position: initialCameraFrame.position, fov: initialCameraFrame.fov, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl, camera }) => { camera.lookAt(...initialCameraFrame.target); gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
+        {demoEnvironment ? <ReplaySpatialScene memory={memory} progressMs={progressMs} entryFrame={entryFrame} onMediaState={onImageState} onArrivalReady={onArrivalReady} /> : <ReplayNeutralSpatialScene entryFrame={entryFrame} onArrivalReady={onArrivalReady} />}
       </Canvas>
     </ReplayCanvasBoundary> : null}
     {media ? <ReplayRecordedSource key={mediaAttempt} media={media} title={memory.title} demo={memory.demo} onImageState={onImageState} onVideoSnapshot={onVideoSnapshot} onVideoSession={onVideoSession} onSourceRelease={onSourceRelease} /> : demoEnvironment && webgl.state !== 'ready' ? <ReplayRecordedSource key={`demo-fallback:${mediaAttempt}`} media={{ kind: 'image', url: replayAssets.primary.src, caption: 'Disclosed demonstration memory environment' }} title={memory.title} demo onImageState={onImageState} onVideoSnapshot={onVideoSnapshot} onVideoSession={onVideoSession} /> : null}
@@ -558,34 +652,34 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       data-proof-only="true"
       data-testid="urai-replay-surface"
       data-mode="replay"
-      data-replay-phase="replay_playing"
-      data-playing="true"
+      data-replay-phase={playing ? 'replay_playing' : 'replay_paused'}
+      data-playing={playing ? 'true' : 'false'}
       data-memory-status={memoryStatus}
       data-manifest-id={memory.replayManifest.id}
       style={replayProofSurfaceStyle}
     />
     <div className="replayAtmosphere" aria-hidden="true" />
-    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : lifeModelAuthority.available ? `${memory.privacy} replay · ${lifeModelAuthority.decision}` : `${memory.privacy} archive replay · reconstruction held`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" {...(world.previousDestination === 'life-movie' ? {} : locale.props('replay.returnFocus'))} onClick={() => { pauseMemory(); unwind() }}>{world.previousDestination === 'life-movie' ? '← Life Movie' : locale.locale === 'en' ? '← Focus' : `← ${locale.text('replay.returnFocus')}`}</button><button className="replayLifeMovieEntry" type="button" onClick={continueLifeMovie}>Continue Life Movie</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? generatedWorldEntry?.href ?? memoryWorldHref} onClick={pauseMemory} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : generatedWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? generatedWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : generatedWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}
+    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : lifeModelAuthority.available ? `${memory.privacy} replay · ${lifeModelAuthority.decision}` : `${memory.privacy} archive replay · reconstruction held`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" {...locale.props('replay.returnFocus')} onClick={() => { pauseMemory(); unwind() }}>{locale.locale === 'en' ? '← Focus' : `← ${locale.text('replay.returnFocus')}`}</button><button className="replayLifeMovieEntry" type="button" onClick={continueLifeMovie}>Continue Life Movie</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? generatedWorldEntry?.href ?? memoryWorldHref} onClick={pauseMemory} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : generatedWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? generatedWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : generatedWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}
     {admission.kind !== 'disclosed-demo' || mediaStatus !== 'ready' || webgl.state !== 'ready' ? <section className="replaySourceStatus" role="status" aria-live="polite" data-replay-source-status={mediaStatus}>
       {media ? <><strong>{memory.demo ? 'Demonstration source' : 'Recorded source'} · original framing</strong><span>A spatial reconstruction is not established by this source. Use the world entry when an admitted place is available.</span></> : admission.kind === 'neutral' ? <><strong>No recorded visual source</strong><span>The memory text and controls remain accessible. No reconstructed place is being shown.</span></> : null}
       {expectsPrivateSource && ownedPlayback.status === 'loading' ? <span>Opening private source…</span> : expectsPrivateSource && ownedPlayback.status === 'unavailable' ? <span>The private source is currently unavailable.</span> : mediaStatus === 'loading' ? <span>{video ? 'Loading recorded media…' : demoEnvironment ? 'Loading demonstration environment…' : 'Loading recorded image…'}</span> : mediaStatus === 'buffering' ? <span>Buffering recorded media. Memory time follows the source.</span> : null}
       {mediaError ? <span>{mediaError}</span> : null}
       {mediaStatus === 'error' ? <button type="button" onClick={retryMedia}>Retry {demoEnvironment ? 'demonstration environment' : 'recorded source'}</button> : null}
-      {webgl.state !== 'ready' && admission.kind !== 'recorded-source' ? <div className="replaySpatialNotice"><span {...locale.props(webgl.state === 'checking' ? 'replay.checkingSpatial' : 'replay.spatialUnavailable')}>{locale.text(webgl.state === 'checking' ? 'replay.checkingSpatial' : 'replay.spatialUnavailable')}</span>{webgl.state !== 'checking' ? <button type="button" onClick={webgl.retry} {...locale.props('replay.retrySpatial')}>{locale.text('replay.retrySpatial')}</button> : null}</div> : null}
+      {webgl.state !== 'ready' && admission.kind !== 'recorded-source' ? <div className="replaySpatialNotice"><span {...locale.props(webgl.state === 'checking' ? 'replay.checkingSpatial' : 'replay.spatialUnavailable')}>{locale.text(webgl.state === 'checking' ? 'replay.checkingSpatial' : 'replay.spatialUnavailable')}</span>{webgl.state !== 'checking' ? <button type="button" onClick={retrySpatial} {...locale.props('replay.retrySpatial')}>{locale.text('replay.retrySpatial')}</button> : null}</div> : null}
       <JourneyOfflineNotice />
     </section> : null}
     {memory.replayManifest.transcript ? <details className="transcript"><summary {...locale.props('replay.transcript')}>{locale.text('replay.transcript')}</summary><p dir="auto">{memory.replayManifest.transcript}</p></details> : null}
     </header>
     <section className="caption" aria-live="polite"><small>{active?.label ?? 'Replay'}</small><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>
     <section className="memoryTempo" aria-label={locale.text('replay.memoryTime')}>
-      <button type="button" className="memoryPulse" onClick={togglePlayback} disabled={!canPlay && !playing} {...locale.props(playing ? 'replay.pause' : 'replay.continue')} aria-label={locale.text(playing ? 'replay.pause' : 'replay.continue')} aria-pressed={playing}>
+      <button type="button" className="memoryPulse" onClick={togglePlayback} disabled={!interactionReady || (!canPlay && !playing)} {...locale.props(playing ? 'replay.pause' : 'replay.continue')} aria-label={locale.text(playing ? 'replay.pause' : 'replay.continue')} aria-pressed={playing}>
         <span aria-hidden="true">{playing ? 'Ⅱ' : '›'}</span>{locale.text(playing ? 'replay.pause' : 'replay.continue')}
       </button>
       <span className="memoryTrace" aria-hidden="true"><i style={{ width: `${percent}%` }} /></span>
-      <input className="memorySeek" type="range" min={0} max={duration} step={100} value={progressMs} disabled={video && !videoSnapshot.durationMs} onChange={(event) => seek(Number(event.currentTarget.value))} {...locale.props('replay.seekTime')} aria-label={locale.locale === 'en' ? `Move through memory time, ${percent} percent complete` : locale.text('replay.seekTime',{percent:new Intl.NumberFormat(locale.props('replay.seekTime').lang).format(percent)})} aria-valuetext={locale.text('replay.timeValue',{elapsed:replayTimeLabel(progressMs),duration:replayTimeLabel(duration)})} />
+      <input className="memorySeek" type="range" min={0} max={duration} step={100} value={progressMs} disabled={!canPlay || !interactionReady || (video && !videoSnapshot.durationMs)} onChange={(event) => seek(Number(event.currentTarget.value))} {...locale.props('replay.seekTime')} aria-label={locale.locale === 'en' ? `Move through memory time, ${percent} percent complete` : locale.text('replay.seekTime',{percent:new Intl.NumberFormat(locale.props('replay.seekTime').lang).format(percent)})} aria-valuetext={locale.text('replay.timeValue',{elapsed:replayTimeLabel(progressMs),duration:replayTimeLabel(duration)})} />
       <output className="srOnly">{percent}% through memory</output>
       <AdamLauncherSlot name="replay-memory-controls" as="div" />
-      {video ? <button className="memoryAudio" type="button" disabled={!videoSnapshot.audioAllowed} onClick={() => videoSession.current?.setMuted(!videoSnapshot.muted)} aria-label={!videoSnapshot.audioAllowed ? 'Recorded audio is off while low stimulation is on' : videoSnapshot.muted ? 'Enable recorded audio' : 'Mute recorded audio'} aria-pressed={!videoSnapshot.muted}>{!videoSnapshot.audioAllowed ? 'Audio off: low stimulation' : videoSnapshot.muted ? 'Enable audio' : 'Mute audio'}</button> : null}
+      {video ? <button className="memoryAudio" type="button" disabled={!interactionReady || !videoSnapshot.audioAllowed} onClick={() => videoSession.current?.setMuted(!videoSnapshot.muted)} aria-label={!videoSnapshot.audioAllowed ? 'Recorded audio is off while low stimulation is on' : videoSnapshot.muted ? 'Enable recorded audio' : 'Mute recorded audio'} aria-pressed={!videoSnapshot.muted}>{!videoSnapshot.audioAllowed ? 'Audio off: low stimulation' : videoSnapshot.muted ? 'Enable audio' : 'Mute audio'}</button> : null}
     </section>
     <ReplayProductControls memory={memory} />
     {lifeModelAuthority.available ? <ReplayPersonPresence people={lifeModelAuthority.people} sceneTruthPacketId={lifeModelAuthority.sceneTruthPacketId} /> : null}
@@ -600,7 +694,7 @@ function ReplayMemoryHorizon({ memoryStatus, message, quality }: { memoryStatus:
 
   return (
     <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-replay-neutral="memory-horizon" data-replay-spatial-owner="neutral-memory-horizon" data-webgl-state={webgl.state}>
-      {webgl.state === 'ready' ? <ReplayCanvasBoundary key={webgl.attempt} onFailure={webgl.fail}><Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? (quality.reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true })}>
+      {webgl.state === 'ready' ? <ReplayCanvasBoundary key={webgl.attempt} onFailure={webgl.fail}><Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'demand' : 'never'} camera={{ position: [0, 0.28, 7.25], fov: 50, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl, camera }) => { camera.lookAt(0, 0.16, -6.8); gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
         <ReplayNeutralSpatialScene />
       </Canvas></ReplayCanvasBoundary> : null}
       <section role={memoryStatus === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p {...locale.props(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}>{locale.text(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}</p><h1 {...locale.props(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')} style={{overflowWrap:'anywhere'}}>{locale.text(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')}</h1><span>{message}</span><JourneyOfflineNotice />{memoryStatus === 'loading' ? null : <button type="button" onClick={chooseMemory} {...locale.props('replay.chooseMemory')}>{locale.text('replay.chooseMemory')}</button>}{webgl.state !== 'ready' && webgl.state !== 'checking' ? <span role="status" {...locale.props('replay.selectionAccessible')}>{locale.text('replay.selectionAccessible')}</span> : null}</section>

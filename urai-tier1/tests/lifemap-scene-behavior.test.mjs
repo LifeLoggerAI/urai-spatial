@@ -58,7 +58,7 @@ test('Life Map establishes authored foreground middle distance and horizon depth
     'life-map-far-future-horizon',
   ]) assert.match(world, new RegExp(marker))
   assert.match(world, /fog attach="fog"/)
-  assert.match(world, /name="life-map-world-stage" scale={stageScale} position={stagePosition}/)
+  assert.match(world, /name="life-map-world-stage" scale=\{initialStage\.current\.scale\} position=\{initialStage\.current\.position\}/)
   assert.match(world, /scaleMode: "intimate"/)
   assert.match(world, /depthBand: "near"/)
   assert.match(world, /life-map-authored-chapter-regions/)
@@ -80,7 +80,7 @@ test('Life Map uses deterministic sequential travel compositions with a safe sel
   assert.match(source, /const SELECTED_MEMORY_STANDOFF = 5\.[0-9]+/)
   assert.ok(source.includes('addScaledVector(direction, SELECTED_MEMORY_STANDOFF)'))
   assert.ok(source.includes('direction.lengthSq()'))
-  assert.ok(source.includes('THREE.MathUtils.damp'))
+  assert.ok(source.includes('cameraDampingAlpha'))
   assert.ok(source.includes('data-life-map-phase={phase}'))
   assert.ok(source.includes('data-life-map-scale='))
   assert.doesNotMatch(source, /setTimeout\(\(\) => setPhase\("approach"\), 1050\)/)

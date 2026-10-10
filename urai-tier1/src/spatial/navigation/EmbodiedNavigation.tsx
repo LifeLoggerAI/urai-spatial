@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent } from 'react'
 import * as THREE from 'three'
+import { cameraDampingAlpha, cameraFrameDelta } from '../canon/cameraMotion'
 
 export type MovementBounds = {
   minX: number
@@ -27,6 +28,7 @@ export type DragLookHandlers = {
   onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void
   onPointerUp: (event: ReactPointerEvent<HTMLElement>) => void
   onPointerCancel: (event: ReactPointerEvent<HTMLElement>) => void
+  onLostPointerCapture: (event: ReactPointerEvent<HTMLElement>) => void
 }
 
 const MOVEMENT_KEYS = new Set([
@@ -90,11 +92,11 @@ export function useMovementInput({
       if (editableTarget) return
       if (event.code === 'Enter' || event.code === 'Space') {
         event.preventDefault()
-        callbacksRef.current.onInteract?.()
+        if (!event.repeat) callbacksRef.current.onInteract?.()
         return
       }
       if (event.code === 'KeyR') {
-        callbacksRef.current.onReset?.()
+        if (!event.repeat) callbacksRef.current.onReset?.()
         return
       }
       if (event.code === 'Escape' && callbacksRef.current.onEscape) {
@@ -117,11 +119,13 @@ export function useMovementInput({
     window.addEventListener('keydown', onKeyDown, { passive: false, capture: true })
     window.addEventListener('keyup', onKeyUp)
     window.addEventListener('blur', clear)
+    window.addEventListener('pagehide', clear)
     document.addEventListener('visibilitychange', clear)
     return () => {
       window.removeEventListener('keydown', onKeyDown, true)
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', clear)
+      window.removeEventListener('pagehide', clear)
       document.removeEventListener('visibilitychange', clear)
       clear()
     }
@@ -147,34 +151,66 @@ export function useDragLook({
   maxPitch?: number
   onDragState?: (dragging: boolean) => void
 }): DragLookHandlers {
-  const drag = useRef<{ pointerId: number; x: number; y: number } | null>(null)
+  const drag = useRef<{ pointerId: number; x: number; y: number; started: boolean; owner: HTMLElement } | null>(null)
+
+  const clear = useCallback(() => {
+    const current = drag.current
+    if (!current) return
+    drag.current = null
+    if (!current.started) return
+    try { current.owner.releasePointerCapture(current.pointerId) } catch { /* browser may already release */ }
+    onDragState?.(false)
+  }, [onDragState])
+
+  useEffect(() => {
+    if (!enabled) { clear(); return }
+    const clearWhenHidden = () => { if (document.visibilityState === 'hidden') clear() }
+    const clearMatchingPointer = (event: PointerEvent) => { if (drag.current?.pointerId === event.pointerId) clear() }
+    window.addEventListener('blur', clear)
+    window.addEventListener('pagehide', clear)
+    window.addEventListener('pointerup', clearMatchingPointer)
+    window.addEventListener('pointercancel', clearMatchingPointer)
+    document.addEventListener('visibilitychange', clearWhenHidden)
+    return () => {
+      window.removeEventListener('blur', clear)
+      window.removeEventListener('pagehide', clear)
+      window.removeEventListener('pointerup', clearMatchingPointer)
+      window.removeEventListener('pointercancel', clearMatchingPointer)
+      document.removeEventListener('visibilitychange', clearWhenHidden)
+      clear()
+    }
+  }, [clear, enabled])
 
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    if (!enabled || event.button !== 0) return
+    if (!enabled || event.button !== 0 || event.isPrimary === false || drag.current) return
     if (event.target instanceof Element && event.target.closest('button,a,input,textarea,select,summary,[data-movement-ui="true"]')) return
-    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
-    try { event.currentTarget.setPointerCapture(event.pointerId) } catch { /* pointer capture is best effort */ }
-    onDragState?.(true)
-  }, [enabled, onDragState])
+    // Keep click/tap ownership with the actual Three hit target. Capture only
+    // after the same six-pixel movement tolerance used by Home sky interaction.
+    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, started: false, owner: event.currentTarget }
+  }, [enabled])
 
   const onPointerMove = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    if (!drag.current || drag.current.pointerId !== event.pointerId) return
+    if (!enabled || !drag.current || drag.current.pointerId !== event.pointerId) return
     const dx = event.clientX - drag.current.x
     const dy = event.clientY - drag.current.y
+    if (!drag.current.started) {
+      if (Math.hypot(dx, dy) <= 6) return
+      drag.current.started = true
+      try { drag.current.owner.setPointerCapture(event.pointerId) } catch { /* capture is best effort */ }
+      onDragState?.(true)
+    }
     drag.current.x = event.clientX
     drag.current.y = event.clientY
     yaw.current -= dx * sensitivity
     pitch.current = THREE.MathUtils.clamp(pitch.current - dy * sensitivity, minPitch, maxPitch)
-  }, [maxPitch, minPitch, pitch, sensitivity, yaw])
+  }, [enabled, maxPitch, minPitch, onDragState, pitch, sensitivity, yaw])
 
   const end = useCallback((event: ReactPointerEvent<HTMLElement>) => {
     if (!drag.current || drag.current.pointerId !== event.pointerId) return
-    drag.current = null
-    try { event.currentTarget.releasePointerCapture(event.pointerId) } catch { /* browser may already release */ }
-    onDragState?.(false)
-  }, [onDragState])
+    clear()
+  }, [clear])
 
-  return { onPointerDown, onPointerMove, onPointerUp: end, onPointerCancel: end }
+  return { onPointerDown, onPointerMove, onPointerUp: end, onPointerCancel: end, onLostPointerCapture: end }
 }
 
 export function setVirtualMovement(input: MovementInput, x: number, z: number) {
@@ -217,39 +253,70 @@ export function stepEmbodiedMotion({
   obstacles?: MovementObstacle[]
   arrivalRadius?: number
 }) {
+  const virtualX = Number.isFinite(input.virtualX.current) ? THREE.MathUtils.clamp(input.virtualX.current, -1, 1) : 0
+  const virtualZ = Number.isFinite(input.virtualZ.current) ? THREE.MathUtils.clamp(input.virtualZ.current, -1, 1) : 0
   const forwardInput = (input.keys.current.has('KeyW') || input.keys.current.has('ArrowUp') ? 1 : 0)
     - (input.keys.current.has('KeyS') || input.keys.current.has('ArrowDown') ? 1 : 0)
-    + -input.virtualZ.current
+    + -virtualZ
   const strafeInput = (input.keys.current.has('KeyD') || input.keys.current.has('ArrowRight') ? 1 : 0)
     - (input.keys.current.has('KeyA') || input.keys.current.has('ArrowLeft') ? 1 : 0)
-    + input.virtualX.current
+    + virtualX
 
+  const finiteYaw = Number.isFinite(yaw) ? yaw : 0
+  const finiteSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
+  const finiteArrivalRadius = Number.isFinite(arrivalRadius) ? Math.max(0, arrivalRadius) : 0.28
   const requested = MOTION_REQUESTED.set(0, 0, 0)
   if (Math.abs(forwardInput) > 0.01 || Math.abs(strafeInput) > 0.01) {
     target.current = null
-    const forward = MOTION_FORWARD.set(-Math.sin(yaw), 0, -Math.cos(yaw))
-    const right = MOTION_RIGHT.set(Math.cos(yaw), 0, -Math.sin(yaw))
+    const forward = MOTION_FORWARD.set(-Math.sin(finiteYaw), 0, -Math.cos(finiteYaw))
+    const right = MOTION_RIGHT.set(Math.cos(finiteYaw), 0, -Math.sin(finiteYaw))
     requested.addScaledVector(forward, forwardInput).addScaledVector(right, strafeInput)
   } else if (target.current) {
-    requested.copy(target.current).sub(position).setY(0)
-    if (requested.length() <= arrivalRadius) {
+    if (!Number.isFinite(target.current.x) || !Number.isFinite(target.current.z)) {
       target.current = null
-      requested.set(0, 0, 0)
+    } else {
+      requested.copy(target.current).sub(position).setY(0)
+      if (requested.length() <= finiteArrivalRadius) {
+        target.current = null
+        requested.set(0, 0, 0)
+      }
     }
   }
 
-  if (requested.lengthSq() > 0.0001) requested.normalize().multiplyScalar(speed)
-  const damping = requested.lengthSq() > 0 ? acceleration : deceleration
+  if (requested.lengthSq() > 0.0001) requested.normalize().multiplyScalar(finiteSpeed)
+  if (!Number.isFinite(velocity.x)) velocity.x = 0
+  if (!Number.isFinite(velocity.y)) velocity.y = 0
+  if (!Number.isFinite(velocity.z)) velocity.z = 0
   // Preserve real elapsed movement on slow devices without allowing an unbounded
-  // background-tab leap. Integrating in 50 ms substeps keeps damping and collision
-  // behavior stable instead of discarding all frame time above the old hard clamp.
-  let remainingDelta = Math.min(delta, 0.5)
+  // background-tab leap. Substeps retain collision checks, while integrating the
+  // exponential velocity exactly avoids distance changing with refresh rate.
+  let remainingDelta = cameraFrameDelta(delta, 0.5)
   while (remainingDelta > 0) {
     const stepDelta = Math.min(remainingDelta, 0.05)
+    // Guided movement must observe arrival during a slow frame too, rather than
+    // spending all substeps travelling in the direction sampled at frame start.
+    if (target.current) {
+      requested.copy(target.current).sub(position).setY(0)
+      if (requested.length() <= finiteArrivalRadius) {
+        target.current = null
+        requested.set(0, 0, 0)
+      } else {
+        requested.normalize().multiplyScalar(finiteSpeed)
+      }
+    }
+    const requestedDamping = requested.lengthSq() > 0 ? acceleration : deceleration
+    const damping = Number.isFinite(requestedDamping) ? Math.max(0, requestedDamping) : 0
+    const alpha = cameraDampingAlpha(damping, stepDelta)
+    const integral = damping > 0 ? alpha / damping : stepDelta
+    const stepX = requested.x * stepDelta + (velocity.x - requested.x) * integral
+    const stepZ = requested.z * stepDelta + (velocity.z - requested.z) * integral
     velocity.x = THREE.MathUtils.damp(velocity.x, requested.x, damping, stepDelta)
     velocity.z = THREE.MathUtils.damp(velocity.z, requested.z, damping, stepDelta)
 
-    const next = MOTION_NEXT.copy(position).addScaledVector(velocity, stepDelta)
+    const next = MOTION_NEXT.copy(position)
+    next.x += stepX
+    next.y += velocity.y * stepDelta
+    next.z += stepZ
     next.x = THREE.MathUtils.clamp(next.x, bounds.minX, bounds.maxX)
     next.z = THREE.MathUtils.clamp(next.z, bounds.minZ, bounds.maxZ)
 

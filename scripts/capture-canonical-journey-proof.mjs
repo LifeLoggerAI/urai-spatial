@@ -3,12 +3,17 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { proveHomeSkyAscent } from './home-sky-ascent-proof.mjs'
+import { chromiumLaunchOptions } from './playwright-runtime-helpers.mjs'
+import { installMotionProofObserver, markMotionProof, summarizeMotionProof } from './motion-proof-observer.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/canonical-journey-proof')
 const exactHead = String(process.env.URAI_EXACT_HEAD || '').trim()
+const motionRecording = process.env.URAI_PROOF_RECORD_MOTION === '1'
+const emulatedCores = process.env.URAI_PROOF_EMULATED_CORES ? Number(process.env.URAI_PROOF_EMULATED_CORES) : null
+if (emulatedCores !== null && (!Number.isInteger(emulatedCores) || emulatedCores < 1 || emulatedCores > 128)) throw new Error('URAI_PROOF_EMULATED_CORES must be a positive integer')
 if (!/^[0-9a-f]{40}$/.test(exactHead)) throw new Error('URAI_EXACT_HEAD must be an exact lowercase 40-character SHA')
 await fs.mkdir(outputDir, { recursive: true })
 
@@ -31,9 +36,9 @@ async function waitAttr(locator, name, expected, timeout = 60_000) {
   while (Date.now() - start < timeout) {
     const remaining = timeout - (Date.now() - start)
     if (remaining <= 0) break
-    if (await locator.count()) {
+    {
       try {
-        lastValue = await locator.getAttribute(name, { timeout: Math.min(10_000, remaining) })
+        lastValue = await locator.evaluateAll((nodes, name) => nodes[0]?.getAttribute(name) ?? null, name)
         lastReadError = null
         if (lastValue === expected) return
       } catch (error) {
@@ -48,7 +53,9 @@ async function waitAttr(locator, name, expected, timeout = 60_000) {
 async function capture(page, journey, id) {
   const filename = `${journey.id}-${id}.png`
   await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
-  journey.steps.push({ id, url: page.url(), filename })
+  journey.steps.push({ id, url: page.url(), filename, ...(motionRecording ? { observed: await markMotionProof(page, id) } : {}) })
+  await fs.writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
+  if (motionRecording) console.log(`[canonical-motion] ${journey.id} ${id} ${normalize(page.url())}`)
 }
 
 async function waitStableLifeMapCamera(root, journey, id) {
@@ -112,7 +119,11 @@ async function activate(page, locator, mode) {
   assert.equal(await locator.count(), 1, 'activation must identify exactly one canonical control')
   await locator.waitFor({ state: 'visible', timeout: 45_000 })
   if (mode === 'touch') {
-    const box = await locator.boundingBox()
+    const box = await locator.evaluateAll(nodes => {
+      if (nodes.length !== 1) return null
+      const rect=nodes[0].getBoundingClientRect()
+      return {x:rect.x,y:rect.y,width:rect.width,height:rect.height}
+    })
     if (!box || box.width < 48 || box.height < 48) throw new Error(`touch target must be at least 48px; got ${box?.width}x${box?.height}`)
     return page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2)
   }
@@ -142,6 +153,7 @@ async function openHome(page, journey) {
 
 async function proveRealHomeAscent(page, journey, home, mode) {
   await capture(page, journey, 'home-first-person')
+  if (motionRecording) await markMotionProof(page, 'start-home-ascent')
   journey.ascentEvidence = await proveHomeSkyAscent(page, home, {
     mode, captureAscent:() => capture(page, journey, 'home-ascent'),
   })
@@ -151,6 +163,7 @@ async function proveRealHomeAscent(page, journey, home, mode) {
 async function directAccessibleHomeHandoff(page, journey, mode) {
   const nav = page.getByTestId('urai-persistent-world-shell').locator('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
   await nav.waitFor({ state: 'visible', timeout: 45_000 })
+  if (motionRecording) await markMotionProof(page, 'start-accessible-home-handoff')
   await activate(page, nav.getByTestId('home-semantic-life-map'), mode)
   await waitPath(page, '/life-map', 60_000)
   journey.ascentProven = null
@@ -173,6 +186,7 @@ async function selectQuietReset(page, journey, mode, root) {
   const navigator = page.getByRole('region', { name: 'Search and filter Life Map', exact: true })
   await navigator.waitFor({ state: 'visible', timeout: 45_000 })
   const button = navigator.locator('button[data-life-map-semantic-result]').filter({ hasText: 'The Quiet Reset' }).first()
+  if (motionRecording) await markMotionProof(page, 'start-star-acquisition')
   await activate(page, button, mode)
   await waitAttr(root, 'data-life-map-phase', 'arrival', 60_000)
   await waitAttr(root, 'data-life-map-render-ready', 'true', 60_000)
@@ -207,10 +221,14 @@ async function waitFocusFrame(focus) {
   const canvas = focus.locator('canvas')
   await canvas.waitFor({ state: 'visible', timeout: 60_000 })
   await waitAttr(canvas, 'data-focus-first-frame', 'true', 60_000)
+  await waitAttr(focus, 'data-focus-input-ready', 'true', 60_000)
+  const settled = await focus.evaluateAll(nodes => nodes[0]?.getAttribute('data-focus-camera-settled') ?? null)
+  if (settled !== null) await waitAttr(focus, 'data-focus-camera-settled', 'true', 60_000)
 }
 
 async function enterFocus(page, journey, mode, identity) {
   const nav = page.getByRole('navigation', { name: 'Selected memory actions' })
+  if (motionRecording) await markMotionProof(page, 'start-life-map-focus')
   await activate(page, nav.getByRole('button', { name: /Enter Focus$/ }), mode)
   await waitPath(page, '/focus', 60_000)
   const focus = ownedRealm(page, 'urai-final-focus-chamber')
@@ -222,6 +240,7 @@ async function enterFocus(page, journey, mode, identity) {
 }
 
 async function enterReplay(page, journey, mode, identity) {
+  if (motionRecording) await markMotionProof(page, 'start-focus-replay')
   const controls = ownedRealm(page, 'urai-final-focus-chamber').getByRole('navigation', { name: 'Focus memory controls', exact: true })
   await activate(page, controls.getByRole('button', { name: 'Open Replay for The Quiet Reset', exact: true }), mode)
   await waitPath(page, '/replay', 60_000)
@@ -233,6 +252,11 @@ async function enterReplay(page, journey, mode, identity) {
   const canvas = replay.locator('canvas')
   await canvas.waitFor({ state: 'visible', timeout: 60_000 })
   await waitAttr(canvas, 'data-replay-first-frame', 'true', 60_000)
+  const arrival = await replay.evaluateAll(nodes => nodes[0]?.getAttribute('data-replay-arrival-ready') ?? null)
+  if (arrival !== null) {
+    await waitAttr(replay, 'data-replay-arrival-ready', 'true', 60_000)
+    await waitAttr(replay, 'data-replay-interaction-ready', 'true', 60_000)
+  }
   await activate(page, replay.getByRole('button', { name: 'Continue memory', exact: true }), mode)
   await waitAttr(replay, 'data-playing', 'true', 20_000)
   await capture(page, journey, 'replay')
@@ -241,6 +265,7 @@ async function enterReplay(page, journey, mode, identity) {
 }
 
 async function unwindReplayToFocus(page, journey, mode, identity) {
+  if (motionRecording) await markMotionProof(page, 'start-replay-unwind')
   if (mode === 'touch') await activate(page, ownedRealm(page, 'cinematic-replay-client').getByRole('button', { name: '← Focus', exact: true }), mode)
   else await page.keyboard.press('Escape')
   await waitPath(page, '/focus', 60_000)
@@ -252,6 +277,7 @@ async function unwindReplayToFocus(page, journey, mode, identity) {
 }
 
 async function unwindFocusToLifeMap(page, journey, mode, identity) {
+  if (motionRecording) await markMotionProof(page, 'start-focus-life-map')
   if (mode === 'touch') {
     const controls = ownedRealm(page, 'urai-final-focus-chamber').getByRole('navigation', { name: 'Focus memory controls', exact: true })
     await activate(page, controls.getByRole('button', { name: '← Life Map', exact: true }), mode)
@@ -272,6 +298,7 @@ async function unwindFocusToLifeMap(page, journey, mode, identity) {
 }
 
 async function lifeMapToHome(page, journey, mode, root) {
+  if (motionRecording) await markMotionProof(page, 'start-life-map-overview')
   if (mode === 'touch') {
     const actions = page.getByRole('navigation', { name: 'Selected memory actions' })
     await activate(page, actions.getByRole('button', { name: 'Return to Life Map overview', exact: true }), mode)
@@ -280,6 +307,7 @@ async function lifeMapToHome(page, journey, mode, root) {
   await waitAttr(root, 'data-life-map-render-ready', 'true', 60_000)
   await waitStableLifeMapCamera(root, journey, 'return-life-map-overview')
   await capture(page, journey, 'return-life-map-overview')
+  if (motionRecording) await markMotionProof(page, 'start-life-map-home')
   if (mode === 'touch') await activate(page, root.getByRole('button', { name: 'Return Home', exact: true }), mode)
   else await page.keyboard.press('Escape')
   await waitPath(page, '/home', 60_000)
@@ -318,19 +346,42 @@ const variants = [
   { id: 'desktop-reduced-keyboard', mode: 'keyboard', realAscent: false, context: { viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' } },
 ]
 
-const receipt = { schemaVersion: 'urai-canonical-journey-proof-1', exactHead, capturedAt: new Date().toISOString(), status: 'running', journeys: [], errors: [] }
-const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
+const selectedVariants = process.env.URAI_PROOF_VARIANTS?.split(',').filter(Boolean)
+const runVariants = selectedVariants ? variants.filter(variant => selectedVariants.includes(variant.id)) : variants
+if (!runVariants.length) throw new Error('URAI_PROOF_VARIANTS matched no canonical journeys')
+const recordingViewport = process.env.URAI_PROOF_VIEWPORT
+if (recordingViewport) {
+  const match = /^(\d{3,4})x(\d{3,4})$/.exec(recordingViewport)
+  if (!match) throw new Error('URAI_PROOF_VIEWPORT must be WIDTHxHEIGHT')
+  for (const variant of runVariants) {
+    if (variant.mode !== 'touch') variant.context.viewport = { width: Number(match[1]), height: Number(match[2]) }
+  }
+}
+
+const receipt = { schemaVersion: 'urai-canonical-journey-proof-1', exactHead, capturedAt: new Date().toISOString(), runtimeSetup:process.env.URAI_MOTION_RUNTIME_SETUP_JSON ? JSON.parse(process.env.URAI_MOTION_RUNTIME_SETUP_JSON) : null, status: 'running', journeys: [], errors: [] }
+const browser = await chromium.launch({ headless: true, ...chromiumLaunchOptions(), args: ['--enable-unsafe-swiftshader', ...JSON.parse(process.env.URAI_CHROMIUM_ARGS_JSON || '[]')] })
+receipt.browserVersion = browser.version()
+receipt.evidenceClass = 'genuine-browser-execution-with-explicit-demo-fixture-not-personal-memory-acceptance'
+receipt.hardwareConcurrencyOverride = emulatedCores === null ? null : { source:'Chromium DevTools hardware-concurrency emulation', cores:emulatedCores, purpose:'exercise-existing-adaptive-low-tier-in-software-renderer', physicalDeviceClaim:false }
 try {
-  for (const variant of variants) {
+  for (const variant of runVariants) {
     const journey = { id: variant.id, mode: variant.mode, realAscent: variant.realAscent, ascentProven: null, identityStable: false, passed: false, steps: [] }
+    journey.context = variant.context
     receipt.journeys.push(journey)
-    const context = await browser.newContext(variant.context)
+    await fs.writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
+    const context = await browser.newContext({ ...variant.context, ...(motionRecording ? { recordVideo: { dir: outputDir, size: variant.context.viewport } } : {}) })
     await context.addInitScript(() => {
       localStorage.setItem('urai:onboarding:v2:complete', '1')
       localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
       localStorage.removeItem('urai:onboarding:v3:setup-step')
     })
+    if (motionRecording) await context.addInitScript(installMotionProofObserver)
     const page = await context.newPage()
+    if (emulatedCores !== null) {
+      const session = await context.newCDPSession(page)
+      await session.send('Emulation.setHardwareConcurrencyOverride', { hardwareConcurrency:emulatedCores })
+    }
+    const video = page.video()
     const readDiagnostics = diagnostics(page)
     try {
       const home = await openHome(page, journey)
@@ -351,12 +402,27 @@ try {
       receipt.errors.push({ journey: variant.id, error: journey.error })
     } finally {
       journey.diagnostics = readDiagnostics()
+      if (motionRecording) {
+        const motion = await page.evaluate(() => window.__uraiMotionProof?.stop()).catch(() => null)
+        if (motion) {
+          const filename = `${variant.id}-telemetry.json`
+          await fs.writeFile(path.join(outputDir, filename), JSON.stringify(motion) + '\n')
+          journey.motion = { filename, ...summarizeMotionProof(motion) }
+          if (journey.motion.nonFiniteCameraSamples.length) {
+            journey.passed = false
+            receipt.errors.push({ journey: variant.id, error: 'non-finite exposed camera telemetry' })
+          }
+        }
+      }
       const blocking = blockingRequests(journey.diagnostics.failedRequests)
       if (journey.diagnostics.pageErrors.length || blocking.length) {
         journey.passed = false
         receipt.errors.push({ journey: variant.id, error: 'runtime diagnostics failed', pageErrors: journey.diagnostics.pageErrors, blockingFailedRequests: blocking })
       }
       await context.close()
+      if (video) { const filename = `${variant.id}.webm`; await video.saveAs(path.join(outputDir, filename)); journey.video = filename }
+      await fs.writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
+      console.log(`[canonical-motion] ${variant.id} ${journey.passed ? 'PASS' : 'FAIL'} ${journey.error?.split('\n')[0] || ''}`)
     }
   }
 } finally {

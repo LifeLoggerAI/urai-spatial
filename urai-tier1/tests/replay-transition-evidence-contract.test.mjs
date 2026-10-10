@@ -25,12 +25,15 @@ test('URA-068 memory focus tunnel is the governed Focus to Replay travelling tra
 
 test('URA-069 replay return reuses deterministic reverse travel instead of bypassing Focus', () => {
   assert.match(replay, /const unwind = useCallback\(\(\) => requestUraiWorldReturn\(\), \[\]\)/)
-  assert.match(replay, /if \(event\.key === 'Escape'\) \{ pauseMemory\(\); event\.preventDefault\(\); unwind\(\); return \}/)
+  assert.match(replay, /if \(event\.key === 'Escape'\) \{\s*pauseMemory\(\)/)
+  assert.match(replay, /if \(event\.defaultPrevented \|\| target\?\.closest/)
+  assert.match(replay, /event\.preventDefault\(\); unwind\(\); return/)
   assert.match(controller, /const onReturn = \(\) => reverseTravel\(\)/)
   assert.match(controller, /if \(destination === 'replay'\) return 'focus'/)
   assert.match(controller, /previousDestinationForReturn\(currentWorld\) \?\? fallbackReturnDestination\(currentWorld\.destination\)/)
   assert.match(controller, /executeTravel\(\{/)
-  assert.match(provider, /previousDestination: state\.world\.destination/)
+  assert.match(provider, /const origin = state\.travelOrigin \?\? state\.world/)
+  assert.match(provider, /previousDestination: origin\.destination/)
   assert.doesNotMatch(replay, /requestUraiWorldTravel\(\{ destination: 'life-map'.*unwind/)
 })
 
