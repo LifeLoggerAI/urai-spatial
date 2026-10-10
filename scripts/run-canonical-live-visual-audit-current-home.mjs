@@ -148,7 +148,7 @@ const currentScreenshot = `    if (route.id === 'life-map' && viewport.width ===
         await cdp.detach()
       }
     } else {
-      await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide' })
+      await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
     }`
 patched = replaceOnce(patched, oldScreenshot, currentScreenshot, 'Life Map viewport capture')
 

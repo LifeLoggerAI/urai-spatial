@@ -124,7 +124,7 @@ async function prove(browser, doorway, testCase) {
     record.failureReason = String(error?.message || error)
   } finally {
     try {
-      const bytes = await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' })
+      const bytes = await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled', timeout: 90_000 })
       if (bytes.length < 24 || bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('retained screenshot is not a nonempty PNG')
       record.image = { path: screenshot, sourceSha: exactSha, capturedAt: new Date().toISOString(), bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) }
     } catch (error) {

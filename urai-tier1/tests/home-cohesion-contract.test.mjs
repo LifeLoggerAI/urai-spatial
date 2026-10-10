@@ -66,6 +66,15 @@ test('Home world preserves separate bounded cinematic ascent and reduced-motion 
   assert.match(world, /prefers-reduced-motion: reduce/)
 })
 
+test('Home fallback keeps semantic destinations compact until keyboard focus', () => {
+  const css = runtime.split('<style jsx global>{`')[1]?.split('`}</style>')[0] ?? ''
+  assert.ok(css.includes('opacity:.015'), 'semantic destinations remain visually quiet before focus')
+  assert.ok(css.includes(':focus-within{opacity:1;width:min(240px,calc(100vw - 100px));grid-template-columns:minmax(0,1fr)}'))
+  assert.ok(css.includes(':focus-within :is(button,a){box-sizing:border-box;width:100%;height:auto;min-height:48px;'))
+  assert.equal(css.includes('data-webgl-ready="false"]>.home-semantic-navigation{'), false, 'the no-WebGL fallback must not replace the compact nav with a dominant rail')
+  assert.equal(css.includes('body.urai-home-webgl-active .home-semantic-navigation'), false, 'focus disclosure must also work in the fallback')
+})
+
 test('Home runtime handles WebGL loss and one recovery attempt before semantic fallback', () => {
   assert.match(runtime, /webglcontextlost/)
   assert.match(runtime, /webglcontextrestored/)
