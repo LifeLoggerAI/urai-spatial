@@ -319,6 +319,10 @@
 }
 
 @media (max-width: 560px) {
+  .urai-world-runtime[data-world-destination='privacy-controls'] .consentHeader {
+    padding-right: max(112px, calc(env(safe-area-inset-right, 0px) + 112px)) !important;
+  }
+
   .urai-world-companion__orb { width: 56px; height: 56px; }
   .urai-world-companion__menu { border-radius: 20px; }
   .urai-world-companion__menu nav { justify-content: flex-start; }
