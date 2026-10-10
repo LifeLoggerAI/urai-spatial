@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { randomUUID } from 'node:crypto'
 import { chromiumLaunchOptions } from './playwright-runtime-helpers.mjs'
 import { installMotionProofObserver, markMotionProof, summarizeMotionProof } from './motion-proof-observer.mjs'
 
@@ -326,7 +327,7 @@ try {
     receipt.cases.push(result)
     const context=await browser.newContext({viewport,recordVideo:{dir:output,size:viewport},...(process.env.URAI_MOTION_REDUCED==='1'?{reducedMotion:'reduce'}:{})})
     await context.addInitScript(()=>{localStorage.setItem('urai:onboarding:v2:complete','1');localStorage.setItem('urai:onboarding:v3:setup-complete','1')})
-    await context.addInitScript(installMotionProofObserver)
+    await context.addInitScript(installMotionProofObserver,{invocationId:`interruption-${randomUUID()}`,exactHead})
     const page=await context.newPage(),video=page.video(),errors=[]
     if(emulatedCores!==null){const session=await context.newCDPSession(page);await session.send('Emulation.setHardwareConcurrencyOverride',{hardwareConcurrency:emulatedCores})}
     page.on('pageerror',error=>errors.push(String(error)))

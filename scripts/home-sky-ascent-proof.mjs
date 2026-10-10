@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 
 const pause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))
 async function waitAttribute(locator, name, expected, timeout = 45_000) {
@@ -41,11 +42,27 @@ export function assertHomeAscentArrival(startingUrl, arrivalUrl) {
   assert.deepEqual([...arrived.searchParams.keys()].sort(), [...['from','entryPortal','cameraCheckpoint'], ...(disclosedDemo ? ['demo'] : [])].sort(), 'real Ascent carried unexpected or duplicate query authority')
 }
 
-export async function proveHomeSkyAscent(page, home, { mode = 'pointer', captureAscent } = {}) {
+export function assertHomeAscentArchive(archive, {invocationId,exactHead,startingUrl,startingHeight}) {
+  assert.equal(archive?.schemaVersion,'urai-read-only-home-ascent-archive-1')
+  assert.equal(archive.invocationId,invocationId,'Ascent archive belongs to a different invocation')
+  assert.equal(archive.exactHead,exactHead,'Ascent archive belongs to a different source')
+  assert.equal(archive.startingUrl,startingUrl,'Ascent archive belongs to a different starting URL')
+  assert.equal(new URL(archive.startingUrl).origin,new URL(startingUrl).origin)
+  assert.ok(Number.isFinite(startingHeight)&&startingHeight>0&&archive.startingHeight===startingHeight,'Ascent archive has no matching actual starting height')
+  assert.ok(Array.isArray(archive.samples)&&archive.samples.length<=512)
+  assert.ok(archive.samples.some(row=>row.phase==='ASCENT'&&row.cameraMode==='ascent'&&row.inputLocked==='true'
+    && ['life-map:opening','life-map:traversal'].includes(row.sequence)&&Number.isFinite(row.height)&&row.height>startingHeight+.1
+    &&Number.isFinite(row.progress)&&row.progress>0&&row.progress<=1),'Ascent archive contains no actual finite locked camera lift')
+  return archive.samples
+}
+
+export async function proveHomeSkyAscent(page, home, { mode = 'pointer', captureAscent, exactHead = null } = {}) {
   const startingUrl = new URL(page.url())
   const startDemo = startingUrl.searchParams.getAll('demo')
   const disclosedDemo = startDemo.length === 1 && startDemo[0] === '1'
   const key = '__uraiLiteralHomeAscentProof'
+  const archiveKey='__uraiReadOnlyHomeAscentArchive:v1'
+  const invocationId=randomUUID()
   let startingHeight = null
   let departureCameraFrame = null
   let samples = []
@@ -75,11 +92,11 @@ export async function proveHomeSkyAscent(page, home, { mode = 'pointer', capture
     return {available,source:'actual-pre-ascent-Home-camera-DOM-publisher',attributes,...(available?{position:fields.slice(0,3).map(field=>Number(attributes[field])),quaternion:fields.slice(3,7).map(field=>Number(attributes[field])),fov:Number(attributes.fov)}:{limitation:'Actual pose tuples are not exposed by this source; no restoration pose is inferred.'})}
   })
 
-  await home.evaluateAll((nodes, key) => {
+  await home.evaluateAll((nodes, {key,archiveKey,invocationId,exactHead,startingUrl,startingHeight}) => {
     if (nodes.length !== 1) throw new Error('Ascent observation requires exactly one actual Home owner')
     const node=nodes[0]
     window[key]?.observer?.disconnect()
-    const state = { samples:[], observer:null }
+    const state = { schemaVersion:'urai-read-only-home-ascent-archive-1',invocationId,exactHead,startingUrl,startingHeight,samples:[], observer:null }
     const sample = () => {
       const row = {
         phase:node.getAttribute('data-home-scene-phase'), cameraMode:node.getAttribute('data-home-camera-mode'),
@@ -87,12 +104,13 @@ export async function proveHomeSkyAscent(page, home, { mode = 'pointer', capture
         height:Number(node.getAttribute('data-home-camera-height')), progress:Number(node.getAttribute('data-home-ascent-progress')),
       }
       if (state.samples.length < 512) state.samples.push(row)
+      try {sessionStorage.setItem(archiveKey,JSON.stringify({schemaVersion:state.schemaVersion,invocationId,exactHead,startingUrl,startingHeight,samples:state.samples}))}catch{/* Optional diagnostic archive only; a live read can still prove Ascent. */}
     }
     state.observer = new MutationObserver(sample)
     state.observer.observe(node, { attributes:true, attributeFilter:['data-home-scene-phase','data-home-camera-mode','data-home-input-locked','data-home-portal-sequence','data-home-camera-height','data-home-ascent-progress'] })
     window[key] = state
     sample()
-  }, key)
+  }, {key,archiveKey,invocationId,exactHead,startingUrl:startingUrl.href,startingHeight})
 
     let activated = false
     // No selector/nav bypass: these are upper-sky pixels of the real Canvas.
@@ -109,14 +127,31 @@ export async function proveHomeSkyAscent(page, home, { mode = 'pointer', capture
         && rows.some(row => row.phase === 'ASCENT' && row.cameraMode === 'ascent' && row.inputLocked === 'true'
           && Number.isFinite(row.height) && row.height > startingHeight + .1 && Number.isFinite(row.progress) && row.progress > 0 && row.progress <= 1)
     }, {key,startingHeight}, {timeout:45_000})
-    samples = await page.evaluate(key => window[key]?.samples ?? [], key)
+    let recoveredAfterDocumentHandoff=false
+    try {samples = await page.evaluate(key => window[key]?.samples ?? [], key)}
+    catch(error){
+      if(!/Execution context was destroyed|Cannot find context|navigation/.test(String(error)))throw error
+      await page.waitForLoadState('domcontentloaded',{timeout:60_000})
+      const archive=await page.evaluate(archiveKey=>{try{return JSON.parse(sessionStorage.getItem(archiveKey)||'null')}catch{return null}},archiveKey)
+      samples=assertHomeAscentArchive(archive,{invocationId,exactHead,startingUrl:startingUrl.href,startingHeight})
+      recoveredAfterDocumentHandoff=true
+    }
+    if(!samples.length && (new URL(page.url()).pathname.replace(/\/+$/,'')||'/')==='/life-map'){
+      const archive=await page.evaluate(archiveKey=>{try{return JSON.parse(sessionStorage.getItem(archiveKey)||'null')}catch{return null}},archiveKey)
+      samples=assertHomeAscentArchive(archive,{invocationId,exactHead,startingUrl:startingUrl.href,startingHeight})
+      recoveredAfterDocumentHandoff=true
+    }
     assert.ok(samples.some(row => row.phase === 'ASCENT' && row.cameraMode === 'ascent' && row.inputLocked === 'true' && Number.isFinite(row.height) && row.height > startingHeight + .1 && Number.isFinite(row.progress) && row.progress > 0 && row.progress <= 1), 'Ascent must physically lift the actual camera')
-    if (captureAscent) await captureAscent()
+    let stillAscentScreenshotClaim=false
+    if (captureAscent && (new URL(page.url()).pathname.replace(/\/+$/,'')||'/')==='/home') {
+      await captureAscent()
+      stillAscentScreenshotClaim=(new URL(page.url()).pathname.replace(/\/+$/,'')||'/')==='/home'
+    }
     const started = Date.now()
     while ((new URL(page.url()).pathname.replace(/\/+$/, '') || '/') !== '/life-map' && Date.now() - started < 60_000) await pause(100)
     const arrived = new URL(page.url())
     assertHomeAscentArrival(startingUrl.href, arrived.href)
-    return { ascentProven:true, startingHeight, departureCameraFrame, peakHeight:Math.max(...samples.filter(row => Number.isFinite(row.height)).map(row => row.height)), samples, arrivalUrl:proofUrl(page.url()), disclosedDemo }
+    return { ascentProven:true, startingHeight, departureCameraFrame, peakHeight:Math.max(...samples.filter(row => Number.isFinite(row.height)).map(row => row.height)), samples, arrivalUrl:proofUrl(page.url()), disclosedDemo, recoveredAfterDocumentHandoff, seamlessness:recoveredAfterDocumentHandoff?false:null, stillAscentScreenshotClaim }
   } catch (error) {
     const observed = await page.evaluate(key => window[key]?.samples ?? [], key).catch(() => [])
     if (observed.length) samples = observed
@@ -125,5 +160,6 @@ export async function proveHomeSkyAscent(page, home, { mode = 'pointer', capture
     throw failure
   } finally {
     await page.evaluate(key => { window[key]?.observer?.disconnect(); delete window[key] }, key).catch(() => {})
+    await page.evaluate(archiveKey=>{try{sessionStorage.removeItem(archiveKey)}catch{}},archiveKey).catch(()=>{})
   }
 }

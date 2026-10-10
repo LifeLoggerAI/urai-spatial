@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { randomUUID } from 'node:crypto'
 import { proveHomeSkyAscent } from './home-sky-ascent-proof.mjs'
 import { chromiumLaunchOptions } from './playwright-runtime-helpers.mjs'
 import { installMotionProofObserver, markMotionProof, summarizeMotionProof } from './motion-proof-observer.mjs'
@@ -157,7 +158,7 @@ async function proveRealHomeAscent(page, journey, home, mode) {
   await capture(page, journey, 'home-first-person')
   if (motionRecording) await markMotionProof(page, 'start-home-ascent')
   journey.ascentEvidence = await proveHomeSkyAscent(page, home, {
-    mode, captureAscent:() => capture(page, journey, 'home-ascent'),
+    mode, exactHead, captureAscent:() => capture(page, journey, 'home-ascent'),
   })
   journey.ascentProven = journey.ascentEvidence.ascentProven
 }
@@ -401,7 +402,7 @@ try {
       localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
       localStorage.removeItem('urai:onboarding:v3:setup-step')
     })
-    if (motionRecording) await context.addInitScript(installMotionProofObserver)
+    if (motionRecording) await context.addInitScript(installMotionProofObserver,{invocationId:`canonical-${randomUUID()}`,exactHead})
     const page = await context.newPage()
     if (emulatedCores !== null) {
       const session = await context.newCDPSession(page)
@@ -445,6 +446,9 @@ try {
         journey.passed = false
         receipt.errors.push({ journey: variant.id, error: 'runtime diagnostics failed', pageErrors: journey.diagnostics.pageErrors, blockingFailedRequests: blocking })
       }
+      journey.functionalJourneyPassed=journey.passed
+      journey.documentNavigationObserved=journey.motion?.documentNavigationObserved??false
+      journey.cinematicContinuityStatus=journey.documentNavigationObserved?'failed-document-handoff':'requires-recording-review'
       await context.close()
       if (video) { const filename = `${variant.id}.webm`; await video.saveAs(path.join(outputDir, filename)); journey.video = filename }
       await fs.writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
@@ -460,7 +464,9 @@ receipt.accessibleReducedJourneyProved = receipt.journeys.some((journey) => jour
 // A selected reduced-motion run uses the adopted accessible handoff rather than
 // camera travel. Its own valid outcome must not require an unrequested normal
 // ascent recording. Every requested physical-ascent variant still must prove it.
-receipt.status = receipt.journeys.every((journey) => journey.passed && journey.identityStable && (!journey.realAscent || journey.ascentProven === true)) && receipt.errors.length === 0 ? 'passed' : 'failed'
+receipt.functionalStatus = receipt.journeys.every((journey) => journey.passed && journey.identityStable && (!journey.realAscent || journey.ascentProven === true)) && receipt.errors.length === 0 ? 'passed' : 'failed'
+receipt.cinematicContinuityStatus=receipt.journeys.some(journey=>journey.documentNavigationObserved)?'failed-document-handoff':'requires-recording-review'
+receipt.status = receipt.functionalStatus==='passed'&&receipt.cinematicContinuityStatus!=='failed-document-handoff'?'passed':'failed'
 await fs.writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
 console.log(JSON.stringify(receipt, null, 2))
 if (receipt.status !== 'passed') process.exitCode = 1
