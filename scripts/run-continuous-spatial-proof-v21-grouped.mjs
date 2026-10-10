@@ -76,11 +76,11 @@ const loadingVisibilityReplacement = `      const loadingVisible = [...document.
 if (original.split(loadingVisibilityTarget).length - 1 !== 1) throw new Error('Loading visibility contract changed')
 
 const discreetControlsTarget = `    discreetControls: await visibleCount(page.locator('.home-discreet-controls button')),`
-const semanticOwnershipReplacement = `    semanticLinks: await semantic.getByRole('link').count(),\n    semanticLinkVisible: await visibleCount(semantic.getByRole('link')),\n    semanticNavigationOwner: await semantic.getAttribute('data-home-navigation-owner'),\n    semanticNavigationNonDominant: await semantic.getAttribute('data-home-navigation-non-dominant'),\n    semanticNavigationOpacity: await semantic.evaluate((node) => Number.parseFloat(getComputedStyle(node).opacity || '1')),`
+const semanticOwnershipReplacement = `    semanticLinks: await semantic.getByRole('link').count(),\n    semanticLinkVisible: await visibleCount(semantic.getByRole('link')),\n    semanticNavigationOwner: await semantic.getAttribute('data-home-navigation-owner'),\n    semanticNavigationNonDominant: await semantic.getAttribute('data-home-navigation-non-dominant'),\n    semanticNavigationOpacity: await semantic.evaluate((node) => Number.parseFloat(getComputedStyle(node).opacity || '1')),\n    semanticNavigationWidth: 0,\n    semanticNavigationAreaRatio: 1,\n    semanticTargetMinWidth: 0,\n    semanticTargetMinHeight: 0,\n    semanticTargetsInViewport: 0,\n    semanticTargetsHitConfirmed: 0,`
 if (original.split(discreetControlsTarget).length - 1 !== 1) throw new Error('Home semantic navigation measurement contract changed')
 
 const discreetPassTarget = `    && result.semanticButtons === 3 && result.semanticVisible === 0 && result.discreetControls === 2`
-const semanticPassReplacement = `    && result.semanticButtons === 1 && result.semanticVisible === 1\n    && result.semanticLinks === 2 && result.semanticLinkVisible === 2\n    && result.semanticNavigationOwner === 'runtime-boundary' && result.semanticNavigationNonDominant === 'true'\n    && Number.isFinite(result.semanticNavigationOpacity) && result.semanticNavigationOpacity <= 0.02`
+const semanticPassReplacement = `    && result.semanticButtons === 1 && result.semanticVisible === 1\n    && result.semanticLinks === 2 && result.semanticLinkVisible === 2\n    && result.semanticNavigationOwner === 'runtime-boundary' && result.semanticNavigationNonDominant === 'true'\n    && Number.isFinite(result.semanticNavigationOpacity) && result.semanticNavigationOpacity > 0\n    && result.semanticNavigationWidth >= 48 && result.semanticNavigationWidth <= 64\n    && result.semanticNavigationAreaRatio >= 0 && result.semanticNavigationAreaRatio <= 0.03\n    && result.semanticTargetMinWidth >= 48 && result.semanticTargetMinHeight >= 48\n    && result.semanticTargetsInViewport === 3 && result.semanticTargetsHitConfirmed === 3`
 if (original.split(discreetPassTarget).length - 1 !== 1) throw new Error('Home semantic navigation pass contract changed')
 
 const reviewModePassTarget = `    && result.assetMode === requiredMode && result.personalizationMode === expected.mode`
@@ -162,6 +162,10 @@ const atomicSnapshot = `async function verifyHome(page, expected) {
     const semantic = document.querySelector('nav[aria-label="Accessible Home destinations"]')
     const buttons = [...(semantic?.querySelectorAll('button') || [])]
     const links = [...(semantic?.querySelectorAll('a[href]') || [])]
+    const semanticActions = [...buttons, ...links]
+    const semanticRect = semantic?.getBoundingClientRect()
+    const viewportArea = Math.max(1, innerWidth * innerHeight)
+    const semanticActionRects = semanticActions.map((node) => node.getBoundingClientRect())
     const element = canvas
     const rect = element?.getBoundingClientRect()
     const visible = (node) => {
@@ -192,6 +196,17 @@ const atomicSnapshot = `async function verifyHome(page, expected) {
       semanticNavigationOwner: semantic?.getAttribute('data-home-navigation-owner') ?? null,
       semanticNavigationNonDominant: semantic?.getAttribute('data-home-navigation-non-dominant') ?? null,
       semanticNavigationOpacity: semantic ? Number.parseFloat(getComputedStyle(semantic).opacity || '1') : null,
+      semanticNavigationWidth: semanticRect?.width ?? 0,
+      semanticNavigationAreaRatio: semanticRect ? Math.max(0, semanticRect.width * semanticRect.height) / viewportArea : 1,
+      semanticTargetMinWidth: semanticActionRects.length ? Math.min(...semanticActionRects.map((bounds) => bounds.width)) : 0,
+      semanticTargetMinHeight: semanticActionRects.length ? Math.min(...semanticActionRects.map((bounds) => bounds.height)) : 0,
+      semanticTargetsInViewport: semanticActionRects.filter((bounds) => bounds.width >= 48 && bounds.height >= 48
+        && bounds.left >= 0 && bounds.top >= 0 && bounds.right <= innerWidth && bounds.bottom <= innerHeight).length,
+      semanticTargetsHitConfirmed: semanticActions.filter((node, index) => {
+        const bounds = semanticActionRects[index]
+        const hit = document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2)
+        return hit === node || (hit instanceof Node && node.contains(hit))
+      }).length,
     }
   }, { ownerSelector, fallbackSelector })
 `
@@ -211,7 +226,13 @@ const requiredSemanticGuards = [
   ['canonical runtime loading owner', "document.querySelectorAll('.home-runtime-loading')"],
   ['semantic navigation owner', "semanticNavigationOwner === 'runtime-boundary'"],
   ['semantic navigation non-dominance', "semanticNavigationNonDominant === 'true'"],
-  ['semantic navigation opacity', 'semanticNavigationOpacity <= 0.02'],
+  ['semantic navigation rendered', 'semanticNavigationOpacity > 0'],
+  ['semantic navigation bounded width', 'semanticNavigationWidth <= 64'],
+  ['semantic navigation bounded viewport footprint', 'semanticNavigationAreaRatio <= 0.03'],
+  ['semantic navigation 48px target width', 'semanticTargetMinWidth >= 48'],
+  ['semantic navigation 48px target height', 'semanticTargetMinHeight >= 48'],
+  ['semantic navigation viewport containment', 'semanticTargetsInViewport === 3'],
+  ['semantic navigation hit ownership', 'semanticTargetsHitConfirmed === 3'],
   ['disclosed review asset mode', 'result.assetMode === requiredMode'],
   ['truthful personalization mode', 'result.personalizationMode === expected.mode'],
   ['editable focus regression owner', "Accessible Home destinations"],
