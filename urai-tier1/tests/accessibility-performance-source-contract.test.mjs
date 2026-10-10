@@ -135,7 +135,9 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(routeOwnerCss, 'max-width: 100vw !important;')
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
   requireText(focus, "aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}")
-  requireText(focus, "{...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')} aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}")
+  // The visible navigation button owns the accessible Replay action. The
+  // retired image billboard no longer contributes a duplicate DOM button.
+  requireNormalizedPattern(focus, /\{memory\s*\?\s*<button[^>]*onClick=\{enterReplay\}[^>]*aria-label=\{locale\.locale === 'en' \? `Open Replay for \$\{memory\.title\}`/, 'The selected memory must retain its named accessible Replay button')
   requireText(read('src/lib/i18n/journeyControlMessages.ts'), '"focus.openReplayFor": {id:"focus.openReplayFor",source:"Open Replay for {title}"')
   assert.equal(URAI_SOURCE_MESSAGES['focus.openReplayFor'].source, 'Open Replay for {title}')
   for (const requested of URAI_LAUNCH_LOCALES) {
