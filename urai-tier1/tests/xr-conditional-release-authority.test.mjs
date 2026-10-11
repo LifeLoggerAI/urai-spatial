@@ -45,13 +45,18 @@ for (const response of [{ status: 200, url: 'https://candidate.example/xr' }, { 
 }
 test('conditional gate accepts exact candidate 404 and slash parity', () => assert.equal(helpers.inspectConditionalXrResponse({ status: 404, url: 'https://candidate.example/xr/' }, 'https://candidate.example/xr', authority), true))
 const publicBody = `<html><body>Own your life. Step inside yourself. Ground below · memory above Home threshold Sky route Orb companion memory life Ascent Life Map Portal URAI Life Map step inside your private constellation urai-final-focus-chamber Selected memory chamber. Replay thread film Unwind return See the pattern clearly. Mirror is the reflection realm Orb reflection passport-ownership-vault UrAi Passport Ownership key consent-sanctuary UrAi Consent Sanctuary Choose what the world may hold. Enforcement: premium-emotional-weather-atlas AR VR XR Quest spatial device browser fallback urai-final-status-control-room Launch locked. Proof before expansion. fingerprint-gated Production certification remains hidden until the protected fingerprint is validated. urai-r3f-canonical-lifemap</body><script src="/unit-candidate.js"></script></html>`
+const requiredPublicBodies = {
+  '/login': '<html><body data-route-owner="canonical-auth-entry">Enter your world.</body></html>',
+  '/privacy-policy': '<html><body>Privacy policy candidate. Your life data stays governed by your choices.</body></html>',
+  '/support': '<html><body>URAI Support. Help when you need it.</body></html>',
+}
 async function runActualScript(relative, proofValue = proof) {
     const seen = [], failures = []
     const fetch = async (value) => {
       const url = new URL(value), normalized = url.pathname.replace(/\/$/, '') || '/'
       seen.push(normalized)
       const conditional = helpers.conditionalXrRoutes.includes(normalized)
-      const body = normalized === '/api/system/deploy-proof' ? JSON.stringify(proofValue) : normalized === '/privacy-controls' ? publicBody.replace('Home threshold', '') : publicBody
+      const body = normalized === '/api/system/deploy-proof' ? JSON.stringify(proofValue) : requiredPublicBodies[normalized] ?? (normalized === '/privacy-controls' ? publicBody.replace('Home threshold', '') : publicBody)
       return { ok: !conditional, status: conditional ? 404 : 200, url: url.href, text: async () => body }
     }
     const source = fs.readFileSync(path.join(root, relative), 'utf8').replace(/^#!.*\n/, '').replace(/^import .*$/gm, '')
@@ -66,6 +71,9 @@ for (const relative of ['scripts/urai-live-smoke.mjs', 'scripts/smoke-home-xr-li
   test(`actual ${relative} accepts governed disabled XR 404 and checks both routes/slashes`, async () => {
     const seen = await runActualScript(relative)
     for (const value of helpers.conditionalXrRoutes) assert.equal(seen.filter((entry) => entry === value).length, 2)
+    if (relative === 'scripts/urai-live-smoke.mjs') {
+      for (const value of Object.keys(requiredPublicBodies)) assert.equal(seen.filter((entry) => entry === value).length, 2)
+    }
   })
 }
 test('actual deploy checker validates forbidden-copy declaration instead of rejecting its own phrase list', async () => {
