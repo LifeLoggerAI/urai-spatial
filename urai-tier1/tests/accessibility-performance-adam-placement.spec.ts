@@ -273,6 +273,7 @@ async function exerciseKeyboardPanel(page: Page, slot: string, capture = true) {
   if (panelGeometry.hasVerticalOverflow) expect(panelGeometry.overflowY).toMatch(/^(auto|scroll)$/)
   if (capture) await attachPlacement(page, test.info(), `${slot}-panel-open-${panelGeometry.viewportWidth}x${panelGeometry.viewportHeight}`, panelGeometry)
   const log = panel.getByRole('log')
+  // Chromium may focus an overflowing conversation log before the composer.
   await page.keyboard.press('Tab')
   if (await log.evaluate(element => element === document.activeElement)) {
     expect(await log.evaluate(element => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0)
