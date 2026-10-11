@@ -145,6 +145,7 @@
 }
 @media (max-width: 560px) {
   .launcher { right: max(8px, env(safe-area-inset-right)); }
+  .log { flex-shrink: 1; min-height: 96px; }
   .panel {
     right: max(8px, env(safe-area-inset-right));
     bottom: max(8px, env(safe-area-inset-bottom));
