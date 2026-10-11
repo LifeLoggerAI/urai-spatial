@@ -2,7 +2,7 @@ name: Accessibility Performance Evidence
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'codex/combine-current-visual-7e794e-20261010']
     paths:
       - '.github/workflows/accessibility-performance-evidence.yml'
       - 'scripts/visual-proof-transport.mjs'

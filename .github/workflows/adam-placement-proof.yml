@@ -1,6 +1,13 @@
 name: Founder Launcher Placement Proof
 
 on:
+  push:
+    branches: ['codex/combine-current-visual-7e794e-20261010']
+    paths:
+      - '.github/workflows/adam-placement-proof.yml'
+      - 'urai-tier1/src/spatial/adam/**'
+      - 'urai-tier1/tests/accessibility-performance-adam-placement.spec.ts'
+      - 'urai-tier1/tests/accessibility-performance-adam-status-fit.spec.ts'
   pull_request:
     branches: [repair/release-closure-integration-20261007]
     paths:
