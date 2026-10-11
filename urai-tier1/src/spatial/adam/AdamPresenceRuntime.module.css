@@ -36,6 +36,11 @@
   box-shadow: 0 24px 80px rgba(0,0,0,.55);
   backdrop-filter: blur(24px);
 }
+/* The open panel shares the body portal layer with spatial navigation. */
+body > .panel[data-urai-adam-presence] {
+  position: fixed;
+  z-index: 2147483602;
+}
 .header {
   position: sticky;
   top: 0;

@@ -6,7 +6,11 @@ import ts from 'typescript'
 import { jsx,jsxs } from 'react/jsx-runtime'
 import * as localePreference from '../src/lib/i18n/localePreference.ts'
 import { uraiTextDirection } from '../src/lib/i18n/locales.ts'
-import { contentLanguage,contentLanguageProps } from '../../packages/localization/src/contentLanguage.ts'
+const contentLanguageSource=fs.readFileSync(new URL('../../packages/localization/src/contentLanguage.ts',import.meta.url),'utf8')
+const contentLanguageCompiled=ts.transpileModule(contentLanguageSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
+const contentLanguageModule={exports:{}}
+vm.runInNewContext(contentLanguageCompiled,{module:contentLanguageModule,exports:contentLanguageModule.exports,require:name=>{throw Error('Unexpected canonical content language dependency '+name)}})
+const {contentLanguage,contentLanguageProps}=contentLanguageModule.exports
 
 const source=fs.readFileSync(new URL('../src/spatial/adam/AdamPresenceRuntime.tsx',import.meta.url),'utf8')
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText
@@ -15,7 +19,7 @@ const localeCompiled=ts.transpileModule(localeSource,{compilerOptions:{module:ts
 const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):''
 const tick=async()=>{for(let i=0;i<8;i++)await new Promise(resolve=>setImmediate(resolve))}
 function fixture(){
-  const cells=[],requests=[],voices=[],audio=[];let cursor=0,locale='en-US',resolve,reject
+  const cells=[],requests=[],voices=[],audio=[],portalCalls=[],portalBody={};let cursor=0,locale='en-US',resolve,reject
   localePreference.updateLocalePreference(localePreference.ENGLISH_LOCALE_PREFERENCE)
   const hooks={useState:initial=>{const i=cursor++;cells[i]??={value:initial};return [cells[i].value,next=>{cells[i].value=typeof next==='function'?next(cells[i].value):next}]},
     useSyncExternalStore:(_subscribe,getSnapshot)=>{cursor++;return getSnapshot()},
@@ -35,7 +39,7 @@ function fixture(){
   vm.runInNewContext(compiled,{module,exports:module.exports,require:name=>{
     if(name==='react')return hooks
     if(name==='react/jsx-runtime')return {jsx,jsxs}
-    if(name==='react-dom')return {createPortal:child=>child}
+    if(name==='react-dom')return {createPortal:(child,target)=>{portalCalls.push({child,target});return child}}
     if(name==='next/navigation')return {usePathname:()=>'/home',useSearchParams:()=>({get:()=>null})}
     if(name.endsWith('/useUraiLocale'))return localeModule.exports
     if(name.endsWith('/localePreference'))return {currentSpeechTag:()=>locale}
@@ -44,7 +48,7 @@ function fixture(){
     if(name==='./adamSurfaceContext')return {resolveAdamSurface:()=>({id:'home',label:'Home'})}
     if(name.endsWith('.module.css'))return {__esModule:true,default:{}}
     throw Error('Unexpected Adam dependency '+name)
-  },AbortController,crypto:{randomUUID:()=>String(cells.length)},URL:{createObjectURL:()=> 'blob:synthetic',revokeObjectURL:()=>{}},
+  },document:{body:portalBody},AbortController,crypto:{randomUUID:()=>String(cells.length)},URL:{createObjectURL:()=> 'blob:synthetic',revokeObjectURL:()=>{}},
   Audio:class{constructor(){audio.push(this)}play(){return Promise.resolve()}pause(){this.paused=true}}})
   const render=()=>{cursor=0;return module.exports.default()}
   const find=predicate=>{const visit=node=>{if(Array.isArray(node)){for(const n of node){const hit=visit(n);if(hit)return hit}}
@@ -52,7 +56,7 @@ function fixture(){
   const open=()=>find(node=>node.type==='button').props.onClick()
   const consent=()=>{const inputs=[];find(node=>{if(node.type==='input')inputs.push(node);return false});for(const input of inputs)input.props.onChange({target:{checked:true}})}
   const send=async()=>{find(node=>node.type==='textarea').props.onChange({target:{value:'Synthetic question'}});void find(node=>node.type==='form').props.onSubmit({preventDefault(){}});await tick()}
-  return {find,render,open,consent,send,requests,voices,audio,setLocale:next=>{locale=next;localePreference.updateLocalePreference({requested:next.split('-')[0],preview:false})},complete:result=>resolve(result),fail:()=>reject(new AdamProviderError('Synthetic rejection'))}
+  return {find,render,open,consent,send,requests,voices,audio,portalCalls,portalBody,setLocale:next=>{locale=next;localePreference.updateLocalePreference({requested:next.split('-')[0],preview:false})},complete:result=>resolve(result),fail:()=>reject(new AdamProviderError('Synthetic rejection'))}
 }
 test('actual Adam stream, caption and queued private voice retain captured Urdu after preference changes',async()=>{
   const f=fixture();f.open();f.consent();f.setLocale('ur-PK');await f.send();f.setLocale('fr-FR')
@@ -76,4 +80,24 @@ test('actual Adam clears private audio and queued speech if streamed completion 
 test('actual Adam rejects unsupported content preference before conversation or private voice',async()=>{
   const f=fixture();f.open();f.consent();f.setLocale('xx-XX');await f.send()
   assert.equal(f.requests.length,0);assert.equal(f.voices.length,0);assert.ok(text(f.render()).includes('Choose a supported content language.'))
+})
+
+test('actual Adam open panel uses the body portal and Close returns its consent-gated launcher',()=>{
+  const f=fixture()
+  f.render()
+  assert.equal(f.portalCalls.length,0)
+  f.open()
+  const panel=f.render()
+  const portal=f.portalCalls.at(-1)
+  assert.equal(portal.target,f.portalBody)
+  assert.equal(portal.child,panel)
+  assert.equal(panel.type,'aside')
+  assert.equal(panel.props['data-urai-adam-presence'],'runtime-v1')
+  assert.equal(f.find(node=>node.type==='button'&&node.props.type==='submit').props.disabled,true)
+  assert.equal(f.requests.length,0)
+  assert.equal(f.voices.length,0)
+  f.find(node=>node.type==='button'&&node.props['aria-label']==='Close Adam').props.onClick()
+  const count=f.portalCalls.length
+  assert.equal(f.find(node=>node.props['data-urai-adam-launcher']==='true').type,'button')
+  assert.equal(f.portalCalls.length,count)
 })
