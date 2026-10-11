@@ -36,6 +36,20 @@ export function verifyProductionAssetReceiptBindings({
     if (manifestFile.code) throw new Error(manifestFile.detail)
     manifest = readJson(manifestPath)
     if (!Array.isArray(manifest.assets)) throw new Error('manifest assets must be an array')
+    const ownerIds = new Set()
+    const ownerPaths = new Set()
+    for (const asset of manifest.assets) {
+      if (!asset || typeof asset !== 'object' || Array.isArray(asset)
+        || typeof asset.id !== 'string' || asset.id.trim().length === 0
+        || !safeRelativePath(asset.fixedPath)) {
+        throw new Error('manifest assets must bind a nonempty owner id and safe fixedPath')
+      }
+      if (ownerIds.has(asset.id) || ownerPaths.has(asset.fixedPath)) {
+        throw new Error('manifest asset owner ids and fixedPaths must be unique')
+      }
+      ownerIds.add(asset.id)
+      ownerPaths.add(asset.fixedPath)
+    }
   } catch (error) {
     errors.push(failure('MANIFEST_INVALID', manifestPath, String(error.message)))
     manifest = null

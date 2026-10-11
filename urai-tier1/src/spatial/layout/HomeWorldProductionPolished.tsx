@@ -5,7 +5,7 @@ import { Environment, Html, Lightformer, Stars, useAnimations, useGLTF } from '@
 import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
-import { isOrbState, resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
+import { isOrbState, resolveAuthorizedHomeReviewOrbState, resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, URAI_EMBODIED_MOVEMENT_INPUT_EVENT, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import HomeSkyInteraction from '@/spatial/navigation/HomeSkyAscentInteraction'
 import { useSceneStore } from '@/spatial/store/useSceneStore'
@@ -678,7 +678,7 @@ function Thresholds({ onGround, onLifeMap }: { onGround: () => void; onLifeMap: 
   return <>
     <group name="home-ground-environmental-threshold" position={GROUND_THRESHOLD}><mesh position={[0,.8,0]} onClick={(e) => { e.stopPropagation(); onGround() }}><boxGeometry args={[4.2,2.8,4.2]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh></group>
     <group name="home-life-map-sky-lookout" position={LIFE_MAP_LOOKOUT}><mesh position={[0,.8,0]} onClick={(e) => { e.stopPropagation(); onLifeMap() }}><boxGeometry args={[4.2,2.8,4.2]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh></group>
-    {phase === 'HOME' ? thresholds.map(({ position, label }) => <Html key={label} position={position.clone().add(new THREE.Vector3(0, 1.25, 0))} center distanceFactor={14} zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
+    {phase === 'HOME' ? thresholds.map(({ position, label }) => <Html key={label} position={position.clone().add(new THREE.Vector3(0, 1.25, 0))} center zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
       <span aria-hidden="true" style={{ display: 'block', whiteSpace: 'nowrap', padding: '7px 11px', borderBottom: '1px solid #a9c9d399', borderRadius: 3, background: '#09151dcc', color: '#e2edf3', font: '500 14px/1.35 system-ui', letterSpacing: '.05em' }}>{label}</span>
     </Html>) : null}
   </>
@@ -892,6 +892,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const [reducedStimulation, setReducedStimulation] = useState(false)
   const [mobileControls, setMobileControls] = useState(false)
   const [orbState, setOrbState] = useState<OrbState>('idle')
+  const reviewOrbState = useRef<OrbState | null>(null)
   const [reviewFixture, setReviewFixture] = useState<'none' | 'safe-private'>('none')
   const [portalSequence, setPortalSequence] = useState<TransitionSequence>('idle')
   const phase = useSceneStore((state) => state.phase)
@@ -934,19 +935,20 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   }, [])
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    setReviewFixture(params.get('homePrivateFixture') === '1' ? 'safe-private' : 'none')
-    const requestedOrbState = params.get('homeOrbState')
-    if (isOrbState(requestedOrbState)) setOrbState(requestedOrbState)
+    const requestedOrbState = resolveAuthorizedHomeReviewOrbState(window.location.search)
+    reviewOrbState.current = requestedOrbState
+    setReviewFixture(params.get('homeAssetReview') === '1' && params.get('homePrivateFixture') === '1' ? 'safe-private' : 'none')
+    if (requestedOrbState) setOrbState(requestedOrbState)
   }, [])
   useEffect(() => {
     const onOrbState = (event: CustomEvent<OrbStateEventDetail>) => {
       if (phase === 'ASCENT' || groundDescent || !isOrbState(event.detail?.state)) return
-      setOrbState(event.detail.state)
+      setOrbState(reviewOrbState.current ?? event.detail.state)
     }
     window.addEventListener(URAI_ORB_STATE_EVENT, onOrbState)
     return () => window.removeEventListener(URAI_ORB_STATE_EVENT, onOrbState)
   }, [groundDescent, phase])
-  useEffect(() => { if (phase !== 'ASCENT' && !groundDescent) setOrbState('idle') }, [groundDescent, phase])
+  useEffect(() => { if (phase !== 'ASCENT' && !groundDescent) setOrbState(reviewOrbState.current ?? 'idle') }, [groundDescent, phase])
   useEffect(() => { const cancel = (event: KeyboardEvent) => { if (event.key !== 'Escape') return; const store = useSceneStore.getState(); if (store.phase === 'ASCENT') { event.preventDefault(); store.setPhase('HOME'); store.unlock(); setPortalSequence('idle'); setOrbState('idle') } else if (groundDescent) { event.preventDefault(); setGroundDescent(false); setPortalSequence('idle'); setOrbState('idle') } }; window.addEventListener('keydown', cancel, true); return () => window.removeEventListener('keydown', cancel, true) }, [groundDescent])
 
   if (!webglAvailable) return null
