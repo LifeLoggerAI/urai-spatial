@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
+import vm from 'node:vm'
+import ts from 'typescript'
+import { isOrbState, resolveAuthorizedHomeReviewOrbState } from '../src/app/home/orbStateController.ts'
 
 const read = (path) => fs.readFileSync(path, 'utf8')
 
@@ -74,6 +77,33 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.match(routeOwnerConvergence, /box-shadow:\s*none\s*!important/)
   assert.match(routeOwnerConvergence, /outline:\s*3px solid rgba\(224,255,255,.96\)\s*!important/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger|urai-home-spatial-runtime-orb/)
+})
+
+test('actual Home Orb event handler preserves guarded state delivery and authorized review override', () => {
+  const file = ts.createSourceFile('HomeWorldProductionPolished.tsx', homeProduction, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const declarations = []
+  function visit(node) {
+    if (ts.isVariableDeclaration(node) && node.name.getText(file) === 'onOrbState') declarations.push(node)
+    ts.forEachChild(node, visit)
+  }
+  visit(file)
+  assert.equal(declarations.length, 1, 'one actual Home event owner is required')
+  const code = ts.transpileModule('const ' + declarations[0].getText(file), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
+  for (const [phase, groundDescent, search, state, expected] of [
+    ['HOME', false, '', 'attention', ['attention']],
+    ['HOME', false, '?homeOrbState=warning', 'attention', ['attention']],
+    ['HOME', false, '?homeAssetReview=1&homePrivateFixture=1&homeOrbState=warning', 'attention', ['warning']],
+    ['HOME', false, '?homeAssetReview=1&homePrivateFixture=1&homeOrbState=invalid', 'attention', ['attention']],
+    ['HOME', false, '', 'invalid', []],
+    ['HOME', false, '', undefined, []],
+    ['ASCENT', false, '', 'attention', []],
+    ['HOME', true, '', 'attention', []],
+  ]) {
+    const observed = []
+    const context = vm.createContext({ phase, groundDescent, isOrbState, reviewOrbState: { current: resolveAuthorizedHomeReviewOrbState(search) }, setOrbState: value => observed.push(value), event: { detail: { state } } })
+    vm.runInContext(code + '\nonOrbState(event)', context)
+    assert.deepEqual(observed, expected, JSON.stringify({ phase, groundDescent, search, state }))
+  }
 })
 
 test('Home Gold Master ground detail preserves density with bounded instanced rendering', () => {

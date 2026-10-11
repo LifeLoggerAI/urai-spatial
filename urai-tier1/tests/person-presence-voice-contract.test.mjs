@@ -32,7 +32,7 @@ test('voice auth failures and provider spend are bounded before ElevenLabs',()=>
   assert.match(provider,/throw new VoiceError\(429,'RATE_LIMITED'/)
   const limiterIndex=provider.indexOf('await consumeVoiceRateLimit(uid)')
   const fetchIndex=provider.indexOf("await paidSpatialFetch(db,uid,'person-voice','elevenlabs'")
-  assert.match(provider,/import \{ paidSpatialFetch, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON \} from '\.\/protectedProviderSpend'/)
+  assert.match(provider,/import \{ paidSpatialFetch, assertSpatialPaidOutputCurrent, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON \} from '\.\/protectedProviderSpend'/)
   assert.match(provider,/secrets:\[ELEVENLABS_API_KEY,SPATIAL_SPEND_WORKER_TOKENS_JSON\]/)
   assert.ok(limiterIndex>-1&&fetchIndex>limiterIndex)
 })

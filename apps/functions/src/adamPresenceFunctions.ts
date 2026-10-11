@@ -3,7 +3,8 @@ import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
 import { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS } from '../../../packages/localization/src/contentLanguage'
-import { paidSpatialFetch, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
+import { paidSpatialFetch, assertSpatialPaidOutputCurrent, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -94,9 +95,9 @@ async function requireProviderConsent(uid: string, provider: Provider, explicitC
   ])
   if (!policySnapshot.exists) throw new ProviderError(403, 'CONSENT_POLICY_REQUIRED', 'A saved privacy policy is required.')
   const policy = policySnapshot.data() ?? {}
-  const domains = isRecord(policy.domains) ? policy.domains : {}
-  const models = isRecord(domains.models) ? domains.models : {}
-  const enforcement = isRecord(policy.enforcement) ? policy.enforcement : {}
+  if (!isCanonicalStoredPolicy(policy, uid)) throw new ProviderError(403, 'CONSENT_POLICY_REQUIRED', 'A canonical owner privacy policy is required.')
+  const models = policy.domains.models
+  const enforcement = policy.enforcement
   if (models.mode !== 'granted' || models.modelContext !== true) {
     throw new ProviderError(403, 'MODEL_PROCESSING_NOT_AUTHORIZED', 'Model processing is not authorized.')
   }
@@ -110,6 +111,13 @@ async function requireProviderConsent(uid: string, provider: Provider, explicitC
       throw new ProviderError(403, 'PROVIDER_PROCESSING_REVOKED', 'Provider processing is not authorized.')
     }
   }
+}
+
+async function currentProviderAuthority(request: { headers: Record<string, unknown> }, uid: string, provider: Provider, explicitConsent: boolean, signal?: AbortSignal) {
+  if (signal?.aborted) throw new ProviderError(499, 'PROVIDER_OUTPUT_CANCELLED', 'Provider output was cancelled.')
+  if (await authenticatedUid(request) !== uid) throw new ProviderError(401, 'UNAUTHORIZED', 'Authentication changed before provider delivery.')
+  await requireProviderConsent(uid, provider, explicitConsent)
+  if (signal?.aborted) throw new ProviderError(499, 'PROVIDER_OUTPUT_CANCELLED', 'Provider output was cancelled.')
 }
 
 async function consumeRateLimit(uid: string, provider: Provider, lane: string, maximum: number) {
@@ -322,6 +330,9 @@ export const adamPresenceProvider = onRequest({
   const startedAt = Date.now()
   let uid = ''
   let inputUnits = 0
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  let controller: AbortController | undefined
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
   try {
     requireAdamEnabled()
     if (request.method !== 'POST') throw new ProviderError(405, 'METHOD_NOT_ALLOWED', 'POST is required.')
@@ -339,24 +350,30 @@ export const adamPresenceProvider = onRequest({
     inputUnits = message.length
     await requireProviderConsent(uid, 'openai', body.aiProcessingConsent === true)
     await consumeRateLimit(uid, 'openai', 'adam', 10)
+    await currentProviderAuthority(request, uid, 'openai', body.aiProcessingConsent === true)
 
     const apiKey = OPENAI_API_KEY.value()
     const moderationController = new AbortController()
     const moderationTimeout = setTimeout(() => moderationController.abort(), 8_000)
-    const moderation = await paidSpatialFetch(db, uid, 'adam-moderation', 'openai', 'omni-moderation-latest', body, 'https://api.openai.com/v1/moderations', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'omni-moderation-latest', input: message }),
-      signal: moderationController.signal,
-    }).finally(() => clearTimeout(moderationTimeout))
-    if (!moderation.ok) throw new ProviderError(503, 'MODERATION_UNAVAILABLE', 'Adam safety screening is unavailable.')
-    const moderationResult = await moderation.json() as { results?: Array<{ flagged?: boolean }> }
-    if (moderationResult.results?.[0]?.flagged) throw new ProviderError(400, 'INPUT_BLOCKED', 'This message cannot be sent to Adam.')
+    try {
+      const moderation = await paidSpatialFetch(db, uid, 'adam-moderation', 'openai', 'omni-moderation-latest', body, 'https://api.openai.com/v1/moderations', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'omni-moderation-latest', input: message }),
+        signal: moderationController.signal,
+      })
+      if (!moderation.ok) throw new ProviderError(503, 'MODERATION_UNAVAILABLE', 'Adam safety screening is unavailable.')
+      const moderationResult = await moderation.json() as { results?: Array<{ flagged?: boolean }> }
+      if (typeof moderationResult.results?.[0]?.flagged !== 'boolean') throw new ProviderError(503, 'MODERATION_UNAVAILABLE', 'Adam safety screening returned no valid decision.')
+      if (moderationResult.results[0].flagged) throw new ProviderError(400, 'INPUT_BLOCKED', 'This message cannot be sent to Adam.')
+    } finally { clearTimeout(moderationTimeout) }
+    await currentProviderAuthority(request, uid, 'openai', body.aiProcessingConsent === true)
 
     const recent = context.map((item, index) => `${index + 1}. ${item.role}: ${item.content}`).join('\n')
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 32_000)
-    response.on('close', () => { if (!response.writableEnded) controller.abort() })
+    controller = new AbortController()
+    const upstreamController = controller
+    timeout = setTimeout(() => upstreamController.abort(), 32_000)
+    response.on('close', () => { if (!response.writableEnded) upstreamController.abort() })
     const model = process.env.OPENAI_ADAM_MODEL || process.env.OPENAI_ORB_MODEL || 'gpt-5'
     const upstream = await paidSpatialFetch(db, uid, 'adam-reasoning', 'openai', model, body, 'https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -389,9 +406,11 @@ export const adamPresenceProvider = onRequest({
         safety_identifier: createHash('sha256').update(`urai-adam-safety:${uid}`).digest('hex'),
         text: { format: { type: 'json_schema', name: 'urai_adam_response', strict: true, schema: ADAM_SCHEMA } },
       }),
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timeout))
+      signal: upstreamController.signal,
+    })
     if (!upstream.ok || !upstream.body) throw new ProviderError(upstream.status === 429 ? 429 : 503, 'OPENAI_REQUEST_FAILED', 'Adam reasoning is unavailable.')
+    await currentProviderAuthority(request, uid, 'openai', body.aiProcessingConsent === true, upstreamController.signal)
+    assertSpatialPaidOutputCurrent(upstream)
 
     response.status(200)
     response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8')
@@ -401,7 +420,7 @@ export const adamPresenceProvider = onRequest({
     response.setHeader('X-URAI-Presence', 'adam')
     response.write(`${JSON.stringify({ type: 'status', status: 'streaming', surface, locale })}\n`)
 
-    const reader = upstream.body.getReader()
+    reader = upstream.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
     let output = ''
@@ -409,7 +428,11 @@ export const adamPresenceProvider = onRequest({
     let streamedCaption: string | null = null
     let completed = false
     while (true) {
+      await currentProviderAuthority(request, uid, 'openai', body.aiProcessingConsent === true, upstreamController.signal)
+      assertSpatialPaidOutputCurrent(upstream)
       const { value, done } = await reader.read()
+      await currentProviderAuthority(request, uid, 'openai', body.aiProcessingConsent === true, upstreamController.signal)
+      assertSpatialPaidOutputCurrent(upstream)
       if (done) break
       buffer += decoder.decode(value, { stream: true })
       if (buffer.length > 64_000) throw new ProviderError(502, 'OPENAI_RESPONSE_LIMIT', 'Adam output exceeded its bound.')
@@ -448,6 +471,8 @@ export const adamPresenceProvider = onRequest({
     if (!completed || !output) throw new ProviderError(502, 'OPENAI_RESPONSE_INCOMPLETE', 'Adam returned an incomplete response.')
     const result = parseAdamOutput(output, locale)
     if (streamedCaption !== null && result.caption !== streamedCaption) throw new ProviderError(502, 'INVALID_PROVIDER_RESPONSE', 'Adam captions changed during its response.')
+    await currentProviderAuthority(request, uid, 'openai', body.aiProcessingConsent === true, upstreamController.signal)
+    assertSpatialPaidOutputCurrent(upstream)
     if (result.message.length > emittedMessageLength) {
       response.write(`${JSON.stringify({ type: 'delta', text: result.message.slice(emittedMessageLength), locale })}\n`)
     }
@@ -463,6 +488,8 @@ export const adamPresenceProvider = onRequest({
       upstreamRequestId: upstream.headers.get('x-request-id'),
     })
   } catch (error) {
+    controller?.abort()
+    void reader?.cancel('Adam delivery stopped').catch(() => undefined)
     if (uid) await recordTelemetry({ uid, provider: 'openai', lane: 'adam', outcome: 'failure', inputUnits, latencyMs: Date.now() - startedAt })
     if (!response.headersSent) sendError(response, error)
     else {
@@ -471,6 +498,9 @@ export const adamPresenceProvider = onRequest({
         : new ProviderError(500, 'ADAM_PROVIDER_BOUNDARY_FAILURE', 'Adam is temporarily unavailable.')
       response.end(`${JSON.stringify({ type: 'error', code: boundary.code, message: boundary.message })}\n`)
     }
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout)
+    try { reader?.releaseLock() } catch { /* Pending cancelled reads retain no publication authority. */ }
   }
 })
 
@@ -484,6 +514,9 @@ export const adamFounderVoiceProvider = onRequest({
   const startedAt = Date.now()
   let uid = ''
   let inputUnits = 0
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  let controller: AbortController | undefined
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
   try {
     requireAdamEnabled()
     if (process.env.FOUNDER_VOICE_ENABLED !== 'true') {
@@ -498,6 +531,7 @@ export const adamFounderVoiceProvider = onRequest({
     inputUnits = text.length
     await requireProviderConsent(uid, 'elevenlabs', body.externalProcessingConsent === true)
     await consumeRateLimit(uid, 'elevenlabs', 'adam-founder-voice', 20)
+    await currentProviderAuthority(request, uid, 'elevenlabs', body.externalProcessingConsent === true)
 
     const voiceId = String(process.env.FOUNDER_ELEVENLABS_VOICE_ID ?? '').trim()
     if (!/^[A-Za-z0-9_-]{1,64}$/.test(voiceId)) {
@@ -507,9 +541,10 @@ export const adamFounderVoiceProvider = onRequest({
     const endpoint = new URL(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}/stream`)
     endpoint.searchParams.set('output_format', process.env.ELEVENLABS_OUTPUT_FORMAT || 'mp3_44100_128')
     if (process.env.ELEVENLABS_ZERO_RETENTION === 'true') endpoint.searchParams.set('enable_logging', 'false')
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 15_000)
-    response.on('close', () => { if (!response.writableEnded) controller.abort() })
+    controller = new AbortController()
+    const upstreamController = controller
+    timeout = setTimeout(() => upstreamController.abort(), 15_000)
+    response.on('close', () => { if (!response.writableEnded) upstreamController.abort() })
     const model = process.env.ELEVENLABS_FOUNDER_MODEL_ID || process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2'
     const upstream = await paidSpatialFetch(db, uid, 'founder-voice', 'elevenlabs', model, body, endpoint, {
       method: 'POST',
@@ -519,9 +554,11 @@ export const adamFounderVoiceProvider = onRequest({
         model_id: model,
         voice_settings: { stability: 0.68, similarity_boost: 0.84, style: 0.14, use_speaker_boost: true },
       }),
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timeout))
+      signal: upstreamController.signal,
+    })
     if (!upstream.ok || !upstream.body) throw new ProviderError(upstream.status === 429 ? 429 : 503, 'ELEVENLABS_REQUEST_FAILED', 'The private Founder voice is unavailable.')
+    await currentProviderAuthority(request, uid, 'elevenlabs', body.externalProcessingConsent === true, upstreamController.signal)
+    assertSpatialPaidOutputCurrent(upstream)
 
     response.status(200)
     response.setHeader('Content-Type', upstream.headers.get('content-type') || 'audio/mpeg')
@@ -529,10 +566,17 @@ export const adamFounderVoiceProvider = onRequest({
     response.setHeader('X-Content-Type-Options', 'nosniff')
     response.setHeader('X-URAI-Provider', 'elevenlabs')
     response.setHeader('X-URAI-Presence', 'adam-private-founder-voice')
-    const reader = upstream.body.getReader()
+    reader = upstream.body.getReader()
+    let streamedBytes = 0
     while (true) {
+      await currentProviderAuthority(request, uid, 'elevenlabs', body.externalProcessingConsent === true, upstreamController.signal)
+      assertSpatialPaidOutputCurrent(upstream)
       const { value, done } = await reader.read()
+      await currentProviderAuthority(request, uid, 'elevenlabs', body.externalProcessingConsent === true, upstreamController.signal)
+      assertSpatialPaidOutputCurrent(upstream)
       if (done) break
+      streamedBytes += value.byteLength
+      if (streamedBytes > 8 * 1024 * 1024) throw new ProviderError(502, 'FOUNDER_VOICE_OUTPUT_LIMIT', 'Founder voice exceeded its output bound.')
       response.write(Buffer.from(value))
     }
     response.end()
@@ -546,8 +590,13 @@ export const adamFounderVoiceProvider = onRequest({
       upstreamRequestId: upstream.headers.get('request-id') ?? upstream.headers.get('x-request-id'),
     })
   } catch (error) {
+    controller?.abort()
+    void reader?.cancel('Founder voice delivery stopped').catch(() => undefined)
     if (uid) await recordTelemetry({ uid, provider: 'elevenlabs', lane: 'adam-founder-voice', outcome: 'failure', inputUnits, latencyMs: Date.now() - startedAt })
     if (!response.headersSent) sendError(response, error)
     else response.end()
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout)
+    try { reader?.releaseLock() } catch { /* Pending cancelled reads retain no publication authority. */ }
   }
 })

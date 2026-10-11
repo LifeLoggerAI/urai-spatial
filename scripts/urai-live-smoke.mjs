@@ -20,6 +20,18 @@ if (requireCustomDomain && !['urai.app', 'www.urai.app'].includes(parsedBase.hos
 
 const routes = [
   {
+    paths: ['/login', '/login/'],
+    markers: [/data-route-owner="canonical-auth-entry"/i, /Enter your world\./i],
+  },
+  {
+    paths: ['/privacy-policy', '/privacy-policy/'],
+    markers: [/Privacy policy candidate/i, /Your life data stays governed by your choices\./i],
+  },
+  {
+    paths: ['/support', '/support/'],
+    markers: [/URAI Support/i, /Help when you need it\./i],
+  },
+  {
     paths: ['/'],
     markers: [/Own your life\./i, /Step inside yourself\./i, /Ground below · memory above/i],
   },

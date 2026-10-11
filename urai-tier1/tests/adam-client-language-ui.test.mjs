@@ -40,7 +40,7 @@ function fixture(){
   vm.runInNewContext(compiled,{module,exports:module.exports,require:name=>{
     if(name==='react')return hooks
     if(name==='react/jsx-runtime')return {jsx,jsxs}
-    if(name==='react-dom')return {createPortal:(child,target)=>{portalCalls.push({child,target});return child}}
+    if(name==='react-dom')return {createPortal:(child,target)=>{assert.equal(target,portalBody);portalCalls.push({child,target});return child}}
     if(name==='next/navigation')return {usePathname:()=>'/home',useSearchParams:()=>({get:()=>null})}
     if(name.endsWith('/useUraiLocale'))return localeModule.exports
     if(name.endsWith('/localePreference'))return {currentSpeechTag:()=>locale}

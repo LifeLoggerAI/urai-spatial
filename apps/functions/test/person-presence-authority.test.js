@@ -30,7 +30,11 @@ function fixture() {
       get: async () => { const rows = [...docs].filter(([key, value]) => key.startsWith(`${location}/`) && !key.slice(location.length + 1).includes('/') && (!predicate || predicate(value)))
         .sort(([a], [b]) => a.localeCompare(b)).filter(([key]) => key.split('/').at(-1) > after).slice(0, limit).map(([key]) => snapshot(key))
         return { docs: rows, empty: rows.length === 0, size: rows.length } }, add: async () => ({}) }; return query } }
-  put('privacyPolicy', 'current', { domains: { models: { mode: 'granted', modelContext: true }, identity: { mode: 'granted', likenessEnabled: true } }, enforcement: { state: 'fully-enforced' } })
+  put('privacyPolicy', 'current', { version: 2, revision: 1, ownerId: uid,
+    domains: Object.fromEntries(['memory','location','models','exports','workforce','identity'].map(domain => [domain, {
+      mode: ['models','identity'].includes(domain) ? 'granted' : 'denied', retentionDays: null, precise: false, replayVisible: false,
+      lifeMapVisible: false, modelContext: domain === 'models', sharingEnabled: false, automationEnabled: false, likenessEnabled: domain === 'identity',
+    }])), enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } })
   put('lifeEntities', 'person', { ownerId: uid, kind: 'person', revoked: false, canonicalLabel: 'Synthetic fixture person', revision: 1 })
   put('lifeEntityStates', 'state', { ownerId: uid, entityId: 'person', asOf: '2020-01-01', knowledgeCutoff: '2020-01-01' })
   put('lifeClaims', 'claim', { ownerId: uid, subjectEntityId: 'person', status: 'accepted', synthetic: false, evidenceClass: 'SOURCE_DERIVED',
@@ -50,11 +54,13 @@ function fixture() {
   function bindVoice() { put('personRenderBindings', `${bundleId}:voice`, { ownerId: uid, personId: 'person', bundleId, modality: 'voice', provider: 'elevenlabs',
     providerResourceId: 'synthetic-voice', reviewState: 'ACCEPTED', consentState: 'authorized', state: 'current', sourceAuthorityHash: 'b'.repeat(64), bundleHash: 'b'.repeat(64),
     bindingHash: 'e'.repeat(64), dependencyIds: ['claim','person','source'] }) }
-  return { db, docs, put, get, prepare, bindVoice, syntheticSpendCalls: [] }
+  return { db, docs, put, get, prepare, bindVoice, syntheticSpendCalls: [], currentUid: uid, outputChecks: 0 }
 }
 
 function handler(file, f, fetch) {
   const module = { exports: {} }, filename = path.resolve(__dirname, `../lib/apps/functions/src/${file}.js`)
+  const sourceFilename = process.env.PERSON_PRESENCE_AUTHORITY_COMPILED_ROOT ? path.join(process.env.PERSON_PRESENCE_AUTHORITY_COMPILED_ROOT, `${file}.js`) : filename
+  if (process.env.GITHUB_ACTIONS && process.env.PERSON_PRESENCE_AUTHORITY_COMPILED_ROOT) throw new Error('Native proof must exercise the checked-out compiled source')
   const compiledRequire = createRequire(filename)
   // This fixture tests private source/consent authority with synthetic transport.
   // Only its three private paid leaves receive this test-only adapter; it creates
@@ -64,6 +70,7 @@ function handler(file, f, fetch) {
   const testOnlyPrivateSpend = {
     SpatialSpendError: TestOnlySpendError,
     SPATIAL_SPEND_WORKER_TOKENS_JSON: { value: () => 'synthetic-unused-no-financial-approval' },
+    assertSpatialPaidOutputCurrent(upstream) { assert.ok(upstream); f.outputChecks++; if (f.expiredOutput) throw new TestOnlySpendError() },
     paidSpatialFetch: async (bindingDb, owner, lane, provider, model, sourceInput, target, init) => {
       assert.equal(bindingDb, f.db); assert.equal(owner, uid)
       assert.ok(['person-moderation', 'person-reasoning', 'person-voice'].includes(lane))
@@ -85,9 +92,9 @@ function handler(file, f, fetch) {
     },
   }
   const admin = { apps: ['synthetic'], firestore: Object.assign(() => f.db, { Timestamp, FieldValue: { serverTimestamp: () => 'synthetic-timestamp' } }),
-    auth: () => ({ verifyIdToken: async () => ({ uid }) }) }
+    auth: () => ({ verifyIdToken: async (_token, checkRevoked) => { assert.equal(checkRevoked, true); return { uid: f.currentUid } } }) }
   const region = { https: { HttpsError, onCall: (callback) => callback } }
-  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), { module, exports: module.exports, require: (name) => {
+  vm.runInNewContext(fs.readFileSync(sourceFilename, 'utf8'), { module, exports: module.exports, require: (name) => {
     if (name === 'firebase-admin') return admin
     if (name === 'firebase-functions/v1') return { region: () => region, https: { HttpsError } }
     if (name === 'firebase-functions/v2/https') return { onRequest: (_options, callback) => callback }
@@ -96,7 +103,15 @@ function handler(file, f, fetch) {
     if (name === './protectedProviderSpend') return testOnlyPrivateSpend
     return compiledRequire(name)
   }, Buffer, process: { env: { PERSON_PRESENCE_ENABLED: 'true', PERSON_PRESENCE_VOICE_ENABLED: 'true' } }, fetch,
-  AbortController, URL, TextDecoder, setTimeout, clearTimeout, setInterval, clearInterval, console }, { filename })
+  AbortController, URL, TextDecoder,
+  setTimeout: (callback, delay, ...args) => {
+    if (!f.syntheticTimers) return setTimeout(callback, delay, ...args)
+    const timer = { callback, delay }; f.syntheticTimers.add(timer); return timer
+  },
+  clearTimeout: timer => {
+    if (f.syntheticTimers?.has(timer)) f.syntheticTimers.delete(timer)
+    else clearTimeout(timer)
+  }, setInterval, clearInterval, console }, { filename })
   return module.exports
 }
 function response() {
@@ -194,6 +209,54 @@ test('voice checks source and accepted binding again before delivering any audio
   const f = fixture(); await f.prepare(); f.bindVoice()
   const h = handler('personPresenceVoiceProvider', f, async () => new Response('synthetic-audio', { headers: { 'content-type': 'audio/mpeg' } })).personPresenceVoiceProvider, res = response()
   await h(request(), res); assert.equal(res.code, 200); assert.equal(Buffer.concat(res.chunks).toString(), 'synthetic-audio')
+})
+
+for (const modality of ['reasoning', 'voice']) {
+  const file = modality === 'reasoning' ? 'personPresenceProvider' : 'personPresenceVoiceProvider'
+  test(`${modality} private Presence validates protected response authority before delivery`, async () => {
+    const f = fixture(); await f.prepare(); f.bindVoice()
+    const h = handler(file, f, async url => url.endsWith('/moderations') ? Response.json({ results: [{ flagged: false }] }) : modality === 'reasoning' ? stream() : new Response('synthetic-audio'))[file], res = response()
+    await h(request(), res); assert.equal(res.code, 200); assert.equal(f.outputChecks, 1)
+  })
+  for (const mutation of ['owner', 'protected-expiry']) test(`${modality} private Presence suppresses output after ${mutation}`, async () => {
+    const f = fixture(); await f.prepare(); f.bindVoice()
+    const h = handler(file, f, async url => {
+      if (url.endsWith('/moderations')) return Response.json({ results: [{ flagged: false }] })
+      if (mutation === 'owner') f.currentUid = 'other-owner'; else f.expiredOutput = true
+      return modality === 'reasoning' ? stream() : new Response('synthetic-audio')
+    })[file], res = response()
+    await h(request(), res); assert.equal(res.code, mutation === 'owner' ? 401 : 503)
+    assert.equal(Buffer.concat(res.chunks).toString().includes(modality === 'reasoning' ? 'synthetic reply' : 'synthetic-audio'), false)
+  })
+  for (const mutation of ['foreign-owner', 'partial-policy']) test(`${modality} private Presence denies noncanonical owner consent before paid processing: ${mutation}`, async () => {
+    const f = fixture(); await f.prepare(); f.bindVoice()
+    if (mutation === 'foreign-owner') f.get('privacyPolicy','current').ownerId = 'other-owner'; else delete f.get('privacyPolicy','current').domains.location
+    const h = handler(file, f, async url => url.endsWith('/moderations') ? Response.json({ results: [{ flagged: false }] }) : modality === 'reasoning' ? stream() : new Response('synthetic-audio'))[file], res = response()
+    await h(request(), res); assert.equal(res.code, 403); assert.equal(res.jsonValue.error, 'CONSENT_POLICY_REQUIRED')
+    assert.equal(f.syntheticSpendCalls.length, 0)
+  })
+}
+for (const payload of [{}, { results: [] }, { results: [{ flagged: 'false' }] }]) test('private Presence refuses malformed moderation before reasoning dispatch: ' + JSON.stringify(payload), async () => {
+  const f = fixture(); await f.prepare()
+  const h = handler('personPresenceProvider', f, async url => url.endsWith('/moderations') ? Response.json(payload) : stream()).personPresenceProvider, res = response()
+  await h(request(), res); assert.equal(res.code, 503); assert.equal(res.jsonValue.error, 'MODERATION_UNAVAILABLE')
+  assert.equal(f.syntheticSpendCalls.length, 1); assert.equal(f.syntheticSpendCalls[0].lane, 'person-moderation')
+})
+
+test('private Presence moderation deadline remains effective while its response body is read', async () => {
+  const f = fixture(); await f.prepare(); f.syntheticTimers = new Set()
+  const h = handler('personPresenceProvider', f, async (url, init) => {
+    if (!url.endsWith('/moderations')) return stream()
+    return { ok: true, json: async () => {
+      for (const timer of f.syntheticTimers) if (timer.delay === 8_000) timer.callback()
+      return { results: [{ flagged: false }] }
+    } }
+  }).personPresenceProvider, res = response()
+  await h(request(), res)
+  assert.equal(res.code, 503); assert.equal(res.jsonValue.error, 'MODERATION_UNAVAILABLE')
+  assert.equal(f.syntheticSpendCalls.length, 1)
+  assert.equal(Buffer.concat(res.chunks).toString().includes('synthetic reply'), false)
+  assert.equal(f.syntheticTimers.size, 0)
 })
 
 test('session/capability handlers carry canonical dependency lineage and deny corrected bundles', async () => {

@@ -342,7 +342,7 @@ export const openAiOrbProvider = onRequest({
     const timeout = setTimeout(() => controller.abort(), 30_000)
     const abortOnClose = () => controller.abort()
     request.on('close', abortOnClose)
-    const { result, upstreamRequestId } = await (async () => {
+    const { result, upstreamRequestId, upstream } = await (async () => {
       try {
         const upstream = await paidSpatialFetch(db, uid, 'orb-reasoning', 'openai', upstreamBody.model, body, 'https://api.openai.com/v1/responses', {
           method: 'POST',
@@ -381,7 +381,7 @@ export const openAiOrbProvider = onRequest({
           }
         }
         if (!completed || !output) throw new ProviderError(502, 'OPENAI_RESPONSE_INCOMPLETE', 'The live Orb provider returned an incomplete response.')
-        return { result: parseOrbOutput(output, locale), upstreamRequestId: upstream.headers.get('x-request-id') }
+        return { result: parseOrbOutput(output, locale), upstreamRequestId: upstream.headers.get('x-request-id'), upstream }
       } finally {
         clearTimeout(timeout)
         request.off?.('close', abortOnClose)
@@ -395,6 +395,7 @@ export const openAiOrbProvider = onRequest({
     reservationCompleted = true
     if (await authenticatedUid(request) !== uid) throw new ProviderError(401, 'UNAUTHORIZED', 'Authentication changed during result completion.')
     await requireProviderConsent(uid, 'openai', body.aiProcessingConsent === true)
+    assertSpatialPaidOutputCurrent(upstream)
 
     response.status(200)
     response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8')
