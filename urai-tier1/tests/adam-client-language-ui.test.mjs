@@ -15,7 +15,7 @@ const localeCompiled=ts.transpileModule(localeSource,{compilerOptions:{module:ts
 const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):''
 const tick=async()=>{for(let i=0;i<8;i++)await new Promise(resolve=>setImmediate(resolve))}
 function fixture(){
-  const cells=[],requests=[],voices=[],audio=[];let cursor=0,locale='en-US',resolve,reject
+  const cells=[],requests=[],voices=[],audio=[],portalTarget={};let cursor=0,locale='en-US',resolve,reject
   localePreference.updateLocalePreference(localePreference.ENGLISH_LOCALE_PREFERENCE)
   const hooks={useState:initial=>{const i=cursor++;cells[i]??={value:initial};return [cells[i].value,next=>{cells[i].value=typeof next==='function'?next(cells[i].value):next}]},
     useSyncExternalStore:(_subscribe,getSnapshot)=>{cursor++;return getSnapshot()},
@@ -35,7 +35,7 @@ function fixture(){
   vm.runInNewContext(compiled,{module,exports:module.exports,require:name=>{
     if(name==='react')return hooks
     if(name==='react/jsx-runtime')return {jsx,jsxs}
-    if(name==='react-dom')return {createPortal:child=>child}
+    if(name==='react-dom')return {createPortal:(child,target)=>{assert.equal(target,portalTarget);return child}}
     if(name==='next/navigation')return {usePathname:()=>'/home',useSearchParams:()=>({get:()=>null})}
     if(name.endsWith('/useUraiLocale'))return localeModule.exports
     if(name.endsWith('/localePreference'))return {currentSpeechTag:()=>locale}
@@ -45,7 +45,7 @@ function fixture(){
     if(name.endsWith('.module.css'))return {__esModule:true,default:{}}
     throw Error('Unexpected Adam dependency '+name)
   },AbortController,crypto:{randomUUID:()=>String(cells.length)},URL:{createObjectURL:()=> 'blob:synthetic',revokeObjectURL:()=>{}},
-  Audio:class{constructor(){audio.push(this)}play(){return Promise.resolve()}pause(){this.paused=true}}})
+  Audio:class{constructor(){audio.push(this)}play(){return Promise.resolve()}pause(){this.paused=true}},document:{body:portalTarget}})
   const render=()=>{cursor=0;return module.exports.default()}
   const find=predicate=>{const visit=node=>{if(Array.isArray(node)){for(const n of node){const hit=visit(n);if(hit)return hit}}
     else if(node?.props){if(predicate(node))return node;return visit(node.props.children)}return null};return visit(render())}
