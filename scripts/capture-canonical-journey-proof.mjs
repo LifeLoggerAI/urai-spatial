@@ -209,6 +209,36 @@ async function waitFocusFrame(focus) {
   await waitAttr(canvas, 'data-focus-first-frame', 'true', 60_000)
 }
 
+async function assertAdamLauncherLabel(realm, journey, surface) {
+  const launcher = realm.locator('[data-urai-adam-launcher-slot] [data-urai-adam-launcher]')
+  await launcher.waitFor({ state: 'visible', timeout: 30_000 })
+  assert.equal(await launcher.count(), 1, `${surface} must own one inline Adam launcher`)
+  const geometry = await launcher.evaluate((button) => {
+    const rect = button.getBoundingClientRect(), style = getComputedStyle(button)
+    const range = document.createRange()
+    range.selectNodeContents(button)
+    const label = range.getBoundingClientRect()
+    return {
+      text: button.textContent?.trim(),
+      placement: button.dataset.adamLauncherPlacement,
+      button: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom },
+      label: { left: label.left, right: label.right, top: label.top, bottom: label.bottom },
+      contentLeft: rect.left + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft),
+      contentRight: rect.right - parseFloat(style.borderRightWidth) - parseFloat(style.paddingRight),
+      viewportWidth: innerWidth,
+    }
+  })
+  assert.equal(geometry.text, 'Adam')
+  assert.equal(geometry.placement, 'inline-slot')
+  assert.ok(geometry.label.right > geometry.label.left, `${surface} has no rendered launcher label`)
+  assert.ok(geometry.label.left >= geometry.contentLeft - 1 && geometry.label.right <= geometry.contentRight + 1,
+    `${surface} launcher label overflows its content box: ${JSON.stringify(geometry)}`)
+  assert.ok(geometry.button.left >= 0 && geometry.button.right <= geometry.viewportWidth,
+    `${surface} launcher exceeds the viewport: ${JSON.stringify(geometry)}`)
+  journey.launcherLabelChecks ||= []
+  journey.launcherLabelChecks.push({ surface, ...geometry })
+}
+
 async function enterFocus(page, journey, mode, identity) {
   const nav = page.getByRole('navigation', { name: 'Selected memory actions' })
   await activate(page, nav.getByRole('button', { name: /Enter Focus$/ }), mode)
@@ -218,6 +248,7 @@ async function enterFocus(page, journey, mode, identity) {
   await assertRealmIdentity(focus, identity)
   await waitFocusFrame(focus)
   assert.equal(new URL(page.url()).searchParams.get('demo'), '1')
+  await assertAdamLauncherLabel(focus, journey, 'focus')
   await capture(page, journey, 'focus')
 }
 
@@ -235,6 +266,7 @@ async function enterReplay(page, journey, mode, identity) {
   await waitAttr(canvas, 'data-replay-first-frame', 'true', 60_000)
   await activate(page, replay.getByRole('button', { name: 'Continue memory', exact: true }), mode)
   await waitAttr(replay, 'data-playing', 'true', 20_000)
+  await assertAdamLauncherLabel(replay, journey, 'replay')
   await capture(page, journey, 'replay')
   await activate(page, replay.getByRole('button', { name: 'Pause memory', exact: true }), mode)
   await waitAttr(replay, 'data-playing', 'false', 20_000)
