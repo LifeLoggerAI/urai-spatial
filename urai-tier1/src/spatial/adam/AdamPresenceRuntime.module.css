@@ -151,6 +151,11 @@
     width: calc(100vw - 16px);
     max-height: calc(100dvh - 16px);
   }
+  .log {
+    /* Keep the composer visible while retaining a scrollable conversation. */
+    flex-shrink: 1;
+    min-height: 96px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .launcher, .panel, .presence { transition: none !important; animation: none !important; }
@@ -167,6 +172,11 @@
   width: 100%;
 }
 /* Route typography and spatial header transforms do not own founder controls. */
+:global(body) > .panel[data-urai-adam-presence] {
+  /* Override generic body-child layering without changing responsive bounds. */
+  position: fixed;
+  z-index: 2147483602;
+}
 .launcher[data-urai-adam-launcher][data-adam-launcher-placement] {
   min-width: 64px !important;
   min-height: 48px !important;

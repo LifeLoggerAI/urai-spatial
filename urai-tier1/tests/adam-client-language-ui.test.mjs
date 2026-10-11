@@ -15,7 +15,7 @@ const localeCompiled=ts.transpileModule(localeSource,{compilerOptions:{module:ts
 const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):''
 const tick=async()=>{for(let i=0;i<8;i++)await new Promise(resolve=>setImmediate(resolve))}
 function fixture(){
-  const cells=[],requests=[],voices=[],audio=[];let cursor=0,locale='en-US',resolve,reject
+  const cells=[],requests=[],voices=[],audio=[],portalContainers=[],body={};let cursor=0,locale='en-US',resolve,reject
   localePreference.updateLocalePreference(localePreference.ENGLISH_LOCALE_PREFERENCE)
   const hooks={useState:initial=>{const i=cursor++;cells[i]??={value:initial};return [cells[i].value,next=>{cells[i].value=typeof next==='function'?next(cells[i].value):next}]},
     useSyncExternalStore:(_subscribe,getSnapshot)=>{cursor++;return getSnapshot()},
@@ -35,7 +35,7 @@ function fixture(){
   vm.runInNewContext(compiled,{module,exports:module.exports,require:name=>{
     if(name==='react')return hooks
     if(name==='react/jsx-runtime')return {jsx,jsxs}
-    if(name==='react-dom')return {createPortal:child=>child}
+    if(name==='react-dom')return {createPortal:(child,container)=>{portalContainers.push(container);return child}}
     if(name==='next/navigation')return {usePathname:()=>'/home',useSearchParams:()=>({get:()=>null})}
     if(name.endsWith('/useUraiLocale'))return localeModule.exports
     if(name.endsWith('/localePreference'))return {currentSpeechTag:()=>locale}
@@ -45,14 +45,14 @@ function fixture(){
     if(name.endsWith('.module.css'))return {__esModule:true,default:{}}
     throw Error('Unexpected Adam dependency '+name)
   },AbortController,crypto:{randomUUID:()=>String(cells.length)},URL:{createObjectURL:()=> 'blob:synthetic',revokeObjectURL:()=>{}},
-  Audio:class{constructor(){audio.push(this)}play(){return Promise.resolve()}pause(){this.paused=true}}})
+  document:{body},Audio:class{constructor(){audio.push(this)}play(){return Promise.resolve()}pause(){this.paused=true}}})
   const render=()=>{cursor=0;return module.exports.default()}
   const find=predicate=>{const visit=node=>{if(Array.isArray(node)){for(const n of node){const hit=visit(n);if(hit)return hit}}
     else if(node?.props){if(predicate(node))return node;return visit(node.props.children)}return null};return visit(render())}
-  const open=()=>find(node=>node.type==='button').props.onClick()
+  const open=()=>{find(node=>node.type==='button').props.onClick();render();assert.equal(portalContainers.at(-1),body,'open panel must portal to document.body outside the spatial stacking context')}
   const consent=()=>{const inputs=[];find(node=>{if(node.type==='input')inputs.push(node);return false});for(const input of inputs)input.props.onChange({target:{checked:true}})}
   const send=async()=>{find(node=>node.type==='textarea').props.onChange({target:{value:'Synthetic question'}});void find(node=>node.type==='form').props.onSubmit({preventDefault(){}});await tick()}
-  return {find,render,open,consent,send,requests,voices,audio,setLocale:next=>{locale=next;localePreference.updateLocalePreference({requested:next.split('-')[0],preview:false})},complete:result=>resolve(result),fail:()=>reject(new AdamProviderError('Synthetic rejection'))}
+  return {find,render,open,consent,send,requests,voices,audio,portalContainers,body,setLocale:next=>{locale=next;localePreference.updateLocalePreference({requested:next.split('-')[0],preview:false})},complete:result=>resolve(result),fail:()=>reject(new AdamProviderError('Synthetic rejection'))}
 }
 test('actual Adam stream, caption and queued private voice retain captured Urdu after preference changes',async()=>{
   const f=fixture();f.open();f.consent();f.setLocale('ur-PK');await f.send();f.setLocale('fr-FR')
