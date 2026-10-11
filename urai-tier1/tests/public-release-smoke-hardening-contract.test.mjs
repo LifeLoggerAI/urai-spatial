@@ -61,7 +61,7 @@ test('custom-domain live smoke verifies the public login, privacy policy, and su
   for (const [route, marker] of [
     ['/login', 'canonical-auth-entry'],
     ['/privacy-policy', 'Privacy policy candidate'],
-    ['/support', 'Help when you need it.'],
+    ['/support', 'Help when you need it\\.'],
   ]) {
     assert.ok(liveSmoke.includes(`paths: ['${route}', '${route}/']`), `missing live route smoke for ${route}`)
     assert.ok(liveSmoke.includes(marker), `missing route-specific live marker for ${route}`)

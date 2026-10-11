@@ -4,7 +4,8 @@ import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
 import { loadPersonPresenceAuthority, PersonPresenceAuthorityError } from './personPresenceAuthority'
 import { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS } from '../../../packages/localization/src/contentLanguage'
-import { paidSpatialFetch, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
+import { paidSpatialFetch, assertSpatialPaidOutputCurrent, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -69,10 +70,11 @@ async function requireProviderConsent(uid: string, explicitConsent: boolean) {
   ])
   if (!policySnapshot.exists) throw new PresenceError(403, 'CONSENT_POLICY_REQUIRED', 'A saved privacy policy is required.')
   const policy = policySnapshot.data() ?? {}
-  const domains = isRecord(policy.domains) ? policy.domains : {}
-  const models = isRecord(domains.models) ? domains.models : {}
-  const identity = isRecord(domains.identity) ? domains.identity : {}
-  const enforcement = isRecord(policy.enforcement) ? policy.enforcement : {}
+  if (!isCanonicalStoredPolicy(policy, uid)) throw new PresenceError(403, 'CONSENT_POLICY_REQUIRED', 'A canonical owner privacy policy is required.')
+  const domains = policy.domains
+  const models = domains.models
+  const identity = domains.identity
+  const enforcement = policy.enforcement
   if (!['granted','limited'].includes(String(models.mode ?? '')) || models.modelContext !== true) {
     throw new PresenceError(403, 'MODEL_PROCESSING_NOT_AUTHORIZED', 'Model processing is not authorized.')
   }
@@ -146,7 +148,8 @@ async function loadSessionAuthority(uid: string, sessionId: string) {
     throw error
   }
 }
-async function recheckSessionAuthority(uid: string, sessionId: string, expectedDigest: string) {
+async function recheckSessionAuthority(uid: string, sessionId: string, expectedDigest: string, request?: { headers: Record<string, unknown> }) {
+  if (request && await authenticatedUid(request) !== uid) throw new PresenceError(401, 'UNAUTHORIZED', 'Authentication changed before Person Presence delivery.')
   await requireProviderConsent(uid, true)
   const authority = await loadSessionAuthority(uid, sessionId)
   if (authority.authorityDigest !== expectedDigest) throw new PresenceError(409, 'PRESENCE_AUTHORITY_CHANGED', 'Person Presence source authority changed.')
@@ -217,26 +220,31 @@ export const personPresenceProvider = onRequest({
     await consumeRateLimit(uid)
     const authority = await loadSessionAuthority(uid, sessionId)
     const spendInput = { request: body, authority_digest: authority.authorityDigest }
+    await recheckSessionAuthority(uid, sessionId, authority.authorityDigest, request)
 
     const moderationController = new AbortController()
     const moderationTimeout = setTimeout(() => moderationController.abort(), 8_000)
-    const moderation = await paidSpatialFetch(db, uid, 'person-moderation', 'openai', 'omni-moderation-latest', spendInput, 'https://api.openai.com/v1/moderations', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${OPENAI_API_KEY.value()}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'omni-moderation-latest', input: message }),
-      signal: moderationController.signal,
-    }).finally(() => clearTimeout(moderationTimeout))
-    if (!moderation.ok) throw new PresenceError(503, 'MODERATION_UNAVAILABLE', 'Safety screening is unavailable.')
-    const moderationResult = await moderation.json() as { results?: Array<{ flagged?: boolean }> }
-    if (moderationResult.results?.[0]?.flagged) throw new PresenceError(400, 'INPUT_BLOCKED', 'This message cannot be sent.')
+    try {
+      const moderation = await paidSpatialFetch(db, uid, 'person-moderation', 'openai', 'omni-moderation-latest', spendInput, 'https://api.openai.com/v1/moderations', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY.value()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'omni-moderation-latest', input: message }),
+        signal: moderationController.signal,
+      })
+      if (!moderation.ok) throw new PresenceError(503, 'MODERATION_UNAVAILABLE', 'Safety screening is unavailable.')
+      const moderationResult = await moderation.json() as { results?: Array<{ flagged?: boolean }> }
+      if (moderationController.signal.aborted) throw new PresenceError(503, 'MODERATION_UNAVAILABLE', 'Safety screening timed out.')
+      if (typeof moderationResult.results?.[0]?.flagged !== 'boolean') throw new PresenceError(503, 'MODERATION_UNAVAILABLE', 'Safety screening returned no valid decision.')
+      if (moderationResult.results?.[0]?.flagged) throw new PresenceError(400, 'INPUT_BLOCKED', 'This message cannot be sent.')
+    } finally { clearTimeout(moderationTimeout) }
 
     const evidenceJson = JSON.stringify(authority.evidence)
     const recent = context.map((item, index) => `${index + 1}. ${item.role}: ${item.content}`).join('\n')
     controller = new AbortController()
     const upstreamController = controller
     timeout = setTimeout(() => upstreamController.abort(), 32_000)
-    monitor = setInterval(() => { recheckSessionAuthority(uid, sessionId, authority.authorityDigest).catch(() => upstreamController.abort()) }, 5_000)
-    await recheckSessionAuthority(uid, sessionId, authority.authorityDigest)
+    monitor = setInterval(() => { recheckSessionAuthority(uid, sessionId, authority.authorityDigest, request).catch(() => upstreamController.abort()) }, 5_000)
+    await recheckSessionAuthority(uid, sessionId, authority.authorityDigest, request)
     response.on('close', () => { if (!response.writableEnded) upstreamController.abort() })
     const model = process.env.OPENAI_PERSON_PRESENCE_MODEL || process.env.OPENAI_ADAM_MODEL || 'gpt-5'
     const upstream = await paidSpatialFetch(db, uid, 'person-reasoning', 'openai', model, spendInput, 'https://api.openai.com/v1/responses', {
@@ -319,8 +327,9 @@ export const personPresenceProvider = onRequest({
     }
     if (!completed || !output) throw new PresenceError(502, 'OPENAI_RESPONSE_INCOMPLETE', 'Person presence returned incomplete output.')
     const result = parseOutput(output, new Set(authority.evidence.map((claim) => claim.id)), locale)
-    await recheckSessionAuthority(uid, sessionId, authority.authorityDigest)
+    await recheckSessionAuthority(uid, sessionId, authority.authorityDigest, request)
     if (upstreamController.signal.aborted) throw new PresenceError(409, 'PRESENCE_AUTHORITY_UNAVAILABLE', 'Person Presence source authority is unavailable.')
+    assertSpatialPaidOutputCurrent(upstream)
     response.status(200)
     response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8')
     response.setHeader('Cache-Control', 'private, no-store, max-age=0')

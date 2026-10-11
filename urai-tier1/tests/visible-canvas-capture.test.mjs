@@ -122,19 +122,27 @@ test('Home/Orb proof binds its visual samples and receipt to guarded canvas pixe
   }
   visit(ast)
   assert.equal(calls.length, 1)
-  assert.deepEqual(calls[0].arguments.map(node => node.getText(ast)), ['page', 'canvas', '90_000', 'samplePoints'])
+  assert.deepEqual(calls[0].arguments.map(node => node.getText(ast)), ['page', 'canvas', '90_000', 'samplePoints', 'selector'])
   const helperSource = await readFile(new URL('../../scripts/capture-visible-canvas-png.mjs', import.meta.url), 'utf8')
   const helperAst = ts.createSourceFile('capture.mjs', helperSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
   const helper = helperAst.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'captureVisibleCanvasPng')
   assert.equal(Number(helper.parameters[2].initializer.text), 90_000)
   assert.equal(helper.parameters[3].initializer.text, 'CANVAS_EVIDENCE_SAMPLE_POINTS')
-  assert.match(source, /record\.canvasSamplingBefore = await worldCanvas\.evaluate\(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS\)/)
+  assert.doesNotMatch(source, /worldCanvas\.evaluate\(/)
+  assert.match(source, /page\.evaluate\(inspectHomeOrbCanvasSamples, \{/)
+  assert.match(source, /selector: worldCanvasSelector,\s+points: CANVAS_EVIDENCE_SAMPLE_POINTS/)
+  assert.match(source, /record\.canvasSamplingBefore = await inspectCanvasSamplingFromPage\(page\)/)
   assert.match(source, /if \(!record\.canvasSamplingBefore\.accepted\) throw/)
-  assert.match(source, /imageEvidence\(page, worldCanvas, record\.canvasSamplingBefore\.samplePoints\)/)
+  assert.match(source, /imageEvidence\(page, worldCanvas, record\.canvasSamplingBefore\.samplePoints, worldCanvasSelector\)/)
+  assert.match(source, /record\.canvasSamplingAfter = await inspectCanvasSamplingFromPage\(page\)/)
   assert.match(source, /!record\.canvasSamplingAfter\.accepted \|\| JSON\.stringify\(record\.canvasSamplingAfter\) !== JSON\.stringify\(record\.canvasSamplingBefore\)/)
   assert.match(source, /record\.canvasCapture = visual\.capture/)
   assert.match(source, /record\.canvasCapture\?\.canvasTopmostAfterCapture === true/)
-  assert.match(source, /if \(await worldCanvas\.count\(\) !== 1\)/)
+  assert.match(source, /if \(await page\.evaluate\(\(selector\) => document\.querySelectorAll\(selector\)\.length, worldCanvasSelector\) !== 1\)/)
+  assert.match(source, /record\.semanticOpacity > 0 && record\.semanticOpacity <= \.02/)
+  const navigationSource = await readFile(new URL('../../scripts/home-orb-canvas-sampling.mjs', import.meta.url), 'utf8')
+  assert.match(navigationSource, /visible: style\.display !== 'none' && style\.visibility === 'visible' && opacity > 0/)
+  assert.doesNotMatch(navigationSource, /visible:.*opacity >= \.99/)
 })
 
 test('Home/Orb image sampler executes the shared guarded capture with the admitted points and unchanged deadline', async () => {
@@ -145,29 +153,63 @@ test('Home/Orb image sampler executes the shared guarded capture with the admitt
   // Inert browser/PNG decode boundary; this tests capture wiring, not rendered pixels.
   const f = fixture()
   const points = CANVAS_EVIDENCE_SAMPLE_POINTS.slice(0, -1)
+  const worldCanvasSelector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"] canvas'
   let captureCalls = 0
   f.page.evaluate = async (_decode, input) => {
+    if (input.selector === worldCanvasSelector) {
+      f.calls.push(['occlusion', input.samplePoints])
+      return { count: 1, visible: true, bounds: visibleBounds, unoccluded: true }
+    }
     assert.equal(input.url, `data:image/png;base64,${f.pixels.toString('base64')}`)
     assert.equal(input.points, points)
     return { luminanceRange: 32, visibleSamples: points.length }
   }
   const run = vm.runInNewContext(`${sampler.getText(ast)}\nimageEvidence`, {
-    captureVisibleCanvasPng: async (page, canvas, timeout, selected) => {
+    worldCanvasSelector, paintedHomeEvaluationTimeout: 90_000, setTimeout, clearTimeout,
+    captureVisibleCanvasPng: async (page, canvas, timeout, selected, selector) => {
       captureCalls += 1
       assert.equal(page, f.page)
       assert.equal(canvas, f.canvas)
       assert.equal(timeout, 90_000)
       assert.equal(selected, points)
-      return captureVisibleCanvasPng(page, canvas, timeout, selected)
+      assert.equal(selector, worldCanvasSelector)
+      return captureVisibleCanvasPng(page, canvas, timeout, selected, selector)
     },
   })
-  const result = await run(f.page, f.canvas, points)
+  const result = await run(f.page, f.canvas, points, worldCanvasSelector)
   assert.equal(captureCalls, 1)
   assert.equal(result.buffer, f.pixels)
   assert.deepEqual(result.capture.samplePoints, points)
   assert.deepEqual(f.calls.filter(([name]) => name === 'occlusion').map(([, selected]) => selected), [points, points])
   assert.equal(result.capture.canvasTopmostAfterCapture, true)
 })
+
+for (const stalledStage of ['before', 'screenshot', 'after', 'decode']) {
+  test(`Home/Orb image evidence rejects a stalled ${stalledStage} phase within its total deadline`, async () => {
+    const source = await readFile(new URL('../../scripts/capture-natural-home-orb-proof.mjs', import.meta.url), 'utf8')
+    const ast = ts.createSourceFile('proof.mjs', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+    const sampler = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'imageEvidence')
+    const f = fixture()
+    const worldCanvasSelector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"] canvas'
+    let canvasReads = 0
+    const never = () => new Promise(() => {})
+    f.page.evaluate = async (_read, input) => {
+      if (input.selector === worldCanvasSelector) {
+        canvasReads += 1
+        if (stalledStage === (canvasReads === 1 ? 'before' : 'after')) return never()
+        return { count: 1, visible: true, bounds: visibleBounds, unoccluded: true }
+      }
+      if (stalledStage === 'decode') return never()
+      return { luminanceRange: 32, visibleSamples: input.points.length }
+    }
+    if (stalledStage === 'screenshot') f.page.screenshot = never
+    const run = vm.runInNewContext(`${sampler.getText(ast)}\nimageEvidence`, {
+      worldCanvasSelector, paintedHomeEvaluationTimeout: 10, setTimeout, clearTimeout, captureVisibleCanvasPng,
+    })
+    await assert.rejects(run(f.page, f.canvas, CANVAS_EVIDENCE_SAMPLE_POINTS, worldCanvasSelector), /image evidence exceeded its bounded painted-home deadline/)
+    assert.equal(canvasReads, stalledStage === 'before' || stalledStage === 'screenshot' ? 1 : 2)
+  })
+}
 
 const homePoints = [[.18,.2],[.5,.2],[.82,.2],[.18,.5],[.5,.5],[.82,.5],[.18,.8],[.5,.8],[.82,.8]]
 test('caller-specific sampling points are guarded before and after capture', async () => {
@@ -224,7 +266,21 @@ async function homeSamplerFixture(options = {}) {
       } } }
     } },
   }
-  f.page.evaluate = async (read, argument) => argument === undefined ? bounds : read(argument)
+  let directReads = 0
+  f.page.evaluate = async (read, argument) => {
+    if (argument?.selector === '.urai-asset-home-world canvas') {
+      directReads += 1
+      f.calls.push(['occlusion', argument.samplePoints])
+      const selectedBounds = directReads === 1 ? bounds : (options.after ?? bounds)
+      return {
+        count: options.canvasCount ?? 1,
+        visible: selectedBounds !== null && selectedBounds.width > 0 && selectedBounds.height > 0,
+        bounds: selectedBounds,
+        unoccluded: options.occluded !== true && !(options.coveredAfter === true && directReads > 1),
+      }
+    }
+    return argument === undefined ? bounds : read(argument)
+  }
   const context = vm.createContext(environment)
   const run = vm.runInContext(source.slice(start, end) + '\nreadVisualEvidence', context)
   return { ...f, directory, context, async run() { return run(f.page) }, async close() { await rm(directory, { recursive: true, force: true }) } }

@@ -44,7 +44,7 @@ function canonical(value: unknown): string {
 }
 function jobDigest(job: JsonRecord) { return spendDigest(canonical(Object.fromEntries(Object.entries(job).filter(([key]) => key !== 'approval' && key !== 'attempts')))) }
 
-const SOURCE_PATHS = [...['providerFunctions.ts', 'adamPresenceFunctions.ts', 'personPresenceProvider.ts', 'personPresenceVoiceProvider.ts', 'councilProviderFunctions.ts', 'protectedProviderSpend.ts', 'mapsElevation.ts', 'mapsElevationResult.ts'].map(name => `apps/functions/src/${name}`), 'urai-tier1/src/app/api/maps/elevation/route.ts']
+const SOURCE_PATHS = [...['providerFunctions.ts', 'adamPresenceFunctions.ts', 'personPresenceProvider.ts', 'personPresenceVoiceProvider.ts', 'councilProviderFunctions.ts', 'protectedProviderSpend.ts', 'mapsElevation.ts', 'mapsElevationResult.ts', 'consentPolicyAuthority.ts', 'personPresenceAuthority.ts'].map(name => `apps/functions/src/${name}`), 'packages/localization/src/contentLanguage.ts', 'urai-tier1/src/app/api/maps/elevation/route.ts', 'urai-tier1/src/lib/server/firebase-user.ts', 'urai-tier1/src/lib/server/google-adc.ts']
 /** Runtime declarations must agree with actual clean tracked enforcement source. */
 export function spatialSpendSourceSha() {
   const expected = sha(process.env.URAI_SOURCE_SHA, 40)

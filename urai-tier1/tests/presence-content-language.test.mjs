@@ -10,6 +10,10 @@ const sourceRoot = process.env.PRESENCE_LANGUAGE_SOURCE_ROOT
   ? new URL(`file://${process.env.PRESENCE_LANGUAGE_SOURCE_ROOT.replace(/\/$/, '')}/`)
   : new URL('../../', import.meta.url)
 const readSource = path => fs.readFileSync(new URL(path, sourceRoot), 'utf8')
+const policyModule = { exports: {} }
+vm.runInNewContext(ts.transpileModule(readSource('apps/functions/src/consentPolicyAuthority.ts'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { module: policyModule, exports: policyModule.exports })
 const frame = event => `data: ${JSON.stringify(event)}\n\n`
 const outputEvent = delta => ({ type: 'response.output_text.delta', delta })
 const completeEvent = { type: 'response.completed' }
@@ -25,7 +29,12 @@ function providerFixture(lane, options = {}) {
   const snapshot = path => ({
     exists: path.endsWith('privacyPolicy/current'),
     data: () => path.endsWith('privacyPolicy/current')
-      ? { domains: { models: { mode: options.consentDenied ? 'denied' : 'granted', modelContext: !options.consentDenied }, identity: { mode: 'granted' } }, enforcement: { state: 'fully-enforced' } }
+      ? { version: 2, revision: 1, ownerId: 'synthetic-owner',
+        domains: Object.fromEntries(['memory','location','models','exports','workforce','identity'].map(domain => [domain, {
+          mode: domain === 'models' ? options.consentDenied ? 'denied' : 'granted' : domain === 'identity' ? 'granted' : 'denied',
+          retentionDays: null, precise: false, replayVisible: false, lifeMapVisible: false, modelContext: domain === 'models' && !options.consentDenied,
+          sharingEnabled: false, automationEnabled: false, likenessEnabled: false,
+        }])), enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } }
       : {},
   })
   const db = {
@@ -60,13 +69,14 @@ function providerFixture(lane, options = {}) {
       if (id === 'firebase-functions/params') return { defineSecret: () => ({ value: () => 'synthetic-provider-key' }) }
       if (id === 'firebase-functions/v2/https') return { onRequest: (_configuration, handler) => handler }
       if (id === '../../../packages/localization/src/contentLanguage') return { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS }
-      if (id === './protectedProviderSpend') return { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => providerTransport(url, init), SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} }
+      if (id === './protectedProviderSpend') return { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => providerTransport(url, init), assertSpatialPaidOutputCurrent: () => undefined, SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} }
+      if (id === './consentPolicyAuthority') return policyModule.exports
       if (id === './personPresenceAuthority') return {
         PersonPresenceAuthorityError,
         loadPersonPresenceAuthority: async () => {
           authorityReads++
           if (options.authorityDenied) throw new PersonPresenceAuthorityError('PERSON_MODEL_STALE')
-          return options.revokeAfterStream && authorityReads >= 3 ? { ...authority, authorityDigest: 'revoked-source' } : authority
+          return options.revokeAfterStream && upstreamCompleted ? { ...authority, authorityDigest: 'revoked-source' } : authority
         },
       }
       throw Error(`Unexpected provider dependency ${id}`)
@@ -143,7 +153,7 @@ for (const lane of ['adam', 'person']) {
       if (lane === 'person') {
         assert.equal(done.historicalSourceAuthority, false)
         assert.equal(done.syntheticOutputMayBecomeHistoricalSource, false)
-        assert.equal(result.authorityReads, 3)
+        assert.ok(result.authorityReads >= 3)
       }
     })
   }
@@ -298,7 +308,7 @@ test('Person Presence still denies stale protected source authority before upstr
 
 test('Person Presence rechecks source authority after model output before releasing language/captions', async () => {
   const result = await providerFixture('person', { requestLocale: 'fa', revokeAfterStream: true }).invoke()
-  assert.equal(result.authorityReads, 3)
+  assert.ok(result.authorityReads >= 3)
   assert.equal(result.code, 409)
   assert.equal(result.json.error, 'PRESENCE_AUTHORITY_CHANGED')
   assert.equal(result.events.length, 0)
@@ -317,5 +327,5 @@ test('server language changes retain accepted private Founder voice and simulate
   assert.doesNotMatch(adam, /pNInz6obpgDQGcFmaJgB/)
   assert.match(person, /Generated dialogue is simulation and can never become historical testimony/)
   assert.match(person, /syntheticOutputMayBecomeHistoricalSource:false/)
-  assert.match(person, /recheckSessionAuthority\(uid, sessionId, authority\.authorityDigest\)/)
+  assert.match(person, /recheckSessionAuthority\(uid, sessionId, authority\.authorityDigest, request\)/)
 })

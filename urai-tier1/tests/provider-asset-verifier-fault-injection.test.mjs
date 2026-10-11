@@ -120,6 +120,45 @@ test('the authoritative English name cannot silently drift behind a correct mess
   assert.ok(failed.failures.some(failure => failure.includes('Home navigation actual home-semantic-ground')))
 })
 
+test('a native-looking client navigation tag cannot substitute an unowned import', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+    "import Link from 'next/link'", "import Link from '@/unowned/navigation'"))
+  assert.ok(failed.failures.some(failure => failure.includes('Home navigation actual home-semantic-ground')))
+  assert.ok(failed.failures.some(failure => failure.includes('Home navigation actual home-semantic-life-map')))
+})
+
+test('a parameter cannot shadow the actual native-anchor renderer import', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+    'function HomeSemanticNavigation()', 'function HomeSemanticNavigation({ Link })'))
+  assert.ok(failed.failures.some(failure => failure.includes('Home navigation actual home-semantic-ground')))
+})
+
+test('a local control cannot shadow the actual native-anchor renderer import', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+    'function HomeSemanticNavigation() {', 'function HomeSemanticNavigation() {\n  const Link = () => null'))
+  assert.ok(failed.failures.some(failure => failure.includes('Home navigation actual home-semantic-ground')))
+})
+
+test('client navigation cannot enable speculative destination requests', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+    '<Link prefetch={false}', '<Link prefetch={true}'))
+  assert.ok(failed.failures.some(failure => failure.includes('Home navigation actual home-semantic-ground')))
+})
+
+test('client navigation cannot remove its explicit prefetch boundary', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+    '<Link prefetch={false}', '<Link'))
+  assert.ok(failed.failures.some(failure => failure.includes('Home navigation actual home-semantic-ground')))
+})
+
+for (const override of ['as="/unowned"', 'onClick={() => undefined}', 'onNavigate={() => undefined}', 'legacyBehavior', 'replace', 'target="_blank"']) {
+  test(`client navigation rejects an overriding ${override.split(/[= ]/)[0]} binding`, t => {
+    const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+      '<Link prefetch={false}', `<Link ${override} prefetch={false}`))
+    assert.ok(failed.failures.some(failure => failure.includes('Home navigation actual home-semantic-ground')))
+  })
+}
+
 test('detached duplicate controls cannot stand in for the returned Home nav', t => {
   const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
     'data-home-navigation-owner="runtime-boundary"', 'data-home-navigation-owner="detached"'))

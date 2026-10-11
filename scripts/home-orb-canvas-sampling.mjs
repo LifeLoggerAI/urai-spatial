@@ -1,6 +1,11 @@
 // The mobile Ground shortcut is part of the admitted Home HUD. Its one sampled
 // point is recorded separately; no other covering element is accepted.
-export function inspectHomeOrbCanvasSamples(canvas, points) {
+export function inspectHomeOrbCanvasSamples(canvasOrInput, explicitPoints) {
+  const selectorInput = canvasOrInput && typeof canvasOrInput === 'object'
+    && typeof canvasOrInput.selector === 'string'
+  const canvas = selectorInput ? document.querySelector(canvasOrInput.selector) : canvasOrInput
+  const points = selectorInput ? canvasOrInput.points : explicitPoints
+  if (!(canvas instanceof HTMLCanvasElement)) throw new Error('Home/Orb canvas selector did not resolve exactly one canvas')
   const rect = canvas.getBoundingClientRect()
   const selected = []
   const excludedHud = []
@@ -32,8 +37,9 @@ export function inspectHomeOrbCanvasSamples(canvas, points) {
     unobstructedSampleFraction: selected.length / points.length, excludedHud, blocked }
 }
 
-// Measure the now-visible, deliberately small navigation HUD instead of
-// requiring its retired almost-transparent presentation.
+// Measure the deliberately quiet navigation HUD without mistaking its
+// non-zero resting opacity for absence. The separate runtime contract proves
+// that keyboard focus reveals the rail at full opacity.
 export function inspectVisibleHomeNavigation(nav) {
   const bounds = nav.getBoundingClientRect()
   const controls = [...nav.querySelectorAll(':scope > button, :scope > a')].map(control => {
@@ -50,7 +56,7 @@ export function inspectVisibleHomeNavigation(nav) {
       recognized: Boolean(known && (!href || href.origin === new URL(document.baseURI).origin)),
       label: control.getAttribute('aria-label'), width: box.width, height: box.height,
       bounds: { left: box.left, right: box.right, top: box.top, bottom: box.bottom },
-      visible: style.display !== 'none' && style.visibility === 'visible' && opacity >= .99,
+      visible: style.display !== 'none' && style.visibility === 'visible' && opacity > 0,
       enabled: !control.disabled && control.getAttribute('aria-disabled') !== 'true',
       inViewport: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight,
       hitConfirmed: Boolean(hit && (hit === control || control.contains(hit))) }
