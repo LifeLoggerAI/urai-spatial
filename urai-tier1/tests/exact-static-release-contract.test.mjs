@@ -1,8 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawn } from 'node:child_process'
+import { enforceStaticLaunchBoundary } from '../../scripts/enforce-static-launch-boundary.mjs'
 
 const normalize = (source) => source.replace(/\r\n?/g, '\n')
 const testDir = path.dirname(fileURLToPath(import.meta.url))
@@ -114,4 +117,106 @@ test('manual trigger remains verification-only and exposes no deploy or rollback
   assert.doesNotMatch(workflow, /rollback_sha:|release_sha:|confirm:/)
   assert.doesNotMatch(workflow, /build-release-output:|attest-release-bundle:|rollback-verify:|\n  deploy:\n/)
   assert.doesNotMatch(workflow, /gh workflow run spatial-live-deploy\.yml/)
+})
+
+
+test('authority bundle requires public login, privacy policy, and support pages in static export', () => {
+  for (const routePage of ['login/index.html', 'privacy-policy/index.html', 'support/index.html']) {
+    assert.ok(bundleBuilder.includes(`'${routePage}'`), `bundle builder must require ${routePage}`)
+  }
+  assert.ok(bundleBuilder.includes('Static output is missing required public route'))
+})
+
+function withConditionalExport(routes, inspect) {
+  const output = mkdtempSync(path.join(os.tmpdir(), 'urai-static-boundary-'))
+  try {
+    mkdirSync(path.join(output, 'api/system'), {recursive:true})
+    writeFileSync(path.join(output, 'api/system/deploy-proof'), JSON.stringify({service:'urai-spatial-deploy-proof',repository:'LifeLoggerAI/urai-spatial',conditionalRoutes:routes,deploymentFreshness:{commitSha:'a'.repeat(40)}}))
+    for (const route of ['xr', 'spatial/ar-vr', 'home']) {
+      mkdirSync(path.join(output, route), {recursive:true})
+      writeFileSync(path.join(output, route, 'index.html'), `<main>${route}</main>`)
+      writeFileSync(path.join(output, `${route}.html`), `<main>${route}</main>`)
+    }
+    mkdirSync(path.join(output,'xr/navmeshes'),{recursive:true})
+    writeFileSync(path.join(output,'xr/navmeshes/home-platform-v1.json'),'verified-existing-navmesh')
+    inspect(output)
+  } finally { rmSync(output, {recursive:true,force:true}) }
+}
+
+test('static export removes both disabled XR artifacts while preserving unrelated Home bytes', () => {
+  withConditionalExport(['/xr','/spatial/ar-vr'].map(route=>({route,enabled:false,expectedStatus:404})), output=>{
+    const before=readFileSync(path.join(output,'home/index.html'))
+    const receipt=enforceStaticLaunchBoundary(output)
+    for (const route of ['xr','spatial/ar-vr']) {
+      assert.equal(existsSync(path.join(output,route,'index.html')),false)
+      assert.equal(existsSync(path.join(output,`${route}.html`)),false)
+    }
+    assert.deepEqual(readFileSync(path.join(output,'home/index.html')),before)
+    assert.equal(readFileSync(path.join(output,'xr/navmeshes/home-platform-v1.json'),'utf8'),'verified-existing-navmesh')
+    assert.equal(receipt.sourceSha,'a'.repeat(40))
+    assert.equal(receipt.deviceAcceptance,false)
+    assert.equal(enforceStaticLaunchBoundary(output).routes.every(route=>route.artifactsRemoved.length===0),true)
+  })
+})
+
+test('static export preserves explicitly enabled XR artifacts without granting device acceptance', () => {
+  withConditionalExport(['/xr','/spatial/ar-vr'].map(route=>({route,enabled:true,expectedStatus:200})), output=>{
+    const receipt=enforceStaticLaunchBoundary(output)
+    for (const route of ['xr','spatial/ar-vr']) assert.equal(existsSync(path.join(output,route,'index.html')),true)
+    assert.equal(receipt.deviceAcceptance,false)
+  })
+})
+
+test('inconsistent, duplicate, or incomplete conditional authority fails before removing exports', () => {
+  for (const routes of [
+    [{route:'/xr',enabled:false,expectedStatus:200},{route:'/spatial/ar-vr',enabled:false,expectedStatus:404}],
+    [{route:'/xr',enabled:false,expectedStatus:404},{route:'/xr',enabled:false,expectedStatus:404}],
+    [{route:'/xr',enabled:false,expectedStatus:404}],
+  ]) withConditionalExport(routes,output=>{
+    assert.throws(()=>enforceStaticLaunchBoundary(output),/authority/)
+    assert.equal(existsSync(path.join(output,'xr/index.html')),true)
+  })
+})
+
+test('both native static-build entry points enforce compiled conditional launch boundaries', () => {
+  const scripts=JSON.parse(readRepo('package.json')).scripts
+  for(const key of ['build:static','next-export']) assert.ok(scripts[key].endsWith('&& node scripts/enforce-static-launch-boundary.mjs'))
+})
+
+test('actual local preview serves canonical 404s and retained navmesh bytes without directory listings', async () => {
+  const output=mkdtempSync(path.join(os.tmpdir(),'urai-preview-status-'))
+  let server
+  try {
+    mkdirSync(path.join(output,'api/system'),{recursive:true})
+    mkdirSync(path.join(output,'xr/navmeshes'),{recursive:true})
+    mkdirSync(path.join(output,'home'),{recursive:true})
+    writeFileSync(path.join(output,'api/system/deploy-proof'),JSON.stringify({conditionalRoutes:['/xr','/spatial/ar-vr'].map(route=>({route,enabled:false,expectedStatus:404}))}))
+    writeFileSync(path.join(output,'404.html'),'<main><h1>This destination is unavailable.</h1><a href="/home/">Return Home</a></main>')
+    writeFileSync(path.join(output,'home/index.html'),'<main>Existing Home</main>')
+    writeFileSync(path.join(output,'xr/navmeshes/home-platform-v1.json'),'existing-navmesh')
+    server=spawn('python3',[path.join(repoRoot,'scripts/serve-static-preview.py'),'--directory',output,'--port','4179'],{stdio:'ignore'})
+    const base='http://127.0.0.1:4179'
+    let ready=false
+    for(let attempt=0;attempt<100;attempt++) {
+      try {if((await fetch(`${base}/home/`)).ok){ready=true;break}} catch {}
+      await new Promise(resolve=>setTimeout(resolve,20))
+    }
+    assert.equal(ready,true,'owned preview server must start')
+    for(const route of ['/xr','/xr/','/spatial/ar-vr','/spatial/ar-vr/','/xr/navmeshes/']) {
+      const response=await fetch(base+route,{redirect:'manual'})
+      assert.equal(response.status,404,route)
+      assert.match(await response.text(),/This destination is unavailable/)
+      assert.equal(response.headers.get('x-content-type-options'),'nosniff')
+    }
+    const mesh=await fetch(`${base}/xr/navmeshes/home-platform-v1.json`)
+    assert.equal(mesh.status,200)
+    assert.equal(await mesh.text(),'existing-navmesh')
+    assert.match(await (await fetch(`${base}/home/`)).text(),/Existing Home/)
+  } finally {
+    if(server&&!server.killed) {
+      server.kill('SIGTERM')
+      await new Promise(resolve=>{server.once('close',resolve);setTimeout(resolve,2000).unref()})
+    }
+    rmSync(output,{recursive:true,force:true})
+  }
 })

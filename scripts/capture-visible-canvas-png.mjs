@@ -98,4 +98,3 @@ export async function captureVisibleCanvasPng(page, canvas, timeoutMs = 90_000, 
     },
   }
 }
-

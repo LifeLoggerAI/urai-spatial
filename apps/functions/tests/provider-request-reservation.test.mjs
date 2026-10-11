@@ -103,12 +103,13 @@ function responseDouble({ loseDelivery = false } = {}) {
   }
 }
 
-function fixture({ store = storage(), env = {}, fetchHook, authHook, shortenDeadlineMs } = {}) {
+function fixture({ store = storage(), env = {}, fetchHook, authHook, outputHook, shortenDeadlineMs } = {}) {
   for (const uid of ['alice', 'bob']) {
     if (!store.state.docs.has(`users/${uid}/privacyPolicy/current`)) store.state.docs.set(`users/${uid}/privacyPolicy/current`, clone({ ...policy, ownerId: uid }))
   }
   const calls = []
   let authReads = 0
+  let outputChecks = 0
   const firestore = Object.assign(() => store.db, { Timestamp, FieldValue: { serverTimestamp: () => Timestamp.fromMillis(Date.now()), increment: (value) => ({ increment: value }) } })
   const admin = {
     apps: [{}], initializeApp() {}, firestore,
@@ -131,7 +132,11 @@ function fixture({ store = storage(), env = {}, fetchHook, authHook, shortenDead
   const exports = loadSource('apps/functions/src/providerFunctions.ts', {
     './consentPolicyAuthority': loadSource('apps/functions/src/consentPolicyAuthority.ts', {}),
     '../../../packages/localization/src/contentLanguage': loadSource('packages/localization/src/contentLanguage.ts', {}),
-    './protectedProviderSpend': { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => fetch(url, init), SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} },
+    './protectedProviderSpend': {
+      paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => fetch(url, init),
+      assertSpatialPaidOutputCurrent(upstream) { assert.ok(upstream); outputChecks++; outputHook?.({ upstream, authReads, store }) },
+      SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {},
+    },
     'firebase-admin': admin,
     'firebase-functions/params': { defineSecret: () => ({ value: () => 'synthetic-test-only-key' }) },
     'firebase-functions/v2/https': { onRequest: (_options, handler) => handler },
@@ -142,7 +147,7 @@ function fixture({ store = storage(), env = {}, fetchHook, authHook, shortenDead
     return response
   }
   const reservations = () => [...store.state.docs].filter(([key]) => key.includes('/providerRequestReservations/'))
-  return { run, calls, store, reservations }
+  return { run, calls, store, reservations, outputChecks: () => outputChecks }
 }
 
 function sse(value, completed = true) {
@@ -158,6 +163,34 @@ test('successful actual HTTP handler invocation holds repeats without replaying 
   assert.equal(f.calls.length, 2); assert.equal(f.reservations()[0][1].state, 'completed')
   assert.equal(f.store.state.docs.get('users/alice/providerRateLimits/openai').count, 1)
   assert.equal(repeat.chunks.length, 0)
+})
+
+test('actual Orb delivery asserts the same protected response after final owner checks and durable completion', async () => {
+  const f = fixture({ outputHook: ({ upstream, authReads, store }) => {
+    assert.equal(upstream.headers.get('x-request-id'), 'synthetic-upstream-receipt')
+    assert.equal(authReads, 5)
+    assert.equal([...store.state.docs.values()].find(row => row.state === 'completed')?.state, 'completed')
+  } })
+  assert.equal((await f.run()).statusCode, 200); assert.equal(f.outputChecks(), 1)
+  assert.equal(f.calls.length, 2); assert.equal((await f.run()).jsonBody.error, 'PROVIDER_REQUEST_HELD')
+  assert.equal(f.outputChecks(), 1); assert.equal(f.calls.length, 2)
+})
+
+for (const phase of ['final-auth', 'completion-write']) test(`expired protected Orb output at ${phase} withholds success without repeating dispatch`, async () => {
+  let expired = false
+  const f = fixture({
+    authHook: ({ authReads }) => { if (phase === 'final-auth' && authReads === 5) expired = true; return { uid: 'alice' } },
+    outputHook: () => { if (expired) throw new Error('Synthetic exact admission no longer current') },
+  })
+  if (phase === 'completion-write') {
+    const originalDoc = f.store.db.doc
+    f.store.db.doc = key => { const ref = originalDoc(key), update = ref.update; ref.update = async value => { await update(value); if (value.state === 'completed') expired = true }; return ref }
+  }
+  const response = await f.run()
+  assert.equal(response.statusCode, 503); assert.equal(response.jsonBody.error, 'PROVIDER_ATTEMPT_UNCERTAIN')
+  assert.equal(response.chunks.length, 0); assert.equal(f.calls.length, 2); assert.equal(f.outputChecks(), 1)
+  assert.equal(f.reservations()[0][1].state, 'completed')
+  assert.equal((await f.run()).jsonBody.error, 'PROVIDER_REQUEST_HELD'); assert.equal(f.calls.length, 2)
 })
 
 test('twelve concurrent same-intent HTTP requests admit exactly one moderation and response invocation', async () => {

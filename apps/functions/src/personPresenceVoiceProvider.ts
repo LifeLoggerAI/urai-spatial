@@ -2,7 +2,8 @@ import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
 import { loadPersonPresenceAuthority, requirePersonPresenceRenderBinding, PersonPresenceAuthorityError } from './personPresenceAuthority'
-import { paidSpatialFetch, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
+import { paidSpatialFetch, assertSpatialPaidOutputCurrent, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -48,7 +49,9 @@ async function requireConsent(uid:string,explicit:boolean){
   if(!explicit)throw new VoiceError(403,'EXPLICIT_CONSENT_REQUIRED','External voice processing consent is required.')
   const [policy,provider]=await Promise.all([db.doc(`users/${uid}/privacyPolicy/current`).get(),db.doc(`users/${uid}/providerConnections/elevenlabs`).get()])
   if(!policy.exists)throw new VoiceError(403,'CONSENT_POLICY_REQUIRED','A saved privacy policy is required.')
-  const p=policy.data()??{},domains=isRecord(p.domains)?p.domains:{},models=isRecord(domains.models)?domains.models:{},identity=isRecord(domains.identity)?domains.identity:{},enforcement=isRecord(p.enforcement)?p.enforcement:{}
+  const p=policy.data()??{}
+  if(!isCanonicalStoredPolicy(p,uid))throw new VoiceError(403,'CONSENT_POLICY_REQUIRED','A canonical owner privacy policy is required.')
+  const domains=p.domains,models=domains.models,identity=domains.identity,enforcement=p.enforcement
   if(!['granted','limited'].includes(String(models.mode??''))||models.modelContext!==true)throw new VoiceError(403,'MODEL_PROCESSING_NOT_AUTHORIZED','Model processing is not authorized.')
   if(!['granted','limited'].includes(String(identity.mode??''))||identity.likenessEnabled!==true)throw new VoiceError(403,'VOICE_LIKENESS_NOT_AUTHORIZED','Voice likeness is not authorized.')
   if(enforcement.state!=='fully-enforced')throw new VoiceError(409,'CONSENT_ENFORCEMENT_PENDING','Privacy changes are still being enforced.')
@@ -80,6 +83,7 @@ export const personPresenceVoiceProvider=onRequest({
     const bindingHash=String(binding.get('bindingHash')??'')
     if(!/^[a-f0-9]{64}$/.test(bindingHash))throw new VoiceError(409,'PERSON_VOICE_BINDING_INVALID','Accepted voice binding is invalid.')
     const recheck=async()=>{
+      if(await uidFrom(request)!==uid)throw new VoiceError(401,'UNAUTHORIZED','Authentication changed before Person voice delivery.')
       await requireConsent(uid,true)
       const current=await loadPersonPresenceAuthority(db,uid,sessionId)
       const currentBinding=await requirePersonPresenceRenderBinding(db,uid,current,'voice')
@@ -110,6 +114,7 @@ export const personPresenceVoiceProvider=onRequest({
     while(true){const {value,done}=await reader.read();if(done)break;total+=value.byteLength;if(total>8*1024*1024)throw new VoiceError(502,'PERSON_VOICE_OUTPUT_LIMIT','Person voice exceeded its output bound.');chunks.push(Buffer.from(value))}
     await recheck()
     if(upstreamController.signal.aborted)throw new VoiceError(409,'PRESENCE_AUTHORITY_UNAVAILABLE','Person voice source authority is unavailable.')
+    assertSpatialPaidOutputCurrent(upstream)
     response.status(200)
     response.setHeader('Content-Type',upstream.headers.get('content-type')||'audio/mpeg')
     response.setHeader('Cache-Control','private, no-store, max-age=0')

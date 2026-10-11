@@ -44,14 +44,20 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     useSyncExternalStore:(_subscribe,snapshot)=>snapshot(),
   }
   const unknown = new Proxy({__esModule:true,default:()=>null},{get:(target,key)=>key in target ? target[key] : ()=>{throw new Error(`UNEXPECTED_FIXTURE_CALL:${String(key)}`)}})
+  // Next Link owns client navigation and renders an anchor. Keep its actual
+  // source props in this inert copy fixture without starting a Next router.
+  function FixtureNextLink({prefetch, ...props}) {
+    assert.equal(prefetch, false, 'Home destinations must preserve explicit prefetch ownership')
+    return React.createElement('a', props)
+  }
   const imports = id => {
     if(id==='react') return hooks
     if(id==='react/jsx-runtime') return require(id)
-    if(id==='next/link') return require(id)
     if(id==='react-dom') return {createPortal:children=>children}
     if(id==='three') return require('three')
     if(id.includes('RoundedBoxGeometry')) return {RoundedBoxGeometry:require('three').BoxGeometry}
     if(id==='next/navigation') return {usePathname:()=>'/home',useSearchParams:()=>params,useRouter:()=>({push:href=>travels.push(href),replace:href=>travels.push(href)})}
+    if(id==='next/link') return {__esModule:true,default:FixtureNextLink}
     if(id.includes('ownedMemoryMediaClient')) return {MEMORY_MEDIA_TYPES:'image/png,audio/mpeg,video/mp4',attachOwnedMemoryFile:async()=>{throw new Error('INERT_NO_UPLOAD')}}
     if(id.includes('localePreference')) return {localizedMessage}
     if(id.includes('journeyControlCopy')) return journeyControlCopy
@@ -103,7 +109,7 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(Array.isArray(element)) return element.map(expand)
     if(!React.isValidElement(element)) return element
     if(typeof element.type==='function') {
-      if(['HomeSemanticNavigation','ReplayMemoryHorizon','ReplayMemoryExperience','JourneyOfflineNotice'].includes(element.type.name)) {stateIndex=0;return expand(element.type(element.props))}
+      if(['HomeSemanticNavigation','ReplayMemoryHorizon','ReplayMemoryExperience','JourneyOfflineNotice','FixtureNextLink'].includes(element.type.name)) {stateIndex=0;return expand(element.type(element.props))}
       return null // Synthetic copy/controls fixture does not certify scene, device or providers.
     }
     const props={...element.props};delete props.jsx;delete props.global
@@ -179,7 +185,20 @@ for(const requested of URAI_LAUNCH_LOCALES) {
     assert.deepEqual(JSON.parse(JSON.stringify(r.travels)),[{destination:'life-map',href:'/life-map/',entryPortal:'replay-memory-horizon',cameraCheckpoint:'life-map-overview'}])
     const h=fixture(pref).render(home)
     assert.ok(text(h).includes(localizedMessage(pref,'home.webglUnavailable').text))
-    assert.equal(elements(h,n=>n.props['data-testid']==='home-semantic-life-map')[0].props.href,'/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete')
+    for(const [id,href,action,label] of [
+      ['home-semantic-ground','/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent','home.groundAction','nav.ground'],
+      ['home-semantic-life-map','/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete','home.lifeMapAction','nav.lifeMap'],
+    ]) {
+      const links=elements(h,n=>n.props['data-testid']===id)
+      assert.equal(links.length,1,`${requested}:${id} must retain one rendered destination`)
+      assert.equal(links[0].type,'a')
+      assert.equal(links[0].props.href,href)
+      const copy=localizedMessage(pref,action)
+      assert.equal(links[0].props['aria-label'],copy.text)
+      assert.equal(links[0].props.lang,copy.locale)
+      assert.equal(links[0].props.dir,copy.direction)
+      assert.equal(text(links[0]),localizedMessage(pref,label).text)
+    }
     const a=fixture(pref,{phase:'ASCENT'}).render(ascent,'HomeWorldProductionPolished')
     assert.equal(text(elements(a,n=>String(n.props.className).includes('home-world-context'))[0]),localizedMessage(pref,'ascent.progress').text)
     const l=fixture(pref,{states:['','all','all',true,true]}).render(lifeMap)

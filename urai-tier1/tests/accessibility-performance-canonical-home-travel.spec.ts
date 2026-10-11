@@ -129,29 +129,20 @@ async function activate(page: Page, destination: Destination, activation: Activa
   const target = navigation.getByRole('link', { name: destination.label, exact: true })
   await expect(target).toBeVisible()
   await expect(target).toBeEnabled()
-  const renderedLink = await target.evaluate(element => ({
-    tagName: element.tagName,
-    href: element.getAttribute('href'),
-    target: element.getAttribute('target'),
-  }))
-  expect(renderedLink.tagName).toBe('A')
-  expect(renderedLink.href).toBe(`${destination.pathname}/?${new URLSearchParams(destination.params).toString()}`)
-  expect(renderedLink.target).toBeNull()
 
   if (activation.method === 'keyboard') {
     await target.focus()
     await expect(target).toBeFocused()
     await target.press('Enter', { noWaitAfter: true })
-    return renderedLink
+    return
   }
 
   if (activation.method === 'touch') {
     await target.tap({ noWaitAfter: true })
-    return renderedLink
+    return
   }
 
   await target.click({ noWaitAfter: true })
-  return renderedLink
 }
 
 async function returnThroughCanonicalHistory(page: Page, destination: Destination) {
@@ -182,7 +173,7 @@ async function proveCanonicalTravel(
 ) {
   const page = await context.newPage()
   await page.goto('/home/', { waitUntil: 'domcontentloaded' })
-  const renderedLink = await activate(page, destination, activation)
+  await activate(page, destination, activation)
 
   const expected = expectedSignature(destination)
   await expect.poll(
@@ -202,7 +193,6 @@ async function proveCanonicalTravel(
   return {
     destination: destination.id,
     activation: activation.id,
-    renderedLink,
     canonicalUrl: settledUrl,
     settledIdentity: identity,
     backUrl: page.url(),

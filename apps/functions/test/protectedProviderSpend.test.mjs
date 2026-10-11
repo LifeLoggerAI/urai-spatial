@@ -13,7 +13,7 @@ import ts from 'typescript'
 const SOURCE = 'd'.repeat(40), GATEWAY = 'a'.repeat(40), UID = 'synthetic-owner'
 const gatewayUrl = 'https://spend.example.invalid/api/worker/production-spend'
 const token = 'SYNTHETIC-WORKER-TOKEN-'.repeat(3), apiKey = 'SYNTHETIC-PROVIDER-CREDENTIAL'
-const paths = [...['providerFunctions.ts', 'adamPresenceFunctions.ts', 'personPresenceProvider.ts', 'personPresenceVoiceProvider.ts', 'councilProviderFunctions.ts', 'protectedProviderSpend.ts', 'mapsElevation.ts', 'mapsElevationResult.ts'].map(name => `apps/functions/src/${name}`), 'urai-tier1/src/app/api/maps/elevation/route.ts']
+const paths = [...['providerFunctions.ts', 'adamPresenceFunctions.ts', 'personPresenceProvider.ts', 'personPresenceVoiceProvider.ts', 'councilProviderFunctions.ts', 'protectedProviderSpend.ts', 'mapsElevation.ts', 'mapsElevationResult.ts', 'consentPolicyAuthority.ts', 'personPresenceAuthority.ts'].map(name => `apps/functions/src/${name}`), 'packages/localization/src/contentLanguage.ts', 'urai-tier1/src/app/api/maps/elevation/route.ts', 'urai-tier1/src/lib/server/firebase-user.ts', 'urai-tier1/src/lib/server/google-adc.ts']
 const digest = value => createHash('sha256').update(value).digest('hex')
 const syntheticJobDigest = job => digest(stable(Object.fromEntries(Object.entries(job).filter(([key]) => key !== 'approval' && key !== 'attempts'))).replace(/[\u007f-\uffff]/g, value => `\\u${value.charCodeAt(0).toString(16).padStart(4,'0')}`))
 function stable(value) {

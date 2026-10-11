@@ -1,5 +1,8 @@
 import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test'
 import { createHash } from 'node:crypto'
+import { currentXrReleaseAuthority, inspectConditionalXrResponse } from '../../scripts/lib/xr-release-authority.mjs'
+
+const xrReleaseAuthority = currentXrReleaseAuthority()
 
 for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }]) {
   test(`Founder helper stays in flow on text surfaces at ${viewport.width}x${viewport.height}`, async ({ page }) => {
@@ -522,7 +525,29 @@ for (const profile of [
       await page.setViewportSize(profile)
       await page.emulateMedia({ reducedMotion: 'reduce' })
       if (profile.noWebGL || surface.noWebGL) await disableWebGL(page)
-      await page.goto(surface.route, { waitUntil: 'domcontentloaded' })
+      const response = await page.goto(surface.route, { waitUntil: 'domcontentloaded' })
+      if (surface.slot === 'xr-portals' && !xrReleaseAuthority.enabled) {
+        expect(response, 'A disabled XR address must have an actual response').not.toBeNull()
+        expect(inspectConditionalXrResponse({ status: response!.status(), url: response!.url() }, new URL(surface.route, info.project.use.baseURL).href, xrReleaseAuthority), 'The real disabled route must preserve governed 404 status, origin and path').toBe(true)
+        await expect(page.getByTestId('urai-quest-explorable-world')).toHaveCount(0)
+        await expect(page.getByRole('button', { name: 'Enter VR in Quest', exact: true })).toHaveCount(0)
+        await expect(page.locator('[data-urai-adam-launcher-slot="xr-portals"]')).toHaveCount(0)
+        // Python's finite static server has its own 404 body. The three exported
+        // 404 profiles below separately exercise Firebase's canonical recovery UI.
+        const unavailable = page.getByRole('heading', { name: /^(Error response|This place isn’t part of your world)$/ })
+        await expect(unavailable).toBeVisible()
+        await expect(page.locator('body')).toContainText(/404|may no longer be available/i)
+        const geometry = await unavailable.boundingBox()
+        expect(geometry).not.toBeNull()
+        expect(geometry!.x).toBeGreaterThanOrEqual(0)
+        expect(geometry!.x + geometry!.width).toBeLessThanOrEqual(profile.width)
+        expect(errors).toEqual([])
+        await attachPlacement(page, info, `xr-governed-unavailable-${surface.route.replaceAll('/', '-')}-${profile.width}x${profile.height}`, {
+          route: surface.route, authority: xrReleaseAuthority, status: response!.status(), url: response!.url(), geometry,
+          responseUI: 'native-static-server-unavailable', deviceAcceptance: false, providerActivation: false,
+        })
+        return
+      }
       const slot = profile.noWebGL && surface.fallbackSlot ? surface.fallbackSlot : surface.slot
       const anchor = page.locator(`[data-urai-adam-launcher-slot="${slot}"]:visible`)
       await expect(anchor, 'Exactly one actual visible founder slot must own the launcher').toHaveCount(1)
