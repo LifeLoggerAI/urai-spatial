@@ -142,7 +142,14 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }
     }
     // A scrollable disclosure need not show all of its copy simultaneously.
     // Exercise the real scroll path rather than altering its DOM or styles.
+    const disclosure = focus.locator('.focusNarration > summary')
+    const details = focus.locator('.focusNarration')
+    await expect(disclosure).toBeVisible()
+    await expect(details).not.toHaveAttribute('open', '')
+    await disclosure.click()
+    await expect(details).toHaveAttribute('open', '')
     const description = focus.locator('.focusNarration strong')
+    await expect(description).toBeVisible()
     await focus.locator('.focusHeading').hover()
     await page.mouse.wheel(0, 1000)
     const descriptionReachability = () => description.evaluate(element => {
