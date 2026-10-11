@@ -583,6 +583,7 @@ for(const [label,change] of [
 // Late SDK settlement executes the actual hook and transport; SDK/HTTP doubles are synthetic.
 function staleReleaseDeferred(){let resolve,reject; const promise=new Promise((a,b)=>{resolve=a;reject=b});return {promise,resolve,reject};}
 async function staleReleaseDrain(){for(let i=0;i<60;i++)await Promise.resolve();}
+async function staleReleaseWaitForCount(read,target,timeoutMs=2000){const deadline=Date.now()+timeoutMs;while(read()<target&&Date.now()<deadline){await new Promise(resolve=>setImmediate(resolve));await staleReleaseDrain()}}
 function staleReleaseLoad(source,requireFn,extra={}){const module={exports:{}};vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{module,exports:module.exports,require:requireFn,AbortController,URL,Uint8Array,Blob,crypto:webcrypto,fetch,Response,Date,...extra});return module.exports;}
 async function staleReleaseScenario(source,phase,settlement="resolve"){
  const bytes=Buffer.from('synthetic hook cleanup fixture; not family media');
@@ -607,7 +608,7 @@ async function staleReleaseScenario(source,phase,settlement="resolve"){
  },{...timerEnv,navigator:{onLine:true},window:{addEventListener(){},removeEventListener(){}},process:{env:{NEXT_PUBLIC_FIREBASE_PROJECT_ID:'urai-4dc1d'}}});
  hook.useOwnedMemoryMediaPlayback(memory,()=>{oldRelease++;});const cleanup=effect();authCallback(user);
  for(const {path,fn}of watches){let data=sourceReceipt;if(path==='consentRecords/owner_memory_storage')data={uid:'owner',purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:sourceReceipt.consentReceiptHash,expiresAt:consentExpiry};else if(path.endsWith('/memories/memory'))data={};else if(path.endsWith('/privacyPolicy/current'))data={ownerId:'owner',version:2,revision:1,domains:{memory:{mode:'granted',replayVisible:true}},enforcement:{state:'fully-enforced'}};else if(path.endsWith('/privacyRuntime/exportAuthority'))data={generation:0,pendingDeletions:{}};else if(path==='users/owner')data={};fn({exists:()=>true,data:()=>data});}
- await staleReleaseDrain();if(phase==='post-download-authority')for(let i=0;i<5;i++){await new Promise(resolve=>setImmediate(resolve));await staleReleaseDrain();}assert.equal(callableCalls,phase==='post-download-authority'?2:1,'old mount entered actual callable wait');if(phase==='token')assert.equal(tokenCalls,1,'old mount entered actual token wait');
+ await staleReleaseDrain();const expectedCallableCalls=phase==='post-download-authority'?2:1;await staleReleaseWaitForCount(()=>callableCalls,expectedCallableCalls);assert.equal(callableCalls,expectedCallableCalls,'old mount entered actual callable wait');if(phase==='token')assert.equal(tokenCalls,1,'old mount entered actual token wait');
  cleanup();assert.equal(oldRelease,1,'initial cleanup releases old consumer once');
  hook.useOwnedMemoryMediaPlayback(memory,()=>{newRelease++;});
  await staleReleaseDrain();const timersAfterCancel=timers.size;
