@@ -78,9 +78,16 @@ export function homeNavigationSourceFailures(runtimeSource, catalogSources, jour
     return failures
   }
   const controls = nav.children.filter(ts.isJsxElement)
+  // Next.js Link renders a native anchor. Admit only the default Link import
+  // from next/link; unrelated JSX components cannot masquerade as links.
+  const canonicalNextLink = file.statements.some(node => ts.isImportDeclaration(node)
+    && ts.isStringLiteral(node.moduleSpecifier) && node.moduleSpecifier.text === 'next/link'
+    && !node.importClause?.isTypeOnly && node.importClause?.name?.text === 'Link')
   for (const [id, tag, key, text] of expected) {
     const targets = controls.filter(node => literalAttribute(node, 'data-testid') === id)
-    if (targets.length !== 1 || targets[0].openingElement.tagName.getText() !== tag
+    const actualTag = targets[0]?.openingElement.tagName.getText()
+    const nativeTagMatches = actualTag === tag || (tag === 'a' && actualTag === 'Link' && canonicalNextLink)
+    if (targets.length !== 1 || !nativeTagMatches
       || messageAttribute(targets[0], 'aria-label') !== key || definitions.get(key) !== text) {
       failures.push(`Home navigation actual ${id} must bind its native ${tag} and authoritative ${key} English name`)
     }
