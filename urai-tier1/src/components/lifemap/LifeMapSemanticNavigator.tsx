@@ -140,6 +140,9 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return
+      // Founder dismisses on the document bubble listener, after this capture listener.
+      // Its active panel owns keyboard input until it restores the launcher focus.
+      if (document.querySelector('[data-urai-adam-presence]')) return
       if (event.key === 'Escape' && open) { event.preventDefault(); closeNavigator(); return }
       if (event.altKey || event.ctrlKey || event.metaKey || isEditableTarget(event.target)) return
       // Search controls own their keys while open. World shortcuts must not change

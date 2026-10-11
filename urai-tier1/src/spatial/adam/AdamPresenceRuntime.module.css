@@ -21,7 +21,7 @@
   position: fixed;
   right: max(16px, env(safe-area-inset-right));
   bottom: max(16px, env(safe-area-inset-bottom));
-  z-index: 2147483101;
+  z-index: 2147483602;
   width: min(430px, calc(100vw - 32px));
   max-height: min(720px, calc(100dvh - 32px));
   display: flex;
@@ -183,3 +183,10 @@
   min-height: 48px !important;
 }
 .launcher:focus-visible { outline: 2px solid #d8fff5; outline-offset: 3px; }
+
+
+/* Keep the open founder panel above route-root stacking contexts after portaling to body. */
+:global(body) > .panel[data-urai-adam-presence] {
+  position: fixed;
+  z-index: 2147483602;
+}

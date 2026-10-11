@@ -119,3 +119,30 @@ test('malformed canonical manifests produce a retained rejection rather than an 
   write('operations/assets/launch-critical-assets.json', { assets: null })
   assert.ok(codes(check()).includes('MANIFEST_INVALID'))
 }))
+
+test('malformed owner rows retain a manifest rejection instead of throwing', () => {
+  for (const asset of [null, {}, { id: '', fixedPath }, { id: 'home', fixedPath: '../home.glb' }]) fixture(({ write, check }) => {
+    write('operations/assets/launch-critical-assets.json', { assets: [asset] })
+    const report = check()
+    assert.equal(report.technicalPass, false)
+    assert.ok(codes(report).includes('MANIFEST_INVALID'))
+  })
+})
+
+test('a canonical asset id or path must identify exactly one owner', () => {
+  fixture(({ write, manifest, check }) => {
+    manifest.assets.push({ ...manifest.assets[0] })
+    write('operations/assets/launch-critical-assets.json', manifest)
+    assert.ok(codes(check()).includes('MANIFEST_INVALID'))
+  })
+  fixture(({ write, manifest, check }) => {
+    manifest.assets.push({ id: 'other', fixedPath, releaseState: 'pending-final-review' })
+    write('operations/assets/launch-critical-assets.json', manifest)
+    assert.ok(codes(check()).includes('MANIFEST_INVALID'))
+  })
+  fixture(({ write, manifest, check }) => {
+    manifest.assets.push({ id: 'home', fixedPath: 'urai-tier1/public/assets/other.glb', releaseState: 'pending-final-review' })
+    write('operations/assets/launch-critical-assets.json', manifest)
+    assert.ok(codes(check()).includes('MANIFEST_INVALID'))
+  })
+})

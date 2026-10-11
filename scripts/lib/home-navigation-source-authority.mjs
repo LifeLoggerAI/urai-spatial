@@ -26,6 +26,16 @@ const messageAttribute = (node, name) => {
     && expression.expression.name.text === 'text' && expression.arguments.length === 1 && ts.isStringLiteral(expression.arguments[0])
     ? expression.arguments[0].text : null
 }
+const falseAttribute = (node, name) => {
+  const found = attribute(node, name)
+  return found.length === 1 && found[0].initializer && ts.isJsxExpression(found[0].initializer)
+    && unwrap(found[0].initializer.expression)?.kind === ts.SyntaxKind.FalseKeyword
+}
+const bindingNames = node => ts.isIdentifier(node) ? [node.text]
+  : ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)
+    ? node.elements.flatMap(element => ts.isBindingElement(element) ? bindingNames(element.name) : []) : []
+const declaresLink = node => (ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node)) ? node.name?.text === 'Link'
+  : ts.isVariableStatement(node) && node.declarationList.declarations.some(declaration => bindingNames(declaration.name).includes('Link'))
 
 // Parse the actual returned JSX and authoritative English definitions. Comments,
 // unused strings and detached fake controls do not satisfy this source boundary.
@@ -68,6 +78,13 @@ export function homeNavigationSourceFailures(runtimeSource, catalogSources, jour
     && node.body)
   const journeyBindingAvailable = journeyImports.length === 1 && !journeyFile.parseDiagnostics.length && journeyDeclarations.length === 1
   const owners = file.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === 'HomeSemanticNavigation')
+  const linkImports = file.statements.filter(node => ts.isImportDeclaration(node)
+    && ts.isStringLiteral(node.moduleSpecifier) && node.moduleSpecifier.text === 'next/link'
+    && !node.importClause?.isTypeOnly && node.importClause?.name?.text === 'Link')
+  const nativeLinkAvailable = linkImports.length === 1
+    && !file.statements.some(declaresLink)
+    && !owners.some(owner => owner.parameters.some(parameter => bindingNames(parameter.name).includes('Link'))
+      || owner.body?.statements.some(declaresLink))
   const returns = owners.length === 1 ? owners[0].body?.statements.filter(ts.isReturnStatement) ?? [] : []
   const nav = returns.length === 1 ? unwrap(returns[0].expression) : null
   if (!nav || !ts.isJsxElement(nav) || nav.openingElement.tagName.getText() !== 'nav'
@@ -80,7 +97,15 @@ export function homeNavigationSourceFailures(runtimeSource, catalogSources, jour
   const controls = nav.children.filter(ts.isJsxElement)
   for (const [id, tag, key, text] of expected) {
     const targets = controls.filter(node => literalAttribute(node, 'data-testid') === id)
-    if (targets.length !== 1 || targets[0].openingElement.tagName.getText() !== tag
+    const element = targets.length === 1 ? targets[0] : null
+    const actualTag = element?.openingElement.tagName.getText()
+    // The pinned Next Link renders a native anchor. Bind the actual import and
+    // disable speculative requests; runtime/SSR proofs verify its rendered href
+    // and pointer, keyboard, touch and browser-history behavior.
+    const clientAnchor = tag === 'a' && actualTag === 'Link' && nativeLinkAvailable
+      && falseAttribute(element, 'prefetch')
+      && ['as', 'replace', 'legacyBehavior', 'target', 'onClick', 'onNavigate'].every(name => attribute(element, name).length === 0)
+    if (targets.length !== 1 || (actualTag !== tag && !clientAnchor)
       || messageAttribute(targets[0], 'aria-label') !== key || definitions.get(key) !== text) {
       failures.push(`Home navigation actual ${id} must bind its native ${tag} and authoritative ${key} English name`)
     }

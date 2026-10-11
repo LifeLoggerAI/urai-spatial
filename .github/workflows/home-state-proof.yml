@@ -26,7 +26,7 @@ concurrency:
 jobs:
   proof:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 75
     env:
       URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
       PLAYWRIGHT_BROWSERS_PATH: '0'
@@ -55,6 +55,7 @@ jobs:
       - name: Verify state-proof contract and build
         run: |
           node --test tests/home-state-proof-sampling.test.mjs tests/home-state-proof-companion-capture.test.mjs
+          node --test urai-tier1/tests/native-proof-post-capture-contract.test.mjs
           (cd urai-tier1 && node --test tests/visible-canvas-capture.test.mjs)
           (cd urai-tier1 && node --import tsx tests/continuous-spatial-restoration-contract.test.mjs)
           pnpm build:static

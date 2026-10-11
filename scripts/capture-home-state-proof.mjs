@@ -68,7 +68,7 @@ async function readVisualEvidence(page) {
   const canvas = page.locator('.urai-asset-home-world canvas')
   if (await canvas.count() !== 1) throw new Error('Home visual evidence requires exactly one world canvas')
   if (canvasEvidenceCount >= MAX_CANVAS_EVIDENCE_FILES) throw new Error('Home canvas evidence image budget exhausted')
-  const { buffer: png, capture } = await captureVisibleCanvasPng(page, canvas, 90_000, HOME_CANVAS_SAMPLE_POINTS)
+  const { buffer: png, capture } = await captureVisibleCanvasPng(page, canvas, 90_000, HOME_CANVAS_SAMPLE_POINTS, '.urai-asset-home-world canvas')
   if (!Buffer.isBuffer(png) || png.length < 1 || png.length > 16 * 1024 * 1024) {
     throw new Error('Home canvas PNG exceeds its finite image byte budget')
   }
@@ -301,6 +301,26 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.keyboard.press('Enter')
     const message = page.getByLabel('Message for Orb').first()
     await message.waitFor({ state: 'visible', timeout: 20_000 })
+    await page.evaluate(() => {
+      const element = document.querySelector('#urai-orb-message')
+      if (!(element instanceof HTMLTextAreaElement)) throw new Error('Orb message target is missing')
+      element.dataset.uraiProofMessageTarget = 'true'
+    })
+    const inspectMessageActionability = () => page.evaluate(() => {
+      const control = document.querySelector('textarea[data-urai-proof-message-target="true"]')
+      if (!(control instanceof HTMLTextAreaElement)) throw new Error('Orb proof message target is missing')
+      const bounds = control.getBoundingClientRect()
+      const style = getComputedStyle(control)
+      const busyOwner = control.closest('[aria-busy]')
+      return {
+        disabled: control.disabled,
+        readOnly: control.readOnly,
+        ariaDisabled: control.getAttribute('aria-disabled'),
+        ariaBusy: busyOwner?.getAttribute('aria-busy') ?? null,
+        visible: bounds.width > 0 && bounds.height > 0 && style.visibility !== 'hidden' && style.display !== 'none',
+        activeElement: document.activeElement === control,
+      }
+    })
     stage = 'focus-message'
     await message.focus()
     await page.waitForFunction(
@@ -328,8 +348,24 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     if (!await consent.isChecked()) throw new Error('Native keyboard consent grant did not check the checkbox')
     record.consentInput = 'native-keyboard'
     record.consentGranted = true
-    await message.fill('Give me a short grounded reflection.')
-    await message.focus()
+    record.messageActionabilityAfterConsent = await inspectMessageActionability()
+    await page.waitForFunction((selector) => {
+      const control = document.querySelector(selector)
+      if (!(control instanceof HTMLTextAreaElement)) return false
+      const bounds = control.getBoundingClientRect()
+      const style = getComputedStyle(control)
+      return !control.disabled && !control.readOnly
+        && control.getAttribute('aria-disabled') !== 'true'
+        && bounds.width > 0 && bounds.height > 0
+        && style.visibility !== 'hidden' && style.display !== 'none'
+    }, 'textarea[data-urai-proof-message-target="true"]', { timeout: 90_000 })
+    record.messageActionabilityBeforeTyping = await inspectMessageActionability()
+    const reflectionPrompt = 'Give me a short grounded reflection.'
+    await message.focus({ timeout: 20_000 })
+    await page.keyboard.type(reflectionPrompt, { delay: 10 })
+    const typedReflection = await message.inputValue()
+    if (typedReflection !== reflectionPrompt) throw new Error('Native keyboard reflection input did not retain the exact prompt')
+    record.messageInput = 'native-keyboard'
     stage = 'send-text-response'
     await page.getByRole('button', { name: 'Send' }).focus()
     await page.keyboard.press('Enter')
@@ -651,8 +687,15 @@ async function captureHomeAssetFailure(fixture) {
   } catch (error) {
     record.error = String(error)
     record.failedStage = stage
-    record.failureScreenshot = `${record.id}-harness-failure-${exactHead.slice(0, 12)}.png`
-    await page.screenshot({ path: path.join(outputDir, record.failureScreenshot), timeout: 30_000 }).catch(() => {})
+    const harnessFailureScreenshot = `${record.id}-harness-failure-${exactHead.slice(0, 12)}.png`
+    try {
+      const screenshot = await page.screenshot({ path: path.join(outputDir, harnessFailureScreenshot), timeout: 30_000 })
+      record.harnessFailureScreenshot = harnessFailureScreenshot
+      record.harnessFailureScreenshotBytes = screenshot.length
+      record.harnessFailureScreenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
+    } catch (captureError) {
+      record.harnessFailureScreenshotError = String(captureError)
+    }
   } finally {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
@@ -708,4 +751,5 @@ try {
 
 await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 if (receipt.errors.length) process.exit(1)
+
 

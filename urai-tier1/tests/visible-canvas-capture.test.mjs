@@ -128,13 +128,18 @@ test('Home/Orb proof binds its visual samples and receipt to guarded canvas pixe
   const helper = helperAst.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'captureVisibleCanvasPng')
   assert.equal(Number(helper.parameters[2].initializer.text), 90_000)
   assert.equal(helper.parameters[3].initializer.text, 'CANVAS_EVIDENCE_SAMPLE_POINTS')
-  assert.match(source, /record\.canvasSamplingBefore = await worldCanvas\.evaluate\(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS\)/)
+  assert.match(source, /record\.canvasSamplingBefore = await worldCanvas\.evaluate\(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS, \{ timeout: paintedHomeEvaluationTimeout \}\)/)
   assert.match(source, /if \(!record\.canvasSamplingBefore\.accepted\) throw/)
   assert.match(source, /imageEvidence\(page, worldCanvas, record\.canvasSamplingBefore\.samplePoints\)/)
+  assert.match(source, /record\.canvasSamplingAfter = await worldCanvas\.evaluate\(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS, \{ timeout: paintedHomeEvaluationTimeout \}\)/)
   assert.match(source, /!record\.canvasSamplingAfter\.accepted \|\| JSON\.stringify\(record\.canvasSamplingAfter\) !== JSON\.stringify\(record\.canvasSamplingBefore\)/)
   assert.match(source, /record\.canvasCapture = visual\.capture/)
   assert.match(source, /record\.canvasCapture\?\.canvasTopmostAfterCapture === true/)
   assert.match(source, /if \(await worldCanvas\.count\(\) !== 1\)/)
+  assert.match(source, /record\.semanticOpacity > 0 && record\.semanticOpacity <= \.02/)
+  const navigationSource = await readFile(new URL('../../scripts/home-orb-canvas-sampling.mjs', import.meta.url), 'utf8')
+  assert.match(navigationSource, /visible: style\.display !== 'none' && style\.visibility === 'visible' && opacity > 0/)
+  assert.doesNotMatch(navigationSource, /visible:.*opacity >= \.99/)
 })
 
 test('Home/Orb image sampler executes the shared guarded capture with the admitted points and unchanged deadline', async () => {
@@ -224,7 +229,21 @@ async function homeSamplerFixture(options = {}) {
       } } }
     } },
   }
-  f.page.evaluate = async (read, argument) => argument === undefined ? bounds : read(argument)
+  let directReads = 0
+  f.page.evaluate = async (read, argument) => {
+    if (argument?.selector === '.urai-asset-home-world canvas') {
+      directReads += 1
+      f.calls.push(['occlusion', argument.samplePoints])
+      const selectedBounds = directReads === 1 ? bounds : (options.after ?? bounds)
+      return {
+        count: options.canvasCount ?? 1,
+        visible: selectedBounds !== null && selectedBounds.width > 0 && selectedBounds.height > 0,
+        bounds: selectedBounds,
+        unoccluded: options.occluded !== true && !(options.coveredAfter === true && directReads > 1),
+      }
+    }
+    return argument === undefined ? bounds : read(argument)
+  }
   const context = vm.createContext(environment)
   const run = vm.runInContext(source.slice(start, end) + '\nreadVisualEvidence', context)
   return { ...f, directory, context, async run() { return run(f.page) }, async close() { await rm(directory, { recursive: true, force: true }) } }
@@ -281,3 +300,4 @@ test('Home sampler enforces a finite retained-image count before screenshot', as
   try { await assert.rejects(f.run(), /image budget/); assert.equal(f.calls.some(([name]) => name === 'screenshot'), false) }
   finally { await f.close() }
 })
+
