@@ -22,7 +22,7 @@ for (const profile of [
 ]) {
   test.describe(profile.name, () => {
     test.use({viewport:profile.viewport,hasTouch:profile.touch,isMobile:profile.touch})
-    test('Founder Close and Escape preserve Search and restore each owning focus target', async ({page}) => {
+    test(`Founder Close and Escape preserve Search and restore each owning focus target (${profile.name})`, async ({page}) => {
       const errors:string[]=[]
       const failedRequests:string[]=[]
       page.on('pageerror',error=>errors.push(error.message))
