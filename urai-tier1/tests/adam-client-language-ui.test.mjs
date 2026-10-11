@@ -13,6 +13,7 @@ vm.runInNewContext(contentLanguageCompiled,{module:contentLanguageModule,exports
 const {contentLanguage,contentLanguageProps}=contentLanguageModule.exports
 
 const source=fs.readFileSync(new URL('../src/spatial/adam/AdamPresenceRuntime.tsx',import.meta.url),'utf8')
+const runtimeCss=fs.readFileSync(new URL('../src/spatial/adam/AdamPresenceRuntime.module.css',import.meta.url),'utf8')
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText
 const localeSource=fs.readFileSync(new URL('../src/lib/i18n/useUraiLocale.ts',import.meta.url),'utf8')
 const localeCompiled=ts.transpileModule(localeSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
@@ -100,4 +101,13 @@ test('actual Adam open panel uses the body portal and Close returns its consent-
   const count=f.portalCalls.length
   assert.equal(f.find(node=>node.props['data-urai-adam-launcher']==='true').type,'button')
   assert.equal(f.portalCalls.length,count)
+})
+
+test('actual open Adam panel portals to the body and keeps its close layer above route children',()=>{
+  const f=fixture();f.open()
+  const panel=f.find(node=>node.type==='aside'&&node.props['data-urai-adam-presence'])
+  assert.ok(panel)
+  assert.equal(f.portalCalls[f.portalCalls.length-1]?.target,f.portalBody)
+  assert.ok(runtimeCss.includes(':global(body) > .panel[data-urai-adam-presence]'))
+  assert.ok(runtimeCss.includes('z-index: 2147483602;'))
 })

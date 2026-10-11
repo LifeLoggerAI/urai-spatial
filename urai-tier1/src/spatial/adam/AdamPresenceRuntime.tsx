@@ -408,7 +408,7 @@ export default function AdamPresenceRuntime() {
     ? [...messages, { id: 'streaming', role: 'assistant' as const, content: streamedText, locale: streamedLocale }]
     : messages
 
-  return createPortal(
+  return createPortal((
     <aside
       className={styles.panel}
       aria-label="Adam founder presence"
@@ -497,7 +497,6 @@ export default function AdamPresenceRuntime() {
         </div>
         <p className={styles.status} role="status" aria-live="polite">{status}</p>
       </form>
-    </aside>,
-    document.body,
-  )
+    </aside>
+  ), document.body)
 }

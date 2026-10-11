@@ -125,9 +125,18 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
     const focus = activeFocusOwner(page)
     await expect(focus).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
-    const disclosure = focus.locator('.focusNarration')
-    await disclosure.locator('summary').click()
-    await expect(disclosure).toHaveAttribute('open', '')
+    const disclosure = focus.locator('.focusNarration > summary')
+    const details = focus.locator('.focusNarration')
+    await expect(disclosure).toBeVisible()
+    await expect(details).not.toHaveAttribute('open', '')
+    await disclosure.click()
+    await expect(details).toHaveAttribute('open', '')
+    const disclosureScroll = await details.evaluate(element => {
+      const style = getComputedStyle(element)
+      return { maxHeight: style.maxHeight, overflowY: style.overflowY }
+    })
+    expect(disclosureScroll.maxHeight).toBe('none')
+    expect(disclosureScroll.overflowY).toBe('visible')
     const heading = await focus.locator('.focusHeading').boundingBox()
     const meaning = await focus.locator('.memoryMeaning').boundingBox()
     const controls = await focus.locator('.focusControls').boundingBox()
@@ -146,6 +155,7 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }
     // A scrollable disclosure need not show all of its copy simultaneously.
     // Exercise the real scroll path rather than altering its DOM or styles.
     const description = focus.locator('.focusNarration strong')
+    await expect(description).toBeVisible()
     await focus.locator('.focusHeading').hover()
     await page.mouse.wheel(0, 1000)
     const descriptionReachability = () => description.evaluate(element => {
