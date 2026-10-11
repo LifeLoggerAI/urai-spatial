@@ -5,6 +5,7 @@ import test from 'node:test'
 import ts from 'typescript'
 import { createHash } from 'node:crypto'
 import { compilePersonModel } from '../src/spatial/life-model/lifeModel.ts'
+import { isCanonicalStoredPolicy } from '../../apps/functions/src/consentPolicyAuthority.ts'
 
 const source = fs.readFileSync(new URL('../../apps/functions/src/privateLifeModelReview.ts', import.meta.url), 'utf8')
 const compiled = ts.transpileModule(source, {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText
@@ -36,6 +37,7 @@ function fixture({retry=false}={}) {
   const module={exports:{}}
   vm.runInNewContext(compiled,{module,exports:module.exports,Buffer,require(name){
     if(name==='node:crypto')return {createHash}
+    if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy}
     if(name==='firebase-functions/v1')return {region:()=>({https:{onCall:callback=>callback}}),https:{HttpsError}}
     if(name==='firebase-admin')return {apps:[{}],firestore:Object.assign(()=>db,{FieldValue:{serverTimestamp:()=>({fixtureTimestamp:true})}})}
     throw new Error(`Unexpected import ${name}`)
@@ -54,11 +56,35 @@ function fixture({retry=false}={}) {
   const checksum=hash(canonical(revision))
   docs.set(root+'/revisions/00000001',{...revision,checksum,backlogState:'QUARANTINED_OWNER_REVIEW'})
   docs.set(root+'/state/current',{ownerUid:owner,revision:1,checksum,reviewState:'OWNER_REVIEW_REQUIRED',historicalSourceAuthority:false})
-  docs.set(policyPath,{domains:{models:{mode:'granted',modelContext:true},identity:{mode:'granted'}},enforcement:{state:'fully-enforced'}})
+  const domain = mode => ({mode,retentionDays:null,precise:false,replayVisible:false,lifeMapVisible:false,modelContext:false,sharingEnabled:false,automationEnabled:false,likenessEnabled:false})
+  docs.set(policyPath,{version:2,revision:1,ownerId:owner,domains:{memory:domain('granted'),location:domain('denied'),models:{...domain('granted'),modelContext:true},exports:domain('denied'),workforce:domain('denied'),identity:domain('granted')},enforcement:{state:'fully-enforced',jobId:'fixture-enforcement',affectedTargets:[],providerState:'complete'}})
   const request={handleHash:handle,revision:1,checksum,reviewId:'review:fixture',entities:['person:fixture'],claims:[{id:'claim:fixture',evidenceClass:'DIRECT_SUBJECT_TESTIMONY',confidence:'confirmed'}],relationships:[]}
   return {docs,commits,request,call:(data=request,uid=owner)=>module.exports.reviewPrivateLifeModelCandidate(data,{auth:uid?{uid}:undefined}),get attempts(){return attempts}}
 }
 const rejects=async (f,code,data=f.request,uid=owner)=>assert.rejects(f.call(data,uid),error=>error.code===code)
+
+for (const [label, mutate] of [
+  ['wrong policy owner', p => { p.ownerId = 'foreign-owner' }],
+  ['missing policy owner', p => { delete p.ownerId }],
+  ['legacy policy version', p => { p.version = 1 }],
+  ['invalid policy revision', p => { p.revision = -1 }],
+  ['incomplete policy domain set', p => { delete p.domains.memory }],
+  ['nonboolean model permission', p => { p.domains.models.sharingEnabled = 'true' }],
+  ['malformed enforcement targets', p => { p.enforcement.affectedTargets = ['duplicate', 'duplicate'] }],
+  ['unknown consent field', p => { p.unreviewedAuthority = true }],
+]) {
+  test(`actual owner review rejects ${label} before first admission or receipt replay`, async () => {
+    for (const admitted of [false, true]) {
+      const f = fixture()
+      if (admitted) await f.call()
+      mutate(f.docs.get(policyPath))
+      const before = canonical([...f.docs.entries()]), commits = f.commits.length
+      await rejects(f, 'failed-precondition')
+      assert.equal(f.commits.length, commits)
+      assert.equal(canonical([...f.docs.entries()]), before, 'invalid current consent cannot create canonical writes or replay acceptance')
+    }
+  })
+}
 
 test('actual review transaction produces canonical entities and claims consumed by the person compiler',async()=>{
   const f=fixture();const result=await f.call()

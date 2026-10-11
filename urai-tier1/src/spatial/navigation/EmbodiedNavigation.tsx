@@ -273,25 +273,30 @@ export function stepEmbodiedMotion({
     if (owner) {
       const spawnX = -0.85
       const spawnZ = 8.4
-      owner.dataset.homeInputOwner = 'window-capture-movement'
-      owner.dataset.homeTelemetryOwner = 'embodied-motion-kernel'
-      owner.dataset.homeInputReady = 'true'
+      const publish = (key: string, value: string) => {
+        if (owner.dataset[key] !== value) owner.dataset[key] = value
+      }
+      publish('homeInputOwner', 'window-capture-movement')
+      publish('homeTelemetryOwner', 'embodied-motion-kernel')
+      publish('homeInputReady', 'true')
       const assetsReady = owner.dataset.homeAssetsReady === 'true'
-      owner.dataset.homeInteractionReady = assetsReady ? 'true' : 'false'
-      owner.dataset.homeReady = 'false'
-      owner.dataset.homePlayerX = position.x.toFixed(3)
-      owner.dataset.homePlayerZ = position.z.toFixed(3)
-      owner.dataset.homeDistance = Math.hypot(position.x - spawnX, position.z - spawnZ).toFixed(3)
-      owner.dataset.homeDistanceOrb = Math.hypot(position.x - 1.8, position.z + 9.5).toFixed(3)
-      owner.dataset.homeDistanceGround = Math.hypot(position.x + 5.4, position.z + 10.8).toFixed(3)
-      owner.dataset.homeDistanceLifeMap = Math.hypot(position.x - 5.4, position.z + 10.8).toFixed(3)
-      owner.dataset.homeMoving = moving ? 'true' : 'false'
-      owner.dataset.homePressedKeys = [...input.keys.current].sort().join(',')
-      owner.dataset.homeMovementVector = `${strafeInput.toFixed(3)},${forwardInput.toFixed(3)}`
+      publish('homeInteractionReady', assetsReady ? 'true' : 'false')
+      // Preserve settled Home telemetry without rounding its physics vectors.
+      const playerX = position.x.toFixed(4), playerZ = position.z.toFixed(4)
+      const telemetryX = Number(playerX), telemetryZ = Number(playerZ)
+      publish('homePlayerX', playerX)
+      publish('homePlayerZ', playerZ)
+      publish('homeDistance', Math.hypot(telemetryX - spawnX, telemetryZ - spawnZ).toFixed(3))
+      publish('homeDistanceOrb', Math.hypot(telemetryX - 1.8, telemetryZ + 9.5).toFixed(3))
+      publish('homeDistanceGround', Math.hypot(telemetryX + 5.4, telemetryZ + 10.8).toFixed(3))
+      publish('homeDistanceLifeMap', Math.hypot(telemetryX - 5.4, telemetryZ + 10.8).toFixed(3))
+      publish('homeMoving', moving ? 'true' : 'false')
+      publish('homePressedKeys', [...input.keys.current].sort().join(','))
+      publish('homeMovementVector', `${strafeInput.toFixed(3)},${forwardInput.toFixed(3)}`)
       const renderedFrames = Number.parseInt(owner.dataset.homeRenderedFrames || '0', 10)
       const nextRenderedFrames = Number.isFinite(renderedFrames) ? renderedFrames + 1 : 1
-      owner.dataset.homeRenderedFrames = String(nextRenderedFrames)
-      owner.dataset.homeReady = assetsReady && nextRenderedFrames >= 3 ? 'true' : 'false'
+      publish('homeRenderedFrames', String(nextRenderedFrames))
+      publish('homeReady', assetsReady && nextRenderedFrames >= 3 ? 'true' : 'false')
     }
   }
 

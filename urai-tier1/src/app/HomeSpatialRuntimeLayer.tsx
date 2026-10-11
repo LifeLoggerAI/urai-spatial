@@ -188,11 +188,15 @@ export default function HomeSpatialRuntimeLayer() {
       const playerX = Number.parseFloat(home.dataset.homePlayerX ?? '0')
       const playerZ = Number.parseFloat(home.dataset.homePlayerZ ?? '8.4')
       const distance = Number.parseFloat(home.dataset.homeDistance ?? '0')
-      if (Number.isFinite(playerX)) home.style.setProperty('--home-parallax-x', `${(-playerX * 3.2).toFixed(1)}px`)
+      if (Number.isFinite(playerX)) {
+        const parallaxX = `${(-playerX * 3.2).toFixed(1)}px`
+        if (home.style.getPropertyValue('--home-parallax-x') !== parallaxX) home.style.setProperty('--home-parallax-x', parallaxX)
+      }
       if (Number.isFinite(playerZ)) {
         const zOffset = playerZ - 8.4
         const movementOffset = Math.abs(zOffset) > 0.001 ? zOffset : -Math.abs(distance)
-        home.style.setProperty('--home-parallax-y', `${(movementOffset * 1.35).toFixed(1)}px`)
+        const parallaxY = `${(movementOffset * 1.35).toFixed(1)}px`
+        if (home.style.getPropertyValue('--home-parallax-y') !== parallaxY) home.style.setProperty('--home-parallax-y', parallaxY)
       }
     }
 
