@@ -272,7 +272,14 @@ async function exerciseKeyboardPanel(page: Page, slot: string, capture = true) {
   expect(panelGeometry.horizontalOverflow).toBe(false)
   if (panelGeometry.hasVerticalOverflow) expect(panelGeometry.overflowY).toMatch(/^(auto|scroll)$/)
   if (capture) await attachPlacement(page, test.info(), `${slot}-panel-open-${panelGeometry.viewportWidth}x${panelGeometry.viewportHeight}`, panelGeometry)
+  const log = panel.getByRole('log')
   await page.keyboard.press('Tab')
+  if (await log.evaluate(element => element === document.activeElement)) {
+    expect(await log.evaluate(element => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0)
+    await page.keyboard.press('End')
+    await expect.poll(() => log.evaluate(element => element.scrollTop)).toBeGreaterThan(0)
+    await page.keyboard.press('Tab')
+  }
   await expect(panel.getByRole('textbox', { name: 'Message Adam', exact: true })).toBeFocused()
   const voice = panel.getByRole('button', { name: 'Mute voice', exact: true })
   await voice.scrollIntoViewIfNeeded()
