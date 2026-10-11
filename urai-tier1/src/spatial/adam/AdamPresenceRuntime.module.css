@@ -167,6 +167,11 @@
   width: 100%;
 }
 /* Route typography and spatial header transforms do not own founder controls. */
+:global(body) > .panel[data-urai-adam-presence] {
+  /* Override generic body-child layering without changing responsive bounds. */
+  position: fixed;
+  z-index: 2147483602;
+}
 .launcher[data-urai-adam-launcher][data-adam-launcher-placement] {
   min-width: 64px !important;
   min-height: 48px !important;
