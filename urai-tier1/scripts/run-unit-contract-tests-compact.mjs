@@ -117,6 +117,7 @@ const tests = [
   'tests/home-cohesion-contract.test.mjs',
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
   'tests/home-sanctuary-geometry-behavior.test.mjs',
+  'tests/home-living-orb-geometry.test.mjs',
   'tests/home-finalization-truth-contract.test.mjs',
   'tests/home-interpretive-splat-contract.test.mjs',
   'tests/lifemap-cinematic-contract.test.mjs',

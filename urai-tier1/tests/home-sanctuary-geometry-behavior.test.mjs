@@ -6,6 +6,7 @@ import ts from 'typescript'
 import * as THREE from 'three'
 import { classifyRetainedHomeMesh } from '../src/spatial/layout/HomeSanctuaryAssetPolicy.ts'
 import { stepEmbodiedMotion } from '../src/spatial/navigation/EmbodiedNavigation.tsx'
+import { createLivingMemoryGeometry } from '../src/spatial/layout/HomeLivingOrbGeometry.ts'
 import {
   HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL,
   homeCourtyardFloorHeight, homeCourtyardPoint, homeTerrainHeight, homeWalkSurfaceHeight,
@@ -91,16 +92,25 @@ function retainedOrbGeometry() {
   return { scene, clips }
 }
 
-function maximumRetainedOrbRadius() {
+function maximumRetainedOrbRadius(horizontalOnly = false) {
   const { scene, clips } = retainedOrbGeometry()
   assert.equal(clips.length, 12)
   const coreScale = homeSource.match(/state === 'speaking' \? ([\d.]+) : state === 'listening'/)?.[1]
-  const shell = homeSource.match(/<sphereGeometry args=\{\[([\d.]+),48,32\]\}/)?.[1]
-  assert.ok(coreScale && shell, 'the actual retained Orb scale and physical shell must be measured')
+  assert.ok(coreScale, 'the actual retained Orb scale must be measured')
+  assert.ok(homeSource.includes('createLivingMemoryGeometry'), 'measure the mantle mounted by the current Home owner')
+  const mantle = createLivingMemoryGeometry()
+  assert.ok(mantle.boundingSphere, 'the actual organic mantle must expose its measured bounds')
+  const positions = mantle.getAttribute('position')
+  // Ground collision is a horizontal disk. Retain the full 3D conservative
+  // envelope for camera framing, and measure every actual x/z vertex for paths.
+  const shell = horizontalOnly
+    ? Math.max(...Array.from({ length: positions.count }, (_, index) => Math.hypot(positions.getX(index), positions.getZ(index))))
+    : mantle.boundingSphere.center.length() + mantle.boundingSphere.radius
+  mantle.dispose()
   scene.scale.setScalar(Number(coreScale))
   const mixer = new THREE.AnimationMixer(scene)
   const point = new THREE.Vector3()
-  let maximum = Number(shell)
+  let maximum = shell
   for (const clip of clips) {
     mixer.stopAllAction()
     mixer.clipAction(clip).reset().play()
@@ -112,7 +122,7 @@ function maximumRetainedOrbRadius() {
         const positions = object.geometry.attributes.position
         for (let vertex = 0; vertex < positions.count; ++vertex) {
           point.fromBufferAttribute(positions, vertex).applyMatrix4(object.matrixWorld)
-          maximum = Math.max(maximum, point.length())
+          maximum = Math.max(maximum, horizontalOnly ? Math.hypot(point.x, point.z) : point.length())
         }
       })
     }
@@ -123,7 +133,7 @@ function maximumRetainedOrbRadius() {
 }
 
 test('the physical retained Orb clears every actual Home walking ribbon without resizing the governed asset', (testContext) => {
-  const envelope = maximumRetainedOrbRadius()
+  const envelope = maximumRetainedOrbRadius(true)
   const makePathStart = homeSource.indexOf('function makePathPoints(')
   const makePathEnd = homeSource.indexOf('\nfunction makeRibbonGeometry(', makePathStart)
   assert.ok(makePathStart > 0 && makePathEnd > makePathStart)
@@ -176,7 +186,7 @@ test('the unchanged Orb fits the actual first-person arrival framing on desktop,
 })
 
 test('Orb physical footprint, native telemetry and current proof agree while the 2.4m interaction radius stays intact', () => {
-  const envelope = maximumRetainedOrbRadius()
+  const envelope = maximumRetainedOrbRadius(true)
   const footprint = HOME_NAVIGATION_OBSTACLES.find(obstacle => obstacle.x === actualOrb.x && obstacle.z === actualOrb.z)
   assert.ok(footprint, 'the rendered physical Orb must not be walk-through')
   assert.ok(footprint.radius >= envelope, 'footprint must contain every retained clip without shrinking the asset')
