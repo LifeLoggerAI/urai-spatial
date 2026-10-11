@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import * as THREE from 'three'
 
 export type MovementBounds = {
@@ -23,6 +23,7 @@ export type MovementInput = {
 }
 
 export type DragLookHandlers = {
+  onClickCapture: (event: ReactMouseEvent<HTMLElement>) => void
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void
   onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void
   onPointerUp: (event: ReactPointerEvent<HTMLElement>) => void
@@ -147,14 +148,16 @@ export function useDragLook({
   maxPitch?: number
   onDragState?: (dragging: boolean) => void
 }): DragLookHandlers {
-  const drag = useRef<{ pointerId: number; x: number; y: number; captureTarget: Element } | null>(null)
+  const drag = useRef<{ pointerId: number; x: number; y: number; startX: number; startY: number; moved: boolean; captureTarget: Element } | null>(null)
+  const completedLook = useRef<Element | null>(null)
 
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    completedLook.current = null
     if (!enabled || event.button !== 0) return
     if (event.target instanceof Element && event.target.closest('button,a,input,textarea,select,summary,[data-movement-ui="true"]')) return
     // Keep canvas-origin clicks on the canvas so scene interactions survive drag capture.
     const captureTarget = event.target instanceof Element ? event.target : event.currentTarget
-    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, captureTarget }
+    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, moved: false, captureTarget }
     try { captureTarget.setPointerCapture(event.pointerId) } catch { /* pointer capture is best effort */ }
     onDragState?.(true)
   }, [enabled, onDragState])
@@ -163,6 +166,7 @@ export function useDragLook({
     if (!drag.current || drag.current.pointerId !== event.pointerId) return
     const dx = event.clientX - drag.current.x
     const dy = event.clientY - drag.current.y
+    drag.current.moved ||= Math.hypot(event.clientX - drag.current.startX, event.clientY - drag.current.startY) > 2
     drag.current.x = event.clientX
     drag.current.y = event.clientY
     yaw.current -= dx * sensitivity
@@ -171,13 +175,26 @@ export function useDragLook({
 
   const end = useCallback((event: ReactPointerEvent<HTMLElement>) => {
     if (!drag.current || drag.current.pointerId !== event.pointerId) return
-    const { captureTarget } = drag.current
+    const { captureTarget, moved } = drag.current
+    completedLook.current = moved ? captureTarget : null
     drag.current = null
     try { captureTarget.releasePointerCapture(event.pointerId) } catch { /* browser may already release */ }
     onDragState?.(false)
   }, [onDragState])
 
-  return { onPointerDown, onPointerMove, onPointerUp: end, onPointerCancel: end }
+  const onClickCapture = useCallback((event: ReactMouseEvent<HTMLElement>) => {
+    const target = completedLook.current
+    completedLook.current = null
+    // A browser can synthesize a click after a small touch look gesture. Stop
+    // that one scene click before it reaches Orb, travel, or walk handlers.
+    // Stationary taps and keyboard-generated clicks retain their own behavior.
+    if (target && event.detail !== 0 && event.target === target) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+  }, [])
+
+  return { onClickCapture, onPointerDown, onPointerMove, onPointerUp: end, onPointerCancel: end }
 }
 
 export function setVirtualMovement(input: MovementInput, x: number, z: number) {

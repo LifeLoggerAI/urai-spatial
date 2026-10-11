@@ -206,3 +206,44 @@ test('best-effort browser capture failures do not wedge drag state', () => {
   assert.deepEqual([f.yaw.current, f.pitch.current], stopped)
   assert.deepEqual(f.dragStates, [true, false])
 })
+
+function sceneClick(f, overrides = {}) {
+  const effects = { prevented: false, stopped: false }
+  f.send('onClickCapture', { detail: 1, preventDefault: () => { effects.prevented = true }, stopPropagation: () => { effects.stopped = true }, ...overrides })
+  return effects
+}
+
+for (const pointerType of ['mouse', 'touch', 'pen']) {
+  test(`${pointerType} small look gesture cannot also activate a scene click`, () => {
+    const f = fixture()
+    f.send('onPointerDown', { pointerType })
+    for (let step = 1; step <= 8; step++) f.send('onPointerMove', { pointerType, clientX: 100 + 5.7026 * step / 8 })
+    f.render()
+    f.send('onPointerUp', { pointerType, clientX: 105.7026 })
+    assert.ok(f.yaw.current < .6, 'The real production camera handler must still turn')
+    assert.deepEqual(sceneClick(f), { prevented: true, stopped: true })
+    f.send('onPointerDown', { pointerType })
+    f.send('onPointerUp', { pointerType })
+    assert.deepEqual(sceneClick(f), { prevented: false, stopped: false }, 'A subsequent stationary Orb tap must activate normally')
+  })
+}
+
+test('look excursion returning to its origin remains a drag, while keyboard activation remains available', () => {
+  const f = fixture()
+  f.send('onPointerDown')
+  f.send('onPointerMove', { clientX: 112 })
+  f.send('onPointerMove', { clientX: 100 })
+  f.send('onPointerUp')
+  assert.deepEqual(sceneClick(f), { prevented: true, stopped: true })
+  f.send('onPointerDown'); f.send('onPointerMove', { clientX: 110 }); f.send('onPointerUp')
+  assert.deepEqual(sceneClick(f, { detail: 0 }), { prevented: false, stopped: false })
+})
+
+test('tap jitter and controls outside the captured canvas are never swallowed', () => {
+  const f = fixture()
+  f.send('onPointerDown'); f.send('onPointerMove', { clientX: 101, clientY: 101 }); f.send('onPointerUp')
+  assert.deepEqual(sceneClick(f), { prevented: false, stopped: false })
+  f.send('onPointerDown'); f.send('onPointerMove', { clientX: 110 }); f.send('onPointerUp')
+  const button = new f.HTMLElementAdapter('button', f.wrapper)
+  assert.deepEqual(sceneClick(f, { target: button }), { prevented: false, stopped: false })
+})
