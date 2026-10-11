@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
@@ -38,8 +39,8 @@ function HomeSemanticNavigation() {
   return (
     <nav className="home-semantic-navigation" {...locale.props('home.destinations')} aria-label={locale.text('home.destinations')} data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
       <button type="button" {...locale.props('home.orbAction')} aria-label={locale.text('home.orbAction')} data-testid="home-semantic-orb" disabled={!companionReady} onClick={requestUraiWorldOrbOpen}>{locale.text('home.orbAction')}</button>
-      <a href={homeJourneyHref('/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent', currentSearch)} {...locale.props('home.groundAction')} aria-label={locale.text('home.groundAction')} data-testid="home-semantic-ground">{locale.text('nav.ground')}</a>
-      <a href={homeJourneyHref('/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete', currentSearch)} {...locale.props('home.lifeMapAction')} aria-label={locale.text('home.lifeMapAction')} data-testid="home-semantic-life-map">{locale.text('nav.lifeMap')}</a>
+      <Link prefetch={false} href={homeJourneyHref('/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent', currentSearch)} {...locale.props('home.groundAction')} aria-label={locale.text('home.groundAction')} data-testid="home-semantic-ground">{locale.text('nav.ground')}</Link>
+      <Link prefetch={false} href={homeJourneyHref('/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete', currentSearch)} {...locale.props('home.lifeMapAction')} aria-label={locale.text('home.lifeMapAction')} data-testid="home-semantic-life-map">{locale.text('nav.lifeMap')}</Link>
     </nav>
   )
 }

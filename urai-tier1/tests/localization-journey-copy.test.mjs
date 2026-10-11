@@ -47,6 +47,7 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
   const imports = id => {
     if(id==='react') return hooks
     if(id==='react/jsx-runtime') return require(id)
+    if(id==='next/link') return require(id)
     if(id==='react-dom') return {createPortal:children=>children}
     if(id==='three') return require('three')
     if(id.includes('RoundedBoxGeometry')) return {RoundedBoxGeometry:require('three').BoxGeometry}
