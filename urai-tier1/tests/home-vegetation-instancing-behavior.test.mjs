@@ -5,6 +5,7 @@ import test from 'node:test'
 import ts from 'typescript'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
 // Execute production vegetation with explicit hook/GLTF adapters and real Three
 // geometry. This tests scene construction, never browser/GPU timing or pixels.
@@ -46,6 +47,7 @@ function fernModel(nested = false) {
 
 function mountVegetation(scene) {
   const layout = [], effects = [], cleanup = []
+  const unexpectedOrbWork = () => assert.fail('vegetation must not construct or dispose Orb presentation')
   const react = {
     Component: class {}, useMemo: fn => fn(), useRef: initial => ({ current: initial }),
     useLayoutEffect: fn => layout.push(fn), useEffect: fn => effects.push(fn),
@@ -57,6 +59,8 @@ function mountVegetation(scene) {
     '@react-three/drei': { useGLTF: Object.assign(() => ({ scene }), { preload() {} }) },
     'three/examples/jsm/geometries/RoundedBoxGeometry.js': { RoundedBoxGeometry },
     './HomeSanctuaryGeometry': geometryModule.exports,
+    './HomeLivingOrbGeometry': { createLivingMemoryGeometry: unexpectedOrbWork, createMemoryFieldGeometry: unexpectedOrbWork, createMemoryFilamentGeometry: unexpectedOrbWork },
+    './HomeAuthoredOrbLight': { createAuthoredOrbLightPresentation: unexpectedOrbWork, disposeAuthoredOrbLightPresentation: unexpectedOrbWork },
     './HomeWorldProduction.module.css': {},
     './HomeSanctuaryMaterials': {}, './HomeSanctuaryAssetPolicy': {},
     '@/app/home/orbStateController': {}, '@/spatial/navigation/EmbodiedNavigation': {},
@@ -66,11 +70,11 @@ function mountVegetation(scene) {
     '@/spatial/home/HomeInterpretiveSplat': { resolveHomeInterpretiveSplatAsset: () => null },
   }
   const module = { exports: {} }
-  vm.runInNewContext(compile(source) + '\nmodule.exports.fixture = { Vegetation, FERN_PLACEMENTS, seeded };', {
+  vm.runInNewContext(compile(source) + '\nmodule.exports.fixture = { Vegetation, FERN_PLACEMENTS, ORB_CLEARING_GEOMETRY, seeded };', {
     module, exports: module.exports, process: { env: {} },
     require: id => { assert.ok(Object.hasOwn(adapters, id), `undeclared context adapter ${id}`); return adapters[id] },
   })
-  const { Vegetation, FERN_PLACEMENTS, seeded } = module.exports.fixture
+  const { Vegetation, FERN_PLACEMENTS, ORB_CLEARING_GEOMETRY, seeded } = module.exports.fixture
   const mount = node => {
     if (typeof node.type === 'function') return mount(node.type(node.props))
     const props = node.props ?? {}
@@ -86,7 +90,7 @@ function mountVegetation(scene) {
   const world = mount(Vegetation())
   for (const effect of [...layout, ...effects]) { const stop = effect(); if (typeof stop === 'function') cleanup.push(stop) }
   world.updateMatrixWorld(true)
-  return { world, placements: FERN_PLACEMENTS, seeded, unmount: () => cleanup.reverse().forEach(stop => stop()) }
+  return { world, placements: FERN_PLACEMENTS, clearing: ORB_CLEARING_GEOMETRY, seeded, unmount: () => cleanup.reverse().forEach(stop => stop()) }
 }
 
 function records(world) {
@@ -143,6 +147,30 @@ test('all104 ferns share at most24 geometry/material/shadow submissions', () => 
   assert.ok(meshes.length <= 24, `unbatched scene creates ${meshes.length} mesh submissions`)
   assert.ok(meshes.every(mesh => mesh.isInstancedMesh))
   mounted.unmount()
+})
+
+test('all104 governed GLB fern canopies stay outside the actual authored Orb clearing', async () => {
+  const bytes = fs.readFileSync(new URL('../public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb', import.meta.url))
+  const model = await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '')
+  const mounted = mountVegetation(model.scene)
+  try {
+    const clearing = new THREE.Box3().setFromBufferAttribute(mounted.clearing.getAttribute('position'))
+    const rows = records(mounted.world)
+    assert.equal(mounted.placements.length, 104)
+    assert.equal(rows.length, 416, 'retain all four native primitives for every fern')
+    for (const [index, row] of rows.entries()) {
+      const canopy = new THREE.Box3(), position = row.geometry.getAttribute('position')
+      const point = new THREE.Vector3()
+      for (let vertex = 0; vertex < position.count; vertex++) {
+        canopy.expandByPoint(point.fromBufferAttribute(position, vertex).applyMatrix4(row.matrix))
+      }
+      // Separation of full transformed bounds also excludes the interiors of
+      // the mesh triangles, not merely their vertices or their root positions.
+      assert.ok(canopy.max.x < clearing.min.x || canopy.min.x > clearing.max.x
+        || canopy.max.z < clearing.min.z || canopy.min.z > clearing.max.z,
+      `retained fern primitive ${index} overlaps the authored Orb clearing`)
+    }
+  } finally { mounted.unmount() }
 })
 
 test('all104 world matrices preserve the four retained native mesh offsets', () => {

@@ -5,7 +5,7 @@ import { Environment, Html, Lightformer, Stars, useAnimations, useGLTF } from '@
 import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
-import { isOrbState, resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
+import { isOrbState, resolveAuthorizedHomeReviewOrbState, resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, URAI_EMBODIED_MOVEMENT_INPUT_EVENT, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import HomeSkyInteraction from '@/spatial/navigation/HomeSkyAscentInteraction'
 import { useSceneStore } from '@/spatial/store/useSceneStore'
@@ -16,6 +16,8 @@ import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpat
 import { HOME_COURTYARD, HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL, homeCourtyardFloorHeight, homeTerrainHeight, homeWalkSurfaceHeight, makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, projectHomeTerrainGeometry, resolveHomeSolidPenetration } from './HomeSanctuaryGeometry'
 import { applyOriginalHomeSurfaceDetail, HomeSkyGradient, HomeSurfaceMaterial } from './HomeSanctuaryMaterials'
 import { classifyRetainedHomeMesh } from './HomeSanctuaryAssetPolicy'
+import { createLivingMemoryGeometry, createMemoryFieldGeometry, createMemoryFilamentGeometry } from './HomeLivingOrbGeometry'
+import { createAuthoredOrbLightPresentation, disposeAuthoredOrbLightPresentation } from './HomeAuthoredOrbLight'
 import styles from './HomeWorldProduction.module.css'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 
@@ -243,7 +245,18 @@ const FERN_PLACEMENTS = Array.from({ length: 104 }, (_, index) => {
   const x = side * edge + (seeded(index, 66) - .5) * 1.65
   const scale = innerCluster ? .42 + seeded(index, 67) * .46 : .32 + seeded(index, 67) * .38
   const rotation = seeded(index, 68) * Math.PI * 2
-  return [x, z, scale, rotation] as const
+  // The governed fern's 1.709387m horizontal envelope, including its native
+  // part offsets, expands to at most 1.846138m under our 1.08 scale variation.
+  // Reserve 1.9m per unit scale plus the clearing patch's maximum 1.08 jitter.
+  // A rectangle keeps the full canopy clear even along the ellipse diagonals.
+  const clearRadiusX = 2.7 * 1.08 + scale * 1.9
+  const clearRadiusZ = 1.85 * 1.08 + scale * 1.9
+  const dx = x - ORB.x
+  const dz = z - ORB.z
+  const clearX = Math.abs(dx) >= clearRadiusX || Math.abs(dz) >= clearRadiusZ
+    ? x
+    : ORB.x + (dx < 0 ? -1 : 1) * clearRadiusX
+  return [clearX, z, scale, rotation] as const
 })
 
 const STONE_SCATTER = Array.from({ length: 48 }, (_, index) => {
@@ -550,8 +563,23 @@ function Water() {
   </group>
 }
 
+function createOrbLightTexture() {
+  const size = 64, data = new Uint8Array(size * size * 4)
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const radius = Math.hypot((x + .5) / size * 2 - 1, (y + .5) / size * 2 - 1)
+    const offset = (y * size + x) * 4
+    data[offset] = data[offset + 1] = data[offset + 2] = 255
+    data[offset + 3] = Math.round(Math.pow(Math.max(0, 1 - radius), 2) * 255)
+  }
+  const texture = new THREE.DataTexture(data, size, size)
+  texture.minFilter = texture.magFilter = THREE.LinearFilter
+  texture.needsUpdate = true
+  return texture
+}
+
 function OrbMotes({ reducedMotion, color }: { reducedMotion: boolean; color: string }) {
   const ref = useRef<THREE.Points>(null)
+  const lightTexture = useMemo(createOrbLightTexture, [])
   const geometry = useMemo(() => {
     const positions = new Float32Array(54 * 3)
     for (let index = 0; index < 54; index += 1) {
@@ -565,9 +593,9 @@ function OrbMotes({ reducedMotion, color }: { reducedMotion: boolean; color: str
     next.setAttribute('position', new THREE.BufferAttribute(positions, 3))
     return next
   }, [])
-  useEffect(() => () => geometry.dispose(), [geometry])
+  useEffect(() => () => { geometry.dispose(); lightTexture.dispose() }, [geometry, lightTexture])
   useFrame((_, delta) => { if (!reducedMotion && ref.current) ref.current.rotation.y += delta * .065 })
-  return <points ref={ref} geometry={geometry}><pointsMaterial color={color} size={.024} transparent opacity={.38} depthWrite={false} toneMapped={false} /></points>
+  return <points ref={ref} geometry={geometry}><pointsMaterial map={lightTexture} color={color} size={.034} transparent opacity={.38} depthWrite={false} toneMapped={false} /></points>
 }
 
 function OrbGroundGlow({ state }: { state: OrbState }) {
@@ -580,25 +608,27 @@ function OrbGroundGlow({ state }: { state: OrbState }) {
 function SacredOrb({ state, reducedMotion, reducedStimulation, onOpen }: { state: OrbState; reducedMotion: boolean; reducedStimulation: boolean; onOpen: () => void }) {
   const root = useRef<THREE.Group>(null)
   const authoredCore = useRef<THREE.Group>(null)
+  const memoryField = useRef<THREE.Points>(null)
   const activeAction = useRef<THREE.AnimationAction | null>(null)
   const light = useRef<THREE.PointLight>(null)
+  const mantle = useMemo(createLivingMemoryGeometry, [])
+  const field = useMemo(() => createMemoryFieldGeometry(mantle), [mantle])
+  const filaments = useMemo(() => createMemoryFilamentGeometry(mantle), [mantle])
+  const lightTexture = useMemo(createOrbLightTexture, [])
   const orb = useGLTF(ORB_MODEL)
-  const authoredOrb = useMemo(() => {
-    const clone = orb.scene.clone(true)
-    clone.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return
-      object.castShadow = true
-      object.receiveShadow = true
-      object.material = Array.isArray(object.material)
-        ? object.material.map((material) => material.clone())
-        : object.material.clone()
-    })
-    return clone
-  }, [orb.scene])
+  const authoredOrb = useMemo(() => createAuthoredOrbLightPresentation(orb.scene, lightTexture), [orb.scene, lightTexture])
   const { actions } = useAnimations(orb.animations, authoredOrb)
   const sensory = useMemo(() => resolveOrbSensoryOutput(state, reducedMotion, true, reducedStimulation), [reducedMotion, reducedStimulation, state])
   const staticPresentation = sensory.movement === 'settled'
   const palette = ORB_PALETTE[state]
+
+  useEffect(() => {
+    authoredOrb.traverse((object) => {
+      if (object instanceof THREE.Sprite && object.userData.authoredOrbLight) {
+        object.material.opacity = Number(object.userData.restOpacity) * (reducedStimulation ? .45 : 1)
+      }
+    })
+  }, [authoredOrb, reducedStimulation])
 
   useEffect(() => {
     const allActions = Object.values(actions).filter((action): action is THREE.AnimationAction => Boolean(action))
@@ -619,6 +649,11 @@ function SacredOrb({ state, reducedMotion, reducedStimulation, onOpen }: { state
     Object.values(actions).forEach((action) => action?.stop())
   }, [actions])
 
+  useEffect(() => () => {
+    mantle.dispose(); field.dispose(); filaments.dispose(); lightTexture.dispose()
+    disposeAuthoredOrbLightPresentation(authoredOrb)
+  }, [authoredOrb, field, filaments, lightTexture, mantle])
+
   useFrame(({ clock }) => {
     if (!root.current) return
     const speed = state === 'speaking' ? 2.4 : state === 'thinking' ? 1.8 : state === 'listening' ? 1.25 : state === 'transition' ? 1.45 : .82
@@ -628,9 +663,11 @@ function SacredOrb({ state, reducedMotion, reducedStimulation, onOpen }: { state
       root.current.scale.setScalar(1)
     } else {
       root.current.position.y = ORB.y + Math.sin(clock.elapsedTime * speed) * .028
-      root.current.rotation.y = clock.elapsedTime * .018
-      root.current.scale.setScalar(1)
+      root.current.rotation.y = Math.sin(clock.elapsedTime * .18) * .07
+      const breath = Math.sin(clock.elapsedTime * speed) * .012
+      root.current.scale.set(1 + breath, 1 - breath * .6, 1 + breath * .35)
     }
+    if (memoryField.current) memoryField.current.rotation.y = staticPresentation ? 0 : Math.sin(clock.elapsedTime * speed * .24) * .055
     if (authoredCore.current) {
       const pulse = staticPresentation ? .34 : state === 'speaking' ? .37 : state === 'listening' ? .355 : .34 + Math.sin(clock.elapsedTime * .95) * .008
       authoredCore.current.scale.setScalar(pulse)
@@ -642,14 +679,16 @@ function SacredOrb({ state, reducedMotion, reducedStimulation, onOpen }: { state
   })
 
   return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], modelPlayback: staticPresentation ? 'stopped' : 'playing', runtimeAsset: ORB_MODEL, material: sensory.material, movement: sensory.movement, materialLanguage: 'translucent-living-memory-heart-with-visible-authored-core' }}>
-    <mesh castShadow receiveShadow rotation={[.24,.5,-.12]}>
-      <sphereGeometry args={[.43,48,32]} />
-      <meshPhysicalMaterial color={palette.core} transparent opacity={0.14} depthWrite={false} emissive={palette.emissive} emissiveIntensity={reducedStimulation ? .12 : state === 'speaking' ? .3 : .18} roughness={.18} metalness={0} clearcoat={.45} clearcoatRoughness={.2} envMapIntensity={.72} />
+    <mesh name="orb-connected-memory-mantle" geometry={mantle}>
+      <meshStandardMaterial vertexColors color={palette.core} transparent opacity={0.14} depthWrite={false} emissive={palette.emissive} emissiveIntensity={reducedStimulation ? .12 : state === 'speaking' ? .62 : .42} roughness={.72} metalness={0} envMapIntensity={.24} />
     </mesh>
+    <mesh name="orb-recessed-memory-field" geometry={mantle} scale={[.84,.88,.84]}>
+      <meshStandardMaterial vertexColors color="#badbcc" emissive={palette.light} emissiveIntensity={reducedStimulation ? .16 : .48} side={THREE.BackSide} transparent opacity={.21} depthWrite={false} roughness={.82} metalness={0} envMapIntensity={.12} />
+    </mesh>
+    <lineSegments name="orb-inner-memory-filaments" geometry={filaments}><lineBasicMaterial color={palette.light} transparent opacity={reducedStimulation ? .07 : .16} depthWrite={false} toneMapped={false} /></lineSegments>
+    <points ref={memoryField} name="orb-interior-memory-motes" geometry={field}><pointsMaterial map={lightTexture} vertexColors size={.022} transparent opacity={reducedStimulation ? .32 : .8} depthWrite={false} toneMapped={false} /></points>
     <group ref={authoredCore} scale={.34}><primitive object={authoredOrb} /></group>
-    <mesh name="orb-luminous-memory-volume"><sphereGeometry args={[.23,32,24]} /><meshStandardMaterial color={palette.aura} transparent opacity={.62} depthWrite={false} emissive={palette.emissive} emissiveIntensity={reducedStimulation ? .5 : state === 'speaking' ? 1.8 : 1.4} roughness={.28} metalness={0} toneMapped={false} /></mesh>
-    <mesh name="orb-warm-memory-heart" position={[.06,-.03,.08]}><sphereGeometry args={[.1,24,16]} /><meshStandardMaterial color="#ffe1a3" emissive="#efbe64" emissiveIntensity={reducedStimulation ? .5 : 1.1} roughness={.3} metalness={0} toneMapped={false} /></mesh>
-    {sensory.particles !== 'none' ? <OrbMotes reducedMotion={reducedMotion} color={palette.light} /> : null}
+    {sensory.particles !== 'none' ? <OrbMotes reducedMotion={staticPresentation} color={palette.light} /> : null}
     <pointLight ref={light} color={palette.light} intensity={sensory.light.intensity * 2.28} distance={state === 'speaking' ? 12 : 10} decay={2} />
   </group>
 }
@@ -678,7 +717,7 @@ function Thresholds({ onGround, onLifeMap }: { onGround: () => void; onLifeMap: 
   return <>
     <group name="home-ground-environmental-threshold" position={GROUND_THRESHOLD}><mesh position={[0,.8,0]} onClick={(e) => { e.stopPropagation(); onGround() }}><boxGeometry args={[4.2,2.8,4.2]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh></group>
     <group name="home-life-map-sky-lookout" position={LIFE_MAP_LOOKOUT}><mesh position={[0,.8,0]} onClick={(e) => { e.stopPropagation(); onLifeMap() }}><boxGeometry args={[4.2,2.8,4.2]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh></group>
-    {phase === 'HOME' ? thresholds.map(({ position, label }) => <Html key={label} position={position.clone().add(new THREE.Vector3(0, 1.25, 0))} center distanceFactor={14} zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
+    {phase === 'HOME' ? thresholds.map(({ position, label }) => <Html key={label} position={position.clone().add(new THREE.Vector3(0, 1.25, 0))} center zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
       <span aria-hidden="true" style={{ display: 'block', whiteSpace: 'nowrap', padding: '7px 11px', borderBottom: '1px solid #a9c9d399', borderRadius: 3, background: '#09151dcc', color: '#e2edf3', font: '500 14px/1.35 system-ui', letterSpacing: '.05em' }}>{label}</span>
     </Html>) : null}
   </>
@@ -892,6 +931,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const [reducedStimulation, setReducedStimulation] = useState(false)
   const [mobileControls, setMobileControls] = useState(false)
   const [orbState, setOrbState] = useState<OrbState>('idle')
+  const reviewOrbState = useRef<OrbState | null>(null)
   const [reviewFixture, setReviewFixture] = useState<'none' | 'safe-private'>('none')
   const [portalSequence, setPortalSequence] = useState<TransitionSequence>('idle')
   const phase = useSceneStore((state) => state.phase)
@@ -934,19 +974,20 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   }, [])
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    setReviewFixture(params.get('homePrivateFixture') === '1' ? 'safe-private' : 'none')
-    const requestedOrbState = params.get('homeOrbState')
-    if (isOrbState(requestedOrbState)) setOrbState(requestedOrbState)
+    const requestedOrbState = resolveAuthorizedHomeReviewOrbState(window.location.search)
+    reviewOrbState.current = requestedOrbState
+    setReviewFixture(params.get('homeAssetReview') === '1' && params.get('homePrivateFixture') === '1' ? 'safe-private' : 'none')
+    if (requestedOrbState) setOrbState(requestedOrbState)
   }, [])
   useEffect(() => {
     const onOrbState = (event: CustomEvent<OrbStateEventDetail>) => {
       if (phase === 'ASCENT' || groundDescent || !isOrbState(event.detail?.state)) return
-      setOrbState(event.detail.state)
+      setOrbState(reviewOrbState.current ?? event.detail.state)
     }
     window.addEventListener(URAI_ORB_STATE_EVENT, onOrbState)
     return () => window.removeEventListener(URAI_ORB_STATE_EVENT, onOrbState)
   }, [groundDescent, phase])
-  useEffect(() => { if (phase !== 'ASCENT' && !groundDescent) setOrbState('idle') }, [groundDescent, phase])
+  useEffect(() => { if (phase !== 'ASCENT' && !groundDescent) setOrbState(reviewOrbState.current ?? 'idle') }, [groundDescent, phase])
   useEffect(() => { const cancel = (event: KeyboardEvent) => { if (event.key !== 'Escape') return; const store = useSceneStore.getState(); if (store.phase === 'ASCENT') { event.preventDefault(); store.setPhase('HOME'); store.unlock(); setPortalSequence('idle'); setOrbState('idle') } else if (groundDescent) { event.preventDefault(); setGroundDescent(false); setPortalSequence('idle'); setOrbState('idle') } }; window.addEventListener('keydown', cancel, true); return () => window.removeEventListener('keydown', cancel, true) }, [groundDescent])
 
   if (!webglAvailable) return null
