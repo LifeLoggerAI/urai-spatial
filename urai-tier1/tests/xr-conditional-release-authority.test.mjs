@@ -5,7 +5,8 @@ import path from 'node:path'
 import vm from 'node:vm'
 import { createRequire } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-const ts = createRequire(import.meta.url)('typescript')
+const require = createRequire(import.meta.url)
+const ts = require('typescript')
 const sourceRoot = fileURLToPath(new URL('../..', import.meta.url))
 const root = process.env.URAI_REPAIR_SOURCE_ROOT || sourceRoot
 const helpers = await import(pathToFileURL(path.join(sourceRoot, 'scripts/lib/xr-release-authority.mjs')))
@@ -13,7 +14,7 @@ const boundarySource = fs.readFileSync(path.join(root, 'urai-tier1/src/lib/spati
 const authority = helpers.readXrReleaseAuthority(boundarySource)
 function loadTs(relative, require) {
   const source = fs.readFileSync(path.join(root, relative), 'utf8')
-  const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
+  const js = ts.transpileModule(source, { fileName: relative, compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText
   const exports = {}
   vm.runInNewContext(js, { exports, require, process: { env: { GITHUB_SHA: 'a'.repeat(40) } } })
   return exports
@@ -25,6 +26,31 @@ const route = loadTs('urai-tier1/src/app/api/system/deploy-proof/route.ts', (nam
 })
 const proof = await route.GET()
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'release/route-manifest.json'), 'utf8'))
+for (const relative of ['urai-tier1/src/app/xr/page.tsx', 'urai-tier1/src/app/spatial/ar-vr/page.tsx']) {
+  for (const enabled of [false, true]) {
+    test(`actual ${relative} ${enabled ? 'preserves the synthetic eligible component branch' : 'rejects disabled XR before rendering the component'}`, () => {
+      let componentRenders = 0
+      const jsx = require('react/jsx-runtime')
+      function EligibleXrComponent() { componentRenders += 1; return jsx.jsx('div', { 'data-inert-xr-component': 'true' }) }
+      const actualPage = loadTs(relative, (name) => {
+        if (name === 'react/jsx-runtime') return jsx
+        if (name === 'next/navigation') return { notFound: require('next/navigation').notFound }
+        if (name === '@/lib/spatial-launch-boundaries') return { spatialLaunchBoundary: { ...boundary.spatialLaunchBoundary, liveArWebXrEnabled: enabled } }
+        assert.ok(name === '@/app/spatial/ar-vr/UraiQuestEntryWorldV2' || name === './UraiQuestEntryWorldV2', `Unexpected actual page dependency: ${name}`)
+        return { __esModule: true, default: EligibleXrComponent }
+      })
+      if (!enabled) {
+        assert.throws(() => actualPage.default(), (error) => error?.digest === 'NEXT_HTTP_ERROR_FALLBACK;404')
+        assert.equal(componentRenders, 0)
+      } else {
+        // This synthetic branch proves preservation, never an activated route or device receipt.
+        const html = require('react-dom/server').renderToStaticMarkup(actualPage.default())
+        assert.match(html, /data-inert-xr-component="true"/)
+        assert.equal(componentRenders, 1)
+      }
+    })
+  }
+}
 test('actual disabled source boundary preserves no real-device acceptance', () => { assert.equal(authority.enabled, false); assert.equal(authority.expectedStatus, 404); assert.equal(authority.claim, 'governed-post-launch-gated') })
 test('actual deployed-proof handler excludes conditional XR from required public routes', () => assert.equal(helpers.inspectXrDeployProof(proof, authority), true))
 test('actual route manifest classifies both XR routes conditionally without public acceptance', () => {

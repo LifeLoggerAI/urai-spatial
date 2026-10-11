@@ -266,10 +266,10 @@ async function enterReplay(page, journey, mode, identity) {
   await waitAttr(canvas, 'data-replay-first-frame', 'true', 60_000)
   await activate(page, replay.getByRole('button', { name: 'Continue memory', exact: true }), mode)
   await waitAttr(replay, 'data-playing', 'true', 20_000)
-  await assertAdamLauncherLabel(replay, journey, 'replay')
-  await capture(page, journey, 'replay')
   await activate(page, replay.getByRole('button', { name: 'Pause memory', exact: true }), mode)
   await waitAttr(replay, 'data-playing', 'false', 20_000)
+  await assertAdamLauncherLabel(replay, journey, 'replay')
+  await capture(page, journey, 'replay')
 }
 
 async function unwindReplayToFocus(page, journey, mode, identity) {
