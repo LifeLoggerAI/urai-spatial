@@ -1,6 +1,11 @@
 // The mobile Ground shortcut is part of the admitted Home HUD. Its one sampled
 // point is recorded separately; no other covering element is accepted.
-export function inspectHomeOrbCanvasSamples(canvas, points) {
+export function inspectHomeOrbCanvasSamples(canvasOrInput, explicitPoints) {
+  const selectorInput = canvasOrInput && typeof canvasOrInput === 'object'
+    && typeof canvasOrInput.selector === 'string'
+  const canvas = selectorInput ? document.querySelector(canvasOrInput.selector) : canvasOrInput
+  const points = selectorInput ? canvasOrInput.points : explicitPoints
+  if (!(canvas instanceof HTMLCanvasElement)) throw new Error('Home/Orb canvas selector did not resolve exactly one canvas')
   const rect = canvas.getBoundingClientRect()
   const selected = []
   const excludedHud = []

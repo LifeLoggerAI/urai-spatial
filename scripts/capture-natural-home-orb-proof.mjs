@@ -14,7 +14,6 @@ const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/portal-o
 const orbPath = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const portalPath = '/assets/urai/generated/models/portal-ring-master-v1.glb'
 const semanticNavigationEvaluationTimeout = 90_000
-const paintedHomeEvaluationTimeout = 90_000
 const finalPackReceiptPath = path.resolve('operations/assets/generated-receipts/urai-final-glb-pack-v1.json')
 const finalPackReceipt = JSON.parse(await readFile(finalPackReceiptPath, 'utf8'))
 const orbReceipt = finalPackReceipt.assets?.find((asset) => asset.fileName === path.basename(orbPath))
@@ -49,8 +48,8 @@ async function frames(page, count = 8) {
   }), count)
 }
 
-async function imageEvidence(page, canvas, samplePoints) {
-  const { buffer, capture } = await captureVisibleCanvasPng(page, canvas, 90_000, samplePoints)
+async function imageEvidence(page, canvas, samplePoints, selector) {
+  const { buffer, capture } = await captureVisibleCanvasPng(page, canvas, 90_000, samplePoints, selector)
   const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
   const sample = await page.evaluate(async ({ url, points }) => {
     const image = new Image()
@@ -126,12 +125,19 @@ for (const spec of cases) {
       const element = document.querySelector('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
       return element ? Number.parseFloat(getComputedStyle(element).opacity || '1') : null
     })
+    const worldCanvasSelector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"] canvas'
     const worldCanvas = owner.locator('canvas')
-    if (await worldCanvas.count() !== 1) throw new Error('Home/Orb visual proof requires exactly one world canvas')
-    record.canvasSamplingBefore = await worldCanvas.evaluate(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS, { timeout: paintedHomeEvaluationTimeout })
+    if (await page.evaluate((selector) => document.querySelectorAll(selector).length, worldCanvasSelector) !== 1) {
+      throw new Error('Home/Orb visual proof requires exactly one world canvas')
+    }
+    const inspectCanvasSamples = () => page.evaluate(inspectHomeOrbCanvasSamples, {
+      selector: worldCanvasSelector,
+      points: CANVAS_EVIDENCE_SAMPLE_POINTS,
+    })
+    record.canvasSamplingBefore = await inspectCanvasSamples()
     if (!record.canvasSamplingBefore.accepted) throw new Error(`Home world sampling rejected an occlusion: ${JSON.stringify(record.canvasSamplingBefore)}`)
-    const visual = await imageEvidence(page, worldCanvas, record.canvasSamplingBefore.samplePoints)
-    record.canvasSamplingAfter = await worldCanvas.evaluate(inspectHomeOrbCanvasSamples, CANVAS_EVIDENCE_SAMPLE_POINTS, { timeout: paintedHomeEvaluationTimeout })
+    const visual = await imageEvidence(page, worldCanvas, record.canvasSamplingBefore.samplePoints, worldCanvasSelector)
+    record.canvasSamplingAfter = await inspectCanvasSamples()
     if (!record.canvasSamplingAfter.accepted || JSON.stringify(record.canvasSamplingAfter) !== JSON.stringify(record.canvasSamplingBefore)) {
       throw new Error('Home world sampling or its exact Ground HUD exception changed during capture')
     }

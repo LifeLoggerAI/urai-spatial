@@ -321,8 +321,21 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
         activeElement: document.activeElement === control,
       }
     })
+    const focusMessageControl = () => page.evaluate(() => {
+      const control = document.querySelector('textarea[data-urai-proof-message-target="true"]')
+      if (!(control instanceof HTMLTextAreaElement)) throw new Error('Orb proof message target is missing')
+      const bounds = control.getBoundingClientRect()
+      const style = getComputedStyle(control)
+      if (control.disabled || control.readOnly || control.getAttribute('aria-disabled') === 'true'
+        || bounds.width <= 0 || bounds.height <= 0 || style.visibility === 'hidden' || style.display === 'none') {
+        throw new Error('Orb proof message target is not actionable')
+      }
+      control.focus()
+      if (document.activeElement !== control) throw new Error('Orb proof message target did not receive focus')
+      return true
+    })
     stage = 'focus-message'
-    await message.focus()
+    await focusMessageControl()
     await page.waitForFunction(
       (selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention',
       ownerSelector,
@@ -361,7 +374,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     }, 'textarea[data-urai-proof-message-target="true"]', { timeout: 90_000 })
     record.messageActionabilityBeforeTyping = await inspectMessageActionability()
     const reflectionPrompt = 'Give me a short grounded reflection.'
-    await message.focus({ timeout: 20_000 })
+    await focusMessageControl()
     await page.keyboard.type(reflectionPrompt, { delay: 10 })
     const typedReflection = await message.inputValue()
     if (typedReflection !== reflectionPrompt) throw new Error('Native keyboard reflection input did not retain the exact prompt')

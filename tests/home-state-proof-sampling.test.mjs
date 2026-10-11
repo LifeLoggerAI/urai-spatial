@@ -58,7 +58,10 @@ test('Home proof uses the direct page DOM path without canvas locator protocol c
 
 test('Home proof avoids the two observed locator-evaluate failure paths', () => {
   assert.doesNotMatch(script, /message\.evaluate\(/)
+  assert.doesNotMatch(script, /message\.focus\(/)
   assert.match(script, /page\.evaluate\(\(\) => \{\s+const element = document\.querySelector\('#urai-orb-message'\)/)
+  assert.match(script, /const focusMessageControl = \(\) => page\.evaluate\(\(\) => \{/)
+  assert.match(script, /if \(document\.activeElement !== control\) throw new Error\('Orb proof message target did not receive focus'\)/)
   assert.match(script, /captureVisibleCanvasPng\(page, canvas, 90_000, HOME_CANVAS_SAMPLE_POINTS, '\.urai-asset-home-world canvas'\)/)
 })
 
