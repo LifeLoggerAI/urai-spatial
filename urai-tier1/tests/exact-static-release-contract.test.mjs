@@ -115,3 +115,11 @@ test('manual trigger remains verification-only and exposes no deploy or rollback
   assert.doesNotMatch(workflow, /build-release-output:|attest-release-bundle:|rollback-verify:|\n  deploy:\n/)
   assert.doesNotMatch(workflow, /gh workflow run spatial-live-deploy\.yml/)
 })
+
+
+test('authority bundle requires public login, privacy policy, and support pages in static export', () => {
+  for (const routePage of ['login/index.html', 'privacy-policy/index.html', 'support/index.html']) {
+    assert.ok(bundleBuilder.includes(`'${routePage}'`), `bundle builder must require ${routePage}`)
+  }
+  assert.ok(bundleBuilder.includes('Static output is missing required public route'))
+})

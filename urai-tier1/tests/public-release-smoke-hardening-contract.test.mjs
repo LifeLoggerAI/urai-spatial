@@ -5,6 +5,7 @@ import test from 'node:test'
 const postDeploy = fs.readFileSync(new URL('../../scripts/urai-post-deploy-smoke.mjs', import.meta.url), 'utf8')
 const releaseControl = fs.readFileSync(new URL('../../scripts/urai-release-control-smoke.mjs', import.meta.url), 'utf8')
 const publicProof = fs.readFileSync(new URL('../../.github/workflows/public-institutional-surface-proof.yml', import.meta.url), 'utf8')
+const liveSmoke = fs.readFileSync(new URL('../../scripts/urai-live-smoke.mjs', import.meta.url), 'utf8')
 
 const publicRoutes = ['/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug']
 const fullVisionRoutes = ['/life-movie', '/council', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr']
@@ -53,4 +54,16 @@ test('release-control browser smoke covers public routes and compatibility redir
 
 test('public institutional proof is eligible on integration branches', () => {
   assert.ok(publicProof.includes("'integration/**'"))
+})
+
+
+test('custom-domain live smoke verifies the public login, privacy policy, and support routes', () => {
+  for (const [route, marker] of [
+    ['/login', 'canonical-auth-entry'],
+    ['/privacy-policy', 'Privacy policy candidate'],
+    ['/support', 'Help when you need it.'],
+  ]) {
+    assert.ok(liveSmoke.includes(`paths: ['${route}', '${route}/']`), `missing live route smoke for ${route}`)
+    assert.ok(liveSmoke.includes(marker), `missing route-specific live marker for ${route}`)
+  }
 })
