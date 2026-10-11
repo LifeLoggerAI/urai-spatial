@@ -12,8 +12,10 @@ Each range is uploaded as its own artifact with compression disabled. The
 check enforces that every actual part and manifest artifact is at most 24 MiB.
 The small manifest and upload receipt are separate artifacts. No step uploads
 the whole transport directory as one artifact. The complete original artifact
-remains available independently. At most eight parts (184 MiB original ZIP) are
-supported; larger or inconsistent archives fail explicitly.
+remains available independently. The three supporting workflows (continuous
+spatial visual proof, accessibility performance evidence, and founder placement)
+upload up to sixteen parts (368 MiB original ZIP); larger or inconsistent
+archives fail explicitly.
 
 The same utility supports the fixed `accessibility-performance` profile. It
 retains `accessibility-performance-evidence-<source SHA>` and partitions that
