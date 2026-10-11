@@ -65,6 +65,7 @@ const tests = [
   'tests/dispatcher-transient-retry-contract.test.mjs',
   'tests/home-runtime-cursor-cleanup-contract.test.mjs',
   'tests/home-movement-lifecycle.test.mjs',
+  'tests/home-telemetry-idempotence.test.mjs',
   'tests/status-live-authority-contract.test.mjs',
   'tests/discoverability-enforcement.test.mjs',
   'tests/open-graph-asset-ownership-contract.test.mjs',
