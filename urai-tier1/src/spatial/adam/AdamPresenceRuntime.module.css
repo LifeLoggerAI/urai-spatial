@@ -183,3 +183,10 @@
   min-height: 48px !important;
 }
 .launcher:focus-visible { outline: 2px solid #d8fff5; outline-offset: 3px; }
+
+
+/* Keep the open founder panel above route-root stacking contexts after portaling to body. */
+:global(body) > .panel[data-urai-adam-presence] {
+  position: fixed;
+  z-index: 2147483602;
+}
