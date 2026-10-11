@@ -147,13 +147,15 @@ export function useDragLook({
   maxPitch?: number
   onDragState?: (dragging: boolean) => void
 }): DragLookHandlers {
-  const drag = useRef<{ pointerId: number; x: number; y: number } | null>(null)
+  const drag = useRef<{ pointerId: number; x: number; y: number; captureTarget: Element } | null>(null)
 
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
     if (!enabled || event.button !== 0) return
     if (event.target instanceof Element && event.target.closest('button,a,input,textarea,select,summary,[data-movement-ui="true"]')) return
-    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
-    try { event.currentTarget.setPointerCapture(event.pointerId) } catch { /* pointer capture is best effort */ }
+    // Keep canvas-origin clicks on the canvas so scene interactions survive drag capture.
+    const captureTarget = event.target instanceof Element ? event.target : event.currentTarget
+    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, captureTarget }
+    try { captureTarget.setPointerCapture(event.pointerId) } catch { /* pointer capture is best effort */ }
     onDragState?.(true)
   }, [enabled, onDragState])
 
@@ -169,8 +171,9 @@ export function useDragLook({
 
   const end = useCallback((event: ReactPointerEvent<HTMLElement>) => {
     if (!drag.current || drag.current.pointerId !== event.pointerId) return
+    const { captureTarget } = drag.current
     drag.current = null
-    try { event.currentTarget.releasePointerCapture(event.pointerId) } catch { /* browser may already release */ }
+    try { captureTarget.releasePointerCapture(event.pointerId) } catch { /* browser may already release */ }
     onDragState?.(false)
   }, [onDragState])
 

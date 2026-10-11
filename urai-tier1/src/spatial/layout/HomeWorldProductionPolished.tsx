@@ -245,7 +245,18 @@ const FERN_PLACEMENTS = Array.from({ length: 104 }, (_, index) => {
   const x = side * edge + (seeded(index, 66) - .5) * 1.65
   const scale = innerCluster ? .42 + seeded(index, 67) * .46 : .32 + seeded(index, 67) * .38
   const rotation = seeded(index, 68) * Math.PI * 2
-  return [x, z, scale, rotation] as const
+  // The governed fern's 1.709387m horizontal envelope, including its native
+  // part offsets, expands to at most 1.846138m under our 1.08 scale variation.
+  // Reserve 1.9m per unit scale plus the clearing patch's maximum 1.08 jitter.
+  // A rectangle keeps the full canopy clear even along the ellipse diagonals.
+  const clearRadiusX = 2.7 * 1.08 + scale * 1.9
+  const clearRadiusZ = 1.85 * 1.08 + scale * 1.9
+  const dx = x - ORB.x
+  const dz = z - ORB.z
+  const clearX = Math.abs(dx) >= clearRadiusX || Math.abs(dz) >= clearRadiusZ
+    ? x
+    : ORB.x + (dx < 0 ? -1 : 1) * clearRadiusX
+  return [clearX, z, scale, rotation] as const
 })
 
 const STONE_SCATTER = Array.from({ length: 48 }, (_, index) => {
