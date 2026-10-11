@@ -14,7 +14,15 @@ for (const route of ['life-map', 'focus']) for (const profile of profiles) {
     const page = await context.newPage()
     try {
       await page.goto(`/${route}/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset`)
-      const root = page.locator(route === 'life-map' ? '[data-testid="urai-true-3d-life-map"]' : '[data-testid="urai-final-focus-chamber"]')
+      // Only the persistent destination owns the interactive Focus. A second
+      // loading route shell may coexist during transition; matching it globally
+      // makes the readiness assertion ambiguous instead of proving the real view.
+      const root = route === 'life-map'
+        ? page.locator('[data-testid="urai-true-3d-life-map"]')
+        : page.locator('[data-testid="urai-persistent-world-shell"][data-world-destination="focus"] [data-testid="urai-final-focus-chamber"]')
+      await expect(root).toHaveCount(1, { timeout: 60_000 })
+      if (route === 'focus') await expect(root).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
+      await expect(root).toBeVisible()
       await expect(root).toHaveAttribute(route === 'life-map' ? 'data-life-map-render-ready' : 'data-focus-render-ready', 'true', { timeout: 60_000 })
       const launcher = page.locator('[data-urai-adam-launcher]')
       await expect(launcher).toHaveAccessibleName(/Talk with Adam/)
