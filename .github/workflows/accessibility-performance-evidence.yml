@@ -411,6 +411,94 @@ jobs:
           retention-days: 365
           compression-level: 0
 
+      - name: Upload bounded accessibility archive part 09
+        id: bounded-accessibility-part-09
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 9 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-09
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-09
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 10
+        id: bounded-accessibility-part-10
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 10 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-10
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-10
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 11
+        id: bounded-accessibility-part-11
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 11 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-11
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-11
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 12
+        id: bounded-accessibility-part-12
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 12 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-12
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-12
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 13
+        id: bounded-accessibility-part-13
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 13 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-13
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-13
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 14
+        id: bounded-accessibility-part-14
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 14 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-14
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-14
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 15
+        id: bounded-accessibility-part-15
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 15 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-15
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-15
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 16
+        id: bounded-accessibility-part-16
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 16 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-16
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-16
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
       - name: Verify separate native transport artifact identities and byte limits
         id: verified-accessibility-transport
         if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' }}

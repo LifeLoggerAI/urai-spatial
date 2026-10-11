@@ -234,7 +234,7 @@ test('production CLI requires external exact binding and rejects unknown or dupl
   assert.deepEqual(fs.readFileSync(f.outputPath), f.archive)
 })
 
-test('workflow preserves all original proof assertions and upload, and uses eight separate bounded paths', () => {
+test('workflow preserves all original proof assertions and upload, and uses the configured separate bounded paths', () => {
   const workflow = fs.readFileSync(new URL('../../.github/workflows/continuous-spatial-visual-proof.yml', import.meta.url), 'utf8')
   const assertions = workflow.slice(workflow.indexOf('      - name: Prove complete group receipt\n'), workflow.indexOf('      - name: Upload exact-head grouped visual proof\n'))
   assert.equal(sha(assertions), '47ba006bf54949f3bdab54a860a483e22e3abd7300b3d1b0462ffd99c4c91612')
@@ -302,3 +302,11 @@ test('a recovered metadata response cannot weaken digest or run ownership', asyn
   assert.equal(calls, 2)
 })
 
+
+test('Adam placement workflow follows the shared bounded transport part limit', () => {
+  const workflow = fs.readFileSync(new URL('../../.github/workflows/adam-placement-proof.yml', import.meta.url), 'utf8')
+  const parts = workflow.split(/\r?\n/).filter(line => line.includes('path: artifacts/adam-placement-transport/adam-placement.zip.part-'))
+  assert.equal(parts.length, MAX_PARTS)
+  assert.equal(new Set(parts).size, MAX_PARTS)
+  assert.match(workflow, /verify-native-uploads/)
+})
