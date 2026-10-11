@@ -94,7 +94,7 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: Verify bounded transport and mounted Life Map navigation
-        run: node --test urai-tier1/tests/visual-proof-transport.test.mjs urai-tier1/tests/lifemap-signed-out-navigation-behavior.test.mjs
+        run: node --import tsx --test urai-tier1/tests/visual-proof-transport.test.mjs urai-tier1/tests/lifemap-signed-out-navigation-behavior.test.mjs
 
       - name: Typecheck and build exact static donor
         run: |
