@@ -148,6 +148,12 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }
     await expect(details).not.toHaveAttribute('open', '')
     await disclosure.click()
     await expect(details).toHaveAttribute('open', '')
+    const disclosureScroll = await details.evaluate(element => {
+      const style = getComputedStyle(element)
+      return { maxHeight: style.maxHeight, overflowY: style.overflowY }
+    })
+    expect(disclosureScroll.maxHeight).toBe('none')
+    expect(disclosureScroll.overflowY).toBe('visible')
     const description = focus.locator('.focusNarration strong')
     await expect(description).toBeVisible()
     await focus.locator('.focusHeading').hover()
