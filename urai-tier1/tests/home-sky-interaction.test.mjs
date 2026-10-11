@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import { createRequire } from 'node:module'
 import test from 'node:test'
+import { renderToStaticMarkup } from 'react-dom/server'
 import ts from 'typescript'
 import * as THREE from 'three'
 import { createHomeSkyTapGate, homeJourneyHref, isUpwardHomeSkyRay, subscribeHomeSkyTaps } from '../src/spatial/navigation/homeSkyInteraction.ts'
@@ -139,6 +140,7 @@ test('actual hydrated direct navigation retains disclosed demo without changing 
   vm.runInNewContext(code,{module,exports:module.exports,window:{location:{search:'?demo=1&memoryId=private-source&token=secret'}},require:id=>{
     if(id==='react')return {useState:()=>[search,next=>{search=next}],useEffect:fn=>effects.push(fn)}
     if(id==='react/jsx-runtime')return require(id)
+    if(id==='next/link')return require(id)
     if(id.includes('useUraiLocale'))return {useUraiLocale:()=>locale}
     if(id.includes('homeSkyInteraction'))return {homeJourneyHref}
     return {}
@@ -148,10 +150,20 @@ test('actual hydrated direct navigation retains disclosed demo without changing 
   for(const id of ['home-semantic-life-map','home-semantic-ground'])assert.equal(new URL(findLink(ssr,id).props.href,'https://urai.example').searchParams.has('demo'),false)
   effects[0]();effects=[]
   const nav=module.exports.HomeSemanticNavigation()
+  const markup=renderToStaticMarkup(nav)
   for(const [id,label] of [['home-semantic-life-map','Open Life Map directly'],['home-semantic-ground','Open Ground directly']]){
     const hydrated=findLink(nav,id),target=new URL(hydrated.props.href,'https://urai.example')
     assert.equal(target.searchParams.get('demo'),'1');assert.equal(target.searchParams.has('memoryId'),false);assert.equal(target.searchParams.has('token'),false)
     assert.equal(hydrated.props['aria-label'],label);assert.equal(hydrated.props.onClick,undefined)
+    assert.equal(hydrated.type,require('next/link').default)
+    assert.equal(hydrated.props.prefetch,false)
+    const anchor=markup.match(new RegExp(`<a\\b[^>]*data-testid="${id}"[^>]*>`))?.[0]
+    assert.ok(anchor, `${id} must render a native anchor through the actual pinned Next Link`)
+    const renderedHref=new URL(anchor.match(/href="([^"]+)"/)[1].replaceAll('&amp;','&'),'https://urai.example')
+    assert.equal(renderedHref.pathname.replace(/\/+$/,''),target.pathname.replace(/\/+$/,''))
+    assert.deepEqual([...renderedHref.searchParams.entries()],[...target.searchParams.entries()])
+    assert.ok(anchor.includes(`aria-label="${label}"`))
+    assert.doesNotMatch(anchor,/\bonclick=|\bprefetch=/i)
   }
 })
 const origin='https://urai.example/home/?demo=1'

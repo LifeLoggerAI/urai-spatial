@@ -126,9 +126,13 @@ test('Home telemetry and continuous proof stay aligned to the polished interacti
   for (const marker of [
     "const spawnX = -0.85",
     "const spawnZ = 8.4",
-    "position.x - 1.8, position.z + 9.5",
-    "position.x + 5.4, position.z + 10.8",
-    "position.x - 5.4, position.z + 10.8",
+    "const playerX = position.x.toFixed(4)",
+    "playerZ = position.z.toFixed(4)",
+    "const telemetryX = Number(playerX)",
+    "telemetryZ = Number(playerZ)",
+    "telemetryX - 1.8, telemetryZ + 9.5",
+    "telemetryX + 5.4, telemetryZ + 10.8",
+    "telemetryX - 5.4, telemetryZ + 10.8",
   ]) assert.ok(includesCanonical(embodiedNavigation, marker), `stale movement telemetry: ${marker}`)
 
   for (const marker of [
