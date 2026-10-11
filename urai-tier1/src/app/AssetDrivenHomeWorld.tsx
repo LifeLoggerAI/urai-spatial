@@ -26,10 +26,10 @@ function synchronizeCanonicalHomeTelemetry(world: HTMLElement) {
   if (!Number.isFinite(playerX) || !Number.isFinite(playerZ)) return
 
   const distance = (target: { x: number; z: number }) => Math.hypot(playerX - target.x, playerZ - target.z).toFixed(3)
-  world.dataset.homeDistance = distance(HOME_SPAWN)
-  world.dataset.homeDistanceOrb = distance(HOME_ORB)
-  world.dataset.homeDistanceGround = distance(HOME_GROUND)
-  world.dataset.homeDistanceLifeMap = distance(HOME_LIFE_MAP)
+  if (world.dataset.homeDistance !== distance(HOME_SPAWN)) world.dataset.homeDistance = distance(HOME_SPAWN)
+  if (world.dataset.homeDistanceOrb !== distance(HOME_ORB)) world.dataset.homeDistanceOrb = distance(HOME_ORB)
+  if (world.dataset.homeDistanceGround !== distance(HOME_GROUND)) world.dataset.homeDistanceGround = distance(HOME_GROUND)
+  if (world.dataset.homeDistanceLifeMap !== distance(HOME_LIFE_MAP)) world.dataset.homeDistanceLifeMap = distance(HOME_LIFE_MAP)
 }
 
 export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable, onSceneFailure, onAssetsReadyChange }: Props) {
@@ -43,9 +43,9 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable, onScen
 
     const hardenHomeOwnership = () => {
       owner.querySelectorAll('canvas').forEach((canvas) => {
-        canvas.setAttribute('aria-hidden', 'true')
-        canvas.setAttribute('role', 'presentation')
-        canvas.setAttribute('tabindex', '-1')
+        if (canvas.getAttribute('aria-hidden') !== 'true') canvas.setAttribute('aria-hidden', 'true')
+        if (canvas.getAttribute('role') !== 'presentation') canvas.setAttribute('role', 'presentation')
+        if (canvas.getAttribute('tabindex') !== '-1') canvas.setAttribute('tabindex', '-1')
       })
 
       const world = owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
@@ -64,16 +64,23 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable, onScen
         ? requestedOrbState as OrbState
         : null
 
-      world.setAttribute('data-home-asset-mode', reviewMode ? 'disclosed-review-candidate' : 'ready')
-      world.setAttribute('data-home-personalization-mode', privateFixture ? 'private-personalized' : 'standard')
-      world.setAttribute('data-home-review-fixture', reviewMode && privateFixture ? 'safe-private' : 'none')
+      const assetMode = reviewMode ? 'disclosed-review-candidate' : 'ready'
+      const personalizationMode = privateFixture ? 'private-personalized' : 'standard'
+      const reviewFixture = reviewMode && privateFixture ? 'safe-private' : 'none'
+      if (world.getAttribute('data-home-asset-mode') !== assetMode) world.setAttribute('data-home-asset-mode', assetMode)
+      if (world.getAttribute('data-home-personalization-mode') !== personalizationMode) world.setAttribute('data-home-personalization-mode', personalizationMode)
+      if (world.getAttribute('data-home-review-fixture') !== reviewFixture) world.setAttribute('data-home-review-fixture', reviewFixture)
       synchronizeCanonicalHomeTelemetry(world)
 
       const assetsReady = world.dataset.homeAssetsReady === 'true'
       const inputReady = world.dataset.homeInputReady === 'true'
       const renderedFrames = Number.parseInt(world.dataset.homeRenderedFrames || '0', 10)
-      world.dataset.homeInteractionReady = assetsReady && inputReady ? 'true' : 'false'
-      world.dataset.homeReady = assetsReady && inputReady && Number.isFinite(renderedFrames) && renderedFrames >= 3 ? 'true' : 'false'
+      if (world.dataset.homeInteractionReady !== (assetsReady && inputReady ? 'true' : 'false')) {
+        world.dataset.homeInteractionReady = assetsReady && inputReady ? 'true' : 'false'
+      }
+      if (world.dataset.homeReady !== (assetsReady && inputReady && Number.isFinite(renderedFrames) && renderedFrames >= 3 ? 'true' : 'false')) {
+        world.dataset.homeReady = assetsReady && inputReady && Number.isFinite(renderedFrames) && renderedFrames >= 3 ? 'true' : 'false'
+      }
       if (lastReportedAssetsReady.current !== assetsReady) {
         lastReportedAssetsReady.current = assetsReady
         onAssetsReadyChange?.(assetsReady)
