@@ -194,6 +194,10 @@ export default function PassportVaultClient() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      // Let form fields keep their native editing and dismissal shortcuts.
+      if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey
+        || target?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target?.tagName ?? '')) return
       if (event.key === 'Home') { event.preventDefault(); setSelectedZone('identity'); document.getElementById('passport-controls')?.focus() }
       if (event.key === 'Escape') { if (window.history.length > 1) window.history.back(); else window.location.assign('/ground') }
     }
