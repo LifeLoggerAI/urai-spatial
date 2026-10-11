@@ -72,6 +72,7 @@ const tests = [
   'tests/captured-reality-life-model-binding.test.mjs',
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/adam-presence-runtime-contract.test.mjs',
+  'tests/adam-client-language-ui.test.mjs',
   'tests/v1-aaa-asset-program-matrix-contract.test.mjs',
   'tests/geographic-location-vault.test.mjs',
   'tests/global-emotional-weather-privacy.test.mjs',

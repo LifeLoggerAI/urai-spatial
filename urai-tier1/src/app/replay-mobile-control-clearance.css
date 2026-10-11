@@ -97,6 +97,11 @@ body:has(.replayWorld) [data-urai-adam-launcher] {
      seek area is always reserved, so keyboard focus cannot move playback. */
   .replayWorld .memoryTempo { gap: 6px; }
   .replayWorld .memoryTempo .memoryPulse { min-width: 0; padding: 0 8px; font-size: 11px; letter-spacing: 0; flex-shrink: 0; }
+  /* Reserve the keyboard seek target while the playback label can shrink.
+     Recorded audio keeps its existing separate row. */
+  .replayWorld .memoryTempo:not(:has(.memoryAudio)) { flex-wrap: nowrap; }
+  .replayWorld .memoryTempo:not(:has(.memoryAudio)) .memoryPulse { min-width: 48px; flex-shrink: 1; }
+  .replayWorld .memoryTempo:not(:has(.memoryAudio)) .memorySeekTrack { min-width: 48px; flex: 1 0 48px; }
 }
 
 

@@ -94,7 +94,7 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: Verify bounded transport and mounted Life Map navigation
-        run: node --test urai-tier1/tests/visual-proof-transport.test.mjs urai-tier1/tests/lifemap-signed-out-navigation-behavior.test.mjs
+        run: node --import tsx --test urai-tier1/tests/visual-proof-transport.test.mjs urai-tier1/tests/lifemap-signed-out-navigation-behavior.test.mjs
 
       - name: Typecheck and build exact static donor
         run: |
@@ -264,6 +264,94 @@ jobs:
         with:
           name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-08
           path: artifacts/adam-placement-transport/adam-placement.zip.part-08
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 09
+        id: bounded-visual-part-09
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 9 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-09
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-09
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 10
+        id: bounded-visual-part-10
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 10 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-10
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-10
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 11
+        id: bounded-visual-part-11
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 11 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-11
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-11
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 12
+        id: bounded-visual-part-12
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 12 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-12
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-12
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 13
+        id: bounded-visual-part-13
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 13 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-13
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-13
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 14
+        id: bounded-visual-part-14
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 14 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-14
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-14
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 15
+        id: bounded-visual-part-15
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 15 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-15
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-15
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 16
+        id: bounded-visual-part-16
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 16 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-16
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-16
           if-no-files-found: error
           retention-days: 90
           compression-level: 0

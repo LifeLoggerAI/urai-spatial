@@ -47,7 +47,7 @@ test.describe('Replay source ownership and accessible transport', () => {
     await page.evaluate(() => document.fonts.ready)
     const context = replay.locator('.replayMemoryContext')
     await expect(context.getByText('Sample', { exact: true })).toBeVisible()
-    await expect(context.locator('time')).toHaveAttribute('datetime', '2026-01-01T12:00:00.000Z')
+    await expect(context.locator('time')).toHaveAttribute('datetime', '2026-05-09T12:00:00.000Z')
     await expect(context.locator('time')).toContainText('2026')
     await expect(context.getByText('Example place', { exact: true })).toBeVisible()
     await expect(context.locator('.replaySequence')).toHaveText('1 / 4 · Memory')
@@ -70,7 +70,7 @@ test.describe('Replay source ownership and accessible transport', () => {
 
     const seek = replay.getByRole('slider', { name: /Move through memory time/ })
     const playBeforeSeek = await play.boundingBox()
-    await seek.focus()
+    await page.keyboard.press('Tab')
     await expect(seek).toBeFocused()
     const playDuringSeek = await play.boundingBox()
     expect(playDuringSeek!.x).toBeCloseTo(playBeforeSeek!.x, 1)
@@ -154,6 +154,8 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 844 }
     await page.goto(replayDemo, { waitUntil: 'domcontentloaded' })
     const replay = page.getByTestId('cinematic-replay-client')
     await expect(replay).toHaveAttribute('data-replay-media-ready', 'true')
+    await expect(replay).toHaveAttribute('data-webgl-state', 'ready')
+    await expect(replay.locator('canvas')).toHaveAttribute('data-replay-first-frame', 'true')
     await page.evaluate(() => document.fonts.ready)
     // Read one simultaneous layout snapshot instead of three forced GPU frames.
     const { caption, tempo, header } = await replay.evaluate(owner => {
@@ -199,5 +201,29 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 844 }
     await expect(replay).toHaveAttribute('data-playing', 'true')
     await replay.getByRole('button', { name: 'Pause memory', exact: true }).click()
     await expect(replay).toHaveAttribute('data-playing', 'false')
+    if (viewport.height <= 500) {
+      const pausedAt = await replay.getAttribute('data-current-time-ms')
+      await page.keyboard.press('Tab')
+      const seek = replay.getByRole('slider', { name: /Move through memory time/ })
+      await expect(seek).toBeFocused()
+      const target = await seek.evaluate(element => {
+        const r = element.getBoundingClientRect()
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+        return { x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom,reachable:hit===element||element.contains(hit) }
+      })
+      expect(target.width).toBeGreaterThanOrEqual(48)
+      expect(target.height).toBeGreaterThanOrEqual(48)
+      expect(target.x).toBeGreaterThanOrEqual(0)
+      expect(target.y).toBeGreaterThanOrEqual(0)
+      expect(target.right).toBeLessThanOrEqual(viewport.width)
+      expect(target.bottom).toBeLessThanOrEqual(viewport.height)
+      expect(target.reachable).toBe(true)
+      await expect(replay).toHaveAttribute('data-current-time-ms', pausedAt!)
+      await seek.press('End')
+      await expect(replay).toHaveAttribute('data-current-time-ms', '12000')
+      await seek.press('Home')
+      await expect(replay).toHaveAttribute('data-current-time-ms', '0')
+      await test.info().attach('replay-keyboard-seek-geometry.json', {body:JSON.stringify(target),contentType:'application/json'})
+    }
   })
 }

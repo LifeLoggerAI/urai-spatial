@@ -125,6 +125,18 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
     const focus = activeFocusOwner(page)
     await expect(focus).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
+    const disclosure = focus.locator('.focusNarration > summary')
+    const details = focus.locator('.focusNarration')
+    await expect(disclosure).toBeVisible()
+    await expect(details).not.toHaveAttribute('open', '')
+    await disclosure.click()
+    await expect(details).toHaveAttribute('open', '')
+    const disclosureScroll = await details.evaluate(element => {
+      const style = getComputedStyle(element)
+      return { maxHeight: style.maxHeight, overflowY: style.overflowY }
+    })
+    expect(disclosureScroll.maxHeight).toBe('none')
+    expect(disclosureScroll.overflowY).toBe('visible')
     const heading = await focus.locator('.focusHeading').boundingBox()
     const meaning = await focus.locator('.memoryMeaning').boundingBox()
     const controls = await focus.locator('.focusControls').boundingBox()
@@ -143,6 +155,7 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }
     // A scrollable disclosure need not show all of its copy simultaneously.
     // Exercise the real scroll path rather than altering its DOM or styles.
     const description = focus.locator('.focusNarration strong')
+    await expect(description).toBeVisible()
     await focus.locator('.focusHeading').hover()
     await page.mouse.wheel(0, 1000)
     const descriptionReachability = () => description.evaluate(element => {
@@ -177,9 +190,9 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }
     })
     await page.mouse.wheel(0, -1000)
 
-    const aperture = focus.locator('.focus-spatial-aperture-button')
-    await expect(aperture).toBeVisible()
-    const apertureGeometry = await aperture.evaluate(element => {
+    const replayEntry = focus.locator('.focusControls').getByRole('button', { name: /Open Replay for/ })
+    await expect(replayEntry).toBeVisible()
+    const replayEntryGeometry = await replayEntry.evaluate(element => {
       const box = element.getBoundingClientRect()
       const point = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
       return {
@@ -188,18 +201,18 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }
         pointerReachable: point === element || (point !== null && element.contains(point)),
       }
     })
-    expect(apertureGeometry.width).toBeGreaterThanOrEqual(48)
-    expect(apertureGeometry.height).toBeGreaterThanOrEqual(48)
-    expect(apertureGeometry.x).toBeGreaterThanOrEqual(0)
-    expect(apertureGeometry.y).toBeGreaterThanOrEqual(0)
-    expect(apertureGeometry.right).toBeLessThanOrEqual(viewport.width)
-    expect(apertureGeometry.bottom).toBeLessThanOrEqual(viewport.height)
-    expect(apertureGeometry.pointerReachable).toBe(true)
-    await test.info().attach('focus-landscape-aperture-geometry.json', {
-      body: JSON.stringify(apertureGeometry), contentType: 'application/json',
+    expect(replayEntryGeometry.width).toBeGreaterThanOrEqual(48)
+    expect(replayEntryGeometry.height).toBeGreaterThanOrEqual(48)
+    expect(replayEntryGeometry.x).toBeGreaterThanOrEqual(0)
+    expect(replayEntryGeometry.y).toBeGreaterThanOrEqual(0)
+    expect(replayEntryGeometry.right).toBeLessThanOrEqual(viewport.width)
+    expect(replayEntryGeometry.bottom).toBeLessThanOrEqual(viewport.height)
+    expect(replayEntryGeometry.pointerReachable).toBe(true)
+    await test.info().attach('focus-landscape-replay-entry-geometry.json', {
+      body: JSON.stringify(replayEntryGeometry), contentType: 'application/json',
     })
     await focus.locator('.focusControls').getByRole('button', { name: 'Recenter', exact: true }).click()
-    await focus.locator('.focusControls').getByRole('button', { name: /Open Replay for/ }).click()
+    await replayEntry.click()
     await expect.poll(() => new URL(page.url()).pathname.split('/').filter(Boolean).join('/')).toBe('replay')
     expect(new URL(page.url()).searchParams.get('memoryId')).toBe('demo:quiet-reset')
   })
