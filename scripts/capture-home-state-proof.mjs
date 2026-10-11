@@ -301,7 +301,16 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.keyboard.press('Enter')
     const message = page.getByLabel('Message for Orb').first()
     await message.waitFor({ state: 'visible', timeout: 20_000 })
-    await message.evaluate((element) => { element.dataset.uraiProofMessageTarget = 'true' })
+    // Read the live DOM directly after disclosure; keep the same visible-textarea requirement and fail closed if it never stabilizes.
+    await page.waitForFunction(() => {
+      const element = document.querySelector('#urai-orb-message')
+      if (!(element instanceof HTMLTextAreaElement)) return false
+      const bounds = element.getBoundingClientRect()
+      const style = getComputedStyle(element)
+      if (bounds.width <= 0 || bounds.height <= 0 || style.visibility === 'hidden' || style.display === 'none') return false
+      element.dataset.uraiProofMessageTarget = 'true'
+      return true
+    }, undefined, { timeout: 20_000 })
     const inspectMessageActionability = () => message.evaluate((element) => {
       const control = element
       const bounds = control.getBoundingClientRect()
