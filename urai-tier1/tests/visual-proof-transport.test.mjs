@@ -31,6 +31,13 @@ function fixture(t, length = PART_BYTES + 107, proofGroup = 'visual') {
   return { root, archive, archivePath, binding, outputDirectory, manifest, manifestPath: path.join(outputDirectory, 'manifest.json'), partPaths: manifest.parts.map(part => path.join(outputDirectory, part.name)), outputPath: path.join(root, 'reconstructed.zip') }
 }
 const reconstruct = (f, overrides = {}) => reconstructArchive({ ...f, expected: f.binding, ...overrides })
+function assertPartBindings(workflow, stepPrefix) {
+  for (let index = 1; index <= MAX_PARTS; index++) {
+    const suffix = String(index).padStart(2, '0')
+    assert.ok(workflow.includes('URAI_PART_' + suffix + '_ID: ${{ steps.' + stepPrefix + '-' + suffix + '.outputs.artifact-id }}'))
+    assert.ok(workflow.includes('URAI_PART_' + suffix + '_DIGEST: ${{ steps.' + stepPrefix + '-' + suffix + '.outputs.artifact-digest }}'))
+  }
+}
 const metadata = (binding, overrides = {}) => ({ id: Number(binding.artifactId), name: binding.proofGroup === 'adam-placement' ? `adam-placement-proof-${binding.sourceSha}` : binding.proofGroup === 'accessibility-performance' ? `accessibility-performance-evidence-${binding.sourceSha}` : `continuous-spatial-visual-proof-${binding.proofGroup}-${binding.sourceSha}`, expired: false,
   size_in_bytes: 100, digest: `sha256:${binding.archiveSha256}`, workflow_run: { id: Number(binding.runId) }, ...overrides })
 
@@ -46,6 +53,34 @@ test('partitioning is deterministic and reassembly retains every original byte',
   assert.deepEqual(fs.readFileSync(f.archivePath), f.archive)
   assert.ok(f.manifest.parts.every(part => part.bytes < ARTIFACT_BYTES))
   assert.ok(fs.statSync(f.manifestPath).size < 64 * 1024)
+})
+
+test('supports a nine-part archive above the previous eight-part transport ceiling', t => {
+  assert.equal(MAX_PARTS, 16)
+  const root = temporary(t)
+  const archivePath = path.join(root, 'large-synthetic.zip')
+  const size = PART_BYTES * 8 + 1
+  const fd = fs.openSync(archivePath, 'wx')
+  try {
+    fs.ftruncateSync(fd, size)
+    fs.writeSync(fd, Buffer.from([0x50, 0x4b, 0x03, 0x04]), 0, 4, 0)
+    const whole = createHash('sha256')
+    const chunkSize = 1024 * 1024
+    for (let offset = 0; offset < size; offset += chunkSize) {
+      const bytes = Buffer.alloc(Math.min(chunkSize, size - offset))
+      assert.equal(fs.readSync(fd, bytes, 0, bytes.length, offset), bytes.length)
+      whole.update(bytes)
+    }
+    const binding = { repository: REPOSITORY, sourceSha, proofGroup: 'accessibility-performance', runId: '100', runAttempt: '2', artifactId: '200', archiveSha256: whole.digest('hex') }
+    const outputDirectory = path.join(root, 'parts')
+    const manifest = splitArchive({ archivePath, outputDirectory, binding })
+    assert.equal(manifest.partCount, 9)
+    assert.deepEqual(manifest.parts.map(part => part.bytes), [...Array(8).fill(PART_BYTES), 1])
+    assert.equal(manifest.archiveBytes, size)
+    assert.ok(manifest.parts.every(part => fs.statSync(path.join(outputDirectory, part.name)).size === part.bytes))
+  } finally {
+    fs.closeSync(fd)
+  }
 })
 
 for (const [label, paths] of [
@@ -215,7 +250,13 @@ test('native upload verification binds separate wrappers, verifies actual sizes 
   const receipt = await verifyNativeUploads({ ...f, outputPath, env, fetchImpl })
   assert.equal(receipt.artifacts.length, 3)
   assert.ok(receipt.artifacts.every(artifact => artifact.archiveBytes <= ARTIFACT_BYTES))
-  for (const changes of [{ URAI_PART_02_ID: '' }, { URAI_PART_02_ID: '301' }, { URAI_PART_03_ID: '303' }]) await assert.rejects(verifyNativeUploads({ ...f, outputPath: path.join(f.root, 'bad.json'), env: { ...env, ...changes }, fetchImpl }))
+  for (const changes of [{ URAI_PART_02_ID: '' }, { URAI_PART_02_ID: '301' }, { URAI_PART_03_ID: '303' }, { URAI_PART_12_ID: '312' }, { URAI_PART_16_DIGEST: 'f'.repeat(64) }]) await assert.rejects(verifyNativeUploads({ ...f, outputPath: path.join(f.root, 'bad.json'), env: { ...env, ...changes }, fetchImpl }))
+  for (let index = 9; index <= 16; index++) {
+    const suffix = String(index).padStart(2, '0')
+    const skipped = { ...env, ['URAI_PART_' + suffix + '_ID']: '', ['URAI_PART_' + suffix + '_DIGEST']: '' }
+    const result = await verifyNativeUploads({ ...f, outputPath: path.join(f.root, 'skipped-' + suffix + '.json'), env: skipped, fetchImpl })
+    assert.equal(result.partCount, 2)
+  }
   records.get('302').size_in_bytes = ARTIFACT_BYTES + 1
   await assert.rejects(verifyNativeUploads({ ...f, outputPath: path.join(f.root, 'bad.json'), env, fetchImpl }), /byte limit/)
   assert.equal(fs.existsSync(path.join(f.root, 'bad.json')), false)
@@ -234,7 +275,7 @@ test('production CLI requires external exact binding and rejects unknown or dupl
   assert.deepEqual(fs.readFileSync(f.outputPath), f.archive)
 })
 
-test('workflow preserves all original proof assertions and upload, and uses eight separate bounded paths', () => {
+test('workflow preserves all original proof assertions and upload, and uses sixteen separate bounded paths', () => {
   const workflow = fs.readFileSync(new URL('../../.github/workflows/continuous-spatial-visual-proof.yml', import.meta.url), 'utf8')
   const assertions = workflow.slice(workflow.indexOf('      - name: Prove complete group receipt\n'), workflow.indexOf('      - name: Upload exact-head grouped visual proof\n'))
   assert.equal(sha(assertions), '47ba006bf54949f3bdab54a860a483e22e3abd7300b3d1b0462ffd99c4c91612')
@@ -249,6 +290,7 @@ test('workflow preserves all original proof assertions and upload, and uses eigh
   assert.equal(workflow.match(/compression-level: 0/g).length, MAX_PARTS + 2)
   assert.match(workflow, /verify-native-uploads/)
   assert.doesNotMatch(workflow, /path: artifacts\/continuous-spatial-transport-\$\{\{ matrix.proof_group \}\}\s*\n/)
+  assertPartBindings(workflow, 'bounded-visual-part')
 })
 
 test('accessibility workflow retains the complete archive and strict first-run/recovered-flake result', () => {
@@ -267,6 +309,16 @@ test('accessibility workflow retains the complete archive and strict first-run/r
   assert.equal(workflow.match(/compression-level: 0/g).length, MAX_PARTS + 2)
   assert.match(workflow, /verify-native-uploads/)
   assert.doesNotMatch(workflow, /path: artifacts\/accessibility-performance-transport\s*\n/)
+  assertPartBindings(workflow, 'bounded-accessibility-part')
+})
+
+test('founder placement workflow binds all sixteen bounded archive parts', () => {
+  const workflow = fs.readFileSync(new URL('../../.github/workflows/adam-placement-proof.yml', import.meta.url), 'utf8')
+  const parts = workflow.match(/path: artifacts\/adam-placement-transport\/adam-placement.zip.part-[0-9]{2}/g)
+  assert.equal(parts.length, MAX_PARTS)
+  assert.equal(new Set(parts).size, MAX_PARTS)
+  assert.equal(workflow.match(/compression-level: 0/g).length, MAX_PARTS + 2)
+  assertPartBindings(workflow, 'bounded-visual-part')
 })
 
 for (const status of [404, 429, 500, 502, 503, 504, 'network']) test(`native preparation recovers bounded ${status} metadata/redirect failures with exact validation`, async t => {
