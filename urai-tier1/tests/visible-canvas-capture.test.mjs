@@ -229,7 +229,21 @@ async function homeSamplerFixture(options = {}) {
       } } }
     } },
   }
-  f.page.evaluate = async (read, argument) => argument === undefined ? bounds : read(argument)
+  let directReads = 0
+  f.page.evaluate = async (read, argument) => {
+    if (argument?.selector === '.urai-asset-home-world canvas') {
+      directReads += 1
+      f.calls.push(['occlusion', argument.samplePoints])
+      const selectedBounds = directReads === 1 ? bounds : (options.after ?? bounds)
+      return {
+        count: options.canvasCount ?? 1,
+        visible: selectedBounds !== null && selectedBounds.width > 0 && selectedBounds.height > 0,
+        bounds: selectedBounds,
+        unoccluded: options.occluded !== true && !(options.coveredAfter === true && directReads > 1),
+      }
+    }
+    return argument === undefined ? bounds : read(argument)
+  }
   const context = vm.createContext(environment)
   const run = vm.runInContext(source.slice(start, end) + '\nreadVisualEvidence', context)
   return { ...f, directory, context, async run() { return run(f.page) }, async close() { await rm(directory, { recursive: true, force: true }) } }
@@ -286,3 +300,4 @@ test('Home sampler enforces a finite retained-image count before screenshot', as
   try { await assert.rejects(f.run(), /image budget/); assert.equal(f.calls.some(([name]) => name === 'screenshot'), false) }
   finally { await f.close() }
 })
+

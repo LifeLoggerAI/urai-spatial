@@ -68,7 +68,7 @@ async function readVisualEvidence(page) {
   const canvas = page.locator('.urai-asset-home-world canvas')
   if (await canvas.count() !== 1) throw new Error('Home visual evidence requires exactly one world canvas')
   if (canvasEvidenceCount >= MAX_CANVAS_EVIDENCE_FILES) throw new Error('Home canvas evidence image budget exhausted')
-  const { buffer: png, capture } = await captureVisibleCanvasPng(page, canvas, 90_000, HOME_CANVAS_SAMPLE_POINTS)
+  const { buffer: png, capture } = await captureVisibleCanvasPng(page, canvas, 90_000, HOME_CANVAS_SAMPLE_POINTS, '.urai-asset-home-world canvas')
   if (!Buffer.isBuffer(png) || png.length < 1 || png.length > 16 * 1024 * 1024) {
     throw new Error('Home canvas PNG exceeds its finite image byte budget')
   }
@@ -301,15 +301,20 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.keyboard.press('Enter')
     const message = page.getByLabel('Message for Orb').first()
     await message.waitFor({ state: 'visible', timeout: 20_000 })
-    await message.evaluate((element) => { element.dataset.uraiProofMessageTarget = 'true' })
-    const inspectMessageActionability = () => message.evaluate((element) => {
-      const control = element
+    await page.evaluate(() => {
+      const element = document.querySelector('#urai-orb-message')
+      if (!(element instanceof HTMLTextAreaElement)) throw new Error('Orb message target is missing')
+      element.dataset.uraiProofMessageTarget = 'true'
+    })
+    const inspectMessageActionability = () => page.evaluate(() => {
+      const control = document.querySelector('textarea[data-urai-proof-message-target="true"]')
+      if (!(control instanceof HTMLTextAreaElement)) throw new Error('Orb proof message target is missing')
       const bounds = control.getBoundingClientRect()
       const style = getComputedStyle(control)
       const busyOwner = control.closest('[aria-busy]')
       return {
-        disabled: control instanceof HTMLTextAreaElement ? control.disabled : null,
-        readOnly: control instanceof HTMLTextAreaElement ? control.readOnly : null,
+        disabled: control.disabled,
+        readOnly: control.readOnly,
         ariaDisabled: control.getAttribute('aria-disabled'),
         ariaBusy: busyOwner?.getAttribute('aria-busy') ?? null,
         visible: bounds.width > 0 && bounds.height > 0 && style.visibility !== 'hidden' && style.display !== 'none',
@@ -746,4 +751,5 @@ try {
 
 await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 if (receipt.errors.length) process.exit(1)
+
 
