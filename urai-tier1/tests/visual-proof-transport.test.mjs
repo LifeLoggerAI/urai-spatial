@@ -60,7 +60,7 @@ test('supports a nine-part archive above the previous eight-part transport ceili
   const root = temporary(t)
   const archivePath = path.join(root, 'large-synthetic.zip')
   const size = PART_BYTES * 8 + 1
-  const fd = fs.openSync(archivePath, 'wx')
+  const fd = fs.openSync(archivePath, 'wx+')
   try {
     fs.ftruncateSync(fd, size)
     fs.writeSync(fd, Buffer.from([0x50, 0x4b, 0x03, 0x04]), 0, 4, 0)
