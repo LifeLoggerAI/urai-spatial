@@ -19,7 +19,7 @@ await mkdir(out,{recursive:true})
 const result={exactHead:sha,admission:false,results:[],failures:[]}
 const browser=await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader','--disable-gpu-sandbox']})
 try {
- for(const profile of [{id:'desktop',width:1440,height:900,reduce:false,preview:true},{id:'mobile-reduced',width:390,height:844,reduce:true,preview:true},{id:'default',width:1440,height:900,reduce:false,preview:false}]){
+ for(const profile of [{id:'desktop',width:1440,height:900,reduce:false,preview:true},{id:'mobile-reduced',width:390,height:844,reduce:true,preview:true},{id:'default',width:1440,height:900,reduce:false,preview:false},{id:'default-wide',width:2560,height:1440,reduce:false,preview:false},{id:'default-mobile-reduced',width:390,height:844,reduce:true,preview:false}]){
   const context=await browser.newContext({viewport:{width:profile.width,height:profile.height},reducedMotion:profile.reduce?'reduce':'no-preference'})
   const page=await context.newPage()
   const info={profile:profile.id,requests:[],screenshot:null,meshes:null,triangles:null}
@@ -60,7 +60,15 @@ try {
     assert.ok(info.framing.cameraClearance > 2.5)
     assert.ok(info.framing.scale > 0 && Number.isFinite(info.framing.groundHeight))
    }else{
-    await page.waitForTimeout(1500)
+    await page.waitForFunction(() => { const e=document.querySelector('main.replayWorld[data-memory-status="demo"]'); try{return JSON.parse(e?.getAttribute('data-replay-default-trail-evidence')||'{}').passed===true}catch{return false} },null,{timeout:90000})
+    const evidence=JSON.parse(await scene.getAttribute('data-replay-default-trail-evidence'))
+    const pacing=JSON.parse(await scene.getAttribute('data-replay-default-trail-pacing')||'{}')
+    assert.equal(evidence.kind,'real-default-replay-trail')
+    assert.equal(evidence.sourceClass,'disclosed-demonstration')
+    assert.equal(evidence.admitted,false)
+    assert.equal(evidence.rayMisses,0)
+    assert.equal(evidence.passed,true)
+    info.defaultWorld={evidence,pacing}
     assert.equal(await scene.getAttribute('data-replay-candidate-model'),null)
    }
    info.requests=await Promise.all(pending)
@@ -74,6 +82,7 @@ try {
    await writeFile(path.join(out,filename),png)
    info.screenshot={file:filename,hash:createHash('sha256').update(png).digest('hex'),width:png.readUInt32BE(16),height:png.readUInt32BE(20)}
    assert.equal(info.screenshot.width,profile.width)
+   assert.equal(info.screenshot.height,profile.height)
   }catch(e){result.failures.push({profile:profile.id,error:String(e),pageErrors:errors})}
   finally{result.results.push(info);await context.close()}
  }
