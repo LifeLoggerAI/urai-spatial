@@ -111,6 +111,14 @@ test.describe('Replay source ownership and accessible transport', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await disableWebGL(page)
+    await page.addInitScript(() => {
+      const counts = { replayEntries: 0, returns: 0 }
+      ;(window as unknown as { __uraiReplayReturnCounts: typeof counts }).__uraiReplayReturnCounts = counts
+      window.addEventListener('urai:world-travel', event => {
+        if ((event as CustomEvent<{ destination?: string }>).detail?.destination === 'replay') counts.replayEntries += 1
+      })
+      window.addEventListener('urai:world-return', () => { counts.returns += 1 })
+    })
     await page.goto('/focus?memoryId=demo%3Aquiet-reset&demo=1', { waitUntil: 'domcontentloaded' })
     for (let cycle = 0; cycle < 2; cycle += 1) {
       const focus = page.getByTestId('urai-final-focus-chamber')
@@ -126,6 +134,8 @@ test.describe('Replay source ownership and accessible transport', () => {
       await expect(replay).toHaveCount(0)
       await expect(focus.getByRole('button', { name: /Open Replay for/ })).toBeFocused()
       await expect(page.locator('.replaySpatialCanvas, .replayRecordedSource video, .replayRecordedSource audio')).toHaveCount(0)
+      const counts = await page.evaluate(() => (window as unknown as { __uraiReplayReturnCounts: { replayEntries: number; returns: number } }).__uraiReplayReturnCounts)
+      expect(counts).toEqual({ replayEntries: cycle + 1, returns: cycle + 1 })
     }
   })
 
