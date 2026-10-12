@@ -41,7 +41,7 @@ import { ReplayForestFloor, ReplayMemoryGrove, ReplayScannedUnderstory } from '.
 import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
 import DevReplayCandidateWorld, { useReplayDevelopmentCandidate } from './DevReplayCandidateWorld'
 
-const REPLAY_RETURN_FOCUS_KEY = 'urai:replay:return-focus:v1'
+import { noteReplayReturnFocus } from '@/spatial/world/replayReturnFocusHandoff'
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
 
@@ -441,7 +441,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     // callback or competing with its navigation. Capture fires before the router.
     const onReplayReturn = () => {
       if (world.previousDestination === 'life-movie') return
-      try { window.sessionStorage.setItem(REPLAY_RETURN_FOCUS_KEY, String(Date.now())) } catch { /* Return remains functional without storage. */ }
+      noteReplayReturnFocus()
     }
     window.addEventListener('urai:world-return', onReplayReturn, true)
     return () => window.removeEventListener('urai:world-return', onReplayReturn, true)
