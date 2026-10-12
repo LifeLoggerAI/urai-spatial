@@ -41,6 +41,8 @@ import { ReplayForestFloor, ReplayMemoryGrove, ReplayScannedUnderstory } from '.
 import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
 import DevReplayCandidateWorld, { useReplayDevelopmentCandidate } from './DevReplayCandidateWorld'
 
+const REPLAY_RETURN_FOCUS_KEY = 'urai:replay:return-focus:v1'
+
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
 
 function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reducedMotion: boolean }) {
@@ -394,6 +396,13 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const videoSession = useRef<ReplayVideoSession | null>(null)
   const sourceRelease = useRef<(() => void) | null>(null)
   const onSourceRelease = useCallback((release: (() => void) | null) => { sourceRelease.current = release }, [])
+  useEffect(() => () => {
+    // Close any remaining owned media session as the Replay scene disappears.
+    sourceRelease.current?.()
+    videoSession.current?.dispose()
+    sourceRelease.current = null
+    videoSession.current = null
+  }, [])
   const ownedPlayback = useOwnedMemoryMediaPlayback(memory, () => { sourceRelease.current?.(); videoSession.current?.dispose() })
   const expectsPrivateSource = Boolean(memory.sourceMediaReceipts?.length)
   const playableMemory = useMemo(() => expectsPrivateSource ? { ...memory, sourceMedia: ownedPlayback.media } : memory, [expectsPrivateSource, memory, ownedPlayback.media])
@@ -426,7 +435,12 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const duration = video ? videoSnapshot.durationMs ?? memory.replayManifest.durationMs : memory.replayManifest.durationMs
   const segments = memory?.replayManifest.segments ?? []
   const active = useMemo(() => segments.find((segment) => progressMs >= segment.startsAtMs && progressMs < segment.startsAtMs + segment.durationMs) ?? segments.at(-1), [progressMs, segments])
-  const unwind = useCallback(() => requestUraiWorldReturn(), [])
+  const unwind = useCallback(() => {
+    if (world.previousDestination !== 'life-movie') {
+      try { window.sessionStorage.setItem(REPLAY_RETURN_FOCUS_KEY, String(Date.now())) } catch { /* Return still works without storage. */ }
+    }
+    requestUraiWorldReturn()
+  }, [world.previousDestination])
   const pauseMemory = useCallback(() => { setNarrativePlaying(false); videoSession.current?.pause() }, [])
   useEffect(() => { if (expectsPrivateSource && ownedPlayback.status !== 'ready') pauseMemory() }, [expectsPrivateSource, ownedPlayback.status, pauseMemory])
   const togglePlayback = useCallback(() => {

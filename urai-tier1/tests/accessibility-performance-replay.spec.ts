@@ -101,6 +101,32 @@ test.describe('Replay source ownership and accessible transport', () => {
     const destination = new URL(page.url())
     expect(destination.searchParams.get('memoryId')).toBe('demo:quiet-reset')
     expect(destination.searchParams.get('manifestId')).toBe('replay-recovery-thread')
+    const returnedFocus = page.getByTestId('urai-final-focus-chamber')
+    await expect(returnedFocus).toBeVisible()
+    await expect(returnedFocus.getByRole('button', { name: /Open Replay for/ })).toBeFocused()
+    await expect(page.locator('.replaySpatialCanvas, .replayRecordedSource video, .replayRecordedSource audio')).toHaveCount(0)
+  })
+
+  test('Focus keyboard restoration survives two Replay exits without stale media or canvas owners', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await disableWebGL(page)
+    await page.goto('/focus?memoryId=demo%3Aquiet-reset&demo=1', { waitUntil: 'domcontentloaded' })
+    for (let cycle = 0; cycle < 2; cycle += 1) {
+      const focus = page.getByTestId('urai-final-focus-chamber')
+      await expect(focus).toBeVisible()
+      const replayEntry = focus.getByRole('button', { name: /Open Replay for/ })
+      await expect(replayEntry).toBeEnabled()
+      if (cycle > 0) await expect(replayEntry).toBeFocused()
+      await replayEntry.click()
+      const replay = page.getByTestId('cinematic-replay-client')
+      await expect(replay).toHaveAttribute('data-replay-media-ready', 'true', { timeout: 45_000 })
+      await page.keyboard.press('Escape')
+      await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '')).toBe('/focus')
+      await expect(replay).toHaveCount(0)
+      await expect(focus.getByRole('button', { name: /Open Replay for/ })).toBeFocused()
+      await expect(page.locator('.replaySpatialCanvas, .replayRecordedSource video, .replayRecordedSource audio')).toHaveCount(0)
+    }
   })
 
   test('one Life Movie continuation preserves selected memory and current movie chapter', async ({ page }) => {

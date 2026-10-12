@@ -3,6 +3,8 @@
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 
+const REPLAY_RETURN_FOCUS_KEY = 'urai:replay:return-focus:v1'
+
 import StellarPhotosphere, { FOCUS_STAR_POSITION, FOCUS_STAR_RADIUS } from '@/spatial/stellar/StellarPhotosphere'
 import FocusAtmosphere from '@/spatial/stellar/FocusAtmosphere'
 import type { StellarMemoryState } from '@/spatial/stellar/stellarMemoryReveal'
@@ -339,6 +341,7 @@ export default function FocusChamberClient() {
   const webglAvailable = useWebGLAvailable()
   const controls = useRef<OrbitControlsImpl | null>(null)
   const shellRef = useRef<HTMLElement | null>(null)
+  const replayReturnFocusPending = useRef(false)
   const [recenterSignal, setRecenterSignal] = useState(0)
   const [committed, setCommitted] = useState(false)
   const [directEntry, setDirectEntry] = useState<boolean | null>(null)
@@ -360,6 +363,32 @@ export default function FocusChamberClient() {
     setEntryFrame(parseEntryCameraFrame(params))
     return () => { document.body.style.cursor = '' }
   }, [])
+
+  useEffect(() => {
+    // A Replay return unmounts the old focused control. This handoff has no
+    // personal memory identifiers and expires without affecting other routes.
+    try {
+      const stamped = window.sessionStorage.getItem(REPLAY_RETURN_FOCUS_KEY)
+      if (!stamped) return
+      window.sessionStorage.removeItem(REPLAY_RETURN_FOCUS_KEY)
+      const elapsed = Date.now() - Number(stamped)
+      if (Number.isFinite(elapsed) && elapsed >= 0 && elapsed <= 30_000) replayReturnFocusPending.current = true
+    } catch { /* Navigation works even without sessionStorage. */ }
+  }, [])
+
+  const selectedMemoryId = memory?.id
+  useEffect(() => {
+    if (!selectedMemoryId || !replayReturnFocusPending.current) return
+    const frame = window.requestAnimationFrame(() => {
+      // Never steal focus if the user has already moved to another control.
+      if (document.activeElement === document.body || document.activeElement === document.documentElement) {
+        const action = shellRef.current?.querySelector<HTMLButtonElement>('.focusControls button.primary:not(:disabled)')
+        if (action?.getClientRects().length) action.focus({ preventScroll: true })
+      }
+      replayReturnFocusPending.current = false
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [selectedMemoryId])
 
   const replayHref = useMemo(() => {
     if (!memory) return null
