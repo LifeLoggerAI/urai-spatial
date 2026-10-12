@@ -428,3 +428,19 @@ test('click-target movement reaches the actual Orb approach, Ground and Life Map
     if (name === 'orb') assert.ok(Math.hypot(position.x - actualOrb.x, position.z - actualOrb.z) < 2.4, 'the actual Orb must retain its interaction zone after click-target approach')
   }
 })
+
+
+test('Home horizon retains two transparent atmospheric depth layers and open sky', () => {
+  const start = homeSource.indexOf('function Horizon()')
+  const end = homeSource.indexOf('function CourtyardMasonry(', start)
+  assert.ok(start >= 0 && end > start, 'actual mountain horizon source must remain mounted')
+  const horizon = homeSource.slice(start, end)
+  assert.match(horizon, /name="home-mountain-horizon"/)
+  assert.match(horizon, /RIDGE_FAR/)
+  assert.match(horizon, /RIDGE_MID/)
+  assert.match(horizon, /RIDGE_NEAR/)
+  assert.match(horizon, /float lowHaze = exp\(/)
+  assert.match(horizon, /float highHaze = exp\(/)
+  assert.match(horizon, /transparent depthWrite=\{false\}/)
+  assert.doesNotMatch(horizon, /<mesh[^>]*name="home-ceiling"/)
+})
