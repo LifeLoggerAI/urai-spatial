@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { dismissHomeFirstRunGuide } from './dismiss-home-first-run-guide.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -71,6 +72,7 @@ try {
       assert.ok(sanctuaryStyles.headingSize >= 25, 'Sanctuary heading must retain its authored readable size')
       record.sanctuaryStyles = sanctuaryStyles
       assert.equal(await page.locator('body').getAttribute('data-deployed-sha'), exactHead, 'Served build must match the proof head')
+      record.onboardingDismissal = await dismissHomeFirstRunGuide(page)
       const launcher = fallback.locator('.home-adam-launcher-slot button')
       await launcher.waitFor({ state: 'visible', timeout: 15000 })
       await page.waitForFunction(() => {
