@@ -435,11 +435,16 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const duration = video ? videoSnapshot.durationMs ?? memory.replayManifest.durationMs : memory.replayManifest.durationMs
   const segments = memory?.replayManifest.segments ?? []
   const active = useMemo(() => segments.find((segment) => progressMs >= segment.startsAtMs && progressMs < segment.startsAtMs + segment.durationMs) ?? segments.at(-1), [progressMs, segments])
-  const unwind = useCallback(() => {
-    if (world.previousDestination !== 'life-movie') {
-      try { window.sessionStorage.setItem(REPLAY_RETURN_FOCUS_KEY, String(Date.now())) } catch { /* Return still works without storage. */ }
+  const unwind = useCallback(() => requestUraiWorldReturn(), [])
+  useEffect(() => {
+    // Observe Replay-owned returns without modifying the canonical reverse-travel
+    // callback or competing with its navigation. Capture fires before the router.
+    const onReplayReturn = () => {
+      if (world.previousDestination === 'life-movie') return
+      try { window.sessionStorage.setItem(REPLAY_RETURN_FOCUS_KEY, String(Date.now())) } catch { /* Return remains functional without storage. */ }
     }
-    requestUraiWorldReturn()
+    window.addEventListener('urai:world-return', onReplayReturn, true)
+    return () => window.removeEventListener('urai:world-return', onReplayReturn, true)
   }, [world.previousDestination])
   const pauseMemory = useCallback(() => { setNarrativePlaying(false); videoSession.current?.pause() }, [])
   useEffect(() => { if (expectsPrivateSource && ownedPlayback.status !== 'ready') pauseMemory() }, [expectsPrivateSource, ownedPlayback.status, pauseMemory])
