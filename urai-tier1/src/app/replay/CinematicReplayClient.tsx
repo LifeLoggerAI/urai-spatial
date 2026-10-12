@@ -1,6 +1,6 @@
 'use client'
 
-import { Component, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 
 const replayProofSurfaceStyle = {
   position: 'absolute',
@@ -37,6 +37,7 @@ import { ReplayRecordedSource, type ReplayImageState } from './ReplayRecordedSou
 import { initialReplayVideoSnapshot, type ReplayVideoSession, type ReplayVideoSnapshot } from './replayMediaSession'
 import { cameraLerpAlpha } from '@/spatial/canon/cameraMotion'
 import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmission'
+import { ReplayForestFloor, ReplayMemoryGrove, ReplayScannedUnderstory } from './ReplayEnvironmentDetails'
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
 
@@ -177,22 +178,15 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
     [8.8, -27.7, 1.58], [13.7, -31.4, 1.86],
   ] as const, [])
 
-  const understory = useMemo(() => Array.from({ length: 28 }, (_, index) => {
-    const side = index % 2 === 0 ? -1 : 1
-    const lane = Math.floor(index / 2)
-    const z = -6.1 - lane * 1.82
-    const x = side * (4.1 + ((index * 11) % 9) * .43)
-    const y = replayTerrainHeight(x, z + 7) + .14
-    const scale = .28 + ((index * 7) % 6) * .055
-    return { x, y, z, scale, yaw: ((index * 31) % 17) * .17 }
-  }), [])
+  const replayGroundHeight = useCallback((x: number, z: number) => replayTerrainHeight(x, z + 7), [])
+  const physicalGroundColor = useMemo(() => new THREE.Color(memory.visuals.ground).lerp(new THREE.Color('#758575'), .72), [memory.visuals.ground])
 
   useEffect(() => () => terrain.dispose(), [terrain])
 
   return (
-    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-procedural-landscape-v4-layered-depth' }}>
+    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-scanned-cc0-and-instanced-grove-v5' }}>
       <mesh geometry={terrain} position={[0, 0, -7]} receiveShadow>
-        <meshPhysicalMaterial color={memory.visuals.ground} roughness={.88} metalness={0} clearcoat={.08} clearcoatRoughness={.72} />
+        <meshPhysicalMaterial color={physicalGroundColor} roughness={.94} metalness={0} clearcoat={.08} clearcoatRoughness={.72} />
       </mesh>
 
       <group name="replay-memory-walk">
@@ -208,7 +202,7 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
           >
             <icosahedronGeometry args={[1, 2]} />
             <meshPhysicalMaterial
-              color={index % 4 === 0 ? memory.visuals.light : '#778079'}
+              color={index % 4 === 0 ? '#9b9e90' : '#788277'}
               roughness={.86}
               metalness={0}
               clearcoat={.08}
@@ -242,59 +236,11 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
         </mesh>
       ))}
 
-      {understory.map((plant, index) => (
-        <group
-          key={`understory-${index}`}
-          name={`replay-memory-understory-${index + 1}`}
-          position={[plant.x, plant.y, plant.z]}
-          rotation={[0, plant.yaw, 0]}
-          scale={plant.scale}
-        >
-          <mesh position={[0, .46, 0]} rotation={[0, 0, .12]} castShadow>
-            <coneGeometry args={[.34, 1.08, 7]} />
-            <meshStandardMaterial color={index % 3 === 0 ? '#41604d' : index % 3 === 1 ? '#355342' : '#294638'} roughness={.96} metalness={0} />
-          </mesh>
-          <mesh position={[.24, .30, .08]} rotation={[0, .65, -.22]} castShadow>
-            <coneGeometry args={[.24, .72, 7]} />
-            <meshStandardMaterial color={index % 2 === 0 ? '#526e56' : '#3b5b47'} roughness={.98} metalness={0} />
-          </mesh>
-          <mesh position={[-.22, .25, -.06]} rotation={[0, -.55, .28]} castShadow>
-            <coneGeometry args={[.2, .62, 7]} />
-            <meshStandardMaterial color="#2f503e" roughness={.98} metalness={0} />
-          </mesh>
-        </group>
-      ))}
-
-      {trees.map(([x, z, scale], index) => (
-        <group key={index} name={`replay-memory-tree-${index + 1}`} position={[x, -1.5, z]} scale={scale}>
-          <mesh position={[0, 1.48, 0]} castShadow>
-            <cylinderGeometry args={[.15, .25, 2.95, 12]} />
-            <meshStandardMaterial color="#382a20" roughness={.96} />
-          </mesh>
-          {[
-            [0, 2.85, 0, .82, 1.02, .82],
-            [.54, 3.18, .16, .62, .76, .60],
-            [-.48, 3.12, -.14, .66, .82, .63],
-            [.06, 3.72, -.03, .53, .64, .50],
-          ].map(([cx, cy, cz, sx, sy, sz], clusterIndex) => (
-            <mesh
-              key={clusterIndex}
-              position={[cx, cy, cz]}
-              scale={[sx, sy, sz]}
-              rotation={[clusterIndex * .07, clusterIndex * .41, clusterIndex * .05]}
-              castShadow
-              receiveShadow
-            >
-              <icosahedronGeometry args={[1.08, 2]} />
-              <meshStandardMaterial
-                color={(index + clusterIndex) % 3 === 0 ? '#284739' : (index + clusterIndex) % 3 === 1 ? '#1d392f' : '#315344'}
-                roughness={.94}
-                metalness={0}
-              />
-            </mesh>
-          ))}
-        </group>
-      ))}
+      <ReplayMemoryGrove trees={trees} groundHeight={replayGroundHeight} />
+      <ReplayForestFloor groundHeight={replayGroundHeight} />
+      <Suspense fallback={null}>
+        <ReplayScannedUnderstory groundHeight={replayGroundHeight} />
+      </Suspense>
 
       <mesh position={[-1.2, 4.2, -20.5]} name="replay-memory-horizon-glow" renderOrder={0}>
         <circleGeometry args={[4.6, 96]} />
@@ -359,9 +305,9 @@ function ReplaySpatialScene({ memory, progressMs, onMediaState }: { memory: Sele
   return (
     <>
       <color attach="background" args={[memory.visuals.sky]} />
-      <fog attach="fog" args={[memory.visuals.sky, 10, 34]} />
-      <ambientLight intensity={0.38} />
-      <hemisphereLight intensity={0.72} color={memory.visuals.light} groundColor={memory.visuals.ground} />
+      <fog attach="fog" args={[memory.visuals.sky, 14, 46]} />
+      <ambientLight intensity={0.5} />
+      <hemisphereLight intensity={0.9} color={memory.visuals.light} groundColor={memory.visuals.ground} />
       <directionalLight position={[-4, 7, 6]} intensity={1.75} color={memory.visuals.light} castShadow />
       <directionalLight position={[4, 3.2, -3]} intensity={0.66} color={memory.visuals.accent} />
       <pointLight position={[0, 1.4, -4.8]} intensity={5.25} distance={19} color={memory.visuals.accent} />
