@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { readFileSync, existsSync, statSync } from 'node:fs'
 import { replayGroundPlacement, replayFernPlacement, replayVariation } from '../src/app/replay/replayEnvironmentPlacement.ts'
+import { buildReplayLeafSprayGeometry, buildReplayMeadowTuftGeometry } from '../src/app/replay/replayBotanicalGeometry.ts'
 
 const replay = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
 const details = readFileSync(new URL('../src/app/replay/ReplayEnvironmentDetails.tsx', import.meta.url), 'utf8')
@@ -39,6 +40,10 @@ test('new demo forest must not substitute source media or impersonate an approve
   assert.match(details, /finalArtAdmitted: false/)
   assert.doesNotMatch(details, /localStorage|sessionStorage|fetch\(|requestCouncilProvider/)
   assert.match(details, /SCANNED_FERN_COUNT = 52/)
+  assert.match(details, /material: child\.material/)
+  assert.match(details, /args=\{\[geometry, material, SCANNED_FERN_COUNT\]\}/)
+  assert.doesNotMatch(details, /<icosahedronGeometry args=\{\[1, 2\]\}/)
+  assert.doesNotMatch(details, /<coneGeometry args=\{\[\.075, 1, 3\]\}/)
 })
 
 
@@ -48,4 +53,30 @@ test('private-memory browser proof keeps demo GLTF loading unavailable, not simu
   assert.match(proof, /Synthetic private-memory transport must not load world art/)
   assert.ok(proof.includes("'@react-three/fiber':"))
   assert.ok(proof.includes('const Component=location.pathname==='))
+})
+
+test('curved botanical geometry uses triangle sheets with normals and instance vertex colors', () => {
+  for (const [name, build, requiredVertices] of [
+    ['leaf spray', buildReplayLeafSprayGeometry, 28 * 5],
+    ['grass tuft', buildReplayMeadowTuftGeometry, 9 * 5],
+  ]) {
+    const geometry = build()
+    assert.equal(geometry.isBufferGeometry, true, name + ' must create physical geometry')
+    const positions = geometry.getAttribute('position')
+    const colors = geometry.getAttribute('color')
+    const normals = geometry.getAttribute('normal')
+    assert.ok(positions.count >= requiredVertices)
+    assert.equal(normals.count, positions.count)
+    assert.equal(colors.count, positions.count)
+    assert.ok(geometry.index.count >= requiredVertices * 2)
+    assert.ok(Array.from(positions.array).every(Number.isFinite))
+    assert.ok(Array.from(normals.array).every(Number.isFinite))
+    assert.ok(geometry.boundingSphere && geometry.boundingSphere.radius > 0.4)
+    geometry.dispose()
+  }
+  assert.match(details, /args=\{\[leafGeometry, undefined, trees\.length \* GROVE_FOLIAGE_PER_TREE\]\}/)
+  assert.match(details, /args=\{\[tuftGeometry, undefined, GROUND_GRASS_COUNT\]\}/)
+  assert.match(details, /vertexColors roughness/)
+  assert.match(details, /GROVE_FOLIAGE_PER_TREE = 42/)
+  assert.match(details, /GROUND_GRASS_COUNT = 840/)
 })

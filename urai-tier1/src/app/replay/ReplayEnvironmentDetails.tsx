@@ -4,14 +4,15 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { replayVariation, replayGroundPlacement, replayFernPlacement } from './replayEnvironmentPlacement'
+import { buildReplayLeafSprayGeometry, buildReplayMeadowTuftGeometry } from './replayBotanicalGeometry'
 
 type Elevation = (x: number, z: number) => number
 type TreePosition = readonly [number, number, number]
 
 export const REPLAY_CC0_FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
-const GROVE_FOLIAGE_PER_TREE = 18
+const GROVE_FOLIAGE_PER_TREE = 42
 const GROVE_BRANCHES_PER_TREE = 5
-const GROUND_GRASS_COUNT = 620
+const GROUND_GRASS_COUNT = 840
 const GROUND_STONE_COUNT = 135
 const SCANNED_FERN_COUNT = 52
 
@@ -24,6 +25,8 @@ export function ReplayMemoryGrove({ trees, groundHeight }: {
   const trunks = useRef<THREE.InstancedMesh>(null)
   const boughs = useRef<THREE.InstancedMesh>(null)
   const crowns = useRef<THREE.InstancedMesh>(null)
+  const leafGeometry = useMemo(() => buildReplayLeafSprayGeometry(), [])
+  useEffect(() => () => leafGeometry.dispose(), [leafGeometry])
 
   useLayoutEffect(() => {
     if (!trunks.current || !boughs.current || !crowns.current) return
@@ -56,12 +59,12 @@ export function ReplayMemoryGrove({ trees, groundHeight }: {
       for (let cluster = 0; cluster < GROVE_FOLIAGE_PER_TREE; cluster++) {
         const id = treeIndex * GROVE_FOLIAGE_PER_TREE + cluster
         const angle = replayVariation(id, 67) * Math.PI * 2
-        const spread = (.24 + replayVariation(id, 68) * 1.12) * size
+        const spread = (.22 + replayVariation(id, 68) * 1.35) * size
         const height = ground + (2.2 + replayVariation(id, 69) * 2.05) * size
-        const radius = (.34 + replayVariation(id, 70) * .28) * size
+        const radius = (.36 + replayVariation(id, 70) * .34) * size
         dummy.position.set(x + Math.cos(angle) * spread, height, z + Math.sin(angle) * spread)
         dummy.rotation.set(replayVariation(id, 71) * .24, angle, replayVariation(id, 72) * .24)
-        dummy.scale.set(radius * 1.25, radius * (1.15 + replayVariation(id, 73) * .45), radius)
+        dummy.scale.set(radius * 1.1, radius * (1.1 + replayVariation(id, 73) * .5), radius)
         dummy.updateMatrix()
         crowns.current!.setMatrixAt(id, dummy.matrix)
         foliageColor.set('#2c4b3e').lerp(new THREE.Color('#698366'), replayVariation(id, 74) * .86)
@@ -84,15 +87,16 @@ export function ReplayMemoryGrove({ trees, groundHeight }: {
       <cylinderGeometry args={[.065, .12, 1, 8]} />
       <meshStandardMaterial color="#ffffff" roughness={.97} metalness={0} />
     </instancedMesh>
-    <instancedMesh ref={crowns} args={[undefined, undefined, trees.length * GROVE_FOLIAGE_PER_TREE]} castShadow receiveShadow name="replay-memory-canopy-clusters">
-      <icosahedronGeometry args={[1, 2]} />
-      <meshStandardMaterial color="#ffffff" roughness={.91} metalness={0} flatShading={false} />
+    <instancedMesh ref={crowns} args={[leafGeometry, undefined, trees.length * GROVE_FOLIAGE_PER_TREE]} castShadow receiveShadow name="replay-memory-canopy-clusters">
+      <meshStandardMaterial color="#ffffff" vertexColors roughness={.9} metalness={0} side={THREE.DoubleSide} />
     </instancedMesh>
   </group>
 }
 
 export function ReplayForestFloor({ groundHeight }: { groundHeight: Elevation }) {
   const grass = useRef<THREE.InstancedMesh>(null)
+  const tuftGeometry = useMemo(() => buildReplayMeadowTuftGeometry(), [])
+  useEffect(() => () => tuftGeometry.dispose(), [tuftGeometry])
   const stones = useRef<THREE.InstancedMesh>(null)
 
   useLayoutEffect(() => {
@@ -129,9 +133,8 @@ export function ReplayForestFloor({ groundHeight }: { groundHeight: Elevation })
   }, [groundHeight])
 
   return <group name="replay-memory-forest-floor" userData={{ truthClass: 'disclosed-demonstration', drawCallStrategy: 'instanced-static-dressing' }}>
-    <instancedMesh ref={grass} args={[undefined, undefined, GROUND_GRASS_COUNT]} receiveShadow name="replay-memory-grass-details">
-      <coneGeometry args={[.075, 1, 3]} />
-      <meshStandardMaterial color="#ffffff" roughness={.94} metalness={0} side={THREE.DoubleSide} />
+    <instancedMesh ref={grass} args={[tuftGeometry, undefined, GROUND_GRASS_COUNT]} receiveShadow name="replay-memory-grass-details">
+      <meshStandardMaterial color="#ffffff" vertexColors roughness={.94} metalness={0} side={THREE.DoubleSide} />
     </instancedMesh>
     <instancedMesh ref={stones} args={[undefined, undefined, GROUND_STONE_COUNT]} receiveShadow name="replay-memory-forest-pebbles">
       <icosahedronGeometry args={[1, 1]} />
@@ -140,8 +143,9 @@ export function ReplayForestFloor({ groundHeight }: { groundHeight: Elevation })
   </group>
 }
 
-function ReplayFernPart({ geometry, localMatrix, rootRotation, groundHeight, part }: {
+function ReplayFernPart({ geometry, material, localMatrix, rootRotation, groundHeight, part }: {
   geometry: THREE.BufferGeometry
+  material: THREE.Material | THREE.Material[]
   localMatrix: THREE.Matrix4
   rootRotation: THREE.Euler
   groundHeight: Elevation
@@ -169,9 +173,7 @@ function ReplayFernPart({ geometry, localMatrix, rootRotation, groundHeight, par
     if (batch.current.instanceColor) batch.current.instanceColor.needsUpdate = true
     batch.current.computeBoundingSphere()
   }, [localMatrix, rootRotation, groundHeight, part])
-  return <instancedMesh ref={batch} args={[geometry, undefined, SCANNED_FERN_COUNT]} dispose={null} receiveShadow name={'replay-cc0-fern-part-' + part}>
-    <meshStandardMaterial color="#ffffff" roughness={.94} metalness={0} side={THREE.DoubleSide} />
-  </instancedMesh>
+  return <instancedMesh ref={batch} args={[geometry, material, SCANNED_FERN_COUNT]} dispose={null} castShadow receiveShadow name={'replay-cc0-fern-part-' + part} />
 }
 
 // Reuse the already-shipped, source-controlled Poly Haven CC0 scan geometry,
@@ -182,17 +184,18 @@ export function ReplayScannedUnderstory({ groundHeight }: { groundHeight: Elevat
     const clone = fern.scene.clone(true)
     clone.updateMatrixWorld(true)
     const inverse = clone.matrixWorld.clone().invert()
-    const result: { geometry: THREE.BufferGeometry; localMatrix: THREE.Matrix4 }[] = []
+    const result: { geometry: THREE.BufferGeometry; material: THREE.Material | THREE.Material[]; localMatrix: THREE.Matrix4 }[] = []
     clone.traverse((child) => {
       if (child instanceof THREE.Mesh) result.push({
         geometry: child.geometry,
+        material: child.material,
         localMatrix: new THREE.Matrix4().multiplyMatrices(inverse, child.matrixWorld),
       })
     })
     return result
   }, [fern.scene])
   return <group name="replay-scanned-understory" userData={{ source: 'Poly Haven fern_02 CC0', truthClass: 'disclosed-demonstration', finalArtAdmitted: false }}>
-    {pieces.map(({ geometry, localMatrix }, index) => <ReplayFernPart key={index} geometry={geometry} localMatrix={localMatrix} rootRotation={fern.scene.rotation} groundHeight={groundHeight} part={index} />)}
+    {pieces.map(({ geometry, material, localMatrix }, index) => <ReplayFernPart key={index} geometry={geometry} material={material} localMatrix={localMatrix} rootRotation={fern.scene.rotation} groundHeight={groundHeight} part={index} />)}
   </group>
 }
 

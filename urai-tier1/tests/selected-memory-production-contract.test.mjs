@@ -12,6 +12,7 @@ const stellarCorona = read('src/spatial/stellar/StellarCorona.tsx')
 const photosphere = read('src/spatial/stellar/StellarPhotosphere.tsx')
 const memoryReveal = read('src/spatial/stellar/stellarMemoryReveal.ts')
 const replay = read('src/app/replay/CinematicReplayClient.tsx')
+const replayBotanicalGeometry = read('src/app/replay/replayBotanicalGeometry.ts')
 const replayEnvironmentDetails = read('src/app/replay/ReplayEnvironmentDetails.tsx')
 const replayEnvironmentPlacement = read('src/app/replay/replayEnvironmentPlacement.ts')
 const lifeMapScene = read('src/components/lifemap/ComposedLifeMapScene.tsx')
@@ -278,10 +279,18 @@ test('Replay preserves inside-memory demonstration canon without admitting it as
   for (const name of ['replay-memory-grove','replay-memory-tree-trunks','replay-memory-tree-branches','replay-memory-canopy-clusters','replay-memory-forest-floor','replay-memory-grass-details','replay-memory-forest-pebbles','replay-scanned-understory']) {
     assert.ok(replayEnvironmentDetails.includes('name="' + name + '"'), 'missing real Replay geometry group: ' + name)
   }
-  for (const count of ['GROVE_FOLIAGE_PER_TREE = 18', 'GROVE_BRANCHES_PER_TREE = 5', 'GROUND_GRASS_COUNT = 620', 'GROUND_STONE_COUNT = 135', 'SCANNED_FERN_COUNT = 52']) {
+  for (const count of ['GROVE_FOLIAGE_PER_TREE = 42', 'GROVE_BRANCHES_PER_TREE = 5', 'GROUND_GRASS_COUNT = 840', 'GROUND_STONE_COUNT = 135', 'SCANNED_FERN_COUNT = 52']) {
     assert.ok(replayEnvironmentDetails.includes(count), 'missing instanced geometry budget: ' + count)
   }
   assert.match(replayEnvironmentDetails, /useGLTF\(REPLAY_CC0_FERN_MODEL\)/)
+  assert.match(replayEnvironmentDetails, /args=\{\[leafGeometry, undefined, trees\.length \* GROVE_FOLIAGE_PER_TREE\]\}/)
+  assert.match(replayEnvironmentDetails, /args=\{\[tuftGeometry, undefined, GROUND_GRASS_COUNT\]\}/)
+  assert.match(replayEnvironmentDetails, /material: child\.material/)
+  assert.match(replayEnvironmentDetails, /args=\{\[geometry, material, SCANNED_FERN_COUNT\]\}/)
+  assert.match(replayBotanicalGeometry, /export function buildReplayLeafSprayGeometry/)
+  assert.match(replayBotanicalGeometry, /export function buildReplayMeadowTuftGeometry/)
+  assert.doesNotMatch(replayEnvironmentDetails, /<icosahedronGeometry args=\{\[1, 2\]\}/)
+  assert.doesNotMatch(replayEnvironmentDetails, /<coneGeometry args=\{\[\.075, 1, 3\]\}/)
   assert.match(replayEnvironmentDetails, /finalArtAdmitted: false/)
   assert.match(replayEnvironmentDetails, /truthClass: 'disclosed-demonstration'/)
   const fernAsset = new URL('../public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb', import.meta.url)
