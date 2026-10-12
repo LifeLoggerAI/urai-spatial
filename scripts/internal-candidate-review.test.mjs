@@ -63,3 +63,9 @@ test('initial review scene uses independently checked model before exercising Ho
   assert.match(capture, /expectedSha256/)
   assert.match(capture, /r\.hash === item\.receipt\.sha256/)
 })
+
+test('cached mobile model still requires original network-byte SHA-256 verification', () => {
+  assert.match(capture, /page\.request\.get\(new URL\(item\.uri, base\)/)
+  assert.match(capture, /assert\.equal\(digest, item\.receipt\.sha256/)
+  assert.match(capture, /assert\.equal\(payload\.length, item\.receipt\.bytes/)
+})

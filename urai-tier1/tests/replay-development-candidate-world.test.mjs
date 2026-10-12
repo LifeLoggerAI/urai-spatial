@@ -4,8 +4,8 @@ import { test } from 'node:test'
 
 const source = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
 const overlay = readFileSync(new URL('../src/app/replay/DevReplayCandidateWorld.tsx', import.meta.url), 'utf8')
-const manifest = JSON.parse(readFileSync(new URL('../../../operations/assets/launch-critical-assets.json', import.meta.url), 'utf8'))
-const receipt = JSON.parse(readFileSync(new URL('../../../operations/assets/generated-receipts/urai-final-glb-pack-v1.json', import.meta.url), 'utf8'))
+const manifest = JSON.parse(readFileSync(new URL('../../operations/assets/launch-critical-assets.json', import.meta.url), 'utf8'))
+const receipt = JSON.parse(readFileSync(new URL('../../operations/assets/generated-receipts/urai-final-glb-pack-v1.json', import.meta.url), 'utf8'))
 
 test('original Replay candidate is an exact unadmitted asset and cannot ship', () => {
   const asset = manifest.assets.find(row => row.id === 'replay-memory-environment-v1')
