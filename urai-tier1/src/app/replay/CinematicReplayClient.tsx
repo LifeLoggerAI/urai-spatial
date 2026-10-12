@@ -38,6 +38,7 @@ import { initialReplayVideoSnapshot, type ReplayVideoSession, type ReplayVideoSn
 import { cameraLerpAlpha } from '@/spatial/canon/cameraMotion'
 import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmission'
 import { ReplayForestFloor, ReplayMemoryGrove, ReplayScannedUnderstory } from './ReplayEnvironmentDetails'
+import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
 import DevReplayCandidateWorld, { useReplayDevelopmentCandidate } from './DevReplayCandidateWorld'
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
@@ -140,6 +141,9 @@ function replayTerrainHeight(x: number, z: number) {
 
 function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
   const developmentCandidate = useReplayDevelopmentCandidate()
+  const soil = useMemo(() => makeReplaySurfaceTextures('soil', 256), [])
+  const rock = useMemo(() => makeReplaySurfaceTextures('stone'), [])
+  useEffect(() => () => { soil.dispose(); rock.dispose() }, [soil, rock])
   const terrain = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(38, 52, 84, 112)
     geometry.rotateX(-Math.PI / 2)
@@ -178,6 +182,10 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
     [-7.4, -27.0, 1.48], [-13.2, -30.0, 1.82],
     [8.4, -11.5, 1.12], [11.2, -15.5, 1.5], [7.1, -20.0, 1.42], [12.8, -23.8, 1.7],
     [8.8, -27.7, 1.58], [13.7, -31.4, 1.86],
+    [-5.5, -7.8, .78], [-9.6, -7.2, 1.02], [-6.2, -12.9, .89],
+    [-15.2, -16.5, 1.68], [-5.8, -25.2, 1.16], [-15.8, -28.4, 1.71],
+    [5.7, -7.9, .86], [9.6, -8.3, 1.12], [6.0, -13.1, .94],
+    [15.1, -18.5, 1.63], [5.7, -25.0, 1.22], [15.6, -29.2, 1.72],
   ] as const, [])
 
   const replayGroundHeight = useCallback((x: number, z: number) => replayTerrainHeight(x, z + 7), [])
@@ -186,9 +194,9 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
   useEffect(() => () => terrain.dispose(), [terrain])
 
   return (
-    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-scanned-cc0-and-instanced-grove-v5' }}>
+    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-scanned-cc0-and-physically-textured-grove-v6' }}>
       <mesh geometry={terrain} position={[0, 0, -7]} receiveShadow>
-        <meshPhysicalMaterial color={physicalGroundColor} roughness={.94} metalness={0} clearcoat={.08} clearcoatRoughness={.72} />
+        <meshPhysicalMaterial color={physicalGroundColor} map={soil.color} normalMap={soil.normal} roughness={.96} metalness={0} clearcoat={.04} clearcoatRoughness={.85} />
       </mesh>
 
       <group name="replay-memory-walk">
@@ -204,8 +212,10 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
           >
             <icosahedronGeometry args={[1, 2]} />
             <meshPhysicalMaterial
-              color={index % 4 === 0 ? '#9b9e90' : '#788277'}
-              roughness={.86}
+              color={index % 4 === 0 ? '#c3c5b9' : '#c1c9bb'}
+              map={rock.color}
+              normalMap={rock.normal}
+              roughness={.92}
               metalness={0}
               clearcoat={.08}
               clearcoatRoughness={.75}
@@ -234,7 +244,7 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
           receiveShadow
         >
           <icosahedronGeometry args={[1, 2]} />
-          <meshStandardMaterial color={index % 3 === 0 ? '#39433d' : '#2b3531'} roughness={.93} metalness={0} />
+          <meshStandardMaterial color={index % 3 === 0 ? '#8e9990' : '#7a857c'} map={rock.color} normalMap={rock.normal} roughness={.96} metalness={0} />
         </mesh>
       ))}
 
@@ -256,15 +266,15 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
 
       <mesh position={[-10.8, -2.4, -24.5]} scale={[9.8, 4.8, 5.4]} rotation={[0, .2, -.04]} castShadow receiveShadow name="replay-memory-ridge-left">
         <icosahedronGeometry args={[1, 3]} />
-        <meshStandardMaterial color="#17251f" roughness={1} metalness={0} />
+        <meshStandardMaterial color="#b1bcb0" map={rock.color} normalMap={rock.normal} roughness={1} metalness={0} />
       </mesh>
       <mesh position={[10.2, -2.6, -26]} scale={[12.2, 5.6, 6.4]} rotation={[0, -.18, .03]} castShadow receiveShadow name="replay-memory-ridge-right">
         <icosahedronGeometry args={[1, 3]} />
-        <meshStandardMaterial color="#20302a" roughness={1} metalness={0} />
+        <meshStandardMaterial color="#b7c1b7" map={rock.color} normalMap={rock.normal} roughness={1} metalness={0} />
       </mesh>
       <mesh position={[0, -3.45, -33]} scale={[18.5, 6.8, 8.2]} receiveShadow name="replay-memory-ridge-horizon">
         <icosahedronGeometry args={[1, 3]} />
-        <meshStandardMaterial color="#2b3b34" roughness={1} metalness={0} />
+        <meshStandardMaterial color="#adb7ac" map={rock.color} normalMap={rock.normal} roughness={1} metalness={0} />
       </mesh>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-5.6, -1.43, -12.8]} name="replay-memory-meadow-light">

@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { readFileSync, existsSync, statSync } from 'node:fs'
 import { replayGroundPlacement, replayFernPlacement, replayVariation } from '../src/app/replay/replayEnvironmentPlacement.ts'
 import { buildReplayLeafSprayGeometry, buildReplayMeadowTuftGeometry } from '../src/app/replay/replayBotanicalGeometry.ts'
+import { makeReplaySurfaceTextures } from '../src/app/replay/replaySurfaceTextures.ts'
 
 const replay = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
 const details = readFileSync(new URL('../src/app/replay/ReplayEnvironmentDetails.tsx', import.meta.url), 'utf8')
@@ -79,4 +80,29 @@ test('curved botanical geometry uses triangle sheets with normals and instance v
   assert.match(details, /vertexColors roughness/)
   assert.match(details, /GROVE_FOLIAGE_PER_TREE = 42/)
   assert.match(details, /GROUND_GRASS_COUNT = 840/)
+})
+
+test('actual demo Replay materials have deterministic source-authored tileable PBR maps with explicit disposal', () => {
+  for (const kind of ['soil', 'bark', 'stone']) {
+    const a = makeReplaySurfaceTextures(kind, 32)
+    const b = makeReplaySurfaceTextures(kind, 32)
+    try {
+      assert.equal(a.color.colorSpace, 'srgb')
+      assert.equal(a.color.wrapS, a.normal.wrapS)
+      assert.equal(a.color.wrapT, a.normal.wrapT)
+      assert.equal(a.color.image.width, 32)
+      assert.equal(a.normal.image.height, 32)
+      const p = [...a.color.image.data]
+      const q = [...b.color.image.data]
+      assert.deepEqual(p, q, 'same source model must produce byte-identical material maps')
+      assert.deepEqual([...a.normal.image.data], [...b.normal.image.data])
+      assert.ok(new Set(p.filter((_, i) => i % 4 === 0)).size > 10, 'material needs physical color detail')
+      assert.ok(a.normal.image.data.some((v, i) => i % 4 !== 3 && v !== 128 && v !== 255))
+    } finally { a.dispose(); b.dispose() }
+  }
+  assert.throws(() => makeReplaySurfaceTextures('soil', 37), /bounded power of two/)
+  assert.match(replay, /makeReplaySurfaceTextures\('soil', 256\)/)
+  assert.match(replay, /map=\{soil\.color\} normalMap=\{soil\.normal\}/)
+  assert.match(details, /map=\{bark\.color\} normalMap=\{bark\.normal\}/)
+  assert.match(details, /map=\{rock\.color\} normalMap=\{rock\.normal\}/)
 })

@@ -5,6 +5,7 @@ import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { replayVariation, replayGroundPlacement, replayFernPlacement } from './replayEnvironmentPlacement'
 import { buildReplayLeafSprayGeometry, buildReplayMeadowTuftGeometry } from './replayBotanicalGeometry'
+import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
 
 type Elevation = (x: number, z: number) => number
 type TreePosition = readonly [number, number, number]
@@ -26,7 +27,8 @@ export function ReplayMemoryGrove({ trees, groundHeight }: {
   const boughs = useRef<THREE.InstancedMesh>(null)
   const crowns = useRef<THREE.InstancedMesh>(null)
   const leafGeometry = useMemo(() => buildReplayLeafSprayGeometry(), [])
-  useEffect(() => () => leafGeometry.dispose(), [leafGeometry])
+  const bark = useMemo(() => makeReplaySurfaceTextures('bark'), [])
+  useEffect(() => () => { leafGeometry.dispose(); bark.dispose() }, [leafGeometry, bark])
 
   useLayoutEffect(() => {
     if (!trunks.current || !boughs.current || !crowns.current) return
@@ -41,7 +43,7 @@ export function ReplayMemoryGrove({ trees, groundHeight }: {
       dummy.scale.set(size, trunkHeight, size)
       dummy.updateMatrix()
       trunks.current!.setMatrixAt(treeIndex, dummy.matrix)
-      trunks.current!.setColorAt(treeIndex, branchColor.set('#706152').lerp(new THREE.Color('#9b8c70'), replayVariation(treeIndex, 63) * .4))
+      trunks.current!.setColorAt(treeIndex, branchColor.set('#d4c2ae').lerp(new THREE.Color('#efddc5'), replayVariation(treeIndex, 63) * .4))
 
       for (let branch = 0; branch < GROVE_BRANCHES_PER_TREE; branch++) {
         const id = treeIndex * GROVE_BRANCHES_PER_TREE + branch
@@ -53,7 +55,7 @@ export function ReplayMemoryGrove({ trees, groundHeight }: {
         dummy.scale.set(size * .45, length, size * .45)
         dummy.updateMatrix()
         boughs.current!.setMatrixAt(id, dummy.matrix)
-        boughs.current!.setColorAt(id, branchColor.set('#554a3f').lerp(new THREE.Color('#85735f'), replayVariation(id, 66) * .35))
+        boughs.current!.setColorAt(id, branchColor.set('#c0b4a1').lerp(new THREE.Color('#e7d4bd'), replayVariation(id, 66) * .35))
       }
 
       for (let cluster = 0; cluster < GROVE_FOLIAGE_PER_TREE; cluster++) {
@@ -80,12 +82,12 @@ export function ReplayMemoryGrove({ trees, groundHeight }: {
 
   return <group name="replay-memory-grove" userData={{ truthClass: 'disclosed-demonstration', authoring: 'deterministic-instanced-forest' }}>
     <instancedMesh ref={trunks} args={[undefined, undefined, trees.length]} castShadow receiveShadow name="replay-memory-tree-trunks">
-      <cylinderGeometry args={[.115, .185, 1, 10]} />
-      <meshStandardMaterial color="#ffffff" roughness={.96} metalness={0} />
+      <cylinderGeometry args={[.09, .20, 1, 12, 6]} />
+      <meshStandardMaterial color="#ffffff" map={bark.color} normalMap={bark.normal} roughness={.94} metalness={0} />
     </instancedMesh>
     <instancedMesh ref={boughs} args={[undefined, undefined, trees.length * GROVE_BRANCHES_PER_TREE]} castShadow name="replay-memory-tree-branches">
-      <cylinderGeometry args={[.065, .12, 1, 8]} />
-      <meshStandardMaterial color="#ffffff" roughness={.97} metalness={0} />
+      <cylinderGeometry args={[.045, .125, 1, 10, 4]} />
+      <meshStandardMaterial color="#ffffff" map={bark.color} normalMap={bark.normal} roughness={.96} metalness={0} />
     </instancedMesh>
     <instancedMesh ref={crowns} args={[leafGeometry, undefined, trees.length * GROVE_FOLIAGE_PER_TREE]} castShadow receiveShadow name="replay-memory-canopy-clusters">
       <meshStandardMaterial color="#ffffff" vertexColors roughness={.9} metalness={0} side={THREE.DoubleSide} />
@@ -98,6 +100,8 @@ export function ReplayForestFloor({ groundHeight }: { groundHeight: Elevation })
   const tuftGeometry = useMemo(() => buildReplayMeadowTuftGeometry(), [])
   useEffect(() => () => tuftGeometry.dispose(), [tuftGeometry])
   const stones = useRef<THREE.InstancedMesh>(null)
+  const rock = useMemo(() => makeReplaySurfaceTextures('stone'), [])
+  useEffect(() => () => rock.dispose(), [rock])
 
   useLayoutEffect(() => {
     if (!grass.current || !stones.current) return
@@ -138,7 +142,7 @@ export function ReplayForestFloor({ groundHeight }: { groundHeight: Elevation })
     </instancedMesh>
     <instancedMesh ref={stones} args={[undefined, undefined, GROUND_STONE_COUNT]} receiveShadow name="replay-memory-forest-pebbles">
       <icosahedronGeometry args={[1, 1]} />
-      <meshStandardMaterial color="#ffffff" roughness={.97} metalness={0} />
+      <meshStandardMaterial color="#ffffff" map={rock.color} normalMap={rock.normal} roughness={.97} metalness={0} />
     </instancedMesh>
   </group>
 }
