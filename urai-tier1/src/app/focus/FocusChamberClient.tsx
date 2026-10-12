@@ -3,7 +3,7 @@
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 
-const REPLAY_RETURN_FOCUS_KEY = 'urai:replay:return-focus:v1'
+import { consumeReplayReturnFocus } from '@/spatial/world/replayReturnFocusHandoff'
 
 import StellarPhotosphere, { FOCUS_STAR_POSITION, FOCUS_STAR_RADIUS } from '@/spatial/stellar/StellarPhotosphere'
 import FocusAtmosphere from '@/spatial/stellar/FocusAtmosphere'
@@ -367,13 +367,7 @@ export default function FocusChamberClient() {
   useEffect(() => {
     // A Replay return unmounts the old focused control. This handoff has no
     // personal memory identifiers and expires without affecting other routes.
-    try {
-      const stamped = window.sessionStorage.getItem(REPLAY_RETURN_FOCUS_KEY)
-      if (!stamped) return
-      window.sessionStorage.removeItem(REPLAY_RETURN_FOCUS_KEY)
-      const elapsed = Date.now() - Number(stamped)
-      if (Number.isFinite(elapsed) && elapsed >= 0 && elapsed <= 30_000) replayReturnFocusPending.current = true
-    } catch { /* Navigation works even without sessionStorage. */ }
+    replayReturnFocusPending.current = consumeReplayReturnFocus()
   }, [])
 
   const selectedMemoryId = memory?.id
