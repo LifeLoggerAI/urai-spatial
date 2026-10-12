@@ -19,6 +19,7 @@ import { classifyRetainedHomeMesh } from './HomeSanctuaryAssetPolicy'
 import { createLivingMemoryGeometry, createMemoryFieldGeometry, createMemoryFilamentGeometry } from './HomeLivingOrbGeometry'
 import { createAuthoredOrbLightPresentation, disposeAuthoredOrbLightPresentation } from './HomeAuthoredOrbLight'
 import styles from './HomeWorldProduction.module.css'
+import HomeSanctuaryPerimeterGrove from './HomeSanctuaryPerimeterGrove'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 
 const HOME_PROVIDER_ENVIRONMENT = '/assets/urai/home/home-threshold-main.webp'
@@ -916,6 +917,7 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     <SanctuaryPath />
     <Horizon />
     <Vegetation />
+    <HomeSanctuaryPerimeterGrove />
     <GroundDetail />
     <SanctuaryPavilion />
     <Water />

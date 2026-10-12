@@ -122,6 +122,7 @@ const tests = [
   'tests/home-sanctuary-geometry-behavior.test.mjs',
   'tests/home-living-orb-geometry.test.mjs',
   'tests/home-vegetation-instancing-behavior.test.mjs',
+  'tests/home-perimeter-grove.test.mjs',
   'tests/home-finalization-truth-contract.test.mjs',
   'tests/home-interpretive-splat-contract.test.mjs',
   'tests/lifemap-cinematic-contract.test.mjs',
