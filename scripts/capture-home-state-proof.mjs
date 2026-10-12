@@ -4,6 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { captureVisibleCanvasPng } from './capture-visible-canvas-png.mjs'
+import { dismissHomeFirstRunGuide } from './dismiss-home-first-run-guide.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -159,6 +160,7 @@ async function capture(state, options = {}) {
   try {
     const response = await page.goto(`${base}/home/?${query}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
+    record.onboardingDismissal = await dismissHomeFirstRunGuide(page)
     await settleAnimationFrames(page, options.forcedColors === 'active' ? 24 : 60)
 
     record.status = response?.status()
@@ -254,6 +256,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     stage = 'home-ready'
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
+    record.onboardingDismissal = await dismissHomeFirstRunGuide(page)
     await page.waitForFunction(
       (selector) => Boolean(document.querySelector(selector)?.getAttribute('data-home-orb-state')),
       ownerSelector,
@@ -670,6 +673,7 @@ async function captureHomeAssetFailure(fixture) {
     record.recoveredAssetsReady = await owner.getAttribute('data-home-assets-ready')
     record.recoveredOwner = await owner.getAttribute('data-home-primary-owner')
     record.recoveredPointerLock = await page.evaluate(() => document.pointerLockElement === null)
+    record.onboardingDismissal = await dismissHomeFirstRunGuide(page)
     record.recoveredVisual = await waitForVisualEvidence(page)
     record.retryScreenshot = `${record.id}-retry-${exactHead.slice(0, 12)}.png`
     const retryScreenshot = await page.screenshot({ path: path.join(outputDir, record.retryScreenshot), animations: 'disabled', caret: 'hide', timeout: 90_000 })
@@ -738,6 +742,7 @@ const transition = { id: 'home-real-offline-transition', pageErrors: transitionE
 try {
   const response = await transitionPage.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
   const owner = await waitForHomeReady(transitionPage)
+  transition.onboardingDismissal = await dismissHomeFirstRunGuide(transitionPage)
   await transitionContext.setOffline(true)
   await transitionPage.evaluate(() => window.dispatchEvent(new Event('offline')))
   await settleAnimationFrames(transitionPage, 30)
