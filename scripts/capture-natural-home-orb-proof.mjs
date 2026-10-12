@@ -5,6 +5,7 @@ import { createRequire } from 'node:module'
 import { CANVAS_EVIDENCE_SAMPLE_POINTS, captureVisibleCanvasPng } from './capture-visible-canvas-png.mjs'
 import { inspectHomeOrbCanvasSamples, inspectVisibleHomeNavigation } from './home-orb-canvas-sampling.mjs'
 import { attachHomeOrbFailureProbe, captureHomeOrbFailure } from './home-orb-failure-diagnostics.mjs'
+import { dismissHomeFirstRunGuide } from './dismiss-home-first-run-guide.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -130,6 +131,8 @@ for (const spec of cases) {
     await owner.waitFor({ state: 'visible', timeout: 45_000 })
     stage = 'home-assets-ready'
     await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45_000 })
+    stage = 'dismiss-first-run-guide'
+    record.onboardingDismissal = await dismissHomeFirstRunGuide(page)
     stage = 'painted-home-proof'
     await frames(page)
     record.status = response?.status()
