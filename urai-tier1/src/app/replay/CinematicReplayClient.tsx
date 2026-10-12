@@ -38,6 +38,7 @@ import { initialReplayVideoSnapshot, type ReplayVideoSession, type ReplayVideoSn
 import { cameraLerpAlpha } from '@/spatial/canon/cameraMotion'
 import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmission'
 import { ReplayForestFloor, ReplayMemoryGrove, ReplayScannedUnderstory } from './ReplayEnvironmentDetails'
+import DevReplayCandidateWorld, { useReplayDevelopmentCandidate } from './DevReplayCandidateWorld'
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
 
@@ -138,6 +139,7 @@ function replayTerrainHeight(x: number, z: number) {
 }
 
 function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
+  const developmentCandidate = useReplayDevelopmentCandidate()
   const terrain = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(38, 52, 84, 112)
     geometry.rotateX(-Math.PI / 2)
@@ -236,11 +238,15 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
         </mesh>
       ))}
 
-      <ReplayMemoryGrove trees={trees} groundHeight={replayGroundHeight} />
-      <ReplayForestFloor groundHeight={replayGroundHeight} />
-      <Suspense fallback={null}>
-        <ReplayScannedUnderstory groundHeight={replayGroundHeight} />
-      </Suspense>
+      {developmentCandidate ? <Suspense fallback={null}>
+        <DevReplayCandidateWorld />
+      </Suspense> : <>
+        <ReplayMemoryGrove trees={trees} groundHeight={replayGroundHeight} />
+        <ReplayForestFloor groundHeight={replayGroundHeight} />
+        <Suspense fallback={null}>
+          <ReplayScannedUnderstory groundHeight={replayGroundHeight} />
+        </Suspense>
+      </>}
 
       <mesh position={[-1.2, 4.2, -20.5]} name="replay-memory-horizon-glow" renderOrder={0}>
         <circleGeometry args={[4.6, 96]} />

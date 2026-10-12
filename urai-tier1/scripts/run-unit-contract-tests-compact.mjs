@@ -169,6 +169,7 @@ const tests = [
   'tests/replay-memory-theater-contract.test.mjs',
   'tests/replay-source-media-behavior.test.mjs',
   'tests/replay-environment-details.test.mjs',
+  'tests/replay-development-candidate-world.test.mjs',
   'tests/replay-operations-contract.test.mjs',
   'tests/replay-product-controls-contract.test.mjs',
   'tests/replay-mobile-control-clearance-contract.test.mjs',
