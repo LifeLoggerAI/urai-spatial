@@ -35,6 +35,7 @@ import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 import { ReplayPersonPresence } from './ReplayPersonPresence'
 import { ReplayRecordedSource, type ReplayImageState } from './ReplayRecordedSource'
 import { initialReplayVideoSnapshot, type ReplayVideoSession, type ReplayVideoSnapshot } from './replayMediaSession'
+import { cameraLerpAlpha } from '@/spatial/canon/cameraMotion'
 import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmission'
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
@@ -48,7 +49,7 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
     const arc = reducedMotion ? 0 : (progress - 0.5) * 0.22
     desired.current.set(arc, 0.28 + breathe, 7.25 - progress * 0.48)
     if (reducedMotion) camera.position.copy(desired.current)
-    else camera.position.lerp(desired.current, Math.min(1, delta * 2.4))
+    else camera.position.lerp(desired.current, cameraLerpAlpha(0.04, delta))
     camera.lookAt(target.current)
   })
 

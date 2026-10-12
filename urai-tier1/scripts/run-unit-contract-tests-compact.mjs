@@ -11,6 +11,7 @@ const tests = [
   'tests/home-semantic-action-proof.test.mjs',
   'tests/home-sky-interaction.test.mjs',
   'tests/home-ascent-camera-clock.test.mjs',
+  'tests/camera-motion-behavior.test.mjs',
   'tests/council-stage-composition.test.mjs',
   'tests/lifemap-demo-journey-identity.test.mjs',
   'tests/lifemap-data-boundary.test.mjs',
