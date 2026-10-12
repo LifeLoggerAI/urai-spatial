@@ -250,8 +250,11 @@ async function run() {
     await validateReplay(page, report, '02-memory-theater-replay.png');
 
     await page.keyboard.press('Escape');
-    await page.waitForURL(/\/(focus|unwind)(\?|$)/, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    report.audits.push('Escape returns Replay through the deterministic world unwind path');
+    await page.waitForURL(/\/(focus|unwind)(\?|$)/, { timeout: 15000 });
+    // URL changes alone are insufficient: the destination must actually own
+    // a mounted surface and Replay must have unmounted after this return.
+    await page.getByTestId('cinematic-replay-client').waitFor({ state: 'detached', timeout: 15000 });
+    report.audits.push('Escape completes one Replay return route transition and removes the old immersive scene');
 
     await page.setViewportSize({ width: 390, height: 844 });
     const mobileUrl = `${server.baseUrl}/replay?memoryId=${encodeURIComponent(MEMORY_ID)}&manifestId=${MANIFEST_ID}&demo=1`;
