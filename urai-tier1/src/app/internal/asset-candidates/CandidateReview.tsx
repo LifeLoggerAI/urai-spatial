@@ -72,6 +72,9 @@ function OriginalModel({ asset, measured }: { asset: ReviewAsset; measured: (id:
 
 export default function CandidateReview({ assets }: { assets: ReviewAsset[] }) {
   const [selected, select] = useState(assets.find(x => x.id === 'portal-ring-master-v1')?.id || assets[0]?.id || '')
+  // Defer the initial WebGL/GLTF mount until an explicit, hydrated selection.
+  // Otherwise a cold, compiling dev server can strand the first source load.
+  const [reviewActivated, setReviewActivated] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => { setHydrated(true) }, [])
   const [report, setReport] = useState<ModelReport | null>(null)
@@ -80,7 +83,7 @@ export default function CandidateReview({ assets }: { assets: ReviewAsset[] }) {
   const measured = useCallback((id: string, value: ModelReport) => { if (id === selected) setReport(value) }, [selected])
   const fail = useCallback((reason: string) => setFailure(reason), [])
   if (!asset) return <main>No inspectable candidates</main>
-  const status = failure ? 'failed' : report ? 'loaded' : 'loading'
+  const status = !reviewActivated ? 'idle' : failure ? 'failed' : report ? 'loaded' : 'loading'
   return <main data-testid="urai-internal-candidate-review" data-asset-review-id={asset.id} data-asset-review-interactive={hydrated ? 'true' : 'false'}
     data-asset-review-state={status} style={{ background: '#0d1219', color: '#f5f7fa', minHeight: '100vh', padding: '56px 16px 24px', fontFamily: 'system-ui,sans-serif' }}>
     <style jsx global>{'body:has(main[data-testid="urai-internal-candidate-review"]) [data-urai-adam-launcher="true"] { display: none !important; }'}</style>
@@ -88,13 +91,13 @@ export default function CandidateReview({ assets }: { assets: ReviewAsset[] }) {
     <p style={{ color: '#ffde9a' }}>DEVELOPMENT ONLY · UNADMITTED ART · NO PERSONAL MEMORY · NO RELEASE AUTHORITY</p>
     <nav aria-label="Exact model selection" style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', maxWidth: '100%', overflowX: 'auto', paddingBottom: 8, marginBottom: 12 }}>
       {assets.map(item => <button type="button" key={item.id} aria-pressed={item.id === asset.id}
-        onClick={() => { select(item.id); setReport(null); setFailure(null) }}
+        onClick={() => { select(item.id); setReport(null); setFailure(null); setReviewActivated(true) }}
         style={{ padding: 12, minHeight: 48, whiteSpace: 'nowrap', flexShrink: 0, border: item.id === asset.id ? '2px solid #95e3d6' : '1px solid #637587', color: '#fff', background: '#253344', borderRadius: 8 }}>
         {item.label}
       </button>)}
     </nav>
     <div style={{ height: 'min(62vh,650px)', minHeight: 300, borderRadius: 12, overflow: 'hidden', border: '1px solid #5c727a' }}>
-      <Canvas key={asset.id} shadows dpr={[1,1.5]} camera={{ position: [5.5,3.8,7.5], fov: 43, near: 0.01, far: 150 }}>
+      {reviewActivated ? <Canvas key={asset.id} shadows dpr={[1,1.5]} camera={{ position: [5.5,3.8,7.5], fov: 43, near: 0.01, far: 150 }}>
         <color attach="background" args={['#161d24']} />
         <ambientLight intensity={0.72} />
         <hemisphereLight args={['#eaf5f7', '#393b34', 1.1]} />
@@ -111,10 +114,10 @@ export default function CandidateReview({ assets }: { assets: ReviewAsset[] }) {
           </Suspense>
         </ModelBoundary>
         <OrbitControls target={[0,0,0]} enableDamping minDistance={3} maxDistance={35} />
-      </Canvas>
+      </Canvas> : <p role="note" style={{ padding: 20 }}>Select a source-controlled candidate to inspect its physical geometry.</p>}
     </div>
     <section style={{ marginTop: 18, maxWidth: 1100 }}>
-      <div role="status" data-asset-review-status={status}><strong>{status === 'loaded' ? 'REAL SOURCE GEOMETRY LOADED' : status === 'failed' ? 'MODEL LOAD FAILED' : 'Waiting for original GLB'}</strong></div>
+      <div role="status" data-asset-review-status={status}><strong>{status === 'loaded' ? 'REAL SOURCE GEOMETRY LOADED' : status === 'failed' ? 'MODEL LOAD FAILED' : status === 'idle' ? 'AWAITING MODEL SELECTION' : 'Waiting for original GLB'}</strong></div>
       {failure ? <p style={{ color: '#ffaaaa' }}>{failure}</p> : null}
       <p><b>Asset:</b> {asset.id} · <b>Release:</b> {asset.releaseState}</p>
       <p><b>Bytes:</b> {asset.bytes.toLocaleString()} · <b>SHA-256:</b> <code style={{ wordBreak: 'break-all' }}>{asset.sha256}</code></p>

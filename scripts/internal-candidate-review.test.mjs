@@ -57,11 +57,14 @@ test('hydration and selected-identity waits target the inspected root, not its d
   assert.doesNotMatch(capture, /main\.locator\('\[data-asset-review-id=/)
 })
 
-test('initial review scene uses independently checked model before exercising Home GLB transitions', () => {
-  assert.match(viewer, /assets\.find\(x => x\.id === 'portal-ring-master-v1'\)/)
-  assert.match(capture, /if \(item\.entry\.id === 'home-entry-chamber-v1'\)/)
+test('cold browser review mounts original WebGL geometry only after hydrated explicit selection', () => {
+  assert.match(viewer, /const \\[reviewActivated, setReviewActivated\\] = useState\\(false\\)/)
+  assert.match(viewer, /\\{reviewActivated \\? <Canvas key=\\{asset\\.id\\}/)
+  assert.match(viewer, /setReviewActivated\\(true\\)/)
+  assert.match(capture, /data-asset-review-interactive="true"/)
+  assert.doesNotMatch(capture, /if \\(item\\.entry\\.id === 'home-entry-chamber-v1'\\)/)
   assert.match(capture, /expectedSha256/)
-  assert.match(capture, /r\.hash === item\.receipt\.sha256/)
+  assert.match(capture, /r\\.hash === item\\.receipt\\.sha256/)
 })
 
 test('cached mobile model still requires original network-byte SHA-256 verification', () => {
