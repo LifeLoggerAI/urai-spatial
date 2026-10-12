@@ -215,7 +215,7 @@ test('an already claimed Escape neither cancels consent nor adds a second return
 })
 
 test('global Escape still defers to all existing realm-owned contracts', () => {
-  for (const destination of ['life-map', 'location-map', 'privacy-controls']) {
+  for (const destination of ['life-map', 'location-map', 'privacy-controls', 'replay']) {
     const { global, event, effects } = escapeHarness({ destination })
     global(event)
     assert.equal(effects.reverseTravel, 0, destination)
@@ -224,7 +224,7 @@ test('global Escape still defers to all existing realm-owned contracts', () => {
 })
 
 test('global Escape still reverses non-owned realms and preserves input safeguards', () => {
-  for (const destination of ['focus', 'replay', 'infrastructure-hub', 'mirror']) {
+  for (const destination of ['focus', 'infrastructure-hub', 'mirror']) {
     const { global, event, effects } = escapeHarness({ destination })
     global(event)
     assert.equal(effects.reverseTravel, 1, destination)
@@ -239,6 +239,24 @@ test('global Escape still reverses non-owned realms and preserves input safeguar
   global(event)
   assert.equal(effects.reverseTravel, 0)
   assert.equal(event.defaultPrevented, false)
+})
+
+test('Replay local Escape owns one world-return event, independent of global listener ordering', () => {
+  for (const order of ['global-first', 'replay-first']) {
+    const { global, event, effects } = escapeHarness({ destination: 'replay' })
+    const pauseEvents = []
+    const local = sourceCallback('src/app/replay/CinematicReplayClient.tsx', 'onKey', {
+      Element: TestElement,
+      pauseMemory: () => pauseEvents.push('pause'),
+      unwind: () => { effects.worldReturns += 1 },
+      togglePlayback: () => { throw new Error('Escape must not toggle media playback') },
+    })
+    for (const callback of order === 'global-first' ? [global, local] : [local, global]) callback(event)
+    assert.deepEqual(pauseEvents, ['pause'], order)
+    assert.equal(effects.worldReturns, 1, order)
+    assert.equal(effects.reverseTravel, 0, order)
+    assert.equal(event.defaultPrevented, true, order)
+  }
 })
 
 test('consent Home key remains operable and preserves modifier/editable ownership', () => {
