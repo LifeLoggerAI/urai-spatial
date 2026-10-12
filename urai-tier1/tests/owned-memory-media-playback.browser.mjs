@@ -40,6 +40,10 @@ const shims = {
   'firebase/functions': `export const httpsCallable=(functions,name)=>async data=>({data:await window.__fixture.call(name,data)});`,
   '@/lib/firebase/client': `export const app={options:{projectId:'urai-4dc1d'}};export const firebasePublicEnvReady=true;export const functions={};export const getFirebaseDb=()=>({});`,
   '@react-three/fiber': `export function Canvas(){return null};export function useFrame(){}`, 
+  // Rendering assets are explicitly unavailable to this synthetic private-media transport.
+  // An accidental world mount must fail closed rather than masquerade as an admitted GLTF.
+  '@react-three/drei': `export const useGLTF=Object.assign(()=>{throw Error('Synthetic private-memory transport must not load world art')},{preload:()=>{},clear:()=>{}});`,
+
   '@/spatial/assets/uraiAssets': `export const replayAssets={primary:{src:'/disclosed-unused-demo.png'}};`,
   '@/spatial/adam/AdamLauncherSlot': `export default function AdamLauncherSlot(){return null}`, 
   '@/spatial/life-model/useReplayLifeModelAuthority': `export const useReplayLifeModelAuthority=()=>({available:false,status:'unavailable',people:[]});`,
