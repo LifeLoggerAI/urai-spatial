@@ -40,6 +40,7 @@ import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmi
 import { ReplayForestFloor, ReplayMemoryGrove, ReplayScannedUnderstory } from './ReplayEnvironmentDetails'
 import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
 import { buildReplayWornTrailGeometry, replayTrailCenter } from './replayTrailGeometry'
+import ReplayDefaultTrailEvidence from './ReplayDefaultTrailEvidence'
 import DevReplayCandidateWorld, { useReplayDevelopmentCandidate } from './DevReplayCandidateWorld'
 import { noteReplayReturnFocus } from '@/spatial/world/replayReturnFocusHandoff'
 
@@ -200,7 +201,7 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
 
   return (
     <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-scanned-cc0-and-physically-textured-grove-v6' }}>
-      <mesh geometry={terrain} position={[0, 0, -7]} receiveShadow>
+      <mesh geometry={terrain} position={[0, 0, -7]} receiveShadow name="replay-memory-terrain">
         <meshPhysicalMaterial color={physicalGroundColor} map={soil.color} normalMap={soil.normal} roughness={.96} metalness={0} clearcoat={.04} clearcoatRoughness={.85} />
       </mesh>
 
@@ -208,6 +209,9 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
         <mesh geometry={wornTrail} receiveShadow name="replay-memory-worn-trail">
           <meshStandardMaterial color="#ffffff" map={soil.color} normalMap={soil.normal} vertexColors roughness={.98} metalness={0} />
         </mesh>
+        {process.env.NEXT_PUBLIC_URAI_PREVIEW_MODE === 'true' && !developmentCandidate
+          ? <ReplayDefaultTrailEvidence />
+          : null}
         {trailStones.map((stone, index) => (
           <mesh
             key={index}

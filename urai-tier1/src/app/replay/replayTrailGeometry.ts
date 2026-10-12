@@ -4,7 +4,7 @@ import * as THREE from 'three'
 export const REPLAY_TRAIL_ROWS = 96
 export const REPLAY_TRAIL_LANES = 8
 export const REPLAY_TRAIL_START_Z = 4
-export const REPLAY_TRAIL_END_Z = -34
+export const REPLAY_TRAIL_END_Z = -32.5 // keep the entire path on the physical 52m terrain translated -7m
 
 export function replayTrailCenter(z: number): number {
   return Math.sin((z + 4) * .25) * .35 + Math.sin(z * .074) * .23
