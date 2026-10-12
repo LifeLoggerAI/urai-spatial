@@ -56,7 +56,31 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 320, height: 700 
     })
     await test.info().attach('home-fallback-heading-overlaps.json', { body: JSON.stringify(headingOverlap), contentType: 'application/json' })
     expect(headingOverlap).toEqual([])
+    // The real automatic first-run guide intentionally owns the input layer.
+    // Verify its accessible native dismissal before measuring navigation below it.
+    // This preserves both the guide's legitimate input ownership and the fallback
+    // navigation's unchanged 48px pointer-reachability requirement.
+    const guide = page.locator('.uraiV2OnboardingCard[data-home-guide="true"][data-first-run="automatic"]')
+    await expect(guide).toBeVisible()
+    const skip = guide.getByRole('button', { name: 'Skip', exact: true })
+    const skipHit = await skip.evaluate(button => {
+      const r = button.getBoundingClientRect()
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      return { width: r.width, height: r.height, owned: hit === button || (hit !== null && button.contains(hit)) }
+    })
+    expect(skipHit.width).toBeGreaterThanOrEqual(48)
+    expect(skipHit.height).toBeGreaterThanOrEqual(48)
+    expect(skipHit.owned).toBe(true)
+    await skip.focus()
+    await expect(skip).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(guide).toHaveCount(0)
+    expect(await page.evaluate(() => localStorage.getItem('urai:onboarding:v2:complete'))).toBe('1')
     const nav = fallback.getByRole('navigation', { name: 'Accessible Home destinations' })
+    // Short fallback viewports have a genuine scroll owner; visibility must
+    // be earned by the real scroll operation, not assumed from offscreen DOM.
+    await nav.scrollIntoViewIfNeeded()
+    await expect(nav).toBeInViewport()
     const controls = await nav.locator(':scope > :is(button,a)').evaluateAll(nodes => nodes.map(node => {
       const r = node.getBoundingClientRect()
       const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)

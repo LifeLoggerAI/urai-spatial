@@ -105,7 +105,10 @@ test('a nondefault selected sample survives semantic selection and guide arrival
   await expect(focus).toBeVisible()
   const destination = new URL(await focus.getAttribute('href') ?? '', page.url())
   expect(destination.searchParams.get('memoryId')).toBe('voice-note-home')
-  expect(destination.searchParams.get('manifestId')).toBe('demo-manifest')
+  // The selected disclosed sample owns its replay manifest. Never substitute
+  // the generic demo-manifest after selecting a different Memory Star.
+  expect(destination.searchParams.get('manifestId')).toBe('voice-note-home')
+  expect(destination.searchParams.get('manifestId')).not.toBe('demo-manifest')
   expect(destination.searchParams.get('demo')).toBe('1')
   expect(destination.searchParams.get('onboarding')).toBe('1')
   expect(await page.evaluate(key => localStorage.getItem(key), completionKey)).toBeNull()
@@ -113,7 +116,7 @@ test('a nondefault selected sample survives semantic selection and guide arrival
   const chamber = page.getByTestId('urai-final-focus-chamber')
   await expect(chamber).toHaveAttribute('data-memory-status', 'demo')
   await expect(chamber).toHaveAttribute('data-memory-id', 'demo:voice-note-home')
-  await expect(chamber).toHaveAttribute('data-manifest-id', 'demo-manifest')
+  await expect(chamber).toHaveAttribute('data-manifest-id', 'voice-note-home')
   await expect.poll(() => page.evaluate(key => localStorage.getItem(key), completionKey)).toBe('1')
   await test.info().attach('guided-nondefault-focus-original.png', { body: await page.screenshot(), contentType: 'image/png' })
 })

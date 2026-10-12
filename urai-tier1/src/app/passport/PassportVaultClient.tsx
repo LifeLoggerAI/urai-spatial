@@ -194,11 +194,16 @@ export default function PassportVaultClient() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return
+      if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
       // The open Founder panel and editable controls own their keyboard input.
       // In particular, Home must scroll its log without moving Passport focus.
       if (document.querySelector('[data-urai-adam-presence]')) return
-      if (event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]')) return
+      const target = event.target as HTMLElement | null
+      // Native input/selection, IME and nested editable descendants own Home/Escape.
+      // Use a structural guard so synthetic fixture events and cross-realm targets
+      // cannot throw before the real keyboard boundary runs.
+      if (target?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target?.tagName ?? '') ||
+        target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"]')) return
       if (event.key === 'Home') { event.preventDefault(); setSelectedZone('identity'); document.getElementById('passport-controls')?.focus() }
       if (event.key === 'Escape') { if (window.history.length > 1) window.history.back(); else window.location.assign('/ground') }
     }
