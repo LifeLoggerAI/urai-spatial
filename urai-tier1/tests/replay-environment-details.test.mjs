@@ -44,8 +44,8 @@ test('new demo forest must not substitute source media or impersonate an approve
 
 test('private-memory browser proof keeps demo GLTF loading unavailable, not simulated as approved world art', () => {
   const proof = readFileSync(new URL('./owned-memory-media-playback.browser.mjs', import.meta.url), 'utf8')
-  assert.match(proof, /'@react-three\\/drei': \`export const useGLTF=Object\\.assign/)
+  assert.ok(proof.includes("'@react-three/drei': `export const useGLTF=Object.assign"))
   assert.match(proof, /Synthetic private-memory transport must not load world art/)
-  assert.match(proof, /'@react-three\\/fiber':/)
-  assert.match(proof, /const Component=location\\.pathname===/)
+  assert.ok(proof.includes("'@react-three/fiber':"))
+  assert.ok(proof.includes('const Component=location.pathname==='))
 })
