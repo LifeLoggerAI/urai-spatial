@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { readFileSync } from 'node:fs'
-import { makeGalacticSpiralPoints } from '../src/components/lifemap/galacticSpiralStructure.ts'
+import { makeGalacticSpiralPoints } from '../src/components/lifemap/galacticSpiralPointDistribution.ts'
 
 const composition = readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
 const renderer = readFileSync(new URL('../src/components/lifemap/GalacticSpiralStructure.tsx', import.meta.url), 'utf8')

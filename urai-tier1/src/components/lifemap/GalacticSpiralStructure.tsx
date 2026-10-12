@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { makeGalacticSpiralPoints, type GalacticDepthBand, type GalacticQuality } from './galacticSpiralStructure'
+import { makeGalacticSpiralPoints, type GalacticDepthBand, type GalacticQuality } from './galacticSpiralPointDistribution'
 
 // Three independent world-depth fields, not a painted skybox. Camera travel
 // produces genuine parallax, and depth testing preserves authored stellar nodes.
