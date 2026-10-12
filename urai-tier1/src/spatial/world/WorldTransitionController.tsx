@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { subscribeBrowserLocation } from '@/lib/browserLocationStore'
 import { definitionForDestination } from './destinationRegistry'
+import { persistHomeWorldCheckpoint } from './homeWorldCheckpointPersistence'
 import { useUraiWorldState } from './WorldStateProvider'
 import {
   URAI_WORLD_RETURN_EVENT,
@@ -139,12 +140,14 @@ export function WorldTransitionController() {
     beginTravelRef.current(request)
 
     if (currentWorld.destination === 'home') {
-      window.sessionStorage.setItem('urai-world-home-checkpoint', JSON.stringify({
+      // This checkpoint is optional continuity, not authorization to travel.
+      // Browsers may deny access to sessionStorage in strict privacy contexts.
+      persistHomeWorldCheckpoint({
         destination: currentWorld.destination,
         entryPortal: request.entryPortal ?? 'ground-gateway',
         cameraCheckpoint: currentWorld.cameraCheckpoint ?? 'home-threshold',
         savedAt: Date.now(),
-      }))
+      })
     }
 
     const href = buildTravelHref(request)

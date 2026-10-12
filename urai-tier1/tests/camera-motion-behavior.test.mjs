@@ -74,7 +74,7 @@ test('yaw crosses the wrap boundary by the short path at 30, 60 and 120 Hz', () 
 
 test('Replay camera uses refresh-rate-independent damping without changing the authored 60 Hz response', () => {
   const source = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
-  assert.match(source, /import \{ cameraLerpAlpha \} from ['"]@\/spatial\/canon\/cameraMotion['"]/) 
+  assert.match(source, /import \{ cameraLerpAlpha \} from ['"]@\/spatial\/canon\/cameraMotion['"]/)
   assert.match(source, /camera\.position\.lerp\(desired\.current, cameraLerpAlpha\(0\.04, delta\)\)/)
   near(cameraLerpAlpha(0.04, 1 / 60), 0.04)
 })

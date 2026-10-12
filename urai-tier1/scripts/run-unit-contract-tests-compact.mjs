@@ -62,6 +62,7 @@ const tests = [
   'tests/focus-composition-frame.test.mjs',
   'tests/focus-camera-recenter.test.mjs',
   'tests/world-return-destination.test.mjs',
+  'tests/home-world-checkpoint-persistence.test.mjs',
   'tests/replay-transition-evidence-contract.test.mjs',
   'tests/dispatcher-transient-retry-contract.test.mjs',
   'tests/home-runtime-cursor-cleanup-contract.test.mjs',
