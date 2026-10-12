@@ -41,6 +41,7 @@ import { ReplayForestFloor, ReplayMemoryGrove, ReplayScannedUnderstory } from '.
 import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
 import { buildReplayWornTrailGeometry, replayTrailCenter } from './replayTrailGeometry'
 import DevReplayCandidateWorld, { useReplayDevelopmentCandidate } from './DevReplayCandidateWorld'
+import { noteReplayReturnFocus } from '@/spatial/world/replayReturnFocusHandoff'
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
 
@@ -401,6 +402,13 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const videoSession = useRef<ReplayVideoSession | null>(null)
   const sourceRelease = useRef<(() => void) | null>(null)
   const onSourceRelease = useCallback((release: (() => void) | null) => { sourceRelease.current = release }, [])
+  useEffect(() => () => {
+    // Close any remaining owned media session as the Replay scene disappears.
+    sourceRelease.current?.()
+    videoSession.current?.dispose()
+    sourceRelease.current = null
+    videoSession.current = null
+  }, [])
   const ownedPlayback = useOwnedMemoryMediaPlayback(memory, () => { sourceRelease.current?.(); videoSession.current?.dispose() })
   const expectsPrivateSource = Boolean(memory.sourceMediaReceipts?.length)
   const playableMemory = useMemo(() => expectsPrivateSource ? { ...memory, sourceMedia: ownedPlayback.media } : memory, [expectsPrivateSource, memory, ownedPlayback.media])
@@ -434,6 +442,16 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const segments = memory?.replayManifest.segments ?? []
   const active = useMemo(() => segments.find((segment) => progressMs >= segment.startsAtMs && progressMs < segment.startsAtMs + segment.durationMs) ?? segments.at(-1), [progressMs, segments])
   const unwind = useCallback(() => requestUraiWorldReturn(), [])
+  useEffect(() => {
+    // Observe Replay-owned returns without modifying the canonical reverse-travel
+    // callback or competing with its navigation. Capture fires before the router.
+    const onReplayReturn = () => {
+      if (world.previousDestination === 'life-movie') return
+      noteReplayReturnFocus()
+    }
+    window.addEventListener('urai:world-return', onReplayReturn, true)
+    return () => window.removeEventListener('urai:world-return', onReplayReturn, true)
+  }, [world.previousDestination])
   const pauseMemory = useCallback(() => { setNarrativePlaying(false); videoSession.current?.pause() }, [])
   useEffect(() => { if (expectsPrivateSource && ownedPlayback.status !== 'ready') pauseMemory() }, [expectsPrivateSource, ownedPlayback.status, pauseMemory])
   const togglePlayback = useCallback(() => {
