@@ -40,3 +40,13 @@ test('browser review verifies actual model network bytes and source material ide
   assert.match(viewer, /materials\.add\(mat\)/)
   assert.match(viewer, /textureCount: textures\.size/)
 })
+
+test('review waits for hydration and preserves mobile asset visibility without lowering model integrity', () => {
+  assert.match(viewer, /data-asset-review-interactive/)
+  assert.match(viewer, /setHydrated\(true\)/)
+  assert.match(viewer, /flexWrap: 'nowrap'/)
+  assert.match(viewer, /overflowX: 'auto'/)
+  assert.match(capture, /data-asset-review-interactive="true"/)
+  assert.match(capture, /fullPage: item\.profile === 'desktop'/)
+  assert.match(capture, /responsePromises/)
+})

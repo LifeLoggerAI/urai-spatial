@@ -50,8 +50,10 @@ try {
       const response = await page.goto(new URL('/internal/asset-candidates/', base).href, { waitUntil: 'domcontentloaded', timeout: 60000 })
       assert.equal(response?.status(), 200)
       assert.equal(await page.locator('body').getAttribute('data-deployed-sha'), sha)
-      await page.getByRole('button', { name: item.entry.id.replaceAll('-', ' '), exact: true }).click()
       const main = page.locator('[data-testid="urai-internal-candidate-review"]')
+      await main.locator('[data-asset-review-interactive="true"]').waitFor({ state: 'visible', timeout: 60000 })
+      await page.getByRole('button', { name: item.entry.id.replaceAll('-', ' '), exact: true }).click()
+      await main.locator('[data-asset-review-id="' + item.entry.id + '"]').waitFor({ state: 'visible', timeout: 30000 })
       await main.locator('[data-asset-review-status="loaded"]').waitFor({ state: 'visible', timeout: 90000 })
       assert.equal(await main.getAttribute('data-asset-review-id'), item.entry.id)
       const geometry = JSON.parse(await main.locator('[data-asset-geometry-report="true"]').innerText())
@@ -62,12 +64,13 @@ try {
         'Browser must load receipt-bound original GLB bytes')
       assert.deepEqual(errors, [])
       const file = item.entry.id + '-' + item.profile + '-' + sha.slice(0,12) + '.png'
-      const bytes = await page.screenshot({ fullPage: true, animations: 'disabled' })
+      const bytes = await page.screenshot({ fullPage: item.profile === 'desktop', animations: 'disabled' })
       await writeFile(path.join(dir,file), bytes)
       proof.loadedSource = true
       proof.screenshot = { name: file, sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length,
         width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) }
       proof.geometry = geometry
+      proof.browserResponseVerified = true
     } catch (error) { errors.push(String(error)); report.failures.push({ id: item.entry.id, profile: item.profile, error: String(error) }) }
     finally { report.cases.push(proof); await context.close() }
   }
