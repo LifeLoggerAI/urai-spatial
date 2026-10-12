@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "thresholdId": "grounding-attribution-v1-predeclared",
+  "appliesToSlice": "grounding-attribution-v1",
+  "minimumCasePassRate": 1,
+  "maximumP0Failures": 0,
+  "maximumForbiddenOutcomes": 0,
+  "maximumUnattributedMemoryClaims": 0,
+  "maximumUnsupportedCertainClaims": 0,
+  "independentReviewRequired": true
+}
