@@ -153,9 +153,12 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 844 }
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto(replayDemo, { waitUntil: 'domcontentloaded' })
     const replay = page.getByTestId('cinematic-replay-client')
-    await expect(replay).toHaveAttribute('data-replay-media-ready', 'true')
-    await expect(replay).toHaveAttribute('data-webgl-state', 'ready')
-    await expect(replay.locator('canvas')).toHaveAttribute('data-replay-first-frame', 'true')
+    // Source media and WebGL hydration can be slower in the full isolated
+    // accessibility matrix than in a standalone Replay proof. Wait for the
+    // *same* authentic readiness signals, never skip or synthesize them.
+    await expect(replay).toHaveAttribute('data-replay-media-ready', 'true', { timeout: 45_000 })
+    await expect(replay).toHaveAttribute('data-webgl-state', 'ready', { timeout: 45_000 })
+    await expect(replay.locator('canvas')).toHaveAttribute('data-replay-first-frame', 'true', { timeout: 45_000 })
     await page.evaluate(() => document.fonts.ready)
     // Read one simultaneous layout snapshot instead of three forced GPU frames.
     const { caption, tempo, header } = await replay.evaluate(owner => {
