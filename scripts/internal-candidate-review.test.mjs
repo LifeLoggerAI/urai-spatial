@@ -50,3 +50,9 @@ test('review waits for hydration and preserves mobile asset visibility without l
   assert.match(capture, /fullPage: item\.profile === 'desktop'/)
   assert.match(capture, /responsePromises/)
 })
+
+test('hydration and selected-identity waits target the inspected root, not its descendants', () => {
+  assert.match(capture, /page\.locator\('\[data-testid="urai-internal-candidate-review"\]\[data-asset-review-interactive="true"\]'\)/)
+  assert.match(capture, /page\.locator\('\[data-testid="urai-internal-candidate-review"\]\[data-asset-review-id=/)
+  assert.doesNotMatch(capture, /main\.locator\('\[data-asset-review-id=/)
+})
