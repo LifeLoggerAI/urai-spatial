@@ -122,50 +122,38 @@ export const STELLAR_MEMORY_REVEAL = `
   }
 
   vec3 revealStellarMemory(vec3 emitted, vec3 normalView, float granulation, float time) {
+    // Source authority and account/selection cancellation remain upstream.
     if (uMemoryReady < .5 || uReveal <= .001) return emitted;
     vec3 facing = normalize(normalView);
     if (facing.z <= 0.0) return emitted;
 
-    // The complete source rectangle fits inside the stellar face. Its diagonal
-    // stays below the limb, for portrait, landscape and square images alike.
-    float aspect = max(uMemoryAspect, .0001);
-    vec2 halfExtent = .92 * vec2(aspect, 1.0) / sqrt(aspect * aspect + 1.0);
-    vec2 projected = facing.xy / halfExtent;
-    float sourceEdge = max(abs(projected.x), abs(projected.y));
-    if (sourceEdge >= 1.0) return emitted;
-    vec2 memoryUv = projected * .5 + .5;
-
-    // Let the source appear through flowing stellar light, rather than follow
-    // its rectangular boundary. This rounded distance affects the veil only;
-    // the complete image coordinates above are neither cropped nor distorted.
-    vec2 edgePosition = abs(projected);
-    float roundedEdge = pow(
-      edgePosition.x * edgePosition.x * edgePosition.x
-        + edgePosition.y * edgePosition.y * edgePosition.y,
-      1.0 / 3.0
-    );
+    // Project the selected image *through the stellar surface* instead of
+    // fitting a small rectangular picture inside a bright circular frame.
+    // This display-only sphere crop never edits the underlying source image.
+    float aspect = clamp(uMemoryAspect, .12, 9.0);
+    vec2 coverScale = vec2(min(1.0, 1.0 / aspect), min(1.0, aspect));
+    vec2 surfaceUv = .5 + facing.xy * .51 * coverScale;
     float drift = time * .018;
-    float irregular = stellarMemoryNoise(projected * 3.1 + vec2(drift, -drift * .7));
-    float fineEdge = stellarMemoryNoise(projected * 10.7 - vec2(drift * .4, drift * .6));
-    float flowingEdge = roundedEdge + (irregular - .5) * .16 + (fineEdge - .5) * .06;
-    float veil = 1.0 - smoothstep(.58, .985, flowingEdge);
-    // Dissolve the perimeter into photospheric pockets. Granules stay weak in
-    // the essential center, so faces and source detail remain legible there.
-    float perimeter = smoothstep(.58, .94, roundedEdge);
-    float solarPockets = smoothstep(.62, .90, granulation) * (.45 + fineEdge * .55);
-    veil *= 1.0 - perimeter * solarPockets * .74;
-    veil *= 1.0 - smoothstep(.94, 1.0, sourceEdge);
-    veil *= smoothstep(.18, .46, facing.z);
+    float convection = stellarMemoryNoise(facing.xy * 8.4 + vec2(drift, -drift * .7));
+    float granuleFlow = stellarMemoryNoise(facing.xy * 21.3 - vec2(drift * .3, drift * .6));
+    // Subpixel-scale organic advection avoids a printed image and keeps
+    // center detail legible. Reduced motion fixes uTime upstream.
+    vec2 flow = vec2(convection - .5, granuleFlow - .5) * .009;
+    vec2 sourceUv = clamp(surfaceUv + flow, vec2(.001), vec2(.999));
+    vec4 source = texture2D(uMemoryTexture, sourceUv);
 
-    vec4 memorySample = texture2D(uMemoryTexture, memoryUv);
-    vec3 image = memorySample.rgb;
-    float lane = smoothstep(.60, .90, granulation);
-    // A weak luminous weave remains in the image; high contrast source detail
-    // survives because the mix happens in linear space, without a tinted wash.
-    vec3 wovenMemory = image + emitted * (.012 + lane * .010);
-    float readability = .90 - lane * .022;
-    // Transparent source pixels retain the existing photosphere's radiance.
-    float reveal = clamp(uReveal, 0.0, 1.0) * veil * readability * memorySample.a;
-    return mix(emitted, wovenMemory, reveal);
+    // The reveal starts in the central photosphere and runs across the
+    // curved surface toward its real limb. It has no rectangular mask.
+    float front = clamp(facing.z, 0.0, 1.0);
+    float phase = uReveal - (1.0 - front) * .43 + (convection - .5) * .11;
+    float opening = smoothstep(.06, .93, phase);
+    float photosphericEdge = smoothstep(.035, .33, front + (granuleFlow - .5) * .055);
+    float solarPockets = smoothstep(.57, .90, granulation) * .105;
+    float exposure = clamp(opening * photosphericEdge * (.94 - solarPockets) * source.a, 0.0, 1.0);
+
+    // Residual luminous granulation binds the photo to the stellar body,
+    // while intact sampled RGB stays the readable, truthful source.
+    vec3 integrated = source.rgb + emitted * (.018 + (1.0 - front) * .025);
+    return mix(emitted, integrated, exposure);
   }
 `

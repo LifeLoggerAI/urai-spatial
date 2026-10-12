@@ -186,6 +186,19 @@ test('Focus stellar body preserves fine photospheric granulation and integrated 
   assert.match(stellarCorona, /material\.dispose\(\)/)
 })
 
+test('Focus selected source emerges across the stellar photosphere without a rectangular photo inset', () => {
+  assert.match(memoryReveal, /uMemoryReady < \.5 \|\| uReveal <= \.001/)
+  assert.match(memoryReveal, /vec2 coverScale = vec2\(min\(1\.0, 1\.0 \/ aspect\), min\(1\.0, aspect\)\)/)
+  assert.match(memoryReveal, /vec2 surfaceUv = \.5 \+ facing\.xy \* \.51 \* coverScale/)
+  assert.match(memoryReveal, /texture2D\(uMemoryTexture, sourceUv\)/)
+  assert.match(memoryReveal, /opening \* photosphericEdge/)
+  assert.match(memoryReveal, /source\.a/)
+  assert.doesNotMatch(memoryReveal, /sourceEdge|roundedEdge|halfExtent|if \(sourceEdge >= 1\.0\)/)
+  assert.match(photosphere, /photosphere\.uniforms\.uMemoryReady\.value = targetReveal/)
+  assert.match(photosphere, /const targetReveal = state === 'ready' && texture \? 1 : 0/)
+  assert.match(memoryReveal, /texture\?\.dispose\(\)/)
+})
+
 test('Focus retains adaptive quality, reduced motion, visibility pausing, and WebGL fallback', () => {
   assert.match(focus, /useAdaptiveSpatialQuality/)
   assert.match(focus, /profile\.pixelRatioMax/)
@@ -269,7 +282,9 @@ test('Replay preserves inside-memory demonstration canon without admitting it as
   // replaced by an actual instanced grove and retained CC0 scanned fern geometry.
   // Enforce the real scene topology and demo privacy boundary rather than old
   // shape names or art versions that no longer exist.
-  assert.match(replay, /artState: 'no-spend-scanned-cc0-and-instanced-grove-v5'/)
+  assert.match(replay, /artState: 'no-spend-scanned-cc0-and-physically-textured-grove-v6'/)
+  assert.match(replay, /map=\{soil\.color\} normalMap=\{soil\.normal\}/)
+  assert.match(replayEnvironmentDetails, /map=\{bark\.color\} normalMap=\{bark\.normal\}/)
   assert.match(replay, /memory\.demo \? <DemoMemoryLandscape memory=\{memory\} \/> : null/)
   assert.match(replay, /<ReplayMemoryGrove trees=\{trees\} groundHeight=\{replayGroundHeight\} \/>/)
   assert.match(replay, /<ReplayForestFloor groundHeight=\{replayGroundHeight\} \/>/)
