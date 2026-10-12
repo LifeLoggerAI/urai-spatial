@@ -39,6 +39,7 @@ import { cameraLerpAlpha } from '@/spatial/canon/cameraMotion'
 import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmission'
 import { ReplayForestFloor, ReplayMemoryGrove, ReplayScannedUnderstory } from './ReplayEnvironmentDetails'
 import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
+import { buildReplayWornTrailGeometry, replayTrailCenter } from './replayTrailGeometry'
 import DevReplayCandidateWorld, { useReplayDevelopmentCandidate } from './DevReplayCandidateWorld'
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
@@ -167,14 +168,15 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
     return { x, z, scale, rotation: ((index * 41) % 19) * .08 }
   }), [])
 
-  const trailStones = useMemo(() => Array.from({ length: 15 }, (_, index) => {
-    const z = -3.8 - index * 1.62
-    const x = Math.sin(index * .72) * .42 + Math.sin(index * .27) * .18
-    const width = .72 + ((index * 13) % 7) * .045
-    const depth = .46 + ((index * 17) % 5) * .035
-    const localTerrainZ = z + 7
-    const y = replayTerrainHeight(x, localTerrainZ) + .08
-    return { x, y, z, width, depth, yaw: Math.sin(index * .51) * .18 }
+  // A few irregular, embedded edge stones replace floating stepping-stone discs.
+  const trailStones = useMemo(() => Array.from({ length: 11 }, (_, index) => {
+    const side = index % 2 ? 1 : -1
+    const z = -5.8 - index * 2.55
+    const x = replayTrailCenter(z) + side * (.79 + ((index * 17) % 5) * .075)
+    const width = .16 + ((index * 13) % 7) * .026
+    const depth = .27 + ((index * 17) % 5) * .034
+    const y = replayTerrainHeight(x, z + 7) + .027
+    return { x, y, z, width, depth, yaw: Math.sin(index * .51) * .24 }
   }), [])
 
   const trees = useMemo(() => [
@@ -189,6 +191,8 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
   ] as const, [])
 
   const replayGroundHeight = useCallback((x: number, z: number) => replayTerrainHeight(x, z + 7), [])
+  const wornTrail = useMemo(() => buildReplayWornTrailGeometry(replayGroundHeight), [replayGroundHeight])
+  useEffect(() => () => wornTrail.dispose(), [wornTrail])
   const physicalGroundColor = useMemo(() => new THREE.Color(memory.visuals.ground).lerp(new THREE.Color('#758575'), .72), [memory.visuals.ground])
 
   useEffect(() => () => terrain.dispose(), [terrain])
@@ -199,20 +203,23 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
         <meshPhysicalMaterial color={physicalGroundColor} map={soil.color} normalMap={soil.normal} roughness={.96} metalness={0} clearcoat={.04} clearcoatRoughness={.85} />
       </mesh>
 
-      <group name="replay-memory-walk">
+      <group name="replay-memory-walk" userData={{ truthClass: 'disclosed-demonstration', sourceGrounded: false }}>
+        <mesh geometry={wornTrail} receiveShadow name="replay-memory-worn-trail">
+          <meshStandardMaterial color="#ffffff" map={soil.color} normalMap={soil.normal} vertexColors roughness={.98} metalness={0} />
+        </mesh>
         {trailStones.map((stone, index) => (
           <mesh
             key={index}
             name={`replay-memory-trail-stone-${index + 1}`}
             position={[stone.x, stone.y, stone.z]}
             rotation={[0, stone.yaw, 0]}
-            scale={[stone.width, .10, stone.depth]}
+            scale={[stone.width, .068, stone.depth]}
             castShadow
             receiveShadow
           >
             <icosahedronGeometry args={[1, 2]} />
             <meshPhysicalMaterial
-              color={index % 4 === 0 ? '#c3c5b9' : '#c1c9bb'}
+              color={index % 4 === 0 ? '#a3ab96' : '#929d89'}
               map={rock.color}
               normalMap={rock.normal}
               roughness={.92}
