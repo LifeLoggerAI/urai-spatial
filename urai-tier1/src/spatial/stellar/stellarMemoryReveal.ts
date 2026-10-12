@@ -142,18 +142,26 @@ export const STELLAR_MEMORY_REVEAL = `
     vec2 sourceUv = clamp(surfaceUv + flow, vec2(.001), vec2(.999));
     vec4 source = texture2D(uMemoryTexture, sourceUv);
 
-    // The reveal starts in the central photosphere and runs across the
-    // curved surface toward its real limb. It has no rectangular mask.
+    // A memory moves through living stellar convection rather than becoming
+    // the star's replacement albedo. Both advected frequencies share uTime,
+    // which freezes under reduced motion in StellarPhotosphere.
     float front = clamp(facing.z, 0.0, 1.0);
-    float phase = uReveal - (1.0 - front) * .43 + (convection - .5) * .11;
-    float opening = smoothstep(.06, .93, phase);
-    float photosphericEdge = smoothstep(.035, .33, front + (granuleFlow - .5) * .055);
-    float solarPockets = smoothstep(.57, .90, granulation) * .105;
-    float exposure = clamp(opening * photosphericEdge * (.94 - solarPockets) * source.a, 0.0, 1.0);
-
-    // Residual luminous granulation binds the photo to the stellar body,
-    // while intact sampled RGB stays the readable, truthful source.
-    vec3 integrated = source.rgb + emitted * (.018 + (1.0 - front) * .025);
-    return mix(emitted, integrated, exposure);
+    float phase = smoothstep(.025, .94, uReveal);
+    float largePlasma = stellarMemoryNoise(facing.xy * 4.8 + vec2(drift, -drift * .7));
+    float smallPlasma = stellarMemoryNoise(facing.xy * 16.1 - vec2(drift * .6, drift * .35));
+    float plasmaField = largePlasma * .73 + smallPlasma * .27;
+    // Active photospheric streams open asymmetrically as the memory is entered.
+    // No hard inset edge, artificial rectangular matte or uniform photo shell.
+    float memoryStreams = smoothstep(.43, .67, plasmaField + phase * .095);
+    float photosphericEdge = smoothstep(.025, .29, front);
+    float opening = phase * memoryStreams;
+    // The star remains predominantly photospheric even at maximum reveal.
+    // Genuine image colors are not recolored, filtered, or reinterpreted.
+    float exposure = clamp(opening * photosphericEdge * (.35 + smallPlasma * .31) * source.a, 0.0, .66);
+    float plasmaRim = phase * photosphericEdge
+      * (smoothstep(.36, .49, plasmaField) - smoothstep(.65, .79, plasmaField));
+    vec3 livingSurface = emitted + vec3(.19, .086, .012) * plasmaRim;
+    vec3 integrated = source.rgb + emitted * (.012 + (1.0 - front) * .032);
+    return mix(livingSurface, integrated, exposure);
   }
 `

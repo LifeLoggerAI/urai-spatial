@@ -198,9 +198,24 @@ export function ReplayScannedUnderstory({ groundHeight }: { groundHeight: Elevat
     })
     return result
   }, [fern.scene])
+  // Publish readiness only once this source-controlled CC0 GLTF, including
+  // referenced image assets, has resolved and the instanced source is mounted.
+  useEffect(() => {
+    if (!pieces.length) return
+    const owner = document.querySelector<HTMLElement>('main.replayWorld[data-memory-status="demo"]')
+    if (!owner) return
+    owner.dataset.replayCc0UnderstoryReady = 'true'
+    owner.dataset.replayCc0UnderstoryMeshes = String(pieces.length)
+    return () => {
+      delete owner.dataset.replayCc0UnderstoryReady
+      delete owner.dataset.replayCc0UnderstoryMeshes
+    }
+  }, [pieces])
   return <group name="replay-scanned-understory" userData={{ source: 'Poly Haven fern_02 CC0', truthClass: 'disclosed-demonstration', finalArtAdmitted: false }}>
     {pieces.map(({ geometry, material, localMatrix }, index) => <ReplayFernPart key={index} geometry={geometry} material={material} localMatrix={localMatrix} rootRotation={fern.scene.rotation} groundHeight={groundHeight} part={index} />)}
   </group>
 }
 
-useGLTF.preload(REPLAY_CC0_FERN_MODEL)
+// Avoid starting embedded GLB texture requests before the actual Replay
+// canvas owns their lifetime. Rapid Focus/Replay travel must not abort an
+// unowned eager preload and misreport source media as a failed asset.

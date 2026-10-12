@@ -173,6 +173,10 @@ async function validateReplay(page, report, screenshotName) {
   await expectAttribute(proof, 'data-playing', 'true');
   await expectVisible(client, 'cinematic Replay client');
   await expectAttribute(client, 'data-memory-status', 'demo');
+  // Geometry read-through is not enough: wait until the actual licensed
+  // GLTF scene has hydrated, not just until the generic Canvas first frame.
+  // Console and network errors remain unconditional test failures.
+  await expectAttribute(client, 'data-replay-cc0-understory-ready', 'true', 60000);
   await expectAttribute(client, 'data-manifest-id', MANIFEST_ID);
   await expectAttribute(client, 'data-playing', 'false');
   await expectVisible(controls, 'Memory controls disclosure');
