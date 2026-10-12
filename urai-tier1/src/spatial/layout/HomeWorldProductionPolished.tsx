@@ -445,7 +445,7 @@ function Horizon() {
             float layeredFog = 0.14*lowHaze+0.055*highHaze;
             vec3 coolDistance = vec3(0.29,0.39,0.40);
             vec3 warmHorizon = vec3(0.45,0.46,0.39);
-            vec3 color = mix(coolDistance,warmHorizon,smoothstep(0.3,0.0,vUv.y));
+            vec3 color = mix(coolDistance,warmHorizon,(1.0-smoothstep(0.0,0.3,vUv.y)));
             gl_FragColor=vec4(color,clamp(layeredFog*horizontalFeather*verticalFeather,0.0,0.22));
           }`}
       />
