@@ -48,6 +48,7 @@ function fernModel(nested = false) {
 function mountVegetation(scene) {
   const layout = [], effects = [], cleanup = []
   const unexpectedOrbWork = () => assert.fail('vegetation must not construct or dispose Orb presentation')
+  const unexpectedPerimeterWork = () => assert.fail('fern-only test fixture must not construct or render the independent perimeter grove')
   const react = {
     Component: class {}, useMemo: fn => fn(), useRef: initial => ({ current: initial }),
     useLayoutEffect: fn => layout.push(fn), useEffect: fn => effects.push(fn),
@@ -61,6 +62,7 @@ function mountVegetation(scene) {
     './HomeSanctuaryGeometry': geometryModule.exports,
     './HomeLivingOrbGeometry': { createLivingMemoryGeometry: unexpectedOrbWork, createMemoryFieldGeometry: unexpectedOrbWork, createMemoryFilamentGeometry: unexpectedOrbWork },
     './HomeAuthoredOrbLight': { createAuthoredOrbLightPresentation: unexpectedOrbWork, disposeAuthoredOrbLightPresentation: unexpectedOrbWork },
+    './HomeSanctuaryPerimeterGrove': unexpectedPerimeterWork,
     './HomeWorldProduction.module.css': {},
     './HomeSanctuaryMaterials': {}, './HomeSanctuaryAssetPolicy': {},
     '@/app/home/orbStateController': {}, '@/spatial/navigation/EmbodiedNavigation': {},
