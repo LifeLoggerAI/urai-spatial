@@ -9,6 +9,11 @@ for (const width of [320, 390]) {
       page.on('pageerror', error => errors.push(error.message))
       await page.goto(route, { waitUntil: 'domcontentloaded' })
       const main = page.locator('[data-launch-surface="cinematic-replay-film-proof"]')
+      // Next's hydration may momentarily expose two copies of this route after
+      // DOMContentLoaded; do not choose .first() or conceal a persistent duplicate.
+      // Require exactly one real mounted proof surface before verifying placement.
+      await expect(main).toHaveCount(1)
+      await expect(main).toBeVisible()
       await expect(main).toHaveAttribute('data-demo-disclosure', 'not-personal-data')
       await expect(main.locator('.demoFilmDisclosure')).toContainText('Demo fixture · not personal data')
       const launcher = main.locator('[data-urai-adam-launcher-slot="demo-film"] [data-urai-adam-launcher]')

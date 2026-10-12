@@ -114,6 +114,10 @@ test('a nondefault selected sample survives semantic selection and guide arrival
   expect(await page.evaluate(key => localStorage.getItem(key), completionKey)).toBeNull()
   await focus.tap()
   const chamber = page.getByTestId('urai-final-focus-chamber')
+  // A route transition can overlap the old and new client surface briefly.
+  // Wait for a *unique* Focus owner; never select an arbitrary first duplicate.
+  await expect(chamber).toHaveCount(1)
+  await expect(chamber).toBeVisible()
   await expect(chamber).toHaveAttribute('data-memory-status', 'demo')
   await expect(chamber).toHaveAttribute('data-memory-id', 'demo:voice-note-home')
   await expect(chamber).toHaveAttribute('data-manifest-id', 'voice-note-home')
