@@ -5,6 +5,8 @@ on:
     branches: [main, 'repair/release-closure-integration-20261007']
     paths:
       - 'scripts/capture-home-state-proof.mjs'
+      - 'scripts/dismiss-home-first-run-guide.mjs'
+      - 'tests/dismiss-home-first-run-guide.test.mjs'
       - 'scripts/capture-visible-canvas-png.mjs'
       - 'tests/home-state-proof-sampling.test.mjs'
       - 'tests/home-state-proof-companion-capture.test.mjs'
@@ -54,7 +56,7 @@ jobs:
           pnpm install --frozen-lockfile 2>&1 | tee artifacts/home-state-proof/install.log
       - name: Verify state-proof contract and build
         run: |
-          node --test tests/home-state-proof-sampling.test.mjs tests/home-state-proof-companion-capture.test.mjs
+          node --test tests/dismiss-home-first-run-guide.test.mjs tests/home-state-proof-sampling.test.mjs tests/home-state-proof-companion-capture.test.mjs
           node --test urai-tier1/tests/native-proof-post-capture-contract.test.mjs
           (cd urai-tier1 && node --test tests/visible-canvas-capture.test.mjs)
           (cd urai-tier1 && node --import tsx tests/continuous-spatial-restoration-contract.test.mjs)
