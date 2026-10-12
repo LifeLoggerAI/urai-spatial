@@ -44,6 +44,7 @@ jobs:
             artifacts/consumer-export/real-static-manifest.json
           retention-days: 14
           if-no-files-found: error
+          include-hidden-files: true # retain the two source-hashed .gitkeep entries
       - name: Verify tracked source remains unchanged
         if: always()
         run: test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD" && git diff --exit-code && git diff --cached --exit-code
