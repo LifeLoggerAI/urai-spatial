@@ -1,11 +1,23 @@
-import { expect, test } from '@playwright/test'
+import { chromium, expect, test } from '@playwright/test'
 
 const route = '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
 
 for (const width of [320, 390, 768, 1024, 1200, 1440]) {
   for (const noWebGL of [false, true]) {
-    test(`Focus disclosure, labels and helper remain clear at ${width}px, noWebGL=${noWebGL}`, async ({ page }) => {
+    test(`Focus disclosure, labels and helper remain clear at ${width}px, noWebGL=${noWebGL}`, async ({ page: fixturePage }) => {
       test.setTimeout(60_000)
+      // Software-rendered WebGL scenes in earlier viewport tests can exhaust
+      // a shared Chromium compositor. Semantic fallback gets its own fresh
+      // browser process, without changing its viewport, assertions, source
+      // content, screenshot requirement, or fail-on-flake CI policy.
+      const semanticBrowser = noWebGL ? await chromium.launch({
+        headless: true,
+        args: ['--enable-unsafe-swiftshader', '--disable-gpu-sandbox', '--disable-dev-shm-usage'],
+      }) : null
+      const page = semanticBrowser
+        ? await semanticBrowser.newPage({ baseURL: 'http://127.0.0.1:3000' })
+        : fixturePage
+      try {
       await page.setViewportSize({ width, height: width === 320 ? 700 : width === 390 ? 844 : width < 1200 ? 1024 : 900 })
       await page.emulateMedia({ reducedMotion: 'reduce' })
       await page.addInitScript(() => {
@@ -113,6 +125,9 @@ for (const width of [320, 390, 768, 1024, 1200, 1440]) {
       await focus.locator('.focusControls').getByRole('button', { name: /Open Replay for/ }).click()
       await expect.poll(() => new URL(page.url()).pathname.replace(/\/$/, '')).toBe('/replay')
       expect(new URL(page.url()).searchParams.get('memoryId')).toBe('demo:quiet-reset')
+      } finally {
+        await semanticBrowser?.close()
+      }
     })
   }
 }
