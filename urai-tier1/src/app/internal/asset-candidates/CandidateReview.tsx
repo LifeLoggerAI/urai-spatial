@@ -71,7 +71,7 @@ function OriginalModel({ asset, measured }: { asset: ReviewAsset; measured: (id:
 }
 
 export default function CandidateReview({ assets }: { assets: ReviewAsset[] }) {
-  const [selected, select] = useState(assets[0]?.id || '')
+  const [selected, select] = useState(assets.find(x => x.id === 'portal-ring-master-v1')?.id || assets[0]?.id || '')
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => { setHydrated(true) }, [])
   const [report, setReport] = useState<ModelReport | null>(null)

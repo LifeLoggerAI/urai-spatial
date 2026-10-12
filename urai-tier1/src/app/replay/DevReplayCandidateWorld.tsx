@@ -24,7 +24,12 @@ export function useReplayDevelopmentCandidate(): boolean {
   return CAN_PREVIEW_REPLAY_CANDIDATE && requested
 }
 
-export default function DevReplayCandidateWorld() {
+// The review camera is at z=7.25. Bring the source model into a useful
+// world-scale view without modifying the GLB or granting collision authority.
+export const REPLAY_REVIEW_WORLD_Z = -11
+export default function DevReplayCandidateWorld({ groundHeight }: {
+  groundHeight: (x: number, z: number) => number
+}) {
   const gltf = useGLTF(REPLAY_CANDIDATE_ASSET_URL)
   const details = useMemo(() => {
     const scene = gltf.scene.clone(true)
@@ -49,9 +54,15 @@ export default function DevReplayCandidateWorld() {
       node.raycast = () => {}
     })
     if (!meshCount || !triangleCount) throw new Error('Replay preview GLB has no measurable triangles')
-    const scale = Math.min(4, Math.max(0.01, 23 / span))
-    return { scene, center, groundY: bounds.min.y, scale, meshCount, triangleCount }
+    const scale = Math.min(4, Math.max(0.01, 26 / span))
+    const cameraClearance = 7.25 - (REPLAY_REVIEW_WORLD_Z + size.z * scale * 0.5)
+    if (!Number.isFinite(cameraClearance) || cameraClearance < 2.5) {
+      throw new Error('Replay candidate review would intersect the camera')
+    }
+    return { scene, center, groundY: bounds.min.y, scale, meshCount, triangleCount,
+      bounds: size.toArray(), cameraClearance, projectedDepth: size.z * scale / (7.25 - REPLAY_REVIEW_WORLD_Z) }
   }, [gltf.scene])
+  const physicalGround = groundHeight(0, REPLAY_REVIEW_WORLD_Z)
   useEffect(() => {
     const main = document.querySelector<HTMLElement>('main.replayWorld[data-memory-status="demo"]')
     if (!main) return
@@ -59,17 +70,26 @@ export default function DevReplayCandidateWorld() {
     main.dataset.replayCandidateTriangleCount = String(details.triangleCount)
     main.dataset.replayCandidateMeshCount = String(details.meshCount)
     main.dataset.replayCandidateAdmission = 'unadmitted-development-only'
+    main.dataset.replayCandidateCameraClearance = String(details.cameraClearance)
+    main.dataset.replayCandidateProjectedDepth = String(details.projectedDepth)
+    main.dataset.replayCandidateGroundY = String(physicalGround)
+    main.dataset.replayCandidateScale = String(details.scale)
     return () => {
       delete main.dataset.replayCandidateModel
       delete main.dataset.replayCandidateTriangleCount
       delete main.dataset.replayCandidateMeshCount
       delete main.dataset.replayCandidateAdmission
+      delete main.dataset.replayCandidateCameraClearance
+      delete main.dataset.replayCandidateProjectedDepth
+      delete main.dataset.replayCandidateGroundY
+      delete main.dataset.replayCandidateScale
     }
-  }, [details])
+  }, [details, physicalGround])
   return <group name="replay-unadmitted-development-candidate"
     userData={{ source: REPLAY_CANDIDATE_ASSET_ID, admission: false,
       privateReconstruction: false, collisionAuthority: false, previewOnly: true }}
-    position={[0, -1.42, -18.4]} scale={details.scale}>
+    position={[0, physicalGround, REPLAY_REVIEW_WORLD_Z]} scale={details.scale}>
+    <pointLight position={[0, 4.8, 5]} intensity={5.2} distance={25} color="#f4ead9" />
     <primitive object={details.scene}
       position={[-details.center.x, -details.groundY, -details.center.z]} />
   </group>

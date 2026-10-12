@@ -50,6 +50,15 @@ try {
     info.triangles=Number(await scene.getAttribute('data-replay-candidate-triangle-count'))
     assert.ok(info.meshes>0&&info.triangles>0)
     assert.equal(await scene.getAttribute('data-replay-candidate-admission'),'unadmitted-development-only')
+    info.framing = {
+      projectedDepth: Number(await scene.getAttribute('data-replay-candidate-projected-depth')),
+      cameraClearance: Number(await scene.getAttribute('data-replay-candidate-camera-clearance')),
+      groundHeight: Number(await scene.getAttribute('data-replay-candidate-ground-y')),
+      scale: Number(await scene.getAttribute('data-replay-candidate-scale'))
+    }
+    assert.ok(info.framing.projectedDepth >= 1.15 && info.framing.projectedDepth <= 2.5)
+    assert.ok(info.framing.cameraClearance > 2.5)
+    assert.ok(info.framing.scale > 0 && Number.isFinite(info.framing.groundHeight))
    }else{
     await page.waitForTimeout(1500)
     assert.equal(await scene.getAttribute('data-replay-candidate-model'),null)

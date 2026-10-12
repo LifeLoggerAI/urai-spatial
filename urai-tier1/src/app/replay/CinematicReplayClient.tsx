@@ -239,7 +239,7 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
       ))}
 
       {developmentCandidate ? <Suspense fallback={null}>
-        <DevReplayCandidateWorld />
+        <DevReplayCandidateWorld groundHeight={replayGroundHeight} />
       </Suspense> : <>
         <ReplayMemoryGrove trees={trees} groundHeight={replayGroundHeight} />
         <ReplayForestFloor groundHeight={replayGroundHeight} />

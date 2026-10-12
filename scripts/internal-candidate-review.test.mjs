@@ -56,3 +56,10 @@ test('hydration and selected-identity waits target the inspected root, not its d
   assert.match(capture, /page\.locator\('\[data-testid="urai-internal-candidate-review"\]\[data-asset-review-id=/)
   assert.doesNotMatch(capture, /main\.locator\('\[data-asset-review-id=/)
 })
+
+test('initial review scene uses independently checked model before exercising Home GLB transitions', () => {
+  assert.match(viewer, /assets\.find\(x => x\.id === 'portal-ring-master-v1'\)/)
+  assert.match(capture, /if \(item\.entry\.id === 'home-entry-chamber-v1'\)/)
+  assert.match(capture, /expectedSha256/)
+  assert.match(capture, /r\.hash === item\.receipt\.sha256/)
+})

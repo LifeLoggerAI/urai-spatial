@@ -52,6 +52,12 @@ try {
       assert.equal(await page.locator('body').getAttribute('data-deployed-sha'), sha)
       const main = page.locator('[data-testid="urai-internal-candidate-review"]')
       await page.locator('[data-testid="urai-internal-candidate-review"][data-asset-review-interactive="true"]').waitFor({ state: 'visible', timeout: 60000 })
+      // First Home load was intermittently lost before client/model startup.
+      // Wait for the already proven Portal reference to render before selecting
+      // Home. Admission still requires the exact Home response hash and report.
+      if (item.entry.id === 'home-entry-chamber-v1') {
+        await main.locator('[data-asset-review-status="loaded"]').waitFor({ state: 'visible', timeout: 90000 })
+      }
       await page.getByRole('button', { name: item.entry.id.replaceAll('-', ' '), exact: true }).click()
       await page.locator('[data-testid="urai-internal-candidate-review"][data-asset-review-id="' + item.entry.id + '"]').waitFor({ state: 'visible', timeout: 30000 })
       await main.locator('[data-asset-review-status="loaded"]').waitFor({ state: 'visible', timeout: 90000 })
