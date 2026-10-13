@@ -562,6 +562,10 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const percent = Math.round((progressMs / duration) * 100)
   const demoEnvironment = admission.kind === 'disclosed-demo'
   const visualOwner = admission.kind === 'recorded-source' ? 'recorded-source-original-framing' : demoEnvironment && webgl.state === 'ready' ? 'r3f-immersive-memory-field' : demoEnvironment ? 'disclosed-demo-asset-fallback' : 'neutral-memory-horizon'
+  // A paused memory is a held frame, not a continuously rendering world.
+  // Return to continuous presentation only during authorized playback. React
+  // and R3F invalidate a demand frame for real state/texture changes.
+  const framePolicy = !quality.documentVisible ? 'never' : quality.reducedMotion || !playing ? 'demand' : 'always'
   const mediaError = video ? videoSnapshot.error : imageState.error
   const style = {
     '--replay-accent': memory.visuals.accent,
@@ -571,9 +575,9 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
+  return <main className="replayWorld" style={style} data-replay-frame-policy={framePolicy} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
     {admission.kind !== 'recorded-source' && webgl.state === 'ready' ? <ReplayCanvasBoundary key={`${webgl.attempt}:${mediaAttempt}`} onFailure={webgl.fail}>
-      <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[Math.min(1, quality.pixelRatioMax), quality.pixelRatioMax]} frameloop={quality.documentVisible ? (quality.reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position: [0, 0.28, 7.25], fov: 50, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
+      <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[Math.min(1, quality.pixelRatioMax), quality.pixelRatioMax]} frameloop={framePolicy} camera={{ position: [0, 0.28, 7.25], fov: 50, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
         {demoEnvironment ? <ReplaySpatialScene memory={memory} progressMs={progressMs} onMediaState={onImageState} /> : <ReplayNeutralSpatialScene />}
       </Canvas>
     </ReplayCanvasBoundary> : null}
