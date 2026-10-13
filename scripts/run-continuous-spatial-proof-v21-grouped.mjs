@@ -23,6 +23,11 @@ const routeAssetReplacement = `          || (requestUrl.pathname === expectedRou
               ? '/assets/urai/final/tier1/ground/ground-realm-desktop.svg'
               : '/assets/urai/final/tier2/life-map/lifemap-galaxy-field-desktop.svg'))
           || (request.method === 'GET'
+            && request.resourceType === 'image'
+            && request.isNavigationRequest === false
+            && destination === 'ground'
+            && requestUrl.pathname === '/assets/urai/v2/onboarding/first-run-ground-card.webp')
+          || (request.method === 'GET'
             && request.resourceType === 'document'`
 const routeAssetCount = portalStableOriginal.split(routeAssetTarget).length - 1
 if (routeAssetCount !== 1) throw new Error(`Portal destination asset abort predicate expected one audited occurrence; found ${routeAssetCount}`)
@@ -32,6 +37,7 @@ for (const [label, marker] of [
   ['GET image guard', "request.resourceType === 'image'"],
   ['non-navigation image guard', 'request.isNavigationRequest === false'],
   ['Ground route asset', '/assets/urai/final/tier1/ground/ground-realm-desktop.svg'],
+  ['Ground onboarding image after settled route', '/assets/urai/v2/onboarding/first-run-ground-card.webp'],
   ['Life Map route asset', '/assets/urai/final/tier2/life-map/lifemap-galaxy-field-desktop.svg'],
   ['document navigation guard', "request.resourceType === 'document'"],
 ]) {
