@@ -76,15 +76,21 @@ function fallbackDecision(label: string): CapturedRealityRenderDecision {
 }
 
 function splatDecision(delivery: RuntimeDelivery): CapturedRealityRenderDecision {
+  // Integrity-approved private proof is not visually admitted recorded history.
+  // Only separately reviewed and device-certified runtime may claim an
+  // autobiographical spatial reconstruction, even if the sample renders.
+  const technicalProof = delivery.accessMode === 'proof'
   return {
     mode: 'gaussian-splat',
-    reasons: [],
-    truthLabel: delivery.truthLabel,
+    reasons: technicalProof ? ['PRIVATE_TECHNICAL_PROOF_NOT_VISUALLY_ACCEPTED'] : [],
+    truthLabel: technicalProof
+      ? 'Private technical reconstruction preview · not an accepted memory world'
+      : delivery.truthLabel,
     assetUrl: delivery.url,
     fallbackMeshArtifactId: null,
     collisionArtifactId: null,
     allowedSourceIds: [],
-    autobiographical: true,
+    autobiographical: !technicalProof,
   }
 }
 
