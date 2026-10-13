@@ -39,13 +39,14 @@ for (const relative of ['urai-tier1/src/app/xr/page.tsx', 'urai-tier1/src/app/sp
         assert.ok(name === '@/app/spatial/ar-vr/UraiQuestEntryWorldV2' || name === './UraiQuestEntryWorldV2', `Unexpected actual page dependency: ${name}`)
         return { __esModule: true, default: EligibleXrComponent }
       })
-      if (!enabled) {
+      if (!enabled && relative.endsWith('/xr/page.tsx')) {
         assert.throws(() => actualPage.default(), (error) => error?.digest === 'NEXT_HTTP_ERROR_FALLBACK;404')
         assert.equal(componentRenders, 0)
       } else {
         // This synthetic branch proves preservation, never an activated route or device receipt.
         const html = require('react-dom/server').renderToStaticMarkup(actualPage.default())
         assert.match(html, /data-inert-xr-component="true"/)
+        if (!enabled) { assert.match(html, /data-xr-release-state="technical-preview"/); assert.match(html, /data-xr-immersive-authority="disabled"/) }
         assert.equal(componentRenders, 1)
       }
     })
@@ -58,7 +59,7 @@ test('actual route manifest classifies both XR routes conditionally without publ
     assert.equal(manifest.criticalRoutes.includes(value), false)
     assert.equal(manifest.classification.publicExact.includes(value), false)
     assert.ok(manifest.classification.conditionalExact.includes(value))
-    assert.ok(manifest.conditionalRoutes.some((entry) => entry.route === value && entry.disabledStatus === 404 && entry.deviceAcceptance === false))
+    assert.ok(manifest.conditionalRoutes.some((entry) => entry.route === value && entry.disabledStatus === (value === '/xr' ? 404 : 200) && entry.deviceAcceptance === false))
   }
 })
 for (const source of ['liveArWebXrEnabled: config,', '// liveArWebXrEnabled: true,', 'liveArWebXrEnabled: false,\nliveArWebXrEnabled: true,', '']) {
@@ -82,8 +83,10 @@ async function runActualScript(relative, proofValue = proof, routeBodies = requi
       const url = new URL(value), normalized = url.pathname.replace(/\/$/, '') || '/'
       seen.push(normalized)
       const conditional = helpers.conditionalXrRoutes.includes(normalized)
+      const disabledImmersive = normalized === '/xr'
       const body = normalized === '/api/system/deploy-proof' ? JSON.stringify(proofValue) : routeBodies[normalized] ?? (normalized === '/privacy-controls' ? publicBody.replace('Home threshold', '') : publicBody)
-      return { ok: !conditional, status: conditional ? 404 : 200, url: url.href, text: async () => body }
+      const effectiveBody = normalized === '/spatial/ar-vr' ? '<main data-xr-release-state="technical-preview" data-xr-immersive-authority="disabled"><h1>URAI AR / VR / XR entry chamber</h1>Live WebXR headset sessions remain disabled</main>' : body
+      return { ok: !disabledImmersive, status: disabledImmersive ? 404 : 200, url: url.href, text: async () => effectiveBody }
     }
     const source = fs.readFileSync(path.join(root, relative), 'utf8').replace(/^#!.*\n/, '').replace(/^import .*$/gm, '')
     const context = { URL, Map, Set, fetch, currentXrReleaseAuthority: () => authority, inspectXrDeployProof: helpers.inspectXrDeployProof,
@@ -117,3 +120,18 @@ test('all four conditional checks report failures; no partial successful accepta
   const failures = await helpers.verifyConditionalXrRoutes('https://candidate.example', authority, async (url) => ({ status: 200, url, text: async () => 'XR live' }))
   assert.equal(failures.length, 4)
 })
+
+test('technical XR preview cannot pass as a directory listing, spoofed 200, or enabled immersive session', () => {
+  const url = 'https://candidate.example/spatial/ar-vr'
+  const html = '<main data-xr-release-state="technical-preview" data-xr-immersive-authority="disabled"><h1>URAI AR / VR / XR entry chamber</h1>Live WebXR headset sessions remain disabled</main>'
+  assert.equal(helpers.expectedConditionalXrStatus('/xr', authority), 404)
+  assert.equal(helpers.expectedConditionalXrStatus('/spatial/ar-vr', authority), 200)
+  assert.equal(helpers.inspectConditionalXrResponse({ status: 200, url }, url, authority, html), true)
+  assert.equal(helpers.inspectConditionalXrResponse({ status: 200, url }, url, authority, '<title>Directory listing for /spatial/ar-vr</title>'), false)
+  assert.equal(helpers.inspectConditionalXrResponse({ status: 200, url }, url, authority, html.replace('disabled', 'enabled')), false)
+  assert.equal(helpers.inspectConditionalXrResponse({ status: 404, url }, url, authority, html), false)
+  assert.equal(helpers.inspectConditionalXrResponse({ status: 200, url:'https://attacker.example/spatial/ar-vr' }, url, authority, html), false)
+})
+
+// Include the static-export policy in the same source-current XR contract suite.
+await import('../../tests/enforce-static-launch-boundary.test.mjs')
