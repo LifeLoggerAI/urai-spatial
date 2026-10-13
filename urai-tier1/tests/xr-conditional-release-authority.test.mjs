@@ -132,3 +132,6 @@ test('technical XR preview cannot pass as a directory listing, spoofed 200, or e
   assert.equal(helpers.inspectConditionalXrResponse({ status: 404, url }, url, authority, html), false)
   assert.equal(helpers.inspectConditionalXrResponse({ status: 200, url:'https://attacker.example/spatial/ar-vr' }, url, authority, html), false)
 })
+
+// Include the static-export policy in the same source-current XR contract suite.
+await import('../../tests/enforce-static-launch-boundary.test.mjs')
