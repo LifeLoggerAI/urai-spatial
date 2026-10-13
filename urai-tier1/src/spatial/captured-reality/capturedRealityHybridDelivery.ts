@@ -23,6 +23,7 @@ export function privateMeshDescriptorValid(
     || mesh.deviceTier!==expected.deviceTier || mesh.requiresAuthorization!==true
     || !/^[a-f0-9]{64}$/i.test(mesh.meshSha256) || !/^[a-f0-9]{64}$/i.test(mesh.splatSha256)
     || mesh.splatSha256!==expected.splatSha256
+    || mesh.registration?.meshSha256 !== mesh.meshSha256
     || !Number.isSafeInteger(mesh.meshByteLength) || mesh.meshByteLength<32
     || mesh.meshByteLength>24*1024*1024 || mesh.meshByteLength%4!==0
     || !/^\d{1,32}$/.test(mesh.meshStorageGeneration)
