@@ -19,8 +19,9 @@ test('consent suppression clears private provenance as well as the rendered scen
   const revokedRef = { current: false }
   const truthLabelRef = { current: 'Private reconstruction label' }
   const renewedDeliveryRef = { current: { url: 'renewed-private-url' } }
+  const meshDescriptorRef = { current: { meshSha256: 'stale-authorized-mesh' } }
   vm.runInNewContext(body, {
-    revokedRef, truthLabelRef, renewedDeliveryRef, message: 'Consent revoked',
+    revokedRef, truthLabelRef, renewedDeliveryRef, meshDescriptorRef, message: 'Consent revoked',
     setDelivery: (value) => { state.delivery = value },
     setHybridMesh: (value) => { state.hybridMesh = value },
     setMetadata: (value) => { state.metadata = value },
@@ -36,6 +37,7 @@ test('consent suppression clears private provenance as well as the rendered scen
   assert.equal(state.showProvenance, false)
   assert.equal(truthLabelRef.current, undefined)
   assert.equal(renewedDeliveryRef.current, null)
+  assert.equal(meshDescriptorRef.current, null, 'revocation clears current mesh authority receipt')
   assert.equal(state.decision.mode, 'suppressed')
   assert.equal(state.decision.label, 'Private captured place unavailable')
   assert.equal(state.route.kind, 'suppressed')
