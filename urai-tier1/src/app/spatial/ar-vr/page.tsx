@@ -16,6 +16,7 @@ export default function SpatialArVrPage() {
         <aside
           role="status"
           data-xr-release-state="technical-preview"
+          data-xr-immersive-authority="disabled"
           className="relative z-10 bg-slate-950 px-6 py-3 text-center text-sm text-white"
         >
           Explorable entry chamber · desktop and touch technical preview.
