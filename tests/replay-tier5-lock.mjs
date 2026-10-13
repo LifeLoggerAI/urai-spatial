@@ -142,6 +142,28 @@ async function expectInsideViewport(locator, page, label, padding = 2) {
   }
 }
 
+// Exercise a genuine pointer hit and assert the native <details> state. In a
+// real earlier Chromium trace the click OPENED the panel, but locator.click()
+// never returned from its post-action wait under a loaded WebGL compositor.
+// A hit-test, native mouse event and explicit state assertion measure the
+// product interaction without treating an automation wait as product failure.
+async function toggleReplayMemoryDisclosure(page, summary, expectedOpen) {
+  await expectVisible(summary, 'Replay memory controls summary');
+  const bounds = await summary.boundingBox();
+  if (!bounds || bounds.width < 1 || bounds.height < 1) throw new Error('Replay controls have no pointer target');
+  const point = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  const actionable = await page.evaluate(({ x, y }) => {
+    const hit = document.elementFromPoint(x, y);
+    return Boolean(hit?.closest('summary[aria-label="Replay memory controls"]'));
+  }, point);
+  if (!actionable) throw new Error('Replay memory controls pointer hit is occluded by another element');
+  await page.mouse.click(point.x, point.y);
+  await page.waitForFunction((open) => {
+    const details = document.querySelector('details.replayProduct');
+    return details instanceof HTMLDetailsElement && details.open === open;
+  }, expectedOpen, { timeout: 10000 });
+}
+
 async function openDemoReplay(page, baseUrl) {
   const focusUrl = `${baseUrl}/focus?memoryId=${encodeURIComponent(MEMORY_ID)}&demo=1`;
   await page.goto(focusUrl, { waitUntil: 'domcontentloaded' });
@@ -180,7 +202,7 @@ async function validateReplay(page, report, screenshotName) {
   await expectAttribute(client, 'data-manifest-id', MANIFEST_ID);
   await expectAttribute(client, 'data-playing', 'false');
   await expectVisible(controls, 'Memory controls disclosure');
-  await controls.click();
+  await toggleReplayMemoryDisclosure(page, controls, true);
   await expectVisible(productControls, 'Memory controls action panel');
   await expectVisible(companion, 'persistent Orb travel control');
   await expectVisible(heading, 'Replay heading');
@@ -188,7 +210,7 @@ async function validateReplay(page, report, screenshotName) {
   await expectVisible(unwind, 'Replay unwind control');
   await expectNoOverlap(heading, unwind, 'Replay heading and unwind control', 4);
   await expectNoOverlap(productControls, companion, 'Replay memory controls and persistent Orb', 4);
-  await controls.click();
+  await toggleReplayMemoryDisclosure(page, controls, false);
   await productControls.waitFor({ state: 'hidden', timeout: 10000 });
 
   const play = page.getByRole('button', { name: 'Continue memory' }).first();

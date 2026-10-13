@@ -40,7 +40,9 @@ import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmi
 import { ReplayForestFloor, ReplayMemoryGrove, ReplayScannedUnderstory } from './ReplayEnvironmentDetails'
 import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
 import { buildReplayWornTrailGeometry, replayTrailCenter } from './replayTrailGeometry'
+import ReplayDefaultTrailEvidence from './ReplayDefaultTrailEvidence'
 import DevReplayCandidateWorld, { useReplayDevelopmentCandidate } from './DevReplayCandidateWorld'
+import { noteReplayReturnFocus } from '@/spatial/world/replayReturnFocusHandoff'
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
 
@@ -62,27 +64,43 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
 
 function MemoryMediaDome({ url, onState }: { url: string; onState: (state: ReplayImageState) => void }) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
-  // Only a disclosed demonstration asset is admitted here. Ordinary sources do not
-  // establish a panorama or a reconstructed world and retain their original framing.
+  // Only disclosed demo art is admitted. Missing/undecodable sources must
+  // report a recoverable error, never leave memory time permanently loading.
   useEffect(() => {
     let cancelled = false
+    let settled = false
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+    const finish = (status: ReplayImageState) => {
+      if (cancelled || settled) return
+      settled = true
+      if (timeoutId !== null) clearTimeout(timeoutId)
+      onState(status)
+    }
+    setTexture(null)
     onState({ status: 'loading', error: null })
     const pending = new THREE.TextureLoader().load(url, (loaded) => {
       const decode = loaded.image instanceof HTMLImageElement ? loaded.image.decode() : Promise.resolve()
       void decode.then(() => {
-        if (cancelled) return
+        if (cancelled || settled) return
         loaded.colorSpace = THREE.SRGBColorSpace
         loaded.minFilter = THREE.LinearFilter
         loaded.magFilter = THREE.LinearFilter
         setTexture(loaded)
-        onState({ status: 'ready', error: null })
+        finish({ status: 'ready', error: null })
       }).catch(() => {
-        if (!cancelled) onState({ status: 'error', error: 'The demonstration environment could not be decoded.' })
+        finish({ status: 'error', error: 'The demonstration environment could not be decoded. Retry the source.' })
       })
     }, undefined, () => {
-      if (!cancelled) onState({ status: 'error', error: 'The demonstration environment could not be opened.' })
+      finish({ status: 'error', error: 'The demonstration environment could not be opened. Retry the source.' })
     })
-    return () => { cancelled = true; pending.dispose() }
+    timeoutId = setTimeout(() => {
+      finish({ status: 'error', error: 'The demonstration environment did not finish loading. Retry the source.' })
+    }, 30_000)
+    return () => {
+      cancelled = true
+      if (timeoutId !== null) clearTimeout(timeoutId)
+      pending.dispose()
+    }
   }, [url, onState])
 
   return (
@@ -199,7 +217,7 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
 
   return (
     <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-scanned-cc0-and-physically-textured-grove-v6' }}>
-      <mesh geometry={terrain} position={[0, 0, -7]} receiveShadow>
+      <mesh geometry={terrain} position={[0, 0, -7]} receiveShadow name="replay-memory-terrain">
         <meshPhysicalMaterial color={physicalGroundColor} map={soil.color} normalMap={soil.normal} roughness={.96} metalness={0} clearcoat={.04} clearcoatRoughness={.85} />
       </mesh>
 
@@ -207,6 +225,9 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
         <mesh geometry={wornTrail} receiveShadow name="replay-memory-worn-trail">
           <meshStandardMaterial color="#ffffff" map={soil.color} normalMap={soil.normal} vertexColors roughness={.98} metalness={0} />
         </mesh>
+        {process.env.NEXT_PUBLIC_URAI_PREVIEW_MODE === 'true' && !developmentCandidate
+          ? <ReplayDefaultTrailEvidence />
+          : null}
         {trailStones.map((stone, index) => (
           <mesh
             key={index}
@@ -401,6 +422,13 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const videoSession = useRef<ReplayVideoSession | null>(null)
   const sourceRelease = useRef<(() => void) | null>(null)
   const onSourceRelease = useCallback((release: (() => void) | null) => { sourceRelease.current = release }, [])
+  useEffect(() => () => {
+    // Close any remaining owned media session as the Replay scene disappears.
+    sourceRelease.current?.()
+    videoSession.current?.dispose()
+    sourceRelease.current = null
+    videoSession.current = null
+  }, [])
   const ownedPlayback = useOwnedMemoryMediaPlayback(memory, () => { sourceRelease.current?.(); videoSession.current?.dispose() })
   const expectsPrivateSource = Boolean(memory.sourceMediaReceipts?.length)
   const playableMemory = useMemo(() => expectsPrivateSource ? { ...memory, sourceMedia: ownedPlayback.media } : memory, [expectsPrivateSource, memory, ownedPlayback.media])
@@ -434,6 +462,16 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const segments = memory?.replayManifest.segments ?? []
   const active = useMemo(() => segments.find((segment) => progressMs >= segment.startsAtMs && progressMs < segment.startsAtMs + segment.durationMs) ?? segments.at(-1), [progressMs, segments])
   const unwind = useCallback(() => requestUraiWorldReturn(), [])
+  useEffect(() => {
+    // Observe Replay-owned returns without modifying the canonical reverse-travel
+    // callback or competing with its navigation. Capture fires before the router.
+    const onReplayReturn = () => {
+      if (world.previousDestination === 'life-movie') return
+      noteReplayReturnFocus()
+    }
+    window.addEventListener('urai:world-return', onReplayReturn, true)
+    return () => window.removeEventListener('urai:world-return', onReplayReturn, true)
+  }, [world.previousDestination])
   const pauseMemory = useCallback(() => { setNarrativePlaying(false); videoSession.current?.pause() }, [])
   useEffect(() => { if (expectsPrivateSource && ownedPlayback.status !== 'ready') pauseMemory() }, [expectsPrivateSource, ownedPlayback.status, pauseMemory])
   const togglePlayback = useCallback(() => {

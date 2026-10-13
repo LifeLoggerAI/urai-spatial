@@ -157,6 +157,11 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
 
 export function requestUraiWorldReturn() {
   if (typeof window === 'undefined') return
+  // A real return ends the prior journey. Keep duplicate-click protection
+  // within one traversal, but never suppress a new Focus -> Replay entry just
+  // because the user legitimately returned in under 1.5 seconds.
+  lastTravelFingerprint = ''
+  lastTravelAt = 0
   dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new Event(URAI_WORLD_RETURN_EVENT))
 }

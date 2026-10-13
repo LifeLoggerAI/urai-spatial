@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { buildReplayWornTrailGeometry, replayTrailCenter, REPLAY_TRAIL_ROWS, REPLAY_TRAIL_LANES } from '../src/app/replay/replayTrailGeometry.ts'
+import { buildReplayWornTrailGeometry, replayTrailCenter, REPLAY_TRAIL_ROWS, REPLAY_TRAIL_LANES, REPLAY_TRAIL_END_Z } from '../src/app/replay/replayTrailGeometry.ts'
 
 test('terrain-conforming Replay demo trail stays above real terrain without floating slabs', () => {
   const height = (x, z) => Math.sin(x * .37 + z * .075) * .28 - 1.72
@@ -33,4 +33,16 @@ test('Replay physical trail produces deterministic geometry and surface colors',
 
 test('Replay trail rejects nonfinite ground elevations before creating a mesh', () => {
   assert.throws(() => buildReplayWornTrailGeometry(() => NaN), /finite terrain height/)
+})
+
+test('the entire visible Replay trail remains on the actual terrain mesh footprint', () => {
+  // Actual Replay ground is 52m across z, offset by -7m: [-33, 19].
+  assert.ok(REPLAY_TRAIL_END_Z >= -33, 'the far trail end may not leave the rendered ground mesh')
+  const geometry = buildReplayWornTrailGeometry(() => -1.6)
+  const positions = geometry.getAttribute('position')
+  for (let i = 0; i < positions.count; i++) {
+    assert.ok(positions.getZ(i) >= -33 && positions.getZ(i) <= 19, 'every trail vertex must be on the visible mesh')
+    assert.ok(Math.abs(positions.getX(i)) <= 19, 'trail may not leave the terrain width')
+  }
+  geometry.dispose()
 })
