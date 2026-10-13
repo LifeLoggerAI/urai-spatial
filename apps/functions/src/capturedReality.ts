@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
@@ -87,9 +88,9 @@ async function requireLocationRuntimeConsent(uid: string, transaction: FirebaseF
   if (central.exists) {
     const marker = central.data() ?? {}, keys = Object.keys(marker)
     const stamp = marker.updatedAt
-    const released = !keys.includes('active') && keys.every(key => ['uid','updatedAt'].includes(key)) && stamp instanceof admin.firestore.Timestamp
+    const released = !keys.includes('active') && keys.every(key => ['uid','updatedAt'].includes(key)) && stamp instanceof Timestamp
     const expiry = marker.exportConsentExpiresAt
-    const projectionExpiry = expiry instanceof admin.firestore.Timestamp ? expiry.toMillis()
+    const projectionExpiry = expiry instanceof Timestamp ? expiry.toMillis()
       : typeof expiry === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(expiry)
         && Number.isFinite(Date.parse(expiry)) && new Date(expiry).toISOString() === expiry ? Date.parse(expiry) : Number.NaN
     // Export consent shares this document with deletion authority. A canonical
@@ -385,12 +386,12 @@ export const getCapturedRealityRuntimeUrl = capturedRealityFunctions.https.onCal
     if (current.authorityHash !== authority.authorityHash) throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_AUTHORITY_CHANGED')
     transaction.create(db.doc(`users/${actor.uid}/capturedRealityRuntimeDeliveries/${deliveryId}`), {
       ownerId: actor.uid, assetId: authority.assetId, deviceTier: authority.deviceTier, accessMode: authority.accessMode,
-      authorityHash: authority.authorityHash, accountCreationTime: actor.creationTime, expiresAt, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      authorityHash: authority.authorityHash, accountCreationTime: actor.creationTime, expiresAt, createdAt: FieldValue.serverTimestamp(),
     })
     transaction.create(db.doc(`users/${actor.uid}/privacyAudit/captured_runtime_${deliveryId}`), {
       ownerId: actor.uid, kind: 'captured_reality.runtime_descriptor_created', assetId: authority.assetId,
       accessMode: authority.accessMode, deviceTier: authority.deviceTier, transport: 'authenticated-function',
-      releaseGate: authority.accessMode === 'proof' ? 'proof-only' : 'enabled', recordedAt: admin.firestore.FieldValue.serverTimestamp(),
+      releaseGate: authority.accessMode === 'proof' ? 'proof-only' : 'enabled', recordedAt: FieldValue.serverTimestamp(),
     })
   })
   await requireCurrentOwner(actor.uid, actor.bearer, actor.creationTime)
@@ -725,7 +726,7 @@ export const getCapturedRealityMeshUrl = capturedRealityFunctions.https.onCall(a
     tx.create(db.doc('users/'+owner.uid+'/capturedRealityMeshDeliveries/'+deliveryId),{
       ownerId:owner.uid,assetId:authority.assetId,accessMode:authority.accessMode,deviceTier:authority.deviceTier,
       meshAuthorityHash:authority.meshAuthorityHash,accountCreationTime:owner.creationTime,expiresAt,
-      createdAt:admin.firestore.FieldValue.serverTimestamp(),
+      createdAt:FieldValue.serverTimestamp(),
     })
   })
   await requireCurrentOwner(owner.uid, owner.bearer, owner.creationTime)
