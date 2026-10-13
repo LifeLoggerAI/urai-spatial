@@ -69,7 +69,8 @@ export async function GET() {
     conditionalRoutes: ['/xr', '/spatial/ar-vr'].map((route) => ({
       route,
       enabled: spatialLaunchBoundary.liveArWebXrEnabled,
-      expectedStatus: spatialLaunchBoundary.liveArWebXrEnabled ? 200 : 404,
+      expectedStatus: route === '/spatial/ar-vr' ? 200 : spatialLaunchBoundary.liveArWebXrEnabled ? 200 : 404,
+      previewOnly: route === '/spatial/ar-vr' && !spatialLaunchBoundary.liveArWebXrEnabled,
     })),
     forbiddenLiveCopy,
     claimBoundaries: {

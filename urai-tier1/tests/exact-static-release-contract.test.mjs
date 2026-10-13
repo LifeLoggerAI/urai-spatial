@@ -134,8 +134,8 @@ function withConditionalExport(routes, inspect) {
     writeFileSync(path.join(output, 'api/system/deploy-proof'), JSON.stringify({service:'urai-spatial-deploy-proof',repository:'LifeLoggerAI/urai-spatial',conditionalRoutes:routes,deploymentFreshness:{commitSha:'a'.repeat(40)}}))
     for (const route of ['xr', 'spatial/ar-vr', 'home']) {
       mkdirSync(path.join(output, route), {recursive:true})
-      writeFileSync(path.join(output, route, 'index.html'), `<main>${route}</main>`)
-      writeFileSync(path.join(output, `${route}.html`), `<main>${route}</main>`)
+      writeFileSync(path.join(output, route, 'index.html'), route === 'spatial/ar-vr' ? '<main data-xr-release-state="technical-preview" data-xr-immersive-authority="disabled"><h1>URAI AR / VR / XR entry chamber</h1>Live WebXR headset sessions remain disabled</main>' : `<main>${route}</main>`)
+      writeFileSync(path.join(output, `${route}.html`), route === 'spatial/ar-vr' ? '<main data-xr-release-state="technical-preview" data-xr-immersive-authority="disabled"><h1>URAI AR / VR / XR entry chamber</h1>Live WebXR headset sessions remain disabled</main>' : `<main>${route}</main>`)
     }
     mkdirSync(path.join(output,'xr/navmeshes'),{recursive:true})
     writeFileSync(path.join(output,'xr/navmeshes/home-platform-v1.json'),'verified-existing-navmesh')
@@ -143,14 +143,14 @@ function withConditionalExport(routes, inspect) {
   } finally { rmSync(output, {recursive:true,force:true}) }
 }
 
-test('static export removes both disabled XR artifacts while preserving unrelated Home bytes', () => {
-  withConditionalExport(['/xr','/spatial/ar-vr'].map(route=>({route,enabled:false,expectedStatus:404})), output=>{
+test('static export removes disabled immersive XR but preserves audited technical preview and unrelated Home bytes', () => {
+  withConditionalExport(['/xr','/spatial/ar-vr'].map(route=>({route,enabled:false,expectedStatus:route==='/xr'?404:200,previewOnly:route==='/spatial/ar-vr'})), output=>{
     const before=readFileSync(path.join(output,'home/index.html'))
     const receipt=enforceStaticLaunchBoundary(output)
-    for (const route of ['xr','spatial/ar-vr']) {
-      assert.equal(existsSync(path.join(output,route,'index.html')),false)
-      assert.equal(existsSync(path.join(output,`${route}.html`)),false)
-    }
+    assert.equal(existsSync(path.join(output,'xr/index.html')),false)
+    assert.equal(existsSync(path.join(output,'xr.html')),false)
+    assert.equal(existsSync(path.join(output,'spatial/ar-vr/index.html')),true)
+    assert.equal(existsSync(path.join(output,'spatial/ar-vr.html')),true)
     assert.deepEqual(readFileSync(path.join(output,'home/index.html')),before)
     assert.equal(readFileSync(path.join(output,'xr/navmeshes/home-platform-v1.json'),'utf8'),'verified-existing-navmesh')
     assert.equal(receipt.sourceSha,'a'.repeat(40))
@@ -160,9 +160,10 @@ test('static export removes both disabled XR artifacts while preserving unrelate
 })
 
 test('static export preserves explicitly enabled XR artifacts without granting device acceptance', () => {
-  withConditionalExport(['/xr','/spatial/ar-vr'].map(route=>({route,enabled:true,expectedStatus:200})), output=>{
+  withConditionalExport(['/xr','/spatial/ar-vr'].map(route=>({route,enabled:false,expectedStatus:route==='/xr'?404:200,previewOnly:route==='/spatial/ar-vr'})), output=>{
     const receipt=enforceStaticLaunchBoundary(output)
-    for (const route of ['xr','spatial/ar-vr']) assert.equal(existsSync(path.join(output,route,'index.html')),true)
+    assert.equal(existsSync(path.join(output,'xr/index.html')),false)
+    assert.equal(existsSync(path.join(output,'spatial/ar-vr/index.html')),true)
     assert.equal(receipt.deviceAcceptance,false)
   })
 })

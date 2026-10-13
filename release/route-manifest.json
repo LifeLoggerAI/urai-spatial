@@ -151,7 +151,8 @@
     {
       "route": "/spatial/ar-vr",
       "authority": "urai-tier1/src/lib/spatial-launch-boundaries.ts#liveArWebXrEnabled",
-      "disabledStatus": 404,
+      "disabledStatus": 200,
+      "previewOnlyWhenDisabled": true,
       "enabledStatus": 200,
       "deviceAcceptance": false
     }
