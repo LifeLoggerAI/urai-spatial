@@ -39,7 +39,11 @@ const shims = {
   'firebase/firestore': `export { Timestamp } from '@firebase/firestore';const snap=(p)=>{const v=window.__fixture.docs[p];return {id:p.split('/').at(-1),exists:()=>v!=null,data:()=>v==null?undefined:structuredClone(v),get:(k)=>k.split('.').reduce((x,key)=>x?.[key],v)}};export const doc=(db,...p)=>p.join('/');export const collection=(db,...p)=>p.join('/');export const limit=()=>null;export const query=(p)=>p;export const getDoc=async p=>snap(p);export const getDocs=async p=>({docs:Object.keys(window.__fixture.docs).filter(k=>k.startsWith(p+'/')&&k.slice(p.length+1).indexOf('/')<0).map(snap)});export const onSnapshot=(p,callback,error)=>{const w={p,callback,error};window.__fixture.watchers.add(w);window.__fixture.allWatchers.push(w);if(!window.__fixture.holdSnapshots.includes(p))queueMicrotask(()=>callback(snap(p)));return()=>window.__fixture.watchers.delete(w)};export const __snapshot=snap;`,
   'firebase/functions': `export const httpsCallable=(functions,name)=>async data=>({data:await window.__fixture.call(name,data)});`,
   '@/lib/firebase/client': `export const app={options:{projectId:'urai-4dc1d'}};export const firebasePublicEnvReady=true;export const functions={};export const getFirebaseDb=()=>({});`,
-  '@react-three/fiber': `export function Canvas(){return null};export function useFrame(){}`, 
+  // Synthetic transport test: Canvas never mounts, but compiling the REAL
+  // Replay consumer requires the real @react-three/fiber hook export surface.
+  // This is not a rendering or GPU readiness proof; the independent browser
+  // world workflow runs the actual R3F package and verifies pixels.
+  '@react-three/fiber': `export function Canvas(){return null};export function useFrame(){};export function useThree(select){const state={invalidate:()=>{}};return typeof select==='function'?select(state):state}`, 
   // Rendering assets are explicitly unavailable to this synthetic private-media transport.
   // An accidental world mount must fail closed rather than masquerade as an admitted GLTF.
   '@react-three/drei': `export const useGLTF=Object.assign(()=>{throw Error('Synthetic private-memory transport must not load world art')},{preload:()=>{},clear:()=>{}});`,
