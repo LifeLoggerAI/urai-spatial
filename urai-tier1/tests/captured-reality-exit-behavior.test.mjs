@@ -15,6 +15,18 @@ const entryStateSource = ts.transpileModule(fs.readFileSync(new URL('../src/spat
 }).outputText
 const settle = async () => { for (let i = 0; i < 12; i++) await Promise.resolve() }
 
+// Production hook layout is explicit: a newly inserted optional private
+// asset must never shift consent/exit assertions to an unrelated state slot.
+const ROUTE_STATE_SLOT = Object.freeze({
+  user: 0,
+  metadata: 1,
+  delivery: 2,
+  hybridMesh: 3,
+  decision: 4,
+  route: 5,
+  provenance: 6,
+})
+
 // Run the production route callbacks/effects with controlled identity and async
 // delivery. Navigation deliberately stays pending, as it can in a real browser.
 function harness(pendingStage) {
@@ -88,14 +100,15 @@ function harness(pendingStage) {
 test('loaded private scenes recheck current authority every30seconds and close on a new artifact generation', async () => {
   const h = harness(null)
   for (let i = 0; i < 8; i++) { h.render(); await settle() }
-  assert.equal(h.states[4].kind, 'ready')
+  assert.equal(h.states[ROUTE_STATE_SLOT.route].kind, 'ready')
   const heartbeat = [...h.timers.values()].find(timer => timer.ms === 30_000)
   assert.ok(heartbeat, 'loaded geometry must recheck current server authority without waiting10minutes')
   h.delivery.storageGeneration = '124'
   heartbeat.fn(); await settle()
-  assert.equal(h.states[2], null)
-  assert.equal(h.states[3].mode, 'suppressed')
-  assert.equal(h.states[4].kind, 'suppressed')
+  assert.equal(h.states[ROUTE_STATE_SLOT.delivery], null)
+  assert.equal(h.states[ROUTE_STATE_SLOT.hybridMesh], null, 'private GLB bytes must be discarded on delivery invalidation')
+  assert.equal(h.states[ROUTE_STATE_SLOT.decision].mode, 'suppressed')
+  assert.equal(h.states[ROUTE_STATE_SLOT.route].kind, 'suppressed')
   h.cleanup()
 })
 
@@ -104,8 +117,9 @@ test('private route rejects predecessor signed capabilities before any renderer 
   h.delivery.requiresAuthorization = false
   h.delivery.url = 'https://storage.googleapis.com/synthetic/private?signature=redacted'
   for (let i = 0; i < 8; i++) { h.render(); await settle() }
-  assert.equal(h.states[4].kind, 'error')
-  assert.equal(h.states[2], null)
+  assert.equal(h.states[ROUTE_STATE_SLOT.route].kind, 'error')
+  assert.equal(h.states[ROUTE_STATE_SLOT.delivery], null)
+  assert.equal(h.states[ROUTE_STATE_SLOT.hybridMesh], null, 'private GLB bytes must be discarded on delivery invalidation')
   assert.equal(h.calls.includes('header'), false)
   h.cleanup()
 })
@@ -114,13 +128,14 @@ test('pending or foreign consent authority tears down already-loaded private res
   for (const patch of [{ 'enforcement.state': 'pending' }, { ownerId: 'foreign' }, { revision: 0 }, { version: 1 }, { 'domains.memory.replayVisible': false }]) {
     const h = harness(null)
     for (let i = 0; i < 8; i++) { h.render(); await settle() }
-    assert.equal(h.states[4].kind, 'ready')
+    assert.equal(h.states[ROUTE_STATE_SLOT.route].kind, 'ready')
     const policy = h.listeners.find(listener => listener.ref.includes('privacyPolicy'))
     assert.ok(policy)
     const values = { ownerId: 'owner', version: 2, revision: 1, 'enforcement.state': 'fully-enforced', 'domains.memory.replayVisible': true, ...patch }
     policy.fn({ exists: () => true, get: key => values[key] ?? 'granted' })
-    assert.equal(h.states[2], null)
-    assert.equal(h.states[3].mode, 'suppressed')
+    assert.equal(h.states[ROUTE_STATE_SLOT.delivery], null)
+  assert.equal(h.states[ROUTE_STATE_SLOT.hybridMesh], null, 'private GLB bytes must be discarded on delivery invalidation')
+    assert.equal(h.states[ROUTE_STATE_SLOT.decision].mode, 'suppressed')
     h.cleanup()
   }
 })
@@ -135,10 +150,10 @@ for (const pending of ['metadata', 'delivery', 'header']) {
     exit()
     h.release(); await settle()
     assert.deepEqual(h.navigations, ['/replay?memoryId=memory-1'])
-    assert.equal(h.states[2], null, 'late response must not restore delivery')
-    assert.equal(h.states[1], null, 'private metadata must clear on exit')
-    assert.equal(h.states[3].mode, 'suppressed', 'late response must not remount a splat')
-    assert.equal(h.states[5], false, 'provenance must close on exit')
+    assert.equal(h.states[ROUTE_STATE_SLOT.delivery], null, 'late response must not restore delivery')
+    assert.equal(h.states[ROUTE_STATE_SLOT.metadata], null, 'private metadata must clear on exit')
+    assert.equal(h.states[ROUTE_STATE_SLOT.decision].mode, 'suppressed', 'late response must not remount a splat')
+    assert.equal(h.states[ROUTE_STATE_SLOT.provenance], false, 'provenance must close on exit')
     assert.equal(h.calls.at(-1), pending, 'no downstream delivery stage may start after exit')
     h.cleanup()
   })
@@ -156,8 +171,9 @@ for (const stage of ['metadata', null]) {
     const assetListener = h.listeners.find(listener => (Array.isArray(listener.ref) ? listener.ref : [listener.ref]).some(part => String(part).includes('capturedRealityAssets')))
     assert.ok(assetListener)
     assetListener.fn({ exists: () => true, get: key => ({ ownerId: 'owner', state: 'revoked', reviewState: 'accepted', releaseState: 'private-pilot' }[key]) })
-    assert.equal(h.states[2], null)
-    assert.equal(h.states[3].mode, 'suppressed')
+    assert.equal(h.states[ROUTE_STATE_SLOT.delivery], null)
+  assert.equal(h.states[ROUTE_STATE_SLOT.hybridMesh], null, 'private GLB bytes must be discarded on delivery invalidation')
+    assert.equal(h.states[ROUTE_STATE_SLOT.decision].mode, 'suppressed')
     if (stage) {
       h.release(); await settle()
       assert.equal(h.calls.at(-1), 'metadata', 'revocation during metadata load must stop delivery')
