@@ -64,27 +64,43 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
 
 function MemoryMediaDome({ url, onState }: { url: string; onState: (state: ReplayImageState) => void }) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
-  // Only a disclosed demonstration asset is admitted here. Ordinary sources do not
-  // establish a panorama or a reconstructed world and retain their original framing.
+  // Only disclosed demo art is admitted. Missing/undecodable sources must
+  // report a recoverable error, never leave memory time permanently loading.
   useEffect(() => {
     let cancelled = false
+    let settled = false
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+    const finish = (status: ReplayImageState) => {
+      if (cancelled || settled) return
+      settled = true
+      if (timeoutId !== null) clearTimeout(timeoutId)
+      onState(status)
+    }
+    setTexture(null)
     onState({ status: 'loading', error: null })
     const pending = new THREE.TextureLoader().load(url, (loaded) => {
       const decode = loaded.image instanceof HTMLImageElement ? loaded.image.decode() : Promise.resolve()
       void decode.then(() => {
-        if (cancelled) return
+        if (cancelled || settled) return
         loaded.colorSpace = THREE.SRGBColorSpace
         loaded.minFilter = THREE.LinearFilter
         loaded.magFilter = THREE.LinearFilter
         setTexture(loaded)
-        onState({ status: 'ready', error: null })
+        finish({ status: 'ready', error: null })
       }).catch(() => {
-        if (!cancelled) onState({ status: 'error', error: 'The demonstration environment could not be decoded.' })
+        finish({ status: 'error', error: 'The demonstration environment could not be decoded. Retry the source.' })
       })
     }, undefined, () => {
-      if (!cancelled) onState({ status: 'error', error: 'The demonstration environment could not be opened.' })
+      finish({ status: 'error', error: 'The demonstration environment could not be opened. Retry the source.' })
     })
-    return () => { cancelled = true; pending.dispose() }
+    timeoutId = setTimeout(() => {
+      finish({ status: 'error', error: 'The demonstration environment did not finish loading. Retry the source.' })
+    }, 30_000)
+    return () => {
+      cancelled = true
+      if (timeoutId !== null) clearTimeout(timeoutId)
+      pending.dispose()
+    }
   }, [url, onState])
 
   return (

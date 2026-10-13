@@ -16,7 +16,11 @@ const receipt=receipts.assets.find(x=>x.fileName==='replay-memory-environment-v1
 assert.equal(asset.releaseState,'pending-final-review')
 assert.ok(receipt?.sha256)
 await mkdir(out,{recursive:true})
-const result={exactHead:sha,admission:false,results:[],failures:[]}
+const budgetSource=await readFile('urai-tier1/tests/accessibility-performance-metrics.spec.ts','utf8')
+const desktopP95Budget=Number(budgetSource.match(/const DESKTOP_FRAME_P95_BUDGET_MS = ([0-9.]+)/)?.[1])
+const mobileP95Budget=Number(budgetSource.match(/const MOBILE_FRAME_P95_BUDGET_MS = ([0-9.]+)/)?.[1])
+assert.ok(Number.isFinite(desktopP95Budget)&&desktopP95Budget>0&&Number.isFinite(mobileP95Budget)&&mobileP95Budget>0)
+const result={exactHead:sha,admission:false,budgets:{desktopP95Ms:desktopP95Budget,mobileP95Ms:mobileP95Budget,source:'urai-tier1/tests/accessibility-performance-metrics.spec.ts'},results:[],failures:[]}
 const browser=await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader','--disable-gpu-sandbox']})
 try {
  for(const profile of [{id:'desktop',width:1440,height:900,reduce:false,preview:true},{id:'mobile-reduced',width:390,height:844,reduce:true,preview:true},{id:'default',width:1440,height:900,reduce:false,preview:false},{id:'default-wide',width:2560,height:1440,reduce:false,preview:false},{id:'default-mobile-reduced',width:390,height:844,reduce:true,preview:false}]){
@@ -62,14 +66,71 @@ try {
    }else{
     await page.waitForFunction(() => { const e=document.querySelector('main.replayWorld[data-memory-status="demo"]'); try{return JSON.parse(e?.getAttribute('data-replay-default-trail-evidence')||'{}').passed===true}catch{return false} },null,{timeout:90000})
     const evidence=JSON.parse(await scene.getAttribute('data-replay-default-trail-evidence'))
-    const pacing=JSON.parse(await scene.getAttribute('data-replay-default-trail-pacing')||'{}')
     assert.equal(evidence.kind,'real-default-replay-trail')
     assert.equal(evidence.sourceClass,'disclosed-demonstration')
     assert.equal(evidence.admitted,false)
     assert.equal(evidence.rayMisses,0)
     assert.equal(evidence.passed,true)
-    info.defaultWorld={evidence,pacing}
     assert.equal(await scene.getAttribute('data-replay-candidate-model'),null)
+    // Geometry alone cannot certify playback or performance. Wait for the
+    // actual demo texture decode result, then measure completed playback.
+    await page.waitForFunction(() => {
+      const e=document.querySelector('main.replayWorld[data-memory-status="demo"]')
+      return e?.getAttribute('data-replay-media-ready')==='true' ||
+        e?.getAttribute('data-replay-media-status')==='error'
+    },null,{timeout:40_000})
+    const mediaState=await scene.getAttribute('data-replay-media-status')
+    assert.equal(mediaState,'ready','Replay demo media must decode or explicitly fail; screenshot of Loading is not acceptance')
+    assert.equal(await scene.getAttribute('data-replay-media-ready'),'true')
+    const targetSamples=profile.reduce?1:90
+    await page.waitForFunction((target)=>{
+      const e=document.querySelector('main.replayWorld[data-memory-status="demo"]')
+      try{return JSON.parse(e?.getAttribute('data-replay-default-trail-pacing')||'{}').samples>=target}catch{return false}
+    },targetSamples,{timeout:90_000})
+    const pacing=JSON.parse(await scene.getAttribute('data-replay-default-trail-pacing')||'{}')
+    const renderHardware=Boolean(pacing.renderer?.hardwareAcceleration)
+    const performanceBudget=profile.reduce?null:desktopP95Budget
+    const performanceStatus=profile.reduce?'REDUCED_MOTION_ON_DEMAND_NOT_FPS_BENCHMARK':renderHardware?'ENFORCED':'NOT_AVAILABLE_HARDWARE_RENDERER'
+    if(performanceStatus==='ENFORCED'){
+      assert.ok(Number.isFinite(pacing.frameP95Ms),'hardware frame p95 must exist')
+      assert.ok(pacing.frameP95Ms<=performanceBudget,
+        'hardware desktop p95 '+pacing.frameP95Ms+'ms exceeds existing '+performanceBudget+'ms budget')
+    }
+    info.defaultWorld={evidence,pacing,mediaState,performanceStatus,performanceBudget}
+    const started=Number(await scene.getAttribute('data-current-time-ms'))
+    const play=page.getByRole('button',{name:'Continue memory',exact:true})
+    await play.waitFor({state:'visible',timeout:15000})
+    await play.focus()
+    await play.press('Enter')
+    await page.waitForFunction((start)=>{
+      const e=document.querySelector('main.replayWorld[data-memory-status="demo"]')
+      return e?.getAttribute('data-playing')==='true' && Number(e.getAttribute('data-current-time-ms'))>start+200
+    },started,{timeout:15_000})
+    const advanced=Number(await scene.getAttribute('data-current-time-ms'))
+    const pause=page.getByRole('button',{name:'Pause memory',exact:true})
+    await pause.focus()
+    await pause.press('Enter')
+    await page.waitForFunction(()=>document.querySelector('main.replayWorld[data-memory-status="demo"]')?.getAttribute('data-playing')==='false',null,{timeout:10_000})
+    const paused=Number(await scene.getAttribute('data-current-time-ms'))
+    await page.waitForTimeout(350)
+    assert.equal(Number(await scene.getAttribute('data-current-time-ms')),paused,'pause must freeze actual memory progress')
+    await play.focus()
+    await play.press('Enter')
+    await page.waitForFunction((stop)=>{
+      const e=document.querySelector('main.replayWorld[data-memory-status="demo"]')
+      return e?.getAttribute('data-playing')==='true'&&Number(e.getAttribute('data-current-time-ms'))>stop+100
+    },paused,{timeout:10_000})
+    const slider=page.getByRole('slider',{name:/Move through memory time/})
+    await slider.focus()
+    await slider.press('End')
+    await page.waitForFunction(()=>{
+      const e=document.querySelector('main.replayWorld[data-memory-status="demo"]')
+      return e?.getAttribute('data-playing')==='false' &&
+        Number(e.getAttribute('data-current-time-ms'))===Number(e.getAttribute('data-duration-ms'))
+    },null,{timeout:10_000})
+    info.playback={startedMs:started,advancedMs:advanced,pausedMs:paused,completedMs:Number(await scene.getAttribute('data-current-time-ms')),durationMs:Number(await scene.getAttribute('data-duration-ms')),pausedStable:true,actualCompletion:true}
+    assert.ok(info.playback.advancedMs>info.playback.startedMs)
+    assert.equal(info.playback.completedMs,info.playback.durationMs)
    }
    info.requests=await Promise.all(pending)
    if(profile.preview)assert.ok(info.requests.some(x=>x.status===200&&x.bytes===receipt.bytes&&x.hash===receipt.sha256))

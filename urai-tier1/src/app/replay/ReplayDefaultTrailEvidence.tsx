@@ -95,6 +95,14 @@ export default function ReplayDefaultTrailEvidence() {
       measured.current = true
     }
 
+    // Only post-media-ready frames count as steady-state evidence.
+    // Reduced motion uses an on-demand renderer: sparse frames are expected,
+    // and cannot be passed off as a continuous FPS benchmark.
+    if (root.dataset.replayMediaReady !== 'true') {
+      frameTimes.current.length = 0
+      frameCount.current = 0
+      return
+    }
     if (Number.isFinite(delta) && delta > 0 && delta < 3) {
       frameTimes.current.push(delta * 1000)
       if (frameTimes.current.length > 120) frameTimes.current.shift()
@@ -103,12 +111,22 @@ export default function ReplayDefaultTrailEvidence() {
     if (frameCount.current % 10 === 0 || frameCount.current === 1) {
       const values = [...frameTimes.current].sort((a, b) => a - b)
       const p95 = values.length ? values[Math.ceil(values.length * .95) - 1] : null
+      const context = gl.getContext()
+      const debug = context.getExtension('WEBGL_debug_renderer_info')
+      const renderer = debug ? String(context.getParameter(debug.UNMASKED_RENDERER_WEBGL)) : null
+      const vendor = debug ? String(context.getParameter(debug.UNMASKED_VENDOR_WEBGL)) : null
+      const hardwareAcceleration = Boolean(renderer && !/swiftshader|llvmpipe|software|microsoft basic render/i.test(renderer + ' ' + vendor))
       root.dataset.replayDefaultTrailPacing = JSON.stringify({
         samples: values.length,
         frameP95Ms: p95 == null ? null : Number(p95.toFixed(2)),
+        renderer: { vendor, renderer, hardwareAcceleration },
+        drawCalls: gl.info.render.calls,
+        renderedTriangles: gl.info.render.triangles,
+        activeGeometries: gl.info.memory.geometries,
+        activeTextures: gl.info.memory.textures,
         cameraPosition: camera.position.toArray().map(x => Number(x.toFixed(5))),
         cameraQuaternion: camera.quaternion.toArray().map(x => Number(x.toFixed(5))),
-        capturedAs: 'WebGL-runtime-samples-not-hardware-benchmark',
+        capturedAs: 'post-media-ready-WebGL-frames',
       })
     }
   })
