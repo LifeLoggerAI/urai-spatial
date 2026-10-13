@@ -21,9 +21,11 @@ const desktopP95Budget=Number(budgetSource.match(/const DESKTOP_FRAME_P95_BUDGET
 const mobileP95Budget=Number(budgetSource.match(/const MOBILE_FRAME_P95_BUDGET_MS = ([0-9.]+)/)?.[1])
 assert.ok(Number.isFinite(desktopP95Budget)&&desktopP95Budget>0&&Number.isFinite(mobileP95Budget)&&mobileP95Budget>0)
 const result={exactHead:sha,admission:false,budgets:{desktopP95Ms:desktopP95Budget,mobileP95Ms:mobileP95Budget,source:'urai-tier1/tests/accessibility-performance-metrics.spec.ts'},results:[],failures:[]}
-const browser=await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader','--disable-gpu-sandbox']})
-try {
- for(const profile of [{id:'desktop',width:1440,height:900,reduce:false,preview:true},{id:'mobile-reduced',width:390,height:844,reduce:true,preview:true},{id:'default',width:1440,height:900,reduce:false,preview:false},{id:'default-wide',width:2560,height:1440,reduce:false,preview:false},{id:'default-mobile-reduced',width:390,height:844,reduce:true,preview:false}]){
+// A closed browser context cannot guarantee reset of SwiftShader process state.
+// Run each real viewport in a fresh browser; never waive scene or pixel proof.
+for(const profile of [{id:'desktop',width:1440,height:900,reduce:false,preview:true},{id:'mobile-reduced',width:390,height:844,reduce:true,preview:true},{id:'default',width:1440,height:900,reduce:false,preview:false},{id:'default-wide',width:2560,height:1440,reduce:false,preview:false},{id:'default-mobile-reduced',width:390,height:844,reduce:true,preview:false}]){
+ const browser=await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader','--disable-gpu-sandbox']})
+ try {
   const context=await browser.newContext({viewport:{width:profile.width,height:profile.height},reducedMotion:profile.reduce?'reduce':'no-preference'})
   const page=await context.newPage()
   const info={profile:profile.id,requests:[],screenshot:null,meshes:null,triangles:null}
@@ -161,7 +163,7 @@ try {
    assert.equal(info.screenshot.height,profile.height)
   }catch(e){result.failures.push({profile:profile.id,error:String(e),pageErrors:errors})}
   finally{result.results.push(info);await context.close()}
- }
-}finally{await browser.close()}
+ }finally{await browser.close()}
+}
 await writeFile(path.join(out,'receipt.json'),JSON.stringify(result,null,2)+'\n')
 if(result.failures.length)process.exitCode=1
