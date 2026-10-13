@@ -39,7 +39,8 @@ export function CapturedRealityHybridMesh({
   mode: 'proof' | 'runtime'
   onRenderReady?: (sha256: string) => void
 }) {
-  const [ownedScene, setOwnedScene] = useState<THREE.Group | null>(null)
+  const [ownedScene, setOwnedScene] = useState<{ key: string; scene: THREE.Group } | null>(null)
+  const sceneKey = mesh ? `${mesh.sha256}:${activeSplatSha256}:${mode}` : ''
   const [failed, setFailed] = useState(false)
   const onRenderReadyRef = useRef(onRenderReady)
   onRenderReadyRef.current = onRenderReady
@@ -56,7 +57,9 @@ export function CapturedRealityHybridMesh({
     if (!mesh) return
     void (async () => {
       const verified = await verifyCapturedRealityHybridPayload(mesh, activeSplatSha256, mode)
-      const gltf = await new GLTFLoader().parseAsync(verified.buffer as ArrayBuffer, '')
+      // Preserve byteOffset/length: passing a pooled ArrayBuffer can append unrelated private bytes.
+      const exactBytes = verified.slice().buffer
+      const gltf = await new GLTFLoader().parseAsync(exactBytes, '')
       loaded = gltf.scene
       if (!active) { disposeOwnedMeshScene(loaded); return }
       let invalidMaterial = false
@@ -75,14 +78,18 @@ export function CapturedRealityHybridMesh({
           queueMicrotask(() => { if (active) onRenderReadyRef.current?.(mesh.sha256) })
         }
       })
-      if (invalidMaterial) throw new Error('HYBRID_DEPTH_MATERIAL_NOT_ACCEPTED')
-      setOwnedScene(loaded)
+      if (invalidMaterial) {
+        disposeOwnedMeshScene(loaded)
+        loaded = null
+        throw new Error('HYBRID_DEPTH_MATERIAL_NOT_ACCEPTED')
+      }
+      setOwnedScene({ key: sceneKey, scene: loaded })
     })().catch(() => { if (active) setFailed(true) })
     return () => {
       active = false
       if (loaded) disposeOwnedMeshScene(loaded)
     }
-  }, [mesh, activeSplatSha256, mode])
+  }, [mesh, activeSplatSha256, mode, sceneKey])
 
   // Private paths, hashes and identities are never surfaced through errors.
   if (failed) throw new Error('PRIVATE_HYBRID_MESH_UNAVAILABLE')
@@ -92,7 +99,7 @@ export function CapturedRealityHybridMesh({
       matrixAutoUpdate={false}
       userData={{ uraiCapturedRealityHybrid: true, mode, admittedForNavigation: mode === 'runtime' && mesh?.registration.metricScaleReviewed === true }}
     >
-      {ownedScene ? <primitive object={ownedScene} dispose={null} /> : null}
+      {ownedScene?.key === sceneKey ? <primitive object={ownedScene.scene} dispose={null} /> : null}
     </group>
   )
 }
