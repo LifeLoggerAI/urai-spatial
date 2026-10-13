@@ -17,7 +17,7 @@ export type CapturedRealityPrivateMeshDescriptor = {
 }
 export function privateMeshDescriptorValid(
   mesh: CapturedRealityPrivateMeshDescriptor,
-  expected: {assetId:string;accessMode:'runtime'|'proof';deviceTier:'desktop'|'mobile';projectId:string;splatSha256:string;now?:number},
+  expected: {assetId:string;accessMode:'runtime'|'proof';deviceTier:'desktop'|'mobile';projectId:string;splatSha256:string;now?:number;emulatorOnly?:boolean},
 ) {
   if (!mesh || mesh.available!==true || mesh.assetId!==expected.assetId || mesh.accessMode!==expected.accessMode
     || mesh.deviceTier!==expected.deviceTier || mesh.requiresAuthorization!==true
@@ -32,9 +32,16 @@ export function privateMeshDescriptorValid(
   if (!Number.isFinite(expires) || expires<=(expected.now??Date.now()) || expires-(expected.now??Date.now())>11*60_000) return false
   try {
     const url=new URL(mesh.url)
-    return url.protocol==='https:' && !url.port && !url.username && !url.password && !url.hash
+    const productionOrigin = url.protocol==='https:' && !url.port
       && url.hostname===`us-central1-${expected.projectId}.cloudfunctions.net`
       && url.pathname==='/streamCapturedRealityMesh'
+    // Both the compile-time test build and the exact local demo project are required.
+    // Production callers retain HTTPS and project-hostname pinning.
+    const isolatedEmulatorOrigin = expected.emulatorOnly===true && process.env.NODE_ENV==='test'
+      && expected.projectId==='demo-urai-hybrid-proof'
+      && url.protocol==='http:' && url.hostname==='127.0.0.1' && url.port==='5001'
+      && url.pathname==='/demo-urai-hybrid-proof/us-central1/streamCapturedRealityMesh'
+    return (productionOrigin || isolatedEmulatorOrigin) && !url.username && !url.password && !url.hash
       && url.searchParams.get('assetId')===expected.assetId
       && url.searchParams.get('accessMode')===expected.accessMode
       && url.searchParams.get('deviceTier')===expected.deviceTier
