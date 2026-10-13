@@ -43,10 +43,22 @@ export function CapturedRealityPrivateScene({
     identityRef.current = { value: decisionIdentity, generation: identityRef.current.generation + 1 }
   }
   const generation = identityRef.current.generation
+  // The same SHA-256 may be re-fetched after consent, token or storage-generation
+  // changes. Never reuse an earlier GLB draw receipt for a newly mounted payload.
+  const meshIdentityRef = useRef({ payload: hybridMesh, generation: 0 })
+  if (meshIdentityRef.current.payload !== hybridMesh) {
+    meshIdentityRef.current = {
+      payload: hybridMesh,
+      generation: meshIdentityRef.current.generation + 1,
+    }
+  }
+  const meshGeneration = meshIdentityRef.current.generation
   const [renderReadyFor, setRenderReadyFor] = useState<{ generation: number; src: string } | null>(null)
-  const [meshDrawReadyFor, setMeshDrawReadyFor] = useState<{ generation: number; sha256: string } | null>(null)
+  const [meshDrawReadyFor, setMeshDrawReadyFor] = useState<{ generation: number; meshGeneration: number; sha256: string } | null>(null)
   const hybridDrawReady = Boolean(hybridMesh && activeSplatSha256 && renderReadyFor?.generation === generation
-    && meshDrawReadyFor?.generation === generation && meshDrawReadyFor.sha256 === hybridMesh.sha256)
+    && meshDrawReadyFor?.generation === generation
+    && meshDrawReadyFor.meshGeneration === meshGeneration
+    && meshDrawReadyFor.sha256 === hybridMesh.sha256)
   const renderReady = decision.mode === 'gaussian-splat'
     && typeof decision.assetUrl === 'string'
     && renderReadyFor?.generation === generation
@@ -82,7 +94,7 @@ export function CapturedRealityPrivateScene({
               <Suspense fallback={null}>
                 {hybridMesh && activeSplatSha256 ? (
                   <CapturedRealityHybridMesh mesh={hybridMesh} activeSplatSha256={activeSplatSha256} mode={hybridAccessMode}
-                    onRenderReady={(sha256) => setMeshDrawReadyFor({ generation, sha256 })} />
+                    onRenderReady={(sha256) => setMeshDrawReadyFor({ generation, meshGeneration, sha256 })} />
                 ) : null}
                 <CapturedRealitySplat
                   decision={decision}
