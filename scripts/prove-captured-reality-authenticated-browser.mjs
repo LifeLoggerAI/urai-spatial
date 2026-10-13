@@ -127,7 +127,7 @@ try {
     })
     const page=await context.newPage(),errors=[],requests=[],responses=[]
     sessions.push({context,page,profile})
-    page.on('pageerror',error=>errors.push(error.message.slice(0,400)))
+    page.on('pageerror',error=>errors.push(String(error.stack||error.message).slice(0,1000)))
     page.on('console',message=>{if(message.type()==='error')errors.push(message.text().slice(0,400))})
     page.on('request',request=>{
       const url=new URL(request.url())
@@ -144,7 +144,22 @@ try {
     await page.addInitScript(value=>{window.__uraiProofIdentity=value},
       {uid:process.env.URAI_OWNER_UID,email:process.env.URAI_OWNER_EMAIL,password:process.env.URAI_OWNER_PASSWORD})
     await page.goto(base+encodeURIComponent(process.env.URAI_ASSET_ID)+'&proof=1',{waitUntil:'domcontentloaded',timeout:60000})
-    await page.locator('[data-urai-proof-auth="signed-in"]').waitFor({timeout:45000})
+    try {
+      await page.locator('[data-urai-proof-auth="signed-in"]').waitFor({timeout:45000})
+    } catch (error) {
+      // A blank proof screen is not an authentication verdict. Preserve only
+      // synthetic-test bootstrap diagnostics so actual browser defects are actionable.
+      const bootstrap = {
+        status:await page.locator('[data-urai-proof-auth]').first()
+          .getAttribute('data-urai-proof-auth').catch(()=>null),
+        rootCount:await page.locator('#root').count(),
+        bundleScriptCount:await page.locator('script[src="/bundle.js"]').count(),
+        pageErrors:errors.slice(0,8),
+      }
+      record.bootstrap=bootstrap
+      throw new Error('Authenticated browser proof did not reach signed-in state: '
+        +JSON.stringify(bootstrap)+'; '+String(error).slice(0,120))
+    }
     record.auth=true
     await page.locator('[data-captured-reality-hybrid-draw-submitted="true"]').waitFor({timeout:120000})
     const scene=await page.locator('section[aria-label="Private captured place"]').evaluate(node=>({
