@@ -134,6 +134,17 @@ try{
   String(transfer.status)+' '+bytes.length)
  const denied=await fetch(desc.url,{headers:{authorization:'Bearer '+b.idToken}})
  check('other owner cannot reuse mesh descriptor',denied.status!==200,String(denied.status))
+ if(process.env.URAI_BROWSER_INTEGRATION==='true'){
+   const {spawnSync}=await import('node:child_process')
+   const result=spawnSync(process.execPath,['scripts/prove-captured-reality-authenticated-browser.mjs'],{
+     env:{...process.env,URAI_OWNER_UID:uid,URAI_OWNER_EMAIL:'urai-owner-a@example.invalid',
+       URAI_OWNER_PASSWORD:'Emulator-Only-Fixture-42!',URAI_ASSET_ID:assetId},
+     stdio:'inherit',timeout:360000,
+   })
+   check('actual production Captured Reality route renders and revokes in Chromium',
+     result.status===0,String(result.status)+' '+String(result.error??''))
+ } else {
+
  await db.doc('users/'+uid+'/capturedRealityAssets/'+assetId).update({meshProofPrivacyReviewed:false})
  const withdrawn=await call(a.idToken,input)
  check('mesh approval withdrawal closes descriptor',withdrawn.status!==200,String(withdrawn.status))
@@ -150,6 +161,7 @@ try{
  check('withdrawn location consent remains denied',privacy.status!==200,String(privacy.status))
  const splatAfterConsent=await fetch(splatDescriptor.url,{headers:{authorization:'Bearer '+a.idToken}})
  check('previous Gaussian stream revoked by location withdrawal',splatAfterConsent.status!==200,String(splatAfterConsent.status))
+ }
  receipt.passed=true
 }catch(e){receipt.passed=false;receipt.error=String(e.stack||e).slice(0,2500)}
 finally{mkdirSync('artifacts/captured-reality-firebase-emulator',{recursive:true})
