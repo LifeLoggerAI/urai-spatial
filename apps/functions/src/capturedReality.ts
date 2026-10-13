@@ -680,6 +680,20 @@ async function issuedMesh(tx:FirebaseFirestore.Transaction,uid:string,data:Recor
 }
 export const getCapturedRealityMeshUrl = capturedRealityFunctions.https.onCall(async(data,context) => {
   const owner = await requireCallableOwner(context)
+  // Mesh is additive; feature-disabled production remains the existing
+  // authenticated splat-only experience without advertising any private asset.
+  if (process.env.URAI_ENABLE_CAPTURED_REALITY_MESH !== 'true') {
+    return { available: false as const }
+  }
+  const optional = await db.runTransaction(async tx => {
+    const splat = await readRuntimeAuthority(tx, owner.uid, data ?? {})
+    const asset = await tx.get(db.doc('users/' + owner.uid + '/capturedRealityAssets/' + splat.assetId))
+    return { meshAbsent: asset.get('meshRuntimeObject') == null }
+  })
+  if (optional.meshAbsent) {
+    await requireCurrentOwner(owner.uid, owner.bearer, owner.creationTime)
+    return { available: false as const }
+  }
   const authority = await db.runTransaction(tx=>readMeshAuthority(tx,owner.uid,data ?? {}))
   const bucket = admin.storage().bucket(authority.storageBucket)
   await requirePrivateRuntimeBucket(bucket)
@@ -700,10 +714,15 @@ export const getCapturedRealityMeshUrl = capturedRealityFunctions.https.onCall(a
       createdAt:admin.firestore.FieldValue.serverTimestamp(),
     })
   })
+  await requireCurrentOwner(owner.uid, owner.bearer, owner.creationTime)
+  const stillCurrent = await db.runTransaction(tx => readMeshAuthority(tx, owner.uid, data ?? {}))
+  if (stillCurrent.meshAuthorityHash !== authority.meshAuthorityHash) {
+    throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_MESH_AUTHORITY_CHANGED')
+  }
   const endpoint = runtimeEndpoint(context.rawRequest?.get('host')).replace(/\/streamCapturedRealityRuntime$/,'/streamCapturedRealityMesh')
   const query = new URLSearchParams({assetId:authority.assetId,deviceTier:authority.deviceTier,
     accessMode:authority.accessMode,deliveryId})
-  return {assetId:authority.assetId,deviceTier:authority.deviceTier,accessMode:authority.accessMode,
+  return {available:true as const,assetId:authority.assetId,deviceTier:authority.deviceTier,accessMode:authority.accessMode,
     requiresAuthorization:true,url:endpoint+'?'+query,expiresAt:new Date(expiresAt).toISOString(),
     meshSha256:authority.meshSha256,meshByteLength:authority.meshBytes,
     meshStorageGeneration:authority.meshGeneration,splatSha256:authority.runtimeSha256,
