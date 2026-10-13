@@ -136,6 +136,18 @@ try {
       return e?.getAttribute('data-playing')==='true'&&Number(e.getAttribute('data-current-time-ms'))>stop+100
     },paused,{timeout:10_000})
     const slider=page.getByRole('slider',{name:/Move through memory time/})
+    // A real pointer seek is mandatory; keyboard-only evidence cannot establish
+    // usable touch/mouse timeline controls in an immersive memory.
+    const bounds=await slider.boundingBox()
+    assert.ok(bounds && bounds.width>=100 && bounds.height>=48,'Replay seek control must have a real 48px hit target')
+    await page.mouse.click(bounds.x + bounds.width * .45,bounds.y + bounds.height/2)
+    await page.waitForFunction(()=>{
+      const e=document.querySelector('main.replayWorld[data-memory-status="demo"]')
+      const p=Number(e?.getAttribute('data-current-time-ms'))
+      const d=Number(e?.getAttribute('data-duration-ms'))
+      return d>0 && p>d*.3 && p<d*.65
+    },null,{timeout:10_000})
+    info.pointerSeekVerified=true
     await slider.focus()
     await slider.press('End')
     await page.waitForFunction(()=>{
