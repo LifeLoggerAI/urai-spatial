@@ -62,6 +62,11 @@ const bundle = (await build({
   stdin: { contents: entry, resolveDir: path.join(root, 'urai-tier1'), loader: 'tsx' },
   write: false, bundle: true, platform: 'browser', format: 'iife', jsx: 'automatic',
   logLevel: 'error',
+  // Next replaces browser process.env references during its production build.
+  // This isolated esbuild route proof needs the same public, test-only shim.
+  // Never inject a real Node process, production environment, or credentials.
+  banner: {js: 'var process = { env: { NODE_ENV: "test" } };'},
+  
   define: {
     'process.env.NODE_ENV': '"test"',
     'process.env.NEXT_PUBLIC_FIREBASE_API_KEY': '"demo-api-key"',
