@@ -197,8 +197,14 @@ try {
   }
   // Mutate the ACTUAL emulator Firestore authority after both browser scenes
   // have rendered. All React listeners must fail closed and unmount the Canvas.
-  const admin=(await import('firebase-admin')).default
-  const db=admin.firestore()
+  // This standalone test script is a separate Node process from Functions.
+  // Initialize only its isolated demo-project Admin client; do not use
+  // production credentials or change any application authorization path.
+  const {getApps, initializeApp} = await import('firebase-admin/app')
+  const {getFirestore} = await import('firebase-admin/firestore')
+  const emulatorAdmin = getApps().find(instance=>instance.name==='urai-auth-browser-proof')
+    ?? initializeApp({projectId:project},'urai-auth-browser-proof')
+  const db=getFirestore(emulatorAdmin)
   await db.doc('users/'+process.env.URAI_OWNER_UID+'/privacyPolicy/current')
     .update({'domains.location.mode':'denied'})
   receipt.revocation={mutation:'location consent denied in Firestore emulator',
