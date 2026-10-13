@@ -590,3 +590,197 @@ export const getCapturedRealityReplayEntry = capturedRealityFunctions.https.onCa
     truthLabel: String(asset.get('truthLabel') ?? 'Spatial reconstruction from recorded sources').slice(0, 240),
   }
 })
+
+
+/** Optional second private artifact. The existing splat's complete owner, source
+ * receipt, location consent and runtime gates are re-evaluated for EVERY read.
+ * The feature stays disabled until its own independently admitted bytes exist.
+ */
+type MeshAuthority = Awaited<ReturnType<typeof readRuntimeAuthority>> & {
+  meshObject: string; meshSha256: string; meshBytes: number; meshGeneration: string;
+  meshRegistration: unknown; meshAuthorityHash: string;
+}
+const MESH_MAX_BYTES = 24 * 1024 * 1024
+function meshRegistrationReady(value: unknown, splatSha: string, meshSha: string, mode: string) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const x = value as Record<string, unknown>
+  const identity = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+  const matrix = x.meshToWorld
+  if (!Array.isArray(x.splatToWorld) || x.splatToWorld.length !== 16
+    || !x.splatToWorld.every((v: unknown,i: number) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v-identity[i]) < 1e-6)
+    || !Array.isArray(matrix) || matrix.length !== 16 || !matrix.every((v: unknown) => typeof v === 'number' && Number.isFinite(v))
+    || [3,7,11].some(i => Math.abs(matrix[i]) > 1e-5) || Math.abs(matrix[15]-1) > 1e-5) return false
+  const axis = [0,4,8].map(i => [matrix[i],matrix[i+1],matrix[i+2]])
+  const lengths = axis.map(v => Math.hypot(...v))
+  const dot = (a: number[],b: number[]) => a.reduce((n,v,i) => n+v*b[i],0)
+  const cross = [axis[0][1]*axis[1][2]-axis[0][2]*axis[1][1],
+    axis[0][2]*axis[1][0]-axis[0][0]*axis[1][2],
+    axis[0][0]*axis[1][1]-axis[0][1]*axis[1][0]]
+  if (lengths.some(n => n < 1e-4 || n > 1e4) || Math.max(...lengths)/Math.min(...lengths)>1.02
+    || Math.abs(dot(axis[0],axis[1]))>lengths[0]*lengths[1]*.02
+    || Math.abs(dot(axis[0],axis[2]))>lengths[0]*lengths[2]*.02
+    || Math.abs(dot(axis[1],axis[2]))>lengths[1]*lengths[2]*.02
+    || dot(cross,axis[2])<=0) return false
+  return x.schemaVersion==='urai-hybrid-registration-1' && x.splatSha256===splatSha
+    && x.meshSha256===meshSha && x.sourceFrame==='right-handed-y-up'
+    && x.alignmentReviewed===true
+    && (mode==='proof' ? ['technical-proof','independently-admitted'].includes(String(x.admission))
+      : x.admission==='independently-admitted' && x.metricScaleReviewed===true)
+}
+async function readMeshAuthority(tx: FirebaseFirestore.Transaction,uid: string,data: Record<string,unknown>): Promise<MeshAuthority> {
+  if (process.env.URAI_ENABLE_CAPTURED_REALITY_MESH!=='true') {
+    throw new functions.https.HttpsError('failed-precondition','CAPTURED_REALITY_MESH_DISABLED')
+  }
+  const splat = await readRuntimeAuthority(tx,uid,data)
+  const asset = await tx.get(db.doc('users/'+uid+'/capturedRealityAssets/'+splat.assetId))
+  const digest = String(asset.get('meshSha256') ?? '').toLowerCase()
+  const mode = splat.accessMode
+  const approved = String(asset.get(mode==='proof'?'proofApprovedMeshSha256':'reviewApprovedMeshSha256') ?? '').toLowerCase()
+  const source = String(asset.get('sourceManifestSha256') ?? '')
+  const sourceApproved = String(asset.get(mode==='proof'?'proofApprovedMeshSourceManifestSha256':'reviewApprovedMeshSourceManifestSha256') ?? '')
+  const path = requirePrivateRuntimeObject(uid,splat.assetId,asset.get('meshRuntimeObject'))
+  const bytes = Number(asset.get('meshBytes'))
+  const generation = String(asset.get(mode==='proof'?'proofApprovedMeshStorageGeneration':'reviewApprovedMeshStorageGeneration') ?? '')
+  const registration = asset.get('meshRegistration')
+  if (!SHA256.test(digest) || digest!==approved || !SHA256.test(source) || source!==sourceApproved
+    || path!==PRIVATE_CAPTURE_PREFIX+'/'+uid+'/'+splat.assetId+'/runtime/mesh/'+digest+'.glb'
+    || !Number.isSafeInteger(bytes) || bytes<32 || bytes> MESH_MAX_BYTES || bytes%4!==0
+    || !/^\d{1,32}$/.test(generation)
+    || !meshRegistrationReady(registration,splat.runtimeSha256,digest,mode)) {
+    throw new functions.https.HttpsError('failed-precondition','CAPTURED_REALITY_MESH_NOT_ADMITTED')
+  }
+  if (mode==='proof' ? asset.get('meshProofIntegrityVerified')!==true || asset.get('meshProofPrivacyReviewed')!==true
+    : asset.get('meshReviewState')!=='accepted' || asset.get('meshIndependentApproval')!==true
+      || typeof asset.get('meshReviewerUid')!=='string' || !String(asset.get('meshReviewerUid')).trim() || asset.get('meshReviewerUid')===uid) {
+    throw new functions.https.HttpsError('failed-precondition','CAPTURED_REALITY_MESH_REVIEW_MISSING')
+  }
+  const meshAuthorityHash = sha(JSON.stringify([splat.authorityHash,digest,path,generation,bytes,registration,asset.updateTime?.toMillis() ?? null]))
+  return {...splat,meshObject:path,meshSha256:digest,meshGeneration:generation,meshBytes:bytes,
+    meshRegistration:registration,meshAuthorityHash}
+}
+function meshMetadataValid(metadata: {generation?:unknown;size?:unknown;contentType?:unknown;metadata?:Record<string,unknown>}, a:MeshAuthority) {
+  if (String(metadata.generation)!==a.meshGeneration || Number(metadata.size)!==a.meshBytes
+    || metadata.contentType!=='model/gltf-binary' || metadata.metadata?.uraiMeshSha256!==a.meshSha256
+    || metadata.metadata?.firebaseStorageDownloadTokens!=null) {
+    throw new functions.https.HttpsError('failed-precondition','CAPTURED_REALITY_MESH_BYTES_CHANGED')
+  }
+}
+async function issuedMesh(tx:FirebaseFirestore.Transaction,uid:string,data:Record<string,unknown>,id:string) {
+  const [issued, current] = await Promise.all([
+    tx.get(db.doc('users/'+uid+'/capturedRealityMeshDeliveries/'+id)),
+    readMeshAuthority(tx,uid,data),
+  ])
+  if (!issued.exists || issued.get('ownerId')!==uid || issued.get('assetId')!==current.assetId
+    || issued.get('meshAuthorityHash')!==current.meshAuthorityHash
+    || issued.get('accessMode')!==current.accessMode || issued.get('deviceTier')!==current.deviceTier
+    || !Number.isSafeInteger(issued.get('expiresAt')) || issued.get('expiresAt')<=Date.now()) {
+    throw new functions.https.HttpsError('failed-precondition','CAPTURED_REALITY_MESH_DELIVERY_EXPIRED')
+  }
+  return {...current,createdFor:String(issued.get('accountCreationTime') ?? '')}
+}
+export const getCapturedRealityMeshUrl = capturedRealityFunctions.https.onCall(async(data,context) => {
+  const owner = await requireCallableOwner(context)
+  const authority = await db.runTransaction(tx=>readMeshAuthority(tx,owner.uid,data ?? {}))
+  const bucket = admin.storage().bucket(authority.storageBucket)
+  await requirePrivateRuntimeBucket(bucket)
+  const file = bucket.file(authority.meshObject,{generation:authority.meshGeneration})
+  meshMetadataValid((await file.getMetadata())[0],authority)
+  await requireCurrentOwner(owner.uid,owner.bearer,owner.creationTime)
+  const expiresAt = Math.min(Date.now()+RUNTIME_URL_TTL_MS,owner.expiresAt)
+  if (!Number.isSafeInteger(expiresAt)||expiresAt<=Date.now()) throw new functions.https.HttpsError('unauthenticated','Current owner required.')
+  const deliveryId = randomBytes(32).toString('hex')
+  await db.runTransaction(async tx=>{
+    const updated = await readMeshAuthority(tx,owner.uid,data ?? {})
+    if (updated.meshAuthorityHash!==authority.meshAuthorityHash) {
+      throw new functions.https.HttpsError('failed-precondition','CAPTURED_REALITY_MESH_AUTHORITY_CHANGED')
+    }
+    tx.create(db.doc('users/'+owner.uid+'/capturedRealityMeshDeliveries/'+deliveryId),{
+      ownerId:owner.uid,assetId:authority.assetId,accessMode:authority.accessMode,deviceTier:authority.deviceTier,
+      meshAuthorityHash:authority.meshAuthorityHash,accountCreationTime:owner.creationTime,expiresAt,
+      createdAt:admin.firestore.FieldValue.serverTimestamp(),
+    })
+  })
+  const endpoint = runtimeEndpoint(context.rawRequest?.get('host')).replace(/\/streamCapturedRealityRuntime$/,'/streamCapturedRealityMesh')
+  const query = new URLSearchParams({assetId:authority.assetId,deviceTier:authority.deviceTier,
+    accessMode:authority.accessMode,deliveryId})
+  return {assetId:authority.assetId,deviceTier:authority.deviceTier,accessMode:authority.accessMode,
+    requiresAuthorization:true,url:endpoint+'?'+query,expiresAt:new Date(expiresAt).toISOString(),
+    meshSha256:authority.meshSha256,meshByteLength:authority.meshBytes,
+    meshStorageGeneration:authority.meshGeneration,splatSha256:authority.runtimeSha256,
+    registration:authority.meshRegistration}
+})
+export const streamCapturedRealityMesh = capturedRealityFunctions.runWith({timeoutSeconds:540,memory:'512MB'})
+  .https.onRequest(async(request,response)=>{
+    response.set({'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Vary':'Origin'})
+    try {
+      const project=runtimeProject(),origin=request.get('origin')
+      if (origin && !allowedRuntimeOrigin(origin,project)) throw new functions.https.HttpsError('permission-denied','Private origin denied.')
+      if (request.method==='OPTIONS') {
+        const header=request.get('access-control-request-headers')
+        if (!origin || request.get('access-control-request-method')!=='GET' || !header
+          || !header.split(',').every(h=>h.trim().toLowerCase()==='authorization')) {
+          throw new functions.https.HttpsError('permission-denied','Private preflight denied.')
+        }
+        response.set({'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Methods':'GET',
+          'Access-Control-Allow-Headers':'Authorization','Access-Control-Max-Age':'0'}).status(204).end()
+        return
+      }
+      if (origin) response.set({'Access-Control-Allow-Origin':origin,
+        'Access-Control-Expose-Headers':'Content-Length, Content-Type, X-URAI-Checksum-SHA256, X-URAI-Storage-Generation'})
+      if (request.method!=='GET') {response.status(405).json({error:'method_not_allowed'});return}
+      const bearer=request.get('authorization')?.match(/^Bearer\s+(\S+)$/i)?.[1]
+      if (!bearer) throw new functions.https.HttpsError('unauthenticated','Owner token required.')
+      let token:admin.auth.DecodedIdToken
+      try {token=await admin.auth().verifyIdToken(bearer,true)}
+      catch {throw new functions.https.HttpsError('unauthenticated','Owner token required.')}
+      const id=request.query.deliveryId
+      if (typeof id!=='string'||!SHA256.test(id)
+        || Object.keys(request.query).some(k=>!['assetId','deviceTier','accessMode','deliveryId'].includes(k))) {
+        throw new functions.https.HttpsError('invalid-argument','Invalid private descriptor.')
+      }
+      const data=request.query as Record<string,unknown>
+      const authority=await db.runTransaction(tx=>issuedMesh(tx,token.uid,data,id))
+      const current=async()=>{
+        await requireCurrentOwner(token.uid,bearer,authority.createdFor)
+        const now=await db.runTransaction(tx=>issuedMesh(tx,token.uid,data,id))
+        if (now.meshAuthorityHash!==authority.meshAuthorityHash || request.aborted || response.destroyed) {
+          throw new functions.https.HttpsError('permission-denied','Private mesh authority changed.')
+        }
+        await requireCurrentOwner(token.uid,bearer,authority.createdFor)
+      }
+      await current()
+      const bucket=admin.storage().bucket(authority.storageBucket)
+      await requirePrivateRuntimeBucket(bucket)
+      const object=bucket.file(authority.meshObject,{generation:authority.meshGeneration})
+      meshMetadataValid((await object.getMetadata())[0],authority)
+      await current()
+      response.set({'Content-Type':'model/gltf-binary','Content-Length':String(authority.meshBytes),
+        'X-URAI-Checksum-SHA256':authority.meshSha256,'X-URAI-Storage-Generation':authority.meshGeneration})
+      const stream=object.createReadStream({validation:'crc32c'})
+      response.once('close',()=>{if(!response.writableFinished) stream.destroy()})
+      const digest=createHash('sha256');let read=0
+      async function* guarded(input:AsyncIterable<Buffer>) {
+        for await(const raw of input) {
+          const bytes=Buffer.isBuffer(raw)?raw:Buffer.from(raw)
+          for(let offset=0;offset<bytes.length;offset+=64*1024){
+            await current()
+            const chunk=bytes.subarray(offset,offset+64*1024)
+            read+=chunk.length
+            if(read>authority.meshBytes)throw new functions.https.HttpsError('failed-precondition','Mesh length changed.')
+            digest.update(chunk)
+            yield chunk
+          }
+        }
+        await current()
+        if(read!==authority.meshBytes || digest.digest('hex')!==authority.meshSha256) {
+          throw new functions.https.HttpsError('failed-precondition','Mesh hash changed.')
+        }
+      }
+      await pipeline(stream,guarded,response)
+    } catch(error) {
+      if(response.headersSent||response.destroyed)return
+      const status=error instanceof functions.https.HttpsError
+        ? ({unauthenticated:401,'permission-denied':403,'invalid-argument':400,'failed-precondition':409,'not-found':404} as Record<string,number>)[error.code] ?? 500 : 500
+      response.status(status).json({error:'captured_reality_mesh_unavailable'})
+    }
+  })
