@@ -142,7 +142,7 @@ try {
     const record={profile:profile.name,passed:false,auth:false,canvasCount:0}
     receipt.profiles.push(record)
     await page.addInitScript(value=>{window.__uraiProofIdentity=value},
-      {uid:globalThis.__uraiNotUsed, email:undefined,password:undefined}.uid ? {} : {uid:process.env.URAI_OWNER_UID,email:process.env.URAI_OWNER_EMAIL,password:process.env.URAI_OWNER_PASSWORD})
+      {uid:process.env.URAI_OWNER_UID,email:process.env.URAI_OWNER_EMAIL,password:process.env.URAI_OWNER_PASSWORD})
     await page.goto(base+encodeURIComponent(process.env.URAI_ASSET_ID)+'&proof=1',{waitUntil:'domcontentloaded',timeout:60000})
     await page.locator('[data-urai-proof-auth="signed-in"]').waitFor({timeout:45000})
     record.auth=true
@@ -186,7 +186,7 @@ try {
   for(const {page,profile} of sessions){
     const record=receipt.profiles.find(x=>x.profile===profile.name)
     await page.locator('[data-captured-reality-mode="suppressed"]').waitFor({timeout:25000})
-    await page.waitForFunction(()=>document.querySelectorAll('canvas').length===0,{timeout:15000})
+    await page.waitForFunction(()=>document.querySelectorAll('canvas').length===0,null,{timeout:15000})
     assert.equal(await page.locator('canvas').count(),0,'Revoked private geometry still mounted')
     const after=await page.screenshot({path:path.join(destination,profile.name+'-revoked.png'),animations:'disabled'})
     assert.ok(after.length>5000,'Missing genuine post-revocation screenshot')
