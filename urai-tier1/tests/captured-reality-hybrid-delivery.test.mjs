@@ -40,3 +40,13 @@ test('same-scene consumer requests owner-only mesh authority after Gaussian appr
   assert.match(source,/hybridMesh=\{memoryEntryActive \? hybridMesh : null\}/)
   assert.match(source,/setHybridMesh\(null\)/)
 })
+
+test('optional mesh-disabled state is explicit and cannot mask consent or artifact errors',()=>{
+  const backend=fs.readFileSync(new URL('../../apps/functions/src/capturedReality.ts',import.meta.url),'utf8')
+  const route=fs.readFileSync(new URL('../src/app/spatial/captured-reality/CapturedRealityRouteClient.tsx',import.meta.url),'utf8')
+  assert.match(backend,/URAI_ENABLE_CAPTURED_REALITY_MESH !== 'true'/)
+  assert.match(backend,/return \{ available: false as const \}/)
+  assert.match(backend,/const splat = await readRuntimeAuthority\(tx, owner\.uid, data \?\? \{\}\)/)
+  assert.match(route,/meshResult\.data\.available === false/)
+  assert.match(route,/if \(!message\.includes\('CAPTURED_REALITY_MESH_DISABLED'\)\) throw error/)
+})
