@@ -133,6 +133,30 @@ test('an unavailable private selection has no sample substitution or optimistic 
   await expect(guide.getByRole('link', { name: 'Open Focus', exact: true })).toHaveCount(0)
   expect(await page.evaluate(key => localStorage.getItem(key), completionKey)).toBeNull()
   await page.goto('/focus?memoryId=onboarding-unavailable-probe&onboarding=1', { waitUntil: 'domcontentloaded' })
-  await expect(page.getByTestId('urai-final-focus-chamber')).not.toHaveAttribute('data-memory-status', /^(ready|demo)$/)
+  // Focus persists in the world shell while Next may briefly retain an
+  // inactive transition tree. Scope the real owner rather than relying on
+  // a globally ambiguous locator or hiding the duplicate with .first().
+  const shell = page.getByTestId('urai-persistent-world-shell')
+  await expect(shell).toHaveAttribute('data-world-destination', 'focus')
+  const chamber = shell.getByTestId('urai-final-focus-chamber')
+  await expect(chamber).toHaveCount(1)
+  await expect(chamber).toBeVisible()
+  await expect(chamber).toHaveAttribute('data-memory-status', 'unavailable')
+  await expect(chamber).toHaveAttribute('data-chamber-state', 'unavailable')
+  await expect(page.getByTestId('urai-final-focus-chamber').filter({ visible: true })).toHaveCount(1)
+
+  // An off-shell chamber must be inert, not painted, not screen-reader
+  // exposed and must not retain a live media or Canvas resource.
+  const offShell = await page.getByTestId('urai-final-focus-chamber').evaluateAll(elements =>
+    elements.filter(element => !element.closest('[data-testid="urai-persistent-world-shell"]')).map(element => {
+      const style = getComputedStyle(element)
+      return {
+        inactive: Boolean(element.closest('[hidden],[inert],[aria-hidden="true"]')) ||
+          style.display === 'none' || style.visibility === 'hidden' || element.getClientRects().length === 0,
+        retainedMedia: element.querySelectorAll('canvas,video,audio').length,
+      }
+    }),
+  )
+  expect(offShell.every(owner => owner.inactive && owner.retainedMedia === 0)).toBe(true)
   expect(await page.evaluate(key => localStorage.getItem(key), completionKey)).toBeNull()
 })
