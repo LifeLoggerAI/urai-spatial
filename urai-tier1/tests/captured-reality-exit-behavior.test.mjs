@@ -75,6 +75,7 @@ function harness(pendingStage) {
     '@/spatial/captured-reality/capturedRealityRuntime': { capturedRealityDeviceTier: () => 'desktop', CAPTURED_REALITY_QUALITY_PROFILES: { desktop: { maxRuntimeBytes: 4096 } }, capturedRealityBrowserCapability: () => ({ supported: true, missing: [] }) },
     '@/spatial/captured-reality/capturedRealityDelivery': { ...deliveryControls, capturedRealityWebGL2Available: () => true, capturedRealityContentLengthAvailable: () => stage('header', true) },
     '@/spatial/captured-reality/capturedRealityHybridDelivery': { privateMeshDescriptorValid: () => false, fetchPrivateHybridMesh: async () => { throw new Error('Unexpected private mesh fetch when unavailable') } },
+    '@/spatial/captured-reality/capturedRealityHybridLiveAuthority': { privateHybridMeshLiveAuthority: () => { throw new Error('Unexpected mesh review when optional mesh is unavailable') } },
   }
   modules['@/spatial/captured-reality/capturedRealityJourney'] = journeyControls
   modules['@/spatial/memory/selectedMemoryContract'] = selectedMemoryControls
