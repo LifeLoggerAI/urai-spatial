@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/captured-reality-firebase-emulator.yml'
+      - 'firebase.captured-reality-emulator.json'
       - 'scripts/prove-captured-reality-firebase-emulator.mjs'
       - 'apps/functions/src/capturedReality.ts'
       - 'apps/functions/src/index.ts'
@@ -53,7 +54,7 @@ jobs:
           pnpm --filter urai-functions build
       - name: Execute actual Auth, Firestore, Storage and Functions emulators
         run: |
-          pnpm exec firebase emulators:exec --project demo-urai-hybrid-proof --only auth,firestore,storage,functions --config firebase.json 'node scripts/prove-captured-reality-firebase-emulator.mjs'
+          pnpm exec firebase emulators:exec --project demo-urai-hybrid-proof --only auth,firestore,storage,functions --config firebase.captured-reality-emulator.json 'node scripts/prove-captured-reality-firebase-emulator.mjs'
       - name: Retain redacted test evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
