@@ -70,7 +70,7 @@ function runtimeSessionForRightHandTurning(
   }
 }
 
-export default function UraiQuestEntryWorldV2() {
+export default function UraiQuestEntryWorldV2({ immersiveSessionEnabled = false }: { immersiveSessionEnabled?: boolean }) {
   const router = useRouter()
 
   const mountRef = useRef<HTMLDivElement>(null)
@@ -292,6 +292,7 @@ export default function UraiQuestEntryWorldV2() {
       className={styles.world}
       data-testid="urai-quest-explorable-world"
       data-quest-proof="QUEST_IMMERSIVE_ENTRY_VERIFIED_MINIMAL_SHELL"
+      data-immersive-session-gated={immersiveSessionEnabled ? 'false' : 'true'}
       data-renderer-ready={
         rendererReady ? 'true' : 'false'
       }
@@ -313,7 +314,7 @@ export default function UraiQuestEntryWorldV2() {
         aria-label="XR and comfort controls"
       >
         <QuestVrEntryButton
-          disabled={!rendererReady}
+          disabled={!rendererReady || !immersiveSessionEnabled}
           onSessionRequested={attachSession}
           onSessionEnded={handleSessionEnded}
         />
