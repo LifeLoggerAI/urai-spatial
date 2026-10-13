@@ -372,14 +372,18 @@ export default function CapturedRealityRouteClient() {
         setDelivery(nextDelivery)
         try {
           const tier = capturedRealityDeviceTier(navigator.userAgent)
-          const callable = httpsCallable<{assetId:string;deviceTier:'desktop'|'mobile';accessMode:'runtime'|'proof'},CapturedRealityPrivateMeshDescriptor>(functions,'getCapturedRealityMeshUrl')
+          const callable = httpsCallable<{assetId:string;deviceTier:'desktop'|'mobile';accessMode:'runtime'|'proof'},CapturedRealityPrivateMeshDescriptor | {available:false}>(functions,'getCapturedRealityMeshUrl')
           const meshResult = await callable({assetId,deviceTier:tier,accessMode})
           if (disposed || revokedRef.current || !identityCurrent() || abort.signal.aborted) return
+          if (meshResult.data.available === false) {
+            setHybridMesh(null)
+          } else {
           const descriptor = meshResult.data
           if (!privateMeshDescriptorValid(descriptor,{assetId,deviceTier:tier,accessMode,projectId:app.options.projectId??'',splatSha256:nextDelivery.runtimeSha256})) throw new Error('PRIVATE_MESH_DESCRIPTOR_UNTRUSTED')
           const payload = await fetchPrivateHybridMesh(descriptor,requestHeaders,abort.signal)
           if (disposed || revokedRef.current || !identityCurrent() || abort.signal.aborted) return
           setHybridMesh(payload)
+          }
         } catch (error) {
           if (disposed || revokedRef.current || !identityCurrent() || abort.signal.aborted) return
           // Only explicitly disabled mesh authority permits a splat-only fallback.
