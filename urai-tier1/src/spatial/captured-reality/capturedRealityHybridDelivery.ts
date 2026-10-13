@@ -49,6 +49,9 @@ export async function fetchPrivateHybridMesh(
   signal.throwIfAborted()
   const headers=await requestHeaders()
   signal.throwIfAborted()
+  if (!headers || typeof headers.Authorization !== 'string' || !/^Bearer [^\s]+$/.test(headers.Authorization)) {
+    throw new Error('PRIVATE_MESH_OWNER_TOKEN_REQUIRED')
+  }
   const response=await fetcher(descriptor.url,{method:'GET',cache:'no-store',credentials:'omit',redirect:'error',headers,signal})
   if (!response.ok || response.status!==200 || response.headers.get('content-type')?.split(';')[0]!=='model/gltf-binary'
     || response.headers.get('x-urai-checksum-sha256')!==descriptor.meshSha256
@@ -71,6 +74,20 @@ export async function fetchPrivateHybridMesh(
       bytes.set(value,used);used+=value.byteLength
     }
     if(used!==bytes.byteLength)throw new Error('PRIVATE_MESH_LENGTH_CHANGED')
+    signal.throwIfAborted()
+    // Verify actual bytes before they enter React state or the Three.js loader.
+    // The renderer independently re-verifies; transport must never trust headers.
+    if (!crypto?.subtle) throw new Error('PRIVATE_MESH_CRYPTO_UNAVAILABLE')
+    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)))
+      .map(n => n.toString(16).padStart(2,'0')).join('')
+    signal.throwIfAborted()
+    if(hash!==descriptor.meshSha256.toLowerCase()) throw new Error('PRIVATE_MESH_CONTENT_HASH_MISMATCH')
     return {bytes,sha256:descriptor.meshSha256,registration:descriptor.registration}
+  } catch(error) {
+    // Revoked, truncated and corrupted personal meshes must never retain their
+    // partially transferred bytes in the caller-accessible buffer.
+    bytes.fill(0)
+    try {await reader.cancel()} catch { /* already aborted or closed */ }
+    throw error
   } finally {reader.releaseLock()}
 }
