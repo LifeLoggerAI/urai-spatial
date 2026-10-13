@@ -22,12 +22,23 @@ export default function ReplayDefaultTrailEvidence() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>('main.replayWorld[data-memory-status="demo"]')
     if (!root) { invalidate(); return }
-    const onReady = () => { if (root.dataset.replayMediaReady === 'true') invalidate() }
+    let nextFrame = 0
+    const onReady = () => {
+      if (root.dataset.replayMediaReady !== 'true') return
+      invalidate()
+      // On software WebGL the first frame may be submitted before the
+      // decoded texture is committed. Request one more real animation frame,
+      // without reviving a perpetual idle loop or fabricating pacing samples.
+      if (!nextFrame) nextFrame = requestAnimationFrame(() => {
+        nextFrame = 0
+        invalidate()
+      })
+    }
     const observer = new MutationObserver(onReady)
     observer.observe(root, { attributes: true, attributeFilter: ['data-replay-media-ready'] })
     invalidate()
     onReady()
-    return () => observer.disconnect()
+    return () => { observer.disconnect(); if (nextFrame) cancelAnimationFrame(nextFrame) }
   }, [invalidate])
 
   useFrame(({ camera, gl, scene }, delta) => {
