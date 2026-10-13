@@ -44,6 +44,9 @@ export function CapturedRealityPrivateScene({
   }
   const generation = identityRef.current.generation
   const [renderReadyFor, setRenderReadyFor] = useState<{ generation: number; src: string } | null>(null)
+  const [meshDrawReadyFor, setMeshDrawReadyFor] = useState<{ generation: number; sha256: string } | null>(null)
+  const hybridDrawReady = Boolean(hybridMesh && activeSplatSha256 && renderReadyFor?.generation === generation
+    && meshDrawReadyFor?.generation === generation && meshDrawReadyFor.sha256 === hybridMesh.sha256)
   const renderReady = decision.mode === 'gaussian-splat'
     && typeof decision.assetUrl === 'string'
     && renderReadyFor?.generation === generation
@@ -56,6 +59,7 @@ export function CapturedRealityPrivateScene({
       data-captured-reality-device-tier={tier}
       data-captured-reality-reduced-motion={reducedMotion ? 'true' : 'false'}
       data-captured-reality-draw-submitted={renderReady ? 'true' : 'false'}
+      data-captured-reality-hybrid-draw-submitted={renderReady && hybridDrawReady ? 'true' : 'false'}
       data-captured-reality-render-state={
         decision.mode === 'gaussian-splat'
           ? (renderReady ? 'GAUSSIAN_RENDERED' : 'LOADING_OR_BLANK')
@@ -77,7 +81,8 @@ export function CapturedRealityPrivateScene({
             <Canvas camera={{ position: [0, 1.6, 4], fov: 62 }} dpr={tier === 'mobile' ? [1, 1.25] : [1, 1.75]}>
               <Suspense fallback={null}>
                 {hybridMesh && activeSplatSha256 ? (
-                  <CapturedRealityHybridMesh mesh={hybridMesh} activeSplatSha256={activeSplatSha256} mode={hybridAccessMode} />
+                  <CapturedRealityHybridMesh mesh={hybridMesh} activeSplatSha256={activeSplatSha256} mode={hybridAccessMode}
+                    onRenderReady={(sha256) => setMeshDrawReadyFor({ generation, sha256 })} />
                 ) : null}
                 <CapturedRealitySplat
                   decision={decision}
