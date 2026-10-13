@@ -24,6 +24,7 @@ import { capturedRealityJourneyReturnHref } from '@/spatial/captured-reality/cap
 import type { CapturedRealityRenderDecision } from '@/spatial/captured-reality/capturedReality'
 import type { CapturedRealityHybridMeshPayload } from '@/spatial/captured-reality/capturedRealityHybridGeometry'
 import { privateMeshDescriptorValid, fetchPrivateHybridMesh, type CapturedRealityPrivateMeshDescriptor } from '@/spatial/captured-reality/capturedRealityHybridDelivery'
+import { privateHybridMeshLiveAuthority } from '@/spatial/captured-reality/capturedRealityHybridLiveAuthority'
 import { useCapturedRealityReplayLookup } from '@/spatial/captured-reality/useCapturedRealityReplayEntry'
 import { sanitizeMemoryId } from '@/spatial/memory/selectedMemoryContract'
 
@@ -179,6 +180,7 @@ export default function CapturedRealityRouteClient() {
   const [metadata, setMetadata] = useState<AssetMetadata | null>(null)
   const [delivery, setDelivery] = useState<RuntimeDelivery | null>(null)
   const [hybridMesh, setHybridMesh] = useState<CapturedRealityHybridMeshPayload | null>(null)
+  const meshDescriptorRef = useRef<CapturedRealityPrivateMeshDescriptor | null>(null)
   const [decision, setDecision] = useState<CapturedRealityRenderDecision>(() => suppressedDecision())
   const [state, setState] = useState<RouteState>({ kind: 'auth-loading' })
   const [showProvenance, setShowProvenance] = useState(false)
@@ -195,6 +197,7 @@ export default function CapturedRealityRouteClient() {
     setMetadata(null)
     setDelivery(null)
     setHybridMesh(null)
+    meshDescriptorRef.current = null
     renewedDeliveryRef.current = null
     setDecision(suppressedDecision(truthLabelRef.current))
     router.push(returnHref)
@@ -216,6 +219,7 @@ export default function CapturedRealityRouteClient() {
     revokedRef.current = true
     setDelivery(null)
     setHybridMesh(null)
+    meshDescriptorRef.current = null
     renewedDeliveryRef.current = null
     setMetadata(null)
     truthLabelRef.current = undefined
@@ -243,6 +247,7 @@ export default function CapturedRealityRouteClient() {
       revokedRef.current = true
       setDelivery(null)
     setHybridMesh(null)
+    meshDescriptorRef.current = null
       renewedDeliveryRef.current = null
       setMetadata(null)
       truthLabelRef.current = undefined
@@ -264,6 +269,7 @@ export default function CapturedRealityRouteClient() {
     setState({ kind: 'loading' })
     setDelivery(null)
     setHybridMesh(null)
+    meshDescriptorRef.current = null
 
     let disposed = false
     const identityCurrent = () => getAuth(app).currentUser === user
@@ -298,6 +304,9 @@ export default function CapturedRealityRouteClient() {
           resolveAssetAuthority(active)
         }
         if (!active) stopForPrivacy('Captured Reality closed because this asset is unavailable or revoked.')
+        if (active && meshDescriptorRef.current && !privateHybridMeshLiveAuthority(snapshot, user.uid, meshDescriptorRef.current)) {
+          stopForPrivacy('Captured Reality closed because the private mesh authority changed.')
+        }
       },
       () => {
         if (firstAssetSnapshot) {
@@ -377,11 +386,13 @@ export default function CapturedRealityRouteClient() {
           if (disposed || revokedRef.current || !identityCurrent() || abort.signal.aborted) return
           if (meshResult.data.available === false) {
             setHybridMesh(null)
+    meshDescriptorRef.current = null
           } else {
           const descriptor = meshResult.data
           if (!privateMeshDescriptorValid(descriptor,{assetId,deviceTier:tier,accessMode,projectId:app.options.projectId??'',splatSha256:nextDelivery.runtimeSha256})) throw new Error('PRIVATE_MESH_DESCRIPTOR_UNTRUSTED')
           const payload = await fetchPrivateHybridMesh(descriptor,requestHeaders,abort.signal)
           if (disposed || revokedRef.current || !identityCurrent() || abort.signal.aborted) return
+          meshDescriptorRef.current = descriptor
           setHybridMesh(payload)
           }
         } catch (error) {
@@ -390,6 +401,7 @@ export default function CapturedRealityRouteClient() {
           const message = error && typeof error==='object' && 'message' in error ? String(error.message) : ''
           if (!message.includes('CAPTURED_REALITY_MESH_DISABLED')) throw error
           setHybridMesh(null)
+    meshDescriptorRef.current = null
         }
         setDecision(splatDecision(nextDelivery))
         setState({ kind: 'ready' })
@@ -397,6 +409,7 @@ export default function CapturedRealityRouteClient() {
         if (disposed || revokedRef.current || abort.signal.aborted || !identityCurrent()) return
         setDelivery(null)
     setHybridMesh(null)
+    meshDescriptorRef.current = null
         setDecision(suppressedDecision())
         setState({ kind: 'error', message: 'This private captured place could not be opened.' })
       }
@@ -410,6 +423,7 @@ export default function CapturedRealityRouteClient() {
       for (const stop of stops) stop()
       setDelivery(null)
     setHybridMesh(null)
+    meshDescriptorRef.current = null
     }
   }, [accessMode, assetId, memoryEntryActive, rawMemoryId, suppress, user, requestHeaders])
 
