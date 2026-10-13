@@ -53,7 +53,7 @@ function harness(pendingStage) {
           : key === 'revision' ? 1 : key === 'enforcement.state' ? 'fully-enforced' : 'granted', exists: () => true })
       return () => {}
     } },
-    'firebase/functions': { httpsCallable: (_, name) => async () => ({ data: await stage(name === 'getCapturedRealityAsset' ? 'metadata' : 'delivery', name === 'getCapturedRealityAsset' ? metadata : delivery) }) },
+    'firebase/functions': { httpsCallable: (_, name) => async () => ({ data: name === 'getCapturedRealityMeshUrl' ? { available: false } : await stage(name === 'getCapturedRealityAsset' ? 'metadata' : 'delivery', name === 'getCapturedRealityAsset' ? metadata : delivery) }) },
     'next/navigation': { useRouter: () => router, useSearchParams: () => new URLSearchParams('assetId=place&memoryId=memory-1') },
     '@/lib/firebase/client': { app: { options: { projectId: 'urai-4dc1d' } }, firebasePublicEnvReady: true, functions: {}, getFirebaseDb: () => ({}) },
     '@/spatial/adam/AdamLauncherSlot': { default: () => null },
@@ -62,6 +62,7 @@ function harness(pendingStage) {
     '@/spatial/captured-reality/useCapturedRealityReplayEntry': { useCapturedRealityReplayLookup: () => ({ status: 'available', entry: { assetId: 'place' } }) },
     '@/spatial/captured-reality/capturedRealityRuntime': { capturedRealityDeviceTier: () => 'desktop', CAPTURED_REALITY_QUALITY_PROFILES: { desktop: { maxRuntimeBytes: 4096 } }, capturedRealityBrowserCapability: () => ({ supported: true, missing: [] }) },
     '@/spatial/captured-reality/capturedRealityDelivery': { ...deliveryControls, capturedRealityWebGL2Available: () => true, capturedRealityContentLengthAvailable: () => stage('header', true) },
+    '@/spatial/captured-reality/capturedRealityHybridDelivery': { privateMeshDescriptorValid: () => false, fetchPrivateHybridMesh: async () => { throw new Error('Unexpected private mesh fetch when unavailable') } },
   }
   modules['@/spatial/captured-reality/capturedRealityJourney'] = journeyControls
   modules['@/spatial/memory/selectedMemoryContract'] = selectedMemoryControls
