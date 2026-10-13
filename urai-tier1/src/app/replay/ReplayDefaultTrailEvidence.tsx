@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
 /**
@@ -13,6 +13,22 @@ export default function ReplayDefaultTrailEvidence() {
   const owner = useRef<HTMLElement | null>(null)
   const frameTimes = useRef<number[]>([])
   const frameCount = useRef(0)
+  const invalidate = useThree((state) => state.invalidate)
+
+  // Replay now holds paused worlds on the demand frameloop. Explicitly ask
+  // R3F to render when the real media owner becomes ready; otherwise a late
+  // decode may leave evidence and the paused view waiting for a nonexistent
+  // continuous frame. This schedules no timer and enables no perpetual loop.
+  useEffect(() => {
+    const root = document.querySelector<HTMLElement>('main.replayWorld[data-memory-status="demo"]')
+    if (!root) { invalidate(); return }
+    const onReady = () => { if (root.dataset.replayMediaReady === 'true') invalidate() }
+    const observer = new MutationObserver(onReady)
+    observer.observe(root, { attributes: true, attributeFilter: ['data-replay-media-ready'] })
+    invalidate()
+    onReady()
+    return () => observer.disconnect()
+  }, [invalidate])
 
   useFrame(({ camera, gl, scene }, delta) => {
     const root = owner.current ?? gl.domElement.closest<HTMLElement>('main.replayWorld[data-memory-status="demo"]')
