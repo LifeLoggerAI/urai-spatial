@@ -53,7 +53,12 @@ export function capturedRealityHybridRegistrationValid(
     || !SHA256.test(activeSplatSha256) || !SHA256.test(binding.splatSha256)
     || !SHA256.test(binding.meshSha256) || binding.splatSha256.toLowerCase() !== activeSplatSha256.toLowerCase()
     || binding.sourceFrame !== 'right-handed-y-up'
-    || !validRigidMatrix(binding.splatToWorld) || !validRigidMatrix(binding.meshToWorld)
+    // The current splat renderer is mounted in the identity frame. Never claim
+    // alignment for a splatToWorld transform it does not actually apply.
+    || !Array.isArray(binding.splatToWorld)
+    || binding.splatToWorld.some((value, i) => Math.abs(value - ([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1][i] ?? NaN)) > 1e-6)
+    || binding.splatToWorld.length !== 16
+    || !validRigidMatrix(binding.meshToWorld)
     || binding.alignmentReviewed !== true) return false
   if (mode === 'runtime') return binding.admission === 'independently-admitted'
     && binding.metricScaleReviewed === true
