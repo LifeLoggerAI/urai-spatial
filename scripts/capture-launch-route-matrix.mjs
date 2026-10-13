@@ -327,7 +327,12 @@ try {
     // Exact-head synchronization: budgets cover navigation, route stabilization,
     // retained screenshot readback, bounded post-retry DOM resampling, and context
     // shutdown. The readiness assertions below remain unchanged.
+    const wideReplayCase = representative && spec.route === '/replay'
+      && captureProfile.width === 2560 && captureProfile.height === 1440
+    // Large WebGL readbacks may consume a minute even after genuine DOM readiness.
+    // Reserve a separate bounded post-capture sampling window; do not waive it.
     const caseBudgetMs = wideHomeCase ? 220_000
+      : wideReplayCase ? 160_000
       : homeRenderCase ? 165_000
       : representative ? 75_000
       : 110_000
@@ -406,7 +411,7 @@ try {
       // Home-rendering routes can require a compositor retry even after their
       // strict readiness predicate is satisfied. Preserve the complete first
       // capture, bounded retry, three-sample resynchronization, and closure budget.
-      const screenshotReserveMs = wideHomeCase ? 140_000 : homeRenderCase ? 100_000 : 30_000
+      const screenshotReserveMs = wideHomeCase ? 140_000 : wideReplayCase ? 120_000 : homeRenderCase ? 100_000 : 30_000
       const settleDeadline = Math.min(Date.now() + settleBudgetMs, caseDeadline - screenshotReserveMs)
       let stableSamples = 0
       let previousSignature = null
@@ -456,7 +461,7 @@ try {
       // the first screenshot attempt. Re-sample the same strict readiness
       // predicate so the retained pixels and readiness describe one instant.
       if (captured.retried) {
-        const postScreenshotWindowMs = wideHomeCase ? 30_000 : 15_000
+        const postScreenshotWindowMs = wideHomeCase || wideReplayCase ? 30_000 : 15_000
         const postScreenshotDeadline = Math.min(Date.now() + postScreenshotWindowMs, caseDeadline - 10_000)
         let postStableSamples = 0
         let postSignature = null
