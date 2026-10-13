@@ -275,7 +275,12 @@ const repairedPortal = `async function capturePortalSequence(browser) {
       try {
         const requestUrl = new URL(request.url)
         return requestUrl.origin === proofOrigin
-          && /^\/assets\/urai\/final\/manifests\/v[234]-asset-factory-spatial-handoff\.json$/.test(requestUrl.pathname)
+          && (
+            /^\/assets\/urai\/final\/manifests\/v[234]-asset-factory-spatial-handoff\.json$/.test(requestUrl.pathname)
+            || (requestUrl.pathname === '/assets/urai/v2/onboarding/first-run-ground-card.webp'
+              && request.resourceType === 'image' && !request.isNavigationRequest
+              && routeEvidence.pathname === '/ground/')
+          )
       } catch {
         return false
       }
