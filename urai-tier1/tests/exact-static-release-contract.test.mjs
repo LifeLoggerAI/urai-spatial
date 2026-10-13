@@ -211,9 +211,16 @@ test('actual local preview serves canonical 404s and retained navmesh bytes with
       assert.match(await response.text(),/This destination is unavailable/)
       assert.equal(response.headers.get('x-content-type-options'),'nosniff')
     }
+    // The finite static server canonicalizes directory URLs before serving
+    // the real exported preview. Neither the intermediate 301 nor final 200
+    // may authorize immersive WebXR; /xr itself must remain a strict 404.
+    const canonical=await fetch(base+'/spatial/ar-vr',{redirect:'manual'})
+    assert.equal(canonical.status,301,'unslashed directory must only redirect locally')
+    assert.equal(new URL(canonical.headers.get('location'),base).pathname,'/spatial/ar-vr/')
     for(const route of ['/spatial/ar-vr','/spatial/ar-vr/']) {
-      const response=await fetch(base+route,{redirect:'manual'})
+      const response=await fetch(base+route,{redirect:'follow'})
       assert.equal(response.status,200,route)
+      assert.equal(new URL(response.url).pathname,'/spatial/ar-vr/')
       const html=await response.text()
       assert.match(html,/data-xr-release-state=["']technical-preview["']/)
       assert.match(html,/data-xr-immersive-authority=["']disabled["']/)
