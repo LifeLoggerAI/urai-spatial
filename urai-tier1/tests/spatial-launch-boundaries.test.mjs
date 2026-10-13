@@ -101,3 +101,14 @@ test('sensitive provider rollout gates fail closed on consent, enforcement, rete
   assert.match(launchBoundary, /consent\.enforcementState !== gate\.policyEnforcementRequired/)
   assert.match(launchBoundary, /gate\.consentDomains\.every/)
 })
+
+test('XR static export preserves an explorable technical chamber but cannot enable immersive WebXR',()=>{
+  const page=read('src/app/spatial/ar-vr/page.tsx')
+  const chamber=read('src/app/spatial/ar-vr/UraiQuestEntryWorldV2.tsx')
+  assert.doesNotMatch(page, /notFound\(\)/)
+  assert.match(page, /URAI AR \/ VR \/ XR entry chamber/)
+  assert.match(page, /data-xr-release-state="technical-preview"/)
+  assert.match(page, /spatialLaunchBoundary\.liveArWebXrEnabled/)
+  assert.match(chamber, /immersiveSessionEnabled = false/)
+  assert.match(chamber, /disabled=\{!rendererReady \|\| !immersiveSessionEnabled\}/)
+})
