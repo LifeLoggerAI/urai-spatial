@@ -140,8 +140,11 @@ try{
  const stale=await fetch(desc.url,{headers:{authorization:'Bearer '+a.idToken}})
  check('previous descriptor revoked',stale.status!==200,String(stale.status))
  const splatStillValid=await fetch(splatDescriptor.url,{headers:{authorization:'Bearer '+a.idToken}})
- check('mesh-only approval withdrawal does not revoke independent Gaussian authority',
-   splatStillValid.status===200,String(splatStillValid.status))
+ // A mutation to the shared asset revision revokes every issued descriptor,
+ // even when the modified approval field targets only the mesh layer.
+ // Never relax the backend authority hash to permit stale Gaussian reuse.
+ check('mesh approval withdrawal invalidates stale shared-asset Gaussian descriptor',
+   splatStillValid.status===409,String(splatStillValid.status))
  await db.doc('users/'+uid+'/privacyPolicy/current').update({'domains.location.mode':'denied'})
  const privacy=await call(a.idToken,input)
  check('withdrawn location consent remains denied',privacy.status!==200,String(privacy.status))
