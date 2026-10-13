@@ -40,6 +40,7 @@ import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmi
 import { ReplayForestFloor, ReplayMemoryGrove, ReplayScannedUnderstory } from './ReplayEnvironmentDetails'
 import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
 import { buildReplayWornTrailGeometry, replayTrailCenter } from './replayTrailGeometry'
+import { buildReplayDistantRidgeGeometry } from './replayDistantRidgeGeometry'
 import ReplayDefaultTrailEvidence from './ReplayDefaultTrailEvidence'
 import DevReplayCandidateWorld, { useReplayDevelopmentCandidate } from './DevReplayCandidateWorld'
 import { noteReplayReturnFocus } from '@/spatial/world/replayReturnFocusHandoff'
@@ -212,6 +213,12 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
   const replayGroundHeight = useCallback((x: number, z: number) => replayTerrainHeight(x, z + 7), [])
   const wornTrail = useMemo(() => buildReplayWornTrailGeometry(replayGroundHeight), [replayGroundHeight])
   useEffect(() => () => wornTrail.dispose(), [wornTrail])
+  const ridges = useMemo(() => ({
+    left: buildReplayDistantRidgeGeometry('left', replayGroundHeight),
+    right: buildReplayDistantRidgeGeometry('right', replayGroundHeight),
+    horizon: buildReplayDistantRidgeGeometry('horizon', replayGroundHeight),
+  }), [replayGroundHeight])
+  useEffect(() => () => { ridges.left.dispose(); ridges.right.dispose(); ridges.horizon.dispose() }, [ridges])
   const physicalGroundColor = useMemo(() => new THREE.Color(memory.visuals.ground).lerp(new THREE.Color('#758575'), .72), [memory.visuals.ground])
   const horizonGlowUniforms = useMemo(() => ({ uGlowColor: { value: new THREE.Color(memory.visuals.light) } }), [memory.visuals.light])
 
@@ -303,17 +310,16 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
       </mesh>
       <pointLight position={[-1.2, 3.8, -18]} intensity={1.15} distance={20} color={memory.visuals.light} />
 
-      <mesh position={[-10.8, -2.4, -24.5]} scale={[9.8, 4.8, 5.4]} rotation={[0, .2, -.04]} castShadow receiveShadow name="replay-memory-ridge-left">
-        <icosahedronGeometry args={[1, 3]} />
-        <meshStandardMaterial color="#b1bcb0" map={rock.color} normalMap={rock.normal} roughness={1} metalness={0} />
+      {/* Height-field ridges converge onto the actual terrain and fade toward the
+          back horizon. The disclosed demonstration art is not an admitted world. */}
+      <mesh geometry={ridges.left} castShadow receiveShadow name="replay-memory-ridge-left">
+        <meshStandardMaterial color={physicalGroundColor} map={soil.color} normalMap={soil.normal} roughness={1} metalness={0} />
       </mesh>
-      <mesh position={[10.2, -2.6, -26]} scale={[12.2, 5.6, 6.4]} rotation={[0, -.18, .03]} castShadow receiveShadow name="replay-memory-ridge-right">
-        <icosahedronGeometry args={[1, 3]} />
-        <meshStandardMaterial color="#b7c1b7" map={rock.color} normalMap={rock.normal} roughness={1} metalness={0} />
+      <mesh geometry={ridges.right} castShadow receiveShadow name="replay-memory-ridge-right">
+        <meshStandardMaterial color={physicalGroundColor} map={soil.color} normalMap={soil.normal} roughness={1} metalness={0} />
       </mesh>
-      <mesh position={[0, -3.45, -33]} scale={[18.5, 6.8, 8.2]} receiveShadow name="replay-memory-ridge-horizon">
-        <icosahedronGeometry args={[1, 3]} />
-        <meshStandardMaterial color="#adb7ac" map={rock.color} normalMap={rock.normal} roughness={1} metalness={0} />
+      <mesh geometry={ridges.horizon} receiveShadow name="replay-memory-ridge-horizon">
+        <meshStandardMaterial color={physicalGroundColor} map={soil.color} normalMap={soil.normal} roughness={1} metalness={0} />
       </mesh>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-5.6, -1.43, -12.8]} name="replay-memory-meadow-light">
