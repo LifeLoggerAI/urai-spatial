@@ -24,7 +24,7 @@ const result={exactHead:sha,admission:false,budgets:{desktopP95Ms:desktopP95Budg
 const browser=await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader','--disable-gpu-sandbox']})
 try {
  for(const profile of [{id:'desktop',width:1440,height:900,reduce:false,preview:true},{id:'mobile-reduced',width:390,height:844,reduce:true,preview:true},{id:'default',width:1440,height:900,reduce:false,preview:false},{id:'default-wide',width:2560,height:1440,reduce:false,preview:false},{id:'default-mobile-reduced',width:390,height:844,reduce:true,preview:false}]){
-  const context=await browser.newContext({viewport:{width:profile.width,height:profile.height},reducedMotion:profile.reduce?'reduce':'no-preference'})
+  const context=await browser.newContext({viewport:{width:profile.width,height:profile.height},hasTouch:profile.width<700,reducedMotion:profile.reduce?'reduce':'no-preference'})
   const page=await context.newPage()
   const info={profile:profile.id,requests:[],screenshot:null,meshes:null,triangles:null}
   const pending=[]
@@ -140,7 +140,8 @@ try {
     // usable touch/mouse timeline controls in an immersive memory.
     const bounds=await slider.boundingBox()
     assert.ok(bounds && bounds.width>=100 && bounds.height>=48,'Replay seek control must have a real 48px hit target')
-    await page.mouse.click(bounds.x + bounds.width * .45,bounds.y + bounds.height/2)
+    if(profile.width<700) await page.touchscreen.tap(bounds.x + bounds.width * .45,bounds.y + bounds.height/2)
+    else await page.mouse.click(bounds.x + bounds.width * .45,bounds.y + bounds.height/2)
     await page.waitForFunction(()=>{
       const e=document.querySelector('main.replayWorld[data-memory-status="demo"]')
       const p=Number(e?.getAttribute('data-current-time-ms'))
