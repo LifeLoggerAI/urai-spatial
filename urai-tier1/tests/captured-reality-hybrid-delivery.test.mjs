@@ -23,6 +23,18 @@ test('private mesh transport accepts only matching owner project, scene, and imm
   assert.equal(privateMeshDescriptorValid({...description,expiresAt:new Date(Date.now()-1000).toISOString()},expected),false)
   assert.equal(privateMeshDescriptorValid({...description,registration:{...description.registration,alignmentReviewed:false}},expected),false)
 })
+test('isolated emulator mesh descriptors never weaken production host pinning',()=>{
+  const demo='demo-urai-hybrid-proof'
+  const local='http://127.0.0.1:5001/'+demo+'/us-central1/streamCapturedRealityMesh?assetId=private-test&deviceTier=desktop&accessMode=proof&deliveryId='+deliveryId
+  const localDescriptor={...description,url:local}
+  const demoExpected={...expected,projectId:demo,emulatorOnly:true}
+  assert.equal(privateMeshDescriptorValid(localDescriptor,demoExpected),process.env.NODE_ENV==='test')
+  assert.equal(privateMeshDescriptorValid(localDescriptor,{...demoExpected,emulatorOnly:false}),false)
+  assert.equal(privateMeshDescriptorValid(localDescriptor,{...demoExpected,projectId:'urai-4dc1d'}),false)
+  assert.equal(privateMeshDescriptorValid({...localDescriptor,url:local.replace('127.0.0.1','localhost')},demoExpected),false)
+  assert.equal(privateMeshDescriptorValid({...localDescriptor,url:local.replace('127.0.0.1','attacker.example')},demoExpected),false)
+  assert.equal(privateMeshDescriptorValid({...localDescriptor,url:local.replace(':5001/',':5002/')},demoExpected),false)
+})
 test('backend still checks current owner, consent, generation and source before every streamed chunk',()=>{
   const backend=fs.readFileSync(new URL('../../apps/functions/src/capturedReality.ts',import.meta.url),'utf8')
   assert.match(backend,/export const getCapturedRealityMeshUrl/)
