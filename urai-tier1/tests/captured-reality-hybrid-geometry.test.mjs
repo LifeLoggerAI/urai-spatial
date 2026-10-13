@@ -65,3 +65,14 @@ test('private scene owns one splat and one optional mesh in the same Canvas',()=
   assert.match(mesh,/HYBRID_DEPTH_MATERIAL_NOT_ACCEPTED/)
   assert.doesNotMatch(mesh,/fetch\(|axios|https:\/\//)
 })
+
+test('both-layer draw proof waits for the GLB onAfterRender and matching scene generation',()=>{
+  const scene=fs.readFileSync(new URL('../src/spatial/captured-reality/CapturedRealityPrivateScene.tsx',import.meta.url),'utf8')
+  const mesh=fs.readFileSync(new URL('../src/spatial/captured-reality/CapturedRealityHybridMesh.tsx',import.meta.url),'utf8')
+  assert.match(mesh,/object\.onAfterRender = \(\) =>/)
+  assert.match(mesh,/onRenderReadyRef\.current\?\.\(mesh\.sha256\)/)
+  assert.match(scene,/meshDrawReadyFor\?\.generation === generation/)
+  assert.match(scene,/meshDrawReadyFor\.sha256 === hybridMesh\.sha256/)
+  assert.match(scene,/data-captured-reality-hybrid-draw-submitted=/)
+  assert.match(scene,/renderReady && hybridDrawReady/)
+})
