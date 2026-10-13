@@ -15,13 +15,14 @@ test('consent suppression clears private provenance as well as the rendered scen
   // Execute the actual callback body with state setters, including an open panel.
   const body = client.match(/const suppress = useCallback\(\(message: string\) => \{([\s\S]*?)\n  \}, \[\]\)/)?.[1]
   assert.ok(body, 'suppression callback must exist')
-  const state = { delivery: 'signed-private-url', metadata: { label: 'Private place' }, showProvenance: true }
+  const state = { delivery: 'signed-private-url', hybridMesh: { sha256: 'private-mesh' }, metadata: { label: 'Private place' }, showProvenance: true }
   const revokedRef = { current: false }
   const truthLabelRef = { current: 'Private reconstruction label' }
   const renewedDeliveryRef = { current: { url: 'renewed-private-url' } }
   vm.runInNewContext(body, {
     revokedRef, truthLabelRef, renewedDeliveryRef, message: 'Consent revoked',
     setDelivery: (value) => { state.delivery = value },
+    setHybridMesh: (value) => { state.hybridMesh = value },
     setMetadata: (value) => { state.metadata = value },
     setShowProvenance: (value) => { state.showProvenance = value },
     suppressedDecision: (label = 'Private captured place unavailable') => ({ mode: 'suppressed', label }),
@@ -30,6 +31,7 @@ test('consent suppression clears private provenance as well as the rendered scen
   })
   assert.equal(revokedRef.current, true)
   assert.equal(state.delivery, null)
+  assert.equal(state.hybridMesh, null)
   assert.equal(state.metadata, null)
   assert.equal(state.showProvenance, false)
   assert.equal(truthLabelRef.current, undefined)
