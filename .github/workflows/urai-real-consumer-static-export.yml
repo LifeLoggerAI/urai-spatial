@@ -31,6 +31,8 @@ jobs:
           cache: pnpm
       - name: Install pinned dependencies
         run: pnpm install --frozen-lockfile
+      - name: Reject unsafe XR static preview and immersive controls
+        run: node --test tests/real-consumer-xr-export.test.mjs
       - name: Build actual compiled UrAi static consumer
         run: env -u GITHUB_SHA SOURCE_VERSION="$URAI_EXACT_HEAD" NEXT_PUBLIC_GIT_SHA="$URAI_EXACT_HEAD" pnpm build:static
       - name: Hash and verify compiled consumer bytes
