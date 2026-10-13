@@ -46,3 +46,18 @@ test('the entire visible Replay trail remains on the actual terrain mesh footpri
   }
   geometry.dispose()
 })
+
+test('Replay atmosphere uses a feathered horizon glow rather than a hard circle', async () => {
+  const { readFileSync } = await import('node:fs')
+  const source = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+  const start = source.indexOf('name="replay-memory-horizon-glow"')
+  assert.ok(start !== -1, 'known horizon glow must remain discoverable')
+  const end = source.indexOf('</mesh>', start)
+  const haze = source.slice(start, end)
+  assert.match(haze, /planeGeometry args=\{\[9\.2, 9\.2\]\}/)
+  assert.match(haze, /shaderMaterial/)
+  assert.match(haze, /smoothstep\(0\.05, 1\.0, radius\)/)
+  assert.match(haze, /depthWrite=\{false\}/)
+  assert.doesNotMatch(haze, /circleGeometry/)
+  assert.match(source, /html\[data-urai-preview="true"\] \.replayWorld header\{top:max\(78px/)
+})
