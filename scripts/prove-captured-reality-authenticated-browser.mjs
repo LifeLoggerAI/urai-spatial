@@ -185,6 +185,12 @@ try {
       canvasCount:node.querySelectorAll('canvas').length,
       reducedMotion:node.getAttribute('data-captured-reality-reduced-motion'),
       truthLabel:node.querySelector('[aria-live]')?.textContent?.slice(0,100),
+      optionalGuidance:(()=>{
+        const guidance=[...node.querySelectorAll('span')].find(candidate=>candidate.textContent?.includes('Captured Reality is optional.'))
+        if(!guidance)return null
+        const rect=guidance.getBoundingClientRect(),style=getComputedStyle(guidance)
+        return {width:rect.width,height:rect.height,position:style.position,overflow:style.overflow}
+      })(),
     }))
     assert.equal(scene.mode,'gaussian-splat')
     assert.equal(scene.splat,'true')
@@ -192,6 +198,10 @@ try {
     assert.equal(scene.canvasCount,1)
     assert.equal(scene.reducedMotion,String(profile.reduced))
     assert.ok(scene.truthLabel?.includes('not an accepted memory world'))
+    assert.equal(scene.optionalGuidance?.position,'absolute')
+    assert.equal(scene.optionalGuidance?.overflow,'hidden')
+    assert.ok(scene.optionalGuidance.width<=1&&scene.optionalGuidance.height<=1,
+      profile.name+': screen-reader escape guidance painted into the captured-place viewport')
     for(const name of endpointNames)assert.ok(responses.some(x=>x.name===name&&x.status===200),
       profile.name+': actual Firebase endpoint not observed: '+name)
     assert.deepEqual(errors,[],profile.name+' browser console errors')
