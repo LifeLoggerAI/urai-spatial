@@ -120,3 +120,15 @@ test('all four conditional checks report failures; no partial successful accepta
   const failures = await helpers.verifyConditionalXrRoutes('https://candidate.example', authority, async (url) => ({ status: 200, url, text: async () => 'XR live' }))
   assert.equal(failures.length, 4)
 })
+
+test('technical XR preview cannot pass as a directory listing, spoofed 200, or enabled immersive session', () => {
+  const url = 'https://candidate.example/spatial/ar-vr'
+  const html = '<main data-xr-release-state="technical-preview" data-xr-immersive-authority="disabled"><h1>URAI AR / VR / XR entry chamber</h1>Live WebXR headset sessions remain disabled</main>'
+  assert.equal(helpers.expectedConditionalXrStatus('/xr', authority), 404)
+  assert.equal(helpers.expectedConditionalXrStatus('/spatial/ar-vr', authority), 200)
+  assert.equal(helpers.inspectConditionalXrResponse({ status: 200, url }, url, authority, html), true)
+  assert.equal(helpers.inspectConditionalXrResponse({ status: 200, url }, url, authority, '<title>Directory listing for /spatial/ar-vr</title>'), false)
+  assert.equal(helpers.inspectConditionalXrResponse({ status: 200, url }, url, authority, html.replace('disabled', 'enabled')), false)
+  assert.equal(helpers.inspectConditionalXrResponse({ status: 404, url }, url, authority, html), false)
+  assert.equal(helpers.inspectConditionalXrResponse({ status: 200, url:'https://attacker.example/spatial/ar-vr' }, url, authority, html), false)
+})
