@@ -56,8 +56,19 @@ test('Replay atmosphere uses a feathered horizon glow rather than a hard circle'
   const haze = source.slice(start, end)
   assert.match(haze, /planeGeometry args=\{\[9\.2, 9\.2\]\}/)
   assert.match(haze, /shaderMaterial/)
+  assert.match(haze, /vertexShader=\{REPLAY_HORIZON_VERTEX_SHADER\}/)
   assert.match(haze, /smoothstep\(0\.05, 1\.0, radius\)/)
   assert.match(haze, /depthWrite=\{false\}/)
   assert.doesNotMatch(haze, /circleGeometry/)
   assert.match(source, /html\[data-urai-preview="true"\] \.replayWorld header\{top:max\(78px/)
+})
+
+
+test('Replay horizon halo retains an actual transformed WebGL gradient without a projection screen', async () => {
+  const { REPLAY_HORIZON_VERTEX_SHADER } = await import('../src/app/replay/replayHorizonVertexShader.ts')
+  assert.match(REPLAY_HORIZON_VERTEX_SHADER, /gl_Position\s*=\s*projectionMatrix\s*\*\s*modelViewMatrix/)
+  assert.match(REPLAY_HORIZON_VERTEX_SHADER, /vGlowUv\s*=\s*uv/)
+  const { readFileSync } = await import('node:fs')
+  const source = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+  assert.doesNotMatch(source, /projector|movie screen|projection/i)
 })
