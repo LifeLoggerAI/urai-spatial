@@ -5,7 +5,7 @@ export const conditionalXrRoutes = Object.freeze(['/xr', '/spatial/ar-vr'])
  * /spatial/ar-vr is a marked non-immersive preview even while disabled.
  */
 export function expectedConditionalXrStatus(route, authority) {
-  const normalized = route.replace(/\\/+$/, '') || '/'
+  const normalized = route.replace(/\/+$/, '') || '/'
   if (!conditionalXrRoutes.includes(normalized)) throw new Error('UNKNOWN_XR_ROUTE')
   return normalized === '/spatial/ar-vr' ? 200 : authority.expectedStatus
 }
@@ -27,7 +27,7 @@ export function inspectConditionalXrResponse(response, requestedUrl, authority, 
   try {
     const requested = new URL(requestedUrl)
     const actual = new URL(response.url)
-    const normalize = (path) => path.replace(/\\/+$/, '') || '/'
+    const normalize = (path) => path.replace(/\/+$/, '') || '/'
     const route = normalize(requested.pathname)
     if (!conditionalXrRoutes.includes(route) || actual.username || actual.password
       || actual.origin !== requested.origin || normalize(actual.pathname) !== route
@@ -36,7 +36,7 @@ export function inspectConditionalXrResponse(response, requestedUrl, authority, 
       // A directory listing or generic 200 must never pass as UrAi XR proof.
       return /data-xr-release-state=["']technical-preview["']/.test(body)
         && /data-xr-immersive-authority=["']disabled["']/.test(body)
-        && /URAI AR \\/ VR \\/ XR entry chamber/.test(body)
+        && /URAI AR \/ VR \/ XR entry chamber/.test(body)
         && /Live WebXR headset sessions remain disabled/.test(body)
     }
     return true
