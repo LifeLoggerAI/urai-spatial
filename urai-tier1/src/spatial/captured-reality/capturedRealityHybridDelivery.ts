@@ -2,6 +2,7 @@ import type { CapturedRealityHybridRegistration, CapturedRealityHybridMeshPayloa
 import { capturedRealityHybridRegistrationValid } from './capturedRealityHybridGeometry'
 
 export type CapturedRealityPrivateMeshDescriptor = {
+  available: true
   assetId: string
   accessMode: 'runtime' | 'proof'
   deviceTier: 'desktop' | 'mobile'
@@ -18,7 +19,7 @@ export function privateMeshDescriptorValid(
   mesh: CapturedRealityPrivateMeshDescriptor,
   expected: {assetId:string;accessMode:'runtime'|'proof';deviceTier:'desktop'|'mobile';projectId:string;splatSha256:string;now?:number},
 ) {
-  if (!mesh || mesh.assetId!==expected.assetId || mesh.accessMode!==expected.accessMode
+  if (!mesh || mesh.available!==true || mesh.assetId!==expected.assetId || mesh.accessMode!==expected.accessMode
     || mesh.deviceTier!==expected.deviceTier || mesh.requiresAuthorization!==true
     || !/^[a-f0-9]{64}$/i.test(mesh.meshSha256) || !/^[a-f0-9]{64}$/i.test(mesh.splatSha256)
     || mesh.splatSha256!==expected.splatSha256
