@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import {
@@ -32,14 +32,17 @@ function disposeOwnedMeshScene(scene: THREE.Group) {
  * artifact verification; this component never makes a network request itself.
  */
 export function CapturedRealityHybridMesh({
-  mesh, activeSplatSha256, mode,
+  mesh, activeSplatSha256, mode, onRenderReady,
 }: {
   mesh: CapturedRealityHybridMeshPayload | null
   activeSplatSha256: string
   mode: 'proof' | 'runtime'
+  onRenderReady?: (sha256: string) => void
 }) {
   const [ownedScene, setOwnedScene] = useState<THREE.Group | null>(null)
   const [failed, setFailed] = useState(false)
+  const onRenderReadyRef = useRef(onRenderReady)
+  onRenderReadyRef.current = onRenderReady
   const worldMatrix = useMemo(
     () => mesh ? new THREE.Matrix4().fromArray([...mesh.registration.meshToWorld]) : new THREE.Matrix4(),
     [mesh],
@@ -57,11 +60,19 @@ export function CapturedRealityHybridMesh({
       loaded = gltf.scene
       if (!active) { disposeOwnedMeshScene(loaded); return }
       let invalidMaterial = false
+      let drawRecorded = false
       loaded.traverse(object => {
         if (!(object instanceof THREE.Mesh)) return
         const mats = Array.isArray(object.material) ? object.material : [object.material]
         if (mats.some(material => !(material instanceof THREE.Material) || material.transparent || !material.depthTest || !material.depthWrite)) {
           invalidMaterial = true
+        }
+        // This fires only when the actual GLB mesh reaches the renderer, not
+        // when its manifest or GLTFLoader.parseAsync promise succeeds.
+        object.onAfterRender = () => {
+          if (!active || drawRecorded) return
+          drawRecorded = true
+          queueMicrotask(() => { if (active) onRenderReadyRef.current?.(mesh.sha256) })
         }
       })
       if (invalidMaterial) throw new Error('HYBRID_DEPTH_MATERIAL_NOT_ACCEPTED')
