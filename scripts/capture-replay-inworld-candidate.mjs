@@ -82,13 +82,28 @@ try {
     const mediaState=await scene.getAttribute('data-replay-media-status')
     assert.equal(mediaState,'ready','Replay demo media must decode or explicitly fail; screenshot of Loading is not acceptance')
     assert.equal(await scene.getAttribute('data-replay-media-ready'),'true')
-    const targetSamples=profile.reduce?1:90
+    // Require a real, post-decoding WebGL frame on every device. Headless
+    // software rasterization is valid capture evidence, never an FPS result:
+    // only positively identified software may avoid the hardware-only
+    // 90-sample performance proof. Unknown renderers retain the strict path.
+    await page.waitForFunction(()=>{
+      const e=document.querySelector('main.replayWorld[data-memory-status="demo"]')
+      try {
+        const p=JSON.parse(e?.getAttribute('data-replay-default-trail-pacing')||'{}')
+        return p.samples>=1 && typeof p.renderer?.renderer==='string' && p.renderer.renderer.length>0
+      } catch { return false }
+    },null,{timeout:90_000})
+    const initialPacing=JSON.parse(await scene.getAttribute('data-replay-default-trail-pacing')||'{}')
+    const identity=[initialPacing.renderer?.vendor??'',initialPacing.renderer?.renderer??''].join(' ')
+    const positivelySoftware=/swiftshader|llvmpipe|softpipe|software rasterizer|microsoft basic render|mesa offscreen/i.test(identity)
+    const targetSamples=profile.reduce||positivelySoftware?1:90
     await page.waitForFunction((target)=>{
       const e=document.querySelector('main.replayWorld[data-memory-status="demo"]')
       try{return JSON.parse(e?.getAttribute('data-replay-default-trail-pacing')||'{}').samples>=target}catch{return false}
     },targetSamples,{timeout:90_000})
     const pacing=JSON.parse(await scene.getAttribute('data-replay-default-trail-pacing')||'{}')
     const renderHardware=Boolean(pacing.renderer?.hardwareAcceleration)
+    assert.ok(!positivelySoftware||!renderHardware,'Software WebGL must not be certified as hardware-accelerated')
     const performanceBudget=profile.reduce?null:desktopP95Budget
     const performanceStatus=profile.reduce?'REDUCED_MOTION_ON_DEMAND_NOT_FPS_BENCHMARK':renderHardware?'ENFORCED':'NOT_AVAILABLE_HARDWARE_RENDERER'
     if(performanceStatus==='ENFORCED'){
@@ -96,7 +111,7 @@ try {
       assert.ok(pacing.frameP95Ms<=performanceBudget,
         'hardware desktop p95 '+pacing.frameP95Ms+'ms exceeds existing '+performanceBudget+'ms budget')
     }
-    info.defaultWorld={evidence,pacing,mediaState,performanceStatus,performanceBudget}
+    info.defaultWorld={evidence,pacing,mediaState,performanceStatus,performanceBudget,captureMode:positivelySoftware?'SOFTWARE_WEBGL_POST_MEDIA_FRAME_NOT_FPS_CERTIFICATION':profile.reduce?'REDUCED_MOTION_ON_DEMAND':'HARDWARE_90_FRAME_BUDGET_ENFORCED',requiredFrameSamples:targetSamples}
     const started=Number(await scene.getAttribute('data-current-time-ms'))
     const play=page.getByRole('button',{name:'Continue memory',exact:true})
     await play.waitFor({state:'visible',timeout:15000})
