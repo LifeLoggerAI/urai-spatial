@@ -133,3 +133,14 @@ test('create-only proof import cleans up a successfully-created object after met
   assert.match(proofImporter, /recoveredGeneration/)
   assert.match(proofImporter, /object\.delete\(\{ ignoreNotFound: true \}\)/)
 })
+
+test('private Gaussian proof remains explicitly non-autobiographical until independently admitted', () => {
+  const decisionSource = client.slice(client.indexOf('function splatDecision('), client.indexOf('function policyMode('))
+  assert.match(decisionSource, /delivery\.accessMode === 'proof'/)
+  assert.match(decisionSource, /PRIVATE_TECHNICAL_PROOF_NOT_VISUALLY_ACCEPTED/)
+  assert.match(decisionSource, /Private technical reconstruction preview/)
+  assert.match(decisionSource, /autobiographical: !technicalProof/)
+  assert.match(client, /proofState.*technical-preview/)
+  assert.match(client, /proofIntegrityVerified/)
+  assert.match(client, /proofPrivacyReviewed/)
+})
