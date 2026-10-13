@@ -12,6 +12,32 @@ async function disableWebGL(page: Page) {
   })
 }
 
+// Next's preserved, hidden route tree can temporarily retain a loading Focus
+// marker during client navigation. The *interactive* destination must be the
+// single Focus owner inside the persistent world shell. Fail on a second
+// painted Focus or on stale media/Canvas in any off-shell transitional tree.
+async function expectSingleActiveFocus(page: Page) {
+  const shell = page.getByTestId('urai-persistent-world-shell')
+  await expect(shell).toHaveAttribute('data-world-destination', 'focus')
+  const focus = shell.getByTestId('urai-final-focus-chamber')
+  await expect(focus).toHaveCount(1)
+  await expect(focus).toHaveAttribute('data-chamber-state', 'ready')
+  await expect(focus).toBeVisible()
+  await expect(page.getByTestId('urai-final-focus-chamber').filter({ visible: true })).toHaveCount(1)
+  const extraOwners = await page.getByTestId('urai-final-focus-chamber').evaluateAll(elements =>
+    elements.filter(element => !element.closest('[data-testid="urai-persistent-world-shell"]')).map(element => {
+      const style = getComputedStyle(element)
+      return {
+        inactive: Boolean(element.closest('[hidden],[inert],[aria-hidden="true"]')) ||
+          style.display === 'none' || style.visibility === 'hidden' || element.getClientRects().length === 0,
+        retainedMedia: element.querySelectorAll('canvas,video,audio').length,
+      }
+    }),
+  )
+  expect(extraOwners.every(owner => owner.inactive && owner.retainedMedia === 0)).toBe(true)
+  return focus
+}
+
 test.describe('Replay source ownership and accessible transport', () => {
   test('missing private selection cannot inherit demonstration art or a playing receipt', async ({ page }) => {
     const demoAssetRequests: string[] = []
@@ -101,8 +127,7 @@ test.describe('Replay source ownership and accessible transport', () => {
     const destination = new URL(page.url())
     expect(destination.searchParams.get('memoryId')).toBe('demo:quiet-reset')
     expect(destination.searchParams.get('manifestId')).toBe('replay-recovery-thread')
-    const returnedFocus = page.getByTestId('urai-final-focus-chamber')
-    await expect(returnedFocus).toBeVisible()
+    const returnedFocus = await expectSingleActiveFocus(page)
     await expect(returnedFocus.getByRole('button', { name: /Open Replay for/ })).toBeFocused()
     await expect(page.locator('.replaySpatialCanvas, .replayRecordedSource video, .replayRecordedSource audio')).toHaveCount(0)
   })
@@ -121,8 +146,7 @@ test.describe('Replay source ownership and accessible transport', () => {
     })
     await page.goto('/focus?memoryId=demo%3Aquiet-reset&demo=1', { waitUntil: 'domcontentloaded' })
     for (let cycle = 0; cycle < 2; cycle += 1) {
-      const focus = page.getByTestId('urai-final-focus-chamber')
-      await expect(focus).toBeVisible()
+      const focus = await expectSingleActiveFocus(page)
       const replayEntry = focus.getByRole('button', { name: /Open Replay for/ })
       await expect(replayEntry).toBeEnabled()
       if (cycle > 0) await expect(replayEntry).toBeFocused()
@@ -132,6 +156,7 @@ test.describe('Replay source ownership and accessible transport', () => {
       await page.keyboard.press('Escape')
       await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '')).toBe('/focus')
       await expect(replay).toHaveCount(0)
+      await expectSingleActiveFocus(page)
       await expect(focus.getByRole('button', { name: /Open Replay for/ })).toBeFocused()
       await expect(page.locator('.replaySpatialCanvas, .replayRecordedSource video, .replayRecordedSource audio')).toHaveCount(0)
       const counts = await page.evaluate(() => (window as unknown as { __uraiReplayReturnCounts: { replayEntries: number; returns: number } }).__uraiReplayReturnCounts)
