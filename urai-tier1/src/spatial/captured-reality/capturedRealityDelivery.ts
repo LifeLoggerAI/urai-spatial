@@ -20,7 +20,7 @@ export type CapturedRealityRuntimeDelivery = {
 /** A private token must never be sent to a URL outside the expected project endpoint. */
 export function validateCapturedRealityRuntimeDelivery(
   delivery: CapturedRealityRuntimeDelivery,
-  expected: { assetId: string; accessMode: 'runtime' | 'proof'; deviceTier: 'desktop' | 'mobile'; projectId: string; maxRuntimeBytes: number; now?: number },
+  expected: { assetId: string; accessMode: 'runtime' | 'proof'; deviceTier: 'desktop' | 'mobile'; projectId: string; maxRuntimeBytes: number; now?: number; emulatorOnly?: boolean },
 ) {
   if (!delivery || delivery.assetId !== expected.assetId || delivery.accessMode !== expected.accessMode
     || delivery.deviceTier !== expected.deviceTier
@@ -34,9 +34,16 @@ export function validateCapturedRealityRuntimeDelivery(
   if (!Number.isFinite(expires) || expires <= now || expires - now > 11 * 60_000) return false
   try {
     const url = new URL(delivery.url)
-    return url.protocol === 'https:' && !url.username && !url.password && !url.hash && !url.port
+    const productionOrigin = url.protocol === 'https:' && !url.port
       && url.hostname === `us-central1-${expected.projectId}.cloudfunctions.net`
       && url.pathname === '/streamCapturedRealityRuntime'
+    // The local emulator is admissible only for the exact isolated demo project
+    // under a test build; production retains the original secure-host contract.
+    const isolatedEmulatorOrigin = expected.emulatorOnly === true && process.env.NODE_ENV === 'test'
+      && expected.projectId === 'demo-urai-hybrid-proof'
+      && url.protocol === 'http:' && url.hostname === '127.0.0.1' && url.port === '5001'
+      && url.pathname === '/demo-urai-hybrid-proof/us-central1/streamCapturedRealityRuntime'
+    return (productionOrigin || isolatedEmulatorOrigin) && !url.username && !url.password && !url.hash
       && url.searchParams.get('assetId') === expected.assetId
       && url.searchParams.get('accessMode') === expected.accessMode
       && url.searchParams.get('deviceTier') === expected.deviceTier

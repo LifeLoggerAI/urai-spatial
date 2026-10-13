@@ -46,3 +46,69 @@ test('the entire visible Replay trail remains on the actual terrain mesh footpri
   }
   geometry.dispose()
 })
+
+test('Replay atmosphere uses a feathered horizon glow rather than a hard circle', async () => {
+  const { readFileSync } = await import('node:fs')
+  const source = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+  const start = source.indexOf('name="replay-memory-horizon-glow"')
+  assert.ok(start !== -1, 'known horizon glow must remain discoverable')
+  const end = source.indexOf('</mesh>', start)
+  const haze = source.slice(start, end)
+  assert.match(haze, /planeGeometry args=\{\[9\.2, 9\.2\]\}/)
+  assert.match(haze, /shaderMaterial/)
+  assert.match(haze, /vertexShader=\{REPLAY_HORIZON_VERTEX_SHADER\}/)
+  assert.match(haze, /smoothstep\(0\.05, 1\.0, radius\)/)
+  assert.match(haze, /depthWrite=\{false\}/)
+  assert.doesNotMatch(haze, /circleGeometry/)
+  assert.match(source, /html\[data-urai-preview="true"\] \.replayWorld header\{top:max\(78px/)
+})
+
+
+test('Replay horizon halo retains an actual transformed WebGL gradient without a projection screen', async () => {
+  const { REPLAY_HORIZON_VERTEX_SHADER } = await import('../src/app/replay/replayHorizonVertexShader.ts')
+  assert.match(REPLAY_HORIZON_VERTEX_SHADER, /gl_Position\s*=\s*projectionMatrix\s*\*\s*modelViewMatrix/)
+  assert.match(REPLAY_HORIZON_VERTEX_SHADER, /vGlowUv\s*=\s*uv/)
+  const { readFileSync } = await import('node:fs')
+  const source = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+  assert.doesNotMatch(source, /projector|movie screen|projection/i)
+})
+
+test('Replay backdrop uses terrain-conforming ridges without giant ellipsoid silhouettes', async () => {
+  const { buildReplayDistantRidgeGeometry, replayRidgeElevation } = await import('../src/app/replay/replayDistantRidgeGeometry.ts')
+  const height = (x, z) => -1.72 + Math.sin(x * .37 + z * .075) * .28
+  for (const section of ['left', 'right', 'horizon']) {
+    const geometry = buildReplayDistantRidgeGeometry(section, height)
+    const positions = geometry.getAttribute('position')
+    assert.ok(positions.count > 1000)
+    assert.equal(geometry.userData.truthClass, 'disclosed-demonstration')
+    assert.equal(geometry.userData.finalArtAdmitted, false)
+    for (let index = 0; index < positions.count; index++) {
+      const x = positions.getX(index), y = positions.getY(index), z = positions.getZ(index)
+      assert.ok([x, y, z].every(Number.isFinite))
+      assert.ok(Math.abs(y - replayRidgeElevation(section, x, z, height)) < 0.0001)
+    }
+    geometry.dispose()
+  }
+  assert.ok(Math.abs(replayRidgeElevation('left', -10, -17, height) - height(-10, -17)) < .06)
+  assert.ok(Math.abs(replayRidgeElevation('right', 10, -17, height) - height(10, -17)) < .06)
+  assert.throws(() => buildReplayDistantRidgeGeometry('left', () => NaN), /finite terrain elevation/)
+  const { readFileSync } = await import('node:fs')
+  const client = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+  assert.match(client, /buildReplayDistantRidgeGeometry\('left'/)
+  for (const section of ['left', 'right', 'horizon']) {
+    const start = client.indexOf('name="replay-memory-ridge-' + section + '"')
+    assert.ok(start > 0)
+    assert.doesNotMatch(client.slice(start, client.indexOf('</mesh>', start)), /icosahedronGeometry/)
+  }
+})
+
+test('Replay timeline retains a visible pointer and touch seek surface with keyboard focus', async () => {
+  const { readFileSync } = await import('node:fs')
+  const source = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+  assert.match(source, /<input className="memorySeek" type="range"/)
+  assert.match(source, /onChange=\{\(event\) => seek\(Number\(event\.currentTarget\.value\)\)\}/)
+  assert.match(source, /\.memorySeek\{position:absolute;inset:0;z-index:2;width:100%;height:48px/)
+  assert.match(source, /touch-action:none/)
+  assert.match(source, /\.memorySeek:focus-visible\{outline:3px solid #fff/)
+  assert.doesNotMatch(source, /\.memorySeek\{[^}]*pointer-events:none/)
+})

@@ -114,6 +114,10 @@ async function open(route = '/replay', settings = {}) {
       if (name === 'getMemoryMediaPlaybackAuthority') return { schemaVersion: 'urai-owned-memory-media-playback-v1', requiresAuthorization: true, ownerId, memoryId, receiptId, kind, contentType: mime, sha256: fixture.sha256, byteLength: fixture.byteLength, storageGeneration: '123', sourceAuthorityHash: 'c'.repeat(64), authorityHash: 'd'.repeat(64), expiresAt: Date.now() + (settings.expiry ? 1400 : 60000) }
       if (name === 'getCapturedRealityReplayEntry') return { available: true, assetId: 'synthetic-accepted-place', truthLabel: 'Synthetic SDK-boundary place entry; no world acceptance' }
       if (name === 'getCapturedRealityAsset') return { assetId: data.assetId, label: 'Synthetic SDK place', truthClass: 'spatially-reconstructable', truthLabel: 'Synthetic fixture only', sourceCount: 1 }
+      // Isolated media-transport fixtures do not contain reviewed private GLB
+      // geometry. Preserve the product's explicit disabled-mesh-only fallback.
+      // Any other mesh error remains fatal and cannot show the private world.
+      if (name === 'getCapturedRealityMeshUrl') throw new Error('CAPTURED_REALITY_MESH_DISABLED')
       if (name === 'getCapturedRealityRuntimeUrl') return { assetId: data.assetId, accessMode: data.accessMode, deviceTier: data.deviceTier, url: `https://us-central1-urai-4dc1d.cloudfunctions.net/streamCapturedRealityRuntime?assetId=${data.assetId}&accessMode=${data.accessMode}&deviceTier=${data.deviceTier}&deliveryId=${'e'.repeat(64)}`, expiresAt: new Date(Date.now()+60000).toISOString(), truthLabel: 'Synthetic fixture only', requiresAuthorization: true, runtimeSha256: 'f'.repeat(64), runtimeByteLength: 32, storageGeneration: '321' }
       throw new Error(`Unimplemented SDK boundary ${name}`)
     }
@@ -358,6 +362,7 @@ try {
   })
   for (const field of ['privacy','deleted','replayVisible']) await check(`Mounted query-memory captured route suppresses on ${field} withdrawal`, async () => {
     const { page, context } = await open('/spatial/captured-reality'); await page.locator('[data-testid="captured-reality-private-route"][data-state="ready"]').waitFor()
+    assert.equal(await page.evaluate(() => window.__fixture.calls.filter(x => x.name === 'getCapturedRealityMeshUrl').length), 1, 'Private route must request live mesh authority before honoring explicit disabled-mesh transport fixture')
     await page.evaluate(({field,memoryId})=>{const f=window.__fixture,base=`users/${f.auth.currentUser.uid}`,p=field==='replayVisible'?base+'/privacyPolicy/current':base+'/memories/'+memoryId; const old=f.docs[p];f.update(p,field==='replayVisible'?{...old,domains:{...old.domains,memory:{mode:'granted',replayVisible:false}}}:{...old,[field]:field==='privacy'?'hidden':true})},{field,memoryId})
     await page.locator('[data-testid="captured-reality-private-route"][data-state="suppressed"]').waitFor();assert.ok(await page.evaluate(()=>window.__fixture.sceneDisposals>0));await context.close()
   })

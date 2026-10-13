@@ -22,6 +22,9 @@ import {
 } from '@/spatial/captured-reality/capturedRealityDelivery'
 import { capturedRealityJourneyReturnHref } from '@/spatial/captured-reality/capturedRealityJourney'
 import type { CapturedRealityRenderDecision } from '@/spatial/captured-reality/capturedReality'
+import type { CapturedRealityHybridMeshPayload } from '@/spatial/captured-reality/capturedRealityHybridGeometry'
+import { privateMeshDescriptorValid, fetchPrivateHybridMesh, type CapturedRealityPrivateMeshDescriptor } from '@/spatial/captured-reality/capturedRealityHybridDelivery'
+import { privateHybridMeshLiveAuthority } from '@/spatial/captured-reality/capturedRealityHybridLiveAuthority'
 import { useCapturedRealityReplayLookup } from '@/spatial/captured-reality/useCapturedRealityReplayEntry'
 import { sanitizeMemoryId } from '@/spatial/memory/selectedMemoryContract'
 
@@ -76,15 +79,21 @@ function fallbackDecision(label: string): CapturedRealityRenderDecision {
 }
 
 function splatDecision(delivery: RuntimeDelivery): CapturedRealityRenderDecision {
+  // Integrity-approved private proof is not visually admitted recorded history.
+  // Only separately reviewed and device-certified runtime may claim an
+  // autobiographical spatial reconstruction, even if the sample renders.
+  const technicalProof = delivery.accessMode === 'proof'
   return {
     mode: 'gaussian-splat',
-    reasons: [],
-    truthLabel: delivery.truthLabel,
+    reasons: technicalProof ? ['PRIVATE_TECHNICAL_PROOF_NOT_VISUALLY_ACCEPTED'] : [],
+    truthLabel: technicalProof
+      ? 'Private technical reconstruction preview · not an accepted memory world'
+      : delivery.truthLabel,
     assetUrl: delivery.url,
     fallbackMeshArtifactId: null,
     collisionArtifactId: null,
     allowedSourceIds: [],
-    autobiographical: true,
+    autobiographical: !technicalProof,
   }
 }
 
@@ -148,6 +157,7 @@ async function loadRuntimeDelivery(assetId: string, accessMode: 'runtime' | 'pro
   const result = await callable({ assetId, deviceTier, accessMode })
   if (!validateCapturedRealityRuntimeDelivery(result.data, {
     assetId, accessMode, deviceTier, projectId: app.options.projectId ?? '', maxRuntimeBytes: CAPTURED_REALITY_QUALITY_PROFILES[deviceTier].maxRuntimeBytes,
+    emulatorOnly: process.env.NODE_ENV === 'test',
   })) throw new Error('PRIVATE_DELIVERY_DESCRIPTOR_INVALID')
   return result.data
 }
@@ -170,6 +180,8 @@ export default function CapturedRealityRouteClient() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [metadata, setMetadata] = useState<AssetMetadata | null>(null)
   const [delivery, setDelivery] = useState<RuntimeDelivery | null>(null)
+  const [hybridMesh, setHybridMesh] = useState<CapturedRealityHybridMeshPayload | null>(null)
+  const meshDescriptorRef = useRef<CapturedRealityPrivateMeshDescriptor | null>(null)
   const [decision, setDecision] = useState<CapturedRealityRenderDecision>(() => suppressedDecision())
   const [state, setState] = useState<RouteState>({ kind: 'auth-loading' })
   const [showProvenance, setShowProvenance] = useState(false)
@@ -185,6 +197,8 @@ export default function CapturedRealityRouteClient() {
     setShowProvenance(false)
     setMetadata(null)
     setDelivery(null)
+    setHybridMesh(null)
+    meshDescriptorRef.current = null
     renewedDeliveryRef.current = null
     setDecision(suppressedDecision(truthLabelRef.current))
     router.push(returnHref)
@@ -205,6 +219,8 @@ export default function CapturedRealityRouteClient() {
   const suppress = useCallback((message: string) => {
     revokedRef.current = true
     setDelivery(null)
+    setHybridMesh(null)
+    meshDescriptorRef.current = null
     renewedDeliveryRef.current = null
     setMetadata(null)
     truthLabelRef.current = undefined
@@ -231,6 +247,8 @@ export default function CapturedRealityRouteClient() {
     return onAuthStateChanged(getAuth(app), (nextUser) => {
       revokedRef.current = true
       setDelivery(null)
+    setHybridMesh(null)
+    meshDescriptorRef.current = null
       renewedDeliveryRef.current = null
       setMetadata(null)
       truthLabelRef.current = undefined
@@ -251,6 +269,8 @@ export default function CapturedRealityRouteClient() {
     revokedRef.current = false
     setState({ kind: 'loading' })
     setDelivery(null)
+    setHybridMesh(null)
+    meshDescriptorRef.current = null
 
     let disposed = false
     const identityCurrent = () => getAuth(app).currentUser === user
@@ -285,6 +305,9 @@ export default function CapturedRealityRouteClient() {
           resolveAssetAuthority(active)
         }
         if (!active) stopForPrivacy('Captured Reality closed because this asset is unavailable or revoked.')
+        if (active && meshDescriptorRef.current && !privateHybridMeshLiveAuthority(snapshot, user.uid, meshDescriptorRef.current)) {
+          stopForPrivacy('Captured Reality closed because the private mesh authority changed.')
+        }
       },
       () => {
         if (firstAssetSnapshot) {
@@ -357,11 +380,37 @@ export default function CapturedRealityRouteClient() {
         }
 
         setDelivery(nextDelivery)
+        try {
+          const tier = capturedRealityDeviceTier(navigator.userAgent)
+          const callable = httpsCallable<{assetId:string;deviceTier:'desktop'|'mobile';accessMode:'runtime'|'proof'},CapturedRealityPrivateMeshDescriptor | {available:false}>(functions,'getCapturedRealityMeshUrl')
+          const meshResult = await callable({assetId,deviceTier:tier,accessMode})
+          if (disposed || revokedRef.current || !identityCurrent() || abort.signal.aborted) return
+          if (meshResult.data.available === false) {
+            setHybridMesh(null)
+    meshDescriptorRef.current = null
+          } else {
+          const descriptor = meshResult.data
+          if (!privateMeshDescriptorValid(descriptor,{assetId,deviceTier:tier,accessMode,projectId:app.options.projectId??'',splatSha256:nextDelivery.runtimeSha256,emulatorOnly:process.env.NODE_ENV==='test'})) throw new Error('PRIVATE_MESH_DESCRIPTOR_UNTRUSTED')
+          const payload = await fetchPrivateHybridMesh(descriptor,requestHeaders,abort.signal)
+          if (disposed || revokedRef.current || !identityCurrent() || abort.signal.aborted) return
+          meshDescriptorRef.current = descriptor
+          setHybridMesh(payload)
+          }
+        } catch (error) {
+          if (disposed || revokedRef.current || !identityCurrent() || abort.signal.aborted) return
+          // Only explicitly disabled mesh authority permits a splat-only fallback.
+          const message = error && typeof error==='object' && 'message' in error ? String(error.message) : ''
+          if (!message.includes('CAPTURED_REALITY_MESH_DISABLED')) throw error
+          setHybridMesh(null)
+    meshDescriptorRef.current = null
+        }
         setDecision(splatDecision(nextDelivery))
         setState({ kind: 'ready' })
       } catch {
         if (disposed || revokedRef.current || abort.signal.aborted || !identityCurrent()) return
         setDelivery(null)
+    setHybridMesh(null)
+    meshDescriptorRef.current = null
         setDecision(suppressedDecision())
         setState({ kind: 'error', message: 'This private captured place could not be opened.' })
       }
@@ -374,6 +423,8 @@ export default function CapturedRealityRouteClient() {
       if (activeLoadAbort.current === abort) activeLoadAbort.current = null
       for (const stop of stops) stop()
       setDelivery(null)
+    setHybridMesh(null)
+    meshDescriptorRef.current = null
     }
   }, [accessMode, assetId, memoryEntryActive, rawMemoryId, suppress, user, requestHeaders])
 
@@ -464,6 +515,9 @@ export default function CapturedRealityRouteClient() {
         onExit={exit}
         onOpenProvenance={() => setShowProvenance((value) => !value)}
         authority={memoryEntryActive ? streamAuthority : undefined}
+        hybridMesh={memoryEntryActive ? hybridMesh : null}
+        activeSplatSha256={memoryEntryActive ? delivery?.runtimeSha256 : undefined}
+        hybridAccessMode={accessMode}
       />
       {showProvenance && metadata ? (
         <aside

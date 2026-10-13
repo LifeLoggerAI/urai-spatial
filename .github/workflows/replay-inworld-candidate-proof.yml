@@ -1,7 +1,7 @@
 name: Actual Replay In-World Candidate Proof (Non-release)
 on:
   pull_request:
-    branches: [main, repair/release-closure-integration-20261007, codex/combine-current-visual-7e794e-20261010]
+    branches: [main, repair/release-closure-integration-20261007, codex/combine-current-visual-7e794e-20261010, codex/replay-art-focus-compatible-proof-20261012, codex/replay-software-wide-raster-budget-20261012]
     paths:
       - '.github/workflows/replay-inworld-candidate-proof.yml'
       - 'scripts/capture-replay-inworld-candidate.mjs'
@@ -9,6 +9,10 @@ on:
       - 'urai-tier1/src/app/replay/CinematicReplayClient.tsx'
       - 'urai-tier1/src/app/replay/ReplayDefaultTrailEvidence.tsx'
       - 'urai-tier1/src/app/replay/replayTrailGeometry.ts'
+      - 'urai-tier1/src/app/replay/replayHorizonVertexShader.ts'
+      - 'urai-tier1/src/spatial/performance/softwareWebGLRenderer.ts'
+      - 'urai-tier1/src/spatial/performance/useAdaptiveSpatialQuality.ts'
+      - 'urai-tier1/tests/replay-trail-geometry.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read

@@ -16,6 +16,7 @@ const memory = {
 const graph = { schemaVersion: 'urai-lived-world-1', ownerId: 'owner-1', generatedAt: '2026-09-25T00:00:00Z', sourcePolicyVersion: 'test', sources: { 'video-a': source }, entities: { 'place-1': place, 'memory-1': memory }, edges: [] }
 const asset = {
   id: 'capture-1', ownerId: 'owner-1', anchorEntityId: 'place-1', truthClass: 'spatially-reconstructable',
+  sourceIds: ['video-a'],
   qa: { reviewState: 'accepted' },
 }
 const binding = {
@@ -55,4 +56,51 @@ test('missing source anchor never becomes fabricated spatial memory evidence', (
   const bad = { ...binding, anchors: [{ id: 'anchor-x', kind: 'audio', sourceId: 'missing', position: [0, 0, 0] }] }
   const errors = validateCapturedRealityReplayBinding({ graph, asset, binding: bad })
   assert.ok(errors.includes('ANCHOR_SOURCE_MISSING:missing'))
+})
+
+test('a graph-known but unrelated source is not authorized as a Captured Reality memory anchor', () => {
+  const unrelated = { ...source, id: 'video-other' }
+  const withUnrelated = { ...graph, sources: { ...graph.sources, 'video-other': unrelated } }
+  const bad = { ...binding, anchors: [{ id: 'cross-memory-anchor', kind: 'video', sourceId: 'video-other', position: [0, 1, -2] }] }
+  const errors = validateCapturedRealityReplayBinding({ graph: withUnrelated, asset, binding: bad })
+  assert.ok(errors.includes('ANCHOR_NOT_IN_CAPTURED_SOURCE_SET:cross-memory-anchor'))
+  assert.ok(errors.includes('ANCHOR_NOT_IN_SELECTED_MEMORY:cross-memory-anchor'))
+  const plan = buildCapturedRealityReplayPlan({ graph: withUnrelated, asset, binding: bad, capturedRealityAvailable: true })
+  assert.equal(plan.mode, 'standard-replay', 'unrelated private media must never be presented inside this world')
+})
+
+test('a source admitted to a captured place still needs to belong to the selected memory', () => {
+  const sharedSource = { ...source, id: 'video-place-other' }
+  const withSource = { ...graph, sources: { ...graph.sources, 'video-place-other': sharedSource } }
+  const capturedWithSource = { ...asset, sourceIds: ['video-a', 'video-place-other'] }
+  const bad = { ...binding, anchors: [{ id: 'place-only-anchor', kind: 'video', sourceId: 'video-place-other', position: [0, 0, 0] }] }
+  const errors = validateCapturedRealityReplayBinding({ graph: withSource, asset: capturedWithSource, binding: bad })
+  assert.ok(!errors.includes('ANCHOR_NOT_IN_CAPTURED_SOURCE_SET:place-only-anchor'))
+  assert.ok(errors.includes('ANCHOR_NOT_IN_SELECTED_MEMORY:place-only-anchor'))
+})
+
+test('memory evidence cannot be positioned inside an unrelated reconstructed asset', () => {
+  const sharedSource = { ...source, id: 'video-memory-only' }
+  const withSource = { ...graph,
+    sources: { ...graph.sources, 'video-memory-only': sharedSource },
+    entities: { ...graph.entities, 'memory-1': { ...memory, replaySourceIds: ['video-a', 'video-memory-only'] } },
+  }
+  const bad = { ...binding, anchors: [{ id: 'memory-only-anchor', kind: 'video', sourceId: 'video-memory-only', position: [0, 0, 0] }] }
+  const errors = validateCapturedRealityReplayBinding({ graph: withSource, asset, binding: bad })
+  assert.ok(errors.includes('ANCHOR_NOT_IN_CAPTURED_SOURCE_SET:memory-only-anchor'))
+  assert.ok(!errors.includes('ANCHOR_NOT_IN_SELECTED_MEMORY:memory-only-anchor'))
+})
+
+test('malformed spatial anchors cannot pass validation as empty or partial coordinates', () => {
+  const badPositions = [[], [0, 1], [0, 1, 2, 3], [0, Number.NaN, 2]]
+  for (const position of badPositions) {
+    const bad = { ...binding, anchors: [{ ...binding.anchors[0], position }] }
+    const errors = validateCapturedRealityReplayBinding({ graph, asset, binding: bad })
+    assert.ok(errors.includes('ANCHOR_POSITION_INVALID:anchor-1'), 'bad position: ' + String(position))
+  }
+  for (const rotation of [[0, 1], [0, Infinity, 2]]) {
+    const bad = { ...binding, anchors: [{ ...binding.anchors[0], rotation }] }
+    const errors = validateCapturedRealityReplayBinding({ graph, asset, binding: bad })
+    assert.ok(errors.includes('ANCHOR_ROTATION_INVALID:anchor-1'))
+  }
 })

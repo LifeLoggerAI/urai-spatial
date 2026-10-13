@@ -15,13 +15,15 @@ test('consent suppression clears private provenance as well as the rendered scen
   // Execute the actual callback body with state setters, including an open panel.
   const body = client.match(/const suppress = useCallback\(\(message: string\) => \{([\s\S]*?)\n  \}, \[\]\)/)?.[1]
   assert.ok(body, 'suppression callback must exist')
-  const state = { delivery: 'signed-private-url', metadata: { label: 'Private place' }, showProvenance: true }
+  const state = { delivery: 'signed-private-url', hybridMesh: { sha256: 'private-mesh' }, metadata: { label: 'Private place' }, showProvenance: true }
   const revokedRef = { current: false }
   const truthLabelRef = { current: 'Private reconstruction label' }
   const renewedDeliveryRef = { current: { url: 'renewed-private-url' } }
+  const meshDescriptorRef = { current: { meshSha256: 'stale-authorized-mesh' } }
   vm.runInNewContext(body, {
-    revokedRef, truthLabelRef, renewedDeliveryRef, message: 'Consent revoked',
+    revokedRef, truthLabelRef, renewedDeliveryRef, meshDescriptorRef, message: 'Consent revoked',
     setDelivery: (value) => { state.delivery = value },
+    setHybridMesh: (value) => { state.hybridMesh = value },
     setMetadata: (value) => { state.metadata = value },
     setShowProvenance: (value) => { state.showProvenance = value },
     suppressedDecision: (label = 'Private captured place unavailable') => ({ mode: 'suppressed', label }),
@@ -30,10 +32,12 @@ test('consent suppression clears private provenance as well as the rendered scen
   })
   assert.equal(revokedRef.current, true)
   assert.equal(state.delivery, null)
+  assert.equal(state.hybridMesh, null)
   assert.equal(state.metadata, null)
   assert.equal(state.showProvenance, false)
   assert.equal(truthLabelRef.current, undefined)
   assert.equal(renewedDeliveryRef.current, null)
+  assert.equal(meshDescriptorRef.current, null, 'revocation clears current mesh authority receipt')
   assert.equal(state.decision.mode, 'suppressed')
   assert.equal(state.decision.label, 'Private captured place unavailable')
   assert.equal(state.route.kind, 'suppressed')
@@ -132,4 +136,15 @@ test('create-only proof import cleans up a successfully-created object after met
   assert.match(proofImporter, /else if \(objectCreated\)/)
   assert.match(proofImporter, /recoveredGeneration/)
   assert.match(proofImporter, /object\.delete\(\{ ignoreNotFound: true \}\)/)
+})
+
+test('private Gaussian proof remains explicitly non-autobiographical until independently admitted', () => {
+  const decisionSource = client.slice(client.indexOf('function splatDecision('), client.indexOf('function policyMode('))
+  assert.match(decisionSource, /delivery\.accessMode === 'proof'/)
+  assert.match(decisionSource, /PRIVATE_TECHNICAL_PROOF_NOT_VISUALLY_ACCEPTED/)
+  assert.match(decisionSource, /Private technical reconstruction preview/)
+  assert.match(decisionSource, /autobiographical: !technicalProof/)
+  assert.match(client, /proofState.*technical-preview/)
+  assert.match(client, /proofIntegrityVerified/)
+  assert.match(client, /proofPrivacyReviewed/)
 })

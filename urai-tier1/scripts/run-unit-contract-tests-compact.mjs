@@ -95,6 +95,8 @@ const tests = [
   'tests/captured-reality-gaussian-v1-contract.test.mjs',
   '../tests/install-disk-budget.test.mjs',
   'tests/captured-reality-authenticated-stream.test.mjs',
+  'tests/captured-reality-hybrid-geometry.test.mjs',
+  'tests/captured-reality-hybrid-delivery.test.mjs',
   'tests/captured-reality-journey-continuity.test.mjs',
   'tests/captured-reality-delivery-behavior.test.mjs',
   'tests/captured-reality-exit-behavior.test.mjs',
