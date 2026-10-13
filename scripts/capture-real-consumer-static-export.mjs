@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
+import { verifyRealConsumerXrExport } from './lib/real-consumer-xr-export.mjs'
 
 const exact = process.env.URAI_EXACT_HEAD || ''
 const src = path.resolve('urai-tier1/out')
@@ -47,7 +48,12 @@ if(proof.repository!=='LifeLoggerAI/urai-spatial'||proof.service!=='urai-spatial
 if(boundary.releaseClassification!=='NO-GO'||boundary.sourceSha!==exact||
   boundary.providerActivation!==false||boundary.deviceAcceptance!==false||
   !Array.isArray(boundary.routes)||boundary.routes.some(x=>typeof x.enabled!=='boolean'))fail('unsafe static launch authority')
-for(const x of boundary.routes)if(!x.enabled){
+const xrExport=verifyRealConsumerXrExport({
+  boundary,files,
+  readHtml:name=>fs.readFileSync(path.join(src,name),'utf8'),
+})
+// Do not permit any other disabled route to expose a static entry point.
+for(const x of boundary.routes)if(!x.enabled && !['/xr','/spatial/ar-vr'].includes(x.route)){
   const p=String(x.route||'').replace(/^\/+/,'')
   if(!p||p.includes('..'))fail('invalid protected route')
   if(files.some(f=>f.path===p+'/index.html'||f.path===p+'.html'))fail('disabled protected route exposed: '+p)
@@ -57,7 +63,8 @@ const manifest={schemaVersion:'urai-real-spatial-static-export-1',
   sourcePullRequest:1810,scope:'real-compiled-static-consumer-not-deployed',
   fileCount:files.length,totalBytes,files,
   authenticatedServiceParityVerified:false,privateStagingDeployed:false,
-  finalAssetsAdmitted:false,independentReviewApproved:false,productionAuthorized:false}
+  finalAssetsAdmitted:false,independentReviewApproved:false,productionAuthorized:false,
+  xrExport}
 fs.mkdirSync(path.dirname(manifestFile),{recursive:true})
 fs.writeFileSync(manifestFile,JSON.stringify(manifest,null,2)+'\n',{mode:0o600})
 console.log(JSON.stringify({result:'REAL_BUILD_EXPORTED_AND_HASHED',sourceSha:exact,sourceTreeSha:treeSha,fileCount:files.length,totalBytes,manifestFile},null,2))
