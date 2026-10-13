@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { detectSoftwareWebGLRenderer } from './softwareWebGLRenderer'
 
 export type SpatialQualityTier = 'low' | 'medium' | 'high'
 
@@ -67,9 +68,10 @@ export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
     const narrow = window.matchMedia('(max-width: 760px)')
     const coarsePointer = window.matchMedia('(pointer: coarse)')
     const connection = (navigator as NavigatorHints).connection
+    const softwareWebGL = detectSoftwareWebGLRenderer()
     const updateMotion = () => setReducedMotion(motion.matches)
     const updateVisibility = () => setDocumentVisible(document.visibilityState === 'visible')
-    const updateTier = () => setTier(deriveTier(motion.matches))
+    const updateTier = () => setTier(softwareWebGL ? 'low' : deriveTier(motion.matches))
 
     updateMotion()
     updateVisibility()

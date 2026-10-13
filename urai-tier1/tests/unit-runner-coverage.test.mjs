@@ -33,6 +33,7 @@ const requiredFocusedTests = [
   'tests/focus-review-regression-contract.test.mjs',
   'tests/world-return-destination.test.mjs',
   'tests/replay-trail-geometry.test.mjs',
+  'tests/software-webgl-renderer-quality.test.mjs',
   'tests/replay-transition-evidence-contract.test.mjs',
   'tests/dispatcher-transient-retry-contract.test.mjs',
   'tests/home-runtime-cursor-cleanup-contract.test.mjs',
