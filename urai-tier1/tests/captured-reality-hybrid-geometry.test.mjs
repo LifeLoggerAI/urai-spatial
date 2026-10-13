@@ -73,6 +73,8 @@ test('both-layer draw proof waits for the GLB onAfterRender and matching scene g
   assert.match(mesh,/onRenderReadyRef\.current\?\.\(mesh\.sha256\)/)
   assert.match(scene,/meshDrawReadyFor\?\.generation === generation/)
   assert.match(scene,/meshDrawReadyFor\.sha256 === hybridMesh\.sha256/)
+  assert.match(scene,/meshDrawReadyFor\.meshGeneration === meshGeneration/)
+  assert.match(scene,/meshIdentityRef\.current\.payload !== hybridMesh/)
   assert.match(scene,/data-captured-reality-hybrid-draw-submitted=/)
   assert.match(scene,/renderReady && hybridDrawReady/)
 })
