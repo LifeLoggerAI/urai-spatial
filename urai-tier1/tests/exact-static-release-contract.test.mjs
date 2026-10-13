@@ -191,9 +191,11 @@ test('actual local preview serves canonical 404s and retained navmesh bytes with
     mkdirSync(path.join(output,'api/system'),{recursive:true})
     mkdirSync(path.join(output,'xr/navmeshes'),{recursive:true})
     mkdirSync(path.join(output,'home'),{recursive:true})
-    writeFileSync(path.join(output,'api/system/deploy-proof'),JSON.stringify({conditionalRoutes:['/xr','/spatial/ar-vr'].map(route=>({route,enabled:false,expectedStatus:404}))}))
+    writeFileSync(path.join(output,'api/system/deploy-proof'),JSON.stringify({conditionalRoutes:['/xr','/spatial/ar-vr'].map(route=>({route,enabled:false,expectedStatus:route==='/xr'?404:200,previewOnly:route==='/spatial/ar-vr'}))}))
     writeFileSync(path.join(output,'404.html'),'<main><h1>This destination is unavailable.</h1><a href="/home/">Return Home</a></main>')
     writeFileSync(path.join(output,'home/index.html'),'<main>Existing Home</main>')
+    mkdirSync(path.join(output,'spatial/ar-vr'),{recursive:true})
+    writeFileSync(path.join(output,'spatial/ar-vr/index.html'),'<main data-xr-release-state="technical-preview" data-xr-immersive-authority="disabled">URAI AR / VR / XR entry chamber - Live WebXR headset sessions remain disabled</main>')
     writeFileSync(path.join(output,'xr/navmeshes/home-platform-v1.json'),'existing-navmesh')
     server=spawn('python3',[path.join(repoRoot,'scripts/serve-static-preview.py'),'--directory',output,'--port','4179'],{stdio:'ignore'})
     const base='http://127.0.0.1:4179'
@@ -203,11 +205,26 @@ test('actual local preview serves canonical 404s and retained navmesh bytes with
       await new Promise(resolve=>setTimeout(resolve,20))
     }
     assert.equal(ready,true,'owned preview server must start')
-    for(const route of ['/xr','/xr/','/spatial/ar-vr','/spatial/ar-vr/','/xr/navmeshes/']) {
+    for(const route of ['/xr','/xr/','/xr/navmeshes/']) {
       const response=await fetch(base+route,{redirect:'manual'})
       assert.equal(response.status,404,route)
       assert.match(await response.text(),/This destination is unavailable/)
       assert.equal(response.headers.get('x-content-type-options'),'nosniff')
+    }
+    // The finite static server canonicalizes directory URLs before serving
+    // the real exported preview. Neither the intermediate 301 nor final 200
+    // may authorize immersive WebXR; /xr itself must remain a strict 404.
+    const canonical=await fetch(base+'/spatial/ar-vr',{redirect:'manual'})
+    assert.equal(canonical.status,301,'unslashed directory must only redirect locally')
+    assert.equal(new URL(canonical.headers.get('location'),base).pathname,'/spatial/ar-vr/')
+    for(const route of ['/spatial/ar-vr','/spatial/ar-vr/']) {
+      const response=await fetch(base+route,{redirect:'follow'})
+      assert.equal(response.status,200,route)
+      assert.equal(new URL(response.url).pathname,'/spatial/ar-vr/')
+      const html=await response.text()
+      assert.match(html,/data-xr-release-state=["']technical-preview["']/)
+      assert.match(html,/data-xr-immersive-authority=["']disabled["']/)
+      assert.match(html,/Live WebXR headset sessions remain disabled/)
     }
     const mesh=await fetch(`${base}/xr/navmeshes/home-platform-v1.json`)
     assert.equal(mesh.status,200)

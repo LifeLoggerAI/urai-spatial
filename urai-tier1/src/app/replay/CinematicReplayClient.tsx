@@ -1,6 +1,6 @@
 'use client'
 
-import { Component, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 
 const replayProofSurfaceStyle = {
   position: 'absolute',
@@ -35,7 +35,16 @@ import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 import { ReplayPersonPresence } from './ReplayPersonPresence'
 import { ReplayRecordedSource, type ReplayImageState } from './ReplayRecordedSource'
 import { initialReplayVideoSnapshot, type ReplayVideoSession, type ReplayVideoSnapshot } from './replayMediaSession'
+import { cameraLerpAlpha } from '@/spatial/canon/cameraMotion'
 import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmission'
+import { ReplayForestFloor, ReplayMemoryGrove, ReplayScannedUnderstory } from './ReplayEnvironmentDetails'
+import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
+import { buildReplayWornTrailGeometry, replayTrailCenter } from './replayTrailGeometry'
+import { buildReplayDistantRidgeGeometry } from './replayDistantRidgeGeometry'
+import ReplayDefaultTrailEvidence from './ReplayDefaultTrailEvidence'
+import DevReplayCandidateWorld, { useReplayDevelopmentCandidate } from './DevReplayCandidateWorld'
+import { noteReplayReturnFocus } from '@/spatial/world/replayReturnFocusHandoff'
+import { REPLAY_HORIZON_VERTEX_SHADER } from './replayHorizonVertexShader'
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
 
@@ -48,7 +57,7 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
     const arc = reducedMotion ? 0 : (progress - 0.5) * 0.22
     desired.current.set(arc, 0.28 + breathe, 7.25 - progress * 0.48)
     if (reducedMotion) camera.position.copy(desired.current)
-    else camera.position.lerp(desired.current, Math.min(1, delta * 2.4))
+    else camera.position.lerp(desired.current, cameraLerpAlpha(0.04, delta))
     camera.lookAt(target.current)
   })
 
@@ -57,27 +66,43 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
 
 function MemoryMediaDome({ url, onState }: { url: string; onState: (state: ReplayImageState) => void }) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
-  // Only a disclosed demonstration asset is admitted here. Ordinary sources do not
-  // establish a panorama or a reconstructed world and retain their original framing.
+  // Only disclosed demo art is admitted. Missing/undecodable sources must
+  // report a recoverable error, never leave memory time permanently loading.
   useEffect(() => {
     let cancelled = false
+    let settled = false
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+    const finish = (status: ReplayImageState) => {
+      if (cancelled || settled) return
+      settled = true
+      if (timeoutId !== null) clearTimeout(timeoutId)
+      onState(status)
+    }
+    setTexture(null)
     onState({ status: 'loading', error: null })
     const pending = new THREE.TextureLoader().load(url, (loaded) => {
       const decode = loaded.image instanceof HTMLImageElement ? loaded.image.decode() : Promise.resolve()
       void decode.then(() => {
-        if (cancelled) return
+        if (cancelled || settled) return
         loaded.colorSpace = THREE.SRGBColorSpace
         loaded.minFilter = THREE.LinearFilter
         loaded.magFilter = THREE.LinearFilter
         setTexture(loaded)
-        onState({ status: 'ready', error: null })
+        finish({ status: 'ready', error: null })
       }).catch(() => {
-        if (!cancelled) onState({ status: 'error', error: 'The demonstration environment could not be decoded.' })
+        finish({ status: 'error', error: 'The demonstration environment could not be decoded. Retry the source.' })
       })
     }, undefined, () => {
-      if (!cancelled) onState({ status: 'error', error: 'The demonstration environment could not be opened.' })
+      finish({ status: 'error', error: 'The demonstration environment could not be opened. Retry the source.' })
     })
-    return () => { cancelled = true; pending.dispose() }
+    timeoutId = setTimeout(() => {
+      finish({ status: 'error', error: 'The demonstration environment did not finish loading. Retry the source.' })
+    }, 30_000)
+    return () => {
+      cancelled = true
+      if (timeoutId !== null) clearTimeout(timeoutId)
+      pending.dispose()
+    }
   }, [url, onState])
 
   return (
@@ -136,6 +161,10 @@ function replayTerrainHeight(x: number, z: number) {
 }
 
 function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
+  const developmentCandidate = useReplayDevelopmentCandidate()
+  const soil = useMemo(() => makeReplaySurfaceTextures('soil', 256), [])
+  const rock = useMemo(() => makeReplaySurfaceTextures('stone'), [])
+  useEffect(() => () => { soil.dispose(); rock.dispose() }, [soil, rock])
   const terrain = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(38, 52, 84, 112)
     geometry.rotateX(-Math.PI / 2)
@@ -159,14 +188,15 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
     return { x, z, scale, rotation: ((index * 41) % 19) * .08 }
   }), [])
 
-  const trailStones = useMemo(() => Array.from({ length: 15 }, (_, index) => {
-    const z = -3.8 - index * 1.62
-    const x = Math.sin(index * .72) * .42 + Math.sin(index * .27) * .18
-    const width = .72 + ((index * 13) % 7) * .045
-    const depth = .46 + ((index * 17) % 5) * .035
-    const localTerrainZ = z + 7
-    const y = replayTerrainHeight(x, localTerrainZ) + .08
-    return { x, y, z, width, depth, yaw: Math.sin(index * .51) * .18 }
+  // A few irregular, embedded edge stones replace floating stepping-stone discs.
+  const trailStones = useMemo(() => Array.from({ length: 11 }, (_, index) => {
+    const side = index % 2 ? 1 : -1
+    const z = -5.8 - index * 2.55
+    const x = replayTrailCenter(z) + side * (.79 + ((index * 17) % 5) * .075)
+    const width = .16 + ((index * 13) % 7) * .026
+    const depth = .27 + ((index * 17) % 5) * .034
+    const y = replayTerrainHeight(x, z + 7) + .027
+    return { x, y, z, width, depth, yaw: Math.sin(index * .51) * .24 }
   }), [])
 
   const trees = useMemo(() => [
@@ -174,41 +204,55 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
     [-7.4, -27.0, 1.48], [-13.2, -30.0, 1.82],
     [8.4, -11.5, 1.12], [11.2, -15.5, 1.5], [7.1, -20.0, 1.42], [12.8, -23.8, 1.7],
     [8.8, -27.7, 1.58], [13.7, -31.4, 1.86],
+    [-5.5, -7.8, .78], [-9.6, -7.2, 1.02], [-6.2, -12.9, .89],
+    [-15.2, -16.5, 1.68], [-5.8, -25.2, 1.16], [-15.8, -28.4, 1.71],
+    [5.7, -7.9, .86], [9.6, -8.3, 1.12], [6.0, -13.1, .94],
+    [15.1, -18.5, 1.63], [5.7, -25.0, 1.22], [15.6, -29.2, 1.72],
   ] as const, [])
 
-  const understory = useMemo(() => Array.from({ length: 28 }, (_, index) => {
-    const side = index % 2 === 0 ? -1 : 1
-    const lane = Math.floor(index / 2)
-    const z = -6.1 - lane * 1.82
-    const x = side * (4.1 + ((index * 11) % 9) * .43)
-    const y = replayTerrainHeight(x, z + 7) + .14
-    const scale = .28 + ((index * 7) % 6) * .055
-    return { x, y, z, scale, yaw: ((index * 31) % 17) * .17 }
-  }), [])
+  const replayGroundHeight = useCallback((x: number, z: number) => replayTerrainHeight(x, z + 7), [])
+  const wornTrail = useMemo(() => buildReplayWornTrailGeometry(replayGroundHeight), [replayGroundHeight])
+  useEffect(() => () => wornTrail.dispose(), [wornTrail])
+  const ridges = useMemo(() => ({
+    left: buildReplayDistantRidgeGeometry('left', replayGroundHeight),
+    right: buildReplayDistantRidgeGeometry('right', replayGroundHeight),
+    horizon: buildReplayDistantRidgeGeometry('horizon', replayGroundHeight),
+  }), [replayGroundHeight])
+  useEffect(() => () => { ridges.left.dispose(); ridges.right.dispose(); ridges.horizon.dispose() }, [ridges])
+  const physicalGroundColor = useMemo(() => new THREE.Color(memory.visuals.ground).lerp(new THREE.Color('#758575'), .72), [memory.visuals.ground])
+  const horizonGlowUniforms = useMemo(() => ({ uGlowColor: { value: new THREE.Color(memory.visuals.light) } }), [memory.visuals.light])
 
   useEffect(() => () => terrain.dispose(), [terrain])
 
   return (
-    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-procedural-landscape-v4-layered-depth' }}>
-      <mesh geometry={terrain} position={[0, 0, -7]} receiveShadow>
-        <meshPhysicalMaterial color={memory.visuals.ground} roughness={.88} metalness={0} clearcoat={.08} clearcoatRoughness={.72} />
+    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-scanned-cc0-and-physically-textured-grove-v6' }}>
+      <mesh geometry={terrain} position={[0, 0, -7]} receiveShadow name="replay-memory-terrain">
+        <meshPhysicalMaterial color={physicalGroundColor} map={soil.color} normalMap={soil.normal} roughness={.96} metalness={0} clearcoat={.04} clearcoatRoughness={.85} />
       </mesh>
 
-      <group name="replay-memory-walk">
+      <group name="replay-memory-walk" userData={{ truthClass: 'disclosed-demonstration', sourceGrounded: false }}>
+        <mesh geometry={wornTrail} receiveShadow name="replay-memory-worn-trail">
+          <meshStandardMaterial color="#ffffff" map={soil.color} normalMap={soil.normal} vertexColors roughness={.98} metalness={0} />
+        </mesh>
+        {process.env.NEXT_PUBLIC_URAI_PREVIEW_MODE === 'true' && !developmentCandidate
+          ? <ReplayDefaultTrailEvidence />
+          : null}
         {trailStones.map((stone, index) => (
           <mesh
             key={index}
             name={`replay-memory-trail-stone-${index + 1}`}
             position={[stone.x, stone.y, stone.z]}
             rotation={[0, stone.yaw, 0]}
-            scale={[stone.width, .10, stone.depth]}
+            scale={[stone.width, .068, stone.depth]}
             castShadow
             receiveShadow
           >
             <icosahedronGeometry args={[1, 2]} />
             <meshPhysicalMaterial
-              color={index % 4 === 0 ? memory.visuals.light : '#778079'}
-              roughness={.86}
+              color={index % 4 === 0 ? '#a3ab96' : '#929d89'}
+              map={rock.color}
+              normalMap={rock.normal}
+              roughness={.92}
               metalness={0}
               clearcoat={.08}
               clearcoatRoughness={.75}
@@ -237,81 +281,45 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
           receiveShadow
         >
           <icosahedronGeometry args={[1, 2]} />
-          <meshStandardMaterial color={index % 3 === 0 ? '#39433d' : '#2b3531'} roughness={.93} metalness={0} />
+          <meshStandardMaterial color={index % 3 === 0 ? '#8e9990' : '#7a857c'} map={rock.color} normalMap={rock.normal} roughness={.96} metalness={0} />
         </mesh>
       ))}
 
-      {understory.map((plant, index) => (
-        <group
-          key={`understory-${index}`}
-          name={`replay-memory-understory-${index + 1}`}
-          position={[plant.x, plant.y, plant.z]}
-          rotation={[0, plant.yaw, 0]}
-          scale={plant.scale}
-        >
-          <mesh position={[0, .46, 0]} rotation={[0, 0, .12]} castShadow>
-            <coneGeometry args={[.34, 1.08, 7]} />
-            <meshStandardMaterial color={index % 3 === 0 ? '#41604d' : index % 3 === 1 ? '#355342' : '#294638'} roughness={.96} metalness={0} />
-          </mesh>
-          <mesh position={[.24, .30, .08]} rotation={[0, .65, -.22]} castShadow>
-            <coneGeometry args={[.24, .72, 7]} />
-            <meshStandardMaterial color={index % 2 === 0 ? '#526e56' : '#3b5b47'} roughness={.98} metalness={0} />
-          </mesh>
-          <mesh position={[-.22, .25, -.06]} rotation={[0, -.55, .28]} castShadow>
-            <coneGeometry args={[.2, .62, 7]} />
-            <meshStandardMaterial color="#2f503e" roughness={.98} metalness={0} />
-          </mesh>
-        </group>
-      ))}
-
-      {trees.map(([x, z, scale], index) => (
-        <group key={index} name={`replay-memory-tree-${index + 1}`} position={[x, -1.5, z]} scale={scale}>
-          <mesh position={[0, 1.48, 0]} castShadow>
-            <cylinderGeometry args={[.15, .25, 2.95, 12]} />
-            <meshStandardMaterial color="#382a20" roughness={.96} />
-          </mesh>
-          {[
-            [0, 2.85, 0, .82, 1.02, .82],
-            [.54, 3.18, .16, .62, .76, .60],
-            [-.48, 3.12, -.14, .66, .82, .63],
-            [.06, 3.72, -.03, .53, .64, .50],
-          ].map(([cx, cy, cz, sx, sy, sz], clusterIndex) => (
-            <mesh
-              key={clusterIndex}
-              position={[cx, cy, cz]}
-              scale={[sx, sy, sz]}
-              rotation={[clusterIndex * .07, clusterIndex * .41, clusterIndex * .05]}
-              castShadow
-              receiveShadow
-            >
-              <icosahedronGeometry args={[1.08, 2]} />
-              <meshStandardMaterial
-                color={(index + clusterIndex) % 3 === 0 ? '#284739' : (index + clusterIndex) % 3 === 1 ? '#1d392f' : '#315344'}
-                roughness={.94}
-                metalness={0}
-              />
-            </mesh>
-          ))}
-        </group>
-      ))}
+      {developmentCandidate ? <Suspense fallback={null}>
+        <DevReplayCandidateWorld groundHeight={replayGroundHeight} />
+      </Suspense> : <>
+        <ReplayMemoryGrove trees={trees} groundHeight={replayGroundHeight} />
+        <ReplayForestFloor groundHeight={replayGroundHeight} />
+        <Suspense fallback={null}>
+          <ReplayScannedUnderstory groundHeight={replayGroundHeight} />
+        </Suspense>
+      </>}
 
       <mesh position={[-1.2, 4.2, -20.5]} name="replay-memory-horizon-glow" renderOrder={0}>
-        <circleGeometry args={[4.6, 96]} />
-        <meshBasicMaterial color={memory.visuals.light} transparent opacity={.065} depthWrite={false} blending={THREE.AdditiveBlending} />
+        {/* Edge-faded atmospheric halo: a solid circle produced the conspicuous
+            opaque-looking disk in real default-world desktop/mobile captures. */}
+        <planeGeometry args={[9.2, 9.2]} />
+        <shaderMaterial
+          uniforms={horizonGlowUniforms}
+          vertexShader={REPLAY_HORIZON_VERTEX_SHADER}
+          fragmentShader="uniform vec3 uGlowColor; varying vec2 vGlowUv; void main() { float radius = length(vGlowUv - vec2(0.5)) * 2.0; float alpha = 0.065 * pow(1.0 - smoothstep(0.05, 1.0, radius), 2.0); gl_FragColor = vec4(uGlowColor, alpha); }"
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
       </mesh>
       <pointLight position={[-1.2, 3.8, -18]} intensity={1.15} distance={20} color={memory.visuals.light} />
 
-      <mesh position={[-10.8, -2.4, -24.5]} scale={[9.8, 4.8, 5.4]} rotation={[0, .2, -.04]} castShadow receiveShadow name="replay-memory-ridge-left">
-        <icosahedronGeometry args={[1, 3]} />
-        <meshStandardMaterial color="#17251f" roughness={1} metalness={0} />
+      {/* Height-field ridges converge onto the actual terrain and fade toward the
+          back horizon. The disclosed demonstration art is not an admitted world. */}
+      <mesh geometry={ridges.left} castShadow receiveShadow name="replay-memory-ridge-left">
+        <meshStandardMaterial color={physicalGroundColor} map={soil.color} normalMap={soil.normal} roughness={1} metalness={0} />
       </mesh>
-      <mesh position={[10.2, -2.6, -26]} scale={[12.2, 5.6, 6.4]} rotation={[0, -.18, .03]} castShadow receiveShadow name="replay-memory-ridge-right">
-        <icosahedronGeometry args={[1, 3]} />
-        <meshStandardMaterial color="#20302a" roughness={1} metalness={0} />
+      <mesh geometry={ridges.right} castShadow receiveShadow name="replay-memory-ridge-right">
+        <meshStandardMaterial color={physicalGroundColor} map={soil.color} normalMap={soil.normal} roughness={1} metalness={0} />
       </mesh>
-      <mesh position={[0, -3.45, -33]} scale={[18.5, 6.8, 8.2]} receiveShadow name="replay-memory-ridge-horizon">
-        <icosahedronGeometry args={[1, 3]} />
-        <meshStandardMaterial color="#2b3b34" roughness={1} metalness={0} />
+      <mesh geometry={ridges.horizon} receiveShadow name="replay-memory-ridge-horizon">
+        <meshStandardMaterial color={physicalGroundColor} map={soil.color} normalMap={soil.normal} roughness={1} metalness={0} />
       </mesh>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-5.6, -1.43, -12.8]} name="replay-memory-meadow-light">
@@ -358,9 +366,9 @@ function ReplaySpatialScene({ memory, progressMs, onMediaState }: { memory: Sele
   return (
     <>
       <color attach="background" args={[memory.visuals.sky]} />
-      <fog attach="fog" args={[memory.visuals.sky, 10, 34]} />
-      <ambientLight intensity={0.38} />
-      <hemisphereLight intensity={0.72} color={memory.visuals.light} groundColor={memory.visuals.ground} />
+      <fog attach="fog" args={[memory.visuals.sky, 14, 46]} />
+      <ambientLight intensity={0.5} />
+      <hemisphereLight intensity={0.9} color={memory.visuals.light} groundColor={memory.visuals.ground} />
       <directionalLight position={[-4, 7, 6]} intensity={1.75} color={memory.visuals.light} castShadow />
       <directionalLight position={[4, 3.2, -3]} intensity={0.66} color={memory.visuals.accent} />
       <pointLight position={[0, 1.4, -4.8]} intensity={5.25} distance={19} color={memory.visuals.accent} />
@@ -431,6 +439,13 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const videoSession = useRef<ReplayVideoSession | null>(null)
   const sourceRelease = useRef<(() => void) | null>(null)
   const onSourceRelease = useCallback((release: (() => void) | null) => { sourceRelease.current = release }, [])
+  useEffect(() => () => {
+    // Close any remaining owned media session as the Replay scene disappears.
+    sourceRelease.current?.()
+    videoSession.current?.dispose()
+    sourceRelease.current = null
+    videoSession.current = null
+  }, [])
   const ownedPlayback = useOwnedMemoryMediaPlayback(memory, () => { sourceRelease.current?.(); videoSession.current?.dispose() })
   const expectsPrivateSource = Boolean(memory.sourceMediaReceipts?.length)
   const playableMemory = useMemo(() => expectsPrivateSource ? { ...memory, sourceMedia: ownedPlayback.media } : memory, [expectsPrivateSource, memory, ownedPlayback.media])
@@ -464,6 +479,16 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const segments = memory?.replayManifest.segments ?? []
   const active = useMemo(() => segments.find((segment) => progressMs >= segment.startsAtMs && progressMs < segment.startsAtMs + segment.durationMs) ?? segments.at(-1), [progressMs, segments])
   const unwind = useCallback(() => requestUraiWorldReturn(), [])
+  useEffect(() => {
+    // Observe Replay-owned returns without modifying the canonical reverse-travel
+    // callback or competing with its navigation. Capture fires before the router.
+    const onReplayReturn = () => {
+      if (world.previousDestination === 'life-movie') return
+      noteReplayReturnFocus()
+    }
+    window.addEventListener('urai:world-return', onReplayReturn, true)
+    return () => window.removeEventListener('urai:world-return', onReplayReturn, true)
+  }, [world.previousDestination])
   const pauseMemory = useCallback(() => { setNarrativePlaying(false); videoSession.current?.pause() }, [])
   useEffect(() => { if (expectsPrivateSource && ownedPlayback.status !== 'ready') pauseMemory() }, [expectsPrivateSource, ownedPlayback.status, pauseMemory])
   const togglePlayback = useCallback(() => {
@@ -537,6 +562,10 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const percent = Math.round((progressMs / duration) * 100)
   const demoEnvironment = admission.kind === 'disclosed-demo'
   const visualOwner = admission.kind === 'recorded-source' ? 'recorded-source-original-framing' : demoEnvironment && webgl.state === 'ready' ? 'r3f-immersive-memory-field' : demoEnvironment ? 'disclosed-demo-asset-fallback' : 'neutral-memory-horizon'
+  // A paused memory is a held frame, not a continuously rendering world.
+  // Return to continuous presentation only during authorized playback. React
+  // and R3F invalidate a demand frame for real state/texture changes.
+  const framePolicy = !quality.documentVisible ? 'never' : quality.reducedMotion || !playing ? 'demand' : 'always'
   const mediaError = video ? videoSnapshot.error : imageState.error
   const style = {
     '--replay-accent': memory.visuals.accent,
@@ -546,9 +575,9 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
+  return <main className="replayWorld" style={style} data-replay-frame-policy={framePolicy} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
     {admission.kind !== 'recorded-source' && webgl.state === 'ready' ? <ReplayCanvasBoundary key={`${webgl.attempt}:${mediaAttempt}`} onFailure={webgl.fail}>
-      <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? (quality.reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position: [0, 0.28, 7.25], fov: 50, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
+      <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[Math.min(1, quality.pixelRatioMax), quality.pixelRatioMax]} frameloop={framePolicy} camera={{ position: [0, 0.28, 7.25], fov: 50, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
         {demoEnvironment ? <ReplaySpatialScene memory={memory} progressMs={progressMs} onMediaState={onImageState} /> : <ReplayNeutralSpatialScene />}
       </Canvas>
     </ReplayCanvasBoundary> : null}
@@ -611,10 +640,10 @@ function ReplayMemoryHorizon({ memoryStatus, message, quality }: { memoryStatus:
 
   return (
     <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-replay-neutral="memory-horizon" data-replay-spatial-owner="neutral-memory-horizon" data-webgl-state={webgl.state}>
-      {webgl.state === 'ready' ? <ReplayCanvasBoundary key={webgl.attempt} onFailure={webgl.fail}><Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? (quality.reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true })}>
+      {webgl.state === 'ready' ? <ReplayCanvasBoundary key={webgl.attempt} onFailure={webgl.fail}><Canvas className="replaySpatialCanvas" dpr={[Math.min(1, quality.pixelRatioMax), quality.pixelRatioMax]} frameloop={quality.documentVisible ? (quality.reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true })}>
         <ReplayNeutralSpatialScene />
       </Canvas></ReplayCanvasBoundary> : null}
-      <section role={memoryStatus === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p {...locale.props(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}>{locale.text(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}</p><h1 {...locale.props(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')} style={{overflowWrap:'anywhere'}}>{locale.text(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')}</h1><span>{message}</span><JourneyOfflineNotice />{memoryStatus === 'loading' ? null : <button type="button" onClick={chooseMemory} {...locale.props('replay.chooseMemory')}>{locale.text('replay.chooseMemory')}</button>}{webgl.state !== 'ready' && webgl.state !== 'checking' ? <span role="status" {...locale.props('replay.selectionAccessible')}>{locale.text('replay.selectionAccessible')}</span> : null}</section>
+      <section role={memoryStatus === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p {...locale.props(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}>{locale.text(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}</p><h1 {...locale.props(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')} style={{overflowWrap:'anywhere'}}>{locale.text(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')}</h1><span>{message}</span><JourneyOfflineNotice /><div className="replayHorizonActions">{memoryStatus === 'loading' ? null : <button type="button" className="replayChooseMemory" onClick={chooseMemory} {...locale.props('replay.chooseMemory')}>{locale.text('replay.chooseMemory')}</button>}<AdamLauncherSlot name="replay-horizon-controls" as="div" /></div>{webgl.state !== 'ready' && webgl.state !== 'checking' ? <span role="status" {...locale.props('replay.selectionAccessible')}>{locale.text('replay.selectionAccessible')}</span> : null}</section>
       <style>{stateCss}</style>
     </main>
   )
@@ -630,6 +659,6 @@ export default function CinematicReplayClient() {
   return <ReplayMemoryExperience key={replaySessionIdentity(memory)} memory={memory} memoryStatus={result.status} quality={quality} />
 }
 
-const stateCss = `.replayState{position:fixed;inset:0;overflow:hidden;display:grid;place-items:center;padding:24px;background:#02060d;color:#fff;isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayState:after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,transparent 0 22%,rgba(1,5,12,.28) 48%,rgba(1,5,12,.8) 100%);pointer-events:none}.replayState section{z-index:2;text-align:center;max-width:620px;padding:28px 30px;border:1px solid rgba(220,248,255,.12);border-radius:28px;background:linear-gradient(145deg,rgba(2,8,16,.7),rgba(2,8,16,.24));backdrop-filter:blur(18px);text-shadow:0 3px 24px #000}.replayState section p{margin:0 0 9px;color:#c9f7ff;font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.replayState section h1{margin:0;font:500 clamp(1.7rem,4.6vw,3.6rem)/1.02 var(--font-sans);letter-spacing:-.045em}.replayState section span{display:block;max-width:520px;margin:12px auto 0;color:rgba(235,247,255,.72);font-size:13px;line-height:1.55}.replayState button{min-height:48px;margin-top:20px;padding:0 22px;border-radius:999px;border:1px solid rgba(210,248,255,.32);background:linear-gradient(135deg,#dffbff,#8fe5ef);color:#041019;font-weight:900}.replayState button:focus-visible{outline:3px solid #fff;outline-offset:4px}@media(max-width:700px){.replayState section{max-width:calc(100vw - 32px);padding:24px 20px}}@media(prefers-reduced-motion:reduce){.replayState section{backdrop-filter:none}}@media(forced-colors:active){.replayState section,.replayState button{border:2px solid CanvasText}}`
+const stateCss = `.replayState{position:fixed;inset:0;overflow:hidden;display:grid;place-items:center;padding:24px;background:#02060d;color:#fff;isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayState:after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,transparent 0 22%,rgba(1,5,12,.28) 48%,rgba(1,5,12,.8) 100%);pointer-events:none}.replayState section{z-index:2;text-align:center;max-width:620px;padding:28px 30px;border:1px solid rgba(220,248,255,.12);border-radius:28px;background:linear-gradient(145deg,rgba(2,8,16,.7),rgba(2,8,16,.24));backdrop-filter:blur(18px);text-shadow:0 3px 24px #000}.replayState section p{margin:0 0 9px;color:#c9f7ff;font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.replayState section h1{margin:0;font:500 clamp(1.7rem,4.6vw,3.6rem)/1.02 var(--font-sans);letter-spacing:-.045em}.replayState section span{display:block;max-width:520px;margin:12px auto 0;color:rgba(235,247,255,.72);font-size:13px;line-height:1.55}.replayHorizonActions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;margin-top:20px}.replayState .replayChooseMemory{min-height:48px;margin-top:0;padding:0 22px;border-radius:999px;border:1px solid rgba(210,248,255,.32);background:linear-gradient(135deg,#dffbff,#8fe5ef);color:#041019;font-weight:900}.replayState .replayChooseMemory:focus-visible{outline:3px solid #fff;outline-offset:4px}@media(max-width:700px){.replayState section{max-width:calc(100vw - 32px);padding:24px 20px}}@media(prefers-reduced-motion:reduce){.replayState section{backdrop-filter:none}}@media(forced-colors:active){.replayState section,.replayState .replayChooseMemory{border:2px solid CanvasText}}`
 
-const replayCss = `.replayWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:var(--replay-sky);isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayAtmosphere{position:absolute;z-index:2;inset:0;background:radial-gradient(circle at 50% 42%,transparent 0 36%,rgba(1,5,12,.08) 64%,rgba(1,5,12,.28) 100%),linear-gradient(180deg,rgba(1,5,12,.09),transparent 24% 70%,rgba(1,5,12,.28));pointer-events:none}.replayRecordedSource{position:absolute;inset:0;z-index:1;display:grid;place-items:center;background:#02060d}.replayRecordedSource>img,.replayRecordedSource>video{display:block;width:100%;height:100%;object-fit:contain}.replayWorld[data-replay-media-status="error"] .replayRecordedSource>img,.replayWorld[data-replay-media-status="error"] .replayRecordedSource>video{visibility:hidden}.replaySourceStatus{position:relative;width:100%;box-sizing:border-box;margin-top:12px;padding:12px 14px;border:1px solid rgba(220,248,255,.18);border-radius:16px;background:rgba(2,7,12,.88);font-size:12px;line-height:1.4}.replaySourceStatus strong,.replaySourceStatus span{display:block}.replaySourceStatus span{margin-top:5px;color:#e0edf3}.replaySourceStatus button,.replaySpatialNotice button,.memoryAudio{min-height:48px;min-width:48px;padding:0 12px;border:1px solid rgba(220,248,255,.3);border-radius:999px;background:#07131d;color:#fff;font-size:11px;font-weight:850}.replaySourceStatus button{margin-top:8px}.replaySpatialNotice{display:grid;gap:8px;justify-items:start;margin-top:8px;font-size:12px}.memoryPulse:disabled{opacity:.6;cursor:wait}.replaySourceStatus button:focus-visible,.replaySpatialNotice button:focus-visible,.memoryAudio:focus-visible{outline:3px solid #fff;outline-offset:3px}.replayWorld header{position:absolute;z-index:5;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(330px,calc(100vw - 36px));max-height:max(48px,calc(100svh - 340px));overflow:auto;overscroll-behavior:contain;text-shadow:0 3px 24px #000}.replayWorld header>p{margin:0;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.replayWorld header h1{margin:5px 0;font-size:clamp(1.25rem,4vw,2.4rem);line-height:.95}.replayWorld header>span{font-size:11px;color:rgba(255,255,255,.7)}.caption{position:absolute;z-index:5;left:50%;bottom:max(clamp(184px,16svh,190px),calc(env(safe-area-inset-bottom) + 184px));transform:translateX(-50%);width:min(640px,68vw);text-align:center;text-shadow:0 3px 30px #000}.caption small{display:block;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}.caption strong{display:block;margin-top:8px;font:500 clamp(1.05rem,2.6vw,2.15rem)/1.1 var(--font-sans);letter-spacing:-.028em}.caption span{display:block;margin:8px auto 0;max-width:620px;font-size:12px;color:rgba(255,255,255,.72)}.memoryTempo{position:absolute;z-index:7;left:50%;bottom:max(112px,calc(env(safe-area-inset-bottom) + 106px));transform:translateX(-50%);width:min(560px,calc(100vw - 40px));display:flex;align-items:center;justify-content:center;gap:12px}.memoryPulse{min-height:48px;padding:0 15px;border:1px solid rgba(222,248,255,.24);border-radius:999px;background:rgba(3,10,18,.46);backdrop-filter:blur(12px);color:#eefcff;font-size:11px;font-weight:850;letter-spacing:.04em}.memoryPulse span{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:7px;border-radius:50%;background:color-mix(in srgb,var(--replay-accent) 32%,transparent);color:var(--replay-light)}.memoryTrace{position:relative;width:min(280px,35vw);height:2px;overflow:hidden;border-radius:999px;background:rgba(230,249,255,.12)}.memoryTrace i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--replay-accent),var(--replay-light));box-shadow:0 0 18px var(--replay-accent)}.memorySeekTrack{position:relative;display:flex;align-items:center;flex:1;min-width:30px;max-width:280px;height:48px}.memorySeekTrack .memoryTrace{width:100%;min-width:0}.memorySeek{position:absolute;width:1px;height:1px;opacity:.001;pointer-events:none}.memorySeek:focus-visible{position:absolute;left:0;top:0;width:100%;height:48px;margin:0;opacity:1;pointer-events:auto;outline:3px solid #fff;outline-offset:3px}.srOnly{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}.transcript summary{display:flex;align-items:center;min-width:48px;min-height:48px;cursor:pointer}.transcript{position:absolute;z-index:8;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));max-width:340px;padding:8px 12px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(2,7,14,.7);font-size:12px}.transcript p{margin:8px 0 0;line-height:1.5}.unwind{display:block;min-height:48px;margin-top:10px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(2,7,12,.72);color:#fff;font-weight:800}.replayImmersiveEntry{display:inline-flex;align-items:center;min-height:48px;margin-top:8px;padding:0 15px;border:1px solid color-mix(in srgb,var(--replay-light) 28%,transparent);border-radius:999px;background:rgba(2,7,12,.46);color:rgba(244,252,255,.86);font-size:11px;font-weight:800;text-decoration:none;backdrop-filter:blur(10px)}.replayLifeMovieEntry{display:inline-flex;align-items:center;min-height:48px;margin:8px 8px 0 0;padding:0 15px;border:1px solid color-mix(in srgb,var(--replay-accent) 38%,transparent);border-radius:999px;background:rgba(2,7,12,.56);color:#f5fdff;font-size:11px;font-weight:900;cursor:pointer;backdrop-filter:blur(10px)}.memoryPulse:focus-visible,.memorySeek:focus-visible,.unwind:focus-visible,.replayLifeMovieEntry:focus-visible,.replayImmersiveEntry:focus-visible,.transcript summary:focus-visible{outline:3px solid #fff;outline-offset:3px}@media(max-width:700px){.caption{bottom:22svh;width:86vw;max-height:min(112px,max(24px,calc(100svh - max(48px,calc(100svh - 340px)) - max(18px,env(safe-area-inset-top)) - 16px - 22svh)));overflow:auto;overscroll-behavior:contain}.caption strong{font-size:1.2rem}.caption span{display:block;overflow:visible}.transcript{top:max(76px,calc(env(safe-area-inset-top) + 70px));right:14px;bottom:auto;max-width:180px}.unwind{margin-top:9px}.memoryTempo{bottom:max(96px,calc(env(safe-area-inset-bottom) + 90px));width:calc(100vw - 28px);gap:8px}.memoryPulse{padding:0 12px}.memoryTrace{flex:1;width:auto}.replayWorld header{max-width:250px}.replayWorld header h1{font-size:1.35rem}}@media(max-height:720px){.caption{bottom:28svh}}@media(max-height:720px) and (max-width:700px){.caption{max-height:min(112px,max(24px,calc(100svh - max(48px,calc(100svh - 340px)) - max(18px,env(safe-area-inset-top)) - 16px - 28svh)))}}@media(max-height:500px) and (min-width:501px){.replayWorld header{width:calc(50vw - 36px - env(safe-area-inset-left));max-width:none;max-height:calc(100svh - 90px);overflow:auto;overscroll-behavior:contain}.replayWorld header h1{font-size:1.35rem;line-height:1.1}.caption{left:auto;right:max(18px,env(safe-area-inset-right));top:88px;bottom:auto;transform:none;width:calc(50vw - 36px - env(safe-area-inset-right));max-height:calc(100svh - 210px);overflow:auto;overscroll-behavior:contain}.caption strong{font-size:1.15rem;line-height:1.2}.caption span{display:block;overflow:visible}.memoryTempo{left:auto;right:max(18px,env(safe-area-inset-right));bottom:max(70px,calc(env(safe-area-inset-bottom) + 64px));transform:none;width:calc(50vw - 36px - env(safe-area-inset-right));gap:8px}.memoryTrace{flex:1;min-width:0;width:auto}.memoryPulse{flex-shrink:0}.transcript{top:max(16px,env(safe-area-inset-top));max-width:calc(50vw - 36px - env(safe-area-inset-right));max-height:56px;overflow:auto}.replayWorld:not([data-webgl-state="ready"]) header{max-height:calc(50svh - 24px)}.replaySourceStatus{width:100%}}@media(max-height:500px) and (max-width:500px){.caption{bottom:max(160px,calc(env(safe-area-inset-bottom) + 154px));max-height:max(24px,calc(100svh - 242px));overflow:auto;overscroll-behavior:contain}.caption span{display:block;overflow:visible}}@media(prefers-reduced-motion:reduce){.memoryPulse{backdrop-filter:none}}@media(forced-colors:active){.memoryPulse,.memoryAudio,.replaySourceStatus button,.replaySpatialNotice button,.unwind,.replayLifeMovieEntry,.replayImmersiveEntry,.transcript{border:2px solid CanvasText}.memoryTrace{border:1px solid CanvasText}}`
+const replayCss = `.replayWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:var(--replay-sky);isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayAtmosphere{position:absolute;z-index:2;inset:0;background:radial-gradient(circle at 50% 42%,transparent 0 36%,rgba(1,5,12,.08) 64%,rgba(1,5,12,.28) 100%),linear-gradient(180deg,rgba(1,5,12,.09),transparent 24% 70%,rgba(1,5,12,.28));pointer-events:none}.replayRecordedSource{position:absolute;inset:0;z-index:1;display:grid;place-items:center;background:#02060d}.replayRecordedSource>img,.replayRecordedSource>video{display:block;width:100%;height:100%;object-fit:contain}.replayWorld[data-replay-media-status="error"] .replayRecordedSource>img,.replayWorld[data-replay-media-status="error"] .replayRecordedSource>video{visibility:hidden}.replaySourceStatus{position:relative;width:100%;box-sizing:border-box;margin-top:12px;padding:12px 14px;border:1px solid rgba(220,248,255,.18);border-radius:16px;background:rgba(2,7,12,.88);font-size:12px;line-height:1.4}.replaySourceStatus strong,.replaySourceStatus span{display:block}.replaySourceStatus span{margin-top:5px;color:#e0edf3}.replaySourceStatus button,.replaySpatialNotice button,.memoryAudio{min-height:48px;min-width:48px;padding:0 12px;border:1px solid rgba(220,248,255,.3);border-radius:999px;background:#07131d;color:#fff;font-size:11px;font-weight:850}.replaySourceStatus button{margin-top:8px}.replaySpatialNotice{display:grid;gap:8px;justify-items:start;margin-top:8px;font-size:12px}.memoryPulse:disabled{opacity:.6;cursor:wait}.replaySourceStatus button:focus-visible,.replaySpatialNotice button:focus-visible,.memoryAudio:focus-visible{outline:3px solid #fff;outline-offset:3px}.replayWorld header{position:absolute;z-index:5;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(330px,calc(100vw - 36px));max-height:max(48px,calc(100svh - 340px));overflow:auto;overscroll-behavior:contain;text-shadow:0 3px 24px #000}.replayWorld header>p{margin:0;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.replayWorld header h1{margin:5px 0;font-size:clamp(1.25rem,4vw,2.4rem);line-height:.95}.replayWorld header>span{font-size:11px;color:rgba(255,255,255,.7)}.caption{position:absolute;z-index:5;left:50%;bottom:max(clamp(184px,16svh,190px),calc(env(safe-area-inset-bottom) + 184px));transform:translateX(-50%);width:min(640px,68vw);text-align:center;text-shadow:0 3px 30px #000}.caption small{display:block;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}.caption strong{display:block;margin-top:8px;font:500 clamp(1.05rem,2.6vw,2.15rem)/1.1 var(--font-sans);letter-spacing:-.028em}.caption span{display:block;margin:8px auto 0;max-width:620px;font-size:12px;color:rgba(255,255,255,.72)}.memoryTempo{position:absolute;z-index:7;left:50%;bottom:max(112px,calc(env(safe-area-inset-bottom) + 106px));transform:translateX(-50%);width:min(560px,calc(100vw - 40px));display:flex;align-items:center;justify-content:center;gap:12px}.memoryPulse{min-height:48px;padding:0 15px;border:1px solid rgba(222,248,255,.24);border-radius:999px;background:rgba(3,10,18,.46);backdrop-filter:blur(12px);color:#eefcff;font-size:11px;font-weight:850;letter-spacing:.04em}.memoryPulse span{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:7px;border-radius:50%;background:color-mix(in srgb,var(--replay-accent) 32%,transparent);color:var(--replay-light)}.memoryTrace{position:relative;width:min(280px,35vw);height:2px;overflow:hidden;border-radius:999px;background:rgba(230,249,255,.12)}.memoryTrace i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--replay-accent),var(--replay-light));box-shadow:0 0 18px var(--replay-accent)}.memorySeekTrack{position:relative;display:flex;align-items:center;flex:1;min-width:30px;max-width:280px;height:48px}.memorySeekTrack .memoryTrace{width:100%;min-width:0}.memorySeek{position:absolute;inset:0;z-index:2;width:100%;height:48px;margin:0;border:0;background:transparent;color:var(--replay-light);cursor:pointer;appearance:none;-webkit-appearance:none;touch-action:none}.memorySeek::-webkit-slider-runnable-track{height:48px;background:transparent;border:0}.memorySeek::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;margin-top:14px;border:2px solid #eefcff;border-radius:50%;background:var(--replay-light);box-shadow:0 0 0 5px rgba(3,10,18,.46)}.memorySeek::-moz-range-track{height:48px;background:transparent;border:0}.memorySeek::-moz-range-thumb{width:20px;height:20px;border:2px solid #eefcff;border-radius:50%;background:var(--replay-light);box-shadow:0 0 0 5px rgba(3,10,18,.46)}.memorySeek:focus-visible{outline:3px solid #fff;outline-offset:3px;border-radius:12px}.memorySeek:disabled{opacity:.55;cursor:not-allowed}.srOnly{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}.transcript summary{display:flex;align-items:center;min-width:48px;min-height:48px;cursor:pointer}.transcript{position:absolute;z-index:8;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));max-width:340px;padding:8px 12px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(2,7,14,.7);font-size:12px}.transcript p{margin:8px 0 0;line-height:1.5}.unwind{display:block;min-height:48px;margin-top:10px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(2,7,12,.72);color:#fff;font-weight:800}.replayImmersiveEntry{display:inline-flex;align-items:center;min-height:48px;margin-top:8px;padding:0 15px;border:1px solid color-mix(in srgb,var(--replay-light) 28%,transparent);border-radius:999px;background:rgba(2,7,12,.46);color:rgba(244,252,255,.86);font-size:11px;font-weight:800;text-decoration:none;backdrop-filter:blur(10px)}.replayLifeMovieEntry{display:inline-flex;align-items:center;min-height:48px;margin:8px 8px 0 0;padding:0 15px;border:1px solid color-mix(in srgb,var(--replay-accent) 38%,transparent);border-radius:999px;background:rgba(2,7,12,.56);color:#f5fdff;font-size:11px;font-weight:900;cursor:pointer;backdrop-filter:blur(10px)}.memoryPulse:focus-visible,.memorySeek:focus-visible,.unwind:focus-visible,.replayLifeMovieEntry:focus-visible,.replayImmersiveEntry:focus-visible,.transcript summary:focus-visible{outline:3px solid #fff;outline-offset:3px}@media(max-width:700px){.caption{bottom:22svh;width:86vw;max-height:min(112px,max(24px,calc(100svh - max(48px,calc(100svh - 340px)) - max(18px,env(safe-area-inset-top)) - 16px - 22svh)));overflow:auto;overscroll-behavior:contain}.caption strong{font-size:1.2rem}.caption span{display:block;overflow:visible}.transcript{top:max(76px,calc(env(safe-area-inset-top) + 70px));right:14px;bottom:auto;max-width:180px}.unwind{margin-top:9px}.memoryTempo{bottom:max(96px,calc(env(safe-area-inset-bottom) + 90px));width:calc(100vw - 28px);gap:8px}.memoryPulse{padding:0 12px}.memoryTrace{flex:1;width:auto}.replayWorld header{max-width:250px}.replayWorld header h1{font-size:1.35rem}}@media(max-height:720px){.caption{bottom:28svh}}@media(max-height:720px) and (max-width:700px){.caption{max-height:min(112px,max(24px,calc(100svh - max(48px,calc(100svh - 340px)) - max(18px,env(safe-area-inset-top)) - 16px - 28svh)))}}@media(max-height:500px) and (min-width:501px){.replayWorld header{width:calc(50vw - 36px - env(safe-area-inset-left));max-width:none;max-height:calc(100svh - 90px);overflow:auto;overscroll-behavior:contain}.replayWorld header h1{font-size:1.35rem;line-height:1.1}.caption{left:auto;right:max(18px,env(safe-area-inset-right));top:88px;bottom:auto;transform:none;width:calc(50vw - 36px - env(safe-area-inset-right));max-height:calc(100svh - 210px);overflow:auto;overscroll-behavior:contain}.caption strong{font-size:1.15rem;line-height:1.2}.caption span{display:block;overflow:visible}.memoryTempo{left:auto;right:max(18px,env(safe-area-inset-right));bottom:max(70px,calc(env(safe-area-inset-bottom) + 64px));transform:none;width:calc(50vw - 36px - env(safe-area-inset-right));gap:8px}.memoryTrace{flex:1;min-width:0;width:auto}.memoryPulse{flex-shrink:0}.transcript{top:max(16px,env(safe-area-inset-top));max-width:calc(50vw - 36px - env(safe-area-inset-right));max-height:56px;overflow:auto}.replayWorld:not([data-webgl-state="ready"]) header{max-height:calc(50svh - 24px)}.replaySourceStatus{width:100%}}@media(max-height:500px) and (max-width:500px){.caption{bottom:max(160px,calc(env(safe-area-inset-bottom) + 154px));max-height:max(24px,calc(100svh - 242px));overflow:auto;overscroll-behavior:contain}.caption span{display:block;overflow:visible}}html[data-urai-preview="true"] .replayWorld header{top:max(46px,calc(env(safe-area-inset-top) + 40px));max-height:calc(100svh - 46px - 300px)}@media(max-width:700px){html[data-urai-preview="true"] .replayWorld header{top:max(78px,calc(env(safe-area-inset-top) + 72px));max-height:calc(100svh - 78px - 300px)}}@media(prefers-reduced-motion:reduce){.memoryPulse{backdrop-filter:none}}@media(forced-colors:active){.memoryPulse,.memoryAudio,.replaySourceStatus button,.replaySpatialNotice button,.unwind,.replayLifeMovieEntry,.replayImmersiveEntry,.transcript{border:2px solid CanvasText}.memoryTrace{border:1px solid CanvasText}}`

@@ -3,6 +3,8 @@
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 
+import { consumeReplayReturnFocus } from '@/spatial/world/replayReturnFocusHandoff'
+
 import StellarPhotosphere, { FOCUS_STAR_POSITION, FOCUS_STAR_RADIUS } from '@/spatial/stellar/StellarPhotosphere'
 import FocusAtmosphere from '@/spatial/stellar/FocusAtmosphere'
 import type { StellarMemoryState } from '@/spatial/stellar/stellarMemoryReveal'
@@ -28,7 +30,7 @@ const focusAccessibilityCss = `
 .focusControls button{min-width:0;white-space:normal;line-height:1.2}
 .focusStatus{max-width:calc(100vw - 32px);text-align:center;white-space:normal}
 @media(max-width:380px),(max-height:500px){.focusHeading{max-height:40svh;overflow-y:auto}.focusNarration{font-size:14px}.focusHelp[open]{max-height:40svh;max-width:calc(100vw - 32px);overflow:auto}.memoryMeaning{max-height:22svh;overflow:auto}}
-@media(max-height:500px) and (min-width:501px){.focusHeading{left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));width:calc(50vw - 40px - env(safe-area-inset-left));max-height:calc(50svh - 32px);overflow:auto;pointer-events:auto;overscroll-behavior:contain}.focusHeading h2{font-size:1.65rem;line-height:1.05}.focusNarration{margin-top:10px;padding:8px 10px}.focusNarration strong{font-size:1rem}.memoryMeaning{left:max(16px,env(safe-area-inset-left));top:50svh;bottom:auto;width:calc(50vw - 40px - env(safe-area-inset-left));max-height:calc(50svh - 100px);box-sizing:border-box;overflow:auto;overscroll-behavior:contain}.focusControls{left:auto;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));bottom:auto;width:calc(50vw - 40px - env(safe-area-inset-right));box-sizing:border-box;justify-content:center}.focusControls button{flex:1;padding:0 8px}.focusHelp{right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));max-width:calc(50vw - 40px - env(safe-area-inset-right))}.focusStatus{width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}}
+@media(max-height:500px) and (min-width:501px){.focusWorld .focusHeading{left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));width:calc(50vw - 40px - env(safe-area-inset-left));max-height:calc(50svh - 32px);overflow:auto;pointer-events:auto;overscroll-behavior:contain}.focusHeading h2{font-size:1.65rem;line-height:1.05}.focusNarration{margin-top:10px;padding:8px 10px}.focusNarration strong{font-size:1rem}.memoryMeaning{left:max(16px,env(safe-area-inset-left));top:calc(50svh + 8px);bottom:auto;width:calc(50vw - 40px - env(safe-area-inset-left));max-height:calc(50svh - 100px);box-sizing:border-box;overflow:auto;overscroll-behavior:contain}.focusControls{left:auto;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));bottom:auto;width:calc(50vw - 40px - env(safe-area-inset-right));box-sizing:border-box;justify-content:center}.focusControls button{flex:1;padding:0 8px}.focusHelp{right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));max-width:calc(50vw - 40px - env(safe-area-inset-right))}.focusStatus{width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}}
 @media(forced-colors:active){.focusControls button,.focusHelp,.neutralActions button,.webglRecovery button,.focus-spatial-aperture-button{background:Canvas;color:CanvasText;border:2px solid CanvasText}.focusControls button:focus-visible,.focusHelp summary:focus-visible,.neutralActions button:focus-visible,.webglRecovery button:focus-visible,.focus-spatial-aperture-button:focus-visible{outline:3px solid Highlight;outline-offset:3px}}
 `
 
@@ -339,6 +341,7 @@ export default function FocusChamberClient() {
   const webglAvailable = useWebGLAvailable()
   const controls = useRef<OrbitControlsImpl | null>(null)
   const shellRef = useRef<HTMLElement | null>(null)
+  const replayReturnFocusPending = useRef(false)
   const [recenterSignal, setRecenterSignal] = useState(0)
   const [committed, setCommitted] = useState(false)
   const [directEntry, setDirectEntry] = useState<boolean | null>(null)
@@ -360,6 +363,26 @@ export default function FocusChamberClient() {
     setEntryFrame(parseEntryCameraFrame(params))
     return () => { document.body.style.cursor = '' }
   }, [])
+
+  useEffect(() => {
+    // A Replay return unmounts the old focused control. This handoff has no
+    // personal memory identifiers and expires without affecting other routes.
+    replayReturnFocusPending.current = consumeReplayReturnFocus()
+  }, [])
+
+  const selectedMemoryId = memory?.id
+  useEffect(() => {
+    if (!selectedMemoryId || !replayReturnFocusPending.current) return
+    const frame = window.requestAnimationFrame(() => {
+      // Never steal focus if the user has already moved to another control.
+      if (document.activeElement === document.body || document.activeElement === document.documentElement) {
+        const action = shellRef.current?.querySelector<HTMLButtonElement>('.focusControls button.primary:not(:disabled)')
+        if (action?.getClientRects().length) action.focus({ preventScroll: true })
+      }
+      replayReturnFocusPending.current = false
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [selectedMemoryId])
 
   const replayHref = useMemo(() => {
     if (!memory) return null

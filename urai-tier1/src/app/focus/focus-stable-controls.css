@@ -38,6 +38,7 @@
 }
 @media (max-height: 500px) and (min-width: 501px) {
   .focusWorld .focusHeading { left: 16px; top: 16px; width: calc(46vw - 32px); max-height: 46svh; overflow: auto; pointer-events: auto; }
+  .focusWorld .focusNarration { max-height: none; overflow: visible; }
   .focusWorld .focusHeading h2 { font-size: 1.8rem; }
   .focusWorld .focusControlDock { left: auto; right: 16px; top: 16px; bottom: auto; width: min(330px, calc(50vw - 24px)); }
   .focusWorld .memoryMeaning { left: 16px; top: 50svh; bottom: 14px; width: calc(46vw - 32px); max-height: none; overflow: auto; }

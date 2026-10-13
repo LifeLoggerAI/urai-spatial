@@ -275,12 +275,29 @@ async function exerciseKeyboardPanel(page: Page, slot: string, capture = true) {
   expect(panelGeometry.horizontalOverflow).toBe(false)
   if (panelGeometry.hasVerticalOverflow) expect(panelGeometry.overflowY).toMatch(/^(auto|scroll)$/)
   if (capture) await attachPlacement(page, test.info(), `${slot}-panel-open-${panelGeometry.viewportWidth}x${panelGeometry.viewportHeight}`, panelGeometry)
-  const log = panel.getByRole('log')
   await page.keyboard.press('Tab')
+  const log = panel.getByRole('log')
+  // Chromium gives overflowing scroll regions a native keyboard stop.
+  // Verify that stop works before continuing to the message composer.
   if (await log.evaluate(element => element === document.activeElement)) {
-    expect(await log.evaluate(element => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0)
+    await expect(log).toBeFocused()
+    const logGeometry = await log.evaluate(element => ({
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+      overflowY: getComputedStyle(element).overflowY,
+    }))
+    expect(logGeometry.scrollHeight).toBeGreaterThan(logGeometry.clientHeight)
+    expect(logGeometry.overflowY).toMatch(/^(auto|scroll)$/)
+    await page.keyboard.press('Home')
+    await expect(log).toBeFocused()
+    await expect.poll(() => log.evaluate(element => element.scrollTop)).toBe(0)
     await page.keyboard.press('End')
     await expect.poll(() => log.evaluate(element => element.scrollTop)).toBeGreaterThan(0)
+    await expect(log).toBeFocused()
+    if (capture) await test.info().attach(`${slot}-log-keyboard-scroll.json`, {
+      body: JSON.stringify({ ...logGeometry, scrollTopAfterEnd: await log.evaluate(element => element.scrollTop) }),
+      contentType: 'application/json',
+    })
     await page.keyboard.press('Tab')
   }
   await expect(panel.getByRole('textbox', { name: 'Message Adam', exact: true })).toBeFocused()
@@ -423,6 +440,11 @@ for (const viewport of placementViewports) {
       expect(actionBounds!.height).toBeGreaterThanOrEqual(48)
       await attachPlacement(page, info, `passport-last-control-${state}-${viewport.width}x${viewport.height}`, { actionBounds })
       await assertInlineLauncher(page, 'passport-controls')
+      // Once the panel is closed, Passport's own Home shortcut still works.
+      await zones.last().focus()
+      await page.keyboard.press('Home')
+      await expect(zones.first()).toHaveAttribute('aria-pressed', 'true')
+      await expect(page.locator('#passport-controls')).toBeFocused()
       expect(errors).toEqual([])
     })
   }
@@ -533,7 +555,7 @@ for (const profile of [
       await page.emulateMedia({ reducedMotion: 'reduce' })
       if (profile.noWebGL || surface.noWebGL) await disableWebGL(page)
       const response = await page.goto(surface.route, { waitUntil: 'domcontentloaded' })
-      if (surface.slot === 'xr-portals' && !xrReleaseAuthority.enabled) {
+      if (surface.route === '/xr' && !xrReleaseAuthority.enabled) {
         expect(response, 'A disabled XR address must have an actual response').not.toBeNull()
         expect(inspectConditionalXrResponse({ status: response!.status(), url: response!.url() }, new URL(surface.route, info.project.use.baseURL).href, xrReleaseAuthority), 'The real disabled route must preserve governed 404 status, origin and path').toBe(true)
         await expect(page.getByTestId('urai-quest-explorable-world')).toHaveCount(0)

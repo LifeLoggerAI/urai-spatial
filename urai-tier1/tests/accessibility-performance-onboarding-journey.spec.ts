@@ -105,15 +105,22 @@ test('a nondefault selected sample survives semantic selection and guide arrival
   await expect(focus).toBeVisible()
   const destination = new URL(await focus.getAttribute('href') ?? '', page.url())
   expect(destination.searchParams.get('memoryId')).toBe('voice-note-home')
-  expect(destination.searchParams.get('manifestId')).toBe('demo-manifest')
+  // The selected disclosed sample owns its replay manifest. Never substitute
+  // the generic demo-manifest after selecting a different Memory Star.
+  expect(destination.searchParams.get('manifestId')).toBe('voice-note-home')
+  expect(destination.searchParams.get('manifestId')).not.toBe('demo-manifest')
   expect(destination.searchParams.get('demo')).toBe('1')
   expect(destination.searchParams.get('onboarding')).toBe('1')
   expect(await page.evaluate(key => localStorage.getItem(key), completionKey)).toBeNull()
   await focus.tap()
   const chamber = page.getByTestId('urai-final-focus-chamber')
+  // A route transition can overlap the old and new client surface briefly.
+  // Wait for a *unique* Focus owner; never select an arbitrary first duplicate.
+  await expect(chamber).toHaveCount(1)
+  await expect(chamber).toBeVisible()
   await expect(chamber).toHaveAttribute('data-memory-status', 'demo')
   await expect(chamber).toHaveAttribute('data-memory-id', 'demo:voice-note-home')
-  await expect(chamber).toHaveAttribute('data-manifest-id', 'demo-manifest')
+  await expect(chamber).toHaveAttribute('data-manifest-id', 'voice-note-home')
   await expect.poll(() => page.evaluate(key => localStorage.getItem(key), completionKey)).toBe('1')
   await test.info().attach('guided-nondefault-focus-original.png', { body: await page.screenshot(), contentType: 'image/png' })
 })
@@ -126,6 +133,30 @@ test('an unavailable private selection has no sample substitution or optimistic 
   await expect(guide.getByRole('link', { name: 'Open Focus', exact: true })).toHaveCount(0)
   expect(await page.evaluate(key => localStorage.getItem(key), completionKey)).toBeNull()
   await page.goto('/focus?memoryId=onboarding-unavailable-probe&onboarding=1', { waitUntil: 'domcontentloaded' })
-  await expect(page.getByTestId('urai-final-focus-chamber')).not.toHaveAttribute('data-memory-status', /^(ready|demo)$/)
+  // Focus persists in the world shell while Next may briefly retain an
+  // inactive transition tree. Scope the real owner rather than relying on
+  // a globally ambiguous locator or hiding the duplicate with .first().
+  const shell = page.getByTestId('urai-persistent-world-shell')
+  await expect(shell).toHaveAttribute('data-world-destination', 'focus')
+  const chamber = shell.getByTestId('urai-final-focus-chamber')
+  await expect(chamber).toHaveCount(1)
+  await expect(chamber).toBeVisible()
+  await expect(chamber).toHaveAttribute('data-memory-status', 'unavailable')
+  await expect(chamber).toHaveAttribute('data-chamber-state', 'unavailable')
+  await expect(page.getByTestId('urai-final-focus-chamber').filter({ visible: true })).toHaveCount(1)
+
+  // An off-shell chamber must be inert, not painted, not screen-reader
+  // exposed and must not retain a live media or Canvas resource.
+  const offShell = await page.getByTestId('urai-final-focus-chamber').evaluateAll(elements =>
+    elements.filter(element => !element.closest('[data-testid="urai-persistent-world-shell"]')).map(element => {
+      const style = getComputedStyle(element)
+      return {
+        inactive: Boolean(element.closest('[hidden],[inert],[aria-hidden="true"]')) ||
+          style.display === 'none' || style.visibility === 'hidden' || element.getClientRects().length === 0,
+        retainedMedia: element.querySelectorAll('canvas,video,audio').length,
+      }
+    }),
+  )
+  expect(offShell.every(owner => owner.inactive && owner.retainedMedia === 0)).toBe(true)
   expect(await page.evaluate(key => localStorage.getItem(key), completionKey)).toBeNull()
 })

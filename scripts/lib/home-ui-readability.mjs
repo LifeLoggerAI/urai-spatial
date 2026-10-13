@@ -9,7 +9,9 @@ export function minimumCssContrast(foreground, background) {
   }))
 }
 export async function inspectHomeCaption(page) {
-  const evidence = await page.locator('.home-world-context').evaluate(node => {
+  const caption = page.locator('.home-world-context')
+  await caption.waitFor({state:'visible', timeout:90_000})
+  const evidence = await caption.evaluate(node => {
     const s = getComputedStyle(node), box = node.getBoundingClientRect(), owner = node.closest('.urai-asset-home-world')
     let opacity = 1
     for (let current = node; current; current = current.parentElement) opacity *= Number(getComputedStyle(current).opacity)
@@ -17,9 +19,10 @@ export async function inspectHomeCaption(page) {
     const lines = [...range.getClientRects()].map(r => ({left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}))
     const rgb = value => { const n = value.match(/[\d.]+/g).map(Number); return [...n.slice(0,3), n[3] ?? 1] }
     return {text:node.textContent,fontSize:Number.parseFloat(s.fontSize),color:rgb(s.color),background:rgb(s.backgroundColor),opacity,zIndex:Number(s.zIndex),vignetteZIndex:Number(getComputedStyle(owner,'::after').zIndex),bounds:{left:box.left,right:box.right,top:box.top,bottom:box.bottom},viewport:{width:innerWidth,height:innerHeight},lines}
-  })
+  }, undefined, {timeout:90_000})
   evidence.minimumContrast = minimumCssContrast(evidence.color,evidence.background)
-  evidence.passed = evidence.fontSize >= 12 && evidence.opacity >= .99 && evidence.minimumContrast >= 4.5
+  evidence.passed = typeof evidence.text === 'string' && evidence.text.trim().length > 0
+    && evidence.fontSize >= 12 && evidence.opacity >= .99 && evidence.minimumContrast >= 4.5
     && evidence.zIndex > evidence.vignetteZIndex && evidence.lines.length > 0
     && evidence.lines.every(r => r.width > 0 && r.left >= evidence.bounds.left - 1 && r.right <= evidence.bounds.right + 1 && r.top >= 0 && r.bottom <= evidence.viewport.height)
     && evidence.bounds.left >= 0 && evidence.bounds.right <= evidence.viewport.width

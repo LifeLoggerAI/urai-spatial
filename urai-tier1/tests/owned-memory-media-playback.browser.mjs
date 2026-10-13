@@ -39,7 +39,15 @@ const shims = {
   'firebase/firestore': `export { Timestamp } from '@firebase/firestore';const snap=(p)=>{const v=window.__fixture.docs[p];return {id:p.split('/').at(-1),exists:()=>v!=null,data:()=>v==null?undefined:structuredClone(v),get:(k)=>k.split('.').reduce((x,key)=>x?.[key],v)}};export const doc=(db,...p)=>p.join('/');export const collection=(db,...p)=>p.join('/');export const limit=()=>null;export const query=(p)=>p;export const getDoc=async p=>snap(p);export const getDocs=async p=>({docs:Object.keys(window.__fixture.docs).filter(k=>k.startsWith(p+'/')&&k.slice(p.length+1).indexOf('/')<0).map(snap)});export const onSnapshot=(p,callback,error)=>{const w={p,callback,error};window.__fixture.watchers.add(w);window.__fixture.allWatchers.push(w);if(!window.__fixture.holdSnapshots.includes(p))queueMicrotask(()=>callback(snap(p)));return()=>window.__fixture.watchers.delete(w)};export const __snapshot=snap;`,
   'firebase/functions': `export const httpsCallable=(functions,name)=>async data=>({data:await window.__fixture.call(name,data)});`,
   '@/lib/firebase/client': `export const app={options:{projectId:'urai-4dc1d'}};export const firebasePublicEnvReady=true;export const functions={};export const getFirebaseDb=()=>({});`,
-  '@react-three/fiber': `export function Canvas(){return null};export function useFrame(){}`, 
+  // Synthetic transport test: Canvas never mounts, but compiling the REAL
+  // Replay consumer requires the real @react-three/fiber hook export surface.
+  // This is not a rendering or GPU readiness proof; the independent browser
+  // world workflow runs the actual R3F package and verifies pixels.
+  '@react-three/fiber': `export function Canvas(){return null};export function useFrame(){};export function useThree(select){const state={invalidate:()=>{}};return typeof select==='function'?select(state):state}`, 
+  // Rendering assets are explicitly unavailable to this synthetic private-media transport.
+  // An accidental world mount must fail closed rather than masquerade as an admitted GLTF.
+  '@react-three/drei': `export const useGLTF=Object.assign(()=>{throw Error('Synthetic private-memory transport must not load world art')},{preload:()=>{},clear:()=>{}});`,
+
   '@/spatial/assets/uraiAssets': `export const replayAssets={primary:{src:'/disclosed-unused-demo.png'}};`,
   '@/spatial/adam/AdamLauncherSlot': `export default function AdamLauncherSlot(){return null}`, 
   '@/spatial/life-model/useReplayLifeModelAuthority': `export const useReplayLifeModelAuthority=()=>({available:false,status:'unavailable',people:[]});`,
@@ -106,6 +114,10 @@ async function open(route = '/replay', settings = {}) {
       if (name === 'getMemoryMediaPlaybackAuthority') return { schemaVersion: 'urai-owned-memory-media-playback-v1', requiresAuthorization: true, ownerId, memoryId, receiptId, kind, contentType: mime, sha256: fixture.sha256, byteLength: fixture.byteLength, storageGeneration: '123', sourceAuthorityHash: 'c'.repeat(64), authorityHash: 'd'.repeat(64), expiresAt: Date.now() + (settings.expiry ? 1400 : 60000) }
       if (name === 'getCapturedRealityReplayEntry') return { available: true, assetId: 'synthetic-accepted-place', truthLabel: 'Synthetic SDK-boundary place entry; no world acceptance' }
       if (name === 'getCapturedRealityAsset') return { assetId: data.assetId, label: 'Synthetic SDK place', truthClass: 'spatially-reconstructable', truthLabel: 'Synthetic fixture only', sourceCount: 1 }
+      // Isolated media-transport fixtures do not contain reviewed private GLB
+      // geometry. Preserve the product's explicit disabled-mesh-only fallback.
+      // Any other mesh error remains fatal and cannot show the private world.
+      if (name === 'getCapturedRealityMeshUrl') throw new Error('CAPTURED_REALITY_MESH_DISABLED')
       if (name === 'getCapturedRealityRuntimeUrl') return { assetId: data.assetId, accessMode: data.accessMode, deviceTier: data.deviceTier, url: `https://us-central1-urai-4dc1d.cloudfunctions.net/streamCapturedRealityRuntime?assetId=${data.assetId}&accessMode=${data.accessMode}&deviceTier=${data.deviceTier}&deliveryId=${'e'.repeat(64)}`, expiresAt: new Date(Date.now()+60000).toISOString(), truthLabel: 'Synthetic fixture only', requiresAuthorization: true, runtimeSha256: 'f'.repeat(64), runtimeByteLength: 32, storageGeneration: '321' }
       throw new Error(`Unimplemented SDK boundary ${name}`)
     }
@@ -350,6 +362,7 @@ try {
   })
   for (const field of ['privacy','deleted','replayVisible']) await check(`Mounted query-memory captured route suppresses on ${field} withdrawal`, async () => {
     const { page, context } = await open('/spatial/captured-reality'); await page.locator('[data-testid="captured-reality-private-route"][data-state="ready"]').waitFor()
+    assert.equal(await page.evaluate(() => window.__fixture.calls.filter(x => x.name === 'getCapturedRealityMeshUrl').length), 1, 'Private route must request live mesh authority before honoring explicit disabled-mesh transport fixture')
     await page.evaluate(({field,memoryId})=>{const f=window.__fixture,base=`users/${f.auth.currentUser.uid}`,p=field==='replayVisible'?base+'/privacyPolicy/current':base+'/memories/'+memoryId; const old=f.docs[p];f.update(p,field==='replayVisible'?{...old,domains:{...old.domains,memory:{mode:'granted',replayVisible:false}}}:{...old,[field]:field==='privacy'?'hidden':true})},{field,memoryId})
     await page.locator('[data-testid="captured-reality-private-route"][data-state="suppressed"]').waitFor();assert.ok(await page.evaluate(()=>window.__fixture.sceneDisposals>0));await context.close()
   })

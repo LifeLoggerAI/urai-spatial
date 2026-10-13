@@ -5,6 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import StellarCorona from "@/spatial/stellar/StellarCorona";
+import GalacticSpiralStructure from "./GalacticSpiralStructure";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import type { LifeMapNode } from "./lifeMapData";
@@ -792,6 +793,7 @@ function GalaxyDepth({ tier, reducedMotion }: { tier: SpatialQualityProfile["tie
   return (
     <group name="life-map-layered-galaxy-depth" userData={{ visualCanon: "foreground-middle-far-stellar-atlas" }}>
       <GalaxyVolume tier={tier} />
+      <GalacticSpiralStructure tier={tier} />
       <FieldParticles seed={2107} count={farCount} radius={66} depth={94} height={42} color="#c5d8ff" opacity={0.72} size={0.034} />
       <FieldParticles seed={2311} count={middleCount} radius={39} depth={44} height={18} color="#b4a3ff" opacity={0.62} size={0.055} />
       <FieldParticles seed={2573} count={foregroundCount} radius={18} depth={18} height={9} color="#d9f7ff" opacity={0.52} size={0.075} />

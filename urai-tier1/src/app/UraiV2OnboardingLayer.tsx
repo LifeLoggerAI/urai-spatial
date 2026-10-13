@@ -106,7 +106,8 @@ function GuidedFocusCompletion() {
 }
 
 function OnboardingCardContent() {
-  const pathname = usePathname() || "";
+  // Static-export routes may include a trailing slash; keep the guide owner stable.
+  const pathname = (usePathname() || "").replace(/\/+$/, "") || "/";
   const searchParams = useSearchParams();
   const query = searchParams?.toString() ?? "";
   const [dismissed, setDismissed] = useState(false);

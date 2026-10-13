@@ -26,7 +26,7 @@ function fixture({ owner = { uid: 'synthetic-owner' }, demo = false, configured 
   let cursor = 0, dirty = true, mounted = true, tree
   const slots = [], queued = [], authListeners = new Set(), listeners = new Map(), subscriptions = new Map()
   const state = { owner, online, keyState, sources, snapshotResult }
-  const calls = { snapshots: 0, exports: [], deletions: [], downloads: [], stops: 0 }
+  const calls = { snapshots: 0, exports: [], deletions: [], downloads: [], stops: 0, focuses: 0, navigation: [] }
   const auth = { get currentUser() { return state.owner } }
   const changed = (a, b) => !a || !b || a.length !== b.length || a.some((v, i) => !Object.is(v, b[i]))
   const react = {
@@ -64,11 +64,11 @@ function fixture({ owner = { uid: 'synthetic-owner' }, demo = false, configured 
     '@/spatial/adam/AdamLauncherSlot': () => null, './passport-vault.css': {},
   }
   const module = { exports: {} }
-  const browser = { location: { search: demo ? '?demo=1' : '', assign() {} }, history: { length: 1, back() {} },
+  const browser = { location: { search: demo ? '?demo=1' : '', assign(path) { calls.navigation.push(path) } }, history: { length: 1, back() { calls.navigation.push('back') } },
     addEventListener: (name, fn) => { const group = listeners.get(name) ?? new Set(); group.add(fn); listeners.set(name, group) },
     removeEventListener: (name, fn) => listeners.get(name)?.delete(fn) }
   vm.runInNewContext(code, { exports: module.exports, module, URLSearchParams, DOMException, AbortController,
-    window: browser, document: { createElement: () => ({ getContext: () => null }), getElementById: () => ({ focus() {} }) },
+    window: browser, document: { createElement: () => ({ getContext: () => null }), getElementById: () => ({ focus() { calls.focuses++ } }), querySelector: () => null },
     navigator: { get onLine() { return state.online } }, require: name => { assert.ok(name in imports, `Unexpected import ${name}`); return imports[name] },
   }, { filename: 'actual-PassportVaultClient.tsx' })
   const render = () => {
@@ -85,9 +85,57 @@ function fixture({ owner = { uid: 'synthetic-owner' }, demo = false, configured 
     updateOwner(owner) { state.owner = owner; for (const listener of authListeners) listener(owner); render() },
     offline() { state.online = false; for (const listener of listeners.get('offline') ?? []) listener(); render() },
     exportRows(rows) { subscriptions.get('exportJobs')?.(rows); render() },
+    keydown(key, options = {}) {
+      const event = { key, defaultPrevented: false, target: null, preventDefault() { this.defaultPrevented = true }, ...options }
+      for (const listener of listeners.get('keydown') ?? []) listener(event)
+      render()
+      return event
+    },
     unmount() { mounted = false; for (const slot of slots) slot.cleanup?.() },
   }
 }
+
+for (const [label, target] of [
+  ['input', { tagName: 'INPUT' }],
+  ['textarea', { tagName: 'TEXTAREA' }],
+  ['select', { tagName: 'SELECT' }],
+  ['contenteditable', { tagName: 'SPAN', isContentEditable: true }],
+  ['nested textbox', { tagName: 'SPAN', closest: selector => selector.includes('[role="textbox"]') ? {} : null }],
+  ['nested editable', { tagName: 'SPAN', closest: selector => selector.includes('[contenteditable]') ? {} : null }],
+]) {
+  test(`Passport native Home and Escape editing are preserved in ${label}`, async () => {
+    const f = fixture(); await f.flush()
+    for (const key of ['Home', 'Escape']) {
+      const event = f.keydown(key, { target })
+      assert.equal(event.defaultPrevented, false, `${key} must remain available to ${label}`)
+    }
+    assert.equal(f.calls.focuses, 0)
+    assert.deepEqual(f.calls.navigation, [])
+    f.unmount()
+  })
+}
+
+for (const option of ['defaultPrevented', 'isComposing', 'altKey', 'ctrlKey', 'metaKey', 'shiftKey']) {
+  test(`Passport keyboard handling respects ${option}`, async () => {
+    const f = fixture(); await f.flush()
+    for (const key of ['Home', 'Escape']) f.keydown(key, { [option]: true })
+    assert.equal(f.calls.focuses, 0)
+    assert.deepEqual(f.calls.navigation, [])
+    f.unmount()
+  })
+}
+
+test('unmodified non-editing Home and Escape still navigate; unmount detaches listener', async () => {
+  const f = fixture(); await f.flush()
+  const neutral = { tagName: 'DIV', closest: () => null }
+  assert.equal(f.keydown('Home', { target: neutral }).defaultPrevented, true)
+  assert.equal(f.calls.focuses, 1)
+  f.keydown('Escape', { target: neutral })
+  assert.deepEqual(f.calls.navigation, ['/ground'])
+  f.unmount()
+  f.keydown('Home', { target: neutral })
+  assert.equal(f.calls.focuses, 1)
+})
 
 test('an empty authenticated owner can choose scopes and request an export', async () => {
   const f = fixture(); await f.flush()

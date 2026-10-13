@@ -112,6 +112,21 @@ function harness(address = '/life-map?memoryId=chosen-memory&manifestId=chosen-m
 }
 
 const primary = h => h.nodes(node => node.type === 'a')[0]
+test('static-export slash routes preserve explicit guided onboarding and private-selection denial', () => {
+  const demo = harness('/life-map/?memoryId=chosen-memory&manifestId=chosen-manifest&onboarding=1')
+  demo.render()
+  const href = new URL(primary(demo)?.props.href, 'https://urai.app')
+  assert.equal(href.pathname, '/focus')
+  assert.equal(href.searchParams.get('memoryId'), 'chosen-memory')
+  assert.equal(demo.nodes(node => node.type === 'aside').length, 1)
+
+  const privateUnavailable = harness('/life-map/?memoryId=unavailable-private&onboarding=1', { status: 'unavailable', memory: null, message: 'unavailable' })
+  privateUnavailable.render()
+  assert.equal(primary(privateUnavailable), undefined)
+  assert.equal(privateUnavailable.nodes(node => node.type === 'button' && node.props.disabled).length, 1)
+  assert.equal(privateUnavailable.stored.has(completionKey), false)
+})
+
 test('guided Life Map carries the chosen real memory and its accepted manifest', () => {
   const h = harness(); h.render()
   const href = new URL(primary(h)?.props.href, 'https://urai.app')

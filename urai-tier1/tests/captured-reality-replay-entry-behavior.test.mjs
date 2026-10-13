@@ -51,6 +51,13 @@ function callable({ place = 'place-1', anchor = 'place-1', missingAnchors = fals
       },
     },
     'firebase-admin': { apps: [{}], firestore: () => db, auth: () => ({ verifyIdToken: async () => ({ uid: 'owner', exp: Math.floor(Date.now()/1000) + 3600 }), getUser: async () => ({ uid: 'owner', disabled: false, metadata: { creationTime: 'synthetic-created' } }) }) },
+    // The source imports the actual v13 named Firestore helpers. Replay tests
+    // replace only their inert sentinels; descriptor/stream tests exercise the
+    // compiled handlers and production SDK independently.
+    'firebase-admin/firestore': {
+      FieldValue: { serverTimestamp: () => ({ __testSentinel: 'serverTimestamp' }) },
+      Timestamp: class Timestamp {},
+    },
     './consentPolicyAuthority': consentExports,
     'node:crypto': nativeRequire('node:crypto'),
     'node:stream/promises': nativeRequire('node:stream/promises'),

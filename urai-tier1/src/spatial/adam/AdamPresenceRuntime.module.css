@@ -166,7 +166,6 @@
   margin: 0;
   box-sizing: border-box;
   width: 100%;
-  padding-inline: 8px;
 }
 /* Route typography and spatial header transforms do not own founder controls. */
 .launcher[data-urai-adam-launcher][data-adam-launcher-placement] {
@@ -185,6 +184,7 @@
   min-height: 48px !important;
 }
 .launcher:focus-visible { outline: 2px solid #d8fff5; outline-offset: 3px; }
+
 
 /* Keep the open founder panel above route-root stacking contexts after portaling to body. */
 :global(body) > .panel[data-urai-adam-presence] {

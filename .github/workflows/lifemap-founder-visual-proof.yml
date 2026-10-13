@@ -18,6 +18,9 @@ on:
       - 'urai-tier1/src/spatial/lifemap/**'
       - 'urai-tier1/src/app/life-map/**'
       - 'urai-tier1/tests/lifemap-*.test.mjs'
+      - 'urai-tier1/tests/selected-memory-production-contract.test.mjs'
+      - 'urai-tier1/src/spatial/adam/**'
+      - 'urai-tier1/tests/accessibility-performance-founder-panel-fit.spec.ts'
   workflow_dispatch:
     inputs:
       verification_sha:
@@ -25,7 +28,7 @@ on:
         required: true
         type: string
   pull_request:
-    branches: [main]
+    branches: [main, repair/release-closure-integration-20261007]
     paths:
       - '.github/workflows/lifemap-founder-visual-proof.yml'
       - 'scripts/capture-lifemap-founder-proof.mjs'
@@ -39,6 +42,9 @@ on:
       - 'urai-tier1/src/spatial/lifemap/**'
       - 'urai-tier1/src/app/life-map/**'
       - 'urai-tier1/tests/lifemap-*.test.mjs'
+      - 'urai-tier1/tests/selected-memory-production-contract.test.mjs'
+      - 'urai-tier1/src/spatial/adam/**'
+      - 'urai-tier1/tests/accessibility-performance-founder-panel-fit.spec.ts'
 
 permissions:
   contents: read
@@ -111,6 +117,7 @@ jobs:
           node --import tsx --test \
             urai-tier1/tests/lifemap-aaa-composition-contract.test.mjs \
             urai-tier1/tests/lifemap-scene-behavior.test.mjs \
+            urai-tier1/tests/selected-memory-production-contract.test.mjs \
             urai-tier1/tests/lifemap-semantic-owner-contract.test.mjs \
             urai-tier1/tests/lifemap-review-repair-contract.test.mjs \
             | tee artifacts/lifemap-founder-proof/lifemap-contract.log
@@ -139,6 +146,18 @@ jobs:
           URAI_CANVAS_PROOF_DIR=artifacts/lifemap-founder-proof/canvas-proof \
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
           node scripts/run-with-ci-webgl.mjs scripts/verify-lifemap-canvas-proof.mjs 2>&1 | tee artifacts/lifemap-founder-proof/canvas-proof.log
+
+      - name: Verify compact Founder panel fit and focus restoration
+        shell: bash
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: artifacts/lifemap-founder-proof/founder-panel-report.json
+        run: |
+          set -euo pipefail
+          pnpm exec playwright test --config playwright.accessibility.config.ts \
+            urai-tier1/tests/accessibility-performance-founder-panel-fit.spec.ts \
+            --retries=0 --reporter=line,json \
+            --output=artifacts/lifemap-founder-proof/founder-panel-results \
+            2>&1 | tee artifacts/lifemap-founder-proof/founder-panel-browser.log
 
       - name: Seal exact-head founder receipt
         shell: bash
@@ -174,5 +193,6 @@ jobs:
         with:
           name: lifemap-founder-visual-proof-${{ env.URAI_EXACT_HEAD }}
           path: artifacts/lifemap-founder-proof
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 365

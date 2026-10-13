@@ -19,6 +19,7 @@ import { classifyRetainedHomeMesh } from './HomeSanctuaryAssetPolicy'
 import { createLivingMemoryGeometry, createMemoryFieldGeometry, createMemoryFilamentGeometry } from './HomeLivingOrbGeometry'
 import { createAuthoredOrbLightPresentation, disposeAuthoredOrbLightPresentation } from './HomeAuthoredOrbLight'
 import styles from './HomeWorldProduction.module.css'
+import HomeSanctuaryPerimeterGrove from './HomeSanctuaryPerimeterGrove'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 
 const HOME_PROVIDER_ENVIRONMENT = '/assets/urai/home/home-threshold-main.webp'
@@ -436,7 +437,18 @@ function Horizon() {
       <planeGeometry args={[92, 12]} />
       <shaderMaterial transparent depthWrite={false} fog={false}
         vertexShader={`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`}
-        fragmentShader={`varying vec2 vUv; void main(){ float band=sin(3.14159265*vUv.y); float edge=smoothstep(.0,.16,vUv.x)*smoothstep(.0,.16,1.0-vUv.x); gl_FragColor=vec4(vec3(.31,.41,.38), band*edge*.16); }`}
+        fragmentShader={`varying vec2 vUv;
+          void main(){
+            float horizontalFeather = smoothstep(0.0,0.17,vUv.x)*smoothstep(0.0,0.17,1.0-vUv.x);
+            float verticalFeather = smoothstep(0.0,0.12,vUv.y)*smoothstep(0.0,0.24,1.0-vUv.y);
+            float lowHaze = exp(-pow((vUv.y-0.25)*3.4,2.0));
+            float highHaze = exp(-pow((vUv.y-0.68)*5.2,2.0));
+            float layeredFog = 0.14*lowHaze+0.055*highHaze;
+            vec3 coolDistance = vec3(0.29,0.39,0.40);
+            vec3 warmHorizon = vec3(0.45,0.46,0.39);
+            vec3 color = mix(coolDistance,warmHorizon,(1.0-smoothstep(0.0,0.3,vUv.y)));
+            gl_FragColor=vec4(color,clamp(layeredFog*horizontalFeather*verticalFeather,0.0,0.22));
+          }`}
       />
     </mesh>
     <group position={[-17, 13.5, -52]}>
@@ -905,6 +917,7 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     <SanctuaryPath />
     <Horizon />
     <Vegetation />
+    <HomeSanctuaryPerimeterGrove />
     <GroundDetail />
     <SanctuaryPavilion />
     <Water />

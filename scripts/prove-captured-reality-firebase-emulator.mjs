@@ -1,0 +1,187 @@
+
+import assert from 'node:assert/strict'
+import {createHash} from 'node:crypto'
+import {mkdirSync,writeFileSync} from 'node:fs'
+import admin from 'firebase-admin'
+const project='demo-urai-hybrid-proof',bucketName=project+'.appspot.com'
+for(const [key,expected] of Object.entries({
+  GCLOUD_PROJECT:project,FIREBASE_AUTH_EMULATOR_HOST:'127.0.0.1:9099',
+  FIRESTORE_EMULATOR_HOST:'127.0.0.1:8080',
+  FIREBASE_STORAGE_EMULATOR_HOST:'127.0.0.1:9199',
+  FIREBASE_STORAGE_BUCKET:bucketName,
+  URAI_ENABLE_CAPTURED_REALITY:'true',
+  URAI_ENABLE_CAPTURED_REALITY_PROOF:'true',
+  URAI_ENABLE_CAPTURED_REALITY_MESH:'true',
+})) assert.equal(process.env[key],expected,'Refusing non-isolated Firebase configuration: '+key)
+assert.equal(process.env.FUNCTIONS_EMULATOR,'true')
+admin.initializeApp({projectId:project,storageBucket:bucketName})
+const db=admin.firestore(),storage=admin.storage().bucket()
+const hash=x=>createHash('sha256').update(x).digest('hex')
+const receipt={schema:'urai-isolated-firebase-mesh-proof-1',classification:'SYNTHETIC_EMULATOR_ONLY_NOT_PRODUCTION_ADMISSION',project,checks:[]}
+const check=(name,ok,detail)=>{receipt.checks.push({name,ok,detail});assert.ok(ok,name+': '+detail)}
+const authRoot='http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts'
+const endpoint='http://127.0.0.1:5001/'+project+'/us-central1'
+async function createAccount(index){
+  const response=await fetch(authRoot+':signUp?key=demo',{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({email:'urai-owner-'+index+'@example.invalid',password:'Emulator-Only-Fixture-42!',returnSecureToken:true})})
+  const data=await response.json()
+  assert.equal(response.status,200,JSON.stringify(data))
+  return data
+}
+async function call(token,input){
+  const response=await fetch(endpoint+'/getCapturedRealityMeshUrl',{method:'POST',
+    headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},
+    body:JSON.stringify({data:input})})
+  return {status:response.status,body:await response.json()}
+}
+async function callSplat(token,input){
+  const response=await fetch(endpoint+'/getCapturedRealityRuntimeUrl',{method:'POST',
+    headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},
+    body:JSON.stringify({data:input})})
+  return {status:response.status,body:await response.json()}
+}
+// The browser's pixel grid intentionally requires visible area, not merely
+// a GPU draw submission. Use the SAME spatially distinct 96-point orange patch
+// and two-triangle green quad as the independent hybrid Chromium proof.
+// These are synthetic integration fixtures, never admitted personal memories.
+const geometry=Buffer.from(new Float32Array([
+  .25,.2,.1, 1.25,.2,.1, 1.25,1.25,.1,
+  .25,.2,.1, 1.25,1.25,.1, .25,1.25,.1,
+]).buffer)
+const gltf={asset:{version:'2.0',generator:'UrAi emulator-only source-bound GLB'},
+  buffers:[{byteLength:geometry.length}],
+  bufferViews:[{buffer:0,byteOffset:0,byteLength:geometry.length,target:34962}],
+  accessors:[{bufferView:0,componentType:5126,count:6,type:'VEC3',
+    min:[.25,.2,.1],max:[1.25,1.25,.1]}],
+  materials:[{emissiveFactor:[0,.95,.45],doubleSided:true,
+    pbrMetallicRoughness:{baseColorFactor:[.2,.3,.25,1],roughnessFactor:1,metallicFactor:0}}],
+  meshes:[{primitives:[{attributes:{POSITION:0},material:0,mode:4}]}],
+  nodes:[{mesh:0}],scenes:[{nodes:[0]}],scene:0}
+const plain=Buffer.from(JSON.stringify(gltf))
+const json=Buffer.alloc(Math.ceil(plain.length/4)*4,32);plain.copy(json)
+const blob=Buffer.alloc(20+json.length+8+geometry.length)
+blob.writeUInt32LE(0x46546c67,0);blob.writeUInt32LE(2,4);blob.writeUInt32LE(blob.length,8)
+blob.writeUInt32LE(json.length,12);blob.writeUInt32LE(0x4e4f534a,16);json.copy(blob,20)
+blob.writeUInt32LE(geometry.length,20+json.length)
+blob.writeUInt32LE(0x004e4942,24+json.length);geometry.copy(blob,28+json.length)
+const splat=Buffer.alloc(96*32)
+for(let point=0;point<96;point++){
+ const o=point*32
+ splat.writeFloatLE(-.9+(point%12)*.07,o)
+ splat.writeFloatLE(-.3+Math.floor(point/12)*.085,o+4)
+ splat.writeFloatLE(0,o+8)
+ for(let axis=0;axis<3;axis++)splat.writeFloatLE(.105,o+12+axis*4)
+ splat[o+24]=255;splat[o+25]=175;splat[o+26]=65;splat[o+27]=255
+ splat[o+28]=255;splat[o+29]=128;splat[o+30]=128;splat[o+31]=128
+}
+const identity=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+try{
+ const a=await createAccount('a'),b=await createAccount('b'),uid=a.localId,assetId='synthetic-emulator-world'
+ const sourceRef='psr_abcdefghijklmnop',sourceHash='c'.repeat(64)
+ const consents=[{purpose:'memory.storage',policyVersion:'2',decisionReceiptId:'fixture-one'},
+ {purpose:'location.context',policyVersion:'2',decisionReceiptId:'fixture-two'}]
+ const binding={sourceReceiptRef:sourceRef,sourceRevision:1,sourceSha256:sourceHash,
+  sourceByteLength:123,sourceFixityRef:'private:isolated-emulator-fixture',sourceConsentSha256:hash(JSON.stringify(consents))}
+ const domain=mode=>({mode,retentionDays:30,precise:false,replayVisible:true,lifeMapVisible:true,
+  modelContext:false,sharingEnabled:false,automationEnabled:false,likenessEnabled:false})
+ const policy={version:2,revision:1,ownerId:uid,domains:{memory:domain('granted'),location:domain('granted'),
+  models:domain('denied'),exports:domain('denied'),workforce:domain('denied'),identity:domain('denied')},
+  enforcement:{state:'fully-enforced',jobId:null,affectedTargets:[],providerState:'complete'}}
+ await db.doc('users/'+uid).set({accountStatus:'active',deleted:false})
+ await db.doc('users/'+uid+'/privacyPolicy/current').set(policy)
+ await db.doc('users/'+uid+'/privacyRuntime/location-collection').set({enabled:true})
+ await db.doc('users/'+uid+'/privacyRuntime/exportAuthority').set({generation:1,pendingDeletions:{}})
+ await db.doc('uraiPrivateSourceReceipts/'+hash(sourceRef)).set({
+  schemaVersion:'urai-private-source-receipt-v2',ownerUid:uid,status:'ACTIVE',synthetic:false,fixtureOnly:false,
+  purposes:['reconstruct-place'],consents,...binding})
+ const splatSha=hash(splat),meshSha=hash(blob)
+ const splatObject='private-captured-reality/'+uid+'/'+assetId+'/runtime/'+splatSha+'.splat'
+ const meshObject='private-captured-reality/'+uid+'/'+assetId+'/runtime/mesh/'+meshSha+'.glb'
+ const sf=storage.file(splatObject),mf=storage.file(meshObject)
+ await sf.save(splat,{metadata:{contentType:'application/octet-stream',metadata:{uraiRuntimeSha256:splatSha}}})
+ await mf.save(blob,{metadata:{contentType:'model/gltf-binary',metadata:{uraiMeshSha256:meshSha}}})
+ const [sm]=await sf.getMetadata(),[mm]=await mf.getMetadata()
+ const manifest=hash('isolated-fixture')
+ const registration={schemaVersion:'urai-hybrid-registration-1',splatSha256:splatSha,meshSha256:meshSha,
+  splatToWorld:identity,meshToWorld:identity,sourceFrame:'right-handed-y-up',alignmentReviewed:true,
+  admission:'technical-proof',metricScaleReviewed:false}
+ await db.doc('users/'+uid+'/capturedRealityAssets/'+assetId).set({
+  ownerId:uid,state:'proof-ready',reviewState:'rejected',releaseState:'private-pilot',truthClass:'spatially-reconstructable',
+  proofState:'technical-preview',proofIntegrityVerified:true,proofPrivacyReviewed:true,
+  meshProofIntegrityVerified:true,meshProofPrivacyReviewed:true,sourceBindings:[binding],
+  sourceManifestSha256:manifest,proofApprovedSourceManifestSha256:manifest,
+  proofApprovedMeshSourceManifestSha256:manifest,storageBucket:bucketName,
+  runtimeObject:splatObject,runtimeSha256:splatSha,runtimeBytes:splat.length,
+  proofApprovedRuntimeSha256:splatSha,proofApprovedStorageGeneration:String(sm.generation),
+  meshRuntimeObject:meshObject,meshSha256:meshSha,meshBytes:blob.length,
+  proofApprovedMeshSha256:meshSha,proofApprovedMeshStorageGeneration:String(mm.generation),
+  meshRegistration:registration})
+ const input={assetId,deviceTier:'desktop',accessMode:'proof'}
+ // The Gaussian path and mesh path must belong to the same authorized
+ // captured place. Exercise both actual callable handlers and both real streams.
+ const splatUnauth=await callSplat(null,input)
+ check('Gaussian descriptor requires owner authentication',splatUnauth.status===401,String(splatUnauth.status))
+ const splatForeign=await callSplat(b.idToken,input)
+ check('Gaussian descriptor rejects foreign owner',splatForeign.status===403,String(splatForeign.status))
+ const splatGood=await callSplat(a.idToken,input)
+ check('owner receives real Gaussian descriptor',splatGood.status===200&&splatGood.body?.result?.assetId===assetId,
+   JSON.stringify(splatGood).slice(0,300))
+ const splatDescriptor=splatGood.body.result
+ check('Gaussian descriptor binds immutable source bytes',splatDescriptor.runtimeSha256===splatSha
+   && splatDescriptor.storageGeneration===String(sm.generation)
+   && splatDescriptor.runtimeByteLength===splat.length,'hash, generation, byte length')
+ const splatResponse=await fetch(splatDescriptor.url,{headers:{authorization:'Bearer '+a.idToken}})
+ const splatBytes=Buffer.from(await splatResponse.arrayBuffer())
+ check('actual authenticated Gaussian binary and SHA-256',splatResponse.status===200
+   && splatBytes.equals(splat)&&hash(splatBytes)===splatSha,String(splatResponse.status)+' '+splatBytes.length)
+ const splatDenied=await fetch(splatDescriptor.url,{headers:{authorization:'Bearer '+b.idToken}})
+ check('foreign owner cannot reuse Gaussian descriptor',splatDenied.status!==200,String(splatDenied.status))
+ const unauth=await call(null,input)
+ check('missing token is denied',unauth.status!==200,String(unauth.status))
+ const foreign=await call(b.idToken,input)
+ check('foreign owner is denied',foreign.status!==200,String(foreign.status))
+ const good=await call(a.idToken,input)
+ check('owner gets real Functions descriptor',good.status===200&&good.body?.result?.available===true,
+  JSON.stringify(good).slice(0,350))
+ const desc=good.body.result
+ check('descriptor matches immutable mesh',desc.meshSha256===meshSha&&desc.meshStorageGeneration===String(mm.generation),'hash and generation')
+ const transfer=await fetch(desc.url,{headers:{authorization:'Bearer '+a.idToken}})
+ const bytes=Buffer.from(await transfer.arrayBuffer())
+ check('actual authenticated GLB bytes and SHA-256',transfer.status===200&&bytes.equals(blob)&&hash(bytes)===meshSha,
+  String(transfer.status)+' '+bytes.length)
+ const denied=await fetch(desc.url,{headers:{authorization:'Bearer '+b.idToken}})
+ check('other owner cannot reuse mesh descriptor',denied.status!==200,String(denied.status))
+ if(process.env.URAI_BROWSER_INTEGRATION==='true'){
+   const {spawnSync}=await import('node:child_process')
+   const result=spawnSync(process.execPath,['scripts/prove-captured-reality-authenticated-browser.mjs'],{
+     env:{...process.env,URAI_OWNER_UID:uid,URAI_OWNER_EMAIL:'urai-owner-a@example.invalid',
+       URAI_OWNER_PASSWORD:'Emulator-Only-Fixture-42!',URAI_ASSET_ID:assetId},
+     stdio:'inherit',timeout:360000,
+   })
+   check('actual production Captured Reality route renders and revokes in Chromium',
+     result.status===0,String(result.status)+' '+String(result.error??''))
+ } else {
+
+ await db.doc('users/'+uid+'/capturedRealityAssets/'+assetId).update({meshProofPrivacyReviewed:false})
+ const withdrawn=await call(a.idToken,input)
+ check('mesh approval withdrawal closes descriptor',withdrawn.status!==200,String(withdrawn.status))
+ const stale=await fetch(desc.url,{headers:{authorization:'Bearer '+a.idToken}})
+ check('previous descriptor revoked',stale.status!==200,String(stale.status))
+ const splatStillValid=await fetch(splatDescriptor.url,{headers:{authorization:'Bearer '+a.idToken}})
+ // A mutation to the shared asset revision revokes every issued descriptor,
+ // even when the modified approval field targets only the mesh layer.
+ // Never relax the backend authority hash to permit stale Gaussian reuse.
+ check('mesh approval withdrawal invalidates stale shared-asset Gaussian descriptor',
+   splatStillValid.status===409,String(splatStillValid.status))
+ await db.doc('users/'+uid+'/privacyPolicy/current').update({'domains.location.mode':'denied'})
+ const privacy=await call(a.idToken,input)
+ check('withdrawn location consent remains denied',privacy.status!==200,String(privacy.status))
+ const splatAfterConsent=await fetch(splatDescriptor.url,{headers:{authorization:'Bearer '+a.idToken}})
+ check('previous Gaussian stream revoked by location withdrawal',splatAfterConsent.status!==200,String(splatAfterConsent.status))
+ }
+ receipt.passed=true
+}catch(e){receipt.passed=false;receipt.error=String(e.stack||e).slice(0,2500)}
+finally{mkdirSync('artifacts/captured-reality-firebase-emulator',{recursive:true})
+ writeFileSync('artifacts/captured-reality-firebase-emulator/receipt.json',JSON.stringify(receipt,null,2)+'\n')}
+assert.equal(receipt.passed,true,JSON.stringify(receipt,null,2))
+console.log(JSON.stringify({passed:receipt.passed,checks:receipt.checks},null,2))

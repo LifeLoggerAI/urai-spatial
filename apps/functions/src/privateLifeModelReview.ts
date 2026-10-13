@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import { createHash } from 'node:crypto'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -122,13 +123,15 @@ function candidateMap(value: unknown, label: string) {
   return value
 }
 
-function requireCurrentModelConsent(policy: FirebaseFirestore.DocumentSnapshot) {
+function requireCurrentModelConsent(policy: FirebaseFirestore.DocumentSnapshot, uid: string) {
   if (!policy.exists) throw new functions.https.HttpsError('failed-precondition', 'CONSENT_POLICY_REQUIRED')
   const data = policy.data() ?? {}
-  const domains = isRecord(data.domains) ? data.domains : {}
-  const models = isRecord(domains.models) ? domains.models : {}
-  const identity = isRecord(domains.identity) ? domains.identity : {}
-  const enforcement = isRecord(data.enforcement) ? data.enforcement : {}
+  if (!isCanonicalStoredPolicy(data, uid)) {
+    throw new functions.https.HttpsError('failed-precondition', 'CONSENT_POLICY_INVALID')
+  }
+  const models = data.domains.models
+  const identity = data.domains.identity
+  const enforcement = data.enforcement
   if (!['granted','limited'].includes(String(models.mode ?? '')) || models.modelContext !== true) {
     throw new functions.https.HttpsError('permission-denied', 'MODEL_CONTEXT_NOT_AUTHORIZED')
   }
@@ -259,7 +262,7 @@ export const reviewPrivateLifeModelCandidate = lifeModelReviewFunctions.https.on
     ])
 
     // Idempotent retries remain subject to the current owner's privacy boundary.
-    requireCurrentModelConsent(policySnapshot)
+    requireCurrentModelConsent(policySnapshot, uid)
     if (fenceSnapshot.exists && fenceSnapshot.get('deleted') === true) {
       throw new functions.https.HttpsError('failed-precondition', 'PRIVATE_LIFE_MODEL_OWNER_DELETED')
     }

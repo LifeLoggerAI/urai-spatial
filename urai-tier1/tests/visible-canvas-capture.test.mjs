@@ -337,3 +337,4 @@ test('Home sampler enforces a finite retained-image count before screenshot', as
   try { await assert.rejects(f.run(), /image budget/); assert.equal(f.calls.some(([name]) => name === 'screenshot'), false) }
   finally { await f.close() }
 })
+

@@ -234,7 +234,7 @@ test('production CLI requires external exact binding and rejects unknown or dupl
   assert.deepEqual(fs.readFileSync(f.outputPath), f.archive)
 })
 
-test('workflow preserves all original proof assertions and upload, and uses eight separate bounded paths', () => {
+test('workflow preserves all original proof assertions and upload, and uses the configured separate bounded paths', () => {
   const workflow = fs.readFileSync(new URL('../../.github/workflows/continuous-spatial-visual-proof.yml', import.meta.url), 'utf8')
   const assertions = workflow.slice(workflow.indexOf('      - name: Prove complete group receipt\n'), workflow.indexOf('      - name: Upload exact-head grouped visual proof\n'))
   assert.equal(sha(assertions), '47ba006bf54949f3bdab54a860a483e22e3abd7300b3d1b0462ffd99c4c91612')
@@ -302,3 +302,83 @@ test('a recovered metadata response cannot weaken digest or run ownership', asyn
   assert.equal(calls, 2)
 })
 
+
+test('Adam placement workflow follows the shared bounded transport part limit', () => {
+  const workflow = fs.readFileSync(new URL('../../.github/workflows/adam-placement-proof.yml', import.meta.url), 'utf8')
+  const parts = workflow.split(/\r?\n/).filter(line => line.includes('path: artifacts/adam-placement-transport/adam-placement.zip.part-'))
+  assert.equal(parts.length, MAX_PARTS)
+  assert.equal(new Set(parts).size, MAX_PARTS)
+  assert.match(workflow, /verify-native-uploads/)
+})
+
+for (const file of ['continuous-spatial-visual-proof.yml', 'accessibility-performance-evidence.yml', 'adam-placement-proof.yml']) {
+  test(`${file} passes every uploaded part identity and digest to native verification`, () => {
+    const workflow = fs.readFileSync(new URL(`../../.github/workflows/${file}`, import.meta.url), 'utf8')
+    const steps = workflow.split(/\r?\n(?=      - name: )/)
+    const verification = steps.find(step => step.includes('node scripts/visual-proof-transport.mjs verify-native-uploads'))
+    assert.ok(verification, 'Native verification step is required')
+    const uploads = steps.filter(step => /path: .*\.zip\.part-\d{2}\s*\n/.test(step))
+    assert.equal(uploads.length, MAX_PARTS)
+    for (const [offset, upload] of uploads.entries()) {
+      const suffix = String(offset + 1).padStart(2, '0')
+      const id = upload.match(/^        id: (\S+)$/m)?.[1]
+      assert.ok(id, `Part ${suffix} needs its own upload step identity`)
+      assert.match(upload, new RegExp(`path: .*\\.zip\\.part-${suffix}\\s*\\n`))
+      assert.ok(verification.includes('URAI_PART_' + suffix + '_ID: ${{ steps.' + id + '.outputs.artifact-id }}'), `Part ${suffix} artifact ID does not reach verification`)
+      assert.ok(verification.includes('URAI_PART_' + suffix + '_DIGEST: ${{ steps.' + id + '.outputs.artifact-digest }}'), `Part ${suffix} artifact digest does not reach verification`)
+    }
+    assert.equal((verification.match(/URAI_PART_\d{2}_ID:/g) ?? []).length, MAX_PARTS)
+    assert.equal((verification.match(/URAI_PART_\d{2}_DIGEST:/g) ?? []).length, MAX_PARTS)
+  })
+}
+
+test('native verification handles all sixteen bounded wrappers and fails closed for late-part substitutions', async t => {
+  // Metadata-only synthetic transport fixture; this creates no native visual acceptance.
+  const f = fixture(t, 100, 'accessibility-performance')
+  f.manifest.archiveBytes = PART_BYTES * MAX_PARTS - 17
+  f.manifest.partCount = MAX_PARTS
+  const first = f.manifest.parts[0]
+  f.manifest.parts = Array.from({ length: MAX_PARTS }, (_, offset) => {
+    const index = offset + 1
+    const suffix = String(index).padStart(2, '0')
+    return { ...first, index, name: first.name.replace(/01$/, suffix), bytes: index === MAX_PARTS ? PART_BYTES - 17 : PART_BYTES,
+      artifactName: first.artifactName.replace(/01$/, suffix) }
+  })
+  fs.writeFileSync(f.manifestPath, JSON.stringify(f.manifest))
+  const env = { ...nativeEnv(f.binding), URAI_MANIFEST_ID: '300', URAI_MANIFEST_DIGEST: 'a'.repeat(64) }
+  const records = new Map([['300', metadata(f.binding, { id: 300, name: f.manifest.manifestArtifactName, digest: `sha256:${env.URAI_MANIFEST_DIGEST}` })]])
+  for (const [offset, part] of f.manifest.parts.entries()) {
+    const suffix = String(offset + 1).padStart(2, '0')
+    const id = String(301 + offset)
+    env[`URAI_PART_${suffix}_ID`] = id
+    env[`URAI_PART_${suffix}_DIGEST`] = sha(Buffer.from(`synthetic-wrapper-${suffix}`))
+    records.set(id, metadata(f.binding, { id: Number(id), name: part.artifactName, size_in_bytes: part.bytes + 188, digest: `sha256:${env[`URAI_PART_${suffix}_DIGEST`]}` }))
+  }
+  const fetchImpl = async url => Response.json(records.get(url.split('/').at(-1)))
+  const receipt = await verifyNativeUploads({ ...f, outputPath: path.join(f.root, 'all-sixteen.json'), env, fetchImpl })
+  assert.equal(receipt.partCount, MAX_PARTS)
+  assert.equal(receipt.artifacts.length, MAX_PARTS + 1)
+  assert.equal(new Set(receipt.artifacts.map(artifact => artifact.artifactId)).size, MAX_PARTS + 1)
+  assert.equal(receipt.validationScope, 'archive-transport-only')
+  const rejectedPath = path.join(f.root, 'rejected.json')
+  for (const [changes, expected] of [
+    [{ URAI_PART_16_ID: '' }, /identity\/digest missing/],
+    [{ URAI_PART_16_ID: env.URAI_PART_01_ID }, /Duplicate native artifact identities/],
+    [{ URAI_PART_16_DIGEST: 'malformed' }, /identity\/digest missing/],
+    [{ URAI_PART_16_DIGEST: 'f'.repeat(64) }, /digest mismatch/],
+  ]) {
+    await assert.rejects(verifyNativeUploads({ ...f, outputPath: rejectedPath, env: { ...env, ...changes }, fetchImpl }), expected)
+    assert.equal(fs.existsSync(rejectedPath), false)
+  }
+  const last = records.get(env.URAI_PART_16_ID)
+  for (const [changes, expected] of [
+    [{ name: f.manifest.parts[0].artifactName }, /identity\/name\/expiry mismatch/],
+    [{ workflow_run: { id: 101 } }, /another run/],
+    [{ expired: true }, /identity\/name\/expiry mismatch/],
+    [{ size_in_bytes: ARTIFACT_BYTES + 1 }, /byte limit/],
+  ]) {
+    records.set(env.URAI_PART_16_ID, { ...last, ...changes })
+    await assert.rejects(verifyNativeUploads({ ...f, outputPath: rejectedPath, env, fetchImpl }), expected)
+    assert.equal(fs.existsSync(rejectedPath), false)
+  }
+})

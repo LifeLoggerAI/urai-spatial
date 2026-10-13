@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { subscribeBrowserLocation } from '@/lib/browserLocationStore'
 import { definitionForDestination } from './destinationRegistry'
+import { persistHomeWorldCheckpoint } from './homeWorldCheckpointPersistence'
 import { useUraiWorldState } from './WorldStateProvider'
 import {
   URAI_WORLD_RETURN_EVENT,
@@ -139,12 +140,14 @@ export function WorldTransitionController() {
     beginTravelRef.current(request)
 
     if (currentWorld.destination === 'home') {
-      window.sessionStorage.setItem('urai-world-home-checkpoint', JSON.stringify({
+      // This checkpoint is optional continuity, not authorization to travel.
+      // Browsers may deny access to sessionStorage in strict privacy contexts.
+      persistHomeWorldCheckpoint({
         destination: currentWorld.destination,
         entryPortal: request.entryPortal ?? 'ground-gateway',
         cameraCheckpoint: currentWorld.cameraCheckpoint ?? 'home-threshold',
         savedAt: Date.now(),
-      }))
+      })
     }
 
     const href = buildTravelHref(request)
@@ -251,7 +254,11 @@ export function WorldTransitionController() {
       // Life Map and Location Map own their realm-specific Escape contracts.
       // Consent Sanctuary owns audit/pending dismissal and its history/Passport return.
       // The global reverse-travel fallback must not race a realm-owned handler.
-      if (currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map' || currentWorld.destination === 'privacy-controls') return
+      // Replay has its own Escape handler that pauses media and dispatches one
+      // URAI_WORLD_RETURN_EVENT. Handling the same key here as well can issue
+      // two reverse travels against the same transition state and leave the
+      // client URL on Replay while the Focus surface is already changing.
+      if (currentWorld.destination === 'replay' || currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map' || currentWorld.destination === 'privacy-controls') return
       event.preventDefault()
       reverseTravel()
     }

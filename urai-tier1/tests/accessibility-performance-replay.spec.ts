@@ -12,6 +12,32 @@ async function disableWebGL(page: Page) {
   })
 }
 
+// Next's preserved, hidden route tree can temporarily retain a loading Focus
+// marker during client navigation. The *interactive* destination must be the
+// single Focus owner inside the persistent world shell. Fail on a second
+// painted Focus or on stale media/Canvas in any off-shell transitional tree.
+async function expectSingleActiveFocus(page: Page) {
+  const shell = page.getByTestId('urai-persistent-world-shell')
+  await expect(shell).toHaveAttribute('data-world-destination', 'focus')
+  const focus = shell.getByTestId('urai-final-focus-chamber')
+  await expect(focus).toHaveCount(1)
+  await expect(focus).toHaveAttribute('data-chamber-state', 'ready')
+  await expect(focus).toBeVisible()
+  await expect(page.getByTestId('urai-final-focus-chamber').filter({ visible: true })).toHaveCount(1)
+  const extraOwners = await page.getByTestId('urai-final-focus-chamber').evaluateAll(elements =>
+    elements.filter(element => !element.closest('[data-testid="urai-persistent-world-shell"]')).map(element => {
+      const style = getComputedStyle(element)
+      return {
+        inactive: Boolean(element.closest('[hidden],[inert],[aria-hidden="true"]')) ||
+          style.display === 'none' || style.visibility === 'hidden' || element.getClientRects().length === 0,
+        retainedMedia: element.querySelectorAll('canvas,video,audio').length,
+      }
+    }),
+  )
+  expect(extraOwners.every(owner => owner.inactive && owner.retainedMedia === 0)).toBe(true)
+  return focus
+}
+
 test.describe('Replay source ownership and accessible transport', () => {
   test('missing private selection cannot inherit demonstration art or a playing receipt', async ({ page }) => {
     const demoAssetRequests: string[] = []
@@ -47,7 +73,7 @@ test.describe('Replay source ownership and accessible transport', () => {
     await page.evaluate(() => document.fonts.ready)
     const context = replay.locator('.replayMemoryContext')
     await expect(context.getByText('Sample', { exact: true })).toBeVisible()
-    await expect(context.locator('time')).toHaveAttribute('datetime', '2026-01-01T12:00:00.000Z')
+    await expect(context.locator('time')).toHaveAttribute('datetime', '2026-05-09T12:00:00.000Z')
     await expect(context.locator('time')).toContainText('2026')
     await expect(context.getByText('Example place', { exact: true })).toBeVisible()
     await expect(context.locator('.replaySequence')).toHaveText('1 / 4 · Memory')
@@ -70,7 +96,7 @@ test.describe('Replay source ownership and accessible transport', () => {
 
     const seek = replay.getByRole('slider', { name: /Move through memory time/ })
     const playBeforeSeek = await play.boundingBox()
-    await seek.focus()
+    await page.keyboard.press('Tab')
     await expect(seek).toBeFocused()
     const playDuringSeek = await play.boundingBox()
     expect(playDuringSeek!.x).toBeCloseTo(playBeforeSeek!.x, 1)
@@ -101,6 +127,41 @@ test.describe('Replay source ownership and accessible transport', () => {
     const destination = new URL(page.url())
     expect(destination.searchParams.get('memoryId')).toBe('demo:quiet-reset')
     expect(destination.searchParams.get('manifestId')).toBe('replay-recovery-thread')
+    const returnedFocus = await expectSingleActiveFocus(page)
+    await expect(returnedFocus.getByRole('button', { name: /Open Replay for/ })).toBeFocused()
+    await expect(page.locator('.replaySpatialCanvas, .replayRecordedSource video, .replayRecordedSource audio')).toHaveCount(0)
+  })
+
+  test('Focus keyboard restoration survives two Replay exits without stale media or canvas owners', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await disableWebGL(page)
+    await page.addInitScript(() => {
+      const counts = { replayEntries: 0, returns: 0 }
+      ;(window as unknown as { __uraiReplayReturnCounts: typeof counts }).__uraiReplayReturnCounts = counts
+      window.addEventListener('urai:world-travel', event => {
+        if ((event as CustomEvent<{ destination?: string }>).detail?.destination === 'replay') counts.replayEntries += 1
+      })
+      window.addEventListener('urai:world-return', () => { counts.returns += 1 })
+    })
+    await page.goto('/focus?memoryId=demo%3Aquiet-reset&demo=1', { waitUntil: 'domcontentloaded' })
+    for (let cycle = 0; cycle < 2; cycle += 1) {
+      const focus = await expectSingleActiveFocus(page)
+      const replayEntry = focus.getByRole('button', { name: /Open Replay for/ })
+      await expect(replayEntry).toBeEnabled()
+      if (cycle > 0) await expect(replayEntry).toBeFocused()
+      await replayEntry.click()
+      const replay = page.getByTestId('cinematic-replay-client')
+      await expect(replay).toHaveAttribute('data-replay-media-ready', 'true', { timeout: 45_000 })
+      await page.keyboard.press('Escape')
+      await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '')).toBe('/focus')
+      await expect(replay).toHaveCount(0)
+      await expectSingleActiveFocus(page)
+      await expect(focus.getByRole('button', { name: /Open Replay for/ })).toBeFocused()
+      await expect(page.locator('.replaySpatialCanvas, .replayRecordedSource video, .replayRecordedSource audio')).toHaveCount(0)
+      const counts = await page.evaluate(() => (window as unknown as { __uraiReplayReturnCounts: { replayEntries: number; returns: number } }).__uraiReplayReturnCounts)
+      expect(counts).toEqual({ replayEntries: cycle + 1, returns: cycle + 1 })
+    }
   })
 
   test('one Life Movie continuation preserves selected memory and current movie chapter', async ({ page }) => {
@@ -153,7 +214,12 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 844 }
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto(replayDemo, { waitUntil: 'domcontentloaded' })
     const replay = page.getByTestId('cinematic-replay-client')
-    await expect(replay).toHaveAttribute('data-replay-media-ready', 'true')
+    // Source media and WebGL hydration can be slower in the full isolated
+    // accessibility matrix than in a standalone Replay proof. Wait for the
+    // *same* authentic readiness signals, never skip or synthesize them.
+    await expect(replay).toHaveAttribute('data-replay-media-ready', 'true', { timeout: 45_000 })
+    await expect(replay).toHaveAttribute('data-webgl-state', 'ready', { timeout: 45_000 })
+    await expect(replay.locator('canvas')).toHaveAttribute('data-replay-first-frame', 'true', { timeout: 45_000 })
     await page.evaluate(() => document.fonts.ready)
     // Read one simultaneous layout snapshot instead of three forced GPU frames.
     const { caption, tempo, header } = await replay.evaluate(owner => {
@@ -199,5 +265,29 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 844 }
     await expect(replay).toHaveAttribute('data-playing', 'true')
     await replay.getByRole('button', { name: 'Pause memory', exact: true }).click()
     await expect(replay).toHaveAttribute('data-playing', 'false')
+    if (viewport.height <= 500) {
+      const pausedAt = await replay.getAttribute('data-current-time-ms')
+      await page.keyboard.press('Tab')
+      const seek = replay.getByRole('slider', { name: /Move through memory time/ })
+      await expect(seek).toBeFocused()
+      const target = await seek.evaluate(element => {
+        const r = element.getBoundingClientRect()
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+        return { x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom,reachable:hit===element||element.contains(hit) }
+      })
+      expect(target.width).toBeGreaterThanOrEqual(48)
+      expect(target.height).toBeGreaterThanOrEqual(48)
+      expect(target.x).toBeGreaterThanOrEqual(0)
+      expect(target.y).toBeGreaterThanOrEqual(0)
+      expect(target.right).toBeLessThanOrEqual(viewport.width)
+      expect(target.bottom).toBeLessThanOrEqual(viewport.height)
+      expect(target.reachable).toBe(true)
+      await expect(replay).toHaveAttribute('data-current-time-ms', pausedAt!)
+      await seek.press('End')
+      await expect(replay).toHaveAttribute('data-current-time-ms', '12000')
+      await seek.press('Home')
+      await expect(replay).toHaveAttribute('data-current-time-ms', '0')
+      await test.info().attach('replay-keyboard-seek-geometry.json', {body:JSON.stringify(target),contentType:'application/json'})
+    }
   })
 }

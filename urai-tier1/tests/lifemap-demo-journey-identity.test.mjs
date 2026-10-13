@@ -17,6 +17,7 @@ const source = fs.readFileSync(process.env.URAI_LIFEMAP_NAVIGATOR_SOURCE ?? 'src
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
 const sceneSource = fs.readFileSync(process.env.URAI_LIFEMAP_SCENE_SOURCE ?? 'src/components/lifemap/ComposedLifeMapScene.tsx', 'utf8')
 const sceneCompiled = ts.transpileModule(sceneSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
+const adamSlotCompiled = ts.transpileModule(fs.readFileSync('src/spatial/adam/AdamLauncherSlot.tsx', 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
 const selectedMemoryCompiled = ts.transpileModule(fs.readFileSync('src/spatial/memory/useSelectedMemory.ts', 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
 const node = { id:'quiet-reset', title:'The Quiet Reset', type:'recovery', eraId:'threshold-return', connectedTo:[], summary:'Disclosed test memory', dateLabel:'Now', replayAvailable:true }
 function descendants(tree) {
@@ -26,6 +27,7 @@ function descendants(tree) {
 }
 function fixture(search, { component = 'navigator', memoryNodes = [node] } = {}) {
   let cursor = 0, dirty = false, queued = []
+  let founderOpen = false
   const slots = [], listeners = new Map(), calls = []
   const browser = { location:new URL('http://localhost/life-map' + search), addEventListener:(name, handler) => listeners.set(name, handler), removeEventListener:(name, handler) => { if (listeners.get(name) === handler) listeners.delete(name) } }
   browser.setTimeout = () => { throw Error('Reduced-motion component must avoid travel timers') }
@@ -66,14 +68,23 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     './selectedMemoryContract':selectedMemoryContract,
     './explicitDemoMemory':{buildNamedExplicitDemoMemory},
   }
+  const adamSlotModule = {exports:{}}
+  vm.runInNewContext(adamSlotCompiled,{exports:adamSlotModule.exports,module:adamSlotModule,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]}},{filename:'actual-AdamLauncherSlot.tsx'})
+  imports['@/spatial/adam/AdamLauncherSlot'] = adamSlotModule.exports
   const module = {exports:{}}
-  vm.runInNewContext(component==='memory'?selectedMemoryCompiled:component==='scene'?sceneCompiled:compiled,{exports:module.exports,module,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]},window:browser,document:{body:{style:{}},querySelector:()=>null},URLSearchParams,HTMLElement:class {},Element:class {}},{filename:component==='memory'?'actual-useSelectedMemory.ts':component==='scene'?'actual-ComposedLifeMapScene.tsx':'actual-LifeMapSemanticNavigator.tsx'})
+  vm.runInNewContext(component==='memory'?selectedMemoryCompiled:component==='scene'?sceneCompiled:compiled,{exports:module.exports,module,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]},window:browser,document:{body:{style:{}},querySelector:selector=>selector==='[data-urai-adam-presence]'&&founderOpen?{}:null},URLSearchParams,HTMLElement:class {},Element:class {}},{filename:component==='memory'?'actual-useSelectedMemory.ts':component==='scene'?'actual-ComposedLifeMapScene.tsx':'actual-LifeMapSemanticNavigator.tsx'})
   const render = () => {
     for (let pass=0;pass<12;pass++) {cursor=0;dirty=false;const tree=component==='memory'?module.exports.useSelectedMemory():module.exports.default({authenticatedUserId:'synthetic-owner'});const effects=queued;queued=[];effects.forEach(effect=>effect());if(!dirty)return tree}
     throw Error('Actual navigator hooks did not settle')
   }
   const open = () => {descendants(render()).find(el=>el.props['data-testid']==='life-map-semantic-trigger').props.onClick();return render()}
-  return {calls,browser,render,open,select(detail=1, id='quiet-reset') {
+  return {calls,browser,render,open,setFounderOpen(value) {founderOpen=value},key(key) {
+    const event={key,target:null,defaultPrevented:false,altKey:false,ctrlKey:false,metaKey:false,preventDefault(){this.defaultPrevented=true}}
+    assert.ok(listeners.has('keydown'))
+    listeners.get('keydown')(event)
+    render()
+    return event
+  },select(detail=1, id='quiet-reset') {
     if(component==='scene') {
       const world=descendants(render()).find(el=>el.type==='synthetic-production-world-boundary')
       const selected=memoryNodes.find(candidate=>candidate.id===id)
@@ -91,6 +102,38 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     assert.ok(control);control.props.onClick();render();return browser.location.searchParams
   }}
 }
+
+test('Founder owns keyboard input above Search until its own dismissal completes', () => {
+  const f=fixture('?demo=1&overview=1')
+  f.open()
+  const initialIdentity=f.browser.location.search
+  const initialCalls=f.calls.slice()
+  f.setFounderOpen(true)
+  for(const key of ['Escape','ArrowRight','ArrowLeft','Home','o','/']) {
+    assert.equal(f.key(key).defaultPrevented,false,key+' must reach Founder')
+    assert.ok(descendants(f.render()).some(el=>el.props.id==='life-map-navigator'),'Search remains open beneath Founder')
+    assert.equal(f.browser.location.search,initialIdentity)
+    assert.deepEqual(f.calls,initialCalls)
+  }
+  f.setFounderOpen(false)
+  assert.equal(f.key('Escape').defaultPrevented,true)
+  assert.equal(descendants(f.render()).some(el=>el.props.id==='life-map-navigator'),false)
+  assert.equal(f.browser.location.search,initialIdentity)
+  assert.deepEqual(f.calls,initialCalls)
+})
+
+test('actual scene overview groups Founder with Return Home without changing its destination',()=>{
+  const f=fixture('?demo=1&overview=1',{component:'scene'})
+  const group=descendants(f.render()).find(el=>el.type==='nav' && el.props['aria-label']==='Life Map overview controls')
+  assert.ok(group)
+  const returnHome=descendants(group).find(el=>el.props['data-life-map-overview-home-return']==='true')
+  const founder=descendants(group).find(el=>typeof el.type==='function' && el.type.name==='AdamLauncherSlot')
+  assert.ok(returnHome);assert.ok(founder)
+  assert.equal(founder.props.name,'life-map-overview-controls')
+  returnHome.props.onClick()
+  assert.equal(f.calls.at(-1).kind,'destination')
+  assert.equal(f.calls.at(-1).destination,'/home')
+})
 
 for (const [activation,detail] of [['pointer',1],['keyboard',0],['touch',1]]) test('actual '+activation+' selection after disclosed Home Ascent binds the demo movie manifest',()=>{
   const f=fixture('?demo=1&from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete')

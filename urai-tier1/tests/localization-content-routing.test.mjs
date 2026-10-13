@@ -115,9 +115,10 @@ function providerFixture({ output = doneEvent('en-US'), policyGranted = true, po
   })
   // Locale assertions use the retained synthetic transport; the dedicated spend suite executes actual admission.
   let providerTransport
-  // Synthetic provider output is admitted to this fixture only after its paid
-  // transport boundary returns; the production final-publication check remains required.
-  const admittedPaidOutputs = new WeakSet()
+  // This locale-only fixture models admitted synthetic responses, not real
+  // paid-provider admission. Final output authority must still be exercised.
+  const admittedSyntheticResponses = new WeakSet()
+  let verifiedSyntheticOutputs = 0
   const provider = sourceModule('../../apps/functions/src/providerFunctions.ts', (id) => {
     if (id === 'node:crypto') return { createHash }
     if (id === 'firebase-admin') return { apps: [{}], firestore, auth: () => ({ verifyIdToken: async () => ({ uid: 'synthetic-owner' }) }) }
@@ -127,12 +128,14 @@ function providerFixture({ output = doneEvent('en-US'), policyGranted = true, po
     if (id === './consentPolicyAuthority') return consentPolicyAuthority
     if (id === './protectedProviderSpend') return {
       paidSpatialFetch: async (_db, _uid, _lane, _provider, _model, _input, url, init) => {
-        const result = await providerTransport(url, init)
-        admittedPaidOutputs.add(result)
-        return result
+        const response = await providerTransport(url, init)
+        admittedSyntheticResponses.add(response)
+        return response
       },
-      assertSpatialPaidOutputCurrent: response => assert.ok(admittedPaidOutputs.has(response),
-        'synthetic paid output must originate from the admitted mock transport'),
+      assertSpatialPaidOutputCurrent(response) {
+        assert.ok(admittedSyntheticResponses.has(response), 'Only responses from the admitted synthetic provider transport may be published')
+        verifiedSyntheticOutputs++
+      },
       SpatialSpendError: class extends Error {},
       SPATIAL_SPEND_WORKER_TOKENS_JSON: {},
     }
@@ -178,7 +181,7 @@ function providerFixture({ output = doneEvent('en-US'), policyGranted = true, po
     }, response)
     return { code, json, headers, events: chunks.join('').trim().split('\n').filter(Boolean).map(value => JSON.parse(value)) }
   }
-  return { calls, stored, invoke }
+  return { calls, stored, invoke, get verifiedSyntheticOutputs() { return verifiedSyntheticOutputs } }
 }
 
 test('content transport covers exactly the governed twenty tags and preserves review gates', () => {
@@ -299,6 +302,7 @@ test('actual server routes all twenty languages into strict response schema, ins
     const f = providerFixture({ output: doneEvent(locale) })
     const response = await f.invoke({ locale })
     assert.equal(response.code, 200)
+    assert.equal(f.verifiedSyntheticOutputs, 1, 'Successful localized delivery must recheck admitted synthetic output authority')
     assert.equal(f.calls.length, 2)
     const generation = f.calls[1]
     assert.match(generation.body.instructions, new RegExp(`in ${locale}\\. Return locale exactly ${locale}\\.`))
