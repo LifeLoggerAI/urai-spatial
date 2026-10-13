@@ -72,3 +72,32 @@ test('Replay horizon halo retains an actual transformed WebGL gradient without a
   const source = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
   assert.doesNotMatch(source, /projector|movie screen|projection/i)
 })
+
+test('Replay backdrop uses terrain-conforming ridges without giant ellipsoid silhouettes', async () => {
+  const { buildReplayDistantRidgeGeometry, replayRidgeElevation } = await import('../src/app/replay/replayDistantRidgeGeometry.ts')
+  const height = (x, z) => -1.72 + Math.sin(x * .37 + z * .075) * .28
+  for (const section of ['left', 'right', 'horizon']) {
+    const geometry = buildReplayDistantRidgeGeometry(section, height)
+    const positions = geometry.getAttribute('position')
+    assert.ok(positions.count > 1000)
+    assert.equal(geometry.userData.truthClass, 'disclosed-demonstration')
+    assert.equal(geometry.userData.finalArtAdmitted, false)
+    for (let index = 0; index < positions.count; index++) {
+      const x = positions.getX(index), y = positions.getY(index), z = positions.getZ(index)
+      assert.ok([x, y, z].every(Number.isFinite))
+      assert.ok(Math.abs(y - replayRidgeElevation(section, x, z, height)) < 0.0001)
+    }
+    geometry.dispose()
+  }
+  assert.ok(Math.abs(replayRidgeElevation('left', -10, -17, height) - height(-10, -17)) < .06)
+  assert.ok(Math.abs(replayRidgeElevation('right', 10, -17, height) - height(10, -17)) < .06)
+  assert.throws(() => buildReplayDistantRidgeGeometry('left', () => NaN), /finite terrain elevation/)
+  const { readFileSync } = await import('node:fs')
+  const client = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+  assert.match(client, /buildReplayDistantRidgeGeometry\('left'/)
+  for (const section of ['left', 'right', 'horizon']) {
+    const start = client.indexOf('name="replay-memory-ridge-' + section + '"')
+    assert.ok(start > 0)
+    assert.doesNotMatch(client.slice(start, client.indexOf('</mesh>', start)), /icosahedronGeometry/)
+  }
+})
