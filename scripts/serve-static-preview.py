@@ -11,7 +11,18 @@ class PreviewHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, directory, **kwargs):
         self.output = Path(directory).resolve()
         proof = json.loads((self.output / "api/system/deploy-proof").read_text())
-        self.disabled = {entry["route"] for entry in proof["conditionalRoutes"] if not entry["enabled"]}
+        # Immersive /xr stays 404. A disabled /spatial/ar-vr may be a
+        # source-governed, non-immersive informational preview (HTTP 200).
+        # Both previewOnly and expectedStatus must agree; do not infer release
+        # authority from the physical presence of an HTML file.
+        self.disabled = {
+            entry["route"] for entry in proof["conditionalRoutes"]
+            if not entry["enabled"] and not (
+                entry["route"] == "/spatial/ar-vr"
+                and entry.get("previewOnly") is True
+                and entry.get("expectedStatus") == 200
+            )
+        }
         super().__init__(*args, directory=str(self.output), **kwargs)
 
     def send_head(self):

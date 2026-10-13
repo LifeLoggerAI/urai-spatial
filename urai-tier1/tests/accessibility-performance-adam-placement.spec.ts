@@ -555,7 +555,7 @@ for (const profile of [
       await page.emulateMedia({ reducedMotion: 'reduce' })
       if (profile.noWebGL || surface.noWebGL) await disableWebGL(page)
       const response = await page.goto(surface.route, { waitUntil: 'domcontentloaded' })
-      if (surface.slot === 'xr-portals' && !xrReleaseAuthority.enabled) {
+      if (surface.route === '/xr' && !xrReleaseAuthority.enabled) {
         expect(response, 'A disabled XR address must have an actual response').not.toBeNull()
         expect(inspectConditionalXrResponse({ status: response!.status(), url: response!.url() }, new URL(surface.route, info.project.use.baseURL).href, xrReleaseAuthority), 'The real disabled route must preserve governed 404 status, origin and path').toBe(true)
         await expect(page.getByTestId('urai-quest-explorable-world')).toHaveCount(0)
