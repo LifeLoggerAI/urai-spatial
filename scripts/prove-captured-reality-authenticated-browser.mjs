@@ -34,6 +34,7 @@ assert.equal(process.env.FUNCTIONS_EMULATOR, 'true')
 
 const entry = [
   "import React,{useEffect,useState} from 'react'",
+  "import * as THREE from 'three'",
   "import {createRoot} from 'react-dom/client'",
   "import {getAuth,connectAuthEmulator,signInWithEmailAndPassword} from 'firebase/auth'",
   "import {getFirestore,connectFirestoreEmulator} from 'firebase/firestore'",
@@ -44,6 +45,11 @@ const entry = [
   "connectAuthEmulator(auth,'http://127.0.0.1:9099',{disableWarnings:true})",
   "connectFirestoreEmulator(getFirestore(app),'127.0.0.1',8080)",
   "connectFunctionsEmulator(functions,'127.0.0.1',5001)",
+  // Observe actual Three.js disposal events without altering the production renderer.
+  "const disposal={geometry:0,material:0,texture:0}",
+  "for(const [kind,proto] of [['geometry',THREE.BufferGeometry.prototype],['material',THREE.Material.prototype],['texture',THREE.Texture.prototype]]){const original=proto.dispose;proto.dispose=function(...args){disposal[kind]++;return original.apply(this,args)}}",
+  "window.__uraiProofDisposal=disposal",
+  "window.__uraiProofOwnerToken=async()=>{const current=getAuth(app).currentUser;if(!current)throw new Error('PROOF_OWNER_NOT_AUTHENTICATED');return current.getIdToken()}",
   "const fixture=window.__uraiProofIdentity",
   "function ProofShell(){",
   " const [status,setStatus]=useState('authenticating')",
@@ -131,7 +137,9 @@ try {
       ...(profile.mobile?{userAgent:'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0 Mobile Safari/537.36'}:{}),
     })
     const page=await context.newPage(),errors=[],requests=[],responses=[]
-    sessions.push({context,page,profile})
+    // Keep signed synthetic fixture URLs only in runner memory, not receipts.
+    const privateStreamUrls=new Map()
+    sessions.push({context,page,profile,privateStreamUrls})
     page.on('pageerror',error=>errors.push(String(error.stack||error.message).slice(0,1000)))
     page.on('console',message=>{if(message.type()==='error')errors.push(message.text().slice(0,400))})
     page.on('request',request=>{
@@ -143,6 +151,8 @@ try {
       const url=new URL(response.url())
       const name=endpointNames.find(n=>url.pathname.endsWith('/'+n))
       if(name)responses.push({name,status:response.status()})
+      if(response.status()===200 && (name==='streamCapturedRealityRuntime'||name==='streamCapturedRealityMesh')
+        && response.request().method()==='GET') privateStreamUrls.set(name,response.url())
     })
     const record={profile:profile.name,passed:false,auth:false,canvasCount:0}
     receipt.profiles.push(record)
@@ -186,6 +196,7 @@ try {
       profile.name+': actual Firebase endpoint not observed: '+name)
     assert.deepEqual(errors,[],profile.name+' browser console errors')
     record.scene=scene
+    record.disposalBefore=await page.evaluate(()=>({...window.__uraiProofDisposal}))
     record.requests=endpointNames.map(name=>({name,
       requestCount:requests.filter(x=>x.name===name).length,
       successfulResponses:responses.filter(x=>x.name===name&&x.status===200).length}))
@@ -209,11 +220,32 @@ try {
     .update({'domains.location.mode':'denied'})
   receipt.revocation={mutation:'location consent denied in Firestore emulator',
     beforeCount:sessions.length,afterCount:0}
-  for(const {page,profile} of sessions){
+  for(const {page,profile,privateStreamUrls} of sessions){
     const record=receipt.profiles.find(x=>x.profile===profile.name)
     await page.locator('[data-captured-reality-mode="suppressed"]').waitFor({timeout:25000})
     await page.waitForFunction(()=>document.querySelectorAll('canvas').length===0,null,{timeout:15000})
     assert.equal(await page.locator('canvas').count(),0,'Revoked private geometry still mounted')
+    // Observe the existing scene's real GPU-resource disposal calls after unmount.
+    await page.waitForFunction(before=>{
+      const after=window.__uraiProofDisposal
+      return after.geometry>before.geometry && after.material>before.material
+        && after.texture>before.texture
+    },record.disposalBefore,{timeout:15000})
+    record.disposalAfter=await page.evaluate(()=>({...window.__uraiProofDisposal}))
+    assert.ok(record.disposalAfter.geometry>record.disposalBefore.geometry,'Geometry.dispose not called')
+    assert.ok(record.disposalAfter.material>record.disposalBefore.material,'Material.dispose not called')
+    assert.ok(record.disposalAfter.texture>record.disposalBefore.texture,'Texture.dispose not called')
+    assert.equal(privateStreamUrls.size,2,'Both prior private streams must have loaded')
+    const staleAccess=await page.evaluate(async links=>{
+      const token=await window.__uraiProofOwnerToken()
+      return Promise.all(links.map(async ({name,url})=>({
+        name,status:(await fetch(url,{method:'GET',cache:'no-store',redirect:'error',
+          credentials:'omit',headers:{Authorization:'Bearer '+token}})).status,
+      })))
+    },[...privateStreamUrls.entries()].map(([name,url])=>({name,url})))
+    assert.ok(staleAccess.every(x=>x.status===403||x.status===409),
+      'A stale private stream was accepted after consent withdrawal')
+    record.revokedStreamStatuses=staleAccess
     const after=await page.screenshot({path:path.join(destination,profile.name+'-revoked.png'),animations:'disabled'})
     assert.ok(after.length>5000,'Missing genuine post-revocation screenshot')
     assert.notEqual(sha256(after),record.before.sha256,'Private-world pixels did not change')
