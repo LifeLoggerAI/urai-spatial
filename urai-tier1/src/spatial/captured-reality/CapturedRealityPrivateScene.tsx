@@ -6,6 +6,8 @@ import { OrbitControls } from '@react-three/drei'
 import type { CapturedRealityRenderDecision } from './capturedReality'
 import { CAPTURED_REALITY_QUALITY_PROFILES, capturedRealityDeviceTier } from './capturedRealityRuntime'
 import CapturedRealitySplat from './CapturedRealitySplat'
+import CapturedRealityHybridMesh from './CapturedRealityHybridMesh'
+import type { CapturedRealityHybridMeshPayload } from './capturedRealityHybridGeometry'
 import { CapturedRealityRenderBoundary } from './CapturedRealityRenderBoundary'
 import type { CapturedRealityStreamAuthority } from './capturedRealityDelivery'
 
@@ -16,6 +18,10 @@ export type CapturedRealityPrivateSceneProps = {
   onOpenProvenance?: () => void
   userAgent?: string
   authority?: CapturedRealityStreamAuthority
+  /** Optional independently authorized and immutable mesh bytes. No client-side URL fetching. */
+  hybridMesh?: CapturedRealityHybridMeshPayload | null
+  activeSplatSha256?: string
+  hybridAccessMode?: 'proof' | 'runtime'
 }
 
 export function CapturedRealityPrivateScene({
@@ -25,6 +31,9 @@ export function CapturedRealityPrivateScene({
   onOpenProvenance,
   userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent,
   authority,
+  hybridMesh = null,
+  activeSplatSha256,
+  hybridAccessMode = 'proof',
 }: CapturedRealityPrivateSceneProps) {
   const tier = useMemo(() => capturedRealityDeviceTier(userAgent), [userAgent])
   const quality = CAPTURED_REALITY_QUALITY_PROFILES[tier]
@@ -67,6 +76,9 @@ export function CapturedRealityPrivateScene({
           <CapturedRealityRenderBoundary resetKey={decision.assetUrl}>
             <Canvas camera={{ position: [0, 1.6, 4], fov: 62 }} dpr={tier === 'mobile' ? [1, 1.25] : [1, 1.75]}>
               <Suspense fallback={null}>
+                {hybridMesh && activeSplatSha256 ? (
+                  <CapturedRealityHybridMesh mesh={hybridMesh} activeSplatSha256={activeSplatSha256} mode={hybridAccessMode} />
+                ) : null}
                 <CapturedRealitySplat
                   decision={decision}
                   maxBytes={quality.maxRuntimeBytes}
