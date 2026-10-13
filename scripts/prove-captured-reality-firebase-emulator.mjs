@@ -40,13 +40,23 @@ async function callSplat(token,input){
     body:JSON.stringify({data:input})})
   return {status:response.status,body:await response.json()}
 }
-const geometry=Buffer.alloc(36)
-;[0,0,0,1,0,0,0,1,0].forEach((value,index)=>geometry.writeFloatLE(value,index*4))
-const gltf={asset:{version:'2.0',generator:'UrAi emulator-only GLB'},buffers:[{byteLength:geometry.length}],
- bufferViews:[{buffer:0,byteOffset:0,byteLength:geometry.length,target:34962}],
- accessors:[{bufferView:0,componentType:5126,count:3,type:'VEC3',min:[0,0,0],max:[1,1,0]}],
- meshes:[{primitives:[{attributes:{POSITION:0},mode:4}]}],
- nodes:[{mesh:0}],scenes:[{nodes:[0]}],scene:0}
+// The browser's pixel grid intentionally requires visible area, not merely
+// a GPU draw submission. Use the SAME spatially distinct 96-point orange patch
+// and two-triangle green quad as the independent hybrid Chromium proof.
+// These are synthetic integration fixtures, never admitted personal memories.
+const geometry=Buffer.from(new Float32Array([
+  .25,.2,.1, 1.25,.2,.1, 1.25,1.25,.1,
+  .25,.2,.1, 1.25,1.25,.1, .25,1.25,.1,
+]).buffer)
+const gltf={asset:{version:'2.0',generator:'UrAi emulator-only source-bound GLB'},
+  buffers:[{byteLength:geometry.length}],
+  bufferViews:[{buffer:0,byteOffset:0,byteLength:geometry.length,target:34962}],
+  accessors:[{bufferView:0,componentType:5126,count:6,type:'VEC3',
+    min:[.25,.2,.1],max:[1.25,1.25,.1]}],
+  materials:[{emissiveFactor:[0,.95,.45],doubleSided:true,
+    pbrMetallicRoughness:{baseColorFactor:[.2,.3,.25,1],roughnessFactor:1,metallicFactor:0}}],
+  meshes:[{primitives:[{attributes:{POSITION:0},material:0,mode:4}]}],
+  nodes:[{mesh:0}],scenes:[{nodes:[0]}],scene:0}
 const plain=Buffer.from(JSON.stringify(gltf))
 const json=Buffer.alloc(Math.ceil(plain.length/4)*4,32);plain.copy(json)
 const blob=Buffer.alloc(20+json.length+8+geometry.length)
@@ -54,9 +64,16 @@ blob.writeUInt32LE(0x46546c67,0);blob.writeUInt32LE(2,4);blob.writeUInt32LE(blob
 blob.writeUInt32LE(json.length,12);blob.writeUInt32LE(0x4e4f534a,16);json.copy(blob,20)
 blob.writeUInt32LE(geometry.length,20+json.length)
 blob.writeUInt32LE(0x004e4942,24+json.length);geometry.copy(blob,28+json.length)
-const splat=Buffer.alloc(32);splat.writeFloatLE(.4,0);splat.writeFloatLE(.3,4);splat.writeFloatLE(.2,8)
-for(let i=12;i<24;i+=4)splat.writeFloatLE(.1,i)
-splat[24]=255;splat[25]=188;splat[26]=66;splat[27]=255;splat[28]=255;splat[29]=128;splat[30]=128;splat[31]=128
+const splat=Buffer.alloc(96*32)
+for(let point=0;point<96;point++){
+ const o=point*32
+ splat.writeFloatLE(-.9+(point%12)*.07,o)
+ splat.writeFloatLE(-.3+Math.floor(point/12)*.085,o+4)
+ splat.writeFloatLE(0,o+8)
+ for(let axis=0;axis<3;axis++)splat.writeFloatLE(.105,o+12+axis*4)
+ splat[o+24]=255;splat[o+25]=175;splat[o+26]=65;splat[o+27]=255
+ splat[o+28]=255;splat[o+29]=128;splat[o+30]=128;splat[o+31]=128
+}
 const identity=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
 try{
  const a=await createAccount('a'),b=await createAccount('b'),uid=a.localId,assetId='synthetic-emulator-world'
