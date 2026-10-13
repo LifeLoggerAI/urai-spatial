@@ -157,6 +157,7 @@ async function loadRuntimeDelivery(assetId: string, accessMode: 'runtime' | 'pro
   const result = await callable({ assetId, deviceTier, accessMode })
   if (!validateCapturedRealityRuntimeDelivery(result.data, {
     assetId, accessMode, deviceTier, projectId: app.options.projectId ?? '', maxRuntimeBytes: CAPTURED_REALITY_QUALITY_PROFILES[deviceTier].maxRuntimeBytes,
+    emulatorOnly: process.env.NODE_ENV === 'test',
   })) throw new Error('PRIVATE_DELIVERY_DESCRIPTOR_INVALID')
   return result.data
 }
@@ -389,7 +390,7 @@ export default function CapturedRealityRouteClient() {
     meshDescriptorRef.current = null
           } else {
           const descriptor = meshResult.data
-          if (!privateMeshDescriptorValid(descriptor,{assetId,deviceTier:tier,accessMode,projectId:app.options.projectId??'',splatSha256:nextDelivery.runtimeSha256})) throw new Error('PRIVATE_MESH_DESCRIPTOR_UNTRUSTED')
+          if (!privateMeshDescriptorValid(descriptor,{assetId,deviceTier:tier,accessMode,projectId:app.options.projectId??'',splatSha256:nextDelivery.runtimeSha256,emulatorOnly:process.env.NODE_ENV==='test'})) throw new Error('PRIVATE_MESH_DESCRIPTOR_UNTRUSTED')
           const payload = await fetchPrivateHybridMesh(descriptor,requestHeaders,abort.signal)
           if (disposed || revokedRef.current || !identityCurrent() || abort.signal.aborted) return
           meshDescriptorRef.current = descriptor
