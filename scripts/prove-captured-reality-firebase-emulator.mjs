@@ -34,6 +34,12 @@ async function call(token,input){
     body:JSON.stringify({data:input})})
   return {status:response.status,body:await response.json()}
 }
+async function callSplat(token,input){
+  const response=await fetch(endpoint+'/getCapturedRealityRuntimeUrl',{method:'POST',
+    headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},
+    body:JSON.stringify({data:input})})
+  return {status:response.status,body:await response.json()}
+}
 const geometry=Buffer.alloc(36)
 ;[0,0,0,1,0,0,0,1,0].forEach((value,index)=>geometry.writeFloatLE(value,index*4))
 const gltf={asset:{version:'2.0',generator:'UrAi emulator-only GLB'},buffers:[{byteLength:geometry.length}],
@@ -94,6 +100,25 @@ try{
   proofApprovedMeshSha256:meshSha,proofApprovedMeshStorageGeneration:String(mm.generation),
   meshRegistration:registration})
  const input={assetId,deviceTier:'desktop',accessMode:'proof'}
+ // The Gaussian path and mesh path must belong to the same authorized
+ // captured place. Exercise both actual callable handlers and both real streams.
+ const splatUnauth=await callSplat(null,input)
+ check('Gaussian descriptor requires owner authentication',splatUnauth.status===401,String(splatUnauth.status))
+ const splatForeign=await callSplat(b.idToken,input)
+ check('Gaussian descriptor rejects foreign owner',splatForeign.status===403,String(splatForeign.status))
+ const splatGood=await callSplat(a.idToken,input)
+ check('owner receives real Gaussian descriptor',splatGood.status===200&&splatGood.body?.result?.assetId===assetId,
+   JSON.stringify(splatGood).slice(0,300))
+ const splatDescriptor=splatGood.body.result
+ check('Gaussian descriptor binds immutable source bytes',splatDescriptor.runtimeSha256===splatSha
+   && splatDescriptor.storageGeneration===String(sm.generation)
+   && splatDescriptor.runtimeByteLength===splat.length,'hash, generation, byte length')
+ const splatResponse=await fetch(splatDescriptor.url,{headers:{authorization:'Bearer '+a.idToken}})
+ const splatBytes=Buffer.from(await splatResponse.arrayBuffer())
+ check('actual authenticated Gaussian binary and SHA-256',splatResponse.status===200
+   && splatBytes.equals(splat)&&hash(splatBytes)===splatSha,String(splatResponse.status)+' '+splatBytes.length)
+ const splatDenied=await fetch(splatDescriptor.url,{headers:{authorization:'Bearer '+b.idToken}})
+ check('foreign owner cannot reuse Gaussian descriptor',splatDenied.status!==200,String(splatDenied.status))
  const unauth=await call(null,input)
  check('missing token is denied',unauth.status!==200,String(unauth.status))
  const foreign=await call(b.idToken,input)
@@ -114,9 +139,14 @@ try{
  check('mesh approval withdrawal closes descriptor',withdrawn.status!==200,String(withdrawn.status))
  const stale=await fetch(desc.url,{headers:{authorization:'Bearer '+a.idToken}})
  check('previous descriptor revoked',stale.status!==200,String(stale.status))
+ const splatStillValid=await fetch(splatDescriptor.url,{headers:{authorization:'Bearer '+a.idToken}})
+ check('mesh-only approval withdrawal does not revoke independent Gaussian authority',
+   splatStillValid.status===200,String(splatStillValid.status))
  await db.doc('users/'+uid+'/privacyPolicy/current').update({'domains.location.mode':'denied'})
  const privacy=await call(a.idToken,input)
  check('withdrawn location consent remains denied',privacy.status!==200,String(privacy.status))
+ const splatAfterConsent=await fetch(splatDescriptor.url,{headers:{authorization:'Bearer '+a.idToken}})
+ check('previous Gaussian stream revoked by location withdrawal',splatAfterConsent.status!==200,String(splatAfterConsent.status))
  receipt.passed=true
 }catch(e){receipt.passed=false;receipt.error=String(e.stack||e).slice(0,2500)}
 finally{mkdirSync('artifacts/captured-reality-firebase-emulator',{recursive:true})
