@@ -85,7 +85,7 @@ function harness(pendingStage) {
   vm.runInNewContext(entryStateSource, { exports: entryStateExports, require(id) { assert.ok(id in modules, `Unexpected entry-state import: ${id}`); return modules[id] } })
   modules['@/spatial/memory/MemoryExperienceState'] = entryStateExports
   const exports = {}
-  vm.runInNewContext(source, { exports, require(id) { assert.ok(id in modules, `Unexpected import: ${id}`); return modules[id] }, AbortController, URLSearchParams, ReadableStream, fetch, Worker: class {}, navigator: { userAgent: 'desktop' }, window: {
+  vm.runInNewContext(source, { exports, require(id) { assert.ok(id in modules, `Unexpected import: ${id}`); return modules[id] }, process: { env: { NODE_ENV: 'test' } }, AbortController, URLSearchParams, ReadableStream, fetch, Worker: class {}, navigator: { userAgent: 'desktop' }, window: {
     history: { length: 2 }, setTimeout(fn, ms) { const id = ++timerId; timers.set(id, { fn, ms }); return id }, clearTimeout(id) { timers.delete(id) },
   } })
   const render = () => { stateIndex = refIndex = effectIndex = memoIndex = 0; const tree = exports.default(); while (queued.length) queued.shift()(); return tree }
