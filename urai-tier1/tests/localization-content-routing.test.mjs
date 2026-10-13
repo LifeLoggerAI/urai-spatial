@@ -115,6 +115,9 @@ function providerFixture({ output = doneEvent('en-US'), policyGranted = true, po
   })
   // Locale assertions use the retained synthetic transport; the dedicated spend suite executes actual admission.
   let providerTransport
+  // Synthetic provider output is admitted to this fixture only after its paid
+  // transport boundary returns; the production final-publication check remains required.
+  const admittedPaidOutputs = new WeakSet()
   const provider = sourceModule('../../apps/functions/src/providerFunctions.ts', (id) => {
     if (id === 'node:crypto') return { createHash }
     if (id === 'firebase-admin') return { apps: [{}], firestore, auth: () => ({ verifyIdToken: async () => ({ uid: 'synthetic-owner' }) }) }
@@ -122,7 +125,17 @@ function providerFixture({ output = doneEvent('en-US'), policyGranted = true, po
     if (id === 'firebase-functions/v2/https') return { onRequest: (_options, handler) => handler }
     if (id === '../../../packages/localization/src/contentLanguage') return { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS }
     if (id === './consentPolicyAuthority') return consentPolicyAuthority
-    if (id === './protectedProviderSpend') return { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => providerTransport(url, init), SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} }
+    if (id === './protectedProviderSpend') return {
+      paidSpatialFetch: async (_db, _uid, _lane, _provider, _model, _input, url, init) => {
+        const result = await providerTransport(url, init)
+        admittedPaidOutputs.add(result)
+        return result
+      },
+      assertSpatialPaidOutputCurrent: response => assert.ok(admittedPaidOutputs.has(response),
+        'synthetic paid output must originate from the admitted mock transport'),
+      SpatialSpendError: class extends Error {},
+      SPATIAL_SPEND_WORKER_TOKENS_JSON: {},
+    }
     throw new Error(`Unexpected provider dependency ${id}`)
   }, {
     process: { env: {} },
