@@ -43,6 +43,7 @@ import { buildReplayWornTrailGeometry, replayTrailCenter } from './replayTrailGe
 import ReplayDefaultTrailEvidence from './ReplayDefaultTrailEvidence'
 import DevReplayCandidateWorld, { useReplayDevelopmentCandidate } from './DevReplayCandidateWorld'
 import { noteReplayReturnFocus } from '@/spatial/world/replayReturnFocusHandoff'
+import { REPLAY_HORIZON_VERTEX_SHADER } from './replayHorizonVertexShader'
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
 
@@ -293,7 +294,7 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
         <planeGeometry args={[9.2, 9.2]} />
         <shaderMaterial
           uniforms={horizonGlowUniforms}
-          vertexShader="varying vec2 vGlowUv; void main() { vGlowUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }"
+          vertexShader={REPLAY_HORIZON_VERTEX_SHADER}
           fragmentShader="uniform vec3 uGlowColor; varying vec2 vGlowUv; void main() { float radius = length(vGlowUv - vec2(0.5)) * 2.0; float alpha = 0.065 * pow(1.0 - smoothstep(0.05, 1.0, radius), 2.0); gl_FragColor = vec4(uGlowColor, alpha); }"
           transparent
           depthWrite={false}
