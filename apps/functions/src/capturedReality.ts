@@ -346,6 +346,20 @@ function validateRuntimeMetadata(metadata: { generation?: unknown; size?: unknow
   }
 }
 async function requirePrivateRuntimeBucket(bucket: ReturnType<ReturnType<typeof admin.storage>['bucket']>) {
+  // The Storage emulator cannot attest uniform bucket IAM or public-access
+  // prevention. Only the fully isolated demo project, with all local emulators
+  // configured, can exercise the stream transport without that metadata.
+  // Production always takes the original IAM-verified path below.
+  const project = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || ''
+  if (process.env.FUNCTIONS_EMULATOR === 'true'
+    && /^demo-[a-z0-9-]{1,50}$/.test(project)
+    && process.env.FIREBASE_AUTH_EMULATOR_HOST === '127.0.0.1:9099'
+    && process.env.FIRESTORE_EMULATOR_HOST === '127.0.0.1:8080'
+    && process.env.FIREBASE_STORAGE_EMULATOR_HOST === '127.0.0.1:9199'
+    && process.env.FIREBASE_STORAGE_BUCKET === project + '.appspot.com'
+    && bucket.name === process.env.FIREBASE_STORAGE_BUCKET) {
+    return
+  }
   const [metadata] = await bucket.getMetadata()
   if (metadata.iamConfiguration?.uniformBucketLevelAccess?.enabled !== true || metadata.iamConfiguration?.publicAccessPrevention !== 'enforced') {
     throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_PRIVATE_BUCKET_REQUIRED')
