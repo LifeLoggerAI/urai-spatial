@@ -7,7 +7,7 @@ const identity=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
 const splat='a'.repeat(64),mesh='b'.repeat(64),deliveryId='c'.repeat(64)
 const expected={assetId:'private-test',accessMode:'proof',deviceTier:'desktop',projectId:'urai-4dc1d',splatSha256:splat}
 const description={
-  ...expected,requiresAuthorization:true,meshSha256:mesh,meshByteLength:1024,
+  ...expected,available:true,requiresAuthorization:true,meshSha256:mesh,meshByteLength:1024,
   meshStorageGeneration:'123',expiresAt:new Date(Date.now()+5*60_000).toISOString(),
   url:`https://us-central1-urai-4dc1d.cloudfunctions.net/streamCapturedRealityMesh?assetId=private-test&deviceTier=desktop&accessMode=proof&deliveryId=${deliveryId}`,
   registration:{schemaVersion:'urai-hybrid-registration-1',splatSha256:splat,meshSha256:mesh,
