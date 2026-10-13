@@ -5,6 +5,13 @@ export function isSoftwareWebGLRenderer(vendor: string | null, renderer: string 
   return /swiftshader|llvmpipe|softpipe|software rasterizer|microsoft basic render|mesa offscreen/i.test(identity)
 }
 
+// Bound CPU raster surfaces at extreme window sizes; never lower hardware
+// fidelity or treat software frames as GPU performance certification.
+export function softwareWebGLPixelRatioForViewport(width: number, height: number, maxPixels = 1440 * 900): number {
+  if (![width, height, maxPixels].every(value => Number.isFinite(value) && value > 0)) return 1
+  return Math.min(1, Math.sqrt(maxPixels / (width * height)))
+}
+
 export function detectSoftwareWebGLRenderer(): boolean {
   if (typeof document === 'undefined') return false
   let context: WebGLRenderingContext | WebGL2RenderingContext | null = null
