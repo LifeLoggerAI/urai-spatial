@@ -101,3 +101,14 @@ test('Replay backdrop uses terrain-conforming ridges without giant ellipsoid sil
     assert.doesNotMatch(client.slice(start, client.indexOf('</mesh>', start)), /icosahedronGeometry/)
   }
 })
+
+test('Replay timeline retains a visible pointer and touch seek surface with keyboard focus', async () => {
+  const { readFileSync } = await import('node:fs')
+  const source = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+  assert.match(source, /<input className="memorySeek" type="range"/)
+  assert.match(source, /onChange=\{\(event\) => seek\(Number\(event\.currentTarget\.value\)\)\}/)
+  assert.match(source, /\.memorySeek\{position:absolute;inset:0;z-index:2;width:100%;height:48px/)
+  assert.match(source, /touch-action:none/)
+  assert.match(source, /\.memorySeek:focus-visible\{outline:3px solid #fff/)
+  assert.doesNotMatch(source, /\.memorySeek\{[^}]*pointer-events:none/)
+})
