@@ -26,6 +26,7 @@ import {
   CouncilExternalProviderAttemptUncertainError,
   uncertainCouncilProviderFallback,
 } from './councilClient'
+import { requestCouncilSecondOpinion } from './councilSecondOpinion'
 
 export default function CouncilConversationPanel({ agent }: { agent: CouncilAgent }) {
   const actor = useSyncExternalStore(subscribeAIActor, getAIActorSnapshot, getServerAIActorSnapshot)
@@ -37,8 +38,14 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
   const [result, setResult] = useState<CouncilProviderResult | null>(null)
+  const [reviewResult, setReviewResult] = useState<CouncilProviderResult | null>(null)
+  const [reviewRequested, setReviewRequested] = useState(false)
+  const [reviewConsent, setReviewConsent] = useState(false)
   const requestableProviderIds = useMemo(() => REQUESTABLE_COUNCIL_PROVIDER_IDS.filter((id): id is Exclude<CouncilProviderId, 'local-fallback'> => id !== 'local-fallback'), [])
   const [providerId, setProviderId] = useState<Exclude<CouncilProviderId, 'local-fallback'>>(requestableProviderIds[0] ?? 'openai')
+  const [reviewProviderId, setReviewProviderId] = useState<Exclude<CouncilProviderId, 'local-fallback'>>('gemini')
+  const reviewableProviderIds = requestableProviderIds.filter((id) => id !== providerId)
+  const selectedReviewerId = reviewableProviderIds.includes(reviewProviderId) ? reviewProviderId : reviewableProviderIds[0]
   const [status, setStatus] = useState('Council conversation is idle.')
   const [busy, setBusy] = useState(false)
   const [consent, setConsent] = useState(false)
@@ -56,6 +63,10 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
     if (!isCurrentAIActorSnapshot(actor)) return
     const trimmed = message.trim()
     if (!trimmed || busy) return
+    if (reviewRequested && (!selectedReviewerId || !reviewConsent)) {
+      setStatus('Select a different Council provider and explicitly allow the second opinion before sending.')
+      return
+    }
     if (!consent) {
       setStatus(`Allow ${COUNCIL_PROVIDER_REGISTRY[providerId].label} processing for this Council message before sending.`)
       return
@@ -66,6 +77,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
     aborter.current = controller
     setBusy(true)
     setResult(null)
+    setReviewResult(null)
     setStatus(`${agent.name} is considering your message through the selected provider…`)
 
     const councilMessage = [
@@ -96,9 +108,34 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
         ])
       }
       setMessage('')
-      setStatus(resolved.provider !== 'fallback'
-        ? `${agent.name} responded through ${COUNCIL_PROVIDER_REGISTRY[resolved.provider].label}.`
-        : 'The selected provider was unavailable before external processing; a disclosed local fallback is shown.')
+      if (response && response.provider !== 'fallback' && reviewRequested && reviewConsent && selectedReviewerId) {
+        setStatus(`First answer received. Requesting a separate opinion from ${COUNCIL_PROVIDER_REGISTRY[selectedReviewerId].label}…`)
+        try {
+          const review = await requestCouncilSecondOpinion({
+            originalProvider: providerId,
+            reviewerProvider: selectedReviewerId,
+            originalQuestion: councilMessage,
+            firstAnswer: response.message,
+            context: history,
+            explicitSecondProviderConsent: true,
+            signal: controller.signal,
+          })
+          if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
+          if (review) {
+            setReviewResult(review)
+            setStatus(`First answer and ${COUNCIL_PROVIDER_REGISTRY[selectedReviewerId].label} second opinion received. No automatic correction or factual certification.`)
+          } else {
+            setStatus('First answer preserved. The second provider was unavailable before processing. No automatic correction.')
+          }
+        } catch {
+          if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
+          setStatus('First answer preserved. The second opinion failed or could not be confirmed. No automatic correction.')
+        }
+      } else {
+        setStatus(resolved.provider !== 'fallback'
+          ? `${agent.name} responded through ${COUNCIL_PROVIDER_REGISTRY[resolved.provider].label}.`
+          : 'The selected provider was unavailable before external processing; a disclosed local fallback is shown.')
+      }
     } catch (error) {
       if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
       const fallback = error instanceof OrbProviderAttemptError
@@ -137,6 +174,8 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
             setProviderId(event.currentTarget.value as Exclude<CouncilProviderId, 'local-fallback'>)
             setHistory([])
             setResult(null)
+            setReviewResult(null)
+            setReviewConsent(false)
             setStatus('Council provider changed. Prior provider context was cleared.')
           }}
         >
@@ -155,14 +194,30 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
           <input type="checkbox" checked={consent} disabled={busy} onChange={(event) => setConsent(event.currentTarget.checked)} />
           Allow this message and bounded recent Council context to be processed by {COUNCIL_PROVIDER_REGISTRY[providerId].label}.
         </label>
+        <label className="councilConsent">
+          <input type="checkbox" checked={reviewRequested} disabled={busy || reviewableProviderIds.length === 0} onChange={(event) => { setReviewRequested(event.currentTarget.checked); setReviewConsent(false); setReviewResult(null) }} />
+          Request a second opinion from another provider (additional external processing; no automatic correction).
+        </label>
+        {reviewRequested && selectedReviewerId ? <>
+          <label htmlFor="urai-council-reviewer">Second-opinion provider</label>
+          <select id="urai-council-reviewer" disabled={busy} value={selectedReviewerId} onChange={(event) => { setReviewProviderId(event.currentTarget.value as Exclude<CouncilProviderId, 'local-fallback'>); setReviewConsent(false); setReviewResult(null) }}>
+            {reviewableProviderIds.map((id) => <option value={id} key={id}>{COUNCIL_PROVIDER_REGISTRY[id].label}</option>)}
+          </select>
+          <label className="councilConsent">
+            <input type="checkbox" checked={reviewConsent} disabled={busy} onChange={(event) => setReviewConsent(event.currentTarget.checked)} />
+            Allow {COUNCIL_PROVIDER_REGISTRY[selectedReviewerId].label} to review the original question, bounded Council context, and first provider answer.
+          </label>
+        </> : null}
+        {reviewableProviderIds.length === 0 ? <small>A second opinion requires another separately enabled Council provider.</small> : null}
         <div className="councilConversationActions">
-          <button type="submit" disabled={busy || !consent || !message.trim()}>{busy ? 'Considering…' : 'Ask Council'}</button>
+          <button type="submit" disabled={busy || !consent || !message.trim() || (reviewRequested && (!selectedReviewerId || !reviewConsent))}>{busy ? 'Considering…' : 'Ask Council'}</button>
           <button type="button" disabled={!busy} onClick={() => { aborter.current?.abort(); aborter.current = null; setBusy(false); setStatus('Council response stopped.') }}>Stop</button>
         </div>
       </form>
       <small>Provider availability is checked when you ask. A listed provider may be unavailable.</small>
       <p role="status" aria-live="polite">{status}</p>
       {result ? <div className="councilResponse"><strong>{agent.name}</strong><p>{result.message}</p><small>{result.disclosure}</small></div> : null}
+      {reviewResult ? <div className="councilResponse" aria-label="Unverified Council second opinion"><strong>Second opinion: {COUNCIL_PROVIDER_REGISTRY[reviewResult.provider].label}</strong><p>{reviewResult.message}</p><small>{reviewResult.disclosure} This is a model response, not verified memory evidence. The first answer has not been automatically changed.</small></div> : null}
       <style>{`
         .councilConversation{pointer-events:auto;margin-top:14px;border-top:1px solid rgba(255,255,255,.12);padding-top:14px}.councilConversation form{display:grid;gap:8px}.councilConversation label{font-size:11px;font-weight:800;color:rgba(255,255,255,.8)}.councilConversation select{box-sizing:border-box;width:100%;min-height:48px;padding:0 10px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(3,8,12,.82);color:#fff}.councilConversation textarea{box-sizing:border-box;width:100%;min-height:76px;padding:10px;border:1px solid rgba(255,255,255,.2);border-radius:14px;background:rgba(3,8,12,.82);color:#fff;resize:vertical}.councilConsent{display:flex;align-items:flex-start;gap:8px;line-height:1.35}.councilConsent input{margin-top:2px}.councilConversationActions{display:flex;gap:8px}.councilConversationActions button{min-height:48px;padding:0 14px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:#f4f1e8;color:#10151a;font-weight:800}.councilConversationActions button+button{background:transparent;color:#fff}.councilConversationActions button:disabled{opacity:.45}.councilConversation>p{margin:8px 0 0;color:rgba(255,255,255,.58);font-size:10px;line-height:1.4}.councilResponse{margin-top:10px;padding:12px;border:1px solid rgba(233,214,183,.24);border-radius:14px;background:rgba(4,8,11,.72)}.councilResponse p{margin:5px 0;color:rgba(255,255,255,.86);line-height:1.5}.councilResponse small{color:rgba(255,255,255,.56)}.councilConversation :is(select,textarea,button,input):focus-visible{outline:3px solid #fff;outline-offset:2px}
       `}</style>
