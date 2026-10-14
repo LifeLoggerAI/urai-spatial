@@ -87,3 +87,16 @@ test('Council fallback truth distinguishes pre-provider, definite provider attem
   assert.match(panel, /attemptedCouncilProviderFallback\(trimmed, error\.provider\)/)
   assert.match(panel, /uncertainCouncilProviderFallback\(trimmed, error\.provider\)/)
 })
+
+test('Council graph handoff never trusts a browser supplied evidence packet', () => {
+  const graphSource=fs.readFileSync(new URL('../../apps/functions/src/councilGraphEvidenceAuthority.ts',import.meta.url),'utf8')
+  assert.match(functions,/readCouncilGraphEvidence\(db, uid, graphRequest\)/)
+  assert.match(functions,/body\.graphSelection/)
+  assert.match(functions,/UNTRUSTED REFERENCE DATA/)
+  assert.doesNotMatch(functions,/body\.graphEvidence/)
+  assert.match(graphSource,/requireLifeItemSources\(db, tx, uid/)
+  assert.match(graphSource,/lifeItemDigest\(item\)/)
+  assert.match(graphSource,/lifeAuthorityDigest\(bindings\)/)
+  assert.match(graphSource,/isCanonicalStoredPolicy\(p, uid\)/)
+  assert.match(graphSource,/provider|model/i)
+})
