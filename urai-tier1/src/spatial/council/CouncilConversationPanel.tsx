@@ -41,6 +41,10 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
   const [reviewResult, setReviewResult] = useState<CouncilProviderResult | null>(null)
   const [reviewRequested, setReviewRequested] = useState(false)
   const [reviewConsent, setReviewConsent] = useState(false)
+  const [graphRequested, setGraphRequested] = useState(false)
+  const [graphSnapshotId, setGraphSnapshotId] = useState('')
+  const [graphEntityIds, setGraphEntityIds] = useState('')
+  const [graphShareConsent, setGraphShareConsent] = useState(false)
   const requestableProviderIds = useMemo(() => REQUESTABLE_COUNCIL_PROVIDER_IDS.filter((id): id is Exclude<CouncilProviderId, 'local-fallback'> => id !== 'local-fallback'), [])
   const [providerId, setProviderId] = useState<Exclude<CouncilProviderId, 'local-fallback'>>(requestableProviderIds[0] ?? 'openai')
   const [reviewProviderId, setReviewProviderId] = useState<Exclude<CouncilProviderId, 'local-fallback'>>('gemini')
@@ -63,6 +67,16 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
     if (!isCurrentAIActorSnapshot(actor)) return
     const trimmed = message.trim()
     if (!trimmed || busy) return
+    const graphIdTokens = graphEntityIds.split(',').map(id => id.trim()).filter(Boolean)
+    const graphSelection = graphRequested && graphSnapshotId.trim() && graphIdTokens.length
+      ? { snapshotId: graphSnapshotId.trim(), entityIds: graphIdTokens } : undefined
+    const graphSelectionValid = Boolean(graphSelection && /^[A-Za-z0-9._:-]{1,160}$/.test(graphSelection.snapshotId)
+      && graphSelection.entityIds.length <= 8 && new Set(graphSelection.entityIds).size === graphSelection.entityIds.length
+      && graphSelection.entityIds.every(id => /^[A-Za-z0-9._:-]{1,160}$/.test(id)))
+    if (graphRequested && (providerId === 'openai' || reviewRequested || !graphSelectionValid || !graphShareConsent)) {
+      setStatus('Choose a supported external Council provider, provide a valid Life Graph snapshot and entity selection, and explicitly authorize disclosure. Graph-backed second opinions are not enabled.')
+      return
+    }
     if (reviewRequested && (!selectedReviewerId || !reviewConsent)) {
       setStatus('Select a different Council provider and explicitly allow the second opinion before sending.')
       return
@@ -95,6 +109,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
         message: councilMessage,
         context: history,
         aiProcessingConsent: true,
+        ...(graphRequested && graphSelection ? { graphSelection, graphShareConsent: true } : {}),
         signal: controller.signal,
       })
       if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
@@ -176,6 +191,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
             setResult(null)
             setReviewResult(null)
             setReviewConsent(false)
+            setGraphShareConsent(false)
             setStatus('Council provider changed. Prior provider context was cleared.')
           }}
         >
@@ -195,7 +211,22 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
           Allow this message and bounded recent Council context to be processed by {COUNCIL_PROVIDER_REGISTRY[providerId].label}.
         </label>
         <label className="councilConsent">
-          <input type="checkbox" checked={reviewRequested} disabled={busy || reviewableProviderIds.length === 0} onChange={(event) => { setReviewRequested(event.currentTarget.checked); setReviewConsent(false); setReviewResult(null) }} />
+          <input type="checkbox" checked={graphRequested} disabled={busy} onChange={(event) => { setGraphRequested(event.currentTarget.checked); setGraphShareConsent(false); setReviewRequested(false); setReviewConsent(false); setResult(null) }} />
+          Ask about source-backed Life Graph records (advanced selection; external disclosure requires separate permission).
+        </label>
+        {graphRequested ? <>
+          <label htmlFor="urai-council-graph-snapshot">Authorized Life Graph snapshot ID</label>
+          <input id="urai-council-graph-snapshot" type="text" value={graphSnapshotId} maxLength={160} disabled={busy} onChange={(event) => { setGraphSnapshotId(event.currentTarget.value); setGraphShareConsent(false) }} />
+          <label htmlFor="urai-council-graph-entities">Selected graph entity IDs (comma-separated, maximum eight)</label>
+          <input id="urai-council-graph-entities" type="text" value={graphEntityIds} maxLength={800} disabled={busy} onChange={(event) => { setGraphEntityIds(event.currentTarget.value); setGraphShareConsent(false) }} />
+          <small>Graph identifiers are not proof of ownership. The server validates current source receipts and access before any provider use. The ordinary memory selected elsewhere is not automatically linked to these IDs.</small>
+          <label className="councilConsent">
+            <input type="checkbox" checked={graphShareConsent} disabled={busy || providerId === 'openai'} onChange={(event) => setGraphShareConsent(event.currentTarget.checked)} />
+            I separately authorize {COUNCIL_PROVIDER_REGISTRY[providerId].label} to process the selected, server-validated private Life Graph evidence for this question.
+          </label>
+        </> : null}
+        <label className="councilConsent">
+          <input type="checkbox" checked={reviewRequested} disabled={busy || graphRequested || reviewableProviderIds.length === 0} onChange={(event) => { setReviewRequested(event.currentTarget.checked); setReviewConsent(false); setReviewResult(null) }} />
           Request a second opinion from another provider (additional external processing; no automatic correction).
         </label>
         {reviewRequested && selectedReviewerId ? <>
@@ -210,7 +241,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
         </> : null}
         {reviewableProviderIds.length === 0 ? <small>A second opinion requires another separately enabled Council provider.</small> : null}
         <div className="councilConversationActions">
-          <button type="submit" disabled={busy || !consent || !message.trim() || (reviewRequested && (!selectedReviewerId || !reviewConsent))}>{busy ? 'Considering…' : 'Ask Council'}</button>
+          <button type="submit" disabled={busy || !consent || !message.trim() || (graphRequested && (providerId === 'openai' || !graphShareConsent || !graphSnapshotId.trim() || !graphEntityIds.trim())) || (reviewRequested && (!selectedReviewerId || !reviewConsent))}>{busy ? 'Considering…' : 'Ask Council'}</button>
           <button type="button" disabled={!busy} onClick={() => { aborter.current?.abort(); aborter.current = null; setBusy(false); setStatus('Council response stopped.') }}>Stop</button>
         </div>
       </form>
@@ -219,7 +250,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
       {result ? <div className="councilResponse"><strong>{agent.name}</strong><p>{result.message}</p><small>{result.disclosure}</small></div> : null}
       {reviewResult && reviewResult.provider !== 'fallback' ? <div className="councilResponse" aria-label="Unverified Council second opinion"><strong>Second opinion: {COUNCIL_PROVIDER_REGISTRY[reviewResult.provider].label}</strong><p>{reviewResult.message}</p><small>{reviewResult.disclosure} This is a model response, not verified memory evidence. The first answer has not been automatically changed.</small></div> : null}
       <style>{`
-        .councilConversation{pointer-events:auto;margin-top:14px;border-top:1px solid rgba(255,255,255,.12);padding-top:14px}.councilConversation form{display:grid;gap:8px}.councilConversation label{font-size:11px;font-weight:800;color:rgba(255,255,255,.8)}.councilConversation select{box-sizing:border-box;width:100%;min-height:48px;padding:0 10px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(3,8,12,.82);color:#fff}.councilConversation textarea{box-sizing:border-box;width:100%;min-height:76px;padding:10px;border:1px solid rgba(255,255,255,.2);border-radius:14px;background:rgba(3,8,12,.82);color:#fff;resize:vertical}.councilConsent{display:flex;align-items:flex-start;gap:8px;line-height:1.35}.councilConsent input{margin-top:2px}.councilConversationActions{display:flex;gap:8px}.councilConversationActions button{min-height:48px;padding:0 14px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:#f4f1e8;color:#10151a;font-weight:800}.councilConversationActions button+button{background:transparent;color:#fff}.councilConversationActions button:disabled{opacity:.45}.councilConversation>p{margin:8px 0 0;color:rgba(255,255,255,.58);font-size:10px;line-height:1.4}.councilResponse{margin-top:10px;padding:12px;border:1px solid rgba(233,214,183,.24);border-radius:14px;background:rgba(4,8,11,.72)}.councilResponse p{margin:5px 0;color:rgba(255,255,255,.86);line-height:1.5}.councilResponse small{color:rgba(255,255,255,.56)}.councilConversation :is(select,textarea,button,input):focus-visible{outline:3px solid #fff;outline-offset:2px}
+        .councilConversation{pointer-events:auto;margin-top:14px;border-top:1px solid rgba(255,255,255,.12);padding-top:14px}.councilConversation form{display:grid;gap:8px}.councilConversation label{font-size:11px;font-weight:800;color:rgba(255,255,255,.8)}.councilConversation select{box-sizing:border-box;width:100%;min-height:48px;padding:0 10px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(3,8,12,.82);color:#fff}.councilConversation input[type=text]{box-sizing:border-box;width:100%;min-height:48px;padding:0 10px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(3,8,12,.82);color:#fff}.councilConversation textarea{box-sizing:border-box;width:100%;min-height:76px;padding:10px;border:1px solid rgba(255,255,255,.2);border-radius:14px;background:rgba(3,8,12,.82);color:#fff;resize:vertical}.councilConsent{display:flex;align-items:flex-start;gap:8px;line-height:1.35}.councilConsent input{margin-top:2px}.councilConversationActions{display:flex;gap:8px}.councilConversationActions button{min-height:48px;padding:0 14px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:#f4f1e8;color:#10151a;font-weight:800}.councilConversationActions button+button{background:transparent;color:#fff}.councilConversationActions button:disabled{opacity:.45}.councilConversation>p{margin:8px 0 0;color:rgba(255,255,255,.58);font-size:10px;line-height:1.4}.councilResponse{margin-top:10px;padding:12px;border:1px solid rgba(233,214,183,.24);border-radius:14px;background:rgba(4,8,11,.72)}.councilResponse p{margin:5px 0;color:rgba(255,255,255,.86);line-height:1.5}.councilResponse small{color:rgba(255,255,255,.56)}.councilConversation :is(select,textarea,button,input):focus-visible{outline:3px solid #fff;outline-offset:2px}
       `}</style>
     </section>
   )
