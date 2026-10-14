@@ -194,7 +194,12 @@ test('Council UI uses the existing provider dispatcher and clears prior provider
   const panel = fs.readFileSync(new URL('../src/spatial/council/CouncilConversationPanel.tsx', import.meta.url), 'utf8')
   const registry = fs.readFileSync(new URL('../src/spatial/council/councilProviderRegistry.ts', import.meta.url), 'utf8')
 
-  assert.ok(panel.includes("useState<Exclude<CouncilProviderId, 'local-fallback'>>(requestableProviderIds[0] ?? 'openai')"))
+  // A selected Memory Star must prefer a governed graph-capable provider,
+  // while an ordinary Council conversation retains the original default.
+  assert.match(panel, /memoryRouteId \? requestableProviderIds\.find\(\(id\) => id !== 'openai'\)/)
+  assert.match(panel, /requestableProviderIds\[0\] \?\? 'openai'/)
+  assert.match(panel, /setConsent\(false\)/)
+  assert.match(panel, /setGraphShareConsent\(false\)/)
   assert.ok(panel.includes('requestCouncilProvider({'))
   assert.ok(panel.includes('provider: providerId'))
   assert.ok(panel.includes('data-live-council-providers='))
