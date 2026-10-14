@@ -209,12 +209,18 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page.locator('.locationAtlasSelection')).toBeVisible()
     await expect(page).toHaveURL(/placeId=/, { timeout: 15_000 })
     const selectedUrl = page.url()
+    // A browser history transition can race the development-server route CSS.
+    // Prove the selected view's resources have settled before history travel;
+    // keep requestfailed, page errors and stylesheet assertions fail-closed.
+    await page.waitForLoadState('networkidle')
     await page.screenshot({ path: testInfo.outputPath('demo-desktop-selected.png'), fullPage: true })
 
     await page.goBack()
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'atlas-world-view')
+    await page.waitForLoadState('networkidle')
     await page.goForward()
     await expect(page).toHaveURL(selectedUrl, { timeout: 15_000 })
+    await page.waitForLoadState('networkidle')
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'place-focus')
     await page.reload({ waitUntil: 'networkidle' })
     await expect(page.locator('[data-camera-checkpoint="place-focus"]')).toBeVisible()
@@ -223,6 +229,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page.locator('.locationAtlasSelection')).toBeHidden()
     await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
     await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
+    await page.waitForLoadState('networkidle')
     await page.screenshot({ path: testInfo.outputPath('demo-desktop-deselected.png'), fullPage: true })
     await stage.focus()
     await page.keyboard.press('ArrowRight')
@@ -234,6 +241,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
     await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'atlas-world-view')
+    await page.waitForLoadState('networkidle')
 
     await page.goto(`${route}&acceptanceState=private`, { waitUntil: 'networkidle' })
     await expect(page.locator('[data-location-map-source="private-repository"]')).toBeVisible()
