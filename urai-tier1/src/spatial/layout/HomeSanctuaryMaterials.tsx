@@ -22,8 +22,25 @@ vec3 homeDetailNormal(vec3 surface, vec3 normalIn, float height) {
 }
 `
 
+// Shared world-meter pigmentation: no seams between projected GLB topology and
+// the terrain extension. This is authored fallback, NOT scanned/approved PBR.
+const GROUNDED_SURFACE_STRATA = `
+float homeMeadowCoverage = smoothstep(.28, .74, homeMacro * .72 + homeBroad * .28);
+float homeExposedLoam = smoothstep(.54, .81, homeMottle * .61 + homeBroad * .39);
+vec3 homeLoamPigment = vec3(.83, .76, .65);
+vec3 homeMeadowPigment = vec3(.90, 1.06, .81);
+vec3 homeGroundPigment = mix(homeLoamPigment, homeMeadowPigment, homeMeadowCoverage);
+homeGroundPigment = mix(homeGroundPigment, vec3(.90, .84, .69), homeExposedLoam * .36);
+float homeGroundMicrotexture = mix(.80, 1.16, homeGrain) * mix(.94, 1.06, homeMottle);
+diffuseColor.rgb *= homeGroundPigment * homeGroundMicrotexture;
+`
+
 function compileOriginalDetail(kind: SurfaceKind): THREE.Material['onBeforeCompile'] {
   return (shader) => {
+    const groundPigment = kind === 'ground' ? GROUNDED_SURFACE_STRATA : ''
+    const relief = kind === 'ground'
+      ? 'homeGrain * .011 + homeMottle * .017 + homeBroad * .022'
+      : 'homeGrain * .0012 + homeMottle * .0008'
     shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vHomeSurfacePosition;').replace('#include <begin_vertex>', `#include <begin_vertex>
 vec4 homeSurfacePoint = vec4(transformed, 1.0);
 #ifdef USE_INSTANCING
@@ -41,7 +58,8 @@ float homeBroad = homeDetailNoise(vHomeSurfacePosition.xz * 2.4);
 float homeMacro = homeDetailNoise(vHomeSurfacePosition.xz * .52 + vec2(7.3, -3.1));
 float homeMottle = homeDetailNoise(vHomeSurfacePosition.xz * 7.8 + vec2(-2.4, 5.7));
 float homeVariation = mix(.86, 1.10, homeMacro) * mix(.95, 1.05, homeBroad) * mix(.98, 1.02, homeMottle);
-diffuseColor.rgb *= homeVariation * mix(.97, 1.03, homeGrain);`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (homeGrain - .5) * .085 + (homeMacro - .5) * .04, .68, 1.0);').replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = homeDetailNormal(-vViewPosition, normal, homeGrain * .0012 + homeMottle * .0008);')
+diffuseColor.rgb *= homeVariation * mix(.97, 1.03, homeGrain);
+${groundPigment}`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (homeGrain - .5) * .085 + (homeMacro - .5) * .04, .68, 1.0);').replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\nnormal = homeDetailNormal(-vViewPosition, normal, ${relief});`)
   }
 }
 
@@ -51,7 +69,7 @@ export const HOME_SURFACE_SHADERS = {
   timber: compileOriginalDetail('timber'),
 }
 const PROGRAM_KEYS = {
-  ground: () => 'urai-original-home-ground-detail-v3',
+  ground: () => 'urai-original-home-ground-strata-v4',
   stone: () => 'urai-original-home-stone-detail-v3',
   timber: () => 'urai-original-home-timber-detail-v3',
 }
