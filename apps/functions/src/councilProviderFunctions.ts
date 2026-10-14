@@ -300,7 +300,28 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       const context = boundedContext(body.context)
       // Browser data supplies only graph identifiers; server loads and validates evidence.
       const graphRequest = body.graphSelection
-      const graphEvidence = graphRequest === undefined ? null : await readCouncilGraphEvidence(db, uid, graphRequest)
+      // Graph data is never read or disclosed based on ordinary message consent.
+      if (graphRequest !== undefined && (body.graphShareConsent !== true || body.aiProcessingConsent !== true)) {
+        throw new CouncilProviderError(403, 'COUNCIL_GRAPH_DISCLOSURE_CONSENT_REQUIRED',
+          'Selected private memory evidence requires separate, explicit provider disclosure consent.')
+      }
+      await requireProviderConsent(uid, provider, body.aiProcessingConsent === true)
+      const loadGraph = async () => {
+        try { return await readCouncilGraphEvidence(db, uid, graphRequest) }
+        catch {
+          throw new CouncilProviderError(403, 'COUNCIL_GRAPH_AUTHORITY_DENIED',
+            'This Life Graph selection is not currently authorized for provider processing.')
+        }
+      }
+      const graphEvidence = graphRequest === undefined ? null : await loadGraph()
+      const graphEvidenceFingerprint = graphEvidence ? JSON.stringify(graphEvidence) : null
+      const recheckGraph = async () => {
+        if (graphRequest === undefined) return
+        const current = await loadGraph()
+        if (JSON.stringify(current) !== graphEvidenceFingerprint) {
+          throw new CouncilProviderError(409, 'COUNCIL_GRAPH_CHANGED', 'Selected Life Graph evidence changed during this request.')
+        }
+      }
       const graphText = graphEvidence ? JSON.stringify(graphEvidence) : ''
       if (graphText.length > 8192) throw new CouncilProviderError(413, 'COUNCIL_GRAPH_EVIDENCE_TOO_LARGE', 'Selected graph evidence exceeds the Council limit.')
       const groundedMessage = graphEvidence
@@ -312,7 +333,7 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       inputUnits = groundedMessage.length + context.reduce((sum, turn) => sum + turn.content.length, 0)
       await requireProviderConsent(uid, provider, body.aiProcessingConsent === true)
       await consumeRateLimit(uid, provider)
-      if (graphRequest !== undefined) await readCouncilGraphEvidence(db, uid, graphRequest)
+      await recheckGraph()
       if (await authenticatedUid(request) !== uid) throw new CouncilProviderError(401, 'UNAUTHORIZED', 'Authentication changed before Council dispatch.')
       await requireProviderConsent(uid, provider, body.aiProcessingConsent === true)
       model = providerModel(provider)
@@ -322,7 +343,7 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       const controller = new AbortController()
       timeout = setTimeout(() => controller.abort(), 30_000)
       response.on('close', () => { if (!response.writableEnded) controller.abort() })
-      if (graphRequest !== undefined) await readCouncilGraphEvidence(db, uid, graphRequest)
+      await recheckGraph()
       const result = await (provider === 'anthropic'
         ? callAnthropic(uid, body, apiKey, model, groundedMessage, context, controller.signal)
         : provider === 'gemini'
@@ -334,7 +355,7 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       // authority. Current owner, consent and admission still govern publication.
       if (await authenticatedUid(request) !== uid) throw new CouncilProviderError(401, 'UNAUTHORIZED', 'Authentication changed before Council delivery.')
       await requireProviderConsent(uid, provider, body.aiProcessingConsent === true)
-      if (graphRequest !== undefined) await readCouncilGraphEvidence(db, uid, graphRequest)
+      await recheckGraph()
       if (controller.signal.aborted) throw new CouncilProviderError(499, 'COUNCIL_OUTPUT_CANCELLED', 'Council output was cancelled.')
       assertSpatialPaidOutputCurrent(result.upstream)
 
@@ -347,7 +368,7 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       response.json({
         message: result.message,
         caption: result.message,
-        disclosure: `${provider === 'xai' ? 'xAI' : provider === 'gemini' ? 'Google Gemini' : provider[0].toUpperCase() + provider.slice(1)} processed this Council response.`,
+        disclosure: `${provider === 'xai' ? 'xAI' : provider === 'gemini' ? 'Google Gemini' : provider[0].toUpperCase() + provider.slice(1)} processed this Council response.${graphEvidence ? ' Selected Life Graph evidence was validated by UrAi; the model interpretation has not been independently verified.' : ''}`,
         suggestedActions: [],
         provider,
         model,
