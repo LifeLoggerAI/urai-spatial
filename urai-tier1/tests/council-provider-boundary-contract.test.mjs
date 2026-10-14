@@ -98,3 +98,17 @@ test('Council graph handoff never trusts a browser supplied evidence packet', ()
     assert.ok(graphSource.includes(required), required)
   }
 })
+
+test('graph disclosure requires a separate user choice and server revalidation', () => {
+  assert.ok(functions.includes('COUNCIL_GRAPH_DISCLOSURE_CONSENT_REQUIRED'))
+  assert.ok(functions.includes('body.graphShareConsent !== true'))
+  assert.ok(functions.includes('await recheckGraph()'))
+  assert.ok(functions.includes('COUNCIL_GRAPH_CHANGED'))
+  assert.ok(client.includes('graphShareConsent: true'))
+  assert.ok(client.includes('if (input.graphSelection && input.graphShareConsent !== true) return null'))
+  assert.ok(registry.includes('if (input.graphSelection) return null'), 'Unprotected OpenAI Orb route must not receive graph selection')
+  assert.ok(panel.includes('setGraphShareConsent(false)'))
+  assert.ok(panel.includes('graphShareConsent: true'))
+  assert.ok(panel.includes('The ordinary memory selected elsewhere is not automatically linked'))
+  assert.ok(panel.includes('graphRequested || reviewableProviderIds.length === 0'))
+})
