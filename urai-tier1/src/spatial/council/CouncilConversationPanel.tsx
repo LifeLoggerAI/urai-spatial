@@ -42,6 +42,9 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
   const [reviewRequested, setReviewRequested] = useState(false)
   const [reviewConsent, setReviewConsent] = useState(false)
   const [graphRequested, setGraphRequested] = useState(false)
+  const selectedMemoryId = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('memoryId')
+  const validMemoryId = selectedMemoryId && /^[A-Za-z0-9._:-]{1,160}$/.test(selectedMemoryId) ? selectedMemoryId : null
+  const [useSelectedMemoryGraph, setUseSelectedMemoryGraph] = useState(true)
   const [graphSnapshotId, setGraphSnapshotId] = useState('')
   const [graphEntityIds, setGraphEntityIds] = useState('')
   const [graphShareConsent, setGraphShareConsent] = useState(false)
@@ -73,7 +76,8 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
     const graphSelectionValid = Boolean(graphSelection && /^[A-Za-z0-9._:-]{1,160}$/.test(graphSelection.snapshotId)
       && graphSelection.entityIds.length <= 8 && new Set(graphSelection.entityIds).size === graphSelection.entityIds.length
       && graphSelection.entityIds.every(id => /^[A-Za-z0-9._:-]{1,160}$/.test(id)))
-    if (graphRequested && (providerId === 'openai' || reviewRequested || !graphSelectionValid || !graphShareConsent)) {
+    const selectedMemoryRequest = graphRequested && useSelectedMemoryGraph ? validMemoryId : null
+    if (graphRequested && (providerId === 'openai' || reviewRequested || (!selectedMemoryRequest && !graphSelectionValid) || !graphShareConsent)) {
       setStatus('Choose a supported external Council provider, provide a valid Life Graph snapshot and entity selection, and explicitly authorize disclosure. Graph-backed second opinions are not enabled.')
       return
     }
@@ -109,7 +113,8 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
         message: councilMessage,
         context: history,
         aiProcessingConsent: true,
-        ...(graphRequested && graphSelection ? { graphSelection, graphShareConsent: true } : {}),
+        ...(graphRequested && selectedMemoryRequest ? { memorySelection: selectedMemoryRequest, graphShareConsent: true }
+          : graphRequested && graphSelection ? { graphSelection, graphShareConsent: true } : {}),
         signal: controller.signal,
       })
       if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
@@ -215,11 +220,17 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
           Ask about source-backed Life Graph records (advanced selection; external disclosure requires separate permission).
         </label>
         {graphRequested ? <>
+          {validMemoryId ? <label className="councilConsent">
+            <input type="checkbox" checked={useSelectedMemoryGraph} disabled={busy} onChange={(event) => { setUseSelectedMemoryGraph(event.currentTarget.checked); setGraphShareConsent(false) }} />
+            Use the selected Memory Star ({validMemoryId}) and its current SceneTruth-linked Life Graph, verified by UrAi.
+          </label> : <small>No selected memory came from Focus or Life Map. Graph-backed memory reasoning requires an authorized source.</small>}
+          {!useSelectedMemoryGraph || !validMemoryId ? <>
           <label htmlFor="urai-council-graph-snapshot">Authorized Life Graph snapshot ID</label>
           <input id="urai-council-graph-snapshot" type="text" value={graphSnapshotId} maxLength={160} disabled={busy} onChange={(event) => { setGraphSnapshotId(event.currentTarget.value); setGraphShareConsent(false) }} />
           <label htmlFor="urai-council-graph-entities">Selected graph entity IDs (comma-separated, maximum eight)</label>
           <input id="urai-council-graph-entities" type="text" value={graphEntityIds} maxLength={800} disabled={busy} onChange={(event) => { setGraphEntityIds(event.currentTarget.value); setGraphShareConsent(false) }} />
-          <small>Graph identifiers are not proof of ownership. The server validates current source receipts and access before any provider use. The ordinary memory selected elsewhere is not automatically linked to these IDs.</small>
+          <small>Advanced graph identifiers are not proof of ownership; the server independently checks them.</small>
+          </> : null}
           <label className="councilConsent">
             <input type="checkbox" checked={graphShareConsent} disabled={busy || providerId === 'openai'} onChange={(event) => setGraphShareConsent(event.currentTarget.checked)} />
             I separately authorize {COUNCIL_PROVIDER_REGISTRY[providerId].label} to process the selected, server-validated private Life Graph evidence for this question.
@@ -241,7 +252,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
         </> : null}
         {reviewableProviderIds.length === 0 ? <small>A second opinion requires another separately enabled Council provider.</small> : null}
         <div className="councilConversationActions">
-          <button type="submit" disabled={busy || !consent || !message.trim() || (graphRequested && (providerId === 'openai' || !graphShareConsent || !graphSnapshotId.trim() || !graphEntityIds.trim())) || (reviewRequested && (!selectedReviewerId || !reviewConsent))}>{busy ? 'Considering…' : 'Ask Council'}</button>
+          <button type="submit" disabled={busy || !consent || !message.trim() || (graphRequested && (providerId === 'openai' || !graphShareConsent || !(useSelectedMemoryGraph && validMemoryId) && (!graphSnapshotId.trim() || !graphEntityIds.trim()))) || (reviewRequested && (!selectedReviewerId || !reviewConsent))}>{busy ? 'Considering…' : 'Ask Council'}</button>
           <button type="button" disabled={!busy} onClick={() => { aborter.current?.abort(); aborter.current = null; setBusy(false); setStatus('Council response stopped.') }}>Stop</button>
         </div>
       </form>
