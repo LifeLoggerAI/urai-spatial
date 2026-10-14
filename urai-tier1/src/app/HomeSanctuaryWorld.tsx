@@ -141,9 +141,19 @@ function MoonlitTerrain() {
       const x = position.getX(index)
       const y = position.getY(index)
       const edge = Math.max(0, Math.abs(x) - 5.4) * .055
+      // Combine long geological undulations with small deterministic erosion
+      // detail. Suppress relief around the navigable central sanctuary path.
+      // This is preview geometry, never an admitted photogrammetric asset.
       const wave = Math.sin(x * .48 + y * .09) * .055 + Math.sin(y * .34 - x * .12) * .035
+      const broadRelief = Math.sin(x * .19 + y * .23) * .17
+        + Math.sin(y * .16 - x * .29) * .095
+      const fineRelief = Math.sin(x * 1.8 + Math.sin(y * .61)) * .018
+        + Math.sin(y * 2.15 - x * .42) * .012
+      const pathClearance = THREE.MathUtils.smoothstep(Math.abs(x), 1.65, 4.15)
+      const perimeter = THREE.MathUtils.smoothstep(Math.abs(x), 4.1, 8.8)
       const sanctuaryDip = Math.exp(-((x * x) / 18 + ((y - .8) * (y - .8)) / 42)) * -.08
-      position.setZ(index, wave + edge + sanctuaryDip)
+      position.setZ(index, wave + edge + sanctuaryDip
+        + (broadRelief * perimeter + fineRelief) * pathClearance)
     }
     surface.computeVertexNormals()
     return surface
