@@ -109,6 +109,90 @@ async function invalidateDependency(uid: string, dependencyId: string, reasonId:
   return invalidateLifeModelDependencies(db, uid, dependencyId, reasonId, revoked, fieldValue.serverTimestamp())
 }
 
+
+/**
+ * Authorized read-only evidence packet for the Council integration.
+ * This callable never dispatches to an external provider. Each call binds
+ * graph content to current owner/source consent inside one transaction.
+ */
+export const getCouncilLifeGraphEvidence = lifeModelFunctions.https.onCall(async (data, context) => {
+  const uid = requireUid(context)
+  const snapshotId = requireToken(data?.snapshotId, 'snapshotId')
+  const requestedEntityIds = optionalTokenArray(data?.entityIds, 8)
+  if (!requestedEntityIds.length) {
+    throw new functions.https.HttpsError('invalid-argument', 'COUNCIL_GRAPH_ENTITY_SELECTION_REQUIRED')
+  }
+  return db.runTransaction(async (transaction) => {
+    await requireModelConsent(uid, transaction)
+    const graph = await transaction.get(db.doc(`users/${uid}/lifeGraphSnapshots/${snapshotId}`))
+    if (!graph.exists || graph.get('ownerId') !== uid || graph.get('schemaVersion') !== 'urai-life-model-v1'
+      || graph.get('state') !== 'current' || graph.get('syntheticOutputMayBecomeHistoricalSource') !== false) {
+      throw new functions.https.HttpsError('failed-precondition', 'COUNCIL_GRAPH_UNAVAILABLE')
+    }
+    const graphData = graph.data() ?? {}
+    const { graphHash, compiledAt, updatedAt, ...graphBody } = graphData
+    if (typeof graphHash !== 'string' || graphHash !== stableDigest(graphBody)) {
+      throw new functions.https.HttpsError('failed-precondition', 'COUNCIL_GRAPH_HASH_MISMATCH')
+    }
+    const graphEntityIds = Array.isArray(graphData.entityIds) ? graphData.entityIds : []
+    if (!requestedEntityIds.every(id => graphEntityIds.includes(id))) {
+      throw new functions.https.HttpsError('permission-denied', 'COUNCIL_GRAPH_ENTITY_NOT_SELECTED')
+    }
+    const graphClaimIds = Array.isArray(graphData.claimIds) ? graphData.claimIds : []
+    const graphEdgeIds = Array.isArray(graphData.edgeIds) ? graphData.edgeIds : []
+    if (graphClaimIds.length > 1024 || graphEdgeIds.length > 1024) {
+      throw new functions.https.HttpsError('failed-precondition', 'COUNCIL_GRAPH_UNBOUNDED')
+    }
+    const [entities, claims, edges] = await Promise.all([
+      transaction.getAll(...requestedEntityIds.map(id => db.doc(`users/${uid}/lifeEntities/${id}`))),
+      graphClaimIds.length ? transaction.getAll(...graphClaimIds.map((id: string) => db.doc(`users/${uid}/lifeClaims/${id}`))) : [],
+      graphEdgeIds.length ? transaction.getAll(...graphEdgeIds.map((id: string) => db.doc(`users/${uid}/lifeCausalEdges/${id}`))) : [],
+    ])
+    if (!entities.every(entity => entity.exists && entity.get('ownerId') === uid
+      && entity.get('revoked') !== true && entity.get('synthetic') !== true)) {
+      throw new functions.https.HttpsError('failed-precondition', 'COUNCIL_ENTITY_REVOKED')
+    }
+    const member = new Set(graphEntityIds)
+    if (!claims.every(claim => claim.exists && claim.get('ownerId') === uid
+      && claim.get('synthetic') === false && ['accepted', 'disputed'].includes(String(claim.get('status')))
+      && member.has(claim.get('subjectEntityId')))
+      || !edges.every(edge => edge.exists && edge.get('ownerId') === uid
+      && edge.get('synthetic') === false && ['accepted', 'disputed'].includes(String(edge.get('status')))
+      && member.has(edge.get('fromEntityId')) && member.has(edge.get('toEntityId')))) {
+      throw new functions.https.HttpsError('failed-precondition', 'COUNCIL_GRAPH_DEPENDENCY_INVALID')
+    }
+    const selected = new Set(requestedEntityIds)
+    const selectedClaims = claims.filter(claim => selected.has(claim.get('subjectEntityId'))).slice(0, 24)
+    const selectedEdges = edges.filter(edge => selected.has(edge.get('fromEntityId'))
+      && selected.has(edge.get('toEntityId'))).slice(0, 24)
+    // Even omitted graph records must be current: graph authority is indivisible.
+    for (const item of [...entities, ...claims, ...edges]) {
+      const field = item.ref.parent.id === 'lifeEntities' ? 'createdFromSourceIds' : 'sourceIds'
+      const bindings = await requireLifeItemSources(db, transaction, uid, item.data() ?? {}, field)
+      const prior = isRecord(graphData.authorityBindings) ? graphData.authorityBindings[item.ref.path] : null
+      if (!isRecord(prior) || prior.itemDigest !== lifeItemDigest(item)
+        || prior.sourceBindingDigest !== lifeAuthorityDigest(bindings)) {
+        throw new functions.https.HttpsError('failed-precondition', 'COUNCIL_GRAPH_SOURCE_CHANGED')
+      }
+    }
+    const evidence = {
+      snapshotId, graphHash,
+      entities: entities.map(entity => ({ id: entity.id, kind: entity.get('kind'),
+        label: String(entity.get('canonicalLabel') ?? '').slice(0, 180) })),
+      claims: selectedClaims.map(claim => ({ id: claim.id, subjectEntityId: claim.get('subjectEntityId'),
+        predicate: claim.get('predicate'), value: claim.get('value'), confidence: claim.get('confidence'),
+        evidenceClass: claim.get('evidenceClass'), status: claim.get('status'), sourceIds: claim.get('sourceIds') })),
+      edges: selectedEdges.map(edge => ({ id: edge.id, fromEntityId: edge.get('fromEntityId'),
+        toEntityId: edge.get('toEntityId'), kind: edge.get('kind'), status: edge.get('status'),
+        evidenceClass: edge.get('evidenceClass'), sourceIds: edge.get('sourceIds') })),
+    }
+    if (Buffer.byteLength(JSON.stringify(evidence), 'utf8') > 16_384) {
+      throw new functions.https.HttpsError('resource-exhausted', 'COUNCIL_EVIDENCE_SIZE_LIMIT')
+    }
+    return { ...evidence, providerDispatchAuthorized: false, sourceChecked: true }
+  })
+})
+
 export const upsertLifeEntity = lifeModelFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   const id = requireToken(data?.id, 'entityId')
