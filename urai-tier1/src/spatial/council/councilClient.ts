@@ -94,9 +94,9 @@ const ENDPOINTS: Record<ExternalCouncilProviderId, string> = {
   mistral: '/api/urai/council/mistral',
 }
 
-async function stableCouncilRequestId(provider: ExternalCouncilProviderId, message: string, context: OrbConversationMessage[]) {
+async function stableCouncilRequestId(provider: ExternalCouncilProviderId, message: string, context: OrbConversationMessage[], graphSelection?: { snapshotId: string; entityIds: string[] }) {
   if (!globalThis.crypto?.subtle) return null
-  const intent = JSON.stringify({ provider, message, context: context.slice(-8) })
+  const intent = JSON.stringify({ provider, message, context: context.slice(-8), graphSelection })
   const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(intent))
   return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('')
 }
@@ -114,7 +114,7 @@ export async function requestExternalCouncilProvider(input: {
   if (!actor) return null
   try {
   const token = await actor.wait(actor.actor.getIdToken())
-  const requestId = await actor.wait(stableCouncilRequestId(input.provider, input.message, input.context))
+  const requestId = await actor.wait(stableCouncilRequestId(input.provider, input.message, input.context, input.graphSelection))
   if (!token || !requestId) return null
   actor.check()
   const body = JSON.stringify({ message: input.message, context: input.context.slice(-8), aiProcessingConsent: true, requestId, ...(input.graphSelection ? { graphSelection: input.graphSelection } : {}) })
