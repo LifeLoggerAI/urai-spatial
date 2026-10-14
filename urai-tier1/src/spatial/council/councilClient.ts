@@ -106,6 +106,7 @@ export async function requestExternalCouncilProvider(input: {
   message: string
   context: OrbConversationMessage[]
   aiProcessingConsent: boolean
+  graphSelection?: { snapshotId: string; entityIds: string[] }
   signal: AbortSignal
 }): Promise<ExternalCouncilProviderResult | null> {
   if (!input.aiProcessingConsent || !firebasePublicEnvReady || input.signal.aborted) return null
@@ -116,7 +117,7 @@ export async function requestExternalCouncilProvider(input: {
   const requestId = await actor.wait(stableCouncilRequestId(input.provider, input.message, input.context))
   if (!token || !requestId) return null
   actor.check()
-  const body = JSON.stringify({ message: input.message, context: input.context.slice(-8), aiProcessingConsent: true, requestId })
+  const body = JSON.stringify({ message: input.message, context: input.context.slice(-8), aiProcessingConsent: true, requestId, ...(input.graphSelection ? { graphSelection: input.graphSelection } : {}) })
   actor.check()
 
   let response: Response
