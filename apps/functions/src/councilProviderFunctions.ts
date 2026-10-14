@@ -303,10 +303,16 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
         throw new CouncilProviderError(400, 'COUNCIL_SELECTION_CONFLICT', 'Select one governed evidence source.')
       }
       const memoryRequest = body.memorySelection
+      // Reject before resolving the memory, preventing unauthorized reads.
+      if ((memoryRequest !== undefined || body.graphSelection !== undefined)
+        && (body.graphShareConsent !== true || body.aiProcessingConsent !== true)) {
+        throw new CouncilProviderError(403, 'COUNCIL_GRAPH_DISCLOSURE_CONSENT_REQUIRED',
+          'Selected private memory evidence requires separate, explicit provider disclosure consent.')
+      }
+      await requireProviderConsent(uid, provider, body.aiProcessingConsent === true)
       const graphRequest = body.graphSelection ?? (memoryRequest !== undefined
         ? await resolveCouncilMemoryGraph(db, uid, memoryRequest).then(({ snapshotId, entityIds }) => ({ snapshotId, entityIds }))
         : undefined)
-      // Graph data is never read or disclosed based on ordinary message consent.
       if (graphRequest !== undefined && (body.graphShareConsent !== true || body.aiProcessingConsent !== true)) {
         throw new CouncilProviderError(403, 'COUNCIL_GRAPH_DISCLOSURE_CONSENT_REQUIRED',
           'Selected private memory evidence requires separate, explicit provider disclosure consent.')
