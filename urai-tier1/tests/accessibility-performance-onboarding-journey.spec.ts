@@ -113,11 +113,25 @@ test('a nondefault selected sample survives semantic selection and guide arrival
   expect(destination.searchParams.get('onboarding')).toBe('1')
   expect(await page.evaluate(key => localStorage.getItem(key), completionKey)).toBeNull()
   await focus.tap()
-  const chamber = page.getByTestId('urai-final-focus-chamber')
-  // A route transition can overlap the old and new client surface briefly.
-  // Wait for a *unique* Focus owner; never select an arbitrary first duplicate.
+  // The persistent world shell is the canonical Focus owner. An App Router
+  // transition may leave a second tree in the DOM; require it to be inert.
+  const shell = page.getByTestId('urai-persistent-world-shell')
+  await expect(shell).toHaveAttribute('data-world-destination', 'focus')
+  const chamber = shell.getByTestId('urai-final-focus-chamber')
   await expect(chamber).toHaveCount(1)
   await expect(chamber).toBeVisible()
+  await expect(page.getByTestId('urai-final-focus-chamber').filter({ visible: true })).toHaveCount(1)
+  const offShell = await page.getByTestId('urai-final-focus-chamber').evaluateAll(elements =>
+    elements.filter(element => !element.closest('[data-testid="urai-persistent-world-shell"]')).map(element => {
+      const style = getComputedStyle(element)
+      return {
+        inactive: Boolean(element.closest('[hidden],[inert],[aria-hidden="true"]')) ||
+          style.display === 'none' || style.visibility === 'hidden' || element.getClientRects().length === 0,
+        retainedMedia: element.querySelectorAll('canvas,video,audio').length,
+      }
+    }),
+  )
+  expect(offShell.every(owner => owner.inactive && owner.retainedMedia === 0)).toBe(true)
   await expect(chamber).toHaveAttribute('data-memory-status', 'demo')
   await expect(chamber).toHaveAttribute('data-memory-id', 'demo:voice-note-home')
   await expect(chamber).toHaveAttribute('data-manifest-id', 'voice-note-home')
