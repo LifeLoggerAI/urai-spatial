@@ -79,6 +79,31 @@ export async function readCouncilGraphEvidence(db: FirebaseFirestore.Firestore, 
 
 
 /**
+ * A Life Graph snapshot may contain several memories about the same person.
+ * Membership of a graph entity does NOT authorize disclosure of every claim
+ * about that entity. Only SceneTruth-approved claim IDs, bound to this memory's
+ * actual source receipts, are eligible for memory-grounded Council requests.
+ *
+ * Until SceneTruth carries an explicitly verified edge allowlist, never export
+ * graph-wide relationship edges through a single-memory request.
+ */
+export function scopeCouncilMemoryEvidence(
+  evidence: Awaited<ReturnType<typeof readCouncilGraphEvidence>>,
+  scope: { knownClaimIds: string[]; memorySourceIds: string[] },
+) {
+  const allowedClaims = new Set(scope.knownClaimIds)
+  const allowedSources = new Set(scope.memorySourceIds)
+  const claims = evidence.claims.filter(claim =>
+    allowedClaims.has(claim.id)
+    && Array.isArray(claim.sourceIds)
+    && claim.sourceIds.length > 0
+    && claim.sourceIds.every((id: string) => allowedSources.has(id))
+  )
+  if (claims.length !== allowedClaims.size) deny('COUNCIL_MEMORY_CLAIM_LINEAGE_MISMATCH')
+  return { ...evidence, claims, edges: [] as typeof evidence.edges }
+}
+
+/**
  * Resolve the exact owner-held lineage from a persisted Memory Star to a
  * current SceneTruth packet and current Life Graph. Caller-provided memoryId
  * is a lookup key, NOT proof of a graph/claim association. A memory without a
@@ -168,7 +193,7 @@ export async function resolveCouncilMemoryGraph(
     return {
       memoryId, memoryTitle: String(m.title ?? 'Selected memory').slice(0, 180),
       sceneTruthPacketId: sceneId, packetHash, snapshotId: graphId, graphHash: g.graphHash,
-      entityIds: selected,
+      entityIds: selected, knownClaimIds, memorySourceIds: memorySources,
     }
   })
   // Reuse the full source-receipt / C1 / model-consent authority reader. Never
@@ -177,5 +202,5 @@ export async function resolveCouncilMemoryGraph(
     snapshotId: binding.snapshotId, entityIds: binding.entityIds,
   })
   if (evidence.graphHash !== binding.graphHash) deny('COUNCIL_MEMORY_GRAPH_CHANGED')
-  return { ...binding, evidence }
+  return { ...binding, evidence: scopeCouncilMemoryEvidence(evidence, binding) }
 }
