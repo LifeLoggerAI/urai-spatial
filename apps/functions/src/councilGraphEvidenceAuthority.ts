@@ -76,3 +76,91 @@ export async function readCouncilGraphEvidence(db: FirebaseFirestore.Firestore, 
     return evidence
   })
 }
+
+
+/**
+ * Resolve the exact owner-held lineage from a persisted Memory Star to a
+ * current SceneTruth packet and current Life Graph. Caller-provided memoryId
+ * is a lookup key, NOT proof of a graph/claim association. A memory without a
+ * real, current SceneTruth binding is intentionally not eligible.
+ */
+export async function resolveCouncilMemoryGraph(
+  db: FirebaseFirestore.Firestore, uid: string, memoryIdInput: unknown,
+) {
+  if (typeof memoryIdInput !== 'string' || !token.test(memoryIdInput) || !uid) {
+    deny('COUNCIL_MEMORY_SELECTION_INVALID')
+  }
+  const memoryId = memoryIdInput as string
+  const binding = await db.runTransaction(async tx => {
+    const memory = await tx.get(db.doc('users/' + uid + '/memories/' + memoryId))
+    const m = memory.data() ?? {}
+    if (!memory.exists || (m.ownerId ?? m.userId) !== uid || m.deleted === true
+      || m.synthetic === true || m.demo === true || ['pending','revoked'].includes(String(m.consentState))) {
+      deny('COUNCIL_MEMORY_NOT_AUTHORIZED')
+    }
+    const lifeMovie = m.lifeMovie
+    if (!lifeMovie || typeof lifeMovie !== 'object' || Array.isArray(lifeMovie)) {
+      deny('COUNCIL_MEMORY_SCENE_TRUTH_REQUIRED')
+    }
+    const sceneId = (lifeMovie as Record<string, unknown>).sceneTruthPacketId
+    if (typeof sceneId !== 'string' || !token.test(sceneId)) deny('COUNCIL_MEMORY_SCENE_TRUTH_REQUIRED')
+    const scene = await tx.get(db.doc('users/' + uid + '/sceneTruthPackets/' + sceneId))
+    const packet = scene.data() ?? {}
+    if (!scene.exists || packet.ownerId !== uid || packet.schemaVersion !== 'urai-life-model-v1'
+      || packet.state !== 'current' || packet.syntheticOutputMayBecomeHistoricalSource !== false
+      || !['READY', 'READY_WITH_OCCLUSION', 'READY_INTERPRETIVE'].includes(String(packet.decision))) {
+      deny('COUNCIL_MEMORY_SCENE_UNAVAILABLE')
+    }
+    const { packetHash, compiledAt, updatedAt, ...packetBody } = packet
+    if (typeof packetHash !== 'string' || hash(packetBody) !== packetHash) {
+      deny('COUNCIL_MEMORY_SCENE_CHANGED')
+    }
+    const graphId = packet.graphSnapshotId
+    if (typeof graphId !== 'string' || !token.test(graphId)) deny('COUNCIL_MEMORY_GRAPH_REQUIRED')
+    const graph = await tx.get(db.doc('users/' + uid + '/lifeGraphSnapshots/' + graphId))
+    const g = graph.data() ?? {}
+    if (!graph.exists || g.ownerId !== uid || g.state !== 'current'
+      || g.schemaVersion !== 'urai-life-model-v1' || g.syntheticOutputMayBecomeHistoricalSource !== false
+      || typeof g.graphHash !== 'string' || g.graphHash !== packet.graphHash) {
+      deny('COUNCIL_MEMORY_GRAPH_CHANGED')
+    }
+    const graphEntities = new Set(ids(g.entityIds, 128))
+    const graphClaims = new Set(ids(g.claimIds, 128))
+    const graphSources = new Set(ids(g.sourceIds, 256))
+    const knownClaimIds = ids(packet.knownClaimIds, 24)
+    const bundleIds = ids(packet.personModelBundleIds, 8)
+    const sceneSources = ids(packet.sourceIds, 256)
+    if (knownClaimIds.some(id => !graphClaims.has(id)) || sceneSources.some(id => !graphSources.has(id))) {
+      deny('COUNCIL_MEMORY_LINEAGE_CHANGED')
+    }
+    const [claims, bundles] = await Promise.all([
+      knownClaimIds.length ? tx.getAll(...knownClaimIds.map(id => db.doc('users/' + uid + '/lifeClaims/' + id))) : [],
+      bundleIds.length ? tx.getAll(...bundleIds.map(id => db.doc('users/' + uid + '/personModelBundles/' + id))) : [],
+    ])
+    if (!claims.every(c => c.exists && c.get('ownerId') === uid && c.get('synthetic') === false
+      && c.get('status') === 'accepted')
+      || !bundles.every(b => b.exists && b.get('ownerId') === uid && b.get('state') === 'current'
+        && b.get('synthetic') === false && b.get('schemaVersion') === 'urai-life-model-v1')) {
+      deny('COUNCIL_MEMORY_EVIDENCE_UNAVAILABLE')
+    }
+    const selected = [...new Set([
+      ...claims.map(c => String(c.get('subjectEntityId') ?? '')),
+      ...bundles.map(b => String(b.get('personId') ?? '')),
+    ])]
+    if (!selected.length || selected.length > 8 || selected.some(id => !token.test(id) || !graphEntities.has(id))) {
+      deny('COUNCIL_MEMORY_ENTITY_BINDING_UNAVAILABLE')
+    }
+    return {
+      memoryId, memoryTitle: String(m.title ?? 'Selected memory').slice(0, 180),
+      sceneTruthPacketId: sceneId, packetHash, snapshotId: graphId, graphHash: g.graphHash,
+      entityIds: selected,
+    }
+  })
+  // Reuse the full source-receipt / C1 / model-consent authority reader. Never
+  // return a presumed verified graph from SceneTruth alone.
+  const evidence = await readCouncilGraphEvidence(db, uid, {
+    snapshotId: binding.snapshotId, entityIds: binding.entityIds,
+  })
+  if (evidence.graphHash !== binding.graphHash) deny('COUNCIL_MEMORY_GRAPH_CHANGED')
+  return { ...binding, evidence }
+}
