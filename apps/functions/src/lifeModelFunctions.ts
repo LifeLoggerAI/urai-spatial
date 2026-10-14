@@ -615,6 +615,8 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
   const uid = requireUid(context)
   const sceneId = requireToken(data?.sceneId, 'sceneId')
   const graphSnapshotId = requireToken(data?.graphSnapshotId, 'graphSnapshotId')
+  // Legacy SceneTruth packets remain possible, but are not authorized as a selected memory.
+  const memoryId = data?.memoryId === undefined ? null : requireToken(data.memoryId, 'memoryId')
   const presentationClass = String(data?.presentationClass ?? '')
   if (!PRESENTATION_CLASSES.has(presentationClass)) {
     throw new functions.https.HttpsError('invalid-argument', 'Presentation class is invalid.')
@@ -630,7 +632,7 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
 
   return db.runTransaction(async (transaction) => {
   await requireModelConsent(uid, transaction)
-  const [graphSnapshot, bundles, claims] = await Promise.all([
+  const [graphSnapshot, bundles, claims, memory] = await Promise.all([
     transaction.get(db.doc(`users/${uid}/lifeGraphSnapshots/${graphSnapshotId}`)),
     personModelBundleIds.length
       ? transaction.getAll(...personModelBundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`)))
@@ -638,6 +640,7 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
     knownClaimIds.length
       ? transaction.getAll(...knownClaimIds.map((id) => db.doc(`users/${uid}/lifeClaims/${id}`)))
       : [],
+    memoryId ? transaction.get(db.doc(`users/${uid}/memories/${memoryId}`)) : Promise.resolve(null),
   ])
   if (
     !graphSnapshot.exists
@@ -670,7 +673,32 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
   if (knownClaimIds.some(id => !graphClaims.includes(id)) || sourceIds.some(id => !graphSourceIds.includes(id))) {
     throw new functions.https.HttpsError('failed-precondition', 'SCENE_GRAPH_LINEAGE_MISMATCH')
   }
-  const dependencyIds = new Set<string>([graphSnapshotId, ...personModelBundleIds, ...knownClaimIds, ...graphSourceIds, ...sourceIds])
+  // The scene's memory identity and source receipts must be checked at
+  // compilation time. Owner-equal scene packets alone are not memory evidence.
+  let memoryBinding: { memoryId: string; memorySourceIds: string[]; memorySourceBindingDigest: string } | null = null
+  if (memoryId) {
+    if (!memory?.exists || (memory.get('ownerId') ?? memory.get('userId')) !== uid
+      || memory.get('deleted') === true || memory.get('demo') === true || memory.get('synthetic') === true
+      || ['pending','revoked'].includes(String(memory.get('consentState')))) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENE_MEMORY_UNAVAILABLE')
+    }
+    const movie = isRecord(memory.get('lifeMovie')) ? memory.get('lifeMovie') as JsonMap : {}
+    const provenance = isRecord(movie.provenance) ? movie.provenance as JsonMap : {}
+    const memorySourceIds = tokenArray(provenance.sourceIds, 256)
+    if (movie.sceneTruthPacketId !== sceneId || !memorySourceIds.length
+      || memorySourceIds.some(id => !sourceIds.includes(id) || !graphSourceIds.includes(id))) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENE_MEMORY_SOURCE_LINEAGE_MISMATCH')
+    }
+    if (!claims.some(claim => claim.exists && claim.get('status') === 'accepted'
+      && Array.isArray(claim.get('sourceIds'))
+      && claim.get('sourceIds').some((id: unknown) => memorySourceIds.includes(String(id))))) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENE_MEMORY_EVIDENCE_REQUIRED')
+    }
+    const sourceBindings = await readLifeSourceBindings(db, transaction, uid, memorySourceIds)
+    memoryBinding = { memoryId, memorySourceIds, memorySourceBindingDigest: lifeAuthorityDigest(sourceBindings) }
+  }
+
+  const dependencyIds = new Set<string>([graphSnapshotId, ...personModelBundleIds, ...knownClaimIds, ...graphSourceIds, ...sourceIds, ...(memoryId ? [memoryId] : [])])
 
   for (const dependency of Array.isArray(graphSnapshot.get('dependencyIds')) ? graphSnapshot.get('dependencyIds') : []) {
     dependencyIds.add(String(dependency))
@@ -721,6 +749,7 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
     schemaVersion: 'urai-life-model-v1',
     ownerId: uid,
     sceneId,
+    ...(memoryBinding ?? {}),
     graphSnapshotId,
     graphHash: graphSnapshot.get('graphHash'),
     presentationClass,
