@@ -39,7 +39,7 @@ export default function HomeSanctuaryPerimeterGrove() {
       transform.scale.set(tree.scale, height, tree.scale)
       transform.updateMatrix()
       trunks.current.setMatrixAt(index, transform.matrix)
-      trunks.current.setColorAt(index, tint.set('#e6dbce').lerp(new THREE.Color('#bbac99'), variation(index, 52) * .22))
+      trunks.current.setColorAt(index, tint.set('#655446').lerp(new THREE.Color('#98806a'), variation(index, 52) * .68))
 
       for (let branch = 0; branch < BRANCHES; branch++) {
         const id = index * BRANCHES + branch
@@ -52,7 +52,7 @@ export default function HomeSanctuaryPerimeterGrove() {
         transform.scale.set(tree.scale * .68, reach, tree.scale * .68)
         transform.updateMatrix()
         boughs.current.setMatrixAt(id, transform.matrix)
-        boughs.current.setColorAt(id, tint.set('#d7c7b6').lerp(new THREE.Color('#f1dec6'), variation(id, 56) * .22))
+        boughs.current.setColorAt(id, tint.set('#635244').lerp(new THREE.Color('#8e765f'), variation(id, 56) * .68))
       }
 
       for (let cluster = 0; cluster < LEAF_CLUSTERS; cluster++) {
@@ -64,10 +64,10 @@ export default function HomeSanctuaryPerimeterGrove() {
         const density = (.54 + variation(id, 60) * .49) * tree.scale
         transform.position.set(tree.x + Math.cos(angle) * spread, canopyY, tree.z + Math.sin(angle) * spread)
         transform.rotation.set((variation(id, 61) - .5) * .49, angle, (variation(id, 62) - .5) * .49)
-        transform.scale.set(density * 1.13, density * (.84 + variation(id, 63) * .35), density * 1.13)
+        transform.scale.set(density * (1.02 + variation(id, 65) * .35), density * (.69 + variation(id, 63) * .59), density * (.96 + variation(id, 66) * .28))
         transform.updateMatrix()
         foliage.current.setMatrixAt(id, transform.matrix)
-        tint.set(index % 4 === 0 ? '#a4b994' : '#71977b').lerp(new THREE.Color('#496e58'), variation(id, 64) * .53)
+        tint.set(index % 5 === 0 ? '#81946a' : '#526e4b').lerp(new THREE.Color('#2f4b3b'), variation(id, 64) * .64)
         foliage.current.setColorAt(id, tint)
       }
     }
