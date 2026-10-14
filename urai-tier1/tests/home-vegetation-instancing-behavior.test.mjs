@@ -118,8 +118,12 @@ function referenceRecords(model, mounted) {
     const fern = model.clone(true)
     fern.position.set(x, geometryModule.exports.homeTerrainHeight(x, z) + .025, z)
     fern.rotation.y = rotation
-    fern.scale.set(scale * (1 + mounted.seeded(index, 16) * .08),
-      scale * (.9 + mounted.seeded(index, 22) * .18), scale * (1 + mounted.seeded(index, 29) * .08))
+    // Reference the actual deterministic authored posture, independently
+    // reconstructing the world matrix rather than reading renderer instances.
+    fern.rotation.x = (mounted.seeded(index, 37) - .5) * .16
+    fern.rotation.z = (mounted.seeded(index, 41) - .5) * .19
+    fern.scale.set(scale * (.89 + mounted.seeded(index, 16) * .25),
+      scale * (.83 + mounted.seeded(index, 22) * .36), scale * (.88 + mounted.seeded(index, 29) * .24))
     fern.updateMatrixWorld(true)
     fern.traverse(mesh => { if (mesh instanceof THREE.Mesh) rows.push({ geometry: mesh.geometry,
       variant: index % 3, castShadow: index < 24, matrix: mesh.matrixWorld.clone() }) })

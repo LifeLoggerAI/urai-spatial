@@ -315,6 +315,7 @@ function FernBatch({ geometry, localMatrix, indices, rootRotation, material, cas
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const transform = useMemo(() => new THREE.Object3D(), [])
   const matrix = useMemo(() => new THREE.Matrix4(), [])
+  const tint = useMemo(() => new THREE.Color(), [])
 
   useLayoutEffect(() => {
     const mesh = meshRef.current
@@ -324,14 +325,24 @@ function FernBatch({ geometry, localMatrix, indices, rootRotation, material, cas
       transform.position.set(x, terrainHeight(x,z) + .025, z)
       transform.rotation.copy(rootRotation)
       transform.rotation.y = rotation
-      transform.scale.set(scale * (1 + seeded(index, 16) * .08), scale * (.9 + seeded(index, 22) * .18), scale * (1 + seeded(index, 29) * .08))
+      // A small deterministic lean breaks repeating flat fern silhouettes;
+      // keep every root terrain-anchored and the canopy corridor unobstructed.
+      transform.rotation.x = (seeded(index, 37) - .5) * .16
+      transform.rotation.z = (seeded(index, 41) - .5) * .19
+      transform.scale.set(scale * (.89 + seeded(index, 16) * .25), scale * (.83 + seeded(index, 22) * .36), scale * (.88 + seeded(index, 29) * .24))
       transform.updateMatrix()
       mesh.setMatrixAt(localIndex, matrix.multiplyMatrices(transform.matrix, localMatrix))
+      // Per-instance color grading preserves the CC0 model's actual geometry
+      // while introducing restrained leaf-to-leaf variation without draw calls.
+      const luminance = .91 + seeded(index, 43) * .13
+      tint.setRGB(luminance * (.96 + seeded(index, 47) * .04), luminance, luminance * (.94 + seeded(index, 53) * .06))
+      mesh.setColorAt(localIndex, tint)
     })
     mesh.instanceMatrix.needsUpdate = true
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
     mesh.computeBoundingSphere()
     return () => { mesh.dispose() }
-  }, [indices, localMatrix, matrix, rootRotation, transform])
+  }, [indices, localMatrix, matrix, rootRotation, tint, transform])
 
   return <instancedMesh ref={meshRef} args={[geometry, material, indices.length]} name={name} castShadow={castShadow} receiveShadow dispose={null} userData={{ instanceNames: indices.map((index) => `home-scanned-fern-${index + 1}`) }} />
 }
