@@ -59,10 +59,25 @@ function fixture(provider, controls = {}) {
     } }
   }
   const env = { [`URAI_COUNCIL_${provider.toUpperCase()}_ENABLED`]: controls.disabled ? 'false' : 'true', [`COUNCIL_${provider.toUpperCase()}_MODEL`]: 'synthetic-model' }
+  const graphFunctions = { https: { HttpsError: class extends Error {
+    constructor(code, message) { super(message); this.code = code }
+  } } }
+  const graphLife = load('../src/lifeGraphAuthority.ts', {
+    'node:crypto': { createHash },
+    'firebase-functions/v1': graphFunctions,
+    './consentPolicyAuthority': authority,
+  })
+  const graphReader = load('../src/councilGraphEvidenceAuthority.ts', {
+    'node:crypto': { createHash },
+    'firebase-functions/v1': graphFunctions,
+    './consentPolicyAuthority': authority,
+    './lifeGraphAuthority': graphLife,
+  })
   const exports = load('../src/councilProviderFunctions.ts', {
     'node:crypto': { createHash }, './consentPolicyAuthority': authority, 'firebase-admin': admin,
     'firebase-functions/params': { defineSecret: () => ({ value: () => { state.secretReads++; return 'synthetic-not-a-credential' } }) },
     'firebase-functions/v2/https': { onRequest: (_settings, handler) => handler },
+    './councilGraphEvidenceAuthority': graphReader,
     './protectedProviderSpend': { paidSpatialFetch, assertSpatialPaidOutputCurrent() { state.outputChecks++; if (controls.expired?.(state)) throw new SpatialSpendError() }, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} },
   }, { process: { env }, setTimeout: (cb, delay) => setTimeout(cb, controls.timeoutMs ?? delay) })
   const response = { headersSent: false, writableEnded: false, statusCode: 200, body: undefined, headers: {}, listeners: {},
