@@ -4,7 +4,9 @@
 // remain the bounded render owner for trunks, boughs, and foliage.
 export const HOME_PERIMETER_TREE_COUNT = 24
 export const HOME_PERIMETER_BRANCHES_PER_TREE = 5
-export const HOME_PERIMETER_LEAF_CLUSTERS_PER_TREE = 18
+// Preserve the established <=360 foliage instance budget while allowing
+// 24 individually profiled trees; the previous 18 x 18 authored limit is not waived.
+export const HOME_PERIMETER_LEAF_CLUSTERS_PER_TREE = 15
 
 const GROVE_Z_CLUSTERS = [7.9, -2.7, -12.8, -23.4] as const
 const GROVE_POCKET_OFFSETS = [-2.7, .3, 2.7] as const
