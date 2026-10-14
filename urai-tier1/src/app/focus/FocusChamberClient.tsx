@@ -439,6 +439,10 @@ export default function FocusChamberClient() {
     <div className="focusControlDock">
     <nav className="focusControls" aria-label={locale.text('focus.controls')} {...locale.props('focus.controls')}>
       {memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} {...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')} aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}><span {...locale.props(committed ? 'common.loading' : 'focus.enterReplay')}>{committed ? locale.text('common.loading') : locale.text('focus.enterReplay')}</span></button> : null}
+      {memory && !memory.demo && memory.authorization === 'owner' ? <button type="button" disabled={committed}
+        onClick={() => requestUraiWorldTravel({ destination: 'council', href: `/council?memoryId=${encodeURIComponent(memory.id)}`,
+          entryPortal: 'focus-memory-council', cameraCheckpoint: `focus:${memory.star.id}`,
+          context: { memoryId: memory.id } })}>Ask Council about this memory</button> : null}
       <button type="button" onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenter')}>{locale.text('focus.recenter')}</button>
       <button className="unwind" type="button" onClick={unwind} {...locale.props('nav.lifeMap')}>← {locale.text('nav.lifeMap')}</button>
     </nav>
