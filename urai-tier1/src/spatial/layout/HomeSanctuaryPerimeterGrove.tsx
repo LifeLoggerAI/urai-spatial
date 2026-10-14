@@ -16,6 +16,12 @@ import {
 // Instanced, physically three-dimensional woodland at the sanctuary boundary.
 // This is honest source-authored non-admitted landscaping, not a captured forest.
 // The walkable first-person interior and its canonical navigation remain intact.
+// Three bounded crown variants reuse the same instanced meshes and draw calls.
+const GROVE_FORMS = [
+  { height: 3.65, spread: 1.35, crownBase: .58 },
+  { height: 4.98, spread: .87, crownBase: .72 },
+  { height: 4.27, spread: 1.12, crownBase: .65 },
+] as const
 export default function HomeSanctuaryPerimeterGrove() {
   const trunks = useRef<THREE.InstancedMesh>(null)
   const boughs = useRef<THREE.InstancedMesh>(null)
@@ -32,10 +38,11 @@ export default function HomeSanctuaryPerimeterGrove() {
     const tint = new THREE.Color()
     for (let index = 0; index < TREE_COUNT; index++) {
       const tree = homePerimeterTreePlacement(index)
+      const form = GROVE_FORMS[tree.crownProfile]
       const ground = homeTerrainHeight(tree.x, tree.z)
-      const height = (3.9 + variation(index, 51) * 1.7) * tree.scale
+      const height = (form.height + variation(index, 51) * 1.45) * tree.scale
       transform.position.set(tree.x, ground + height * .5, tree.z)
-      transform.rotation.set(0, tree.yaw, 0)
+      transform.rotation.set(tree.lean * .25, tree.yaw, tree.lean)
       transform.scale.set(tree.scale, height, tree.scale)
       transform.updateMatrix()
       trunks.current.setMatrixAt(index, transform.matrix)
@@ -44,8 +51,8 @@ export default function HomeSanctuaryPerimeterGrove() {
       for (let branch = 0; branch < BRANCHES; branch++) {
         const id = index * BRANCHES + branch
         const angle = tree.yaw + branch * Math.PI * 2 / BRANCHES + variation(id, 53) * .38
-        const reach = (.95 + variation(id, 54) * .75) * tree.scale
-        const stemHeight = ground + height * (.57 + branch * .066)
+        const reach = (.95 + variation(id, 54) * .75) * tree.scale * form.spread
+        const stemHeight = ground + height * (form.crownBase - .12 + branch * .066)
         direction.set(Math.cos(angle) * .84, .37 + variation(id, 55) * .27, Math.sin(angle) * .84).normalize()
         transform.position.set(tree.x + direction.x * reach * .44, stemHeight + direction.y * reach * .44, tree.z + direction.z * reach * .44)
         transform.quaternion.setFromUnitVectors(up, direction)
@@ -59,8 +66,8 @@ export default function HomeSanctuaryPerimeterGrove() {
         const id = index * LEAF_CLUSTERS + cluster
         const branch = cluster % BRANCHES
         const angle = tree.yaw + branch * Math.PI * 2 / BRANCHES + (variation(id, 57) - .5) * 1.55
-        const spread = (.58 + variation(id, 58) * 1.18) * tree.scale
-        const canopyY = ground + height * (.69 + variation(id, 59) * .41)
+        const spread = (.58 + variation(id, 58) * 1.18) * tree.scale * form.spread
+        const canopyY = ground + height * (form.crownBase + variation(id, 59) * (.99 - form.crownBase))
         const density = (.54 + variation(id, 60) * .49) * tree.scale
         transform.position.set(tree.x + Math.cos(angle) * spread, canopyY, tree.z + Math.sin(angle) * spread)
         transform.rotation.set((variation(id, 61) - .5) * .49, angle, (variation(id, 62) - .5) * .49)
@@ -80,7 +87,7 @@ export default function HomeSanctuaryPerimeterGrove() {
 
   return <group name="home-perimeter-grove" userData={{
     truthClass: 'authored-non-admitted-landscaping',
-    source: 'deterministic-instanced-woodland-shared-physical-foliage-and-bark',
+    source: 'deterministic-clustered-woodland-authored-crown-variants-shared-physical-foliage-and-bark',
     finalArtAdmitted: false,
     collisionAuthority: false,
     rootPlacement: 'outside-first-person-walking-bounds',
