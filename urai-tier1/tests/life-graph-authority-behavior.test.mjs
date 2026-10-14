@@ -88,6 +88,27 @@ function fixture() {
  }
  return {docs,put,amend,commits,call,graph,scene,edge,reviewed,conflict:fn=>{conflict=fn},get retries(){return retries}}
 }
+test('memory-linked SceneTruth binds exact memory and current reviewed source lineage', async () => {
+ const f=fixture()
+ f.put(prefix+'memories/memory-a',{ownerId:uid,deleted:false,demo:false,synthetic:false,consentState:'granted',
+   lifeMovie:{sceneTruthPacketId:'scene-a',provenance:{sourceIds:[sourceId]}}})
+ await f.call('compileLifeCausalGraphSnapshot',f.graph)
+ const result=await f.call('compileSceneTruthPacket',{...f.scene,memoryId:'memory-a'})
+ assert.equal(result.decision,'READY')
+ const packet=f.docs.get(prefix+'sceneTruthPackets/scene-a')
+ assert.equal(packet.memoryId,'memory-a')
+ assert.deepEqual(Array.from(packet.memorySourceIds),[sourceId])
+ assert.match(packet.memorySourceBindingDigest,/^[a-f0-9]{64}$/)
+ const bad=fixture()
+ bad.put(prefix+'memories/memory-a',{ownerId:uid,lifeMovie:{sceneTruthPacketId:'other-scene',provenance:{sourceIds:[sourceId]}}})
+ await bad.call('compileLifeCausalGraphSnapshot',bad.graph)
+ await assert.rejects(bad.call('compileSceneTruthPacket',{...bad.scene,memoryId:'memory-a'}),/SCENE_MEMORY_SOURCE_LINEAGE_MISMATCH/)
+ const wrong=fixture()
+ wrong.put(prefix+'memories/memory-a',{ownerId:'foreign-owner',lifeMovie:{sceneTruthPacketId:'scene-a',provenance:{sourceIds:[sourceId]}}})
+ await wrong.call('compileLifeCausalGraphSnapshot',wrong.graph)
+ await assert.rejects(wrong.call('compileSceneTruthPacket',{...wrong.scene,memoryId:'memory-a'}),/SCENE_MEMORY_UNAVAILABLE/)
+})
+
 test('actual graph producer and SceneTruth consumer bind protected canonical content and stable repeated delivery',async()=>{
  const f=fixture(),a=await f.call('compileLifeCausalGraphSnapshot',f.graph),b=await f.call('compileLifeCausalGraphSnapshot',f.graph)
  assert.equal(a.graphHash,b.graphHash)
