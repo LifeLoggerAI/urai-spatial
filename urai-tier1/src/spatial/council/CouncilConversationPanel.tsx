@@ -118,6 +118,12 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
         signal: controller.signal,
       })
       if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
+      if (graphRequested && !response) {
+        setResult(null)
+        setStatus('Selected memory evidence was unavailable or not authorized. No grounded Council response was produced.')
+        setGraphShareConsent(false)
+        return
+      }
       const resolved = response ?? deterministicOrbFallback(trimmed)
       setResult(resolved)
       if (response) {
@@ -158,6 +164,12 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
       }
     } catch (error) {
       if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
+      if (graphRequested) {
+        setResult(null)
+        setGraphShareConsent(false)
+        setStatus('Selected memory evidence could not be safely processed or verified. No grounded Council response was produced.')
+        return
+      }
       const fallback = error instanceof OrbProviderAttemptError
         ? attemptedExternalOrbFallback(trimmed)
         : error instanceof OrbProviderAttemptUncertainError
