@@ -84,9 +84,9 @@ function fixture(provider, controls = {}) {
     status(code) { this.statusCode = code; return this }, setHeader(name, value) { this.headers[name] = value },
     json(value) { this.body = value; this.headersSent = true; this.writableEnded = true },
     end() { this.writableEnded = true }, on(name, handler) { this.listeners[name] = handler } }
-  const run = async () => {
+  const run = async (extra = {}) => {
     state.closeOutput = () => response.listeners.close?.()
-    await exports[`${provider}CouncilProvider`]({ method: 'POST', headers: { authorization: 'Bearer synthetic-token' }, body: { message: 'Disclosed synthetic question', context: [], aiProcessingConsent: true, requestId: 'a'.repeat(64) } }, response)
+    await exports[`${provider}CouncilProvider`]({ method: 'POST', headers: { authorization: 'Bearer synthetic-token' }, body: { message: 'Disclosed synthetic question', context: [], aiProcessingConsent: true, requestId: 'a'.repeat(64), ...extra } }, response)
     return response
   }
   return { state, response, run }
@@ -133,5 +133,16 @@ for (const provider of providers) {
     const f = fixture(provider, { disabled: true }); const response = await f.run()
     assert.equal(response.statusCode, 503); assert.equal(response.body.error, 'COUNCIL_PROVIDER_DISABLED')
     assert.equal(f.state.secretReads, 0); assert.equal(f.state.paid.length, 0)
+  })
+}
+
+
+for (const provider of providers) {
+  test(provider + ' rejects unapproved graph selection before paid provider dispatch', async () => {
+    const f = fixture(provider)
+    const response = await f.run({ graphSelection: { snapshotId: 'synthetic-current-graph', entityIds: ['person-a'] } })
+    assert.equal(f.state.paid.length, 0, 'graph authority must fail before any provider cost')
+    assert.notEqual(response.statusCode, 200)
+    assert.equal(response.body?.message === responseText, false)
   })
 }
