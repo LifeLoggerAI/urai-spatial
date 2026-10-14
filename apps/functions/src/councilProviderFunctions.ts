@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
-import { readCouncilGraphEvidence } from './councilGraphEvidenceAuthority'
+import { readCouncilGraphEvidence, resolveCouncilMemoryGraph } from './councilGraphEvidenceAuthority'
 import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
@@ -299,7 +299,13 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       requireRequestId(body.requestId)
       const context = boundedContext(body.context)
       // Browser data supplies only graph identifiers; server loads and validates evidence.
-      const graphRequest = body.graphSelection
+      if (body.memorySelection !== undefined && body.graphSelection !== undefined) {
+        throw new CouncilProviderError(400, 'COUNCIL_SELECTION_CONFLICT', 'Select one governed evidence source.')
+      }
+      const memoryRequest = body.memorySelection
+      const graphRequest = body.graphSelection ?? (memoryRequest !== undefined
+        ? await resolveCouncilMemoryGraph(db, uid, memoryRequest).then(({ snapshotId, entityIds }) => ({ snapshotId, entityIds }))
+        : undefined)
       // Graph data is never read or disclosed based on ordinary message consent.
       if (graphRequest !== undefined && (body.graphShareConsent !== true || body.aiProcessingConsent !== true)) {
         throw new CouncilProviderError(403, 'COUNCIL_GRAPH_DISCLOSURE_CONSENT_REQUIRED',
@@ -314,6 +320,15 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
         }
       }
       const graphEvidence = graphRequest === undefined ? null : await loadGraph()
+      const memoryBinding = memoryRequest === undefined ? null : await resolveCouncilMemoryGraph(db, uid, memoryRequest)
+      const memoryFingerprint = memoryBinding ? [memoryBinding.sceneTruthPacketId, memoryBinding.packetHash, memoryBinding.graphHash, ...memoryBinding.entityIds].join('|') : null
+      const recheckMemory = async () => {
+        if (memoryRequest === undefined) return
+        const current = await resolveCouncilMemoryGraph(db, uid, memoryRequest)
+        if ([current.sceneTruthPacketId, current.packetHash, current.graphHash, ...current.entityIds].join('|') !== memoryFingerprint) {
+          throw new CouncilProviderError(409, 'COUNCIL_MEMORY_CHANGED', 'Selected memory authority changed during this request.')
+        }
+      }
       const graphEvidenceFingerprint = graphEvidence ? JSON.stringify(graphEvidence) : null
       const recheckGraph = async () => {
         if (graphRequest === undefined) return
@@ -334,6 +349,7 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       await requireProviderConsent(uid, provider, body.aiProcessingConsent === true)
       await consumeRateLimit(uid, provider)
       await recheckGraph()
+      await recheckMemory()
       if (await authenticatedUid(request) !== uid) throw new CouncilProviderError(401, 'UNAUTHORIZED', 'Authentication changed before Council dispatch.')
       await requireProviderConsent(uid, provider, body.aiProcessingConsent === true)
       model = providerModel(provider)
@@ -344,6 +360,7 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       timeout = setTimeout(() => controller.abort(), 30_000)
       response.on('close', () => { if (!response.writableEnded) controller.abort() })
       await recheckGraph()
+      await recheckMemory()
       const result = await (provider === 'anthropic'
         ? callAnthropic(uid, body, apiKey, model, groundedMessage, context, controller.signal)
         : provider === 'gemini'
@@ -356,6 +373,7 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       if (await authenticatedUid(request) !== uid) throw new CouncilProviderError(401, 'UNAUTHORIZED', 'Authentication changed before Council delivery.')
       await requireProviderConsent(uid, provider, body.aiProcessingConsent === true)
       await recheckGraph()
+      await recheckMemory()
       if (controller.signal.aborted) throw new CouncilProviderError(499, 'COUNCIL_OUTPUT_CANCELLED', 'Council output was cancelled.')
       assertSpatialPaidOutputCurrent(result.upstream)
 
