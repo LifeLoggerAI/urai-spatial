@@ -52,7 +52,8 @@ function fixture() {
  }
  const handlers=load('lifeModelFunctions.ts')
  const authority=load('lifeGraphAuthority.ts')
- put(prefix+'privacyPolicy/current',{version:2,revision:0,ownerId:uid,domains:Object.fromEntries(['memory','location','models','exports','workforce','identity'].map(domain=>[domain,{mode:['models','identity'].includes(domain)?'granted':'denied',retentionDays:null,precise:false,replayVisible:false,lifeMapVisible:false,modelContext:domain==='models',sharingEnabled:false,automationEnabled:false,likenessEnabled:false}])),enforcement:{state:'fully-enforced',jobId:null,affectedTargets:[],providerState:'not-applicable'}})
+ put(prefix+'privacyPolicy/current',{version:2,revision:1,ownerId:uid,domains:Object.fromEntries(['memory','location','models','exports','workforce','identity'].map(domain=>[domain,{mode:['memory','models','identity'].includes(domain)?'granted':'denied',retentionDays:null,precise:false,replayVisible:false,lifeMapVisible:false,modelContext:domain==='models',sharingEnabled:false,automationEnabled:false,likenessEnabled:false}])),enforcement:{state:'fully-enforced',jobId:null,affectedTargets:[],providerState:'not-applicable'}})
+ put('consentRecords/'+uid+'_memory_storage',{uid,purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:sha('disclosed-synthetic-C1-receipt'),expiresAt:'2099-01-01T00:00:00.000Z'})
  put(sourcePath,{schemaVersion:'urai-private-source-receipt-v2',ownerUid:uid,sourceReceiptRef:sourceId,status:'ACTIVE',synthetic:false,
   purposes:['memory-index'],sourceRevision:1,sourceSha256:sha('synthetic-source'),sourceFixityRef:'private:fixity/synthetic',sourceByteLength:42,
   sourceHandle:'psh_abcdefghijklmnop',sourceEvidenceClass:'SOURCE_CAPTURED',consent:{purpose:'memory.storage',policyVersion:'test-policy',decisionReceiptId:'test-receipt'}})
