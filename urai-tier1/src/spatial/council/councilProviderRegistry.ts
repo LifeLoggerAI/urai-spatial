@@ -117,6 +117,7 @@ export async function requestCouncilProvider(input: {
   message: string
   context: OrbConversationMessage[]
   aiProcessingConsent: boolean
+  graphSelection?: { snapshotId: string; entityIds: string[] }
   signal: AbortSignal
   onEvent?: (event: OrbProviderEvent) => void
 }): Promise<CouncilProviderResult | null> {
@@ -138,6 +139,7 @@ export async function requestCouncilProvider(input: {
     message: input.message,
     context: input.context,
     aiProcessingConsent: input.aiProcessingConsent,
+    graphSelection: input.graphSelection,
     signal: input.signal,
   })
 }
