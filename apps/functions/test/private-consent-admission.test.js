@@ -35,6 +35,13 @@ const policyAuthority = require(path.join(candidateRoot, 'consentPolicyAuthority
 const clone = value => JSON.parse(JSON.stringify(value))
 
 function graphFixture(f, options = {}) {
+  // The canonical graph reader requires current C1 memory consent independently
+  // of model/identity policy and even if Jobs revocation has not propagated.
+  f.records.set('consentRecords/' + uid + '_memory_storage', {
+    uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0',
+    status: 'granted', receiptHash: sha('synthetic-current-C1-grant'),
+    expiresAt: '2099-01-01T00:00:00.000Z',
+  })
   const sourceId = 'psr_SYNTHETIC_SOURCE_123456789'
   const sourceRef = 'uraiPrivateSourceReceipts/' + sha(sourceId)
   const source = { schemaVersion: 'urai-private-source-receipt-v2', ownerUid: uid,

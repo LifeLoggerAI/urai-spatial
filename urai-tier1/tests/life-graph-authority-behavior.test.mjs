@@ -9,6 +9,7 @@ const sourceRoot = process.env.LIFE_GRAPH_TEST_ROOT || new URL('../../apps/funct
 const sha = s => createHash('sha256').update(s).digest('hex')
 const uid = 'disclosed-synthetic-owner', sourceId = 'psr_abcdefghijklmnop'
 const prefix = 'users/' + uid + '/', sourcePath = 'uraiPrivateSourceReceipts/' + sha(sourceId)
+const c1Path = 'consentRecords/' + uid + '_memory_storage'
 const copy = v => v === undefined ? undefined : structuredClone(v)
 function fixture() {
  const docs = new Map(), versions = new Map(), commits = []; let conflict, retries = 0
@@ -52,7 +53,8 @@ function fixture() {
  }
  const handlers=load('lifeModelFunctions.ts')
  const authority=load('lifeGraphAuthority.ts')
- put(prefix+'privacyPolicy/current',{version:2,revision:0,ownerId:uid,domains:Object.fromEntries(['memory','location','models','exports','workforce','identity'].map(domain=>[domain,{mode:['models','identity'].includes(domain)?'granted':'denied',retentionDays:null,precise:false,replayVisible:false,lifeMapVisible:false,modelContext:domain==='models',sharingEnabled:false,automationEnabled:false,likenessEnabled:false}])),enforcement:{state:'fully-enforced',jobId:null,affectedTargets:[],providerState:'not-applicable'}})
+ put(prefix+'privacyPolicy/current',{version:2,revision:1,ownerId:uid,domains:Object.fromEntries(['memory','location','models','exports','workforce','identity'].map(domain=>[domain,{mode:['memory','models','identity'].includes(domain)?'granted':'denied',retentionDays:null,precise:false,replayVisible:false,lifeMapVisible:false,modelContext:domain==='models',sharingEnabled:false,automationEnabled:false,likenessEnabled:false}])),enforcement:{state:'fully-enforced',jobId:null,affectedTargets:[],providerState:'not-applicable'}})
+ put(c1Path,{uid,purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:sha('disclosed-synthetic-C1-receipt'),expiresAt:'2099-01-01T00:00:00.000Z'})
  put(sourcePath,{schemaVersion:'urai-private-source-receipt-v2',ownerUid:uid,sourceReceiptRef:sourceId,status:'ACTIVE',synthetic:false,
   purposes:['memory-index'],sourceRevision:1,sourceSha256:sha('synthetic-source'),sourceFixityRef:'private:fixity/synthetic',sourceByteLength:42,
   sourceHandle:'psh_abcdefghijklmnop',sourceEvidenceClass:'SOURCE_CAPTURED',consent:{purpose:'memory.storage',policyVersion:'test-policy',decisionReceiptId:'test-receipt'}})
@@ -105,6 +107,12 @@ for(const [name,mutate]of Object.entries({
  'foreign source owner':f=>f.amend(sourcePath,{ownerUid:'other'}),
  'synthetic source':f=>f.amend(sourcePath,{synthetic:true}),
  'consent withdrawal':f=>f.put('jobConsentBlocks/'+sha(uid+'\n'+'memory.storage'),{active:true}),
+ 'canonical C1 revoked before Jobs notification':f=>f.amend(c1Path,{status:'revoked'}),
+ 'canonical C1 expired before Jobs notification':f=>f.amend(c1Path,{expiresAt:'2020-01-01T00:00:00.000Z'}),
+ 'canonical C1 foreign owner':f=>f.amend(c1Path,{uid:'other'}),
+ 'canonical C1 invalid receipt':f=>f.amend(c1Path,{receiptHash:'not-a-receipt'}),
+ 'missing canonical C1 record':f=>f.docs.delete(c1Path),
+ 'missing C1 policy enforcement':f=>f.amend(prefix+'privacyPolicy/current',{enforcement:{state:'pending'}}),
  'owner deletion':f=>f.put('uraiPrivateLifeModelOwnerFences/'+sha(uid),{deleted:true}),
  'foreign entity owner':f=>f.amend(prefix+'lifeEntities/person-a',{ownerId:'other'}),
  'synthetic entity':f=>f.amend(prefix+'lifeEntities/person-a',{synthetic:true}),

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import * as functions from 'firebase-functions/v1'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 type Row = Record<string, any>
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
@@ -15,11 +16,34 @@ function ids(value: unknown): string[] {
 }
 export async function readLifeSourceBindings(db: FirebaseFirestore.Firestore, tx: FirebaseFirestore.Transaction, uid: string, sourceIds: unknown) {
   const selected = ids(sourceIds)
-  const [block, fence] = await Promise.all([
+  // Bind every graph/source read to the current canonical C1 consent grant,
+  // not solely to a source receipt or asynchronously delivered Jobs block.
+  // A revoked C1 grant must close this reader before any downstream event
+  // consumer has acknowledged the revocation.
+  const [block, fence, policy, consent] = await Promise.all([
     tx.get(db.doc('jobConsentBlocks/' + hash(uid + '\n' + 'memory.storage'))),
     tx.get(db.doc('uraiPrivateLifeModelOwnerFences/' + hash(uid))),
+    tx.get(db.doc('users/' + uid + '/privacyPolicy/current')),
+    tx.get(db.doc('consentRecords/' + uid + '_memory_storage')),
   ])
   if (block.get('active') === true || fence.get('deleted') === true) deny('GRAPH_SOURCE_CONSENT_OR_OWNER_REVOKED')
+  const storedPolicy = policy.data()
+  const c1 = consent.data()
+  const expiryText = c1?.expiresAt
+  const expires = typeof expiryText === 'string'
+    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(expiryText)
+    && Number.isFinite(Date.parse(expiryText))
+    && new Date(expiryText).toISOString() === expiryText
+      ? Date.parse(expiryText) : Number.NaN
+  if (!policy.exists || !isCanonicalStoredPolicy(storedPolicy, uid)
+    || storedPolicy.revision < 1 || storedPolicy.domains.memory.mode !== 'granted'
+    || storedPolicy.enforcement.state !== 'fully-enforced'
+    || !consent.exists || c1?.uid !== uid || c1.purpose !== 'memory.storage'
+    || c1.consentTier !== 'C1' || c1.policyVersion !== '1.0.0'
+    || c1.status !== 'granted' || !/^[a-f0-9]{64}$/.test(String(c1.receiptHash))
+    || !Number.isSafeInteger(expires) || expires <= Date.now()) {
+    deny('GRAPH_CURRENT_MEMORY_CONSENT_REQUIRED')
+  }
   const bindings: Row[] = []
   for (const id of selected.sort()) {
     const snapshot = await tx.get(db.doc('uraiPrivateSourceReceipts/' + hash(id))), source = snapshot.data() ?? {}
