@@ -42,6 +42,8 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
   const [reviewRequested, setReviewRequested] = useState(false)
   const [reviewConsent, setReviewConsent] = useState(false)
   const [graphRequested, setGraphRequested] = useState(false)
+  // Never treat a router-provided ID as source authority. Refresh it on each
+  // submission and after the provider responds so stale routes fail closed.
   const selectedMemoryId = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('memoryId')
   const validMemoryId = selectedMemoryId && /^[A-Za-z0-9._:-]{1,160}$/.test(selectedMemoryId) ? selectedMemoryId : null
   const [useSelectedMemoryGraph, setUseSelectedMemoryGraph] = useState(true)
@@ -76,7 +78,8 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
     const graphSelectionValid = Boolean(graphSelection && /^[A-Za-z0-9._:-]{1,160}$/.test(graphSelection.snapshotId)
       && graphSelection.entityIds.length <= 8 && new Set(graphSelection.entityIds).size === graphSelection.entityIds.length
       && graphSelection.entityIds.every(id => /^[A-Za-z0-9._:-]{1,160}$/.test(id)))
-    const selectedMemoryRequest = graphRequested && useSelectedMemoryGraph ? validMemoryId : null
+    const liveMemoryId = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('memoryId')
+    const selectedMemoryRequest = graphRequested && useSelectedMemoryGraph && liveMemoryId === validMemoryId ? validMemoryId : null
     if (graphRequested && (providerId === 'openai' || reviewRequested || (!selectedMemoryRequest && !graphSelectionValid) || !graphShareConsent)) {
       setStatus('Choose a supported external Council provider, provide a valid Life Graph snapshot and entity selection, and explicitly authorize disclosure. Graph-backed second opinions are not enabled.')
       return
@@ -118,6 +121,12 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
         signal: controller.signal,
       })
       if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
+      if (graphRequested && selectedMemoryRequest && (typeof window === 'undefined' || new URLSearchParams(window.location.search).get('memoryId') !== selectedMemoryRequest)) {
+        setResult(null)
+        setGraphShareConsent(false)
+        setStatus('Selected memory changed. The earlier Council response was discarded.')
+        return
+      }
       if (graphRequested && !response) {
         setResult(null)
         setStatus('Selected memory evidence was unavailable or not authorized. No grounded Council response was produced.')
