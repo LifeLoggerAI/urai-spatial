@@ -48,6 +48,7 @@ export {
   compileLifeCausalGraphSnapshot,
   compilePersonModelBundle,
   compileSceneTruthPacket,
+  getCouncilLifeGraphEvidence,
   getReplayLifeModelAuthority,
   revokeLifeEntity,
   upsertLifeCausalEdge,
