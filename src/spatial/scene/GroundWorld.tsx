@@ -5,6 +5,8 @@ import { useFrame } from "@react-three/fiber";
 import {
   AdditiveBlending,
   Color,
+  CircleGeometry,
+  Float32BufferAttribute,
   type Group,
   type Mesh,
   type MeshBasicMaterial,
@@ -164,6 +166,33 @@ export default function GroundWorld({
   const profile = MOOD_PROFILES[mood] ?? MOOD_PROFILES.calm;
   const reducedMotion = useReducedMotionPreference();
 
+  // Deterministic, bounded mineral relief. The central interaction pad stays
+  // level for Orb contact/accessibility; peripheral slate/earth tones break
+  // up the former uniform black disc without adding unreviewed art assets.
+  const terrainGeometry = useMemo(() => {
+    const geometry = new CircleGeometry(3.3, 160, 0, Math.PI * 2);
+    const position = geometry.getAttribute('position');
+    const colors: number[] = [];
+    const low = new Color('#26312c');
+    const high = new Color('#48544a');
+    const detail = new Color();
+    for (let i = 0; i < position.count; i += 1) {
+      const x = position.getX(i);
+      const y = position.getY(i);
+      const radius = Math.hypot(x, y);
+      const wave = Math.sin(x * 5.3 + y * 2.4) * Math.cos(y * 6.7 - x * 1.9);
+      const sediment = Math.sin(x * 1.7 + y * 2.3) * 0.5 + 0.5;
+      const edge = Math.min(1, Math.max(0, (radius - 1.48) / 1.5));
+      position.setZ(i, edge * (0.026 * wave + 0.025 * sediment));
+      detail.copy(low).lerp(high, Math.min(1, Math.max(0, 0.22 + sediment * 0.54 + wave * 0.18)));
+      colors.push(detail.r, detail.g, detail.b);
+    }
+    geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
+    geometry.computeVertexNormals();
+    return geometry;
+  }, []);
+  useEffect(() => () => terrainGeometry.dispose(), [terrainGeometry]);
+
   const rootRef = useRef<Group>(null);
   const groundMaterialRef = useRef<MeshStandardMaterial | null>(null);
   const contactShadowRef = useRef<Mesh>(null);
@@ -188,7 +217,8 @@ export default function GroundWorld({
   );
 
   useEffect(() => {
-    groundMaterialRef.current?.color.copy(colors.ground);
+    // Vertex colors provide the earth/stone response; the material remains
+    // neutral so emotional weather does not erase the natural relief.
 
     if (innerRingMaterialRef.current) {
       innerRingMaterialRef.current.color.copy(colors.innerGlow);
@@ -313,12 +343,13 @@ export default function GroundWorld({
       }}
     >
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow renderOrder={0}>
-        <circleGeometry args={[3.3, 64]} />
+        <primitive attach="geometry" object={terrainGeometry} />
         <meshStandardMaterial
           ref={groundMaterialRef}
-          color={profile.ground}
-          roughness={0.98}
-          metalness={0.02}
+          color="#ffffff"
+          vertexColors
+          roughness={0.92}
+          metalness={0.01}
           transparent
           opacity={0.94}
         />
