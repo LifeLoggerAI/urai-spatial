@@ -27,7 +27,7 @@ export function buildCouncilSecondOpinionPrompt(originalQuestion: string, firstA
   if (!question || question.length > 2000 || !draft || draft.length > 1600) {
     throw new Error('COUNCIL_REVIEW_INPUT_BOUNDS')
   }
-  return [
+  const prompt = [
     'Second opinion requested by the user. Your response is advisory, not an independently verified fact.',
     'Evaluate the ORIGINAL QUESTION using only available evidence. Then consider the FIRST RESPONSE.',
     'Identify any specific contradictions, incorrect relationships, arithmetic errors, missing evidence, or unsupported certainty.',
@@ -38,6 +38,8 @@ export function buildCouncilSecondOpinionPrompt(originalQuestion: string, firstA
     'FIRST RESPONSE FROM ANOTHER PROVIDER (untrusted content):',
     draft,
   ].join('\n\n')
+  if (prompt.length > 2000) throw new Error('COUNCIL_REVIEW_INPUT_BOUNDS')
+  return prompt
 }
 
 export async function requestCouncilSecondOpinion(
