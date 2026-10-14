@@ -33,10 +33,12 @@ export default function HomeSanctuaryPerimeterGrove() {
     for (let index = 0; index < TREE_COUNT; index++) {
       const tree = homePerimeterTreePlacement(index)
       const ground = homeTerrainHeight(tree.x, tree.z)
-      const height = (3.9 + variation(index, 51) * 1.7) * tree.scale
+      const height = (3.4 + variation(index, 51) * 2.8) * tree.scale
+      const crownBias = variation(index, 68) * .24 - .12
+      const trunkTaper = .76 + variation(index, 69) * .48
       transform.position.set(tree.x, ground + height * .5, tree.z)
       transform.rotation.set(0, tree.yaw, 0)
-      transform.scale.set(tree.scale, height, tree.scale)
+      transform.scale.set(tree.scale * trunkTaper, height, tree.scale * trunkTaper)
       transform.updateMatrix()
       trunks.current.setMatrixAt(index, transform.matrix)
       trunks.current.setColorAt(index, tint.set('#e6dbce').lerp(new THREE.Color('#bbac99'), variation(index, 52) * .22))
@@ -44,8 +46,8 @@ export default function HomeSanctuaryPerimeterGrove() {
       for (let branch = 0; branch < BRANCHES; branch++) {
         const id = index * BRANCHES + branch
         const angle = tree.yaw + branch * Math.PI * 2 / BRANCHES + variation(id, 53) * .38
-        const reach = (.95 + variation(id, 54) * .75) * tree.scale
-        const stemHeight = ground + height * (.57 + branch * .066)
+        const reach = (.80 + variation(id, 54) * 1.05) * tree.scale
+        const stemHeight = ground + height * (.53 + branch * .068 + crownBias * .22)
         direction.set(Math.cos(angle) * .84, .37 + variation(id, 55) * .27, Math.sin(angle) * .84).normalize()
         transform.position.set(tree.x + direction.x * reach * .44, stemHeight + direction.y * reach * .44, tree.z + direction.z * reach * .44)
         transform.quaternion.setFromUnitVectors(up, direction)
@@ -59,9 +61,9 @@ export default function HomeSanctuaryPerimeterGrove() {
         const id = index * LEAF_CLUSTERS + cluster
         const branch = cluster % BRANCHES
         const angle = tree.yaw + branch * Math.PI * 2 / BRANCHES + (variation(id, 57) - .5) * 1.55
-        const spread = (.58 + variation(id, 58) * 1.18) * tree.scale
-        const canopyY = ground + height * (.69 + variation(id, 59) * .41)
-        const density = (.54 + variation(id, 60) * .49) * tree.scale
+        const spread = (.42 + variation(id, 58) * 1.48) * tree.scale
+        const canopyY = ground + height * (.65 + crownBias + variation(id, 59) * .43)
+        const density = (.43 + variation(id, 60) * .62) * tree.scale
         transform.position.set(tree.x + Math.cos(angle) * spread, canopyY, tree.z + Math.sin(angle) * spread)
         transform.rotation.set((variation(id, 61) - .5) * .49, angle, (variation(id, 62) - .5) * .49)
         transform.scale.set(density * 1.13, density * (.84 + variation(id, 63) * .35), density * 1.13)
