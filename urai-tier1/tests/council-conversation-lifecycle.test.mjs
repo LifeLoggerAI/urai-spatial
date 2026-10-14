@@ -281,9 +281,12 @@ test('switching authenticated Memory Star routes aborts the old request and rese
   f.route('memory-a')
   f.change('textarea', { value: 'Where was the fictional trip?' })
   f.change('input', { checked: true })
-  const checkboxes = f.container.querySelectorAll('input[type="checkbox"]')
+  // The synthetic DOM may model input.type as a property rather than a
+  // physical attribute. React's real input props are authoritative here.
+  const checkboxes = f.container.querySelectorAll('input').filter(node => f.props(node)?.type === 'checkbox')
   assert.ok(checkboxes.length >= 4, 'Selected-memory disclosure control must be present')
   await act(async () => { f.props(checkboxes[3]).onChange({ currentTarget: { checked: true } }) })
+  assert.equal(f.props(checkboxes[3]).checked, true, 'Selected memory disclosure must be explicit')
   f.submit()
   assert.equal(f.requests.length, 1, 'Council should call only the selected memory provider')
   assert.equal(f.requests[0].input.memorySelection, 'memory-a')
@@ -292,7 +295,7 @@ test('switching authenticated Memory Star routes aborts the old request and rese
   f.route('memory-b')
   assert.equal(priorSignal.aborted, true)
   assert.equal(f.element('textarea').value, '')
-  const nextCheckboxes = f.container.querySelectorAll('input[type="checkbox"]')
+  const nextCheckboxes = f.container.querySelectorAll('input').filter(node => f.props(node)?.type === 'checkbox')
   assert.equal(nextCheckboxes[0].checked, false, 'AI processing permission must reset')
   assert.equal(nextCheckboxes[3].checked, false, 'Private evidence disclosure must reset')
   await f.resolve(0, answer('Only Memory A answer'))
