@@ -1,6 +1,5 @@
 'use client'
 
-import { Stars } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import * as THREE from 'three'
@@ -223,33 +222,27 @@ function CameraRig({ mode, pointerRef, reducedMotion }: { mode: CameraMode; poin
   return null
 }
 
-function SanctuaryFloor({ palette, groundHealth, onGround }: { palette: typeof PALETTES.calm; groundHealth: number; onGround: () => void }) {
+function SanctuaryFloor({ onGround }: { onGround: () => void }) {
   const activate = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     onGround()
   }
-  const energy = 0.08 + groundHealth * 0.1
   return (
     <group data-testid="urai-home-authored-sanctuary" name="home-transparent-threshold-floor">
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, -2.4]} onClick={activate}>
         <planeGeometry args={[34, 30]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
       </mesh>
-      {[3.2, 5.4, 7.8].map((radius, index) => (
-        <mesh key={radius} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.13 + index * 0.006, -2.4]}>
-          <ringGeometry args={[radius, radius + 0.035, 128]} />
-          <meshBasicMaterial color={index % 2 ? palette.secondary : palette.accent} transparent opacity={Math.max(0.035, energy - index * 0.025)} toneMapped={false} depthWrite={false} />
-        </mesh>
-      ))}
+      {/* Keep the authored sanctuary terrain unobstructed: no luminous target rings. */}
     </group>
   )
 }
 
-function SanctuaryGardens({ palette }: { palette: typeof PALETTES.calm }) {
+function SanctuaryGardens() {
   return (
     <group data-testid="urai-home-sculpted-gardens" name="home-authored-garden-lighting">
       {[-5.8, -3.1, 3.1, 5.8].map((x, index) => (
-        <pointLight key={x} position={[x, 0.8, -7.6 - Math.abs(x) * 0.22]} color={index % 2 ? palette.secondary : palette.accent} intensity={0.32} distance={4.2} />
+        <pointLight key={x} position={[x, 0.8, -7.6 - Math.abs(x) * 0.22]} color={index % 2 ? '#e6c9a4' : '#f4dfba'} intensity={0.22} distance={4.6} />
       ))}
     </group>
   )
@@ -313,7 +306,7 @@ function Orb({ onOpen }: { onOpen: () => void }) {
   )
 }
 
-function Atmosphere({ palette, reducedMotion, tier, onSky }: { palette: typeof PALETTES.calm; reducedMotion: boolean; tier: DeviceTier; onSky: () => void }) {
+function Atmosphere({ onSky }: { onSky: () => void }) {
   const activate = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     onSky()
@@ -324,8 +317,8 @@ function Atmosphere({ palette, reducedMotion, tier, onSky }: { palette: typeof P
         <planeGeometry args={[38, 18]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
       </mesh>
-      {tier !== 'low' ? <Stars radius={62} depth={36} count={tier === 'high' ? 760 : 420} factor={2.2} saturation={0.18} fade speed={reducedMotion ? 0 : 0.045} /> : null}
-      <pointLight position={[0, 7.5, -12]} color={palette.secondary} intensity={0.65} distance={18} />
+      {/* Open daytime sky: the approved authored landscape supplies the atmosphere, not an interior star dome. */}
+      <pointLight position={[0, 7.5, -12]} color="#f6e7c9" intensity={0.45} distance={20} />
     </group>
   )
 }
@@ -348,9 +341,9 @@ function Scene({ profile, tier, mode, pointerRef, reducedMotion, onOrbOpen, onAv
       <FrameScheduler fps={tier === 'low' ? 24 : tier === 'medium' ? 40 : 60} />
       <CameraRig mode={mode} pointerRef={pointerRef} reducedMotion={reducedMotion} />
       <ambientLight intensity={0.42} color="#d7edf5" />
-      <Atmosphere palette={palette} reducedMotion={reducedMotion} tier={tier} onSky={onSky} />
-      <SanctuaryFloor palette={palette} groundHealth={profile.groundHealth} onGround={onGround} />
-      <SanctuaryGardens palette={palette} />
+      <Atmosphere onSky={onSky} />
+      <SanctuaryFloor onGround={onGround} />
+      <SanctuaryGardens />
       <RelationshipPresences count={profile.relationshipCount} palette={palette} />
       <EmbodiedAvatar palette={palette} reducedMotion={reducedMotion} onAvatar={onAvatar} />
       <Orb onOpen={onOrbOpen} />
