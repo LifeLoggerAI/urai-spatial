@@ -69,12 +69,42 @@ function distance2D(a: THREE.Vector3, b: THREE.Vector3) {
 }
 
 function Tree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  // Repeatable tree silhouettes without runtime randomness: different scales,
+  // canopy lean and branch layering break the faceted placeholder repetition.
+  // This is a procedural preview only; it is NOT a licensed final tree asset.
+  const variant = Math.abs(Math.sin(position[0] * 3.79 + position[2] * 1.83))
+  const lean = (variant - 0.5) * 0.18
+  const shade = variant > 0.5 ? '#3b6850' : '#496e53'
   return (
-    <group position={position} scale={scale}>
-      <mesh position={[0, 0.78, 0]} castShadow><cylinderGeometry args={[0.12, 0.2, 1.55, 10]} /><meshStandardMaterial color="#3b3027" roughness={0.94} /></mesh>
-      <mesh position={[0, 1.85, 0]} castShadow scale={[0.95, 1.15, 0.95]}><icosahedronGeometry args={[0.76, 2]} /><meshStandardMaterial color="#4d7158" roughness={0.9} /></mesh>
-      <mesh position={[-0.42, 1.52, 0.08]} castShadow scale={0.62}><icosahedronGeometry args={[0.62, 1]} /><meshStandardMaterial color="#45664f" roughness={0.92} /></mesh>
-      <mesh position={[0.45, 1.58, -0.08]} castShadow scale={0.68}><icosahedronGeometry args={[0.62, 1]} /><meshStandardMaterial color="#55795f" roughness={0.92} /></mesh>
+    <group position={position} scale={scale} rotation={[0, variant * Math.PI * 0.72, 0]}>
+      <mesh position={[0, 0.88, 0]} rotation={[0, 0, lean * 0.45]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.085, 0.19, 1.76, 10]} />
+        <meshStandardMaterial color="#41372d" roughness={0.98} />
+      </mesh>
+      {[-0.65, 0.4, 1.38].map((angle, index) => (
+        <mesh key={index}
+          position={[Math.sin(angle + variant) * 0.26, 1.1 + index * 0.31, Math.cos(angle + variant) * 0.19]}
+          rotation={[0.28, angle, 0.37 * Math.cos(angle)]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.028, 0.066, 1.05 - index * 0.13, 7]} />
+          <meshStandardMaterial color="#41372d" roughness={0.96} />
+        </mesh>
+      ))}
+      <mesh position={[lean, 1.85, 0]} rotation={[0, variant, -lean]} scale={[0.96, 1.14, 0.88]} castShadow receiveShadow>
+        <sphereGeometry args={[0.76, 16, 12]} />
+        <meshStandardMaterial color={shade} roughness={0.94} />
+      </mesh>
+      <mesh position={[-0.43 + lean, 1.55, 0.14]} scale={[0.67, 0.82, 0.70]} castShadow receiveShadow>
+        <sphereGeometry args={[0.62, 14, 10]} />
+        <meshStandardMaterial color="#476a4e" roughness={0.96} />
+      </mesh>
+      <mesh position={[0.42 + lean, 1.65 + variant * 0.16, -0.12]} scale={[0.72, 0.79, 0.66]} castShadow receiveShadow>
+        <sphereGeometry args={[0.62, 14, 10]} />
+        <meshStandardMaterial color="#5a8062" roughness={0.95} />
+      </mesh>
+      <mesh position={[lean - 0.12, 2.35 + variant * 0.1, 0.03]} scale={[0.56, 0.64, 0.56]} castShadow receiveShadow>
+        <sphereGeometry args={[0.64, 14, 10]} />
+        <meshStandardMaterial color="#3b604a" roughness={0.94} />
+      </mesh>
     </group>
   )
 }
