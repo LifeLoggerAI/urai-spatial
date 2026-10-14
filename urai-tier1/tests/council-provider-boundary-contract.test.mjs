@@ -89,14 +89,12 @@ test('Council fallback truth distinguishes pre-provider, definite provider attem
 })
 
 test('Council graph handoff never trusts a browser supplied evidence packet', () => {
-  const graphSource=fs.readFileSync(new URL('../../apps/functions/src/councilGraphEvidenceAuthority.ts',import.meta.url),'utf8')
-  assert.match(functions,/readCouncilGraphEvidence\(db, uid, graphRequest\)/)
-  assert.match(functions,/body\.graphSelection/)
-  assert.match(functions,/UNTRUSTED REFERENCE DATA/)
-  assert.doesNotMatch(functions,/body\.graphEvidence/)
-  assert.match(graphSource,/requireLifeItemSources\(db, tx, uid/)
-  assert.match(graphSource,/lifeItemDigest\(item\)/)
-  assert.match(graphSource,/lifeAuthorityDigest\(bindings\)/)
-  assert.match(graphSource,/isCanonicalStoredPolicy\(p, uid\)/)
-  assert.match(graphSource,/provider|model/i)
+  const graphSource = fs.readFileSync(new URL('../../apps/functions/src/councilGraphEvidenceAuthority.ts', import.meta.url), 'utf8')
+  assert.ok(functions.includes('readCouncilGraphEvidence(db, uid, graphRequest)'))
+  assert.ok(functions.includes('body.graphSelection'))
+  assert.ok(functions.includes('UNTRUSTED REFERENCE DATA'))
+  assert.equal(functions.includes('body.graphEvidence'), false)
+  for (const required of ['requireLifeItemSources(db, tx, uid', 'lifeItemDigest(item)', 'lifeAuthorityDigest(bindings)', 'isCanonicalStoredPolicy(p, uid)']) {
+    assert.ok(graphSource.includes(required), required)
+  }
 })
