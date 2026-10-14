@@ -86,6 +86,24 @@ export default function HomeSky() {
         <meshBasicMaterial color="#335c96" transparent opacity={0.1 * opacity} depthWrite={false} />
       </mesh>
 
+      {/* Layered atmospheric perspective: independently placed, semi-transparent
+          haze banks replace a single flat horizon billboard. These use only
+          authored materials; they are not final production environment assets. */}
+      <group name="home-atmosphere-depth-banks" userData={{ previewOnly: true, finalAssetAdmitted: false }}>
+        <mesh position={[-10, 2.0, -64]} rotation={[0.04, -0.12, 0.06]} scale={[2.8, 0.2, 1]} renderOrder={-3}>
+          <circleGeometry args={[11, 48]} />
+          <meshBasicMaterial color="#557e9b" transparent opacity={0.055 * opacity} depthWrite={false} />
+        </mesh>
+        <mesh position={[11, 1.7, -48]} rotation={[0.02, 0.1, -0.04]} scale={[2.1, 0.18, 1]} renderOrder={-2}>
+          <circleGeometry args={[10, 48]} />
+          <meshBasicMaterial color="#87b5c1" transparent opacity={0.065 * opacity} depthWrite={false} />
+        </mesh>
+        <mesh position={[-6, 1.05, -26]} rotation={[0.02, -0.08, 0.035]} scale={[1.8, 0.15, 1]} renderOrder={1}>
+          <circleGeometry args={[8, 48]} />
+          <meshBasicMaterial color="#b7d6cd" transparent opacity={0.048 * opacity} depthWrite={false} />
+        </mesh>
+      </group>
+
       <mesh ref={horizonMist} position={[-0.2, 1.18, -34]} scale={[1.9, 0.24, 1]} renderOrder={2}>
         <circleGeometry args={[9.5, 64]} />
         <meshBasicMaterial color="#9bdcff" transparent opacity={(0.12 + env.aliveness * 0.04) * opacity} depthWrite={false} />
