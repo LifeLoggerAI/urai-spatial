@@ -118,6 +118,7 @@ export async function requestCouncilProvider(input: {
   context: OrbConversationMessage[]
   aiProcessingConsent: boolean
   graphSelection?: { snapshotId: string; entityIds: string[] }
+  graphShareConsent?: boolean
   signal: AbortSignal
   onEvent?: (event: OrbProviderEvent) => void
 }): Promise<CouncilProviderResult | null> {
@@ -125,6 +126,8 @@ export async function requestCouncilProvider(input: {
   if (!descriptor.requestEnabled) throw new CouncilProviderNotConnectedError(input.provider)
 
   if (input.provider === 'openai') {
+    // Orb provider does not yet accept server-validated graph selections.
+    if (input.graphSelection) return null
     return requestOpenAIOrb({
       message: input.message,
       context: input.context,
@@ -140,6 +143,7 @@ export async function requestCouncilProvider(input: {
     context: input.context,
     aiProcessingConsent: input.aiProcessingConsent,
     graphSelection: input.graphSelection,
+    graphShareConsent: input.graphShareConsent,
     signal: input.signal,
   })
 }
