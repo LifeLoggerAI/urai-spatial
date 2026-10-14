@@ -5,6 +5,7 @@ import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { verifyRealConsumerXrExport } from './lib/real-consumer-xr-export.mjs'
+import { sourcePrFromRunner } from './lib/real-consumer-source-pr.mjs'
 
 const exact = process.env.URAI_EXACT_HEAD || ''
 const src = path.resolve('urai-tier1/out')
@@ -60,7 +61,7 @@ for(const x of boundary.routes)if(!x.enabled && !['/xr','/spatial/ar-vr'].includ
 }
 const manifest={schemaVersion:'urai-real-spatial-static-export-1',
   repository:'LifeLoggerAI/urai-spatial',sourceSha:exact,sourceTreeSha:treeSha,
-  sourcePullRequest:1810,scope:'real-compiled-static-consumer-not-deployed',
+  sourcePullRequest:sourcePrFromRunner(),scope:'real-compiled-static-consumer-not-deployed',
   fileCount:files.length,totalBytes,files,
   authenticatedServiceParityVerified:false,privateStagingDeployed:false,
   finalAssetsAdmitted:false,independentReviewApproved:false,productionAuthorized:false,
