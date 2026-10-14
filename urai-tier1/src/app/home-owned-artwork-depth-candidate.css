@@ -1,0 +1,56 @@
+/* HOME OWNED ARTWORK DEPTH CORRECTION — technical candidate, NOT final-art admission.
+ * This is the actual / and /home route, not an unrelated 3D demo component.
+ * Owned in-repository desktop/mobile imagery is composited behind still-
+ * interactive authored Home UI. Do not hide safety/consent route navigation.
+ */
+.urai-genesis-home .urai-genesis-home__world {
+  background-color: #071316;
+}
+.urai-genesis-home .urai-genesis-home__sky {
+  background-image:
+    linear-gradient(180deg, rgba(6,20,29,.08) 0%, rgba(4,17,20,.08) 43%, rgba(3,12,16,.46) 77%, #071015 100%),
+    image-set(
+      url('/assets/urai/home/home-threshold-main.webp') type('image/webp') 1x
+    ) !important;
+  background-size: cover !important;
+  background-position: center 48% !important;
+  background-repeat: no-repeat !important;
+  filter: saturate(.92) contrast(1.04) !important;
+}
+.urai-genesis-home .urai-genesis-home__sky::after {
+  opacity: .18 !important;
+}
+.urai-genesis-home .urai-genesis-home__deep-haze,
+.urai-genesis-home .urai-genesis-home__aurora {
+  opacity: .24 !important;
+}
+.urai-genesis-home .urai-genesis-home__ground-grid,
+.urai-genesis-home .urai-genesis-home__ground-rings,
+.urai-genesis-home .urai-genesis-home__far-ring {
+  opacity: .11 !important;
+}
+.urai-genesis-home .urai-genesis-home__horizon-line {
+  opacity: .16 !important;
+}
+.urai-genesis-home .urai-genesis-home__hero,
+.urai-genesis-home .urai-genesis-home__portals,
+.urai-genesis-home .urai-genesis-home__bottom-dock {
+  isolation: isolate;
+}
+@media (max-width: 699px) {
+  .urai-genesis-home .urai-genesis-home__sky {
+    background-image:
+      linear-gradient(180deg, rgba(5,17,24,.10), rgba(2,12,16,.4) 75%, #071015),
+      image-set(url('/assets/urai/home/home-threshold-mobile.webp') type('image/webp') 1x) !important;
+    background-position: center center !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .urai-genesis-home .urai-genesis-home__sky {
+    transform: none !important;
+  }
+  .urai-genesis-home .urai-genesis-home__deep-haze,
+  .urai-genesis-home .urai-genesis-home__aurora {
+    animation: none !important;
+  }
+}
