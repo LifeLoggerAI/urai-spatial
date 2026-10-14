@@ -95,6 +95,9 @@ const answer = message => ({ message, caption: message, disclosure: 'Synthetic p
 const deferred = () => { let resolve, reject; const promise = new Promise((a,b) => { resolve=a; reject=b }); return { promise, resolve, reject } }
 
 function fixture(t) {
+  // Keep individual scenarios independent even when earlier tests navigated
+  // to a private Memory Star. Real route changes are exercised separately.
+  window.location.search = ''
   const requests = []
   // Current-account authority is an explicit stable adapter; this suite checks
   // presence selection and leaves actor-boundary acceptance to its own tests.
@@ -107,6 +110,21 @@ function fixture(t) {
   const fallback = () => ({ ...answer('Local fallback'), provider: 'fallback' })
   const imports = {
     react: React, 'react/jsx-runtime': jsxRuntime,
+    // This suite exercises the real Council React tree. These adapters replace
+    // the browser/Firebase subscriptions, not the Council's routing behavior.
+    '@/hooks/useBrowserLocation': {
+      useBrowserLocation: () => window.location.origin + '/council' + window.location.search,
+    },
+    '@/spatial/memory/useSelectedMemory': {
+      useSelectedMemory: () => {
+        const id = new URLSearchParams(window.location.search).get('memoryId')
+        return id ? { status: 'ready', memory: { id, title: 'Fictional ' + id, demo: false } }
+          : { status: 'missing', memory: null, message: 'No memory selected.' }
+      },
+    },
+    '@/spatial/memory/selectedMemoryContract': {
+      sanitizeMemoryId: value => typeof value === 'string' && /^[A-Za-z0-9._:-]{1,160}$/.test(value) ? value : null,
+    },
     '@/lib/privacy/aiActorBoundary': {
       subscribeAIActor: () => () => {}, getAIActorSnapshot: () => actor,
       getServerAIActorSnapshot: () => actor, isCurrentAIActorSnapshot: value => value === actor,
@@ -144,7 +162,7 @@ function fixture(t) {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
   }).outputText
   const module = { exports: {} }
-  vm.runInNewContext(code, { module, exports: module.exports, AbortController,
+  vm.runInNewContext(code, { module, exports: module.exports, AbortController, URLSearchParams, window,
     require(name) { assert.ok(name in imports, 'Unexpected production import: ' + name); return imports[name] },
   }, { filename: componentPath.pathname })
   const container = document.createElement('div')
@@ -152,6 +170,10 @@ function fixture(t) {
   const root = createRoot(container)
   let mounted = true
   const render = agent => act(() => root.render(React.createElement(module.exports.default, { agent })))
+  const route = (memoryId, agent = agents[0]) => {
+    window.location.search = memoryId ? '?memoryId=' + encodeURIComponent(memoryId) : ''
+    render(agent)
+  }
   const element = selector => { const node = container.querySelector(selector); assert.ok(node, 'Missing element ' + selector); return node }
   const props = node => node[Object.keys(node).find(key => key.startsWith('__reactProps$'))]
   const change = (selector, currentTarget) => act(() => props(element(selector)).onChange({ currentTarget }))
@@ -166,9 +188,9 @@ function fixture(t) {
   }
   const reject = async index => { await act(async () => { requests[index].reject(new Error('late adapter failure')); await Promise.resolve() }) }
   const unmount = () => { if (mounted) { act(() => root.unmount()); mounted=false } }
-  t.after(() => { unmount(); container.parentNode?.removeChild(container) })
+  t.after(() => { unmount(); container.parentNode?.removeChild(container); window.location.search = '' })
   render(agents[0])
-  return { requests, container, render, ask, submit, resolve, reject, unmount, change, element, props,
+  return { requests, container, render, route, ask, submit, resolve, reject, unmount, change, element, props,
     text: () => container.textContent,
     stop: () => act(() => { props(container.querySelectorAll('button')[1]).onClick() }),
   }
@@ -253,3 +275,27 @@ test('a unavailable provider retains the disclosed local fallback without adding
   assert.equal(f.requests[1].input.context.length, 0)
 })
 
+
+test('switching authenticated Memory Star routes aborts the old request and resets disclosure grants', async t => {
+  const f = fixture(t)
+  f.route('memory-a')
+  f.change('textarea', { value: 'Where was the fictional trip?' })
+  f.change('input', { checked: true })
+  const checkboxes = f.container.querySelectorAll('input[type="checkbox"]')
+  assert.ok(checkboxes.length >= 4, 'Selected-memory disclosure control must be present')
+  await act(async () => { f.props(checkboxes[3]).onChange({ currentTarget: { checked: true } }) })
+  f.submit()
+  assert.equal(f.requests.length, 1, 'Council should call only the selected memory provider')
+  assert.equal(f.requests[0].input.memorySelection, 'memory-a')
+  assert.equal(f.requests[0].input.graphShareConsent, true)
+  const priorSignal = f.requests[0].input.signal
+  f.route('memory-b')
+  assert.equal(priorSignal.aborted, true)
+  assert.equal(f.element('textarea').value, '')
+  const nextCheckboxes = f.container.querySelectorAll('input[type="checkbox"]')
+  assert.equal(nextCheckboxes[0].checked, false, 'AI processing permission must reset')
+  assert.equal(nextCheckboxes[3].checked, false, 'Private evidence disclosure must reset')
+  await f.resolve(0, answer('Only Memory A answer'))
+  assert.ok(!f.text().includes('Only Memory A answer'), 'Stale answer cannot be delivered after route switch')
+  assert.match(f.text(), /Fictional memory-b/, 'New route should present the newly selected memory')
+})
