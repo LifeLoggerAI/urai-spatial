@@ -100,7 +100,12 @@ export function scopeCouncilMemoryEvidence(
     && claim.sourceIds.every((id: string) => allowedSources.has(id))
   )
   if (claims.length !== allowedClaims.size) deny('COUNCIL_MEMORY_CLAIM_LINEAGE_MISMATCH')
-  return { ...evidence, claims, edges: [] as typeof evidence.edges }
+  // Entity labels may have been learned from other memories in this shared
+  // graph. Until per-label memory-local source provenance is available, never
+  // disclose the unscopeable canonical label in a selected-memory request.
+  // Entity IDs and kinds preserve claim references without asserting identity.
+  const entities = evidence.entities.map(entity => ({ id: entity.id, kind: entity.kind }))
+  return { ...evidence, entities, claims, edges: [] as typeof evidence.edges }
 }
 
 /**
