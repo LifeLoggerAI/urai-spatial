@@ -31,6 +31,7 @@ test('the reviewer must be a different provider and bounds are enforced', async 
   await assert.rejects(requestCouncilSecondOpinion(fake({ reviewerProvider:'openai' }), async()=>null), /COUNCIL_REVIEW_PROVIDER_MUST_DIFFER/)
   assert.throws(()=>buildCouncilSecondOpinionPrompt('hello', 'x'.repeat(1601)),/COUNCIL_REVIEW_INPUT_BOUNDS/)
   assert.throws(()=>buildCouncilSecondOpinionPrompt(' ', 'valid'),/COUNCIL_REVIEW_INPUT_BOUNDS/)
+  assert.throws(()=>buildCouncilSecondOpinionPrompt('Q'.repeat(1500), 'A'.repeat(700)),/COUNCIL_REVIEW_INPUT_BOUNDS/)
 })
 
 test('the actual provider dispatch contract uses the chosen reviewer and bounded, consented context', async () => {
