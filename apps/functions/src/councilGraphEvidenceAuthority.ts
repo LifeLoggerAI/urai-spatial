@@ -115,6 +115,21 @@ export async function resolveCouncilMemoryGraph(
     if (typeof packetHash !== 'string' || hash(packetBody) !== packetHash) {
       deny('COUNCIL_MEMORY_SCENE_CHANGED')
     }
+    // Memory-to-scene identity is immutable evidence, not an owner-equal lookup.
+    if (packet.memoryId !== memoryId) deny('COUNCIL_MEMORY_SCENE_IDENTITY_MISMATCH')
+    const movie = lifeMovie as Record<string, unknown>
+    const provenance = movie.provenance
+    const declaredSources = provenance && typeof provenance === 'object' && !Array.isArray(provenance)
+      ? (provenance as Record<string, unknown>).sourceIds : undefined
+    const memorySources = ids(declaredSources, 256)
+    if (!memorySources.length || !Array.isArray(packet.memorySourceIds)
+      || JSON.stringify(memorySources) !== JSON.stringify(packet.memorySourceIds)) {
+      deny('COUNCIL_MEMORY_SOURCE_LINEAGE_MISMATCH')
+    }
+    const sourceBindings = await requireLifeItemSources(db, tx, uid, { sourceIds: memorySources }, 'sourceIds')
+    if (packet.memorySourceBindingDigest !== lifeAuthorityDigest(sourceBindings)) {
+      deny('COUNCIL_MEMORY_SOURCE_BINDING_CHANGED')
+    }
     const graphId = packet.graphSnapshotId
     if (typeof graphId !== 'string' || !token.test(graphId)) deny('COUNCIL_MEMORY_GRAPH_REQUIRED')
     const graph = await tx.get(db.doc('users/' + uid + '/lifeGraphSnapshots/' + graphId))
