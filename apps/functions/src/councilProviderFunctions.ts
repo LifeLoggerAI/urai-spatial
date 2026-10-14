@@ -325,8 +325,11 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
             'This Life Graph selection is not currently authorized for provider processing.')
         }
       }
-      const graphEvidence = graphRequest === undefined ? null : await loadGraph()
       const memoryBinding = memoryRequest === undefined ? null : await resolveCouncilMemoryGraph(db, uid, memoryRequest)
+      // Never upgrade a full graph read into single-memory disclosure:
+      // the memory resolver supplies only SceneTruth-scoped claim evidence.
+      const graphEvidence = memoryBinding ? memoryBinding.evidence
+        : graphRequest === undefined ? null : await loadGraph()
       const memoryFingerprint = memoryBinding ? [memoryBinding.sceneTruthPacketId, memoryBinding.packetHash, memoryBinding.graphHash, ...memoryBinding.entityIds].join('|') : null
       const recheckMemory = async () => {
         if (memoryRequest === undefined) return
@@ -338,7 +341,8 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       const graphEvidenceFingerprint = graphEvidence ? JSON.stringify(graphEvidence) : null
       const recheckGraph = async () => {
         if (graphRequest === undefined) return
-        const current = await loadGraph()
+        const current = memoryRequest === undefined
+          ? await loadGraph() : (await resolveCouncilMemoryGraph(db, uid, memoryRequest)).evidence
         if (JSON.stringify(current) !== graphEvidenceFingerprint) {
           throw new CouncilProviderError(409, 'COUNCIL_GRAPH_CHANGED', 'Selected Life Graph evidence changed during this request.')
         }
@@ -351,7 +355,9 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
             'REFERENCE DATA:', graphText, 'USER QUESTION:', message].join('\n')
         : message
       if (groundedMessage.length > 11000) throw new CouncilProviderError(413, 'COUNCIL_GROUNDED_REQUEST_TOO_LARGE', 'Grounded Council request exceeds the bounded limit.')
-      inputUnits = groundedMessage.length + context.reduce((sum, turn) => sum + turn.content.length, 0)
+      // A selected memory must not inherit possibly unrelated prior chat turns.
+      const scopedContext = memoryRequest === undefined ? context : []
+      inputUnits = groundedMessage.length + scopedContext.reduce((sum, turn) => sum + turn.content.length, 0)
       await requireProviderConsent(uid, provider, body.aiProcessingConsent === true)
       await consumeRateLimit(uid, provider)
       await recheckGraph()
@@ -368,10 +374,10 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       await recheckGraph()
       await recheckMemory()
       const result = await (provider === 'anthropic'
-        ? callAnthropic(uid, body, apiKey, model, groundedMessage, context, controller.signal)
+        ? callAnthropic(uid, body, apiKey, model, groundedMessage, scopedContext, controller.signal)
         : provider === 'gemini'
-          ? callGemini(uid, body, apiKey, model, groundedMessage, context, controller.signal)
-          : callCompatible(uid, body, provider, apiKey, model, groundedMessage, context, controller.signal)
+          ? callGemini(uid, body, apiKey, model, groundedMessage, scopedContext, controller.signal)
+          : callCompatible(uid, body, provider, apiKey, model, groundedMessage, scopedContext, controller.signal)
       )
 
       // Provider parsing and protected outcome recording do not grant delivery
