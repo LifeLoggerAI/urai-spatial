@@ -129,6 +129,17 @@ function fixture(t) {
       requestCouncilProvider(input) { const next = deferred(); requests.push({ input, ...next }); return next.promise },
     },
   }
+  const reviewPath = new URL('../src/spatial/council/councilSecondOpinion.ts', import.meta.url)
+  const reviewJs = ts.transpileModule(fs.readFileSync(reviewPath, 'utf8'), {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true },
+  }).outputText
+  const reviewModule = { exports: {} }
+  vm.runInNewContext(reviewJs, {
+    module: reviewModule, exports: reviewModule.exports, AbortController,
+    require(name) { assert.ok(name in imports, 'Unexpected review import: ' + name); return imports[name] },
+  }, { filename: reviewPath.pathname })
+  imports['./councilSecondOpinion'] = reviewModule.exports
+
   const code = ts.transpileModule(fs.readFileSync(componentPath, 'utf8'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
   }).outputText
