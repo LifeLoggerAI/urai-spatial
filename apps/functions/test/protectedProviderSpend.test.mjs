@@ -381,6 +381,26 @@ test('aborted and deadline-limited streams retain full charges and never release
 
 const policyAuthority = sourceModule('../src/consentPolicyAuthority.ts', id => { throw new Error(`Unexpected policy-authority dependency ${id}`) })
 const language = sourceModule('../../../packages/localization/src/contentLanguage.ts', id => { throw new Error(`Unexpected language dependency ${id}`) })
+
+const graphFirebaseFunctions = { https: { HttpsError: class extends Error {
+  constructor(code, message) { super(message); this.code = code }
+} } }
+// Exercise actual graph source/consent checkers as imported production modules.
+// They are not approval stubs: graph-selected tests must satisfy their reads.
+const graphLifeAuthority = sourceModule('../src/lifeGraphAuthority.ts', id => {
+  if (id === 'node:crypto') return { createHash }
+  if (id === 'firebase-functions/v1') return graphFirebaseFunctions
+  if (id === './consentPolicyAuthority') return policyAuthority
+  throw new Error('Unexpected graph life-authority dependency ' + id)
+})
+const graphEvidenceAuthority = sourceModule('../src/councilGraphEvidenceAuthority.ts', id => {
+  if (id === 'node:crypto') return { createHash }
+  if (id === 'firebase-functions/v1') return graphFirebaseFunctions
+  if (id === './consentPolicyAuthority') return policyAuthority
+  if (id === './lifeGraphAuthority') return graphLifeAuthority
+  throw new Error('Unexpected Council graph-authority dependency ' + id)
+})
+
 const leaves = [
   ['providerFunctions.ts','openAiOrbProvider','orb','openai'],
   ['providerFunctions.ts','elevenLabsVoiceProvider','narrator','elevenlabs'],
@@ -421,6 +441,7 @@ function leafFixture(leaf, change = {}) {
     if (id === 'firebase-functions/v2/https') return { onRequest:(options,handler) => { assert.ok(options.secrets.includes(f.helper.SPATIAL_SPEND_WORKER_TOKENS_JSON)); return handler } }
     if (id === '../../../packages/localization/src/contentLanguage') return language
     if (id === './consentPolicyAuthority') return policyAuthority
+    if (id === './councilGraphEvidenceAuthority') return graphEvidenceAuthority
     if (id === './protectedProviderSpend') return { ...f.helper, paidSpatialFetch:f.paidFetch }
     if (id === './personPresenceAuthority') return { PersonPresenceAuthorityError, loadPersonPresenceAuthority:requireAuthority, requirePersonPresenceRenderBinding:async () => { await requireAuthority(); return { get:key => ({ provider:'elevenlabs',bindingHash:'e'.repeat(64),providerResourceId:'SYNTHETIC_VOICE',providerModelId:'synthetic-model' })[key] } } }
     throw new Error(`Unexpected paid-leaf dependency ${id}`)
