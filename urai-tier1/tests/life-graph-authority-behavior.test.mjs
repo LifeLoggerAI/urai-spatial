@@ -189,3 +189,34 @@ test('caller flags cannot confer historical edge authority or change a reviewed 
  f.reviewed();await assert.rejects(f.call('upsertLifeCausalEdge',{...f.edge,kind:'CAUSED'}),/CONTENT_MISMATCH/)
  assert.equal(f.docs.get(prefix+'lifeCausalEdges/edge-a').kind,'PARTICIPATED_IN')
 })
+
+
+test('Council evidence packet returns only selected current, source-backed graph records', async () => {
+ const f=fixture()
+ await f.call('compileLifeCausalGraphSnapshot',f.graph)
+ const result=await f.call('getCouncilLifeGraphEvidence',{snapshotId:'graph-a',entityIds:['person-a']})
+ assert.equal(result.providerDispatchAuthorized,false)
+ assert.equal(result.sourceChecked,true)
+ assert.equal(result.entities.length,1)
+ assert.equal(result.entities[0].id,'person-a')
+ assert.equal(result.claims.length,1)
+ assert.equal(result.claims[0].id,'claim-a')
+ assert.equal(result.edges.length,0)
+ assert.equal(result.snapshotId,'graph-a')
+ assert.match(result.graphHash,/^[a-f0-9]{64}$/)
+})
+test('Council evidence is denied on missing consent, foreign owner, changed sources and graph tampering', async () => {
+ for(const mutate of [
+  f=>f.amend(c1Path,{status:'revoked'}),
+  f=>f.amend(sourcePath,{status:'REVOKED'}),
+  f=>f.amend(prefix+'lifeClaims/claim-a',{value:'changed-without-new-graph'}),
+  f=>f.amend(prefix+'lifeGraphSnapshots/graph-a',{graphHash:'f'.repeat(64)}),
+ ]) {
+  const f=fixture();await f.call('compileLifeCausalGraphSnapshot',f.graph);mutate(f)
+  await assert.rejects(f.call('getCouncilLifeGraphEvidence',{snapshotId:'graph-a',entityIds:['person-a']}))
+ }
+ const f=fixture();await f.call('compileLifeCausalGraphSnapshot',f.graph)
+ await assert.rejects(f.call('getCouncilLifeGraphEvidence',{snapshotId:'graph-a',entityIds:['foreign-entity']}))
+ await assert.rejects(f.call('getCouncilLifeGraphEvidence',{snapshotId:'graph-a',entityIds:[]}))
+ await assert.rejects(f.call('getCouncilLifeGraphEvidence',{snapshotId:'graph-a',entityIds:['person-a']},'foreign-owner'))
+})
