@@ -33,6 +33,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build actual compiled UrAi static consumer
         run: env -u GITHUB_SHA SOURCE_VERSION="$URAI_EXACT_HEAD" NEXT_PUBLIC_GIT_SHA="$URAI_EXACT_HEAD" pnpm build:static
+      - name: Validate native PR provenance contract
+        run: node scripts/lib/real-consumer-source-pr.test.mjs
       - name: Hash and verify compiled consumer bytes
         run: node scripts/capture-real-consumer-static-export.mjs
       - name: Retain real export for governed staging assembler
