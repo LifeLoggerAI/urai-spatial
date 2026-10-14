@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
 import { getAIActorSnapshot, getServerAIActorSnapshot, isCurrentAIActorSnapshot, subscribeAIActor, type AIActorSnapshot } from '@/lib/privacy/aiActorBoundary'
 import type { CouncilAgent } from './councilAgentSchema'
+import { useBrowserLocation } from '@/hooks/useBrowserLocation'
+import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import { sanitizeMemoryId } from '@/spatial/memory/selectedMemoryContract'
 import {
   attemptedExternalOrbFallback,
   deterministicOrbFallback,
@@ -30,28 +33,41 @@ import { requestCouncilSecondOpinion } from './councilSecondOpinion'
 
 export default function CouncilConversationPanel({ agent }: { agent: CouncilAgent }) {
   const actor = useSyncExternalStore(subscribeAIActor, getAIActorSnapshot, getServerAIActorSnapshot)
-  const sessionKey = JSON.stringify([actor.generation, agent.id, agent.name, agent.role, agent.focus])
-  return <ActorBoundCouncilConversationPanel key={sessionKey} agent={agent} actor={actor} />
+  const location = useBrowserLocation()
+  const address = location.split('#')[0]
+  const params = new URLSearchParams(address.includes('?') ? address.slice(address.indexOf('?') + 1) : '')
+  const memoryRouteId = sanitizeMemoryId(params.get('memoryId'))
+  // A new Memory Star or actor must create a new conversation, aborting any
+  // in-flight request and clearing all grants/history for the old selection.
+  const sessionKey = JSON.stringify([actor.generation, agent.id, agent.name, agent.role, agent.focus, memoryRouteId, params.get('demo')])
+  return <ActorBoundCouncilConversationPanel key={sessionKey} agent={agent} actor={actor} memoryRouteId={memoryRouteId} />
 }
 
-function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAgent; actor: AIActorSnapshot }) {
+function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId }: {
+  agent: CouncilAgent; actor: AIActorSnapshot; memoryRouteId: string | null
+}) {
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
   const [result, setResult] = useState<CouncilProviderResult | null>(null)
   const [reviewResult, setReviewResult] = useState<CouncilProviderResult | null>(null)
   const [reviewRequested, setReviewRequested] = useState(false)
   const [reviewConsent, setReviewConsent] = useState(false)
-  const [graphRequested, setGraphRequested] = useState(false)
-  // Never treat a router-provided ID as source authority. Refresh it on each
-  // submission and after the provider responds so stale routes fail closed.
-  const selectedMemoryId = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('memoryId')
-  const validMemoryId = selectedMemoryId && /^[A-Za-z0-9._:-]{1,160}$/.test(selectedMemoryId) ? selectedMemoryId : null
-  const [useSelectedMemoryGraph, setUseSelectedMemoryGraph] = useState(true)
+  // Focus supplies the selected star through canonical navigation. Memory
+  // evidence is the default context, but provider disclosure never is.
+  const [graphRequested, setGraphRequested] = useState(Boolean(memoryRouteId))
+  const selectedMemory = useSelectedMemory()
+  const validMemoryId = memoryRouteId && selectedMemory.status === 'ready'
+    && selectedMemory.memory.id === memoryRouteId && selectedMemory.memory.demo === false
+    ? memoryRouteId : null
+  const [useSelectedMemoryGraph, setUseSelectedMemoryGraph] = useState(Boolean(memoryRouteId))
   const [graphSnapshotId, setGraphSnapshotId] = useState('')
   const [graphEntityIds, setGraphEntityIds] = useState('')
   const [graphShareConsent, setGraphShareConsent] = useState(false)
   const requestableProviderIds = useMemo(() => REQUESTABLE_COUNCIL_PROVIDER_IDS.filter((id): id is Exclude<CouncilProviderId, 'local-fallback'> => id !== 'local-fallback'), [])
-  const [providerId, setProviderId] = useState<Exclude<CouncilProviderId, 'local-fallback'>>(requestableProviderIds[0] ?? 'openai')
+  const [providerId, setProviderId] = useState<Exclude<CouncilProviderId, 'local-fallback'>>(
+    (memoryRouteId ? requestableProviderIds.find((id) => id !== 'openai') : undefined)
+      ?? requestableProviderIds[0] ?? 'openai'
+  )
   const [reviewProviderId, setReviewProviderId] = useState<Exclude<CouncilProviderId, 'local-fallback'>>('gemini')
   const reviewableProviderIds = requestableProviderIds.filter((id) => id !== providerId)
   const selectedReviewerId = reviewableProviderIds.includes(reviewProviderId) ? reviewProviderId : reviewableProviderIds[0]
@@ -67,6 +83,21 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
     return () => { unsubscribe(); aborter.current?.abort(); aborter.current = null }
   }, [actor])
 
+  useEffect(() => {
+    if (!memoryRouteId || !graphRequested || !useSelectedMemoryGraph
+      || selectedMemory.status === 'loading' || validMemoryId) return
+    // A deleted, demo, inaccessible, or changed selected memory cannot retain
+    // a response, prior history, or a disclosure grant from an older snapshot.
+    aborter.current?.abort()
+    aborter.current = null
+    setBusy(false)
+    setResult(null)
+    setReviewResult(null)
+    setHistory([])
+    setGraphShareConsent(false)
+    setStatus('The selected memory is not currently authorized for Council processing.')
+  }, [memoryRouteId, graphRequested, useSelectedMemoryGraph, selectedMemory.status, validMemoryId])
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!isCurrentAIActorSnapshot(actor)) return
@@ -79,9 +110,9 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
       && graphSelection.entityIds.length <= 8 && new Set(graphSelection.entityIds).size === graphSelection.entityIds.length
       && graphSelection.entityIds.every(id => /^[A-Za-z0-9._:-]{1,160}$/.test(id)))
     const liveMemoryId = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('memoryId')
-    const selectedMemoryRequest = graphRequested && useSelectedMemoryGraph && liveMemoryId === validMemoryId ? validMemoryId : null
+    const selectedMemoryRequest = graphRequested && useSelectedMemoryGraph && validMemoryId && liveMemoryId === validMemoryId ? validMemoryId : null
     if (graphRequested && (providerId === 'openai' || reviewRequested || (!selectedMemoryRequest && !graphSelectionValid) || !graphShareConsent)) {
-      setStatus('Choose a supported external Council provider, provide a valid Life Graph snapshot and entity selection, and explicitly authorize disclosure. Graph-backed second opinions are not enabled.')
+      setStatus('Selected memory evidence requires an accessible Memory Star or a valid advanced Life Graph selection, a supported external provider, and separate disclosure permission. Graph-backed second opinions remain disabled.')
       return
     }
     if (reviewRequested && (!selectedReviewerId || !reviewConsent)) {
@@ -214,6 +245,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
           onChange={(event) => {
             setProviderId(event.currentTarget.value as Exclude<CouncilProviderId, 'local-fallback'>)
             setHistory([])
+            setConsent(false)
             setResult(null)
             setReviewResult(null)
             setReviewConsent(false)
@@ -236,9 +268,13 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
           <input type="checkbox" checked={consent} disabled={busy} onChange={(event) => setConsent(event.currentTarget.checked)} />
           Allow this message and bounded recent Council context to be processed by {COUNCIL_PROVIDER_REGISTRY[providerId].label}.
         </label>
+        {memoryRouteId ? <p role="status" aria-live="polite">
+          Selected Memory Star: {validMemoryId && selectedMemory.memory ? selectedMemory.memory.title : selectedMemory.message}.
+          UrAi must still verify its SceneTruth, provenance, graph, and processing authority on the server.
+        </p> : null}
         <label className="councilConsent">
           <input type="checkbox" checked={graphRequested} disabled={busy} onChange={(event) => { setGraphRequested(event.currentTarget.checked); setGraphShareConsent(false); setReviewRequested(false); setReviewConsent(false); setResult(null) }} />
-          Ask about source-backed Life Graph records (advanced selection; external disclosure requires separate permission).
+          {memoryRouteId ? 'Ask Council about this Memory Star using server-verified evidence (separate sharing permission required).' : 'Ask about source-backed Life Graph records (advanced selection; external disclosure requires separate permission).'}
         </label>
         {graphRequested ? <>
           {validMemoryId ? <label className="councilConsent">
@@ -253,7 +289,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
           <small>Advanced graph identifiers are not proof of ownership; the server independently checks them.</small>
           </> : null}
           <label className="councilConsent">
-            <input type="checkbox" checked={graphShareConsent} disabled={busy || providerId === 'openai'} onChange={(event) => setGraphShareConsent(event.currentTarget.checked)} />
+            <input type="checkbox" checked={graphShareConsent} disabled={busy || providerId === 'openai' || (Boolean(memoryRouteId) && useSelectedMemoryGraph && !validMemoryId)} onChange={(event) => setGraphShareConsent(event.currentTarget.checked)} />
             I separately authorize {COUNCIL_PROVIDER_REGISTRY[providerId].label} to process the selected, server-validated private Life Graph evidence for this question.
           </label>
         </> : null}
@@ -273,7 +309,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor }: { agent: CouncilAg
         </> : null}
         {reviewableProviderIds.length === 0 ? <small>A second opinion requires another separately enabled Council provider.</small> : null}
         <div className="councilConversationActions">
-          <button type="submit" disabled={busy || !consent || !message.trim() || (graphRequested && (providerId === 'openai' || !graphShareConsent || !(useSelectedMemoryGraph && validMemoryId) && (!graphSnapshotId.trim() || !graphEntityIds.trim()))) || (reviewRequested && (!selectedReviewerId || !reviewConsent))}>{busy ? 'Considering…' : 'Ask Council'}</button>
+          <button type="submit" disabled={busy || !consent || !message.trim() || (graphRequested && (providerId === 'openai' || !graphShareConsent || (useSelectedMemoryGraph && Boolean(memoryRouteId) ? !validMemoryId : !graphSnapshotId.trim() || !graphEntityIds.trim()))) || (reviewRequested && (!selectedReviewerId || !reviewConsent))}>{busy ? 'Considering…' : 'Ask Council'}</button>
           <button type="button" disabled={!busy} onClick={() => { aborter.current?.abort(); aborter.current = null; setBusy(false); setStatus('Council response stopped.') }}>Stop</button>
         </div>
       </form>
