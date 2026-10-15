@@ -111,6 +111,17 @@ async function testProfile(profile) {
   const after = await owner.evaluate(element => ({ x: Number(element.dataset.homePlayerX), z: Number(element.dataset.homePlayerZ), nearby: element.dataset.homeNearby, orb: element.dataset.homeOrbState }))
   if (!Number.isFinite(after.x) || !Number.isFinite(after.z) || Math.hypot(after.x - before.x, after.z - before.z) < .05) throw new Error(profile.id + ' first-person locomotion not observed')
   const moved = await screenshot(page, profile.id + '-after-movement')
+  // Check ordinary Home travel before opening the Orb companion. The open
+  // companion can own focus or temporarily suppress background navigation.
+  const affordances = await page.evaluate(() => ({
+    ground: document.querySelector('[data-testid="home-semantic-ground"]')?.getAttribute('href') ?? null,
+    lifeMap: document.querySelector('[data-testid="home-semantic-life-map"]')?.getAttribute('href') ?? null,
+    location: window.location.pathname,
+    navigationOwners: document.querySelectorAll('[data-home-navigation-owner="runtime-boundary"]').length,
+  }))
+  if (!affordances.ground?.startsWith('/ground/') || !affordances.lifeMap?.startsWith('/life-map/')) {
+    throw new Error(profile.id + ' missing accessible Home travel before Orb activation: ' + JSON.stringify(affordances))
+  }
   // Exercise real input and World001 Orb proximity, not merely the Orb DOM label.
   await page.evaluate(() => {
     window.__uraiV3OrbOpenProofCount = 0
@@ -147,8 +158,6 @@ async function testProfile(profile) {
   if (orbOpenEvents !== 1) throw new Error(profile.id + ' unexpected duplicate Orb activation: ' + orbOpenEvents)
   const activated = await screenshot(page, profile.id + '-orb-activated')
   const orbState = await owner.getAttribute('data-home-orb-state').catch(() => null)
-  const affordances = await page.evaluate(() => ({ ground: document.querySelector('[data-testid="home-semantic-ground"]')?.getAttribute('href') ?? null, lifeMap: document.querySelector('[data-testid="home-semantic-life-map"]')?.getAttribute('href') ?? null }))
-  if (!affordances.ground?.startsWith('/ground/') || !affordances.lifeMap?.startsWith('/life-map/')) throw new Error(profile.id + ' missing accessible travel affordance')
   if (errors.length) throw new Error(profile.id + ' browser exceptions: ' + errors.join(' | '))
   receipt.scenarios.push({ profile: profile.id, before, after, arrivalAtOrb, orbOpenEvents, orbState, affordances, asset: loaded, frameTiming, screenshots: [initial, moved, atOrb, activated], observed: 'first-person movement, V3 Orb proximity and real Orb open event; full-journey and physical navmesh remain unapproved' })
   await context.close()
