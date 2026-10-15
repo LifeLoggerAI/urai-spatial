@@ -121,3 +121,9 @@ test('cross-property Adam contexts are allowlisted and remain inside the one can
   assert.match(functions, /readSurface\(body\.surface\)/)
   assert.match(functions, /INVALID_SURFACE/)
 })
+
+
+test('free-floating founder launcher portals above Life Map WebGL stacking after hydration', () => {
+  assert.match(runtime, /launcherPortalReady/)
+  assert.match(runtime, /createPortal\(launcher, document\.body\)/)
+})

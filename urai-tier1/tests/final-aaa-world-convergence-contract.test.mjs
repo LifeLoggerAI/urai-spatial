@@ -61,7 +61,7 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionPolished as HomeWorldProduction \} from "\.\/HomeWorldProductionPolished"/)
   assert.match(homeProduction, /name="home-orb-sanctuary"/)
   assert.match(homeProduction, /data-testid="urai-home-webgl-orb"/)
-  assert.match(homeProduction, /<Orb onOpen=\{props\.onOrbOpen\} reducedMotion=\{props\.reducedMotion\} reducedStimulation=\{props\.reducedStimulation\} state=\{props\.orbState\} \/>/)
+  assert.match(homeProduction, /<Orb onOpen=\{props\.onOrbOpen\} reducedMotion=\{props\.reducedMotion\} reducedStimulation=\{props\.reducedStimulation\} state=\{props\.orbState\} anchor=\{orbAnchor\} \/>/)
   assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true, reducedStimulation\)/)
   assert.match(companion, /<OrbConversationPanel active=\{open && phase === 'idle'\} \/>/)
   assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT,\s*onOrbState\)/)

@@ -73,6 +73,8 @@ export default function AdamPresenceRuntime() {
   const conversationGeneration = useRef(0)
   const [open, setOpen] = useState(false)
   const [launcherAnchor, setLauncherAnchor] = useState<HTMLElement | null>(null)
+  const [launcherPortalReady, setLauncherPortalReady] = useState(false)
+  useEffect(() => { setLauncherPortalReady(true) }, [])
   const launcherRef = useRef<HTMLButtonElement | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
   const restoreLauncherFocus = useRef(false)
@@ -400,7 +402,7 @@ export default function AdamPresenceRuntime() {
         Adam
       </button>
     )
-    return launcherAnchor ? createPortal(launcher, launcherAnchor) : launcher
+    return launcherAnchor ? createPortal(launcher, launcherAnchor) : launcherPortalReady ? createPortal(launcher, document.body) : launcher
   }
 
   const contextCurrent = activeSurfaceKey.current === surfaceKey
