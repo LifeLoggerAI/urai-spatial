@@ -45,6 +45,10 @@ function memory(id,title,year){
 const memoryA=db.doc('users/'+owner.uid+'/memories/memory-a')
 await memoryA.set(memory('memory-a','Lake Alpha 1988','1988'))
 await db.doc('users/'+owner.uid+'/memories/memory-b').set(memory('memory-b','Lake Beta 1996','1996'))
+await db.doc('users/'+owner.uid+'/lifeMapEvents/star-a').set({userId:owner.uid,type:'memory',title:'Map label A',summary:'Fictional map event',memoryId:'memory-a',sourceType:'manual_seed',occurredAt:'1988-08-01T12:00:00.000Z',replayAvailable:true})
+await db.doc('users/'+owner.uid+'/lifeMapEvents/star-b').set({userId:owner.uid,type:'memory',title:'Map label B',summary:'Fictional map event',memoryId:'memory-b',sourceType:'manual_seed',occurredAt:'1996-08-01T12:00:00.000Z',replayAvailable:true})
+await db.doc('users/'+owner.uid+'/lifeMapEvents/orphan').set({userId:owner.uid,type:'memory',title:'Unresolved private event',summary:'Not a memory',memoryId:'no-such-memory',sourceType:'manual_seed',occurredAt:'1990-08-01T12:00:00.000Z',replayAvailable:true})
+await db.doc('users/'+other.uid+'/lifeMapEvents/foreign').set({userId:other.uid,type:'memory',title:'Other owner's private constellation',summary:'Other private data',sourceType:'manual_seed',occurredAt:'1999-08-01T12:00:00.000Z'})
 
 const entry=[
  "import React,{useEffect,useState} from 'react'",
@@ -53,6 +57,7 @@ const entry=[
  "import {getFirestore,connectFirestoreEmulator,getDoc,doc} from 'firebase/firestore'",
  "import {app} from './src/lib/firebase/client'",
  "import CouncilConversationPanel from './src/spatial/council/CouncilConversationPanel'",
+ "import {useLifeMapEvents} from './src/components/lifemap/useLifeMapEvents'", 
  "const auth=getAuth(app)",
  "connectAuthEmulator(auth,'http://127.0.0.1:9099',{disableWarnings:true})",
  "connectFirestoreEmulator(getFirestore(app),'127.0.0.1',8080)",
@@ -62,9 +67,10 @@ const entry=[
  "window.__uraiProofOwner=()=>signInWithEmailAndPassword(auth,accounts.owner.email,accounts.owner.password)",
  "window.__uraiProofReadFirstOwnerMemory=async()=>{try{const snap=await getDoc(doc(getFirestore(app),'users',accounts.owner.uid,'memories','memory-a'));return {allowed:true,exists:snap.exists()}}catch(error){return {allowed:false,code:error.code||'unknown'}}}",
  "const agent={id:'fictional-archivist',name:'The Archivist',role:'archivist',focus:'Fictional lake chronology'}",
+ "function MapObserver(){const [uid,setUid]=useState(auth.currentUser?.uid||null);useEffect(()=>auth.onAuthStateChanged(u=>setUid(u?.uid||null)),[]);const data=useLifeMapEvents(uid||undefined);return <output data-proof-map-mode={data.sourceMode} data-proof-map-nodes={JSON.stringify(data.nodes.map(n=>({id:n.id,title:n.title,authorized:n.authorizedMemory||false,locked:n.locked||false,manifest:n.replayManifestId||null})))} />}",
  "function Shell(){const[state,setState]=useState('signing-in');useEffect(()=>{let alive=true;",
  " signInWithEmailAndPassword(auth,accounts.owner.email,accounts.owner.password).then(r=>{if(r.user.uid!==accounts.owner.uid)throw Error('WRONG_OWNER');if(alive)setState('ready')}).catch(()=>{if(alive)setState('failed')});",
- " return()=>{alive=false}},[]);return <main data-proof-auth={state}>{state==='ready'?<CouncilConversationPanel agent={agent}/>:<p role='status'>Authenticating fictional user</p>}</main>}",
+ " return()=>{alive=false}},[]);return <main data-proof-auth={state}>{state==='ready'?<CouncilConversationPanel agent={agent}/>:<p role='status'>Authenticating fictional user</p>}<MapObserver/></main>}",
  "createRoot(document.getElementById('root')).render(<Shell/>)"
 ].join('\n')
 const bundled=(await build({
@@ -115,6 +121,11 @@ try{
    await page.locator('[data-proof-auth="ready"]').waitFor({timeout:30000})
    await page.getByText(/Selected Memory Star: Lake Alpha 1988/).waitFor({timeout:30000})
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Beta 1996'))
+   const mapState=page.locator('[data-proof-map-nodes]')
+   await page.waitForFunction(()=>{const out=document.querySelector('[data-proof-map-nodes]');if(!out)return false;const nodes=JSON.parse(out.getAttribute('data-proof-map-nodes')||'[]');return nodes.some(n=>n.id==='memory-a'&&n.authorized&&n.manifest==='replay-memory-a')&&nodes.some(n=>n.id==='memory-b'&&n.authorized&&n.manifest==='replay-memory-b')})
+   const liveNodes=JSON.parse(await mapState.getAttribute('data-proof-map-nodes'))
+   assert.ok(liveNodes.some(n=>n.id==='orphan'&&n.locked&&!n.authorized),'Orphan event must never become an authorized Focus route')
+   assert.ok(liveNodes.every(n=>n.title!==\"Other owner's private constellation\"),'Another account must not appear in owner Life Map')
    const checks=page.locator('.councilConversation input[type="checkbox"]')
    assert.ok(await checks.count()>=4)
    await page.locator('#urai-council-message').fill('Which lake was visited?')
@@ -136,6 +147,7 @@ try{
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Beta 1996'))
    await page.evaluate(()=>window.__uraiProofOther())
    await page.getByText(/Selected memory could not be found/).waitFor({timeout:30000})
+   await page.waitForFunction(()=>{const el=document.querySelector('[data-proof-map-nodes]');return el&&JSON.parse(el.getAttribute('data-proof-map-nodes')||'[]').every(n=>n.id!=='memory-a'&&n.id!=='memory-b')})
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Beta 1996'))
    // The UI must hide private data, but Firestore must also refuse a direct
    // cross-account read of the canonical owner document.
@@ -149,6 +161,7 @@ try{
    await page.evaluate(()=>window.__uraiProofOwner())
    await page.evaluate(()=>window.history.pushState({},'','/?memoryId=memory-a'))
    await page.getByText(/Selected Memory Star: Lake Alpha corrected 1988/).waitFor({timeout:30000})
+   await page.waitForFunction(()=>{const el=document.querySelector('[data-proof-map-nodes]');return el&&JSON.parse(el.getAttribute('data-proof-map-nodes')||'[]').some(n=>n.id==='memory-a'&&n.title==='Lake Alpha corrected 1988'&&n.authorized)})
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Alpha 1988'),
      'Superseded title must not reappear after owner reauthentication')
    const ownerRead=await page.evaluate(()=>window.__uraiProofReadFirstOwnerMemory())
