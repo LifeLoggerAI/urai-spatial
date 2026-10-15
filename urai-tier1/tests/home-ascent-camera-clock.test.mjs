@@ -11,7 +11,7 @@ const constants = ['SPAWN', 'ORB', 'GROUND_THRESHOLD', 'LIFE_MAP_LOOKOUT', 'HOME
 const declarations = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === 'PlayerRig'
   || ts.isVariableStatement(node) && node.declarationList.declarations.some(item => constants.includes(item.name.getText(ast))))
 assert.equal(declarations.filter(node => ts.isFunctionDeclaration(node)).length, 1)
-const code = ts.transpileModule(declarations.map(node => node.getText(ast)).join('\n') + '\nexports.PlayerRig = PlayerRig', {
+const code = ts.transpileModule(declarations.map(node => node.getText(ast)).join('\n') + '\nexports.PlayerRig = PlayerRig; exports.ORB = ORB', {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
 }).outputText
 
@@ -30,7 +30,7 @@ function rig(reducedMotion = false) {
   })
   output.PlayerRig({ input: { keys: { current: new Set() }, virtualX: { current: 0 }, virtualZ: { current: 0 } },
     yaw: { current: .055 }, pitch: { current: -.04 }, target: { current: null }, avatar: { current: null },
-    onNearby() {}, groundDescent: false, reducedMotion, onGroundComplete() {}, onTransitionSequence: value => sequences.push(value) })
+    onNearby() {}, groundDescent: false, reducedMotion, previewW13V3: false, orbAnchor: output.ORB, onGroundComplete() {}, onTransitionSequence: value => sequences.push(value) })
   return { camera, state, travels, sequences, tick: (elapsedTime, delta) => frame({ clock: { elapsedTime } }, delta) }
 }
 const near = (actual, expected) => assert.ok(actual.distanceTo(expected) < 1e-9, `${actual.toArray()} != ${expected.toArray()}`)
