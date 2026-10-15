@@ -524,28 +524,80 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  await page.getByRole('button',{name:'Sign out'}).click()
  await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:30000})
  await login(page,accounts[0].email,accounts[0].password,accounts[0].uid)
- await db.doc('users/fictional-urai-a/memories/fictional-memory-a').update({consentState:'revoked'})
- await db.doc('users/fictional-urai-a/privacyPolicy/current').update({revision:2,
-  domains:{...policy.domains,memory:{...policy.domains.memory,mode:'denied',
-   replayVisible:false,lifeMapVisible:false,modelContext:false}}})
+ // Drive the existing production Consent Sanctuary and its real callable.
+ // Admin patching this test record would not exercise consent authority and
+ // must never be represented as equivalent to applyConsentPolicy.
+ await page.goto(origin+'/privacy-controls',{waitUntil:'domcontentloaded'})
+ const consent=page.locator('main[data-route-owner="consent-sanctuary"]')
+ await consent.waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(()=>{
+  const panel=document.querySelector('main[data-route-owner="consent-sanctuary"]')
+  return panel?.dataset.privacySource==='private' &&
+   panel?.dataset.enforcementState==='fully-enforced' &&
+   panel.querySelector('.consentPanelHeading p')?.textContent?.includes('Revision 1')
+ },null,{timeout:90000})
+ await screenshot(page,'J9-canonical-consent-before')
+ const memoryControls=consent.locator('#consent-controls')
+ await memoryControls.getByRole('button',{name:'denied',exact:true}).click({timeout:15000})
+ const confirm=page.getByRole('dialog',{name:'Confirm Memory'})
+ await confirm.waitFor({state:'visible',timeout:15000})
+ await confirm.getByRole('button',{name:'Confirm and request enforcement'}).click({timeout:15000})
+ // A request/pending state is not enforcement. Require the real trigger and
+ // server-controlled revision/receipt to complete on this isolated project.
+ await page.waitForFunction(()=>{
+  const panel=document.querySelector('main[data-route-owner="consent-sanctuary"]')
+  return panel?.dataset.privacySource==='private' &&
+   panel.querySelector('.consentPanelHeading p')?.textContent?.includes('Revision 2')
+ },null,{timeout:90000})
+ await page.waitForFunction(()=>document.querySelector('main[data-route-owner="consent-sanctuary"]')?.dataset.enforcementState==='fully-enforced',
+  null,{timeout:90000})
+ const live=(await db.doc('users/fictional-urai-a/privacyPolicy/current').get()).data()
+ assert.equal(live?.revision,2,'Canonical callable did not increment consent revision')
+ assert.equal(live?.domains?.memory?.mode,'denied','Callable did not deny memory access')
+ assert.equal(live?.domains?.memory?.replayVisible,true,
+  'The user selected only the memory permission mode; do not fake unrelated toggle changes')
+ assert.equal(live?.enforcement?.state,'fully-enforced','Canonical Functions job did not complete')
+ const jobId=live?.enforcement?.jobId
+ assert.match(jobId,/^[a-f0-9]{40}$/,'Canonical enforcement job missing')
+ const job=(await db.doc('privacyEnforcementJobs/'+jobId).get()).data()
+ assert.equal(job?.state,'fully-enforced','Canonical enforcement job did not reach completion')
+ const receipts=await db.collection('users/fictional-urai-a/privacyReceipts')
+  .where('jobId','==',jobId).limit(2).get()
+ assert.equal(receipts.size,1,'Canonical consent receipt missing or duplicated')
+ assert.equal(receipts.docs[0].get('result'),'fully-enforced','Consent receipt not completed')
+ const projection=(await db.doc('users/fictional-urai-a/privacyRuntime/replay-visibility').get()).data()
+ assert.equal(projection?.revision,2,'Replay consent projection is stale')
+ assert.equal(projection?.mode,'denied','Replay consent projection is not denied')
+ result.journey.privacy.revocation={
+  revision:2,mode:'denied',jobId,receipts:1,
+  canonicalUserConsentCallableVerified:true,repositoryEnforcementVerified:true,
+  councilAsyncContextInvalidationVerified:false,privateMediaTokensVerified:false,
+  userInterface:'actual-consent-sanctuary'
+ }
+ mark('J9-canonical-callable',result.journey.privacy.revocation)
+ await screenshot(page,'J9-canonical-consent-enforced')
+ // Preserve one honest test of the existing Replay consumer after global
+ // denial. Never mutate the memory's own consentState with Admin to make it pass.
  await page.goto(origin+'/replay?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
  await replay.waitFor({state:'visible',timeout:90000})
  await page.waitForFunction(()=>{
   const status=document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.memoryStatus
-  return ['unavailable','unauthorized','deleted'].includes(status)
- },null,{timeout:90000})
- result.journey.privacy.revocation={revision:2,replayDenied:true,
-  isolatedTrustedEmulatorProducer:true,canonicalUserConsentCallableVerified:false,
-  councilAsyncContextInvalidationVerified:false,privateMediaTokensVerified:false}
- mark('J9-partial',result.journey.privacy)
- await screenshot(page,'J9-revoked-replay-denied')
- throw Error('J9_INCOMPLETE: canonical consent callable, stale Council responses and private-media token revocation unverified')
+  return status && status!=='loading'
+ },null,{timeout:60000})
+ const state=await replay.getAttribute('data-memory-status')
+ result.journey.privacy.revocation.postWithdrawalReplayStatus=state
+ await screenshot(page,'J9-canonical-replay-after-withdrawal')
+ if(state==='ready')throw Error('J9_CANONICAL_MEMORY_DENIED_BUT_REPLAY_CONSUMER_REMAINED_READY')
+ assert.ok(['unavailable','unauthorized','deleted'].includes(state),
+  'J9 selected-memory access produced an unexpected state after revoked memory policy: '+state)
+ mark('J9-partial',{...result.journey.privacy,staleReplayDenied:true})
+ throw Error('J9_INCOMPLETE: stale Council response authority and private-media token revocation not yet end-to-end certified')
 }
 
 await mkdir(out,{recursive:true})
 try{
  assert.match(sha,/^[a-f0-9]{40}$/)
- for(const [key,value] of Object.entries({GCLOUD_PROJECT:project,FIREBASE_AUTH_EMULATOR_HOST:'127.0.0.1:9099',FIRESTORE_EMULATOR_HOST:'127.0.0.1:8080',NEXT_PUBLIC_FIREBASE_PROJECT_ID:project,NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR:'true'}))assert.equal(process.env[key],value,'isolated '+key)
+ for(const [key,value] of Object.entries({GCLOUD_PROJECT:project,FIREBASE_AUTH_EMULATOR_HOST:'127.0.0.1:9099',FIRESTORE_EMULATOR_HOST:'127.0.0.1:8080',FIREBASE_FUNCTIONS_EMULATOR_HOST:'127.0.0.1:5001',NEXT_PUBLIC_FIREBASE_PROJECT_ID:project,NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR:'true'}))assert.equal(process.env[key],value,'isolated '+key)
  assert.equal(process.env.NODE_ENV||'development','development')
  app=admin.initializeApp({projectId:project},'journey-wave41')
  const auth=app.auth(),db=app.firestore()
@@ -634,7 +686,25 @@ finally{
  if(browser)await browser.close().catch(()=>{})
  if(server)server.kill('SIGTERM')
  const errors=[]
- if(disposableDb)for(const item of [...disposableDocs].reverse())try{await disposableDb.doc(item).delete()}catch(e){errors.push('record:'+item+':'+String(e).slice(0,80))}
+ // The canonical callable/trigger creates real emulator-only job and receipt
+ // documents; track those too, even when the browser fails halfway through.
+ if(disposableDb){
+  for(const collectionPath of [
+   'users/fictional-urai-a/privacyReceipts',
+   'users/fictional-urai-a/privacyRuntime'
+  ]){
+   try{
+    const found=await disposableDb.collection(collectionPath).limit(150).get()
+    for(const doc of found.docs)disposableDocs.push(doc.ref.path)
+   }catch(error){errors.push('cleanup-collection:'+collectionPath+':'+String(error).slice(0,80))}
+  }
+  try{
+   const jobs=await disposableDb.collection('privacyEnforcementJobs')
+    .where('uid','==','fictional-urai-a').limit(25).get()
+   for(const doc of jobs.docs)disposableDocs.push(doc.ref.path)
+  }catch(error){errors.push('cleanup-jobs:'+String(error).slice(0,80))}
+ }
+ if(disposableDb)for(const item of [...new Set(disposableDocs)].reverse())try{await disposableDb.doc(item).delete()}catch(e){errors.push('record:'+item+':'+String(e).slice(0,80))}
  if(disposableAuth)for(const uid of [...disposableUsers].reverse())try{await disposableAuth.deleteUser(uid)}catch(e){errors.push('identity:'+uid+':'+String(e).slice(0,80))}
  result.cleanup={disposableDocumentCount:disposableDocs.length,disposableIdentityCount:disposableUsers.length,errors}
  if(errors.length){result.errors.push(...errors);process.exitCode=1}
