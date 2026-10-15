@@ -754,7 +754,7 @@ function Thresholds({ onGround, onLifeMap }: { onGround: () => void; onLifeMap: 
   </>
 }
 
-function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent, reducedMotion, onGroundComplete, onTransitionSequence }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; groundDescent: boolean; reducedMotion: boolean; onGroundComplete: () => void; onTransitionSequence: (value: TransitionSequence) => void }) {
+function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent, reducedMotion, onGroundComplete, onTransitionSequence, previewW13V3, orbAnchor }: { previewW13V3: boolean; orbAnchor: THREE.Vector3; input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; groundDescent: boolean; reducedMotion: boolean; onGroundComplete: () => void; onTransitionSequence: (value: TransitionSequence) => void }) {
   const { camera, size, invalidate, gl } = useThree()
   const owner = useRef<HTMLElement | null>(null)
   const position = useRef(SPAWN.clone())
@@ -770,12 +770,12 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
 
   const place = useCallback(() => {
     const portrait = size.height > size.width
-    position.current.y = homeWalkSurfaceHeight(position.current.x, position.current.z)
+    position.current.y = previewW13V3 ? W13_V3_FLOOR_Y : homeWalkSurfaceHeight(position.current.x, position.current.z)
     camera.position.copy(position.current).add(new THREE.Vector3(0, portrait ? 1.58 : 1.68, .14))
     forward.current.set(Math.sin(yaw.current),0,-Math.cos(yaw.current))
     look.current.copy(position.current).addScaledVector(forward.current, portrait ? 6 : 8)
     camera.lookAt(look.current.x, position.current.y + 1.22 + pitch.current, look.current.z)
-  }, [camera, pitch, size.height, size.width, yaw])
+  }, [camera, pitch, previewW13V3, size.height, size.width, yaw])
   useLayoutEffect(() => place(), [place])
   useEffect(() => { owner.current = gl.domElement.closest<HTMLElement>('[data-home-primary-owner="asset-driven"]') }, [gl])
   const publishCameraHeight = () => {
@@ -847,9 +847,9 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     transitionStarted.current = null
     transitionIssued.current = false
     if (lastTransitionSequence.current !== 'idle') { lastTransitionSequence.current = 'idle'; onTransitionSequence('idle') }
-    stepEmbodiedMotion({ delta, input, yaw: yaw.current, position: position.current, velocity: velocity.current, target, bounds: HOME_BOUNDS, obstacles: HOME_NAVIGATION_OBSTACLES, speed: 3.15, acceleration: 9, deceleration: 12 })
-    resolveHomeSolidPenetration(position.current)
-    position.current.y = homeWalkSurfaceHeight(position.current.x, position.current.z)
+    stepEmbodiedMotion({ delta, input, yaw: yaw.current, position: position.current, velocity: velocity.current, target, bounds: previewW13V3 ? W13_V3_WALK_BOUNDS : HOME_BOUNDS, obstacles: previewW13V3 ? W13_V3_WALK_OBSTACLES : HOME_NAVIGATION_OBSTACLES, speed: 3.15, acceleration: 9, deceleration: 12 })
+    if (!previewW13V3) resolveHomeSolidPenetration(position.current)
+    position.current.y = previewW13V3 ? W13_V3_FLOOR_Y : homeWalkSurfaceHeight(position.current.x, position.current.z)
     // Publish actual locomotion to the existing Home telemetry owner.
     if (owner.current) {
       const x = position.current.x.toFixed(4), z = position.current.z.toFixed(4)
@@ -865,21 +865,21 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     publishCameraHeight()
     look.current.copy(position.current).addScaledVector(forward.current, portrait ? 6 : 8)
     camera.lookAt(look.current.x, position.current.y + 1.22 + pitch.current, look.current.z)
-    const candidates: readonly [Nearby, THREE.Vector3, number][] = [['orb', ORB, 2.4], ['ground', GROUND_THRESHOLD, 2.8], ['life-map', LIFE_MAP_LOOKOUT, 2.8]]
+    const candidates: readonly [Nearby, THREE.Vector3, number][] = [['orb', orbAnchor, 2.4], ['ground', GROUND_THRESHOLD, 2.8], ['life-map', LIFE_MAP_LOOKOUT, 2.8]]
     let next: Nearby = null, best = Infinity
     for (const [name, poi, radius] of candidates) { const distance = Math.hypot(position.current.x - poi.x, position.current.z - poi.z); if (distance < radius && distance < best) { next = name; best = distance } }
     if (next !== lastNearby.current) {
       const previousNearby = lastNearby.current
       lastNearby.current = next
       if (next === 'orb' && previousNearby !== 'orb') {
-        const dx = ORB.x - position.current.x
-        const dz = ORB.z - position.current.z
+        const dx = orbAnchor.x - position.current.x
+        const dz = orbAnchor.z - position.current.z
         if (Math.hypot(dx, dz) > 0.001) {
           // Give the physical Orb one production-facing attention handoff when the
           // user actually enters its proximity radius. This is not a camera lock:
           // pointer/touch look remains authoritative immediately afterward.
           yaw.current = Math.atan2(dx, -dz)
-          pitch.current = THREE.MathUtils.clamp(ORB.y - position.current.y - 1.22, -.42, .18)
+          pitch.current = THREE.MathUtils.clamp(orbAnchor.y - position.current.y - 1.22, -.42, .18)
           forward.current.set(Math.sin(yaw.current), 0, -Math.cos(yaw.current))
           look.current.copy(position.current).addScaledVector(forward.current, portrait ? 6 : 8)
           camera.lookAt(look.current.x, position.current.y + 1.22 + pitch.current, look.current.z)
@@ -898,12 +898,16 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
   return null
 }
 
-function SceneReady({ onReady }: { onReady: () => void }) {
+function SceneReady({ onReady, previewW13V3 }: { onReady: () => void; previewW13V3: boolean }) {
   const { scene, invalidate } = useThree(); const frames = useRef(0); const done = useRef(false)
   useFrame(() => {
     if (done.current) return
-    const required = ['home-authored-terrain','home-authored-embodied-self','home-orb-sanctuary','home-ground-environmental-threshold','home-life-map-sky-lookout','home-mountain-horizon','home-living-vegetation','home-sanctuary-pavilion','home-sanctuary-path']
-    if (++frames.current < 4 || !(scene.getObjectByName('home-w13-v3-interpretive-preview') || required.every((name) => scene.getObjectByName(name)))) { invalidate(); return }
+    const common = ['home-authored-embodied-self', 'home-orb-sanctuary', 'home-ground-environmental-threshold', 'home-life-map-sky-lookout']
+    const ordinary = ['home-authored-terrain', 'home-mountain-horizon', 'home-living-vegetation', 'home-sanctuary-pavilion', 'home-sanctuary-path']
+    const preview = scene.getObjectByName('home-w13-v3-interpretive-preview')
+    const previewReady = Boolean(preview && preview.getObjectByProperty('type', 'Mesh'))
+    const sceneReady = common.every((name) => scene.getObjectByName(name)) && (previewW13V3 ? previewReady : ordinary.every((name) => scene.getObjectByName(name)))
+    if (++frames.current < 4 || !sceneReady) { invalidate(); return }
     done.current = true
     onReady()
   })
@@ -921,6 +925,8 @@ function World001V3Preview() {
 function Scene(props: { previewW13V3: boolean; input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onGroundComplete: () => void; onLifeMap: () => void; onReady: () => void; onTransitionSequence: (value: TransitionSequence) => void; groundDescent: boolean; reducedMotion: boolean; reducedStimulation: boolean; orbState: OrbState }) {
   const phase = useSceneStore((state) => state.phase)
   const cosmic = phase === 'ASCENT'
+  const orbAnchor = props.previewW13V3 ? W13_V3_ORB : ORB
+  const orbGroundY = props.previewW13V3 ? W13_V3_FLOOR_Y : terrainHeight(ORB.x, ORB.z)
   return <>
     <color attach="background" args={[cosmic ? '#01050b' : '#101d30']} />
     {!cosmic ? <HomeSkyGradient /> : null}
@@ -950,14 +956,14 @@ function Scene(props: { previewW13V3: boolean; input: MovementInput; yaw: Mutabl
       <SanctuaryPavilion />
       <Water />
     </>}
-    <OrbPlatform />
-    <OrbGroundGlow state={props.orbState} />
-    <Orb onOpen={props.onOrbOpen} reducedMotion={props.reducedMotion} reducedStimulation={props.reducedStimulation} state={props.orbState} />
+    <OrbPlatform anchor={orbAnchor} groundY={orbGroundY} />
+    <OrbGroundGlow state={props.orbState} anchor={orbAnchor} groundY={orbGroundY} />
+    <Orb onOpen={props.onOrbOpen} reducedMotion={props.reducedMotion} reducedStimulation={props.reducedStimulation} state={props.orbState} anchor={orbAnchor} />
     <EmbodiedPresence root={props.avatar} />
     <HomeSkyInteraction groundDescent={props.groundDescent} onAscent={props.onLifeMap} />
     <Thresholds onGround={props.onGround} onLifeMap={props.onLifeMap} />
-    <PlayerRig input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.onNearby} groundDescent={props.groundDescent} reducedMotion={props.reducedMotion} onGroundComplete={props.onGroundComplete} onTransitionSequence={props.onTransitionSequence} />
-    <SceneReady onReady={props.onReady} />
+    <PlayerRig previewW13V3={props.previewW13V3} orbAnchor={orbAnchor} input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.onNearby} groundDescent={props.groundDescent} reducedMotion={props.reducedMotion} onGroundComplete={props.onGroundComplete} onTransitionSequence={props.onTransitionSequence} />
+    <SceneReady key={props.previewW13V3 ? 'w13-v3' : 'canonical'} previewW13V3={props.previewW13V3} onReady={props.onReady} />
   </>
 }
 
@@ -1024,6 +1030,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
     setPreviewW13V3(privatePreview && params.get('world001ModeledV3') === '1')
     if (requestedOrbState) setOrbState(requestedOrbState)
   }, [])
+  useEffect(() => { setSceneReady(false) }, [previewW13V3])
   useEffect(() => {
     const onOrbState = (event: CustomEvent<OrbStateEventDetail>) => {
       if (phase === 'ASCENT' || groundDescent || !isOrbState(event.detail?.state)) return
@@ -1041,8 +1048,8 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const orbSensory = resolveOrbSensoryOutput(orbState, reducedMotion, true, reducedStimulation)
   const contextId = phase === 'ASCENT' ? 'ascent.progress' : groundDescent ? 'home.groundProgress' : nearby === 'orb' ? 'home.orbNearby' : nearby === 'ground' ? 'home.groundNearby' : nearby === 'life-map' ? 'home.skyNearby' : null
 
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="legacy-placeholder-metadata-only" data-home-provider-regions="not-rendered" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-world001-preview={previewW13V3 ? 'MODELED_INTERPRETIVE_NONPRODUCTION' : 'off'} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-orb-reduced-stimulation={reducedStimulation ? 'true' : 'false'} data-home-orb-playback={orbSensory.movement === 'settled' ? 'stopped' : 'playing'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
-    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? (reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene previewW13V3={previewW13V3} input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="legacy-placeholder-metadata-only" data-home-provider-regions="not-rendered" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-world001-preview={previewW13V3 ? 'MODELED_INTERPRETIVE_NONPRODUCTION' : 'off'} data-home-v3-navigation={previewW13V3 ? 'bounded-central-terrace-research-not-certified-navmesh' : 'off'} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-orb-reduced-stimulation={reducedStimulation ? 'true' : 'false'} data-home-orb-playback={orbSensory.movement === 'settled' ? 'stopped' : 'playing'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
+    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? (reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene key={previewW13V3 ? 'w13-v3' : 'canonical'} previewW13V3={previewW13V3} input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
     {contextId ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" {...locale.props(contextId)} style={{ zIndex:19, ...(locale.locale !== 'en' ? { maxInlineSize:'calc(100vw - 32px)', whiteSpace:'normal', overflowWrap:'anywhere', textAlign:'start' as const } : {}) }}>{locale.text(contextId)}</div> : null}
     {!transitioning && mobileControls ? <MobileMovementPad input={input} label="Home movement controls" /> : null}
@@ -1052,11 +1059,11 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
 }
 
 export function clearHomeAssetCache() {
-  for (const asset of [HOME_SANCTUARY_MODEL, HOME_FERN_MODEL, ORB_MODEL]) useGLTF.clear(asset)
+  for (const asset of [HOME_SANCTUARY_MODEL, HOME_FERN_MODEL, ORB_MODEL, HOME_W13_V3_PREVIEW]) useGLTF.clear(asset)
 }
 
 export function isHomeAssetLoadError(error: Error) {
-  return [HOME_SANCTUARY_MODEL, HOME_FERN_MODEL, ORB_MODEL].some((asset) => error.message.includes(asset))
+  return [HOME_SANCTUARY_MODEL, HOME_FERN_MODEL, ORB_MODEL, HOME_W13_V3_PREVIEW].some((asset) => error.message.includes(asset))
 }
 
 useGLTF.preload(HOME_SANCTUARY_MODEL)
