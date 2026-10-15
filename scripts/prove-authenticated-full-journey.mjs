@@ -29,15 +29,39 @@ async function screenshot(page,name){
 async function login(page,email,password,expected){
  await page.goto(origin+'/login',{waitUntil:'domcontentloaded'})
  await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:90000})
- await page.getByTestId('urai-e2e-email').fill(email)
- await page.getByTestId('urai-e2e-password').fill(password)
+ // A streamed Next.js document can display the form before its React event
+ // handlers have hydrated. Wait for the actual LoginClient auth observer to
+ // settle before entering credentials; never fake the signed-in state.
+ await page.locator('[data-route-owner="canonical-auth-entry"] [role="status"]').waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(() => {
+  const status=document.querySelector('[data-route-owner="canonical-auth-entry"] [role="status"]')?.textContent||''
+  return !status.includes('Checking account state') && !status.includes('Opening the secure identity')
+ },null,{timeout:90000})
+ const fieldEmail=page.getByTestId('urai-e2e-email')
+ const fieldPass=page.getByTestId('urai-e2e-password')
+ await fieldEmail.fill(email)
+ await fieldPass.fill(password)
+ const valid=await page.getByTestId('urai-e2e-login-form').evaluate(form=>({
+  valid:form.checkValidity(),
+  email:form.querySelector('input[type=email]')?.value||'',
+  passwordLength:form.querySelector('input[type=password]')?.value?.length||0
+ }))
+ assert.ok(valid.valid&&valid.email===email&&valid.passwordLength===password.length,
+   'Native form lost user-entered credentials before real submit: '+JSON.stringify({valid:valid.valid,emailStable:valid.email===email,passwordLength:valid.passwordLength}))
  await page.getByTestId('urai-e2e-submit').click()
+ await page.waitForTimeout(400)
+ result.authFormSubmission={
+  emailNativeValidity:valid.valid,
+  inputsPersistedBeforeSubmit:true,
+  authErrorCode:await page.getByTestId('urai-e2e-auth-error').textContent().catch(()=>null),
+  status:await page.locator('[data-route-owner="canonical-auth-entry"] [role="status"]').first().textContent().catch(()=>null)
+ }
  try {
   await page.getByTestId('urai-e2e-auth-uid').getByText(expected,{exact:true}).waitFor({timeout:16000})
  } catch (error) {
   result.authDiagnostics = {
    state: await page.getByTestId('urai-e2e-auth-error').textContent().catch(()=>null),
-   status: await page.getByRole('status').first().textContent().catch(()=>null),
+   status: await page.locator('[data-route-owner="canonical-auth-entry"] [role="status"]').first().textContent().catch(()=>null),
    formVisible: await page.getByTestId('urai-e2e-login-form').isVisible().catch(()=>false),
    pathname: new URL(page.url()).pathname
   }
