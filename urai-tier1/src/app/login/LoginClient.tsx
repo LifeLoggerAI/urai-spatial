@@ -16,6 +16,7 @@ export default function LoginClient() {
   const [testEmail, setTestEmail] = useState('')
   const [testPassword, setTestPassword] = useState('')
   const [foreignRead, setForeignRead] = useState('not-tested')
+  const [testAuthErrorCode, setTestAuthErrorCode] = useState('not-attempted')
   const [state, setState] = useState<AuthState>(firebasePublicEnvReady ? 'checking' : 'unavailable')
   const [message, setMessage] = useState(firebasePublicEnvReady ? 'Checking account state...' : 'Private sign-in is unavailable because Firebase public configuration is not present.')
 
@@ -69,10 +70,14 @@ export default function LoginClient() {
   const enterFictionalEmulator = async () => {
     if (!uraiJourneyEmulatorEnabled || state === 'working') return
     setState('working')
+    setTestAuthErrorCode('working')
     try {
       await signInWithEmailAndPassword(getUraiAuth(), testEmail, testPassword)
+      setTestAuthErrorCode('signed-in')
       setTestPassword('')
-    } catch {
+    } catch (error) {
+      const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : 'unknown'
+      setTestAuthErrorCode(code.replace(/[^a-z0-9/_-]/gi, '').slice(0, 80))
       setState('signed-out')
       setMessage('Fictional emulator sign-in was denied.')
     }
@@ -148,6 +153,7 @@ export default function LoginClient() {
                 <label htmlFor="urai-e2e-password">Fictional emulator password</label>
                 <input id="urai-e2e-password" data-testid="urai-e2e-password" type="password" autoComplete="off" value={testPassword} onChange={event => setTestPassword(event.target.value)} style={{minHeight:48,padding:10}} required />
                 <button type="submit" data-testid="urai-e2e-submit" style={buttonPrimary} disabled={state === 'working'}>Sign in to isolated emulator</button>
+                <output data-testid="urai-e2e-auth-error" aria-live="polite">{testAuthErrorCode}</output>
               </form>
             ) : <button type="button" disabled={state==='unavailable'||state==='working'||(nativeIos&&!nativeGoogleConfigured())} onClick={() => void enter()} style={buttonPrimary}>{state==='working'?'Opening provider...':nativeIos?'Continue with Google':'Continue securely'}</button>}
             {!uraiJourneyEmulatorEnabled && nativeIos ? <button type="button" disabled={state==='unavailable'||state==='working'||!nativeAppleConfigured()} onClick={() => void enterApple()} style={buttonApple}>Sign in with Apple</button> : null}

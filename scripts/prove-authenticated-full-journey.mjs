@@ -13,6 +13,7 @@ const project='demo-urai-auth-journey', origin='http://127.0.0.1:4173'
 const out=path.resolve('artifacts/authenticated-full-journey')
 const sha=process.env.URAI_EXACT_HEAD||''
 const result={schema:'urai-real-app-emulator-journey-v2',sourceSha:sha,
+ authDiagnostics:null,
  classification:'NON_RELEASE_PARTIAL_EMULATOR_PROOF',status:'FAIL_CLOSED',
  milestones:[],screenshots:[],errors:[],firstFailure:null,
  authenticMedia:false,deviceCertified:false,finalWorldArt:false}
@@ -29,7 +30,18 @@ async function login(page,email,password,expected){
  await page.getByTestId('urai-e2e-email').fill(email)
  await page.getByTestId('urai-e2e-password').fill(password)
  await page.getByTestId('urai-e2e-submit').click()
- await page.getByTestId('urai-e2e-auth-uid').getByText(expected,{exact:true}).waitFor({timeout:30000})
+ try {
+  await page.getByTestId('urai-e2e-auth-uid').getByText(expected,{exact:true}).waitFor({timeout:16000})
+ } catch (error) {
+  result.authDiagnostics = {
+   state: await page.getByTestId('urai-e2e-auth-error').textContent().catch(()=>null),
+   status: await page.getByRole('status').first().textContent().catch(()=>null),
+   formVisible: await page.getByTestId('urai-e2e-login-form').isVisible().catch(()=>false),
+   pathname: new URL(page.url()).pathname
+  }
+  await screenshot(page,'J2-real-auth-failed').catch(()=>{})
+  throw new Error('J2 real Firebase Auth failed: '+JSON.stringify(result.authDiagnostics))
+ }
  assert.equal((await page.getByTestId('urai-e2e-auth-uid').innerText()).trim(),expected)
 }
 await mkdir(out,{recursive:true})
@@ -41,6 +53,13 @@ try{
  const auth=app.auth(),db=app.firestore()
  const accounts=[{uid:'fictional-urai-a',email:'fictional-a@example.invalid',password:'Test_Only_A_2026!'},{uid:'fictional-urai-b',email:'fictional-b@example.invalid',password:'Test_Only_B_2026!'}]
  for(const user of accounts){await auth.createUser(user);await db.doc('users/'+user.uid).set({ownerId:user.uid,accountStatus:'active',deleted:false})}
+ // Isolate client transport failures from backend fixture/seeding failures.
+ const probe=await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fictional-emulator-key',{
+  method:'POST',headers:{'content-type':'application/json'},
+  body:JSON.stringify({email:accounts[0].email,password:accounts[0].password,returnSecureToken:true})
+ })
+ assert.equal(probe.status,200,'Auth emulator rejects seeded fictional account A')
+ result.authDiagnostics={backendSeededAccountLogin:'emulator-200-no-token-recorded'}
  await db.doc('users/fictional-urai-a/memories/fictional-memory-a').set({
   ownerId:'fictional-urai-a',title:'Fictional Lake',occurredAt:'1988-08-01T12:00:00.000Z',
   summary:'Fictional emulator data only',emotionalState:'calm',deleted:false,demo:false,consentState:'granted',privacy:'private',
