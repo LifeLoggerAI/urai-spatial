@@ -145,7 +145,10 @@ async function testProfile(profile) {
   if (!profile.mobile) await page.keyboard.down('KeyW')
   else await page.getByRole('button', { name: 'Move forward' }).dispatchEvent('pointerdown')
   try {
-    await page.waitForFunction(() => document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')?.getAttribute('data-home-nearby') === 'orb', null, { timeout: 12000 })
+    // Reduced-motion uses demand rendering on a software WebGL runner. Preserve
+    // real held input and source distance; allow slow legitimate frames to
+    // reach the physical Orb without moving the player programmatically.
+    await page.waitForFunction(() => document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')?.getAttribute('data-home-nearby') === 'orb', null, { timeout: profile.reducedMotion ? 45000 : 12000 })
   } finally {
     if (!profile.mobile) await page.keyboard.up('KeyW')
     else await page.getByRole('button', { name: 'Move forward' }).dispatchEvent('pointerup')
