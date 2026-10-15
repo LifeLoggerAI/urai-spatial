@@ -111,16 +111,31 @@ async function testProfile(profile) {
   const after = await owner.evaluate(element => ({ x: Number(element.dataset.homePlayerX), z: Number(element.dataset.homePlayerZ), nearby: element.dataset.homeNearby, orb: element.dataset.homeOrbState }))
   if (!Number.isFinite(after.x) || !Number.isFinite(after.z) || Math.hypot(after.x - before.x, after.z - before.z) < .05) throw new Error(profile.id + ' first-person locomotion not observed')
   const moved = await screenshot(page, profile.id + '-after-movement')
-  // Check ordinary Home travel before opening the Orb companion. The open
-  // companion can own focus or temporarily suppress background navigation.
+  // Verify exact Home travel destinations before the Orb opens. Next.js may
+  // canonicalize a route to either /ground or /ground/, so compare parsed
+  // pathnames and the required transition identity rather than string prefixes.
   const affordances = await page.evaluate(() => ({
     ground: document.querySelector('[data-testid="home-semantic-ground"]')?.getAttribute('href') ?? null,
     lifeMap: document.querySelector('[data-testid="home-semantic-life-map"]')?.getAttribute('href') ?? null,
     location: window.location.pathname,
     navigationOwners: document.querySelectorAll('[data-home-navigation-owner="runtime-boundary"]').length,
   }))
-  if (!affordances.ground?.startsWith('/ground/') || !affordances.lifeMap?.startsWith('/life-map/')) {
-    throw new Error(profile.id + ' missing accessible Home travel before Orb activation: ' + JSON.stringify(affordances))
+  function matchesJourneyHref(href, pathname, expectedParams) {
+    if (typeof href !== 'string') return false
+    try {
+      const url = new URL(href, origin)
+      const actualPath = url.pathname.replace(/\\/+$/, '') || '/'
+      return url.origin === origin && actualPath === pathname
+        && url.searchParams.size === Object.keys(expectedParams).length
+        && Object.entries(expectedParams).every(([key, value]) => url.searchParams.get(key) === value)
+    } catch {
+      return false
+    }
+  }
+  if (affordances.navigationOwners !== 1
+    || !matchesJourneyHref(affordances.ground, '/ground', { entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' })
+    || !matchesJourneyHref(affordances.lifeMap, '/life-map', { from: 'home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' })) {
+    throw new Error(profile.id + ' invalid accessible Home travel destination before Orb activation: ' + JSON.stringify(affordances))
   }
   // Exercise real input and World001 Orb proximity, not merely the Orb DOM label.
   await page.evaluate(() => {
