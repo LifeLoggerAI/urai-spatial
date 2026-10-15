@@ -111,3 +111,14 @@ test('guided onboarding restores the Skip focus target after route hydration', (
   assert.match(onboarding, /dismissRef\.current\?\.focus\(\{ preventScroll: true \}\)/)
   assert.match(onboarding, /<button ref=\{dismissRef\} type="button" onClick=\{dismiss\}>Skip<\/button>/)
 })
+
+test('selected semantic search result keeps accessible Focus actions on desktop and mobile', () => {
+  assert.match(navigator, /selectNode\(node, event\.detail === 0 \? 'keyboard' : 'pointer', true\)/)
+  assert.match(navigator, /pendingInspectorFocus\.current = node\.id/)
+  assert.match(navigator, /inspectorHeadingRef\.current\?\.focus\(\{ preventScroll: true \}\)/)
+  assert.match(navigator, /ref=\{inspectorHeadingRef\} tabIndex=\{-1\}/)
+  assert.match(navigator, /\{selected && open \? <aside className="life-map-semantic-inspector"/)
+  assert.match(navigator, /\.life-map-semantic-inspector\{display:grid;left:12px/)
+  assert.doesNotMatch(navigator, /\.life-map-semantic-inspector\{display:none/)
+  assert.match(navigator, /disabled=\{\(!explicitDemo && !selected\.authorizedMemory\) \|\| Boolean\(selected\.locked\)\}/)
+})
