@@ -96,7 +96,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable, onScen
     const observer = new MutationObserver(hardenHomeOwnership)
     observer.observe(owner, {
       attributes: true,
-      attributeFilter: ['data-home-player-x', 'data-home-player-z', 'data-home-assets-ready', 'data-home-input-ready'],
+      attributeFilter: ['data-home-player-x', 'data-home-player-z', 'data-home-assets-ready', 'data-home-input-ready', 'data-home-rendered-frames'],
       childList: true,
       subtree: true,
     })

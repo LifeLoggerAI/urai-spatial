@@ -195,6 +195,14 @@ export function PersistentWorldCompanion() {
     const href = buildCompanionTravelHref(request)
     closeCompanionFromEvent(false)
     publishOrbState('transition', 'companion')
+    // The Home Orb's Life Map choice must execute the real 3D Ascent, not
+    // skip the camera traversal via a premature router.push.
+    if (world.destination === 'home' && destination === 'life-map') {
+      const home = document.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+      if (!home || home.dataset.homeReady !== 'true' || home.dataset.homeInputLocked !== 'false') return
+      requestUraiWorldTravel({ ...request, href, entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' })
+      return
+    }
     router.push(href)
     requestUraiWorldTravel({ ...request, href })
   }, [closeCompanionFromEvent, phase, router, world])

@@ -7,6 +7,7 @@ import { createRequire } from 'node:module'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import admin from 'firebase-admin'
+import { assertHomeAscentArrival } from './home-sky-ascent-proof.mjs'
 const requireTier1=createRequire(new URL('../urai-tier1/package.json',import.meta.url))
 const {chromium}=requireTier1('playwright')
 const project='demo-urai-auth-journey', origin='http://127.0.0.1:4173'
@@ -17,7 +18,8 @@ const result={schema:'urai-real-app-emulator-journey-v2',sourceSha:sha,
  authTransport:[],
  classification:'NON_RELEASE_PARTIAL_EMULATOR_PROOF',status:'FAIL_CLOSED',
  milestones:[],screenshots:[],errors:[],firstFailure:null,
- authenticMedia:false,deviceCertified:false,finalWorldArt:false}
+ authenticMedia:false,deviceCertified:false,finalWorldArt:false,
+ journey:{home:null,orb:null,ascent:null,privateMemory:null,focus:null,replay:null,return:null,privacy:null}}
 let app,server,browser,disposableAuth,disposableDb
 const disposableUsers=[]
 const disposableDocs=[]
@@ -212,6 +214,241 @@ async function verifyOwnerFocusReplayReturn(page){
   recordedMedia:false,cinematicAcceptance:false}
 }
 
+
+async function routeIs(page, expected){
+ await page.waitForURL(url=>url.pathname.replace(/\/+$/,'')===expected,{timeout:90000})
+ assert.equal(new URL(page.url()).searchParams.has('demo'),false,'Demo mode forbidden in authenticated journey')
+}
+async function readyHome(page){
+ const world=page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+ await world.waitFor({state:'visible',timeout:90000})
+ try{
+  await page.waitForFunction(()=>{
+   const e=document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+   return e?.dataset.homeReady==='true'&&e?.dataset.homeInteractionReady==='true'&&
+    e?.dataset.homeAssetsReady==='true'&&e?.dataset.homeScenePhase==='HOME'&&
+    e?.dataset.homeInputLocked==='false'&&e?.dataset.homeCameraMode==='embodied-first-person'&&
+    Number.isFinite(Number.parseFloat(e?.dataset.homePlayerX||''))&&
+    Number.isFinite(Number.parseFloat(e?.dataset.homePlayerZ||''))&&
+    Number(e.dataset.homeCameraHeight)>1.4
+  },null,{timeout:120000,polling:200})
+ }catch(error){
+  result.journey.home=await world.evaluate(e=>({assets:e.dataset.homeAssetsReady,
+   interaction:e.dataset.homeInteractionReady,ready:e.dataset.homeReady,
+   input:e.dataset.homeInputReady,frames:e.dataset.homeRenderedFrames,
+   phase:e.dataset.homeScenePhase,locked:e.dataset.homeInputLocked,
+   camera:e.dataset.homeCameraHeight})).catch(()=>({worldMissing:true}))
+  await screenshot(page,'J3-world-not-ready').catch(()=>{})
+  throw Error('J3 real Home not interactive: '+JSON.stringify(result.journey.home))
+ }
+ assert.equal(await world.getAttribute('data-home-world001-preview'),'off','Research World001 preview is forbidden')
+ const guide=page.locator('aside.uraiV2OnboardingCard[data-home-guide="true"]')
+ let dismissed=false
+ if(await guide.isVisible().catch(()=>false)){
+  const skip=guide.getByRole('button',{name:'Skip',exact:true})
+  await skip.waitFor({state:'visible',timeout:15000})
+  const target=await skip.boundingBox()
+  assert.ok(target&&target.width>=48&&target.height>=48,'Accessible first-run Skip target too small')
+  await skip.click({timeout:15000})
+  await guide.waitFor({state:'hidden',timeout:15000})
+  dismissed=true
+ }
+ const height=Number(await world.getAttribute('data-home-camera-height'))
+ assert.ok(height<2.5&&height>1.4,'Original first-person camera height invalid')
+ result.journey.home={world:'asset-driven',ready:true,preview:'off',height,guideDismissed:dismissed}
+ mark('J3',{state:'interactive',...result.journey.home})
+ await screenshot(page,'J3-interactive-production-home')
+ return world
+}
+async function proveOrbToMap(page,world){
+ const startUrl=page.url()
+ const read=async()=>world.evaluate(e=>({x:Number(e.dataset.homePlayerX),z:Number(e.dataset.homePlayerZ),
+   distance:Number(e.dataset.homeDistanceOrb),nearby:e.dataset.homeNearby,
+   phase:e.dataset.homeScenePhase,cameraHeight:Number(e.dataset.homeCameraHeight)}))
+ const start=await read()
+ assert.ok(Number.isFinite(start.x)&&Number.isFinite(start.z),'No real Home player telemetry')
+ await page.evaluate(()=>{
+  window.__uraiWave44OrbEvents=0
+  window.addEventListener('urai:world-orb-open',()=>{window.__uraiWave44OrbEvents++})
+ })
+ let failure=null
+ await page.keyboard.down('KeyW')
+ try{
+  await page.waitForFunction(()=>{
+   const e=document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+   if(!e)return false
+   const x=Number(e.dataset.homePlayerX),z=Number(e.dataset.homePlayerZ)
+   return Number.isFinite(x)&&Number.isFinite(z)&&
+    Math.hypot(x-1.8,z+9.5)<2.2&&Number(e.dataset.homeDistanceOrb)<2.2
+  },null,{timeout:80000,polling:150})
+ }catch(e){failure=String(e)}
+ finally{await page.keyboard.up('KeyW')}
+ const arrival=await read()
+ result.journey.orb={starting:start,arrival,
+  measuredDistance:Math.hypot(arrival.x-1.8,arrival.z+9.5),radiusMetres:2.4,
+  input:'actual keyboard locomotion',failure}
+ if(failure){
+  await screenshot(page,'J4-orb-approach-failure').catch(()=>{})
+  throw Error('J4 production Orb approach failed: '+JSON.stringify(result.journey.orb).slice(0,1300))
+ }
+ await page.waitForFunction(()=>{
+  const e=document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+  return e?.dataset.homeNearby==='orb'&&Number(e.dataset.homeDistanceOrb)<2.4
+ },null,{timeout:10000})
+ assert.ok(arrival.distance<2.4&&result.journey.orb.measuredDistance<2.4)
+ await screenshot(page,'J4-physical-orb-proximity')
+ await page.keyboard.press('Enter')
+ await page.waitForFunction(()=>window.__uraiWave44OrbEvents===1,null,{timeout:20000})
+ const companion=page.locator('aside.urai-world-companion[data-open="true"]')
+ await companion.waitFor({state:'visible',timeout:20000})
+ result.journey.orb.openEvents=1
+ await screenshot(page,'J4-real-orb-menu')
+ const beforeHeight=arrival.cameraHeight
+ await world.evaluate(e=>{
+  window.__uraiWave44Ascent=[]
+  const take=()=>{
+   window.__uraiWave44Ascent.push({phase:e.dataset.homeScenePhase,
+    sequence:e.dataset.homePortalSequence,height:Number(e.dataset.homeCameraHeight),
+    progress:Number(e.dataset.homeAscentProgress),locked:e.dataset.homeInputLocked,
+    camera:e.dataset.homeCameraMode})
+  }
+  window.__uraiWave44AscentObserver=new MutationObserver(take)
+  window.__uraiWave44AscentObserver.observe(e,{attributes:true,
+   attributeFilter:['data-home-scene-phase','data-home-portal-sequence','data-home-camera-height','data-home-ascent-progress','data-home-input-locked','data-home-camera-mode']})
+  take()
+ })
+ const choose=companion.locator('nav[aria-label="Travel through the URAI world"] button[data-world-target="life-map"]')
+ await choose.waitFor({state:'visible',timeout:15000})
+ assert.ok(await choose.isEnabled(),'Original Orb Life Map choice disabled')
+ await choose.click({timeout:15000})
+ await page.waitForFunction(h=>window.__uraiWave44Ascent?.some(s=>s.phase==='ASCENT'&&
+  s.camera==='ascent'&&s.locked==='true'&&s.height>h+0.1&&s.progress>0),
+  beforeHeight,{timeout:45000,polling:80})
+ const observed=await page.evaluate(()=>window.__uraiWave44Ascent||[])
+ assert.ok(observed.some(s=>s.phase==='ASCENT'&&s.height>beforeHeight+0.1))
+ result.journey.ascent={realCameraLift:true,samples:observed.length,
+  highestCameraMetres:Math.max(...observed.map(s=>s.height).filter(Number.isFinite))}
+ await screenshot(page,'J4-camera-ascent').catch(()=>{})
+ await routeIs(page,'/life-map')
+ assertHomeAscentArrival(startUrl,page.url())
+ mark('J4',{orb:result.journey.orb,ascent:result.journey.ascent,lifeMap:'/life-map'})
+ await screenshot(page,'J4-arrived-original-life-map')
+}
+async function proveMapFocusReplayReturn(page,uid){
+ const map=page.getByTestId('urai-true-3d-life-map')
+ await map.waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(()=>document.querySelector('[data-testid="urai-true-3d-life-map"]')?.dataset.lifeMapSource==='private',
+  null,{timeout:90000})
+ await page.getByTestId('life-map-semantic-trigger').click({timeout:15000})
+ const star=page.locator('#life-map-navigator button[data-life-map-node-id="fictional-star-a"]')
+ await star.waitFor({state:'visible',timeout:60000})
+ await star.click({timeout:15000})
+ await page.waitForFunction(()=>{
+  const p=new URLSearchParams(location.search)
+  return p.get('node')==='fictional-star-a'&&p.get('memoryId')==='fictional-memory-a'&&
+   p.get('manifestId')==='fictional-manifest-a'
+ },null,{timeout:60000})
+ await page.waitForFunction(()=>document.querySelector('[data-testid="urai-true-3d-life-map"]')?.dataset.lifeMapPhase==='arrival',
+  null,{timeout:60000})
+ result.journey.privateMemory={uid,event:'fictional-star-a',memory:'fictional-memory-a',
+  manifest:'fictional-manifest-a',source:'private',notDemo:true}
+ mark('J5',result.journey.privateMemory)
+ await screenshot(page,'J5-private-memory-star')
+ const focusButton=page.locator('.life-map-semantic-inspector button').filter({hasText:'Enter Focus'})
+ await focusButton.waitFor({state:'visible',timeout:20000})
+ assert.ok(await focusButton.isEnabled(),'Private Focus threshold unavailable')
+ await focusButton.click({timeout:15000})
+ await routeIs(page,'/focus')
+ const focus=page.getByTestId('urai-final-focus-chamber')
+ await focus.waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(()=>document.querySelector('[data-testid="urai-final-focus-chamber"]')?.dataset.memoryStatus==='ready',null,{timeout:90000})
+ assert.equal(await focus.getAttribute('data-memory-id'),'fictional-memory-a')
+ assert.equal(await focus.getAttribute('data-manifest-id'),'fictional-manifest-a')
+ assert.equal(await focus.getAttribute('data-star-id'),'fictional-star-a')
+ result.journey.focus={memory:'fictional-memory-a',manifest:'fictional-manifest-a',status:'ready'}
+ mark('J6',result.journey.focus)
+ await screenshot(page,'J6-original-stellar-focus')
+ await focus.locator('nav.focusControls button.primary').click({timeout:15000})
+ await routeIs(page,'/replay')
+ const replay=page.getByTestId('cinematic-replay-client')
+ await replay.waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(()=>document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.memoryStatus==='ready',
+   null,{timeout:90000})
+ assert.equal(await replay.getAttribute('data-memory-id'),'fictional-memory-a')
+ assert.equal(await replay.getAttribute('data-manifest-id'),'fictional-manifest-a')
+ const media=await replay.getAttribute('data-replay-media-status')
+ assert.equal(media,'absent','Fictional no-media fixture must not masquerade as recorded source')
+ result.journey.replay={memory:'fictional-memory-a',manifest:'fictional-manifest-a',
+  media:'absent',classification:'neutral-authorized-archive-not-authentic-media'}
+ mark('J7',result.journey.replay)
+ await screenshot(page,'J7-real-replay-neutral-fallback')
+ await replay.locator('button.unwind').click({timeout:15000})
+ await routeIs(page,'/focus')
+ await focus.waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(()=>document.querySelector('[data-testid="urai-final-focus-chamber"]')?.dataset.memoryStatus==='ready',
+   null,{timeout:60000})
+ await focus.locator('nav.focusControls button.unwind').click({timeout:15000})
+ await routeIs(page,'/life-map')
+ await map.waitFor({state:'visible',timeout:90000})
+ await map.getByRole('button',{name:'Return to Life Map overview'}).click({timeout:15000})
+ await page.waitForFunction(()=>document.querySelector('[data-testid="urai-true-3d-life-map"]')?.dataset.lifeMapPhase==='overview',
+   null,{timeout:30000})
+ await map.locator('button[data-life-map-overview-home-return="true"]').click({timeout:15000})
+ await routeIs(page,'/home')
+ await readyHome(page)
+ result.journey.return={path:'Replay->Focus->Life Map->Home',throughOriginalControls:true}
+ mark('J8',result.journey.return)
+ await screenshot(page,'J8-real-control-return-home')
+}
+async function provePrivacyAfterJourney(page,accounts,db,policy){
+ await page.goto(origin+'/login')
+ await page.getByRole('button',{name:'Sign out'}).click()
+ await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:30000})
+ await login(page,accounts[1].email,accounts[1].password,accounts[1].uid)
+ await page.getByTestId('urai-e2e-owner-read').click({timeout:15000})
+ await page.getByTestId('urai-e2e-owner-read-result').getByText('permission-denied').waitFor({timeout:30000})
+ await page.goto(origin+'/life-map')
+ const map=page.getByTestId('urai-true-3d-life-map')
+ await map.waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(()=>{
+  const mode=document.querySelector('[data-testid="urai-true-3d-life-map"]')?.dataset.lifeMapSource
+  return mode==='private'||mode==='empty'
+ },null,{timeout:90000})
+ await page.getByTestId('life-map-semantic-trigger').click({timeout:15000})
+ assert.equal(await page.locator('#life-map-navigator button[data-life-map-node-id="fictional-star-a"]').count(),0,
+  'Account B must not observe account A constellation')
+ await page.goto(origin+'/replay?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
+ const replay=page.getByTestId('cinematic-replay-client')
+ await replay.waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(()=>{
+  const status=document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.memoryStatus
+  return ['unavailable','unauthorized','deleted'].includes(status)
+ },null,{timeout:90000})
+ result.journey.privacy={actorB:accounts[1].uid,ownerRead:'permission-denied',
+   accountAConstellationVisible:false,foreignReplayDenied:true}
+ await screenshot(page,'J9-foreign-account-denied')
+ await page.goto(origin+'/login')
+ await page.getByRole('button',{name:'Sign out'}).click()
+ await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:30000})
+ await login(page,accounts[0].email,accounts[0].password,accounts[0].uid)
+ await db.doc('users/fictional-urai-a/memories/fictional-memory-a').update({consentState:'revoked'})
+ await db.doc('users/fictional-urai-a/privacyPolicy/current').update({revision:2,
+  domains:{...policy.domains,memory:{...policy.domains.memory,mode:'denied',
+   replayVisible:false,lifeMapVisible:false,modelContext:false}}})
+ await page.goto(origin+'/replay?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
+ await replay.waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(()=>{
+  const status=document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.memoryStatus
+  return ['unavailable','unauthorized','deleted'].includes(status)
+ },null,{timeout:90000})
+ result.journey.privacy.revocation={revision:2,replayDenied:true,
+  isolatedTrustedEmulatorProducer:true,canonicalUserConsentCallableVerified:false,
+  councilAsyncContextInvalidationVerified:false,privateMediaTokensVerified:false}
+ mark('J9-partial',result.journey.privacy)
+ await screenshot(page,'J9-revoked-replay-denied')
+ throw Error('J9_INCOMPLETE: canonical consent callable, stale Council responses and private-media token revocation unverified')
+}
+
 await mkdir(out,{recursive:true})
 try{
  assert.match(sha,/^[a-f0-9]{40}$/)
@@ -288,75 +525,15 @@ try{
  await login(page,accounts[0].email,accounts[0].password,accounts[0].uid)
  mark('J2',{uid:accounts[0].uid,method:'real-LoginClient-Firebase-SDK'});await screenshot(page,'J2-signed-in')
  await page.getByRole('link',{name:'Open Home'}).click()
- await page.waitForURL(url=>url.pathname.replace(/\/$/,'')==='/home',{timeout:60000})
+ await routeIs(page,'/home')
  const shell=page.getByTestId('urai-persistent-world-shell')
  await shell.waitFor({state:'visible',timeout:90000})
- assert.ok(!new URL(page.url()).searchParams.has('demo'))
- mark('J3',{route:'/home',scope:'authenticated-router-shell-not-orb'});await screenshot(page,'J3-home')
-
- // Each stage executes the original application and records native browser
- // observations, not a source-only assertion. Failure never implies release.
- const orb=await executeMilestone(page,'J4-real-canonical-Home-Orb',()=>activateNormalHomeOrb(page))
- const map=await executeMilestone(page,'J5-owner-Life-Map',()=>enterOwnerLifeMap(page,orb))
- const focusReplay=map&&await executeMilestone(page,'J6-J8-Focus-Replay-return',()=>verifyOwnerFocusReplayReturn(page))
- const revocation=await executeMilestone(page,'J9-live-private-memory-revocation',async()=>{
-  await page.goto(origin+'/focus?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
-  await guardAttribute(page,'[data-testid="urai-final-focus-chamber"]','data-memory-status','ready')
-  await db.doc('users/fictional-urai-a/memories/fictional-memory-a').update({consentState:'revoked'})
-  await guardAttribute(page,'[data-testid="urai-final-focus-chamber"]','data-memory-status','unauthorized')
-  assert.equal(await page.getByTestId('urai-final-focus-chamber').getAttribute('data-memory-id'),null)
-  await page.goto(origin+'/replay?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
-  await guardAttribute(page,'[data-testid="cinematic-replay-client"]','data-memory-status','unauthorized')
-  assert.equal(await page.getByTestId('cinematic-replay-client').getAttribute('data-memory-id'),null)
-  return {revokedMemory:'fictional-memory-a',focusDenied:true,replayDenied:true,
-   providerAndExternalPropagation:'NOT_TESTED'}
- })
- const accountSwitch=await executeMilestone(page,'J10-real-account-switch-isolation',async()=>{
-  await page.goto(origin+'/login')
-  await page.getByRole('button',{name:'Sign out'}).click()
-  await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:30000})
-  await login(page,accounts[1].email,accounts[1].password,accounts[1].uid)
-  await page.getByTestId('urai-e2e-owner-read').click()
-  await page.waitForFunction(()=>
-   document.querySelector('[data-testid="urai-e2e-owner-read-result"]')?.textContent?.includes('permission-denied'),
-   null,{timeout:30000})
-  await page.goto(origin+'/life-map')
-  await guardAttribute(page,'[data-testid="life-map-semantic-trigger"]','data-life-map-source','private')
-  await page.getByTestId('life-map-semantic-trigger').click()
-  await page.locator('[data-life-map-node-id="fictional-star-b"]').waitFor({state:'visible',timeout:60000})
-  assert.equal(await page.locator('[data-life-map-node-id="fictional-star-a"]').count(),0,'Previous owner star leaked')
-  await page.goto(origin+'/focus?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
-  await guardAttribute(page,'[data-testid="urai-final-focus-chamber"]','data-memory-status','unavailable')
-  return {actor:'fictional-urai-b',realBrowserLogin:true,foreignRead:'permission-denied',ownStar:true,priorOwnerMemoryHidden:true}
- })
- const deletion=await executeMilestone(page,'J11-owner-reentry-deletion',async()=>{
-  await page.goto(origin+'/login')
-  await page.getByRole('button',{name:'Sign out'}).click()
-  await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:30000})
-  await db.doc('users/fictional-urai-a/memories/fictional-memory-a').update({consentState:'granted'})
-  await login(page,accounts[0].email,accounts[0].password,accounts[0].uid)
-  await page.goto(origin+'/focus?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
-  await guardAttribute(page,'[data-testid="urai-final-focus-chamber"]','data-memory-status','ready')
-  await db.doc('users/fictional-urai-a/memories/fictional-memory-a').update({deleted:true})
-  await guardAttribute(page,'[data-testid="urai-final-focus-chamber"]','data-memory-status','deleted')
-  await db.doc('users/fictional-urai-a/memories/fictional-memory-a').delete()
-  await guardAttribute(page,'[data-testid="urai-final-focus-chamber"]','data-memory-status','unavailable')
-  return {originalOwnerReauthenticated:true,deletedAndMissingLocked:true}
- })
- result.authenticatedJourney=Boolean(orb&&map&&focusReplay&&revocation&&accountSwitch&&deletion)
- result.physicalNormalOrbVerified=Boolean(orb)
- result.realOwnerLifeMapVerified=Boolean(map)
- result.canonicalFocusReplayReturnVerified=Boolean(focusReplay)
- result.liveSyntheticRevocationVerified=Boolean(revocation)
- result.crossAccountIsolationVerified=Boolean(accountSwitch)
- result.deletionVerified=Boolean(deletion)
- result.recordedMediaCertified=false
- result.deviceCertified=false
- result.finalWorldArt=false
- if(!result.authenticatedJourney)throw Error('NOT_YET_VERIFIED: at least one executed normal private journey stage failed; see milestone receipts')
- result.classification='NON_RELEASE_SYNTHETIC_AUTHENTICATED_APP_JOURNEY'
- result.status='PASS_NONRELEASE_SYNTHETIC_JOURNEY'
-
+ mark('J3-route',{route:'/home',scope:'original-shell-not-interactive'})
+ await screenshot(page,'J3-home-shell')
+ const home=await readyHome(page)
+ await proveOrbToMap(page,home)
+ await proveMapFocusReplayReturn(page,accounts[0].uid)
+ await provePrivacyAfterJourney(page,accounts,db,privacyPolicy)
 }catch(e){result.firstFailure=String(e);process.exitCode=1}
 finally{
  // Zero permanent records or identities: clean tracked disposable emulator data
