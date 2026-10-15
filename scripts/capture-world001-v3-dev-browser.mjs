@@ -17,7 +17,7 @@ const origin = 'http://127.0.0.1:' + port
 const modelPath = '/assets/urai/world001-preview/URAI_WORLD001_FOUNDER_HOME_ARCHITECTURE_v3.glb'
 const expectedHash = '84727ed6d335b51f736194a3850d5390a3d4ab8876f07acc8bb08593c5c33717'
 const expectedBytes = 2742444
-const receipt = { schemaVersion: 'urai-world001-v3-dev-browser-proof-1', head, classification: 'MODELED_INTERPRETIVE_NONPRODUCTION', origin, modelPath, scenarios: [], failures: [], executed: false }
+const receipt = { schemaVersion: 'urai-world001-v3-dev-browser-proof-2', head, classification: 'MODELED_INTERPRETIVE_NONPRODUCTION', origin, modelPath, browser: null, scenarios: [], failures: [], executed: false }
 let server, browser
 function guard(action) {
   const result = spawnSync(process.execPath, [verifyScript, action], { cwd: root, env: { ...process.env, NODE_ENV: 'development', URAI_V3_DEV_BROWSER_PROOF: 'true' }, encoding: 'utf8' })
@@ -80,10 +80,38 @@ async function testProfile(profile) {
   const after = await owner.evaluate(element => ({ x: Number(element.dataset.homePlayerX), z: Number(element.dataset.homePlayerZ), nearby: element.dataset.homeNearby, orb: element.dataset.homeOrbState }))
   if (!Number.isFinite(after.x) || !Number.isFinite(after.z) || Math.hypot(after.x - before.x, after.z - before.z) < .05) throw new Error(profile.id + ' first-person locomotion not observed')
   const moved = await screenshot(page, profile.id + '-after-movement')
-  const orb = await owner.evaluate(element => element.dataset.homeOrbState)
-  if (!orb) throw new Error(profile.id + ' Orb state owner absent')
+  // Exercise real input and World001 Orb proximity, not merely the Orb DOM label.
+  await page.evaluate(() => {
+    window.__uraiV3OrbOpenProofCount = 0
+    window.addEventListener('urai:world-orb-open', () => { window.__uraiV3OrbOpenProofCount += 1 })
+  })
+  if (!profile.mobile) await page.keyboard.down('KeyW')
+  else await page.getByRole('button', { name: 'Move forward' }).dispatchEvent('pointerdown')
+  try {
+    await page.waitForFunction(() => document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')?.getAttribute('data-home-nearby') === 'orb', null, { timeout: 12000 })
+  } finally {
+    if (!profile.mobile) await page.keyboard.up('KeyW')
+    else await page.getByRole('button', { name: 'Move forward' }).dispatchEvent('pointerup')
+  }
+  const arrivalAtOrb = await owner.evaluate(element => ({ x: Number(element.dataset.homePlayerX), z: Number(element.dataset.homePlayerZ), nearby: element.dataset.homeNearby, orbState: element.dataset.homeOrbState }))
+  if (arrivalAtOrb.nearby !== 'orb' || !Number.isFinite(arrivalAtOrb.x) || !Number.isFinite(arrivalAtOrb.z)) throw new Error(profile.id + ' failed genuine Orb proximity')
+  const atOrb = await screenshot(page, profile.id + '-at-orb')
+  if (profile.mobile) {
+    const accessibleOrb = page.getByTestId('home-semantic-orb')
+    await accessibleOrb.waitFor({ state: 'attached', timeout: 10000 })
+    if (!await accessibleOrb.isEnabled()) throw new Error('Mobile accessible Orb control is not authorized/ready')
+    await accessibleOrb.tap({ force: true })
+  } else {
+    await page.keyboard.press('Enter')
+  }
+  await page.waitForFunction(() => window.__uraiV3OrbOpenProofCount > 0, null, { timeout: 12000 })
+  const orbOpenEvents = await page.evaluate(() => window.__uraiV3OrbOpenProofCount)
+  const activated = await screenshot(page, profile.id + '-orb-activated')
+  const orbState = await owner.getAttribute('data-home-orb-state').catch(() => null)
+  const affordances = await page.evaluate(() => ({ ground: document.querySelector('[data-testid="home-semantic-ground"]')?.getAttribute('href') ?? null, lifeMap: document.querySelector('[data-testid="home-semantic-life-map"]')?.getAttribute('href') ?? null }))
+  if (!affordances.ground?.startsWith('/ground/') || !affordances.lifeMap?.startsWith('/life-map/')) throw new Error(profile.id + ' missing accessible travel affordance')
   if (errors.length) throw new Error(profile.id + ' browser exceptions: ' + errors.join(' | '))
-  receipt.scenarios.push({ profile: profile.id, before, after, orb, asset: loaded, screenshots: [initial, moved], observed: 'first-person movement and loaded authored scene; Orb activation NOT independently verified' })
+  receipt.scenarios.push({ profile: profile.id, before, after, arrivalAtOrb, orbOpenEvents, orbState, affordances, asset: loaded, screenshots: [initial, moved, atOrb, activated], observed: 'first-person movement, V3 Orb proximity and real Orb open event; full-journey and physical navmesh remain unapproved' })
   await context.close()
 }
 try {
@@ -92,10 +120,11 @@ try {
   guard('assert-excluded')
   guard('stage')
   server = spawn('pnpm', ['--dir', 'urai-tier1', 'exec', 'next', 'dev', '--hostname', '127.0.0.1', '--port', String(port)], {
-    cwd: root, env: { ...process.env, NODE_ENV: 'development', URAI_V3_DEV_BROWSER_PROOF: 'true' }, stdio: 'ignore'
+    cwd: root, env: { ...process.env, NODE_ENV: 'development', URAI_V3_DEV_BROWSER_PROOF: 'true' }, stdio: 'ignore', detached: true
   })
   await waitReady()
   browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader', '--disable-gpu-sandbox', '--disable-dev-shm-usage'] })
+  receipt.browser = { engine: 'chromium', version: browser.version(), environment: 'development WebGL software renderer; not device GPU certification' }
   for (const profile of [
     { id: 'desktop', viewport: { width: 1440, height: 900 } },
     { id: 'mobile', viewport: { width: 390, height: 844 }, mobile: true },
@@ -108,7 +137,7 @@ try {
 } finally {
   await browser?.close().catch(() => {})
   if (server) {
-    server.kill('SIGTERM')
+    try { process.kill(-server.pid, 'SIGTERM') } catch { server.kill('SIGTERM') }
     await new Promise(resolve => { if (server.exitCode !== null) return resolve(); server.once('exit', resolve); setTimeout(resolve, 7000).unref() })
   }
   try { guard('clean'); guard('assert-build-excluded') } catch (error) { receipt.failures.push(String(error)); process.exitCode = 1 }
