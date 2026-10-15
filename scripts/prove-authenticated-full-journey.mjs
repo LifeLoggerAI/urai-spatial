@@ -271,26 +271,64 @@ async function proveOrbToMap(page,world){
   window.__uraiWave44OrbEvents=0
   window.addEventListener('urai:world-orb-open',()=>{window.__uraiWave44OrbEvents++})
  })
- let failure=null
- await page.keyboard.down('KeyW')
- try{
-  await page.waitForFunction(()=>{
-   const e=document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
-   if(!e)return false
-   const x=Number(e.dataset.homePlayerX),z=Number(e.dataset.homePlayerZ)
-   return Number.isFinite(x)&&Number.isFinite(z)&&
-    Math.hypot(x-1.8,z+9.5)<2.2&&Number(e.dataset.homeDistanceOrb)<2.2
-  },null,{timeout:80000,polling:150})
- }catch(e){failure=String(e)}
- finally{await page.keyboard.up('KeyW')}
- const arrival=await read()
- result.journey.orb={starting:start,arrival,
-  measuredDistance:Math.hypot(arrival.x-1.8,arrival.z+9.5),radiusMetres:2.4,
-  input:'actual keyboard locomotion',failure}
- if(failure){
-  await screenshot(page,'J4-orb-approach-failure').catch(()=>{})
-  throw Error('J4 production Orb approach failed: '+JSON.stringify(result.journey.orb).slice(0,1300))
+ // The canonical courtyard has genuine collidable benches and stone bodies.
+ // Holding W for 80 seconds follows the obstruction into the southwest bound.
+ // Steer by production source coordinates with real WASD keys, following the
+ // clear center aisle rather than setting player coordinates or bypassing physics.
+ const waypoints=[
+  {x:.7,z:5},{x:.7,z:0},{x:.7,z:-4.2},{x:.8,z:-7.7},{x:1.25,z:-9.1}
+ ]
+ const trace=[]
+ let waypoint=0,inside=false,failure=null,stalled=0
+ for(let step=0;step<145;step++){
+  const before=await read()
+  const realDistance=Math.hypot(before.x-1.8,before.z+9.5)
+  if(!Number.isFinite(realDistance)||!Number.isFinite(before.distance)){
+   failure='Nonfinite production player or Orb coordinates';break
+  }
+  if(realDistance<2.2&&before.distance<2.2&&before.nearby==='orb'){
+   inside=true;break
+  }
+  if(before.phase!=='HOME'){failure='Unexpected original scene phase '+before.phase;break}
+  while(waypoint<waypoints.length){
+   const p=waypoints[waypoint]
+   if(Math.abs(before.x-p.x)>.75||Math.abs(before.z-p.z)>.75)break
+   waypoint++
+  }
+  const p=waypoints[Math.min(waypoint,waypoints.length-1)]
+  const dx=p.x-before.x,dz=p.z-before.z
+  const key=Math.abs(dx)>.62?(dx>0?'KeyD':'KeyA'):
+   Math.abs(dz)>.65?(dz<0?'KeyW':'KeyS'):
+   realDistance>2.2?(before.x<1.8?'KeyD':'KeyW'):'KeyW'
+  await holdActualKey(page,key,270)
+  await page.waitForTimeout(70)
+  const after=await read()
+  const displacement=Math.hypot(after.x-before.x,after.z-before.z)
+  trace.push({waypoint,key,x:after.x,z:after.z,
+   distanceOrb:after.distance,nearby:after.nearby,moved:Number(displacement.toFixed(3))})
+  stalled=displacement<.035?stalled+1:0
+  if(stalled>=5){
+   failure='Genuine collision or input stall at waypoint '+waypoint+' using '+key
+   break
+  }
+  if(after.z<=-17.8||after.x<=-13.8||after.x>=13.8){
+   failure='Hit original world bounds before Orb proximity'
+   break
+  }
  }
+ const arrival=await read()
+ const distance=Math.hypot(arrival.x-1.8,arrival.z+9.5)
+ if(!inside&&!failure)failure='Exceeded bounded WASD approach budget'
+ result.journey.orb={starting:start,arrival,waypointsCompleted:waypoint,
+  movementPulses:trace.length,approachTrace:trace.slice(-35),
+  measuredDistance:distance,radiusMetres:2.4,
+  input:'actual-WASD-original-embodied-movement-kernel',failure}
+ if(failure||distance>=2.4||arrival.nearby!=='orb'){
+  await screenshot(page,'J4-orb-approach-failure').catch(()=>{})
+  throw Error('J4 source-anchored physical approach failed: '+
+   JSON.stringify({arrival,waypoint,steps:trace.length,last:trace.slice(-10),failure}).slice(0,2400))
+ }
+
  await page.waitForFunction(()=>{
   const e=document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
   return e?.dataset.homeNearby==='orb'&&Number(e.dataset.homeDistanceOrb)<2.4
