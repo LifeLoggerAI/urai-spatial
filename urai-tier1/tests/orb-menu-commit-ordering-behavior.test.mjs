@@ -55,6 +55,17 @@ class DomElement extends DomNode {
   hasAttribute(name) { return this.attributes.has(name) }
   get disabled() { return this.hasAttribute('disabled') }
   get id() { return this.getAttribute('id') ?? '' }
+  // HTML elements expose data-* attributes through camelCase dataset keys.
+  // Keep the isolated React DOM adapter faithful to the real browser so the
+  // production Home readiness guard is tested rather than skipped or mocked.
+  get dataset() {
+    const fields = Object.create(null)
+    for (const [name, value] of this.attributes) {
+      if (!name.startsWith('data-')) continue
+      fields[name.slice(5).replace(/-([a-z])/g, (_match, letter) => letter.toUpperCase())] = value
+    }
+    return fields
+  }
   matches(selector) {
     const notDisabled = selector.endsWith(':not([disabled])')
     if (notDisabled) selector = selector.slice(0, -':not([disabled])'.length)
