@@ -288,8 +288,9 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     if (profile.reducedMotion) setPhase("arrival");
     else setPhase("departure");
     const next = withIdentity(new URLSearchParams(), node.id);
-    next.set("memoryId", node.id);
     next.set("node", node.id);
+    if (node.authorizedMemory && node.memoryId) next.set("memoryId", node.memoryId);
+    else next.delete("memoryId");
     if (node.eraId) next.set("era", node.eraId);
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
   }, [profile.reducedMotion, router, withIdentity]);
@@ -304,18 +305,21 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     setPhase("overview");
     const next = withIdentity(new URLSearchParams(), retainedId || undefined);
     if (retainedId) {
-      next.set("memoryId", retainedId);
+      const retainedNode = nodes.find((node) => node.id === retainedId);
       next.set("node", retainedId);
+      if (retainedNode?.authorizedMemory && retainedNode.memoryId) next.set("memoryId", retainedNode.memoryId);
+      else next.delete("memoryId");
     }
     next.set("overview", "1");
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [queryNode, router, selectedId, withIdentity]);
+  }, [nodes, queryNode, router, selectedId, withIdentity]);
 
   const destinationHref = useCallback((route: "focus" | "replay") => {
     if (!selected) return "/life-map";
     const next = withIdentity(new URLSearchParams(), selected.id);
-    next.set("memoryId", selected.id);
     next.set("node", selected.id);
+    if (!explicitDemoRequested && selected.authorizedMemory && selected.memoryId) next.set("memoryId", selected.memoryId);
+    else if (!explicitDemoRequested) next.delete("memoryId");
     if (!explicitDemoRequested && selected.authorizedMemory && selected.replayManifestId) next.set("manifestId", selected.replayManifestId);
     next.set("returnNode", selected.id);
     next.set("artifactFamily", resolveArtifactFamily(selected));
@@ -333,7 +337,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       }
     }
     return `/${route}?${next.toString()}`;
-  }, [phase, selected, withIdentity]);
+  }, [explicitDemoRequested, phase, selected, withIdentity]);
 
   useEffect(() => {
     if (!overviewRequested) return;
