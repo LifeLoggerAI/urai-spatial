@@ -12,7 +12,6 @@ type Props = {
 }
 
 const HOME_SPAWN = { x: -0.85, z: 8.4 } as const
-const HOME_ORB = { x: 1.8, z: -9.5 } as const
 const HOME_GROUND = { x: -5.4, z: -10.8 } as const
 const HOME_LIFE_MAP = { x: 5.4, z: -10.8 } as const
 const REVIEW_ORB_STATES = new Set<OrbState>([
@@ -27,7 +26,18 @@ function synchronizeCanonicalHomeTelemetry(world: HTMLElement) {
 
   const distance = (target: { x: number; z: number }) => Math.hypot(playerX - target.x, playerZ - target.z).toFixed(3)
   if (world.dataset.homeDistance !== distance(HOME_SPAWN)) world.dataset.homeDistance = distance(HOME_SPAWN)
-  if (world.dataset.homeDistanceOrb !== distance(HOME_ORB)) world.dataset.homeDistanceOrb = distance(HOME_ORB)
+  // The canonical and research-preview scenes have different physical Orb
+  // anchors. Read the currently rendered source anchor rather than claiming
+  // proximity to a stale coordinate from a different world.
+  const orbX = Number.parseFloat(world.dataset.homeOrbAnchorX ?? '')
+  const orbZ = Number.parseFloat(world.dataset.homeOrbAnchorZ ?? '')
+  if (Number.isFinite(orbX) && Number.isFinite(orbZ)) {
+    const actualOrbDistance = distance({ x: orbX, z: orbZ })
+    if (world.dataset.homeDistanceOrb !== actualOrbDistance) world.dataset.homeDistanceOrb = actualOrbDistance
+  } else {
+    // Missing source anchor must not leave a stale positive proximity receipt.
+    if (world.dataset.homeDistanceOrb !== undefined) delete world.dataset.homeDistanceOrb
+  }
   if (world.dataset.homeDistanceGround !== distance(HOME_GROUND)) world.dataset.homeDistanceGround = distance(HOME_GROUND)
   if (world.dataset.homeDistanceLifeMap !== distance(HOME_LIFE_MAP)) world.dataset.homeDistanceLifeMap = distance(HOME_LIFE_MAP)
 }
@@ -96,7 +106,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable, onScen
     const observer = new MutationObserver(hardenHomeOwnership)
     observer.observe(owner, {
       attributes: true,
-      attributeFilter: ['data-home-player-x', 'data-home-player-z', 'data-home-assets-ready', 'data-home-input-ready', 'data-home-rendered-frames'],
+      attributeFilter: ['data-home-player-x', 'data-home-player-z', 'data-home-orb-anchor-x', 'data-home-orb-anchor-z', 'data-home-assets-ready', 'data-home-input-ready', 'data-home-rendered-frames'],
       childList: true,
       subtree: true,
     })

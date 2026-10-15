@@ -434,9 +434,22 @@ async function proveMapFocusReplayReturn(page,uid){
   manifest:'fictional-manifest-a',source:'private',notDemo:true}
  mark('J5',result.journey.privateMemory)
  await screenshot(page,'J5-private-memory-star')
- const focusButton=page.locator('.life-map-semantic-inspector button').filter({hasText:'Enter Focus'})
+ // The selected star's actual in-world threshold owns Focus navigation. The
+ // semantic inspector is optional and closes after search selection, so its
+ // hidden button is not evidence that Focus is unavailable.
+ const focusButton=page.locator('.life-map-thresholds button.focus-threshold')
  await focusButton.waitFor({state:'visible',timeout:20000})
  assert.ok(await focusButton.isEnabled(),'Private Focus threshold unavailable')
+ const href=await focusButton.getAttribute('data-destination-href')
+ assert.ok(href,'Original Life Map Focus action has no destination contract')
+ const focusTarget=new URL(href,page.url())
+ assert.equal(focusTarget.origin,new URL(page.url()).origin)
+ assert.equal(focusTarget.pathname,'/focus')
+ assert.equal(focusTarget.searchParams.get('node'),'fictional-star-a')
+ assert.equal(focusTarget.searchParams.get('memoryId'),'fictional-memory-a')
+ assert.equal(focusTarget.searchParams.get('manifestId'),'fictional-manifest-a')
+ assert.equal(focusTarget.searchParams.get('from'),'life-map')
+ assert.equal(focusTarget.searchParams.get('demo'),null,'Private Focus must not gain demo authority')
  await focusButton.click({timeout:15000})
  await routeIsPage(page,'/focus')
  const focus=page.getByTestId('urai-final-focus-chamber')
