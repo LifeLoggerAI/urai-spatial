@@ -24,10 +24,10 @@
     "dev": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs --filter urai-tier1 dev",
     "dev:3001": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs --dir urai-tier1 exec next dev --hostname 0.0.0.0 --port 3001",
     "build": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/prepare-low-disk-build.mjs && node scripts/run-pnpm.mjs --filter urai-tier1 build",
-    "build:static": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/prepare-low-disk-build.mjs && URAI_FIREBASE_STATIC_EXPORT=true node scripts/run-pnpm.mjs --dir urai-tier1 exec next build && node scripts/enforce-static-launch-boundary.mjs",
+    "build:static": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/prepare-low-disk-build.mjs && URAI_FIREBASE_STATIC_EXPORT=true node scripts/run-pnpm.mjs --dir urai-tier1 exec next build && node scripts/enforce-static-launch-boundary.mjs && node scripts/world001-v3-preview-asset.mjs assert-build-excluded",
     "start": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs --filter urai-tier1 start",
     "lint": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs --filter urai-tier1 lint",
-    "next-export": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/prepare-low-disk-build.mjs && URAI_FIREBASE_STATIC_EXPORT=true node scripts/run-pnpm.mjs --dir urai-tier1 exec next build && node scripts/enforce-static-launch-boundary.mjs",
+    "next-export": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/prepare-low-disk-build.mjs && URAI_FIREBASE_STATIC_EXPORT=true node scripts/run-pnpm.mjs --dir urai-tier1 exec next build && node scripts/enforce-static-launch-boundary.mjs && node scripts/world001-v3-preview-asset.mjs assert-build-excluded",
     "clean:next": "node scripts/clean-next-state.mjs",
     "clean:install": "node scripts/clean-install-artifacts.mjs",
     "fresh:dev": "node scripts/run-pnpm.mjs clean:next && node scripts/run-pnpm.mjs dev:3001",
@@ -140,7 +140,11 @@
     "lock:v11-v20:non-assets": "node scripts/check-v11-v20-non-asset-lock.mjs",
     "verify:v11-v20:non-assets": "pnpm lock:v11-v20:non-assets && pnpm verify:release:critical",
     "verify:v1-v20:non-assets": "pnpm verify:v1-v10:non-assets && pnpm verify:v11-v20:non-assets",
-    "test:dependency-security": "node scripts/run-spatial-quarantined-security-tests.mjs"
+    "test:dependency-security": "node scripts/run-spatial-quarantined-security-tests.mjs",
+    "world001:preview:verify": "node scripts/world001-v3-preview-asset.mjs verify-source",
+    "world001:preview:stage": "node scripts/world001-v3-preview-asset.mjs stage",
+    "world001:preview:clean": "node scripts/world001-v3-preview-asset.mjs clean",
+    "world001:preview:assert-excluded": "node scripts/world001-v3-preview-asset.mjs assert-excluded"
   },
   "devDependencies": {
     "firebase-tools": "15.32.1",
