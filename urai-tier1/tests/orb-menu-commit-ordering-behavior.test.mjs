@@ -59,11 +59,12 @@ class DomElement extends DomNode {
     const notDisabled = selector.endsWith(':not([disabled])')
     if (notDisabled) selector = selector.slice(0, -':not([disabled])'.length)
     if (notDisabled && this.disabled) return false
-    const match = selector.match(/^([a-z-]+)?(?:\[([^=\]]+)(?:="([^"]*)")?\])?$/i)
+    const match = selector.match(/^([a-z-]+)?(?:\.([a-z][a-z0-9-]*))?(?:\[([^=\]]+)(?:="([^"]*)")?\])?$/i)
     if (selector.startsWith('#')) return this.id === selector.slice(1)
     assert.ok(match, `DOM adapter needs an explicit selector: ${selector}`)
     return (!match[1] || this.tagName.toLowerCase() === match[1].toLowerCase())
-      && (!match[2] || (match[3] === undefined ? this.hasAttribute(match[2]) : this.getAttribute(match[2]) === match[3]))
+      && (!match[2] || (this.getAttribute('class') ?? '').split(/\s+/).includes(match[2]))
+      && (!match[3] || (match[4] === undefined ? this.hasAttribute(match[3]) : this.getAttribute(match[3]) === match[4]))
   }
   querySelectorAll(selector) { return this.childNodes.flatMap(child => child.nodeType === 1 ? [...(child.matches(selector) ? [child] : []), ...child.querySelectorAll(selector)] : []) }
   querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null }
@@ -103,9 +104,19 @@ const registry = compile('../src/spatial/world/destinationRegistry.ts')
 const sensory = compile('../src/app/home/orbStateController.ts')
 const worldEvents = compile('../src/spatial/world/worldEvents.ts', { '../store/useSceneStore': { useSceneStore: { getState: () => ({ phase: 'HOME' }) } } })
 
-function fixture(t, { destination = 'home', phase = 'idle', search = '', context = {} } = {}) {
+function fixture(t, { destination = 'home', phase = 'idle', search = '', context = {}, homeReady = true, homeLocked = false } = {}) {
   const container = document.createElement('div')
   const trigger = document.createElement('button')
+  // Production Home exposes readiness on its actual spatial owner. The test
+  // models that boundary without inventing a navigation or Ascent completion.
+  const home = destination === 'home' ? document.createElement('main') : null
+  if (home) {
+    home.setAttribute('class', 'urai-asset-home-world')
+    home.setAttribute('data-home-primary-owner', 'asset-driven')
+    home.setAttribute('data-home-ready', homeReady ? 'true' : 'false')
+    home.setAttribute('data-home-input-locked', homeLocked ? 'true' : 'false')
+    document.body.appendChild(home)
+  }
   trigger.setAttribute('data-testid', 'home-semantic-orb')
   trigger.addEventListener('click', worldEvents.requestUraiWorldOrbOpen)
   document.body.appendChild(trigger); document.body.appendChild(container)
@@ -137,7 +148,7 @@ function fixture(t, { destination = 'home', phase = 'idle', search = '', context
   observations.length = 0
   let mounted = true
   const unmount = () => { if (mounted) { act(() => root.unmount()); mounted = false } }
-  t.after(() => { unmount(); window.removeEventListener(sensory.URAI_ORB_STATE_EVENT, observe); document.body.removeChild(container); document.body.removeChild(trigger); document.activeElement = document.body; console.error = originalError })
+  t.after(() => { unmount(); window.removeEventListener(sensory.URAI_ORB_STATE_EVENT, observe); document.body.removeChild(container); document.body.removeChild(trigger); if (home) document.body.removeChild(home); document.activeElement = document.body; console.error = originalError })
   return {
     container, trigger, model, observations, calls, warnings, snapshot,
     controller: () => container.querySelector('[data-urai-audit-action="orb-controls"]'),
@@ -246,7 +257,7 @@ test('phase-driven close preserves disabled guards and never flushes inside a li
   assert.equal(f.snapshot().open, 'false')
 })
 
-test('travel commits close without restoring trigger and retains actual context and route construction', t => {
+test('ready Home travel commits the menu before a real Ascent request without premature route push', t => {
   const context = { memoryId: 'synthetic-memory', threadId: 'synthetic-thread', replayManifestId: 'synthetic-manifest', privacyMode: 'private' }
   const f = fixture(t, { context, search: '?placeId=synthetic-place&chapterId=synthetic-chapter' })
   f.open()
@@ -255,15 +266,28 @@ test('travel commits close without restoring trigger and retains actual context 
   assert.equal(f.observations.at(-1).state, 'transition')
   assert.equal(f.observations.every(item => item.open === 'false' && item.hidden === 'true' && item.inert), true)
   assert.notEqual(document.activeElement, f.trigger)
-  assert.deepEqual(f.calls.map(call => call.kind), ['push', 'travel'])
-  assert.equal(f.calls.every(call => call.open === 'false' && call.hidden === 'true' && call.inert), true)
-  const href = new URL(f.calls[0].value, window.location.origin)
+  // The original Home camera must finish its physical Ascent before the
+  // completion event commits navigation. An immediate router.push is a defect.
+  assert.deepEqual(f.calls.map(call => call.kind), ['travel'])
+  assert.equal(f.calls[0].open, 'false')
+  assert.equal(f.calls[0].hidden, 'true')
+  assert.equal(f.calls[0].inert, true)
+  assert.equal(f.calls[0].value.destination, 'life-map')
+  assert.equal(f.calls[0].value.entryPortal, 'home-sky')
+  assert.equal(f.calls[0].value.cameraCheckpoint, 'home-sky-ascent')
+  const href = new URL(f.calls[0].value.href, window.location.origin)
   assert.equal(href.pathname, '/life-map')
   for (const [key, value] of Object.entries({ memoryId: context.memoryId, node: context.memoryId, thread: context.threadId, manifestId: context.replayManifestId, privacyMode: context.privacyMode, placeId: 'synthetic-place', chapterId: 'synthetic-chapter' })) assert.equal(href.searchParams.get(key), value)
-  assert.equal(href.searchParams.get('entryPortal'), registry.definitionForDestination('life-map').entryPortal)
-  assert.equal(href.searchParams.get('cameraCheckpoint'), registry.definitionForDestination('life-map').cameraCheckpoint)
-  assert.equal(f.calls[1].value.href, f.calls[0].value)
 })
+
+for (const blocked of [{ homeReady: false }, { homeLocked: true }]) {
+  test(`Home does not request Ascent when readiness is blocked: ${JSON.stringify(blocked)}`, t => {
+    const f = fixture(t, blocked)
+    f.open()
+    act(() => f.container.querySelector('[data-world-target="life-map"]').click())
+    assert.deepEqual(f.calls.map(call => call.kind), [])
+  })
+}
 
 test('world return commits close without fabricating a Home return destination', t => {
   const f = fixture(t, { destination: 'focus' })
