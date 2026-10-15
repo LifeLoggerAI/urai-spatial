@@ -17,7 +17,9 @@ const result={schema:'urai-real-app-emulator-journey-v2',sourceSha:sha,
  classification:'NON_RELEASE_PARTIAL_EMULATOR_PROOF',status:'FAIL_CLOSED',
  milestones:[],screenshots:[],errors:[],firstFailure:null,
  authenticMedia:false,deviceCertified:false,finalWorldArt:false}
-let app,server,browser
+let app,server,browser,disposableAuth,disposableDb
+const disposableUsers=[]
+const disposableDocs=[]
 const wait=ms=>new Promise(r=>setTimeout(r,ms))
 const mark=(name,data={})=>result.milestones.push({name,...data})
 async function screenshot(page,name){
@@ -51,8 +53,9 @@ try{
  assert.equal(process.env.NODE_ENV||'development','development')
  app=admin.initializeApp({projectId:project},'journey-wave41')
  const auth=app.auth(),db=app.firestore()
+ disposableAuth=auth;disposableDb=db
  const accounts=[{uid:'fictional-urai-a',email:'fictional-a@example.invalid',password:'Test_Only_A_2026!'},{uid:'fictional-urai-b',email:'fictional-b@example.invalid',password:'Test_Only_B_2026!'}]
- for(const user of accounts){await auth.createUser(user);await db.doc('users/'+user.uid).set({ownerId:user.uid,accountStatus:'active',deleted:false})}
+ for(const user of accounts){await auth.createUser(user);disposableUsers.push(user.uid);const userDoc='users/'+user.uid;disposableDocs.push(userDoc);await db.doc(userDoc).set({ownerId:user.uid,accountStatus:'active',deleted:false})}
  // Isolate client transport failures from backend fixture/seeding failures.
  const probe=await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fictional-emulator-key',{
   method:'POST',headers:{'content-type':'application/json'},
@@ -60,12 +63,22 @@ try{
  })
  assert.equal(probe.status,200,'Auth emulator rejects seeded fictional account A')
  result.authDiagnostics={backendSeededAccountLogin:'emulator-200-no-token-recorded'}
+ disposableDocs.push('users/fictional-urai-a/memories/fictional-memory-a')
  await db.doc('users/fictional-urai-a/memories/fictional-memory-a').set({
   ownerId:'fictional-urai-a',title:'Fictional Lake',occurredAt:'1988-08-01T12:00:00.000Z',
   summary:'Fictional emulator data only',emotionalState:'calm',deleted:false,demo:false,consentState:'granted',privacy:'private',
   sourceMedia:[],star:{id:'fictional-star-a',position:[0,0,-4],scale:1},replayManifest:{id:'fictional-manifest-a',version:1,durationMs:10000,segments:['memory','emotion','pattern','return'].map((id,i)=>({id,label:id,caption:'Fictional',narratorLine:'Fictional',startsAtMs:i*2500,durationMs:2500}))}
  })
- await db.doc('users/fictional-urai-a/privacyPolicy/current').set({ownerId:'fictional-urai-a',version:2,revision:1,enforcement:{state:'fully-enforced'},domains:{memory:{mode:'granted',replayVisible:true}}})
+ const domain=()=>({mode:'limited',retentionDays:365,precise:false,replayVisible:true,lifeMapVisible:true,modelContext:false,sharingEnabled:false,automationEnabled:false,likenessEnabled:false})
+ const privacyPolicy={version:2,revision:1,ownerId:'fictional-urai-a',
+  domains:{memory:{...domain(),mode:'granted',modelContext:true},location:domain(),
+   models:{...domain(),modelContext:true},exports:{...domain(),mode:'denied'},
+   workforce:{...domain(),mode:'paused'},identity:domain()},
+  enforcement:{state:'fully-enforced',jobId:null,affectedTargets:[],providerState:'not-applicable'}}
+ const policyPath='users/fictional-urai-a/privacyPolicy/current'
+ disposableDocs.push(policyPath)
+ await db.doc(policyPath).set(privacyPolicy)
+ disposableDocs.push('users/fictional-urai-a/lifeMapEvents/fictional-star-a')
  await db.doc('users/fictional-urai-a/lifeMapEvents/fictional-star-a').set({userId:'fictional-urai-a',type:'memory',title:'Fictional Lake',memoryId:'fictional-memory-a',sourceType:'manual_seed',occurredAt:'1988-08-01T12:00:00.000Z',replayAvailable:true})
  server=spawn('pnpm',['--dir','urai-tier1','exec','next','dev','--hostname','127.0.0.1','--port','4173'],{env:{...process.env,NODE_ENV:'development',NEXT_TELEMETRY_DISABLED:'1'},stdio:'ignore'})
  let live=false
@@ -98,4 +111,17 @@ try{
  await screenshot(page,'J9-cross-account-denial')
  throw Error('NOT_YET_VERIFIED: physical Orb, owner Life Map, Focus, Replay, return and revocation in one authenticated session')
 }catch(e){result.firstFailure=String(e);process.exitCode=1}
-finally{result.status='FAIL_CLOSED';if(browser)await browser.close().catch(()=>{});if(server)server.kill('SIGTERM');if(app)await app.delete().catch(()=>{});await writeFile(path.join(out,'receipt.json'),JSON.stringify(result,null,2))}
+finally{
+ // Zero permanent records or identities: clean tracked disposable emulator data
+ // before the emulator shuts down; failure to clean is also failure to accept.
+ if(browser)await browser.close().catch(()=>{})
+ if(server)server.kill('SIGTERM')
+ const errors=[]
+ if(disposableDb)for(const item of [...disposableDocs].reverse())try{await disposableDb.doc(item).delete()}catch(e){errors.push('record:'+item+':'+String(e).slice(0,80))}
+ if(disposableAuth)for(const uid of [...disposableUsers].reverse())try{await disposableAuth.deleteUser(uid)}catch(e){errors.push('identity:'+uid+':'+String(e).slice(0,80))}
+ result.cleanup={disposableDocumentCount:disposableDocs.length,disposableIdentityCount:disposableUsers.length,errors}
+ if(errors.length){result.errors.push(...errors);process.exitCode=1}
+ result.status='FAIL_CLOSED'
+ if(app)await app.delete().catch(()=>{})
+ await writeFile(path.join(out,'receipt.json'),JSON.stringify(result,null,2))
+}
