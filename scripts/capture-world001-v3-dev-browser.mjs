@@ -142,16 +142,70 @@ async function testProfile(profile) {
     window.__uraiV3OrbOpenProofCount = 0
     window.addEventListener('urai:world-orb-open', () => { window.__uraiV3OrbOpenProofCount += 1 })
   })
+  // Record physical movement, not the lagging React nearby label alone.
+  // Slow demand-rendered software WebGL can cross the narrow V3 Orb zone
+  // while held input waits for a React DOM commit. Release real input at the
+  // measured source coordinate, then require the semantic nearby state too.
+  await page.evaluate(() => {
+    window.__uraiV3ApproachTrace = []
+    const started = performance.now()
+    window.__uraiV3ApproachTimer = window.setInterval(() => {
+      const root = document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+      if (!root) return
+      const x = Number(root.dataset.homePlayerX), z = Number(root.dataset.homePlayerZ)
+      window.__uraiV3ApproachTrace.push({
+        elapsedMs: Math.round(performance.now() - started), x, z,
+        sourceDistance: Number(root.dataset.homeDistanceOrb),
+        recomputedDistance: Math.hypot(x - .1, z + 1.9),
+        nearby: root.dataset.homeNearby
+      })
+      if (window.__uraiV3ApproachTrace.length > 140) window.__uraiV3ApproachTrace.shift()
+    }, 400)
+  })
   if (!profile.mobile) await page.keyboard.down('KeyW')
   else await page.getByRole('button', { name: 'Move forward' }).dispatchEvent('pointerdown')
+  let proximityError = null
   try {
-    // Reduced-motion uses demand rendering on a software WebGL runner. Preserve
-    // real held input and source distance; allow slow legitimate frames to
-    // reach the physical Orb without moving the player programmatically.
-    await page.waitForFunction(() => document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')?.getAttribute('data-home-nearby') === 'orb', null, { timeout: profile.reducedMotion ? 45000 : 12000 })
+    await page.waitForFunction(() => {
+      const root = document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+      if (!root) return false
+      const x = Number(root.dataset.homePlayerX), z = Number(root.dataset.homePlayerZ)
+      const fromSource = Number(root.dataset.homeDistanceOrb)
+      // Stop actual movement *inside* the normal radius with a settling
+      // margin; never teleport, enlarge the radius or accept a DOM label alone.
+      return Number.isFinite(x) && Number.isFinite(z) &&
+        Number.isFinite(fromSource) && fromSource < 2.2 &&
+        Math.hypot(x - .1, z + 1.9) < 2.2
+    }, null, { timeout: profile.reducedMotion ? 45000 : 12000, polling: 100 })
+  } catch (error) {
+    proximityError = error
   } finally {
     if (!profile.mobile) await page.keyboard.up('KeyW')
     else await page.getByRole('button', { name: 'Move forward' }).dispatchEvent('pointerup')
+    await page.evaluate(() => window.clearInterval(window.__uraiV3ApproachTimer))
+  }
+  if (!proximityError) {
+    try {
+      await page.waitForFunction(() => {
+        const root = document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+        if (!root) return false
+        const x = Number(root.dataset.homePlayerX), z = Number(root.dataset.homePlayerZ)
+        return root.dataset.homeNearby === 'orb' && Number.isFinite(x) &&
+          Number.isFinite(z) && Number(root.dataset.homeDistanceOrb) < 2.4 &&
+          Math.hypot(x - .1, z + 1.9) < 2.4
+      }, null, { timeout: profile.reducedMotion ? 10000 : 5000, polling: 100 })
+    } catch (error) { proximityError = error }
+  }
+  const approachTrace = await page.evaluate(() => window.__uraiV3ApproachTrace || [])
+  if (proximityError) {
+    const state = await owner.evaluate(element => ({
+      x: element.dataset.homePlayerX, z: element.dataset.homePlayerZ,
+      nearby: element.dataset.homeNearby, distance: element.dataset.homeDistanceOrb
+    }))
+    const diagnostic = { profile: profile.id, state, approachTrace, error: String(proximityError).slice(0, 800) }
+    receipt.proximityDiagnostics = [...(receipt.proximityDiagnostics || []), diagnostic]
+    await screenshot(page, profile.id + '-orb-approach-failed').catch(() => {})
+    throw new Error(profile.id + ' source-anchored physical/semantic Orb approach failed: ' + JSON.stringify(diagnostic).slice(0, 3500))
   }
   const arrivalAtOrb = await owner.evaluate(element => ({
     x: Number(element.dataset.homePlayerX), z: Number(element.dataset.homePlayerZ),
