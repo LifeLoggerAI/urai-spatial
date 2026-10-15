@@ -275,12 +275,42 @@ async function proveOrbToMap(page,world){
  // Holding W for 80 seconds follows the obstruction into the southwest bound.
  // Steer by production source coordinates with real WASD keys, following the
  // clear center aisle rather than setting player coordinates or bypassing physics.
+ // Read the user's true movement basis from controlled keyboard pulses.
+ // Wave45 real browser receipt proved each 270ms strafe overshot by ~1.49m:
+ // X alternated between 0.0646 and 1.5528 indefinitely at waypoint 2.
+ // We must measure actual yaw-relative directions and scale pulse duration
+ // to remaining projected travel, rather than treating WASD as world axes.
+ const calibrate=async key=>{
+  const before=await read()
+  await holdActualKey(page,key,140)
+  await page.waitForTimeout(170)
+  const after=await read()
+  const dx=after.x-before.x,dz=after.z-before.z
+  const metres=Math.hypot(dx,dz)
+  assert.ok(metres>.12,'J4 real input basis calibration failed: '+key)
+  return {key,metres,dx,dz,unit:{x:dx/metres,z:dz/metres}}
+ }
+ const forward=await calibrate('KeyW')
+ const right=await calibrate('KeyD')
+ const orthogonality=forward.unit.x*right.unit.x+forward.unit.z*right.unit.z
+ assert.ok(Math.abs(orthogonality)<.75,'J4 measured WASD basis is incoherent')
+ const speedEstimate=(forward.metres+right.metres)/.28
+ assert.ok(Number.isFinite(speedEstimate)&&speedEstimate>.5&&speedEstimate<25,
+  'J4 actual calibrated movement speed outside safe bounds')
+ const basis={
+  KeyW:forward.unit,KeyS:{x:-forward.unit.x,z:-forward.unit.z},
+  KeyD:right.unit,KeyA:{x:-right.unit.x,z:-right.unit.z}
+ }
+ const measuredYawRadians=Math.atan2(-forward.unit.x,-forward.unit.z)
+ // Center aisle belongs to the original authored sanctuary; waypoint targets
+ // are navigation goals, never player-state mutation or collision overrides.
  const waypoints=[
-  {x:.7,z:5},{x:.7,z:0},{x:.7,z:-4.2},{x:.8,z:-7.7},{x:1.25,z:-9.1}
+  {x:.7,z:5},{x:.7,z:0},{x:.7,z:-4.2},
+  {x:.8,z:-7.7},{x:1.25,z:-9.1}
  ]
  const trace=[]
  let waypoint=0,inside=false,failure=null,stalled=0
- for(let step=0;step<145;step++){
+ for(let step=0;step<140;step++){
   const before=await read()
   const realDistance=Math.hypot(before.x-1.8,before.z+9.5)
   if(!Number.isFinite(realDistance)||!Number.isFinite(before.distance)){
@@ -289,44 +319,56 @@ async function proveOrbToMap(page,world){
   if(realDistance<2.2&&before.distance<2.2&&before.nearby==='orb'){
    inside=true;break
   }
-  if(before.phase!=='HOME'){failure='Unexpected original scene phase '+before.phase;break}
+  if(before.phase!=='HOME'){failure='Unexpected real scene phase '+before.phase;break}
   while(waypoint<waypoints.length){
-   const p=waypoints[waypoint]
-   if(Math.abs(before.x-p.x)>.75||Math.abs(before.z-p.z)>.75)break
+   const goal=waypoints[waypoint]
+   if(Math.abs(before.x-goal.x)>.92||Math.abs(before.z-goal.z)>.92)break
    waypoint++
   }
-  const p=waypoints[Math.min(waypoint,waypoints.length-1)]
-  const dx=p.x-before.x,dz=p.z-before.z
-  const key=Math.abs(dx)>.62?(dx>0?'KeyD':'KeyA'):
-   Math.abs(dz)>.65?(dz<0?'KeyW':'KeyS'):
-   realDistance>2.2?(before.x<1.8?'KeyD':'KeyW'):'KeyW'
-  await holdActualKey(page,key,270)
-  await page.waitForTimeout(70)
+  const goal=waypoints[Math.min(waypoint,waypoints.length-1)]
+  const dx=goal.x-before.x,dz=goal.z-before.z
+  const choices=Object.entries(basis).map(([key,v])=>({
+   key,projection:dx*v.x+dz*v.z
+  })).sort((a,b)=>b.projection-a.projection)
+  const chosen=choices[stalled>2?1:0]
+  if(!chosen||chosen.projection<=0){
+   failure='No positive measured keyboard direction toward waypoint '+waypoint;break
+  }
+  const durationMs=Math.max(65,Math.min(205,Math.round(chosen.projection/speedEstimate*650)))
+  await holdActualKey(page,chosen.key,durationMs)
+  await page.waitForTimeout(125)
   const after=await read()
-  const displacement=Math.hypot(after.x-before.x,after.z-before.z)
-  trace.push({waypoint,key,x:after.x,z:after.z,
-   distanceOrb:after.distance,nearby:after.nearby,moved:Number(displacement.toFixed(3))})
-  stalled=displacement<.035?stalled+1:0
-  if(stalled>=5){
-   failure='Genuine collision or input stall at waypoint '+waypoint+' using '+key
-   break
+  const moved=Math.hypot(after.x-before.x,after.z-before.z)
+  trace.push({
+   waypoint,key:chosen.key,durationMs,
+   projectedMetres:Number(chosen.projection.toFixed(3)),
+   beforeX:before.x,beforeZ:before.z,x:after.x,z:after.z,
+   moved:Number(moved.toFixed(3)),distanceOrb:after.distance,nearby:after.nearby
+  })
+  stalled=moved<.05?stalled+1:0
+  if(stalled>=6){
+   failure='Real input/collision stall on measured heading at waypoint '+waypoint;break
   }
   if(after.z<=-17.8||after.x<=-13.8||after.x>=13.8){
-   failure='Hit original world bounds before Orb proximity'
-   break
+   failure='Physical player reached original world bounds';break
   }
  }
  const arrival=await read()
  const distance=Math.hypot(arrival.x-1.8,arrival.z+9.5)
- if(!inside&&!failure)failure='Exceeded bounded WASD approach budget'
- result.journey.orb={starting:start,arrival,waypointsCompleted:waypoint,
-  movementPulses:trace.length,approachTrace:trace.slice(-35),
+ if(!inside&&!failure)failure='Measured-basis movement budget exhausted before Orb'
+ result.journey.orb={
+  starting:start,arrival,waypointsCompleted:waypoint,
+  movementPulses:trace.length,approachTrace:trace.slice(-40),
   measuredDistance:distance,radiusMetres:2.4,
-  input:'actual-WASD-original-embodied-movement-kernel',failure}
+  calibration:{forward,right,measuredYawRadians,orthogonality,speedEstimate},
+  input:'genuine-WASD-calibrated-on-original-player',failure
+ }
  if(failure||distance>=2.4||arrival.nearby!=='orb'){
   await screenshot(page,'J4-orb-approach-failure').catch(()=>{})
-  throw Error('J4 source-anchored physical approach failed: '+
-   JSON.stringify({arrival,waypoint,steps:trace.length,last:trace.slice(-10),failure}).slice(0,2400))
+  throw Error('J4 actual calibrated physical approach failed: '+JSON.stringify({
+   arrival,waypoint,pulses:trace.length,calibration:result.journey.orb.calibration,
+   last:trace.slice(-10),failure
+  }).slice(0,2500))
  }
 
  await page.waitForFunction(()=>{
