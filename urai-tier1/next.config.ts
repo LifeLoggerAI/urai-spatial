@@ -12,7 +12,7 @@ const WORLD001_V3_PUBLIC = path.join(
   projectRoot,
   "public/assets/urai/world001-preview/URAI_WORLD001_FOUNDER_HOME_ARCHITECTURE_v3.glb",
 );
-if (process.env.NODE_ENV === "production" && existsSync(WORLD001_V3_PUBLIC)) {
+if ((process.env.NODE_ENV === "production" || isFirebaseStaticExport) && existsSync(WORLD001_V3_PUBLIC)) {
   throw new Error("Release blocked: nonproduction World001 V3 model is staged under Next public/");
 }
 

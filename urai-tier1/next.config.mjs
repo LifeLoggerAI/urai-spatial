@@ -1,3 +1,16 @@
+import { existsSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const WORLD001_V3_PUBLIC = join(
+  dirname(fileURLToPath(import.meta.url)),
+  'public/assets/urai/world001-preview/URAI_WORLD001_FOUNDER_HOME_ARCHITECTURE_v3.glb',
+)
+// Retain this guard even when Next selects next.config.mjs instead of next.config.ts.
+if ((process.env.NODE_ENV === 'production' || process.env.URAI_FIREBASE_STATIC_EXPORT === 'true') && existsSync(WORLD001_V3_PUBLIC)) {
+  throw new Error('Release blocked: nonproduction World001 V3 model is staged under Next public/')
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Keep the full build within bounded worker memory without skipping analysis.
