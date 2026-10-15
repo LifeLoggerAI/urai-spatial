@@ -64,3 +64,12 @@ html.urai-route-life-map [data-testid='urai-true-3d-life-map'][data-life-map-mod
   display: none !important;
   background-image: none !important;
 }
+
+/* World-only launcher lift: at compact widths, selected galaxy labels and their
+   high-z overlays can intercept the floating Adam button's real 48px hit target.
+   Keep the original button in place, above Life Map controls but below the
+   separately portaled and consent-governed Adam panel (z-index 2147483602). */
+html.urai-route-life-map [data-urai-adam-launcher][data-adam-launcher-placement='spatial-overlay'] {
+  z-index: 2147483601 !important;
+  pointer-events: auto !important;
+}
