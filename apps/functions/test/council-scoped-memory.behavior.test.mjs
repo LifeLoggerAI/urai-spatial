@@ -11,13 +11,13 @@ const digest = value => createHash('sha256').update(JSON.stringify(value)).diges
 const uid = 'fictional-owner'
 const sourceA = 'psr_lake_alpha', sourceB = 'psr_lake_beta'
 const base = 'users/' + uid + '/'
-function load(file, imports) {
+function load(file, imports, globals = {}) {
   const source = fs.readFileSync(new URL('../src/' + file, import.meta.url), 'utf8')
   const js = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText
   const module = { exports: {} }
-  vm.runInNewContext(js, { module, exports: module.exports, Buffer, require(name) {
+  vm.runInNewContext(js, { module, exports: module.exports, Buffer, URL, AbortController, setTimeout, clearTimeout, ...globals, require(name) {
     assert.ok(Object.hasOwn(imports, name), 'Unexpected production dependency: ' + name)
     return imports[name]
   } }, { filename: file })
@@ -41,9 +41,9 @@ function makeFixture() {
       ref: { path, parent: { id: path.split('/').at(-2) } },
       data: () => data, get: key => data?.[key] }
   }
-  const db = { doc: path => ({ path }), async runTransaction(callback) {
+  const db = { doc: path => ({ path, get: async () => snapshot(path), set: async value => docs.set(path, value) }), async runTransaction(callback) {
     const tx = { get: async ref => snapshot(ref.path),
-      getAll: async (...refs) => refs.map(ref => snapshot(ref.path)) }
+      getAll: async (...refs) => refs.map(ref => snapshot(ref.path)), set: (ref, value) => docs.set(ref.path, value) }
     return callback(tx)
   } }
   const life = {
@@ -182,4 +182,122 @@ test('real resolver rejects revoked model-context consent', async () => {
   p.domains.models.mode = 'denied'
   f.put('privacyPolicy/current', p)
   await assert.rejects(f.authority.resolveCouncilMemoryGraph(f.db, uid, 'memory-a'))
+})
+
+
+// Full local trust-path integration: both the real SceneTruth/Life Graph
+// resolver and the production HTTP handler execute in one test. Only the
+// persisted database, receipt service, and paid-provider transport are mocked.
+function integratedCouncilHarness() {
+  const f = makeFixture()
+  f.put('providerConnections/xai', { processingAllowed: true, revocationState: 'not-required' })
+  const sent = []
+  let actor = uid
+  const firestore = () => f.db
+  class Timestamp {
+    constructor(ms) { this.ms = ms }
+    toMillis() { return this.ms }
+    static fromMillis(ms) { return new Timestamp(ms) }
+  }
+  firestore.Timestamp = Timestamp
+  firestore.FieldValue = {
+    serverTimestamp: () => 'test-timestamp',
+    increment: n => ({ increment: n }),
+  }
+  const admin = {
+    apps: [{}], initializeApp() {},
+    firestore,
+    auth: () => ({ async verifyIdToken(token, checkRevocation) {
+      assert.equal(token, 'fictional-test-token')
+      assert.equal(checkRevocation, true)
+      return { uid: actor }
+    } }),
+  }
+  const env = { URAI_COUNCIL_XAI_ENABLED: 'true', COUNCIL_XAI_MODEL: 'fictional-transport' }
+  const provider = load('councilProviderFunctions.ts', {
+    'node:crypto': { createHash },
+    './consentPolicyAuthority': consent,
+    './councilGraphEvidenceAuthority': f.authority,
+    'firebase-admin': admin,
+    'firebase-functions/params': { defineSecret: () => ({ value: () => 'fake-not-a-secret' }) },
+    'firebase-functions/v2/https': { onRequest: (_opts, handler) => handler },
+    './protectedProviderSpend': {
+      SPATIAL_SPEND_WORKER_TOKENS_JSON: {},
+      SpatialSpendError: class extends Error {},
+      assertSpatialPaidOutputCurrent() {},
+      async paidSpatialFetch(_db, who, lane, family, model, sourceInput, endpoint, init) {
+        assert.equal(who, uid)
+        assert.equal(lane, 'council-xai')
+        assert.equal(family, 'xai')
+        assert.equal(model, 'fictional-transport')
+        sent.push({ body: String(init.body), sourceInput, endpoint: String(endpoint) })
+        return {
+          ok: true, status: 200, headers: { get: () => 'fictional-request-id' },
+          async json() { return { choices: [{ message: { content: 'Answer from fictional evidence only.' } }] } },
+        }
+      },
+    },
+  }, { process: { env } })
+  const invoke = async (memorySelection, patch = {}) => {
+    const response = {
+      statusCode: 0, body: null, writableEnded: false, headersSent: false, headers: {},
+      on() {}, status(code) { this.statusCode = code; return this },
+      setHeader(name, value) { this.headers[name] = value },
+      json(value) { this.body = value; this.headersSent = true; this.writableEnded = true; return this },
+      end() { this.writableEnded = true },
+    }
+    await provider.xaiCouncilProvider({
+      method: 'POST', headers: { authorization: 'Bearer fictional-test-token' },
+      body: {
+        requestId: 'a'.repeat(64), message: 'What lake was visited?',
+        memorySelection, graphShareConsent: true, aiProcessingConsent: true,
+        context: [{ role: 'user', content: 'Unrelated previous discussion: OTHER_MEMORY_CONTEXT' }],
+        ...patch,
+      },
+    }, response)
+    return response
+  }
+  return { ...f, sent, invoke, changeActor: value => { actor = value } }
+}
+
+test('integrated real resolver and provider handler isolate both memories in serialized xAI request', async () => {
+  const f = integratedCouncilHarness()
+  for (const [selected, allowed, forbidden] of [
+    ['memory-a', 'Lake Alpha in 1988', 'Lake Beta in 1996'],
+    ['memory-b', 'Lake Beta in 1996', 'Lake Alpha in 1988'],
+  ]) {
+    const result = await f.invoke(selected)
+    assert.equal(result.statusCode, 200, result.body?.error)
+    assert.equal(result.body.provider, 'xai')
+    const sent = f.sent.at(-1).body
+    assert.match(sent, new RegExp(allowed))
+    assert.doesNotMatch(sent, new RegExp(forbidden))
+    assert.doesNotMatch(sent, /OTHER_MEMORY_CONTEXT|canonicalLabel|edge-beta/)
+  }
+  assert.equal(f.sent.length, 2)
+})
+
+test('integrated real resolver refuses revoked source before provider dispatch', async () => {
+  const f = integratedCouncilHarness()
+  f.receipts.set(sourceA, { active: false, owner: uid, revision: 1 })
+  const result = await f.invoke('memory-a')
+  assert.notEqual(result.statusCode, 200)
+  assert.equal(f.sent.length, 0)
+})
+
+test('integrated real resolver and handler deny missing separate evidence consent before dispatch', async () => {
+  const f = integratedCouncilHarness()
+  const result = await f.invoke('memory-a', { graphShareConsent: false })
+  assert.equal(result.statusCode, 403)
+  assert.equal(result.body.error, 'COUNCIL_GRAPH_DISCLOSURE_CONSENT_REQUIRED')
+  assert.equal(f.sent.length, 0)
+})
+
+test('integrated real resolver and handler deny revoked provider processing', async () => {
+  const f = integratedCouncilHarness()
+  f.put('providerConnections/xai', { processingAllowed: false, revocationState: 'requested' })
+  const result = await f.invoke('memory-b')
+  assert.equal(result.statusCode, 403)
+  assert.equal(result.body.error, 'PROVIDER_PROCESSING_REVOKED')
+  assert.equal(f.sent.length, 0)
 })
