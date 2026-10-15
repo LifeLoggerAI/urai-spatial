@@ -90,3 +90,17 @@ test('persistent Life Map route transactions use Firebase auth rather than impli
   assert.match(routeTransactionBridge, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)/)
   assert.doesNotMatch(routeTransactionBridge, /localStorage\.getItem/)
 })
+
+test('a changed Firebase actor never renders previously cached private Life Map stars or eras', () => {
+  // Firestore unsubscribe happens after render. The current-actor fence must
+  // apply synchronously on render, before useEffect cleanup can run.
+  assert.match(source, /const currentOwner = explicitDemo \? 'demo-user' : resolvedUserId;/)
+  assert.match(source, /const currentNodes = nodesOwner === currentOwner \? nodes : \[\];/)
+  assert.match(source, /const currentEras = erasOwner === currentOwner \? eras : \[\];/)
+  assert.match(source, /return \{ nodes: currentNodes, eras: currentEras, loading, error, usingSeedData: explicitDemo, sourceMode \};/)
+  assert.match(source, /setNodesOwner\(resolvedUserId\)/)
+  assert.match(source, /setErasOwner\(resolvedUserId\)/)
+  // Demo mode must be its own explicit source, never inherited from an owner.
+  assert.match(source, /setNodesOwner\('demo-user'\)/)
+  assert.match(source, /setErasOwner\('demo-user'\)/)
+})
