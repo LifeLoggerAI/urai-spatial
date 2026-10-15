@@ -26,8 +26,10 @@ const {build}=require(createRequire(require.resolve('tsx/package.json')).resolve
 const {chromium}=require('playwright')
 const owner={uid:'fictional-council-a',email:'fictional-council-a@example.invalid',password:'Emulator-Only-A-2026!'}
 const other={uid:'fictional-council-b',email:'fictional-council-b@example.invalid',password:'Emulator-Only-B-2026!'}
-admin.initializeApp({projectId:project},'urai-council-emulator-browser')
-const db=admin.firestore(),auth=admin.auth()
+const emulatorApp=admin.initializeApp({projectId:project},'urai-council-emulator-browser')
+// The isolated named Admin app owns both emulator SDK clients; do not fall
+// back to a default Firebase Admin app or production credentials.
+const db=emulatorApp.firestore(),auth=emulatorApp.auth()
 await auth.createUser(owner);await auth.createUser(other)
 function memory(id,title,year){
   return {ownerId:owner.uid,title,occurredAt:year+'-08-01T12:00:00.000Z',
