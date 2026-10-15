@@ -93,10 +93,11 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     const next = withIdentity(new URLSearchParams(), node.id)
     next.set('memoryId', node.id)
     next.set('node', node.id)
+    if (!explicitDemo && node.authorizedMemory && node.replayManifestId) next.set('manifestId', node.replayManifestId)
     next.set('returnNode', node.id)
     next.set('from', 'life-map-semantic')
     return `/${route}?${next.toString()}`
-  }, [withIdentity])
+  }, [withIdentity, explicitDemo])
 
   const overview = useCallback(() => {
     setOpen(false)
@@ -211,8 +212,8 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
       <h2 dir="auto">{selected.title}</h2>
       <p dir="auto">{selected.summary}</p>
       <nav className="semantic-thresholds" aria-labelledby="semantic-thresholds-label"><span id="semantic-thresholds-label" className="sr-only" {...locale.props('lifeMap.destinations')}>{locale.text('lifeMap.destinations')}</span>
-        <button type="button" onClick={() => router.push(destinationHref('focus', selected))} {...locale.props('lifeMap.enterFocus')}>{locale.text('lifeMap.enterFocus')}</button>
-        <button type="button" disabled={!selected.replayAvailable || selected.locked} onClick={() => router.push(destinationHref('replay', selected))} {...locale.props('nav.replay')}>{locale.text('nav.replay')}</button>
+        <button type="button" disabled={(!explicitDemo && !selected.authorizedMemory) || Boolean(selected.locked)} onClick={() => router.push(destinationHref('focus', selected))} {...locale.props('lifeMap.enterFocus')}>{locale.text('lifeMap.enterFocus')}</button>
+        <button type="button" disabled={!selected.replayAvailable || selected.locked || (!explicitDemo && !selected.authorizedMemory)} onClick={() => router.push(destinationHref('replay', selected))} {...locale.props('nav.replay')}>{locale.text('nav.replay')}</button>
         <button type="button" onClick={overview} {...locale.props('common.overview')}>{locale.text('common.overview')}</button>
       </nav>
       {related.length ? <div className="related-paths"><strong {...locale.props('lifeMap.connected')}>{locale.text('lifeMap.connected')}</strong>{related.slice(0, 4).map((node) => <button key={node.id} type="button" onClick={() => selectNode(node)} dir="auto">{node.title}</button>)}</div> : null}
