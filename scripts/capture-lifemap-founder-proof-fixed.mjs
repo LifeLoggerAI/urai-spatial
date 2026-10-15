@@ -833,6 +833,10 @@ async function desktopActionsAndKeyboard() {
     await waitForRenderedWorld(page)
     await selectQuietReset(page, { keyboard: true })
     await shot(page, 'keyboard-selection', 'keyboard-selection', { memoryId: 'quiet-reset', interaction: 'keyboard' })
+    // First Escape dismisses the open search inspector; second leaves selected arrival.
+    await page.locator('#life-map-navigator').waitFor({ state: 'visible' })
+    await page.keyboard.press('Escape')
+    await page.locator('#life-map-navigator').waitFor({ state: 'hidden' })
     await page.keyboard.press('Escape')
     await waitForOverviewState(page)
     await shot(page, 'escape-unwind', 'escape-unwind')
