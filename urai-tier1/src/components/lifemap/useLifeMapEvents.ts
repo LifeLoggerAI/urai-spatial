@@ -127,10 +127,16 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     const authoritative = memoryId && node.type === "memory" ? currentMemories.get(memoryId) : undefined;
     // Keep contextual events visible but non-navigable. Never infer memory
     // identity or manifest authority from event IDs, labels or source links.
-    if (!authoritative) return { ...node, authorizedMemory: false, locked: true, replayAvailable: false };
-    return { ...node, id: authoritative.id, memoryId: authoritative.id,
+    if (!authoritative) return { ...node, authorizedMemory: false,
+      // Contextual life objects remain navigable within the galaxy, but never
+      // inherit private Focus/Replay authority from a missing memory.
+      locked: node.type === "memory" ? true : Boolean(node.locked),
+      replayAvailable: false, replayManifestId: undefined };
+    return { ...node, id: node.id, memoryId: authoritative.id,
+      // Event identity owns the constellation, graph links and camera anchor;
+      // the separately verified memory owns personal historical content.
       title: authoritative.title, summary: authoritative.summary,
-      replayAvailable: node.replayAvailable, locked: Boolean(node.locked),
+      replayAvailable: Boolean(node.replayAvailable), locked: Boolean(node.locked),
       authorizedMemory: true, replayManifestId: authoritative.replayManifest.id };
   }), [currentNodes, currentMemories, explicitDemo]);
   const currentEras = erasOwner === currentOwner ? eras : [];
