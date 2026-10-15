@@ -169,9 +169,9 @@ for (const flag of ['onboarding','firstRun']) test('actual semantic selection re
   const f=fixture('?demo=1&'+flag+'=1');const q=f.select()
   assert.equal(q.get(flag),'1');assert.equal(q.get('manifestId'),'replay-recovery-thread')
 })
-test('selecting a different private memory drops the previous manifest rather than rebinding it',()=>{
+test('selecting a different authorized private memory replaces previous manifest with canonical manifest',()=>{
   const f=fixture('?memoryId=other-private-memory&manifestId=other-private-manifest&onboarding=1',{memoryNodes:[privateNode]});const q=f.select()
-  assert.equal(q.get('memoryId'),'quiet-reset');assert.equal(q.get('manifestId'),null);assert.equal(q.get('onboarding'),'1');assert.equal(q.get('demo'),null)
+  assert.equal(q.get('memoryId'),'quiet-reset');assert.equal(q.get('manifestId'),'existing-source-manifest');assert.equal(q.get('onboarding'),'1');assert.equal(q.get('demo'),null)
 })
 
 // Exercise the canonical scene's actual onSelect and destination callbacks,
