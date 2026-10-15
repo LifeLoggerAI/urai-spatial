@@ -1,5 +1,6 @@
 import { getApp, getApps, initializeApp, type FirebaseOptions } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
+import { connectAuthEmulator, getAuth } from 'firebase/auth'
 import { getFunctions } from 'firebase/functions'
 
 const PUBLIC_FIREBASE_ENV = {
@@ -36,4 +37,30 @@ const firebaseConfig: FirebaseOptions = {
 
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
 export const functions = getFunctions(app)
-export const getFirebaseDb = () => getFirestore(app)
+const emulatorRequested = process.env.NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR === 'true'
+// Fail closed even if someone accidentally provides the test flag to a live build.
+export const uraiJourneyEmulatorEnabled = emulatorRequested &&
+  process.env.NODE_ENV === 'development' &&
+  projectId === 'demo-urai-auth-journey' && firebasePublicEnvReady
+if (emulatorRequested && !uraiJourneyEmulatorEnabled)
+  throw new Error('Refusing UrAi journey emulator outside isolated development project')
+if (uraiJourneyEmulatorEnabled && app.options.projectId !== 'demo-urai-auth-journey')
+  throw new Error('Refusing non-isolated Firebase app for journey emulator')
+let authEmulatorConnected = false
+let firestoreEmulatorConnected = false
+export function getUraiAuth() {
+  const auth = getAuth(app)
+  if (uraiJourneyEmulatorEnabled && !authEmulatorConnected) {
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+    authEmulatorConnected = true
+  }
+  return auth
+}
+export const getFirebaseDb = () => {
+  const db = getFirestore(app)
+  if (uraiJourneyEmulatorEnabled && !firestoreEmulatorConnected) {
+    connectFirestoreEmulator(db, '127.0.0.1', 8080)
+    firestoreEmulatorConnected = true
+  }
+  return db
+}

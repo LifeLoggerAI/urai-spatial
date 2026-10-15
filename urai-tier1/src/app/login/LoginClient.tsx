@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { getAuth, GoogleAuthProvider, OAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signOut, type User } from 'firebase/auth'
+import { GoogleAuthProvider, OAuthProvider, onAuthStateChanged, signInWithCredential, signInWithEmailAndPassword, signInWithPopup, signOut, type User } from 'firebase/auth'
 import { Capacitor } from '@capacitor/core'
-import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { firebasePublicEnvReady, getUraiAuth, getFirebaseDb, uraiJourneyEmulatorEnabled } from '@/lib/firebase/client'
+import { doc, getDoc } from 'firebase/firestore'
 import { NativeGoogleSignInUnavailable, performUraiGoogleSignIn, performUraiGoogleSignOut, performUraiAppleSignIn } from '@/lib/firebase/googleSignInPolicy'
 
 type AuthState = 'checking' | 'signed-out' | 'working' | 'signed-in' | 'unavailable' | 'error'
@@ -12,13 +13,16 @@ type AuthState = 'checking' | 'signed-out' | 'working' | 'signed-in' | 'unavaila
 export default function LoginClient() {
   const [user, setUser] = useState<User | null>(null)
   const [nativeIos, setNativeIos] = useState(false)
+  const [testEmail, setTestEmail] = useState('')
+  const [testPassword, setTestPassword] = useState('')
+  const [foreignRead, setForeignRead] = useState('not-tested')
   const [state, setState] = useState<AuthState>(firebasePublicEnvReady ? 'checking' : 'unavailable')
   const [message, setMessage] = useState(firebasePublicEnvReady ? 'Checking account state...' : 'Private sign-in is unavailable because Firebase public configuration is not present.')
 
   useEffect(() => {
     setNativeIos(Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios')
     if (!firebasePublicEnvReady) return
-    const auth = getAuth(app)
+    const auth = getUraiAuth()
     return onAuthStateChanged(auth, (nextUser) => {
       setUser(nextUser)
       if (!nextUser && Capacitor.isNativePlatform() && !nativeIdentityConfigured()) {
@@ -46,17 +50,41 @@ export default function LoginClient() {
         platform: Capacitor.getPlatform(),
         nativeConfigured: nativeGoogleConfigured(),
       }, {
-        web: () => signInWithPopup(getAuth(app), provider),
+        web: () => signInWithPopup(getUraiAuth(), provider),
         native: async () => {
           const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
           const result = await FirebaseAuthentication.signInWithGoogle({ skipNativeAuth: true, ...(Capacitor.getPlatform() === 'android' ? { useCredentialManager: true } : {}) })
           return result.credential?.idToken
         },
-        exchange: (idToken) => signInWithCredential(getAuth(app), GoogleAuthProvider.credential(idToken)),
+        exchange: (idToken) => signInWithCredential(getUraiAuth(), GoogleAuthProvider.credential(idToken)),
       })
     } catch (error) {
       setState(error instanceof NativeGoogleSignInUnavailable ? 'unavailable' : 'signed-out')
       setMessage(error instanceof NativeGoogleSignInUnavailable ? error.message : 'Sign-in was not completed. Your private world remains closed.')
+    }
+  }
+
+
+  // Actual LoginClient + Firebase SDK; never renders on production configuration.
+  const enterFictionalEmulator = async () => {
+    if (!uraiJourneyEmulatorEnabled || state === 'working') return
+    setState('working')
+    try {
+      await signInWithEmailAndPassword(getUraiAuth(), testEmail, testPassword)
+      setTestPassword('')
+    } catch {
+      setState('signed-out')
+      setMessage('Fictional emulator sign-in was denied.')
+    }
+  }
+  const probeFictionalOwnerRead = async () => {
+    if (!uraiJourneyEmulatorEnabled) return
+    try {
+      const snap = await getDoc(doc(getFirebaseDb(), 'users', 'fictional-urai-a', 'memories', 'fictional-memory-a'))
+      setForeignRead(snap.exists() ? 'allowed' : 'not-found')
+    } catch (error) {
+      const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : 'unknown'
+      setForeignRead(code)
     }
   }
 
@@ -71,7 +99,7 @@ export default function LoginClient() {
           const result = await FirebaseAuthentication.signInWithApple({ skipNativeAuth: true })
           return { idToken: result.credential?.idToken, nonce: result.credential?.nonce }
         },
-        exchange: (idToken, rawNonce) => signInWithCredential(getAuth(app), new OAuthProvider('apple.com').credential({ idToken, rawNonce })),
+        exchange: (idToken, rawNonce) => signInWithCredential(getUraiAuth(), new OAuthProvider('apple.com').credential({ idToken, rawNonce })),
       })
     } catch (error) {
       setState(error instanceof NativeGoogleSignInUnavailable ? 'unavailable' : 'signed-out')
@@ -86,7 +114,7 @@ export default function LoginClient() {
         platform: Capacitor.getPlatform(),
         nativeConfigured: nativeIdentityConfigured(),
       }, {
-        closeSession: () => signOut(getAuth(app)),
+        closeSession: () => signOut(getUraiAuth()),
         resetNativeAccount: async () => {
           const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
           await FirebaseAuthentication.signOut()
@@ -106,13 +134,23 @@ export default function LoginClient() {
 
         {state === 'signed-in' && user ? (
           <div>
+            {uraiJourneyEmulatorEnabled ? <output data-testid="urai-e2e-auth-uid">{user.uid}</output> : null}
+            {uraiJourneyEmulatorEnabled ? <div><button type="button" onClick={() => void probeFictionalOwnerRead()} style={buttonSecondary} data-testid="urai-e2e-owner-read">Check fictional owner authorization</button><output data-testid="urai-e2e-owner-read-result">{foreignRead}</output></div> : null}
             <p style={{color:'#d9f5f8'}}>Signed in as <strong><bdi>{user.email ?? 'your private account'}</bdi></strong>.</p>
             <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:24}}><Link href="/home" style={primary}>Open Home</Link><Link href="/passport" style={secondary}>Passport</Link><button type="button" onClick={() => void leave()} style={buttonSecondary}>Sign out</button></div>
           </div>
         ) : (
           <div style={{marginTop:24,display:'flex',gap:10,flexWrap:'wrap'}}>
-            <button type="button" disabled={state==='unavailable'||state==='working'||(nativeIos&&!nativeGoogleConfigured())} onClick={() => void enter()} style={buttonPrimary}>{state==='working'?'Opening provider...':nativeIos?'Continue with Google':'Continue securely'}</button>
-            {nativeIos ? <button type="button" disabled={state==='unavailable'||state==='working'||!nativeAppleConfigured()} onClick={() => void enterApple()} style={buttonApple}>Sign in with Apple</button> : null}
+            {uraiJourneyEmulatorEnabled ? (
+              <form data-testid="urai-e2e-login-form" onSubmit={(event) => { event.preventDefault(); void enterFictionalEmulator() }} style={{display:'grid',gap:12,width:'100%'}}>
+                <label htmlFor="urai-e2e-email">Fictional emulator email</label>
+                <input id="urai-e2e-email" data-testid="urai-e2e-email" type="email" autoComplete="off" value={testEmail} onChange={event => setTestEmail(event.target.value)} style={{minHeight:48,padding:10}} required />
+                <label htmlFor="urai-e2e-password">Fictional emulator password</label>
+                <input id="urai-e2e-password" data-testid="urai-e2e-password" type="password" autoComplete="off" value={testPassword} onChange={event => setTestPassword(event.target.value)} style={{minHeight:48,padding:10}} required />
+                <button type="submit" data-testid="urai-e2e-submit" style={buttonPrimary} disabled={state === 'working'}>Sign in to isolated emulator</button>
+              </form>
+            ) : <button type="button" disabled={state==='unavailable'||state==='working'||(nativeIos&&!nativeGoogleConfigured())} onClick={() => void enter()} style={buttonPrimary}>{state==='working'?'Opening provider...':nativeIos?'Continue with Google':'Continue securely'}</button>}
+            {!uraiJourneyEmulatorEnabled && nativeIos ? <button type="button" disabled={state==='unavailable'||state==='working'||!nativeAppleConfigured()} onClick={() => void enterApple()} style={buttonApple}>Sign in with Apple</button> : null}
           </div>
         )}
 

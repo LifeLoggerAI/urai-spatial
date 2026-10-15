@@ -1,57 +1,82 @@
-/** Wave 40: non-release real-app authenticated journey boundary probe.
- * Not Gold Master acceptance. No provider, production, or personal data.
- * The real login/fixture producer must supply Playwright storage state created
- * through the original application's Firebase emulator client.
- */
+#!/usr/bin/env node
+/** Non-release, fail-closed Wave 41: original Next LoginClient + Firebase emulator. */
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import path from 'node:path'
+import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
-
-const require = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
-const { chromium } = require('playwright')
-const sha = process.env.URAI_EXACT_HEAD || ''
-assert.match(sha, /^[a-f0-9]{40}$/, 'Exact candidate SHA required')
-assert.equal(process.env.FIREBASE_AUTH_EMULATOR_HOST, '127.0.0.1:9099')
-assert.equal(process.env.FIRESTORE_EMULATOR_HOST, '127.0.0.1:8080')
-assert.equal(process.env.GCLOUD_PROJECT, 'demo-urai-auth-journey')
-const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
-const origin = new URL(base)
-assert.equal(origin.protocol, 'http:', 'No HTTPS remote origin for emulator proof')
-assert.ok(['127.0.0.1', 'localhost'].includes(origin.hostname), 'Refuse production target')
-const dir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/authenticated-full-journey')
-await mkdir(dir, { recursive: true })
-const receipt = { schema:'urai-authenticated-full-journey-probe-v1', sha,
-  classification:'NON_RELEASE_PARTIAL_REAL_APP_PROBE', result:'FAIL_CLOSED',
-  authenticatedApplicationJourney:false, authenticPrivateMediaAcceptance:false,
-  physicalDeviceAcceptance:false, finalVisualArtAcceptance:false,
-  states:[], images:[], failures:[] }
-let browser
-try {
-  assert.ok(process.env.URAI_EMULATOR_AUTH_STORAGE_STATE,
-    'Missing real-app emulator login storageState produced by the owner login fixture')
-  const storageState = JSON.parse(await readFile(process.env.URAI_EMULATOR_AUTH_STORAGE_STATE,'utf8'))
-  assert.ok(Array.isArray(storageState.origins), 'Invalid Playwright storageState')
-  browser = await chromium.launch({ headless:true })
-  const context = await browser.newContext({ storageState, reducedMotion:'reduce' })
-  const page = await context.newPage()
-  page.on('pageerror', e => receipt.failures.push('pageerror:'+String(e)))
-  const response = await page.goto(base+'/home/', { waitUntil:'domcontentloaded',timeout:90000 })
-  assert.ok(response?.ok(), 'Real Home response did not succeed')
-  assert.equal(new URL(page.url()).searchParams.has('demo'),false,'Demo mode forbidden')
-  const home=page.getByTestId('urai-persistent-world-shell')
-  await home.waitFor({state:'visible',timeout:90000})
-  const shot=await page.screenshot({path:path.join(dir,'real-home-entry.png'),animations:'disabled'})
-  receipt.images.push({name:'real-home-entry.png',sha256:createHash('sha256').update(shot).digest('hex')})
-  receipt.states.push({state:'real-home-rendered',pathname:new URL(page.url()).pathname})
-  // This is intentionally a boundaried probe, not a substitute for Auth/Consent,
-  // original physical Orb movement, owner-scoped Life Map, Focus/Replay and revocation.
-  throw new Error('NOT_YET_BOUND: real client auth+consent, Orb movement, private Life Graph and Replay')
-} catch(e) {
-  receipt.failures.push(String(e))
-  process.exitCode=1
-} finally {
-  await browser?.close()
-  await writeFile(path.join(dir,'receipt.json'),JSON.stringify(receipt,null,2))
+import { mkdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import admin from 'firebase-admin'
+const requireTier1=createRequire(new URL('../urai-tier1/package.json',import.meta.url))
+const {chromium}=requireTier1('playwright')
+const project='demo-urai-auth-journey', origin='http://127.0.0.1:4173'
+const out=path.resolve('artifacts/authenticated-full-journey')
+const sha=process.env.URAI_EXACT_HEAD||''
+const result={schema:'urai-real-app-emulator-journey-v2',sourceSha:sha,
+ classification:'NON_RELEASE_PARTIAL_EMULATOR_PROOF',status:'FAIL_CLOSED',
+ milestones:[],screenshots:[],errors:[],firstFailure:null,
+ authenticMedia:false,deviceCertified:false,finalWorldArt:false}
+let app,server,browser
+const wait=ms=>new Promise(r=>setTimeout(r,ms))
+const mark=(name,data={})=>result.milestones.push({name,...data})
+async function screenshot(page,name){
+ const image=await page.screenshot({path:path.join(out,name+'.png'),timeout:90000})
+ result.screenshots.push({name,sha256:createHash('sha256').update(image).digest('hex')})
 }
+async function login(page,email,password,expected){
+ await page.goto(origin+'/login',{waitUntil:'domcontentloaded'})
+ await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:90000})
+ await page.getByTestId('urai-e2e-email').fill(email)
+ await page.getByTestId('urai-e2e-password').fill(password)
+ await page.getByTestId('urai-e2e-submit').click()
+ await page.getByTestId('urai-e2e-auth-uid').getByText(expected,{exact:true}).waitFor({timeout:30000})
+ assert.equal((await page.getByTestId('urai-e2e-auth-uid').innerText()).trim(),expected)
+}
+await mkdir(out,{recursive:true})
+try{
+ assert.match(sha,/^[a-f0-9]{40}$/)
+ for(const [key,value] of Object.entries({GCLOUD_PROJECT:project,FIREBASE_AUTH_EMULATOR_HOST:'127.0.0.1:9099',FIRESTORE_EMULATOR_HOST:'127.0.0.1:8080',NEXT_PUBLIC_FIREBASE_PROJECT_ID:project,NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR:'true'}))assert.equal(process.env[key],value,'isolated '+key)
+ assert.equal(process.env.NODE_ENV||'development','development')
+ app=admin.initializeApp({projectId:project},'journey-wave41')
+ const auth=app.auth(),db=app.firestore()
+ const accounts=[{uid:'fictional-urai-a',email:'fictional-a@example.invalid',password:'Test_Only_A_2026!'},{uid:'fictional-urai-b',email:'fictional-b@example.invalid',password:'Test_Only_B_2026!'}]
+ for(const user of accounts){await auth.createUser(user);await db.doc('users/'+user.uid).set({ownerId:user.uid,accountStatus:'active',deleted:false})}
+ await db.doc('users/fictional-urai-a/memories/fictional-memory-a').set({
+  ownerId:'fictional-urai-a',title:'Fictional Lake',occurredAt:'1988-08-01T12:00:00.000Z',
+  summary:'Fictional emulator data only',emotionalState:'calm',deleted:false,demo:false,consentState:'granted',privacy:'private',
+  sourceMedia:[],star:{id:'fictional-star-a',position:[0,0,-4],scale:1},replayManifest:{id:'fictional-manifest-a',version:1,durationMs:10000,segments:['memory','emotion','pattern','return'].map((id,i)=>({id,label:id,caption:'Fictional',narratorLine:'Fictional',startsAtMs:i*2500,durationMs:2500}))}
+ })
+ await db.doc('users/fictional-urai-a/privacyPolicy/current').set({ownerId:'fictional-urai-a',version:2,revision:1,enforcement:{state:'fully-enforced'},domains:{memory:{mode:'granted',replayVisible:true}}})
+ await db.doc('users/fictional-urai-a/lifeMapEvents/fictional-star-a').set({userId:'fictional-urai-a',type:'memory',title:'Fictional Lake',memoryId:'fictional-memory-a',sourceType:'manual_seed',occurredAt:'1988-08-01T12:00:00.000Z',replayAvailable:true})
+ server=spawn('pnpm',['--dir','urai-tier1','exec','next','dev','--hostname','127.0.0.1','--port','4173'],{env:{...process.env,NODE_ENV:'development',NEXT_TELEMETRY_DISABLED:'1'},stdio:'ignore'})
+ let live=false
+ for(let i=0;i<110;i++){if(server.exitCode!==null)throw Error('Next server exited');try{let r=await fetch(origin+'/login',{signal:AbortSignal.timeout(3500)});if(r.ok){live=true;break}}catch{}await wait(1500)}
+ assert.ok(live,'Real Next application not ready')
+ browser=await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader','--disable-dev-shm-usage']})
+ const context=await browser.newContext({viewport:{width:1280,height:800},reducedMotion:'reduce'})
+ await context.route('**/*',route=>{const u=new URL(route.request().url());return ['127.0.0.1','localhost'].includes(u.hostname)?route.continue():route.abort()})
+ const page=await context.newPage()
+ page.on('pageerror',e=>result.errors.push(String(e).slice(0,300)))
+ await page.goto(origin+'/login')
+ await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible'})
+ mark('J1',{origin,project});await screenshot(page,'J1-real-login')
+ await login(page,accounts[0].email,accounts[0].password,accounts[0].uid)
+ mark('J2',{uid:accounts[0].uid,method:'real-LoginClient-Firebase-SDK'});await screenshot(page,'J2-signed-in')
+ await page.getByRole('link',{name:'Open Home'}).click()
+ await page.waitForURL(url=>url.pathname.replace(/\/$/,'')==='/home',{timeout:60000})
+ const shell=page.getByTestId('urai-persistent-world-shell')
+ await shell.waitFor({state:'visible',timeout:90000})
+ assert.ok(!new URL(page.url()).searchParams.has('demo'))
+ mark('J3',{route:'/home',scope:'authenticated-router-shell-not-orb'});await screenshot(page,'J3-home')
+ // Verify signed-out user B cannot read A through real Firebase client.
+ await page.goto(origin+'/login')
+ await page.getByRole('button',{name:'Sign out'}).click()
+ await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible'})
+ await login(page,accounts[1].email,accounts[1].password,accounts[1].uid)
+ await page.getByTestId('urai-e2e-owner-read').click()
+ await page.getByTestId('urai-e2e-owner-read-result').getByText('permission-denied').waitFor({timeout:30000})
+ mark('J9-partial',{crossAccountFirestore:'permission-denied',consentRevocation:'not-yet-tested'})
+ await screenshot(page,'J9-cross-account-denial')
+ throw Error('NOT_YET_VERIFIED: physical Orb, owner Life Map, Focus, Replay, return and revocation in one authenticated session')
+}catch(e){result.firstFailure=String(e);process.exitCode=1}
+finally{result.status='FAIL_CLOSED';if(browser)await browser.close().catch(()=>{});if(server)server.kill('SIGTERM');if(app)await app.delete().catch(()=>{});await writeFile(path.join(out,'receipt.json'),JSON.stringify(result,null,2))}
