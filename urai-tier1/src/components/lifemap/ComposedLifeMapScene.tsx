@@ -288,11 +288,19 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     if (profile.reducedMotion) setPhase("arrival");
     else setPhase("departure");
     const next = withIdentity(new URLSearchParams(), node.id);
-    next.set("memoryId", node.id);
     next.set("node", node.id);
+    if (explicitDemoRequested) next.set("memoryId", node.id);
+    else if (node.authorizedMemory && node.memoryId) next.set("memoryId", node.memoryId);
+    else next.delete("memoryId");
+    // Route metadata is not access authority. Never carry an unrelated private
+    // manifest forward, even if a star ID happens to match an older memory ID.
+    if (!explicitDemoRequested) {
+      next.delete("manifestId");
+      if (node.authorizedMemory && node.replayManifestId) next.set("manifestId", node.replayManifestId);
+    }
     if (node.eraId) next.set("era", node.eraId);
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [profile.reducedMotion, router, withIdentity]);
+  }, [explicitDemoRequested, profile.reducedMotion, router, withIdentity]);
 
   const overview = useCallback(() => {
     const retainedId = selectedId || queryNode;
@@ -304,18 +312,32 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     setPhase("overview");
     const next = withIdentity(new URLSearchParams(), retainedId || undefined);
     if (retainedId) {
-      next.set("memoryId", retainedId);
+      const retainedNode = nodes.find((node) => node.id === retainedId);
       next.set("node", retainedId);
+      if (explicitDemoRequested) next.set("memoryId", retainedId);
+      else if (retainedNode?.authorizedMemory && retainedNode.memoryId) next.set("memoryId", retainedNode.memoryId);
+      else next.delete("memoryId");
+    }
+    if (!explicitDemoRequested) {
+      next.delete("manifestId");
+      const retainedNode = nodes.find((node) => node.id === retainedId);
+      if (retainedNode?.authorizedMemory && retainedNode.replayManifestId) next.set("manifestId", retainedNode.replayManifestId);
     }
     next.set("overview", "1");
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [queryNode, router, selectedId, withIdentity]);
+  }, [explicitDemoRequested, nodes, queryNode, router, selectedId, withIdentity]);
 
   const destinationHref = useCallback((route: "focus" | "replay") => {
     if (!selected) return "/life-map";
     const next = withIdentity(new URLSearchParams(), selected.id);
-    next.set("memoryId", selected.id);
     next.set("node", selected.id);
+    if (explicitDemoRequested) next.set("memoryId", selected.id);
+    else if (selected.authorizedMemory && selected.memoryId) next.set("memoryId", selected.memoryId);
+    else next.delete("memoryId");
+    if (!explicitDemoRequested) {
+      next.delete("manifestId");
+      if (selected.authorizedMemory && selected.replayManifestId) next.set("manifestId", selected.replayManifestId);
+    }
     next.set("returnNode", selected.id);
     next.set("artifactFamily", resolveArtifactFamily(selected));
     next.set("from", "life-map");
@@ -332,7 +354,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       }
     }
     return `/${route}?${next.toString()}`;
-  }, [phase, selected, withIdentity]);
+  }, [explicitDemoRequested, phase, selected, withIdentity]);
 
   useEffect(() => {
     if (!overviewRequested) return;
@@ -442,10 +464,10 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     </div>
 
     {thresholdsVisible ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}>
-      <button className="focus-threshold" data-destination-href={destinationHref("focus")} onClick={() => router.push(destinationHref("focus"))}>
+      <button className="focus-threshold" data-destination-href={destinationHref("focus")} disabled={(!explicitDemoRequested && !selected!.authorizedMemory) || Boolean(selected!.locked)} onClick={() => router.push(destinationHref("focus"))}>
         <span>Inspect</span><strong>Enter Focus</strong>
       </button>
-      <button className="replay-threshold" data-destination-href={destinationHref("replay")} disabled={!selected!.replayAvailable || selected!.locked} onClick={() => router.push(destinationHref("replay"))}>
+      <button className="replay-threshold" data-destination-href={destinationHref("replay")} disabled={!selected!.replayAvailable || selected!.locked || (!explicitDemoRequested && !selected!.authorizedMemory)} onClick={() => router.push(destinationHref("replay"))}>
         <span>Cross threshold</span><strong>Replay</strong>
       </button>
       <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>

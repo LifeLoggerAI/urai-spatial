@@ -194,7 +194,12 @@ test('Council UI uses the existing provider dispatcher and clears prior provider
   const panel = fs.readFileSync(new URL('../src/spatial/council/CouncilConversationPanel.tsx', import.meta.url), 'utf8')
   const registry = fs.readFileSync(new URL('../src/spatial/council/councilProviderRegistry.ts', import.meta.url), 'utf8')
 
-  assert.ok(panel.includes("useState<Exclude<CouncilProviderId, 'local-fallback'>>(requestableProviderIds[0] ?? 'openai')"))
+  // A selected Memory Star must prefer a governed graph-capable provider,
+  // while an ordinary Council conversation retains the original default.
+  assert.match(panel, /memoryRouteId \? requestableProviderIds\.find\(\(id\) => id !== 'openai'\)/)
+  assert.match(panel, /requestableProviderIds\[0\] \?\? 'openai'/)
+  assert.match(panel, /setConsent\(false\)/)
+  assert.match(panel, /setGraphShareConsent\(false\)/)
   assert.ok(panel.includes('requestCouncilProvider({'))
   assert.ok(panel.includes('provider: providerId'))
   assert.ok(panel.includes('data-live-council-providers='))
@@ -207,4 +212,24 @@ test('Council UI uses the existing provider dispatcher and clears prior provider
   for (const id of ['anthropic', 'gemini', 'xai', 'mistral']) {
     assert.equal(registry.includes(`case '${id}':`), false)
   }
+})
+
+test('selected-memory requests transmit no prior Council conversation even to the authenticated server', async () => {
+  const configured = await registryFor('true')
+  requests = []
+  responseFor = success
+  for (const provider of providers) {
+    const result = await configured.requestCouncilProvider(input(provider, {
+      memorySelection: 'memory-a',
+      graphShareConsent: true,
+      context: [{ role: 'user', content: 'Fictional Memory B private history' }],
+    }))
+    assert.equal(result.provider, provider)
+    const sent = requests.at(-1)
+    assert.deepEqual(sent.body.context, [], 'Selected-memory context must be minimized before HTTP')
+    assert.equal(sent.body.memorySelection, 'memory-a')
+    assert.equal(sent.body.graphShareConsent, true)
+    assert.doesNotMatch(String(sent.init.body), /Fictional Memory B private history/)
+  }
+  assert.equal(requests.length, providers.length)
 })

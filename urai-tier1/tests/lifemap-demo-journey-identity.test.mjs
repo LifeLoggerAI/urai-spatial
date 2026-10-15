@@ -20,6 +20,7 @@ const sceneCompiled = ts.transpileModule(sceneSource, { compilerOptions: { targe
 const adamSlotCompiled = ts.transpileModule(fs.readFileSync('src/spatial/adam/AdamLauncherSlot.tsx', 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
 const selectedMemoryCompiled = ts.transpileModule(fs.readFileSync('src/spatial/memory/useSelectedMemory.ts', 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
 const node = { id:'quiet-reset', title:'The Quiet Reset', type:'recovery', eraId:'threshold-return', connectedTo:[], summary:'Disclosed test memory', dateLabel:'Now', replayAvailable:true }
+const privateNode = { ...node, type:'memory', memoryId:'quiet-reset', authorizedMemory:true, replayManifestId:'existing-source-manifest' }
 function descendants(tree) {
   if (!tree || typeof tree !== 'object') return []
   const children = tree.props?.children
@@ -145,11 +146,11 @@ for (const [activation,detail] of [['pointer',1],['keyboard',0],['touch',1]]) te
   assert.equal(f.calls[1].activation,detail===0?'keyboard':'pointer');assert.equal(f.calls[2].destination,f.calls[0].destination);assert.equal(f.calls[2].options.scroll,false)
 })
 for (const search of ['', '?demo=0','?demo=true','?demo=01']) test('actual private selection does not invent demo manifest authority for '+(search||'absent demo'),()=>{
-  const f=fixture(search);const q=f.select();assert.equal(q.get('manifestId'),null);assert.equal(q.get('demo'),null);assert.equal(q.get('memoryId'),'quiet-reset')
+  const f=fixture(search);const q=f.select();assert.equal(q.get('manifestId'),null);assert.equal(q.get('demo'),null);assert.equal(q.get('memoryId'),null);assert.equal(q.get('node'),'quiet-reset')
 })
 for (const demo of [false,true]) test('actual '+(demo?'disclosed demo':'private')+' selection preserves an existing explicit manifest',()=>{
   const manifest=demo?'replay-recovery-thread':'existing-source-manifest'
-  const f=fixture('?memoryId=quiet-reset&manifestId='+manifest+(demo?'&demo=1':''));const q=f.select();assert.equal(q.get('manifestId'),manifest);assert.equal(q.getAll('manifestId').length,1)
+  const f=fixture('?memoryId=quiet-reset&manifestId='+manifest+(demo?'&demo=1':''),{memoryNodes:demo?[node]:[{...privateNode,replayManifestId:manifest}]});const q=f.select();assert.equal(q.get('manifestId'),manifest);assert.equal(q.getAll('manifestId').length,1)
 })
 for (const route of ['focus','replay']) test('actual '+route+' destination carries selected demo identity without copying incoming private query',()=>{
   const f=fixture('?demo=1&node=quiet-reset&privateNote=not-for-navigation')
@@ -168,9 +169,9 @@ for (const flag of ['onboarding','firstRun']) test('actual semantic selection re
   const f=fixture('?demo=1&'+flag+'=1');const q=f.select()
   assert.equal(q.get(flag),'1');assert.equal(q.get('manifestId'),'replay-recovery-thread')
 })
-test('selecting a different private memory drops the previous manifest rather than rebinding it',()=>{
-  const f=fixture('?memoryId=other-private-memory&manifestId=other-private-manifest&onboarding=1');const q=f.select()
-  assert.equal(q.get('memoryId'),'quiet-reset');assert.equal(q.get('manifestId'),null);assert.equal(q.get('onboarding'),'1');assert.equal(q.get('demo'),null)
+test('selecting a different authorized private memory replaces previous manifest with canonical manifest',()=>{
+  const f=fixture('?memoryId=other-private-memory&manifestId=other-private-manifest&onboarding=1',{memoryNodes:[privateNode]});const q=f.select()
+  assert.equal(q.get('memoryId'),'quiet-reset');assert.equal(q.get('manifestId'),'existing-source-manifest');assert.equal(q.get('onboarding'),'1');assert.equal(q.get('demo'),null)
 })
 
 // Exercise the canonical scene's actual onSelect and destination callbacks,
@@ -218,7 +219,7 @@ for(const marker of ['','0','true','01']) test('canonical private scene does not
 })
 
 test('canonical scene retains an existing manifest for the same private memory through destinations and Overview',()=>{
-  const f=fixture('?memoryId=quiet-reset&node=quiet-reset&manifestId=source-bound-manifest&onboarding=1&firstRun=1',{component:'scene',memoryNodes:sceneNodes})
+  const f=fixture('?memoryId=quiet-reset&node=quiet-reset&manifestId=source-bound-manifest&onboarding=1&firstRun=1',{component:'scene',memoryNodes:[{...privateNode,replayManifestId:'source-bound-manifest'},...sceneNodes.slice(1)]})
   for(const route of ['focus','replay']) {
     const destination=f.destination(route)
     assert.equal(destination.searchParams.get('manifestId'),'source-bound-manifest')

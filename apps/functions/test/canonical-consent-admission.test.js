@@ -33,6 +33,28 @@ const providers = ['anthropic', 'gemini', 'xai', 'mistral']
 const councilCode = fs.readFileSync(path.join(moduleRoot, 'councilProviderFunctions.js'), 'utf8')
 const clone = value => JSON.parse(JSON.stringify(value))
 
+function strictGraphEvidenceModule() {
+  const authorityCode = fs.readFileSync(path.join(moduleRoot, 'councilGraphEvidenceAuthority.js'), 'utf8')
+  const lifeCode = fs.readFileSync(path.join(moduleRoot, 'lifeGraphAuthority.js'), 'utf8')
+  const funcs = { https: { HttpsError: class extends Error {
+    constructor(code, message) { super(message); this.code = code }
+  } } }
+  function evaluate(source, dependencies) {
+    const module = { exports: {} }
+    vm.runInNewContext(source, { exports: module.exports, module, Buffer,
+      require(name) {
+        assert.ok(Object.hasOwn(dependencies, name), 'Unexpected graph dependency: ' + name)
+        return dependencies[name]
+      },
+    })
+    return module.exports
+  }
+  const shared = { 'node:crypto': crypto, 'firebase-functions/v1': funcs,
+    './consentPolicyAuthority': policyAuthority }
+  const life = evaluate(lifeCode, shared)
+  return evaluate(authorityCode, { ...shared, './lifeGraphAuthority': life })
+}
+
 function councilFixture(f, provider = 'anthropic') {
   const stats = { auth: 0, paid: 0, initialized: 0, secretReads: 0, rateWrites: 0, telemetry: [] }
   const db = {
@@ -61,6 +83,7 @@ function councilFixture(f, provider = 'anthropic') {
       if (name === 'node:crypto') return crypto
       if (name === 'firebase-admin') return admin
       if (name === './consentPolicyAuthority') return policyAuthority
+      if (name === './councilGraphEvidenceAuthority') return strictGraphEvidenceModule()
       if (name === 'firebase-functions/params') return { defineSecret: () => ({
         value() { stats.secretReads++; throw Error('NO CREDENTIAL READ EXPECTED') },
       }) }
