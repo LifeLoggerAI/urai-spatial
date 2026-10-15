@@ -14,7 +14,7 @@ function trackedDataset(initial) {
   return { dataset, writes }
 }
 function withHome(run) {
-  const owner = trackedDataset({ homeAssetsReady: 'true' })
+  const owner = trackedDataset({ homeAssetsReady: 'true', homeOrbAnchorX: '1.8', homeOrbAnchorZ: '-9.5' })
   const previousDocument = globalThis.document
   globalThis.document = { querySelector: () => owner }
   const position = new THREE.Vector3(-.85, 0, 8.4)
@@ -64,7 +64,7 @@ test('Home readiness retains three actual frames and responds to late assets and
 })
 
 test('canonical distance synchronization is idempotent while preserving three-decimal distances', () => {
-  const world = trackedDataset({ homePlayerX: '-0.8500', homePlayerZ: '8.4000' })
+  const world = trackedDataset({ homePlayerX: '-0.8500', homePlayerZ: '8.4000', homeOrbAnchorX: '1.8', homeOrbAnchorZ: '-9.5' })
   const context = vm.createContext({ world, ...landmarks })
   vm.runInContext(declaration(read('app/AssetDrivenHomeWorld.tsx'), 'synchronizeCanonicalHomeTelemetry'), context)
   vm.runInContext('synchronizeCanonicalHomeTelemetry(world)', context)
@@ -73,10 +73,15 @@ test('canonical distance synchronization is idempotent while preserving three-de
   world.writes.length = 0
   vm.runInContext('synchronizeCanonicalHomeTelemetry(world)', context)
   assert.deepEqual(world.writes, [])
+  world.dataset.homeOrbAnchorX = '0.1'
+  world.dataset.homeOrbAnchorZ = '-1.9'
+  world.writes.length = 0
+  vm.runInContext('synchronizeCanonicalHomeTelemetry(world)', context)
+  assert.equal(world.dataset.homeDistanceOrb, Math.hypot(-.85 - .1, 8.4 + 1.9).toFixed(3))
 })
 
 test('asset-owner hardening does not rewrite unchanged canvas attributes or world readiness', () => {
-  const world = trackedDataset({ homePlayerX: '-0.8500', homePlayerZ: '8.4000', homeAssetsReady: 'true', homeInputReady: 'true', homeRenderedFrames: '3' })
+  const world = trackedDataset({ homePlayerX: '-0.8500', homePlayerZ: '8.4000', homeOrbAnchorX: '1.8', homeOrbAnchorZ: '-9.5', homeAssetsReady: 'true', homeInputReady: 'true', homeRenderedFrames: '3' })
   const dataKey = key => key.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
   world.getAttribute = key => world.dataset[dataKey(key)] ?? null
   world.setAttribute = (key, value) => { world.dataset[dataKey(key)] = value }
