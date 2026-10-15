@@ -289,11 +289,18 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     else setPhase("departure");
     const next = withIdentity(new URLSearchParams(), node.id);
     next.set("node", node.id);
-    if (node.authorizedMemory && node.memoryId) next.set("memoryId", node.memoryId);
+    if (explicitDemoRequested) next.set("memoryId", node.id);
+    else if (node.authorizedMemory && node.memoryId) next.set("memoryId", node.memoryId);
     else next.delete("memoryId");
+    // Route metadata is not access authority. Never carry an unrelated private
+    // manifest forward, even if a star ID happens to match an older memory ID.
+    if (!explicitDemoRequested) {
+      next.delete("manifestId");
+      if (node.authorizedMemory && node.replayManifestId) next.set("manifestId", node.replayManifestId);
+    }
     if (node.eraId) next.set("era", node.eraId);
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [profile.reducedMotion, router, withIdentity]);
+  }, [explicitDemoRequested, profile.reducedMotion, router, withIdentity]);
 
   const overview = useCallback(() => {
     const retainedId = selectedId || queryNode;
@@ -307,20 +314,26 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     if (retainedId) {
       const retainedNode = nodes.find((node) => node.id === retainedId);
       next.set("node", retainedId);
-      if (retainedNode?.authorizedMemory && retainedNode.memoryId) next.set("memoryId", retainedNode.memoryId);
+      if (explicitDemoRequested) next.set("memoryId", retainedId);
+      else if (retainedNode?.authorizedMemory && retainedNode.memoryId) next.set("memoryId", retainedNode.memoryId);
       else next.delete("memoryId");
     }
+    if (!explicitDemoRequested) next.delete("manifestId");
     next.set("overview", "1");
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [nodes, queryNode, router, selectedId, withIdentity]);
+  }, [explicitDemoRequested, nodes, queryNode, router, selectedId, withIdentity]);
 
   const destinationHref = useCallback((route: "focus" | "replay") => {
     if (!selected) return "/life-map";
     const next = withIdentity(new URLSearchParams(), selected.id);
     next.set("node", selected.id);
-    if (!explicitDemoRequested && selected.authorizedMemory && selected.memoryId) next.set("memoryId", selected.memoryId);
-    else if (!explicitDemoRequested) next.delete("memoryId");
-    if (!explicitDemoRequested && selected.authorizedMemory && selected.replayManifestId) next.set("manifestId", selected.replayManifestId);
+    if (explicitDemoRequested) next.set("memoryId", selected.id);
+    else if (selected.authorizedMemory && selected.memoryId) next.set("memoryId", selected.memoryId);
+    else next.delete("memoryId");
+    if (!explicitDemoRequested) {
+      next.delete("manifestId");
+      if (selected.authorizedMemory && selected.replayManifestId) next.set("manifestId", selected.replayManifestId);
+    }
     next.set("returnNode", selected.id);
     next.set("artifactFamily", resolveArtifactFamily(selected));
     next.set("from", "life-map");
