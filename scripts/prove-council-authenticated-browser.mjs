@@ -50,7 +50,7 @@ const entry=[
  "import React,{useEffect,useState} from 'react'",
  "import {createRoot} from 'react-dom/client'",
  "import {getAuth,connectAuthEmulator,signInWithEmailAndPassword,signOut} from 'firebase/auth'",
- "import {getFirestore,connectFirestoreEmulator} from 'firebase/firestore'",
+ "import {getFirestore,connectFirestoreEmulator,getDoc,doc} from 'firebase/firestore'",
  "import {app} from './src/lib/firebase/client'",
  "import CouncilConversationPanel from './src/spatial/council/CouncilConversationPanel'",
  "const auth=getAuth(app)",
@@ -59,6 +59,8 @@ const entry=[
  "const accounts=window.__uraiFictionalAccounts",
  "window.__uraiProofSignOut=()=>signOut(auth)",
  "window.__uraiProofOther=()=>signInWithEmailAndPassword(auth,accounts.other.email,accounts.other.password)",
+ "window.__uraiProofOwner=()=>signInWithEmailAndPassword(auth,accounts.owner.email,accounts.owner.password)",
+ "window.__uraiProofReadFirstOwnerMemory=async()=>{try{const snap=await getDoc(doc(getFirestore(app),'users',accounts.owner.uid,'memories','memory-a'));return {allowed:true,exists:snap.exists()}}catch(error){return {allowed:false,code:error.code||'unknown'}}}",
  "const agent={id:'fictional-archivist',name:'The Archivist',role:'archivist',focus:'Fictional lake chronology'}",
  "function Shell(){const[state,setState]=useState('signing-in');useEffect(()=>{let alive=true;",
  " signInWithEmailAndPassword(auth,accounts.owner.email,accounts.owner.password).then(r=>{if(r.user.uid!==accounts.owner.uid)throw Error('WRONG_OWNER');if(alive)setState('ready')}).catch(()=>{if(alive)setState('failed')});",
@@ -135,9 +137,30 @@ try{
    await page.evaluate(()=>window.__uraiProofOther())
    await page.getByText(/Selected memory could not be found/).waitFor({timeout:30000})
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Beta 1996'))
+   // The UI must hide private data, but Firestore must also refuse a direct
+   // cross-account read of the canonical owner document.
+   const foreignRead=await page.evaluate(()=>window.__uraiProofReadFirstOwnerMemory())
+   assert.deepEqual(foreignRead,{allowed:false,code:'permission-denied'},
+     'Firestore security rules must deny an authenticated foreign owner')
+   // Persistent correction is not proven by an in-memory React update. Sign
+   // the original owner back in after a foreign actor, revisit the original
+   // document, and verify the corrected version is still stored and displayed.
+   await page.evaluate(()=>window.__uraiProofSignOut())
+   await page.evaluate(()=>window.__uraiProofOwner())
+   await page.evaluate(()=>window.history.pushState({},'','/?memoryId=memory-a'))
+   await page.getByText(/Selected Memory Star: Lake Alpha corrected 1988/).waitFor({timeout:30000})
+   assert.ok(!(await page.locator('body').innerText()).includes('Lake Alpha 1988'),
+     'Superseded title must not reappear after owner reauthentication')
+   const ownerRead=await page.evaluate(()=>window.__uraiProofReadFirstOwnerMemory())
+   assert.equal(ownerRead.allowed,true,'Owner can read their persisted corrected memory')
+   assert.equal(ownerRead.exists,true)
+   const reauthChecks=page.locator('.councilConversation input[type="checkbox"]')
+   assert.equal(await reauthChecks.nth(0).isChecked(),false,'Processing consent is not carried over between sessions')
+   assert.equal(await reauthChecks.nth(3).isChecked(),false,'Evidence disclosure is not carried over between sessions')
    assert.equal(modelRequests.length,0,'No external AI request is permitted in this emulator proof')
    assert.deepEqual(errors,[],profile.name+' uncaught runtime errors')
-   evidence.profiles.push({name:profile.name,passed:true,correctionInvalidatedConsent:true,foreignOwnerDenied:true,
+   evidence.profiles.push({name:profile.name,passed:true,correctionInvalidatedConsent:true,foreignOwnerDenied:true,foreignOwnerFirestoreReadDenied:true,
+     correctedMemoryPersistedAcrossActorSwitchAndReauthentication:true,
      screenshotBytes:image.length,screenshotSha256:createHash('sha256').update(image).digest('hex')})
   }finally{await context.close()}
  }
