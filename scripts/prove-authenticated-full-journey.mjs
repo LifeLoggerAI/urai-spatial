@@ -215,7 +215,7 @@ async function verifyOwnerFocusReplayReturn(page){
 }
 
 
-async function routeIs(page, expected){
+async function routeIsPage(page, expected){
  await page.waitForURL(url=>url.pathname.replace(/\/+$/,'')===expected,{timeout:90000})
  assert.equal(new URL(page.url()).searchParams.has('demo'),false,'Demo mode forbidden in authenticated journey')
 }
@@ -329,7 +329,7 @@ async function proveOrbToMap(page,world){
  result.journey.ascent={realCameraLift:true,samples:observed.length,
   highestCameraMetres:Math.max(...observed.map(s=>s.height).filter(Number.isFinite))}
  await screenshot(page,'J4-camera-ascent').catch(()=>{})
- await routeIs(page,'/life-map')
+ await routeIsPage(page,'/life-map')
  assertHomeAscentArrival(startUrl,page.url())
  mark('J4',{orb:result.journey.orb,ascent:result.journey.ascent,lifeMap:'/life-map'})
  await screenshot(page,'J4-arrived-original-life-map')
@@ -358,7 +358,7 @@ async function proveMapFocusReplayReturn(page,uid){
  await focusButton.waitFor({state:'visible',timeout:20000})
  assert.ok(await focusButton.isEnabled(),'Private Focus threshold unavailable')
  await focusButton.click({timeout:15000})
- await routeIs(page,'/focus')
+ await routeIsPage(page,'/focus')
  const focus=page.getByTestId('urai-final-focus-chamber')
  await focus.waitFor({state:'visible',timeout:90000})
  await page.waitForFunction(()=>document.querySelector('[data-testid="urai-final-focus-chamber"]')?.dataset.memoryStatus==='ready',null,{timeout:90000})
@@ -369,7 +369,7 @@ async function proveMapFocusReplayReturn(page,uid){
  mark('J6',result.journey.focus)
  await screenshot(page,'J6-original-stellar-focus')
  await focus.locator('nav.focusControls button.primary').click({timeout:15000})
- await routeIs(page,'/replay')
+ await routeIsPage(page,'/replay')
  const replay=page.getByTestId('cinematic-replay-client')
  await replay.waitFor({state:'visible',timeout:90000})
  await page.waitForFunction(()=>document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.memoryStatus==='ready',
@@ -383,18 +383,18 @@ async function proveMapFocusReplayReturn(page,uid){
  mark('J7',result.journey.replay)
  await screenshot(page,'J7-real-replay-neutral-fallback')
  await replay.locator('button.unwind').click({timeout:15000})
- await routeIs(page,'/focus')
+ await routeIsPage(page,'/focus')
  await focus.waitFor({state:'visible',timeout:90000})
  await page.waitForFunction(()=>document.querySelector('[data-testid="urai-final-focus-chamber"]')?.dataset.memoryStatus==='ready',
    null,{timeout:60000})
  await focus.locator('nav.focusControls button.unwind').click({timeout:15000})
- await routeIs(page,'/life-map')
+ await routeIsPage(page,'/life-map')
  await map.waitFor({state:'visible',timeout:90000})
  await map.getByRole('button',{name:'Return to Life Map overview'}).click({timeout:15000})
  await page.waitForFunction(()=>document.querySelector('[data-testid="urai-true-3d-life-map"]')?.dataset.lifeMapPhase==='overview',
    null,{timeout:30000})
  await map.locator('button[data-life-map-overview-home-return="true"]').click({timeout:15000})
- await routeIs(page,'/home')
+ await routeIsPage(page,'/home')
  await readyHome(page)
  result.journey.return={path:'Replay->Focus->Life Map->Home',throughOriginalControls:true}
  mark('J8',result.journey.return)
@@ -525,7 +525,7 @@ try{
  await login(page,accounts[0].email,accounts[0].password,accounts[0].uid)
  mark('J2',{uid:accounts[0].uid,method:'real-LoginClient-Firebase-SDK'});await screenshot(page,'J2-signed-in')
  await page.getByRole('link',{name:'Open Home'}).click()
- await routeIs(page,'/home')
+ await routeIsPage(page,'/home')
  const shell=page.getByTestId('urai-persistent-world-shell')
  await shell.waitFor({state:'visible',timeout:90000})
  mark('J3-route',{route:'/home',scope:'original-shell-not-interactive'})
