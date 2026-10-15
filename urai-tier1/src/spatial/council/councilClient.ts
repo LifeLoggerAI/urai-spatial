@@ -116,14 +116,18 @@ export async function requestExternalCouncilProvider(input: {
 }): Promise<ExternalCouncilProviderResult | null> {
   if (!input.aiProcessingConsent || !firebasePublicEnvReady || input.signal.aborted) return null
   if ((input.graphSelection || input.memorySelection) && input.graphShareConsent !== true) return null
+  // Do not transmit Council chat history to the backend for a selected Memory
+  // Star. Server-side memory grounding also strips prior turns before any
+  // external provider call, but minimize sensitive data at the first hop.
+  const context = input.memorySelection ? [] : input.context.slice(-8)
   const actor = beginAIActorRequest(input.signal)
   if (!actor) return null
   try {
   const token = await actor.wait(actor.actor.getIdToken())
-  const requestId = await actor.wait(stableCouncilRequestId(input.provider, input.message, input.context, input.graphSelection, input.graphShareConsent, input.memorySelection))
+  const requestId = await actor.wait(stableCouncilRequestId(input.provider, input.message, context, input.graphSelection, input.graphShareConsent, input.memorySelection))
   if (!token || !requestId) return null
   actor.check()
-  const body = JSON.stringify({ message: input.message, context: input.context.slice(-8), aiProcessingConsent: true, requestId, ...(input.graphSelection ? { graphSelection: input.graphSelection, graphShareConsent: true } : {}), ...(input.memorySelection ? { memorySelection: input.memorySelection, graphShareConsent: true } : {}) })
+  const body = JSON.stringify({ message: input.message, context, aiProcessingConsent: true, requestId, ...(input.graphSelection ? { graphSelection: input.graphSelection, graphShareConsent: true } : {}), ...(input.memorySelection ? { memorySelection: input.memorySelection, graphShareConsent: true } : {}) })
   actor.check()
 
   let response: Response
