@@ -125,7 +125,7 @@ try{
    await page.waitForFunction(()=>{const out=document.querySelector('[data-proof-map-nodes]');if(!out)return false;const nodes=JSON.parse(out.getAttribute('data-proof-map-nodes')||'[]');return nodes.some(n=>n.id==='memory-a'&&n.authorized&&n.manifest==='replay-memory-a')&&nodes.some(n=>n.id==='memory-b'&&n.authorized&&n.manifest==='replay-memory-b')})
    const liveNodes=JSON.parse(await mapState.getAttribute('data-proof-map-nodes'))
    assert.ok(liveNodes.some(n=>n.id==='orphan'&&n.locked&&!n.authorized),'Orphan event must never become an authorized Focus route')
-   assert.ok(liveNodes.every(n=>n.title!==\"Other owner's private constellation\"),'Another account must not appear in owner Life Map')
+   assert.ok(liveNodes.every(n=>n.title!=="Other owner's private constellation"),'Another account must not appear in owner Life Map')
    const checks=page.locator('.councilConversation input[type="checkbox"]')
    assert.ok(await checks.count()>=4)
    await page.locator('#urai-council-message').fill('Which lake was visited?')
