@@ -73,6 +73,32 @@ async function beginMobileTouchHold(page, label) {
   }
 }
 
+// The real first-run guide owns the touch surface until a user explicitly
+// dismisses it. Preserve the guide and exercise its accessible Skip button
+// through Chromium touch before testing real first-person movement.
+async function dismissInitialMobileHomeGuide(page) {
+  const guide = page.locator('aside.uraiV2OnboardingCard[data-home-guide="true"]')
+  await guide.waitFor({ state: 'visible', timeout: 15000 })
+  if (await guide.getAttribute('data-first-run') !== 'automatic') {
+    throw new Error('V3 mobile proof expected fresh automatic first-run guide')
+  }
+  const skip = guide.getByRole('button', { name: 'Skip', exact: true })
+  await skip.waitFor({ state: 'visible', timeout: 15000 })
+  if (!await skip.isEnabled()) throw new Error('Home first-run Skip is disabled')
+  const bounds = await skip.boundingBox()
+  if (!bounds || bounds.width < 48 || bounds.height < 48) {
+    throw new Error('Home first-run Skip touch target is smaller than 48px')
+  }
+  const x = bounds.x + bounds.width / 2, y = bounds.y + bounds.height / 2
+  const hit = await page.evaluate(({ x, y }) =>
+    document.elementFromPoint(x, y)?.closest('button')?.textContent?.trim() ?? null, { x, y })
+  if (hit !== 'Skip') throw new Error('Home first-run Skip center is obstructed: ' + String(hit))
+  await skip.tap({ timeout: 15000 })
+  await guide.waitFor({ state: 'hidden', timeout: 15000 })
+  return { action: 'unforced-Chromium-touch-on-real-first-run-Skip', hitTest: hit,
+    targetWidth: bounds.width, targetHeight: bounds.height, guideClosed: true }
+}
+
 async function testProfile(profile) {
   const context = await browser.newContext({
     viewport: profile.viewport, deviceScaleFactor: 1,
@@ -132,6 +158,8 @@ async function testProfile(profile) {
     requestAnimationFrame(tick)
   }))
   const initial = await screenshot(page, profile.id + '-arrival')
+  const firstRunGuide = profile.mobile ? await dismissInitialMobileHomeGuide(page) : null
+  const afterGuide = firstRunGuide ? await screenshot(page, profile.id + '-after-first-run-skip') : null
   if (!profile.mobile) {
     await page.keyboard.down('KeyW')
     await page.waitForTimeout(700)
@@ -266,7 +294,7 @@ async function testProfile(profile) {
   const activated = await screenshot(page, profile.id + '-orb-activated')
   const orbState = await owner.getAttribute('data-home-orb-state').catch(() => null)
   if (errors.length) throw new Error(profile.id + ' browser exceptions: ' + errors.join(' | '))
-  receipt.scenarios.push({ profile: profile.id, before, after, arrivalAtOrb, orbOpenEvents, orbState, affordances, asset: loaded, frameTiming, touchEvidence: profile.mobile ? 'hit-tested-Chromium-touch-and-unforced-Orb-tap' : 'keyboard', screenshots: [initial, moved, atOrb, activated], observed: 'first-person movement, V3 Orb proximity and real Orb open event; full-journey and physical navmesh remain unapproved' })
+  receipt.scenarios.push({ profile: profile.id, before, after, arrivalAtOrb, orbOpenEvents, orbState, affordances, asset: loaded, frameTiming, touchEvidence: profile.mobile ? 'hit-tested-Chromium-touch-and-unforced-Orb-tap' : 'keyboard', firstRunGuide, screenshots: [initial, ...(afterGuide ? [afterGuide] : []), moved, atOrb, activated], observed: 'first-person movement, V3 Orb proximity and real Orb open event; full-journey and physical navmesh remain unapproved' })
   await context.close()
 }
 try {
