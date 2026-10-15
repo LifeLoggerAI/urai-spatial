@@ -147,7 +147,7 @@ export default function LoginClient() {
         ) : (
           <div style={{marginTop:24,display:'flex',gap:10,flexWrap:'wrap'}}>
             {uraiJourneyEmulatorEnabled ? (
-              <form data-testid="urai-e2e-login-form" onSubmit={(event) => { event.preventDefault(); void enterFictionalEmulator() }} style={{display:'grid',gap:12,width:'100%'}}>
+              <form data-testid="urai-e2e-login-form" data-emulator-auth-ready={state === "signed-out" ? "true" : "false"} onSubmit={(event) => { event.preventDefault(); void enterFictionalEmulator() }} style={{display:'grid',gap:12,width:'100%'}}>
                 <label htmlFor="urai-e2e-email">Fictional emulator email</label>
                 <input id="urai-e2e-email" data-testid="urai-e2e-email" type="email" autoComplete="off" value={testEmail} onChange={event => setTestEmail(event.target.value)} style={{minHeight:48,padding:10}} required />
                 <label htmlFor="urai-e2e-password">Fictional emulator password</label>

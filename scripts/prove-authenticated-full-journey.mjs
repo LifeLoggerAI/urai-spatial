@@ -14,6 +14,7 @@ const out=path.resolve('artifacts/authenticated-full-journey')
 const sha=process.env.URAI_EXACT_HEAD||''
 const result={schema:'urai-real-app-emulator-journey-v2',sourceSha:sha,
  authDiagnostics:null,
+ authTransport:[],
  classification:'NON_RELEASE_PARTIAL_EMULATOR_PROOF',status:'FAIL_CLOSED',
  milestones:[],screenshots:[],errors:[],firstFailure:null,
  authenticMedia:false,deviceCertified:false,finalWorldArt:false}
@@ -29,39 +30,41 @@ async function screenshot(page,name){
 async function login(page,email,password,expected){
  await page.goto(origin+'/login',{waitUntil:'domcontentloaded'})
  await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:90000})
- // A streamed Next.js document can display the form before its React event
- // handlers have hydrated. Wait for the actual LoginClient auth observer to
- // settle before entering credentials; never fake the signed-in state.
- await page.locator('[data-route-owner="canonical-auth-entry"] [role="status"]').waitFor({state:'visible',timeout:90000})
- await page.waitForFunction(() => {
-  const status=document.querySelector('[data-route-owner="canonical-auth-entry"] [role="status"]')?.textContent||''
-  return !status.includes('Checking account state') && !status.includes('Opening the secure identity')
- },null,{timeout:90000})
- const fieldEmail=page.getByTestId('urai-e2e-email')
- const fieldPass=page.getByTestId('urai-e2e-password')
- await fieldEmail.fill(email)
- await fieldPass.fill(password)
- const valid=await page.getByTestId('urai-e2e-login-form').evaluate(form=>({
-  valid:form.checkValidity(),
-  email:form.querySelector('input[type=email]')?.value||'',
-  passwordLength:form.querySelector('input[type=password]')?.value?.length||0
+ // SSR visibility is not proof React hydrated or registered the form handler.
+ // Wait for the real Firebase Auth observer to settle on signed-out.
+ await page.waitForFunction(()=>
+  document.querySelector('[data-testid="urai-e2e-login-form"]')?.getAttribute('data-emulator-auth-ready')==='true',
+  null,{timeout:60000})
+
+ await page.getByTestId('urai-e2e-email').fill(email)
+ await page.getByTestId('urai-e2e-password').fill(password)
+ assert.equal(await page.getByTestId('urai-e2e-email').inputValue(),email,'React email control lost its value')
+ assert.equal(await page.getByTestId('urai-e2e-password').inputValue(),password,'React password control lost its value')
+ const formValidity=await page.getByTestId('urai-e2e-login-form').evaluate(form=>({
+   valid:form.checkValidity(),
+   invalidKinds:[...form.querySelectorAll('input')].filter(input=>!input.validity.valid).map(input=>input.type)
  }))
- assert.ok(valid.valid&&valid.email===email&&valid.passwordLength===password.length,
-   'Native form lost user-entered credentials before real submit: '+JSON.stringify({valid:valid.valid,emailStable:valid.email===email,passwordLength:valid.passwordLength}))
+ assert.ok(formValidity.valid,'Native browser blocked email/password submit: '+JSON.stringify(formValidity))
  await page.getByTestId('urai-e2e-submit').click()
- await page.waitForTimeout(400)
- result.authFormSubmission={
-  emailNativeValidity:valid.valid,
-  inputsPersistedBeforeSubmit:true,
-  authErrorCode:await page.getByTestId('urai-e2e-auth-error').textContent().catch(()=>null),
-  status:await page.locator('[data-route-owner="canonical-auth-entry"] [role="status"]').first().textContent().catch(()=>null)
+ const delivered=await page.waitForFunction(()=>{
+   const diag=document.querySelector('[data-testid="urai-e2e-auth-error"]')?.textContent
+   return diag && diag!=='not-attempted'
+ },null,{timeout:5000}).catch(()=>null)
+ if(!delivered){
+  result.authDiagnostics={...(result.authDiagnostics||{}),clientSubmitReached:false,formValidity}
+  await screenshot(page,'J2-form-submit-not-delivered').catch(()=>{})
+  throw Error('J2 browser submit never entered hydrated React handler')
  }
  try {
-  await page.getByTestId('urai-e2e-auth-uid').getByText(expected,{exact:true}).waitFor({timeout:16000})
+  await page.getByTestId('urai-e2e-auth-uid').waitFor({state:'visible',timeout:20000})
+  await page.waitForFunction(uid=>
+   document.querySelector('[data-testid="urai-e2e-auth-uid"]')?.textContent?.trim()===uid,
+   expected,{timeout:20000})
  } catch (error) {
   result.authDiagnostics = {
+   ...(result.authDiagnostics||{}),
    state: await page.getByTestId('urai-e2e-auth-error').textContent().catch(()=>null),
-   status: await page.locator('[data-route-owner="canonical-auth-entry"] [role="status"]').first().textContent().catch(()=>null),
+   status: await page.getByRole('status').first().textContent().catch(()=>null),
    formVisible: await page.getByTestId('urai-e2e-login-form').isVisible().catch(()=>false),
    pathname: new URL(page.url()).pathname
   }
@@ -69,6 +72,8 @@ async function login(page,email,password,expected){
   throw new Error('J2 real Firebase Auth failed: '+JSON.stringify(result.authDiagnostics))
  }
  assert.equal((await page.getByTestId('urai-e2e-auth-uid').innerText()).trim(),expected)
+ assert.ok(result.authTransport.some(item=>item.status===200),
+  'Real browser Firebase Auth sign-in had no successful emulator response')
 }
 await mkdir(out,{recursive:true})
 try{
@@ -112,6 +117,16 @@ try{
  const context=await browser.newContext({viewport:{width:1280,height:800},reducedMotion:'reduce'})
  await context.route('**/*',route=>{const u=new URL(route.request().url());return ['127.0.0.1','localhost'].includes(u.hostname)?route.continue():route.abort()})
  const page=await context.newPage()
+ page.on('response',response=>{
+   try{
+     const url=new URL(response.url())
+     if(url.hostname==='127.0.0.1' && url.port==='9099' &&
+        url.pathname.endsWith('/accounts:signInWithPassword')){
+       result.authTransport.push({destination:'127.0.0.1:9099',operation:'accounts:signInWithPassword',
+         status:response.status(),source:'browser-Firebase-client'})
+     }
+   }catch{}
+ })
  page.on('pageerror',e=>result.errors.push(String(e).slice(0,300)))
  await page.goto(origin+'/login')
  await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible'})
