@@ -113,6 +113,6 @@ test('private Life Map joins only explicit owner-verified canonical memory docum
   assert.match(source, /const memoryId = sanitizeMemoryId\(node\.memoryId\)/)
   assert.match(source, /memoryId && node\.type === "memory" \? currentMemories\.get\(memoryId\)/)
   assert.match(source, /authorizedMemory: false, locked: true, replayAvailable: false/)
-  assert.match(source, /id: authoritative\.id, memoryId: authoritative\.id/)
+  assert.match(source, /id: node\.id, memoryId: authoritative\.id/)
   assert.match(source, /replayManifestId: authoritative\.replayManifest\.id/)
 })
