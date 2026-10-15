@@ -131,7 +131,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     return { ...node, id: authoritative.id, memoryId: authoritative.id,
       title: authoritative.title, summary: authoritative.summary,
       replayAvailable: node.replayAvailable, locked: Boolean(node.locked),
-      authorizedMemory: true };
+      authorizedMemory: true, replayManifestId: authoritative.replayManifest.id };
   }), [currentNodes, currentMemories, explicitDemo]);
   const currentEras = erasOwner === currentOwner ? eras : [];
   const [eventsLoading, setEventsLoading] = useState(!explicitDemo);
