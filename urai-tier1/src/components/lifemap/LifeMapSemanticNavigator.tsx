@@ -72,8 +72,9 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     if (source === 'semantic') closeNavigator()
     else setOpen(false)
     const next = withIdentity(new URLSearchParams(), node.id)
-    next.set('memoryId', node.id)
     next.set('node', node.id)
+    if (!explicitDemo && node.authorizedMemory && node.memoryId) next.set('memoryId', node.memoryId)
+    else if (!explicitDemo) next.delete('memoryId')
     if (node.eraId) next.set('era', node.eraId)
 
     // Same-route selection identity must become observable before the spatial world begins
@@ -87,12 +88,13 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     // If the listener already handled the event, localSelectionId preserves the
     // departure/travel/approach sequence and this replace is idempotent.
     router.replace(destination, { scroll: false })
-  }, [closeNavigator, commitBrowserIdentity, router, withIdentity])
+  }, [closeNavigator, commitBrowserIdentity, explicitDemo, router, withIdentity])
 
   const destinationHref = useCallback((route: 'focus' | 'replay', node: LifeMapNode) => {
     const next = withIdentity(new URLSearchParams(), node.id)
-    next.set('memoryId', node.id)
     next.set('node', node.id)
+    if (!explicitDemo && node.authorizedMemory && node.memoryId) next.set('memoryId', node.memoryId)
+    else if (!explicitDemo) next.delete('memoryId')
     if (!explicitDemo && node.authorizedMemory && node.replayManifestId) next.set('manifestId', node.replayManifestId)
     next.set('returnNode', node.id)
     next.set('from', 'life-map-semantic')
