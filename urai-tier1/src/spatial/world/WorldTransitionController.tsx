@@ -43,19 +43,36 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
 
   const target = new URL(request.href ?? definition.href, window.location.origin)
   const current = new URLSearchParams(window.location.search)
+  const context = request.context
+  const selectedMemoryId = context?.memoryId ?? target.searchParams.get('memoryId')
+  const currentMemoryId = current.get('memoryId')
+  const sameMemory = Boolean(selectedMemoryId && currentMemoryId && selectedMemoryId === currentMemoryId)
+  const memoryDestination = request.destination === 'life-map' || request.destination === 'focus'
+    || request.destination === 'replay' || request.destination === 'council'
+    || request.destination === 'life-movie'
 
   for (const key of CONTEXT_KEYS) {
+    // An old visual node is never an implicit private memory identity.
+    // Reuse node/manifest metadata only when an explicit selected memory
+    // matches the current memory. Cross-realm travel must not leak it.
+    if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
+    if ((key === 'node' || key === 'manifestId') && (!memoryDestination || !sameMemory)) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
     }
   }
 
-  const context = request.context
-  if (context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
+  if (!memoryDestination) {
+    target.searchParams.delete('memoryId')
+    target.searchParams.delete('node')
+    target.searchParams.delete('manifestId')
+  }
+
+  if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
-  if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
+  if (memoryDestination && context?.replayManifestId && selectedMemoryId) target.searchParams.set('manifestId', context.replayManifestId)
   if (context?.movieId) target.searchParams.set('movieId', context.movieId)
   if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
@@ -71,14 +88,8 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
-  const memoryId = target.searchParams.get('memoryId')
-  const nodeId = target.searchParams.get('node')
-  if (request.destination === 'life-map') {
-    if (!nodeId && memoryId) target.searchParams.set('node', memoryId)
-  } else if (!memoryId && nodeId) {
-    target.searchParams.set('memoryId', nodeId)
-  }
-
+  // No node-to-memory or memory-to-node inference: these are separate
+  // identities, and each consumer must independently validate access.
   return `${target.pathname}${target.search}${target.hash}`
 }
 
