@@ -48,7 +48,7 @@ await db.doc('users/'+owner.uid+'/memories/memory-b').set(memory('memory-b','Lak
 await db.doc('users/'+owner.uid+'/lifeMapEvents/star-a').set({userId:owner.uid,type:'memory',title:'Map label A',summary:'Fictional map event',memoryId:'memory-a',sourceType:'manual_seed',occurredAt:'1988-08-01T12:00:00.000Z',replayAvailable:true})
 await db.doc('users/'+owner.uid+'/lifeMapEvents/star-b').set({userId:owner.uid,type:'memory',title:'Map label B',summary:'Fictional map event',memoryId:'memory-b',sourceType:'manual_seed',occurredAt:'1996-08-01T12:00:00.000Z',replayAvailable:true})
 await db.doc('users/'+owner.uid+'/lifeMapEvents/orphan').set({userId:owner.uid,type:'memory',title:'Unresolved private event',summary:'Not a memory',memoryId:'no-such-memory',sourceType:'manual_seed',occurredAt:'1990-08-01T12:00:00.000Z',replayAvailable:true})
-await db.doc('users/'+other.uid+'/lifeMapEvents/foreign').set({userId:other.uid,type:'memory',title:'Other owner's private constellation',summary:'Other private data',sourceType:'manual_seed',occurredAt:'1999-08-01T12:00:00.000Z'})
+await db.doc('users/'+other.uid+'/lifeMapEvents/foreign').set({userId:other.uid,type:'memory',title:"Other owner private constellation",summary:'Other private data',sourceType:'manual_seed',occurredAt:'1999-08-01T12:00:00.000Z'})
 
 const entry=[
  "import React,{useEffect,useState} from 'react'",
@@ -125,7 +125,7 @@ try{
    await page.waitForFunction(()=>{const out=document.querySelector('[data-proof-map-nodes]');if(!out)return false;const nodes=JSON.parse(out.getAttribute('data-proof-map-nodes')||'[]');return nodes.some(n=>n.id==='star-a'&&n.authorized&&n.manifest==='replay-memory-a')&&nodes.some(n=>n.id==='star-b'&&n.authorized&&n.manifest==='replay-memory-b')})
    const liveNodes=JSON.parse(await mapState.getAttribute('data-proof-map-nodes'))
    assert.ok(liveNodes.some(n=>n.id==='orphan'&&n.locked&&!n.authorized),'Orphan event must never become an authorized Focus route')
-   assert.ok(liveNodes.every(n=>n.title!=="Other owner's private constellation"),'Another account must not appear in owner Life Map')
+   assert.ok(liveNodes.every(n=>n.title!=="Other owner private constellation"),'Another account must not appear in owner Life Map')
    const checks=page.locator('.councilConversation input[type="checkbox"]')
    assert.ok(await checks.count()>=4)
    await page.locator('#urai-council-message').fill('Which lake was visited?')
