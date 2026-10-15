@@ -213,3 +213,23 @@ test('Council UI uses the existing provider dispatcher and clears prior provider
     assert.equal(registry.includes(`case '${id}':`), false)
   }
 })
+
+test('selected-memory requests transmit no prior Council conversation even to the authenticated server', async () => {
+  const configured = await registryFor('true')
+  requests = []
+  responseFor = success
+  for (const provider of providers) {
+    const result = await configured.requestCouncilProvider(input(provider, {
+      memorySelection: 'memory-a',
+      graphShareConsent: true,
+      context: [{ role: 'user', content: 'Fictional Memory B private history' }],
+    }))
+    assert.equal(result.provider, provider)
+    const sent = requests.at(-1)
+    assert.deepEqual(sent.body.context, [], 'Selected-memory context must be minimized before HTTP')
+    assert.equal(sent.body.memorySelection, 'memory-a')
+    assert.equal(sent.body.graphShareConsent, true)
+    assert.doesNotMatch(String(sent.init.body), /Fictional Memory B private history/)
+  }
+  assert.equal(requests.length, providers.length)
+})
