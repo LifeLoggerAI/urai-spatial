@@ -38,6 +38,41 @@ async function screenshot(page, name) {
   const bytes = await readFile(file)
   return { path: path.basename(file), sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length }
 }
+// Browser-protocol touch is not physical-device certification. Unlike
+// dispatchEvent, this checks the real 48px target and sends a hit-tested
+// Chromium touch through the browser's input pipeline.
+async function beginMobileTouchHold(page, label) {
+  const button = page.getByRole('button', { name: label })
+  await button.waitFor({ state: 'visible', timeout: 15000 })
+  if (!await button.isEnabled()) throw new Error(label + ' mobile movement disabled')
+  const bounds = await button.boundingBox()
+  if (!bounds || bounds.width < 48 || bounds.height < 48) {
+    throw new Error(label + ' mobile movement hit target below 48px')
+  }
+  const x = bounds.x + bounds.width / 2
+  const y = bounds.y + bounds.height / 2
+  const hit = await page.evaluate(({ x, y }) =>
+    document.elementFromPoint(x, y)?.closest('button')?.getAttribute('aria-label') ?? null, { x, y })
+  if (hit !== label) throw new Error(label + ' mobile movement center is obstructed by ' + String(hit))
+  const session = await page.context().newCDPSession(page)
+  try {
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] })
+  } catch (error) {
+    await session.detach().catch(() => {})
+    throw error
+  }
+  let released = false
+  return async () => {
+    if (released) return
+    released = true
+    try {
+      await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    } finally {
+      await session.detach().catch(() => {})
+    }
+  }
+}
+
 async function testProfile(profile) {
   const context = await browser.newContext({
     viewport: profile.viewport, deviceScaleFactor: 1,
@@ -102,10 +137,8 @@ async function testProfile(profile) {
     await page.waitForTimeout(700)
     await page.keyboard.up('KeyW')
   } else {
-    const forward = page.getByRole('button', { name: 'Move forward' })
-    await forward.dispatchEvent('pointerdown')
-    await page.waitForTimeout(700)
-    await forward.dispatchEvent('pointerup')
+    const releaseMobile = await beginMobileTouchHold(page, 'Move forward')
+    try { await page.waitForTimeout(700) } finally { await releaseMobile() }
   }
   await page.waitForTimeout(350)
   const after = await owner.evaluate(element => ({ x: Number(element.dataset.homePlayerX), z: Number(element.dataset.homePlayerZ), nearby: element.dataset.homeNearby, orb: element.dataset.homeOrbState }))
@@ -162,8 +195,8 @@ async function testProfile(profile) {
       if (window.__uraiV3ApproachTrace.length > 140) window.__uraiV3ApproachTrace.shift()
     }, 400)
   })
+  const releaseMobileApproach = profile.mobile ? await beginMobileTouchHold(page, 'Move forward') : null
   if (!profile.mobile) await page.keyboard.down('KeyW')
-  else await page.getByRole('button', { name: 'Move forward' }).dispatchEvent('pointerdown')
   let proximityError = null
   try {
     await page.waitForFunction(() => {
@@ -181,7 +214,7 @@ async function testProfile(profile) {
     proximityError = error
   } finally {
     if (!profile.mobile) await page.keyboard.up('KeyW')
-    else await page.getByRole('button', { name: 'Move forward' }).dispatchEvent('pointerup')
+    else await releaseMobileApproach?.()
     await page.evaluate(() => window.clearInterval(window.__uraiV3ApproachTimer))
   }
   if (!proximityError) {
@@ -221,7 +254,9 @@ async function testProfile(profile) {
     const accessibleOrb = page.getByTestId('home-semantic-orb')
     await accessibleOrb.waitFor({ state: 'attached', timeout: 10000 })
     if (!await accessibleOrb.isEnabled()) throw new Error('Mobile accessible Orb control is not authorized/ready')
-    await accessibleOrb.tap({ force: true })
+    const orbTarget = await accessibleOrb.boundingBox()
+    if (!orbTarget || orbTarget.width < 48 || orbTarget.height < 48) throw new Error('Mobile accessible Orb target below 48px')
+    await accessibleOrb.tap({ timeout: 15000 })
   } else {
     await page.keyboard.press('Enter')
   }
@@ -231,7 +266,7 @@ async function testProfile(profile) {
   const activated = await screenshot(page, profile.id + '-orb-activated')
   const orbState = await owner.getAttribute('data-home-orb-state').catch(() => null)
   if (errors.length) throw new Error(profile.id + ' browser exceptions: ' + errors.join(' | '))
-  receipt.scenarios.push({ profile: profile.id, before, after, arrivalAtOrb, orbOpenEvents, orbState, affordances, asset: loaded, frameTiming, screenshots: [initial, moved, atOrb, activated], observed: 'first-person movement, V3 Orb proximity and real Orb open event; full-journey and physical navmesh remain unapproved' })
+  receipt.scenarios.push({ profile: profile.id, before, after, arrivalAtOrb, orbOpenEvents, orbState, affordances, asset: loaded, frameTiming, touchEvidence: profile.mobile ? 'hit-tested-Chromium-touch-and-unforced-Orb-tap' : 'keyboard', screenshots: [initial, moved, atOrb, activated], observed: 'first-person movement, V3 Orb proximity and real Orb open event; full-journey and physical navmesh remain unapproved' })
   await context.close()
 }
 try {
