@@ -50,7 +50,7 @@ function fixture(provider, controls = {}) {
   const paidSpatialFetch = async (_db, owner, lane, family, _model, input, url, init) => {
     assert.equal(owner, uid); assert.equal(family, provider); assert.equal(lane, `council-${provider}`)
     assert.equal(input.message, 'Disclosed synthetic question'); assert.equal(init.method, 'POST')
-    state.paid.push({ lane, family, url: String(url) }); await controls.onPaid?.(state, init)
+    state.paid.push({ lane, family, url: String(url), body: String(init.body) }); await controls.onPaid?.(state, init)
     return { ok: true, status: 200, headers: { get: () => 'synthetic-upstream-id' }, async json() {
       await controls.onParse?.(state, init)
       if (provider === 'anthropic') return { content: [{ type: 'text', text: responseText }] }
@@ -77,7 +77,12 @@ function fixture(provider, controls = {}) {
     'node:crypto': { createHash }, './consentPolicyAuthority': authority, 'firebase-admin': admin,
     'firebase-functions/params': { defineSecret: () => ({ value: () => { state.secretReads++; return 'synthetic-not-a-credential' } }) },
     'firebase-functions/v2/https': { onRequest: (_settings, handler) => handler },
-    './councilGraphEvidenceAuthority': graphReader,
+    './councilGraphEvidenceAuthority': controls.memoryEvidence
+      ? { ...graphReader, resolveCouncilMemoryGraph: async (_db, owner, memoryId) => {
+          assert.equal(owner, uid)
+          return controls.memoryEvidence(memoryId, state)
+        } }
+      : graphReader,
     './protectedProviderSpend': { paidSpatialFetch, assertSpatialPaidOutputCurrent() { state.outputChecks++; if (controls.expired?.(state)) throw new SpatialSpendError() }, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} },
   }, { process: { env }, setTimeout: (cb, delay) => setTimeout(cb, controls.timeoutMs ?? delay) })
   const response = { headersSent: false, writableEnded: false, statusCode: 200, body: undefined, headers: {}, listeners: {},
@@ -146,3 +151,88 @@ for (const provider of providers) {
     assert.equal(response.body?.message === responseText, false)
   })
 }
+
+
+// The real production HTTP handler and provider-specific serializer run here.
+// Only Firestore and the memory resolver are controlled boundaries. The real
+// SceneTruth / receipt resolver has its own separate behavioral test suite.
+function fictionalMemory(id) {
+  assert.ok(id === 'memory-a' || id === 'memory-b')
+  const a = id === 'memory-a'
+  return {
+    snapshotId: 'shared-graph', entityIds: ['person-one'],
+    graphHash: 'shared-graph-hash',
+    sceneTruthPacketId: a ? 'scene-a' : 'scene-b',
+    packetHash: a ? 'scene-hash-a' : 'scene-hash-b',
+    evidence: {
+      snapshotId: 'shared-graph', graphHash: 'shared-graph-hash',
+      entities: [{ id: 'person-one', kind: 'person' }],
+      claims: [{
+        id: a ? 'claim-alpha' : 'claim-beta', subjectEntityId: 'person-one',
+        predicate: 'visited', value: a ? 'Lake Alpha in 1988' : 'Lake Beta in 1996',
+        status: 'accepted', evidenceClass: 'SOURCE_CAPTURED',
+        sourceIds: [a ? 'psr_alpha' : 'psr_beta'],
+      }],
+      edges: [],
+    },
+  }
+}
+
+for (const provider of providers) {
+  test(provider + ' actual outbound payload cannot include another memory or earlier conversation', async () => {
+    for (const memoryId of ['memory-a', 'memory-b']) {
+      const f = fixture(provider, { memoryEvidence: fictionalMemory })
+      const other = memoryId === 'memory-a' ? 'Lake Beta in 1996' : 'Lake Alpha in 1988'
+      const current = memoryId === 'memory-a' ? 'Lake Alpha in 1988' : 'Lake Beta in 1996'
+      const forbiddenClaim = memoryId === 'memory-a' ? 'claim-beta' : 'claim-alpha'
+      const result = await f.run({
+        memorySelection: memoryId, graphShareConsent: true,
+        context: [{ role: 'user', content: 'Older unrelated Council context: ' + other }],
+      })
+      assert.equal(result.statusCode, 200)
+      assert.equal(result.body.provider, provider)
+      assert.equal(f.state.paid.length, 1)
+      const serialized = f.state.paid[0].body
+      assert.match(serialized, new RegExp(current))
+      assert.doesNotMatch(serialized, new RegExp(other))
+      assert.ok(!serialized.includes(forbiddenClaim))
+      assert.doesNotMatch(serialized, /Older unrelated Council context|canonicalLabel/)
+      const outgoing = JSON.parse(serialized)
+      const messages = provider === 'gemini' ? outgoing.contents : outgoing.messages
+      assert.equal(messages.length, provider === 'xai' || provider === 'mistral' ? 2 : 1)
+    }
+  })
+
+  test(provider + ' memory evidence requires separate disclosure and refuses paid dispatch', async () => {
+    const f = fixture(provider, { memoryEvidence: fictionalMemory })
+    const result = await f.run({ memorySelection: 'memory-a', graphShareConsent: false })
+    assert.equal(result.statusCode, 403)
+    assert.equal(result.body.error, 'COUNCIL_GRAPH_DISCLOSURE_CONSENT_REQUIRED')
+    assert.equal(f.state.paid.length, 0)
+  })
+
+  test(provider + ' selected-memory revocation after dispatch suppresses delivery', async () => {
+    const f = fixture(provider, {
+      memoryEvidence: fictionalMemory,
+      onPaid(state) { state.connection.revocationState = 'requested' },
+    })
+    const response = await f.run({ memorySelection: 'memory-a', graphShareConsent: true })
+    assert.equal(f.state.paid.length, 1)
+    assert.equal(response.statusCode, 403)
+    assert.equal(response.body.error, 'PROVIDER_PROCESSING_REVOKED')
+    assert.notEqual(response.body.message, responseText)
+  })
+}
+
+test('a changed selected-memory packet is refused before paid dispatch', async () => {
+  let calls = 0
+  const f = fixture('xai', { memoryEvidence(id) {
+    const m = fictionalMemory(id)
+    if (++calls >= 3) m.packetHash = 'changed-while-processing'
+    return m
+  } })
+  const response = await f.run({ memorySelection: 'memory-a', graphShareConsent: true })
+  assert.equal(response.statusCode, 409)
+  assert.equal(response.body.error, 'COUNCIL_MEMORY_CHANGED')
+  assert.equal(f.state.paid.length, 0)
+})
