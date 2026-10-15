@@ -181,6 +181,17 @@ service cloud.firestore {
         allow read: if isSelf(uid);
         allow write: if false;
       }
+      match /lifeMapEvents/{eventId} {
+        // Life Map subscribes to this owner's constellation. No cross-account
+        // read or client-authored memory-to-event authority is permitted.
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeMapEras/{eraId} {
+        // Era grouping follows the same private owner-only read boundary.
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
       match /memoryMediaReceipts/{receiptId} {
         // The producer is the only writer. Object locators never grant delivery.
         allow read: if isSelf(uid);
