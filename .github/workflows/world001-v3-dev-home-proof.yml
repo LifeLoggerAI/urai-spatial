@@ -1,7 +1,9 @@
 name: World001 V3 Nonproduction Browser Proof
 on:
   pull_request:
-    branches: [repair/release-closure-integration-20261007]
+    # Run exact-head V3 proof for the original controller PR to main and for
+    # V3 owner PRs targeting the controller. Dev-only asset guards remain intact.
+    branches: [main, repair/release-closure-integration-20261007]
     paths:
       - '.github/workflows/world001-v3-dev-home-proof.yml'
       - 'scripts/capture-world001-v3-dev-browser.mjs'
