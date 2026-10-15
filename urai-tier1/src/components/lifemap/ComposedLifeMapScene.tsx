@@ -318,7 +318,11 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       else if (retainedNode?.authorizedMemory && retainedNode.memoryId) next.set("memoryId", retainedNode.memoryId);
       else next.delete("memoryId");
     }
-    if (!explicitDemoRequested) next.delete("manifestId");
+    if (!explicitDemoRequested) {
+      next.delete("manifestId");
+      const retainedNode = nodes.find((node) => node.id === retainedId);
+      if (retainedNode?.authorizedMemory && retainedNode.replayManifestId) next.set("manifestId", retainedNode.replayManifestId);
+    }
     next.set("overview", "1");
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
   }, [explicitDemoRequested, nodes, queryNode, router, selectedId, withIdentity]);
