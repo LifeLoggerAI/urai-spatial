@@ -34,6 +34,12 @@ const HOME_BOUNDS = { minX: -14, maxX: 14, minZ: -18, maxZ: 12 }
 const HOME_GROUND_COLOR = '#52654c'
 const SPAWN = new THREE.Vector3(-0.85, 0, 8.4)
 const ORB = new THREE.Vector3(1.8, 0.82, -9.5)
+// Frozen Wave13 registry anchors (authored scene units; not photographic calibration).
+const W13_V3_ORB = new THREE.Vector3(0.1, 1.42, -1.9)
+const W13_V3_FLOOR_Y = 0.12
+// Limited clear central corridor only; not an approved full navmesh.
+const W13_V3_WALK_BOUNDS = { minX: -1.85, maxX: 1.75, minZ: -2.25, maxZ: 9.1 }
+const W13_V3_WALK_OBSTACLES: typeof HOME_NAVIGATION_OBSTACLES = []
 const GROUND_THRESHOLD = new THREE.Vector3(-5.4, 0, -10.8)
 const LIFE_MAP_LOOKOUT = new THREE.Vector3(5.4, 0, -10.8)
 const ASCENT_DURATION_SECONDS = 3.4
@@ -623,14 +629,14 @@ function OrbMotes({ reducedMotion, color }: { reducedMotion: boolean; color: str
   return <points ref={ref} geometry={geometry}><pointsMaterial map={lightTexture} color={color} size={.034} transparent opacity={.38} depthWrite={false} toneMapped={false} /></points>
 }
 
-function OrbGroundGlow({ state }: { state: OrbState }) {
+function OrbGroundGlow({ state, anchor, groundY }: { state: OrbState; anchor: THREE.Vector3; groundY: number }) {
   const palette = ORB_PALETTE[state]
-  return <group position={[ORB.x, terrainHeight(ORB.x, ORB.z) + .032, ORB.z]} rotation={[-Math.PI / 2, 0, 0]} userData={{ treatment: 'soft-grounded-light-no-rings' }}>
+  return <group position={[anchor.x, groundY + .032, anchor.z]} rotation={[-Math.PI / 2, 0, 0]} userData={{ treatment: 'soft-grounded-light-no-rings' }}>
     <mesh><circleGeometry args={[1.18, 64]} /><meshBasicMaterial color={palette.aura} transparent opacity={.032} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></mesh>
   </group>
 }
 
-function SacredOrb({ state, reducedMotion, reducedStimulation, onOpen }: { state: OrbState; reducedMotion: boolean; reducedStimulation: boolean; onOpen: () => void }) {
+function SacredOrb({ state, reducedMotion, reducedStimulation, onOpen, anchor }: { state: OrbState; reducedMotion: boolean; reducedStimulation: boolean; onOpen: () => void; anchor: THREE.Vector3 }) {
   const root = useRef<THREE.Group>(null)
   const authoredCore = useRef<THREE.Group>(null)
   const memoryField = useRef<THREE.Points>(null)
@@ -683,11 +689,11 @@ function SacredOrb({ state, reducedMotion, reducedStimulation, onOpen }: { state
     if (!root.current) return
     const speed = state === 'speaking' ? 2.4 : state === 'thinking' ? 1.8 : state === 'listening' ? 1.25 : state === 'transition' ? 1.45 : .82
     if (staticPresentation) {
-      root.current.position.y = ORB.y
+      root.current.position.y = anchor.y
       root.current.rotation.y = 0
       root.current.scale.setScalar(1)
     } else {
-      root.current.position.y = ORB.y + Math.sin(clock.elapsedTime * speed) * .028
+      root.current.position.y = anchor.y + Math.sin(clock.elapsedTime * speed) * .028
       root.current.rotation.y = Math.sin(clock.elapsedTime * .18) * .07
       const breath = Math.sin(clock.elapsedTime * speed) * .012
       root.current.scale.set(1 + breath, 1 - breath * .6, 1 + breath * .35)
@@ -703,7 +709,7 @@ function SacredOrb({ state, reducedMotion, reducedStimulation, onOpen }: { state
     }
   })
 
-  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], modelPlayback: staticPresentation ? 'stopped' : 'playing', runtimeAsset: ORB_MODEL, material: sensory.material, movement: sensory.movement, materialLanguage: 'translucent-living-memory-heart-with-visible-authored-core' }}>
+  return <group ref={root} name="home-orb-sanctuary" position={anchor} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], modelPlayback: staticPresentation ? 'stopped' : 'playing', runtimeAsset: ORB_MODEL, material: sensory.material, movement: sensory.movement, materialLanguage: 'translucent-living-memory-heart-with-visible-authored-core' }}>
     <mesh name="orb-connected-memory-mantle" geometry={mantle}>
       <meshStandardMaterial vertexColors color={palette.core} transparent opacity={0.14} depthWrite={false} emissive={palette.emissive} emissiveIntensity={reducedStimulation ? .12 : state === 'speaking' ? .62 : .42} roughness={.72} metalness={0} envMapIntensity={.24} />
     </mesh>
@@ -718,12 +724,12 @@ function SacredOrb({ state, reducedMotion, reducedStimulation, onOpen }: { state
   </group>
 }
 
-function Orb({ onOpen, reducedMotion, reducedStimulation, state }: { onOpen: () => void; reducedMotion: boolean; reducedStimulation: boolean; state: OrbState }) {
-  return <SacredOrb onOpen={onOpen} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} state={state} />
+function Orb({ onOpen, reducedMotion, reducedStimulation, state, anchor }: { onOpen: () => void; reducedMotion: boolean; reducedStimulation: boolean; state: OrbState; anchor: THREE.Vector3 }) {
+  return <SacredOrb onOpen={onOpen} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} state={state} anchor={anchor} />
 }
 
-function OrbPlatform() {
-  return <group name="home-orb-grounded-clearing-marker" position={[ORB.x, terrainHeight(ORB.x, ORB.z), ORB.z]} userData={{ treatment: 'level-natural-clearing-no-pedestal-or-ring' }} />
+function OrbPlatform({ anchor, groundY }: { anchor: THREE.Vector3; groundY: number }) {
+  return <group name="home-orb-grounded-clearing-marker" position={[anchor.x, groundY, anchor.z]} userData={{ treatment: 'level-natural-clearing-no-pedestal-or-ring' }} />
 }
 
 function EmbodiedPresence({ root }: { root: MutableRefObject<THREE.Group | null> }) {
