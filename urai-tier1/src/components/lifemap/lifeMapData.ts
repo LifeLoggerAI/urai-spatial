@@ -23,6 +23,8 @@ export type LifeMapNode = {
   memoryId?: string;
   /** True only after an owner-scoped canonical memory passed runtime validation. */
   authorizedMemory?: boolean;
+  /** Resolved canonical replay manifest, never inferred from event metadata. */
+  replayManifestId?: string;
   summary: string;
   connectedTo: string[];
   occurredAt?: string;
