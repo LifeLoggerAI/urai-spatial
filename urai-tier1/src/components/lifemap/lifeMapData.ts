@@ -19,6 +19,10 @@ export type LifeMapNode = {
   dateLabel: string;
   replayAvailable: boolean;
   locked?: boolean;
+  /** Explicit Life Map event link to a canonical memory, not an access grant. */
+  memoryId?: string;
+  /** True only after an owner-scoped canonical memory passed runtime validation. */
+  authorizedMemory?: boolean;
   summary: string;
   connectedTo: string[];
   occurredAt?: string;
@@ -52,6 +56,8 @@ export type LifeMapEvent = {
   type: LifeMapNodeType;
   sourceType: LifeMapEventSourceType;
   sourceId?: string;
+  /** Canonical memory document ID, independent of the Life Map event ID. */
+  memoryId?: string;
   occurredAt?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -456,6 +462,7 @@ export function mapLifeMapEventToNode(event: LifeMapEvent): LifeMapNode {
     dateLabel: formatLifeMapDateLabel(occurredAt) || lifeMapTypeLabels[type],
     replayAvailable: Boolean(event.replayAvailable),
     locked: event.locked,
+    memoryId: event.memoryId,
     summary: event.summary || "A private URAI Life Map signal ready for spatial rendering.",
     connectedTo: Array.isArray(event.connectedTo) ? event.connectedTo : [],
     occurredAt,
