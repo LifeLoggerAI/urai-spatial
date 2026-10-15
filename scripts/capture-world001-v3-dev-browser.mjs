@@ -91,8 +91,8 @@ try {
   guard('verify-source')
   guard('assert-excluded')
   guard('stage')
-  server = spawn('node', [path.join(root, 'node_modules/next/dist/bin/next'), 'dev', '--hostname', '127.0.0.1', '--port', String(port)], {
-    cwd: path.join(root, 'urai-tier1'), env: { ...process.env, NODE_ENV: 'development', URAI_V3_DEV_BROWSER_PROOF: 'true' }, stdio: 'ignore'
+  server = spawn('pnpm', ['--dir', 'urai-tier1', 'exec', 'next', 'dev', '--hostname', '127.0.0.1', '--port', String(port)], {
+    cwd: root, env: { ...process.env, NODE_ENV: 'development', URAI_V3_DEV_BROWSER_PROOF: 'true' }, stdio: 'ignore'
   })
   await waitReady()
   browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader', '--disable-gpu-sandbox', '--disable-dev-shm-usage'] })
