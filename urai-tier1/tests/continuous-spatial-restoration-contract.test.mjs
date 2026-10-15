@@ -110,7 +110,9 @@ test('Home telemetry and continuous proof stay aligned to the polished interacti
     "const ORB = new THREE.Vector3(1.8, 0.82, -9.5)",
     "const GROUND_THRESHOLD = new THREE.Vector3(-5.4, 0, -10.8)",
     "const LIFE_MAP_LOOKOUT = new THREE.Vector3(5.4, 0, -10.8)",
-    "['orb', ORB, 2.4]",
+    "['orb', orbAnchor, 2.4]",
+    "const W13_V3_ORB = new THREE.Vector3(0.1, 1.42, -1.9)",
+    "const orbAnchor = props.previewW13V3 ? W13_V3_ORB : ORB",
     "['ground', GROUND_THRESHOLD, 2.8]",
     "['life-map', LIFE_MAP_LOOKOUT, 2.8]",
   ]
