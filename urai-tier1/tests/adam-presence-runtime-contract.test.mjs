@@ -130,7 +130,7 @@ test('free-floating founder launcher portals above Life Map WebGL stacking after
 })
 
 test('body-portal launcher is exempt from generic page-layer relative positioning', () => {
-  assert.match(adamStyles, /\\.launcher\\s*\\{\\s*position:\\s*fixed;/)
+  assert.match(adamStyles, /\.launcher\s*\{\s*position:\s*fixed;/)
   assert.ok(pageLayerCss.includes('body > *:not(.urai-final-asset-spine-scene-layer):not([data-urai-adam-launcher]) {'), 'Portaled Adam must not inherit body-page position:relative')
-  assert.match(runtime, /launcherPortalReady\\s*\\?\\s*createPortal\\(launcher, document\\.body\\)/)
+  assert.match(runtime, /launcherPortalReady\s*\?\s*createPortal\(launcher, document\.body\)/)
 })
