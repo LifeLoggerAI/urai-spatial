@@ -855,6 +855,12 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
       const x = position.current.x.toFixed(4), z = position.current.z.toFixed(4)
       if (owner.current.dataset.homePlayerX !== x) owner.current.dataset.homePlayerX = x
       if (owner.current.dataset.homePlayerZ !== z) owner.current.dataset.homePlayerZ = z
+      if (previewW13V3) {
+        // The shared movement kernel reports the canonical production Orb
+        // coordinate. Override research-preview telemetry with the authored
+        // V3 anchor; otherwise the distance proof is about the wrong Orb.
+        owner.current.dataset.homeDistanceOrb = Math.hypot(position.current.x - orbAnchor.x, position.current.z - orbAnchor.z).toFixed(3)
+      }
     }
     if (target.current && position.current.distanceTo(target.current) < .2) target.current = null
     if (avatar.current) { avatar.current.position.copy(position.current); avatar.current.rotation.y = yaw.current }
@@ -905,9 +911,26 @@ function SceneReady({ onReady, previewW13V3 }: { onReady: () => void; previewW13
     const common = ['home-authored-embodied-self', 'home-orb-sanctuary', 'home-ground-environmental-threshold', 'home-life-map-sky-lookout']
     const ordinary = ['home-authored-terrain', 'home-mountain-horizon', 'home-living-vegetation', 'home-sanctuary-pavilion', 'home-sanctuary-path']
     const preview = scene.getObjectByName('home-w13-v3-interpretive-preview')
-    const previewReady = Boolean(preview && preview.getObjectByProperty('type', 'Mesh'))
+    let meshCount = 0
+    const materials = new Set<string>()
+    if (previewW13V3 && preview) preview.traverse((object) => {
+      if (!(object instanceof THREE.Mesh) || !object.visible || !object.geometry) return
+      meshCount += 1
+      const surfaces = Array.isArray(object.material) ? object.material : [object.material]
+      for (const surface of surfaces) if (surface) materials.add(surface.uuid)
+    })
+    const previewReady = Boolean(preview && meshCount > 0 && materials.size > 0)
     const sceneReady = common.every((name) => scene.getObjectByName(name)) && (previewW13V3 ? previewReady : ordinary.every((name) => scene.getObjectByName(name)))
     if (++frames.current < 4 || !sceneReady) { invalidate(); return }
+    // Runtime mesh evidence is derived from the actual R3F scene graph, not
+    // the GLB manifest or an assumed successful loader callback.
+    if (previewW13V3) {
+      const owner = document.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+      if (owner) {
+        owner.dataset.homeV3MeshCount = String(meshCount)
+        owner.dataset.homeV3MaterialCount = String(materials.size)
+      }
+    }
     done.current = true
     onReady()
   })

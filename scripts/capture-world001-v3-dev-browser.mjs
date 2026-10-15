@@ -63,8 +63,39 @@ async function testProfile(profile) {
     return { status: response.status, bytes: bytes.length, sha256: Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('') }
   }, modelPath)
   if (loaded.status !== 200 || loaded.bytes !== expectedBytes || loaded.sha256 !== expectedHash) throw new Error(profile.id + ' V3 GLB runtime bytes disagree with source')
-  const before = await owner.evaluate(element => ({ x: Number(element.dataset.homePlayerX), z: Number(element.dataset.homePlayerZ), ready: element.dataset.homeAssetsReady, mode: element.dataset.homeWorld001Preview, navigation: element.dataset.homeV3Navigation }))
+  const before = await owner.evaluate(element => ({
+    x: Number(element.dataset.homePlayerX), z: Number(element.dataset.homePlayerZ),
+    ready: element.dataset.homeAssetsReady, mode: element.dataset.homeWorld001Preview,
+    navigation: element.dataset.homeV3Navigation,
+    renderedMeshes: Number(element.dataset.homeV3MeshCount),
+    loadedMaterials: Number(element.dataset.homeV3MaterialCount),
+    cameraHeight: Number(element.dataset.homeCameraHeight)
+  }))
   if (before.navigation !== 'bounded-central-terrace-research-not-certified-navmesh') throw new Error('Expected explicit unapproved navmesh classification')
+  if (!(before.renderedMeshes > 0) || !(before.loadedMaterials > 0)) throw new Error(profile.id + ' V3 visible mesh/material telemetry absent')
+  if (!(before.cameraHeight > 1.4 && before.cameraHeight < 2.3)) throw new Error(profile.id + ' invalid first-person camera height')
+  // Browser RAF intervals are sampled, never called GPU FPS or device timing.
+  const frameTiming = await page.evaluate(() => new Promise(resolve => {
+    const intervals = []
+    let previous = 0, finished = false
+    const timer = setTimeout(() => finish(true), 6000)
+    function finish(timedOut) {
+      if (finished) return
+      finished = true
+      clearTimeout(timer)
+      const sorted = [...intervals].sort((a, b) => a - b)
+      const percentile = q => sorted.length ? Number(sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * q))].toFixed(2)) : null
+      resolve({ samples: intervals.length, p50Ms: percentile(.5), p95Ms: percentile(.95), timedOut, classification: 'browser-raf-intervals-not-gpu-frame-time' })
+    }
+    function tick(now) {
+      if (finished) return
+      if (previous) intervals.push(now - previous)
+      previous = now
+      if (intervals.length >= 48) finish(false)
+      else requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }))
   const initial = await screenshot(page, profile.id + '-arrival')
   if (!profile.mobile) {
     await page.keyboard.down('KeyW')
@@ -93,8 +124,15 @@ async function testProfile(profile) {
     if (!profile.mobile) await page.keyboard.up('KeyW')
     else await page.getByRole('button', { name: 'Move forward' }).dispatchEvent('pointerup')
   }
-  const arrivalAtOrb = await owner.evaluate(element => ({ x: Number(element.dataset.homePlayerX), z: Number(element.dataset.homePlayerZ), nearby: element.dataset.homeNearby, orbState: element.dataset.homeOrbState }))
-  if (arrivalAtOrb.nearby !== 'orb' || !Number.isFinite(arrivalAtOrb.x) || !Number.isFinite(arrivalAtOrb.z)) throw new Error(profile.id + ' failed genuine Orb proximity')
+  const arrivalAtOrb = await owner.evaluate(element => ({
+    x: Number(element.dataset.homePlayerX), z: Number(element.dataset.homePlayerZ),
+    nearby: element.dataset.homeNearby, orbState: element.dataset.homeOrbState,
+    distanceToSourceOrb: Number(element.dataset.homeDistanceOrb)
+  }))
+  if (arrivalAtOrb.nearby !== 'orb' || !Number.isFinite(arrivalAtOrb.x) || !Number.isFinite(arrivalAtOrb.z)
+    || !(arrivalAtOrb.distanceToSourceOrb < 2.4)
+    || Math.hypot(arrivalAtOrb.x - .1, arrivalAtOrb.z + 1.9) >= 2.4)
+    throw new Error(profile.id + ' failed V3 source-anchored Orb proximity')
   const atOrb = await screenshot(page, profile.id + '-at-orb')
   if (profile.mobile) {
     const accessibleOrb = page.getByTestId('home-semantic-orb')
@@ -106,12 +144,13 @@ async function testProfile(profile) {
   }
   await page.waitForFunction(() => window.__uraiV3OrbOpenProofCount > 0, null, { timeout: 12000 })
   const orbOpenEvents = await page.evaluate(() => window.__uraiV3OrbOpenProofCount)
+  if (orbOpenEvents !== 1) throw new Error(profile.id + ' unexpected duplicate Orb activation: ' + orbOpenEvents)
   const activated = await screenshot(page, profile.id + '-orb-activated')
   const orbState = await owner.getAttribute('data-home-orb-state').catch(() => null)
   const affordances = await page.evaluate(() => ({ ground: document.querySelector('[data-testid="home-semantic-ground"]')?.getAttribute('href') ?? null, lifeMap: document.querySelector('[data-testid="home-semantic-life-map"]')?.getAttribute('href') ?? null }))
   if (!affordances.ground?.startsWith('/ground/') || !affordances.lifeMap?.startsWith('/life-map/')) throw new Error(profile.id + ' missing accessible travel affordance')
   if (errors.length) throw new Error(profile.id + ' browser exceptions: ' + errors.join(' | '))
-  receipt.scenarios.push({ profile: profile.id, before, after, arrivalAtOrb, orbOpenEvents, orbState, affordances, asset: loaded, screenshots: [initial, moved, atOrb, activated], observed: 'first-person movement, V3 Orb proximity and real Orb open event; full-journey and physical navmesh remain unapproved' })
+  receipt.scenarios.push({ profile: profile.id, before, after, arrivalAtOrb, orbOpenEvents, orbState, affordances, asset: loaded, frameTiming, screenshots: [initial, moved, atOrb, activated], observed: 'first-person movement, V3 Orb proximity and real Orb open event; full-journey and physical navmesh remain unapproved' })
   await context.close()
 }
 try {
