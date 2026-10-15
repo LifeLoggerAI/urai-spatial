@@ -120,10 +120,12 @@ test('Home telemetry and continuous proof stay aligned to the polished interacti
 
   for (const marker of [
     "HOME_SPAWN = { x: -0.85, z: 8.4 }",
-    "HOME_ORB = { x: 1.8, z: -9.5 }",
+    "Number.parseFloat(world.dataset.homeOrbAnchorX",
+    "Number.parseFloat(world.dataset.homeOrbAnchorZ",
     "HOME_GROUND = { x: -5.4, z: -10.8 }",
     "HOME_LIFE_MAP = { x: 5.4, z: -10.8 }",
   ]) assert.ok(includesCanonical(assetHome, marker), `stale AssetDrivenHomeWorld telemetry: ${marker}`)
+  assert.doesNotMatch(assetHome, /HOME_ORB\s*=\s*\{\s*x:\s*1\.8,\s*z:\s*-9\.5\s*\}/)
 
   for (const marker of [
     "const spawnX = -0.85",
