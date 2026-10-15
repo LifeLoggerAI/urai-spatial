@@ -166,7 +166,7 @@ test('the unchanged Orb fits the actual first-person arrival framing on desktop,
   const initialLook = homeSource.match(/const yaw = useRef\(([^)]+)\), pitch = useRef\(([^)]+)\)/)
   assert.ok(initialLook, 'the actual initial look must be measured')
   const placeStart = homeSource.indexOf('  const place = useCallback(() => {')
-  const placeEnd = homeSource.indexOf('\n  }, [camera, pitch, size.height, size.width, yaw])', placeStart)
+  const placeEnd = homeSource.indexOf('\n  }, [camera, pitch, previewW13V3, size.height, size.width, yaw])', placeStart)
   assert.ok(placeStart > 0 && placeEnd > placeStart)
   const placeBody = homeSource.slice(placeStart + '  const place = useCallback(() => {'.length, placeEnd)
   for (const [width, height] of [[1440, 900], [390, 844], [320, 700], [844, 390]]) {
