@@ -99,6 +99,7 @@ function fixture(t) {
   // to a private Memory Star. Real route changes are exercised separately.
   window.location.search = ''
   const requests = []
+  let memoryRevision = 1
   // Current-account authority is an explicit stable adapter; this suite checks
   // presence selection and leaves actor-boundary acceptance to its own tests.
   const actor = { generation: 1 }
@@ -118,7 +119,7 @@ function fixture(t) {
     '@/spatial/memory/useSelectedMemory': {
       useSelectedMemory: () => {
         const id = new URLSearchParams(window.location.search).get('memoryId')
-        return id ? { status: 'ready', memory: { id, title: 'Fictional ' + id, demo: false } }
+        return id ? { status: 'ready', memory: { id, title: 'Fictional ' + id, demo: false, evidenceRevision: memoryRevision } }
           : { status: 'missing', memory: null, message: 'No memory selected.' }
       },
     },
@@ -174,6 +175,7 @@ function fixture(t) {
     window.location.search = memoryId ? '?memoryId=' + encodeURIComponent(memoryId) : ''
     render(agent)
   }
+  const reviseMemory = () => { memoryRevision += 1; render(agents[0]) }
   const element = selector => { const node = container.querySelector(selector); assert.ok(node, 'Missing element ' + selector); return node }
   const props = node => node[Object.keys(node).find(key => key.startsWith('__reactProps$'))]
   const change = (selector, currentTarget) => act(() => props(element(selector)).onChange({ currentTarget }))
@@ -190,7 +192,7 @@ function fixture(t) {
   const unmount = () => { if (mounted) { act(() => root.unmount()); mounted=false } }
   t.after(() => { unmount(); container.parentNode?.removeChild(container); window.location.search = '' })
   render(agents[0])
-  return { requests, container, render, route, ask, submit, resolve, reject, unmount, change, element, props,
+  return { requests, container, render, route, reviseMemory, ask, submit, resolve, reject, unmount, change, element, props,
     text: () => container.textContent,
     stop: () => act(() => { props(container.querySelectorAll('button')[1]).onClick() }),
   }
@@ -301,4 +303,22 @@ test('switching authenticated Memory Star routes aborts the old request and rese
   await f.resolve(0, answer('Only Memory A answer'))
   assert.ok(!f.text().includes('Only Memory A answer'), 'Stale answer cannot be delivered after route switch')
   assert.match(f.text(), /Fictional memory-b/, 'New route should present the newly selected memory')
+})
+
+test('same-route selected-memory correction aborts prior Council request and resets consent and answer', async t => {
+  const f = fixture(t)
+  f.route('memory-a')
+  f.change('textarea', { value: 'Old historical question' })
+  f.change('input', { checked: true })
+  f.submit()
+  assert.equal(f.requests.length, 1)
+  const signal = f.requests[0].input.signal
+  f.reviseMemory()
+  assert.equal(signal.aborted, true, 'Memory revision must cancel old request')
+  assert.equal(f.element('textarea').value, '', 'Memory revision clears old draft')
+  const checkboxes = f.container.querySelectorAll('input').filter(node => f.props(node)?.type === 'checkbox')
+  assert.equal(checkboxes[0].checked, false, 'Memory revision clears provider consent')
+  assert.equal(checkboxes[3].checked, false, 'Memory revision clears private evidence sharing')
+  await f.resolve(0, answer('Stale answer from before the correction'))
+  assert.doesNotMatch(f.text(), /Stale answer from before the correction/)
 })
