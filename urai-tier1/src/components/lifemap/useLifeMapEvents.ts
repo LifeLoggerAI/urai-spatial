@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { collection, limit, onSnapshot, orderBy, query, type DocumentData } from "firebase/firestore";
+import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from "@/spatial/memory/selectedMemoryContract";
 import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
 import { lifeMapDisplayPosition } from "./lifeMapLayout";
@@ -63,6 +64,7 @@ function normalizeEvent(id: string, data: DocumentData, ownerId = ""): LifeMapEv
     type: asNodeType(data.type),
     sourceType: asSourceType(data.sourceType),
     sourceId: typeof data.sourceId === "string" ? data.sourceId : undefined,
+    memoryId: sanitizeMemoryId(typeof data.memoryId === "string" ? data.memoryId : null) ?? undefined,
     occurredAt: data.occurredAt,
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
@@ -109,6 +111,9 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const resolvedUserId = useMemo(() => resolveUserId(userId), [userId]);
   const [nodes, setNodes] = useState<LifeMapNode[]>(() => explicitDemo ? positionedDemoNodes : []);
   const [eras, setEras] = useState<LifeMapEra[]>(() => explicitDemo ? lifeMapEras : []);
+  const [canonicalMemories, setCanonicalMemories] = useState<Map<string, SelectedMemory>>(new Map());
+  const [memoriesOwner, setMemoriesOwner] = useState<string | null>(null);
+  const [memoriesLoading, setMemoriesLoading] = useState(!explicitDemo);
   // Identity changes can render before the old Firestore listener's useEffect
   // cleanup runs. Fence previously loaded private data synchronously during
   // render, rather than briefly showing another actor's Life Map.
@@ -116,6 +121,18 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const [erasOwner, setErasOwner] = useState<string | null>(() => explicitDemo ? 'demo-user' : null);
   const currentOwner = explicitDemo ? 'demo-user' : resolvedUserId;
   const currentNodes = nodesOwner === currentOwner ? nodes : [];
+  const currentMemories = memoriesOwner === currentOwner ? canonicalMemories : new Map<string, SelectedMemory>();
+  const resolvedNodes = useMemo(() => explicitDemo ? currentNodes : currentNodes.map(node => {
+    const memoryId = sanitizeMemoryId(node.memoryId);
+    const authoritative = memoryId && node.type === "memory" ? currentMemories.get(memoryId) : undefined;
+    // Keep contextual events visible but non-navigable. Never infer memory
+    // identity or manifest authority from event IDs, labels or source links.
+    if (!authoritative) return { ...node, authorizedMemory: false, locked: true, replayAvailable: false };
+    return { ...node, id: authoritative.id, memoryId: authoritative.id,
+      title: authoritative.title, summary: authoritative.summary,
+      replayAvailable: node.replayAvailable, locked: Boolean(node.locked),
+      authorizedMemory: true };
+  }), [currentNodes, currentMemories, explicitDemo]);
   const currentEras = erasOwner === currentOwner ? eras : [];
   const [eventsLoading, setEventsLoading] = useState(!explicitDemo);
   const [erasLoading, setErasLoading] = useState(!explicitDemo);
@@ -211,10 +228,44 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     }
   }, [explicitDemo, resolvedUserId]);
 
-  const loading = eventsLoading || erasLoading || (Boolean(resolvedUserId) && (nodesOwner !== currentOwner || erasOwner !== currentOwner));
+  useEffect(() => {
+    let cancelled = false;
+    if (explicitDemo || !resolvedUserId || !firebasePublicEnvReady) {
+      setCanonicalMemories(new Map());
+      setMemoriesOwner(explicitDemo ? 'demo-user' : resolvedUserId);
+      setMemoriesLoading(false);
+      return () => { cancelled = true; };
+    }
+    setMemoriesLoading(true);
+    // Canonical private memory documents are server-authored, owner-readable.
+    // No data from this subscription is made accessible across account changes.
+    const unsub = onSnapshot(
+      query(collection(getFirebaseDb(), "users", resolvedUserId, "memories"), limit(240)),
+      snapshot => {
+        if (cancelled) return;
+        const accepted = new Map<string, SelectedMemory>();
+        for (const doc of snapshot.docs) {
+          const parsed = parseSelectedMemory(doc.data(), resolvedUserId, doc.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+          if (parsed.status === 'ready') accepted.set(doc.id, parsed.memory);
+        }
+        setCanonicalMemories(accepted);
+        setMemoriesOwner(resolvedUserId);
+        setMemoriesLoading(false);
+      },
+      () => {
+        if (cancelled) return;
+        setCanonicalMemories(new Map());
+        setMemoriesOwner(resolvedUserId);
+        setMemoriesLoading(false);
+      },
+    );
+    return () => { cancelled = true; unsub(); };
+  }, [explicitDemo, resolvedUserId]);
+
+  const loading = eventsLoading || erasLoading || memoriesLoading || (Boolean(resolvedUserId) && (nodesOwner !== currentOwner || erasOwner !== currentOwner || memoriesOwner !== currentOwner));
   const error = eventsError || erasError;
-  const sourceMode: LifeMapSourceMode = explicitDemo ? "explicit-demo" : !resolvedUserId ? "signed-out" : !firebasePublicEnvReady ? "unavailable" : error ? "error" : !loading && currentNodes.length === 0 ? "empty" : "private";
-  return { nodes: currentNodes, eras: currentEras, loading, error, usingSeedData: explicitDemo, sourceMode };
+  const sourceMode: LifeMapSourceMode = explicitDemo ? "explicit-demo" : !resolvedUserId ? "signed-out" : !firebasePublicEnvReady ? "unavailable" : error ? "error" : !loading && resolvedNodes.length === 0 ? "empty" : "private";
+  return { nodes: resolvedNodes, eras: currentEras, loading, error, usingSeedData: explicitDemo, sourceMode };
 }
 
 export const __lifeMapEventNormalizationForTests = {
