@@ -122,7 +122,7 @@ try{
    await page.getByText(/Selected Memory Star: Lake Alpha 1988/).waitFor({timeout:30000})
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Beta 1996'))
    const mapState=page.locator('[data-proof-map-nodes]')
-   await page.waitForFunction(()=>{const out=document.querySelector('[data-proof-map-nodes]');if(!out)return false;const nodes=JSON.parse(out.getAttribute('data-proof-map-nodes')||'[]');return nodes.some(n=>n.id==='memory-a'&&n.authorized&&n.manifest==='replay-memory-a')&&nodes.some(n=>n.id==='memory-b'&&n.authorized&&n.manifest==='replay-memory-b')})
+   await page.waitForFunction(()=>{const out=document.querySelector('[data-proof-map-nodes]');if(!out)return false;const nodes=JSON.parse(out.getAttribute('data-proof-map-nodes')||'[]');return nodes.some(n=>n.id==='star-a'&&n.authorized&&n.manifest==='replay-memory-a')&&nodes.some(n=>n.id==='star-b'&&n.authorized&&n.manifest==='replay-memory-b')})
    const liveNodes=JSON.parse(await mapState.getAttribute('data-proof-map-nodes'))
    assert.ok(liveNodes.some(n=>n.id==='orphan'&&n.locked&&!n.authorized),'Orphan event must never become an authorized Focus route')
    assert.ok(liveNodes.every(n=>n.title!=="Other owner's private constellation"),'Another account must not appear in owner Life Map')
@@ -147,7 +147,7 @@ try{
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Beta 1996'))
    await page.evaluate(()=>window.__uraiProofOther())
    await page.getByText(/Selected memory could not be found/).waitFor({timeout:30000})
-   await page.waitForFunction(()=>{const el=document.querySelector('[data-proof-map-nodes]');return el&&JSON.parse(el.getAttribute('data-proof-map-nodes')||'[]').every(n=>n.id!=='memory-a'&&n.id!=='memory-b')})
+   await page.waitForFunction(()=>{const el=document.querySelector('[data-proof-map-nodes]');return el&&JSON.parse(el.getAttribute('data-proof-map-nodes')||'[]').every(n=>n.id!=='star-a'&&n.id!=='star-b')})
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Beta 1996'))
    // The UI must hide private data, but Firestore must also refuse a direct
    // cross-account read of the canonical owner document.
@@ -161,7 +161,7 @@ try{
    await page.evaluate(()=>window.__uraiProofOwner())
    await page.evaluate(()=>window.history.pushState({},'','/?memoryId=memory-a'))
    await page.getByText(/Selected Memory Star: Lake Alpha corrected 1988/).waitFor({timeout:30000})
-   await page.waitForFunction(()=>{const el=document.querySelector('[data-proof-map-nodes]');return el&&JSON.parse(el.getAttribute('data-proof-map-nodes')||'[]').some(n=>n.id==='memory-a'&&n.title==='Lake Alpha corrected 1988'&&n.authorized)})
+   await page.waitForFunction(()=>{const el=document.querySelector('[data-proof-map-nodes]');return el&&JSON.parse(el.getAttribute('data-proof-map-nodes')||'[]').some(n=>n.id==='star-a'&&n.title==='Lake Alpha corrected 1988'&&n.authorized)})
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Alpha 1988'),
      'Superseded title must not reappear after owner reauthentication')
    const ownerRead=await page.evaluate(()=>window.__uraiProofReadFirstOwnerMemory())
