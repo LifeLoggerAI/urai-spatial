@@ -5,7 +5,7 @@ import { getAIActorSnapshot, getServerAIActorSnapshot, isCurrentAIActorSnapshot,
 import type { CouncilAgent } from './councilAgentSchema'
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
-import { sanitizeMemoryId } from '@/spatial/memory/selectedMemoryContract'
+import { sanitizeMemoryId, type SelectedMemoryResult } from '@/spatial/memory/selectedMemoryContract'
 import {
   attemptedExternalOrbFallback,
   deterministicOrbFallback,
@@ -37,14 +37,22 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
   const address = location.split('#')[0]
   const params = new URLSearchParams(address.includes('?') ? address.slice(address.indexOf('?') + 1) : '')
   const memoryRouteId = sanitizeMemoryId(params.get('memoryId'))
-  // A new Memory Star or actor must create a new conversation, aborting any
-  // in-flight request and clearing all grants/history for the old selection.
-  const sessionKey = JSON.stringify([actor.generation, agent.id, agent.name, agent.role, agent.focus, memoryRouteId, params.get('demo')])
-  return <ActorBoundCouncilConversationPanel key={sessionKey} agent={agent} actor={actor} memoryRouteId={memoryRouteId} />
+  const selectedMemory = useSelectedMemory()
+  // The memory route can stay unchanged while the owner corrects or revokes
+  // a persisted memory. A changed selected-memory record must remount Council,
+  // removing stale answers, clearing consent/history and aborting any request.
+  // This client freshness fence complements server-side SceneTruth rechecks;
+  // it is not itself evidence of historical authority.
+  const memoryRevision = useMemo(() => selectedMemory.status === 'ready'
+    && selectedMemory.memory.id === memoryRouteId
+    ? JSON.stringify(selectedMemory.memory)
+    : selectedMemory.status, [selectedMemory, memoryRouteId])
+  const sessionKey = JSON.stringify([actor.generation, agent.id, agent.name, agent.role, agent.focus, memoryRouteId, params.get('demo'), memoryRevision])
+  return <ActorBoundCouncilConversationPanel key={sessionKey} agent={agent} actor={actor} memoryRouteId={memoryRouteId} selectedMemory={selectedMemory} />
 }
 
-function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId }: {
-  agent: CouncilAgent; actor: AIActorSnapshot; memoryRouteId: string | null
+function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selectedMemory }: {
+  agent: CouncilAgent; actor: AIActorSnapshot; memoryRouteId: string | null; selectedMemory: SelectedMemoryResult
 }) {
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
@@ -55,7 +63,6 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId }: {
   // Focus supplies the selected star through canonical navigation. Memory
   // evidence is the default context, but provider disclosure never is.
   const [graphRequested, setGraphRequested] = useState(Boolean(memoryRouteId))
-  const selectedMemory = useSelectedMemory()
   const validMemoryId = memoryRouteId && selectedMemory.status === 'ready'
     && selectedMemory.memory.id === memoryRouteId && selectedMemory.memory.demo === false
     ? memoryRouteId : null
@@ -266,7 +273,10 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId }: {
         />
         <label className="councilConsent">
           <input type="checkbox" checked={consent} disabled={busy} onChange={(event) => setConsent(event.currentTarget.checked)} />
-          Allow this message and bounded recent Council context to be processed by {COUNCIL_PROVIDER_REGISTRY[providerId].label}.
+          {validMemoryId && graphRequested && useSelectedMemoryGraph
+            ? 'Allow this question (not earlier Council chat history) to be processed by '
+            : 'Allow this message and bounded recent Council context to be processed by '}
+          {COUNCIL_PROVIDER_REGISTRY[providerId].label}.
         </label>
         {memoryRouteId ? <p role="status" aria-live="polite">
           Selected Memory Star: {validMemoryId && selectedMemory.memory ? selectedMemory.memory.title : selectedMemory.message}.
