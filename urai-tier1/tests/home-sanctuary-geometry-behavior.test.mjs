@@ -171,7 +171,7 @@ test('the unchanged Orb fits the actual first-person arrival framing on desktop,
   const placeBody = homeSource.slice(placeStart + '  const place = useCallback(() => {'.length, placeEnd)
   for (const [width, height] of [[1440, 900], [390, 844], [320, 700], [844, 390]]) {
     const camera = new THREE.PerspectiveCamera(Number(projection[1]), width / height, Number(projection[2]), Number(projection[3]))
-    const sandbox = { THREE, camera, homeWalkSurfaceHeight, size: { width, height }, position: { current: spawn.clone() }, yaw: { current: Number(initialLook[1]) }, pitch: { current: Number(initialLook[2]) }, forward: { current: new THREE.Vector3() }, look: { current: new THREE.Vector3() } }
+    const sandbox = { THREE, camera, homeWalkSurfaceHeight, previewW13V3: false, size: { width, height }, position: { current: spawn.clone() }, yaw: { current: Number(initialLook[1]) }, pitch: { current: Number(initialLook[2]) }, forward: { current: new THREE.Vector3() }, look: { current: new THREE.Vector3() } }
     vm.runInNewContext(`(() => {${placeBody}\n})()`, sandbox)
     camera.updateMatrixWorld()
     let maximumX = 0, maximumY = 0
