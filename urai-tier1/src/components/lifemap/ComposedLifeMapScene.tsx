@@ -316,6 +316,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     const next = withIdentity(new URLSearchParams(), selected.id);
     next.set("memoryId", selected.id);
     next.set("node", selected.id);
+    if (!explicitDemoRequested && selected.authorizedMemory && selected.replayManifestId) next.set("manifestId", selected.replayManifestId);
     next.set("returnNode", selected.id);
     next.set("artifactFamily", resolveArtifactFamily(selected));
     next.set("from", "life-map");
@@ -442,10 +443,10 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     </div>
 
     {thresholdsVisible ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}>
-      <button className="focus-threshold" data-destination-href={destinationHref("focus")} onClick={() => router.push(destinationHref("focus"))}>
+      <button className="focus-threshold" data-destination-href={destinationHref("focus")} disabled={(!explicitDemoRequested && !selected!.authorizedMemory) || Boolean(selected!.locked)} onClick={() => router.push(destinationHref("focus"))}>
         <span>Inspect</span><strong>Enter Focus</strong>
       </button>
-      <button className="replay-threshold" data-destination-href={destinationHref("replay")} disabled={!selected!.replayAvailable || selected!.locked} onClick={() => router.push(destinationHref("replay"))}>
+      <button className="replay-threshold" data-destination-href={destinationHref("replay")} disabled={!selected!.replayAvailable || selected!.locked || (!explicitDemoRequested && !selected!.authorizedMemory)} onClick={() => router.push(destinationHref("replay"))}>
         <span>Cross threshold</span><strong>Replay</strong>
       </button>
       <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
