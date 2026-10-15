@@ -99,6 +99,7 @@ function graphFixture(f, options = {}) {
       require(dependency) {
         if (dependency === 'firebase-functions/v1') return functions
         if (dependency === 'firebase-admin') return admin
+        if (dependency === 'firebase-admin/firestore') return { FieldValue: admin.firestore.FieldValue, Timestamp: require('firebase-admin/firestore').Timestamp }
         if (dependency === 'node:crypto') return crypto
         if (dependency.startsWith('./')) return load(dependency.slice(2))
         throw Error('Unexpected actual LifeModel dependency: ' + dependency)

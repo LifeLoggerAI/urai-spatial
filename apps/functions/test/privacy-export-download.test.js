@@ -157,6 +157,7 @@ function fixture(options = {}) {
     require: name => {
       if (name === 'firebase-functions/v1') return functions
       if (name === 'firebase-admin') return admin
+      if (name === 'firebase-admin/firestore') return { FieldValue: admin.firestore.FieldValue, Timestamp }
       if (name === 'node:crypto') return crypto
       if (name === 'node:stream/promises') return options.realPipeline ? require(name) : { pipeline: async (source, guard, response) => {
         assert.ok([...records.keys()].some(k => k.includes('/privacyAudit/') && records.get(k).action === 'export_download_authorized'), 'audit must commit before stream')
@@ -1175,4 +1176,17 @@ test('known receipt generation is disposed even when versioned Storage has no li
   await f.handlers.processDeletionQueueItem(await f.db.doc(`deletionQueue/${deletion.jobId}`).get())
   assert.ok(!f.versions.has(`${r.objectPath}#${r.storageGeneration}`))
   assert.equal(f.objects.get(r.objectPath).bytes.length,0)
+})
+
+
+test('compiled operational privacy uses real modular Firestore sentinels, not absent Admin namespace statics', () => {
+  const modular = require('firebase-admin/firestore')
+  assert.equal(typeof modular.FieldValue.serverTimestamp, 'function')
+  assert.equal(typeof modular.Timestamp.fromMillis, 'function')
+  assert.ok(modular.FieldValue.serverTimestamp(), 'real modular FieldValue must create a server timestamp')
+  assert.equal(modular.Timestamp.fromMillis(1_234).toMillis(), 1_234)
+  const compiled = fs.readFileSync(path.resolve(__dirname, '../lib/apps/functions/src/privacyOperations.js'), 'utf8')
+  assert.match(compiled, /firebase-admin\/firestore/, 'compiled callable must import modular Firestore SDK')
+  const currentSource = fs.readFileSync(path.resolve(__dirname, '../src/privacyOperations.ts'), 'utf8')
+  assert.doesNotMatch(currentSource, /admin\.firestore\.(?:FieldValue|Timestamp)/, 'legacy namespace static must not be reused')
 })

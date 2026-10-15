@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { CONSENT_DOMAINS, CONSENT_MODES, STORED_DOMAIN_KEYS, ownPolicyRecord, isCanonicalStoredPolicy, type ConsentDomain, type ConsentMode, type ConsentDomainPolicy, type ConsentPolicy } from './consentPolicyAuthority'
 import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
@@ -10,8 +11,8 @@ import { assertBoundMemoryMedia, exportMemoryMediaBytes, deleteMemoryMedia, veri
 if (!admin.apps.length) admin.initializeApp()
 
 const db = admin.firestore()
-const fieldValue = admin.firestore.FieldValue
-const timestamp = admin.firestore.Timestamp
+const fieldValue = FieldValue
+const timestamp = Timestamp
 
 const EXPORT_SCOPES = ['profile', 'consent', 'memories', 'spatial', 'life-model', 'intelligence', 'audit'] as const
 const DELETION_SCOPES = [
@@ -777,7 +778,7 @@ async function readBoundExport(transaction: FirebaseFirestore.Transaction, uid: 
     }
     const sourceExpiresAt = await verifyMemoryMediaExportAuthorities(transaction, uid, authorities)
     const packageExpiresAt = job.get('expiresAt')
-    if (!(packageExpiresAt instanceof admin.firestore.Timestamp) || packageExpiresAt.toMillis() > sourceExpiresAt) {
+    if (!(packageExpiresAt instanceof Timestamp) || packageExpiresAt.toMillis() > sourceExpiresAt) {
       throw new functions.https.HttpsError('failed-precondition', 'MEMORY_MEDIA_EXPORT_AUTHORITY_REQUIRED')
     }
   }
@@ -1037,7 +1038,7 @@ async function readDownloadAuthority(transaction: FirebaseFirestore.Transaction,
   const { jobId, file, assetId } = selection
   const { job, subject } = await readBoundExport(transaction, uid, jobId, 'ready')
   const expiresAt = job.get('expiresAt')
-  const packageExpiresAt = expiresAt instanceof admin.firestore.Timestamp ? expiresAt.toMillis() : Number.NaN
+  const packageExpiresAt = expiresAt instanceof Timestamp ? expiresAt.toMillis() : Number.NaN
   if (!Number.isSafeInteger(packageExpiresAt) || packageExpiresAt <= Date.now() || packageExpiresAt > subject.canonicalExportConsentExpiresAt) {
     throw new functions.https.HttpsError('failed-precondition', 'Export has expired or its authority lifetime changed.')
   }
@@ -1468,7 +1469,7 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
   const scope = parseDeletionScope(job.scope)
   const state = String(job.state)
   if (['completed', 'failed', 'cancelled'].includes(state)) return
-  const executeAfter = job.executeAfter as admin.firestore.Timestamp | undefined
+  const executeAfter = job.executeAfter as Timestamp | undefined
   if (executeAfter && executeAfter.toMillis() > Date.now()) return
 
   const uid = job.uid
@@ -1485,7 +1486,7 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
         || !['queued', 'awaiting-grace'].includes(String(current.get('state')))
         || current.get('state') !== ownerJob.get('state')) return false
       const deadline = current.get('executeAfter')
-      if (!(deadline instanceof admin.firestore.Timestamp) || !Number.isSafeInteger(deadline.toMillis()) || deadline.toMillis() > Date.now()) return false
+      if (!(deadline instanceof Timestamp) || !Number.isSafeInteger(deadline.toMillis()) || deadline.toMillis() > Date.now()) return false
       const generation = fence.exists ? fence.get('generation') : 0
       if (!Number.isSafeInteger(generation) || generation < 0 || generation >= Number.MAX_SAFE_INTEGER
         || (fence.exists && !isRecord(fence.get('pendingDeletions')))) throw new functions.https.HttpsError('failed-precondition', 'Invalid export deletion epoch.')
@@ -1580,7 +1581,7 @@ export const processDeletionGraceQueue = functions.pubsub
   .onRun(async () => {
     const snapshot = await db.collection('deletionQueue').where('state', '==', 'awaiting-grace').limit(25).get()
     for (const item of snapshot.docs) {
-      const executeAfter = item.get('executeAfter') as admin.firestore.Timestamp | undefined
+      const executeAfter = item.get('executeAfter') as Timestamp | undefined
       if (executeAfter && executeAfter.toMillis() <= Date.now()) await processDeletion(item)
     }
   })
@@ -1606,7 +1607,7 @@ export const cancelDeletionRequest = functions.https.onCall(async (data, context
 })
 
 function safeTimestamp(value: unknown): string | null {
-  if (value instanceof admin.firestore.Timestamp) return value.toDate().toISOString()
+  if (value instanceof Timestamp) return value.toDate().toISOString()
   if (typeof value === 'string') return value
   return null
 }
