@@ -124,7 +124,7 @@ async function testProfile(profile) {
     if (typeof href !== 'string') return false
     try {
       const url = new URL(href, origin)
-      const actualPath = url.pathname.replace(/\\/+$/, '') || '/'
+      const actualPath = url.pathname.endsWith('/') ? url.pathname.slice(0, -1) : url.pathname
       return url.origin === origin && actualPath === pathname
         && url.searchParams.size === Object.keys(expectedParams).length
         && Object.entries(expectedParams).every(([key, value]) => url.searchParams.get(key) === value)
