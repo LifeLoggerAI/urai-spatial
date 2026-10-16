@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { FieldValue, Timestamp } from 'firebase-admin/firestore'
+import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore'
 import * as functions from 'firebase-functions/v1'
 import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
@@ -672,7 +672,7 @@ export async function deleteMemoryMedia(database: FirebaseFirestore.Firestore, u
     let cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined
     while (true) {
       await requireCurrent()
-      let query = database.collection(`users/${uid}/${collectionName}`).orderBy(admin.firestore.FieldPath.documentId()).limit(250)
+      let query = database.collection(`users/${uid}/${collectionName}`).orderBy(FieldPath.documentId()).limit(250)
       if (cursor) query = query.startAfter(cursor)
       const page = await query.get(); await requireCurrent()
       if (!page.size) break

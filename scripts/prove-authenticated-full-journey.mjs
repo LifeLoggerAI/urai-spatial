@@ -591,7 +591,77 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  assert.ok(['unavailable','unauthorized','deleted'].includes(state),
   'J9 selected-memory access produced an unexpected state after revoked memory policy: '+state)
  mark('J9-partial',{...result.journey.privacy,staleReplayDenied:true})
- throw Error('J9_INCOMPLETE: stale Council response authority and private-media token revocation not yet end-to-end certified')
+ // Prove the original authenticated product deletion, not fixture teardown.
+ // This deliberately does not remove the independent Council/media NO-GO gate.
+ await page.goto(origin+'/privacy-controls',{waitUntil:'domcontentloaded'})
+ await page.waitForFunction(()=>{
+  const panel=document.querySelector('main[data-route-owner="consent-sanctuary"]')
+  return panel?.dataset.privacySource==='private' &&
+   panel?.dataset.enforcementState==='fully-enforced' &&
+   panel.querySelector('.consentPanelHeading p')?.textContent?.includes('Revision 2')
+ },null,{timeout:90000})
+ await page.getByLabel('Deletion scope').selectOption('memories')
+ await page.getByLabel('Type CONFIRM DELETE').fill('CONFIRM DELETE')
+ const emittedRequest=page.waitForRequest(request=>
+  request.method()==='POST' && request.url().includes('/createSpatialDeletionRequest'),{timeout:30000})
+ await page.getByRole('button',{name:'Create deletion request'}).click({timeout:15000})
+ const request=await emittedRequest
+ // Never write Auth headers, bearer tokens or the raw operation ID to proof.
+ const operationId=JSON.parse(request.postData()||'{}').data?.operationId
+ assert.match(operationId,/^[A-Za-z0-9_-]{12,96}$/,'J9G must capture the actual original callable operation identity')
+ const jobId=createHash('sha256').update('deletion:'+accounts[0].uid+':'+operationId).digest('hex').slice(0,40)
+ const receiptId=createHash('sha256').update('deletion-receipt:'+accounts[0].uid+':'+operationId).digest('hex').slice(0,40)
+ disposableDocs.push('deletionQueue/'+jobId,'deletionReceipts/'+receiptId,
+  'users/'+accounts[0].uid+'/deletionJobs/'+jobId)
+ await page.waitForFunction(()=>document.querySelector('.consentStatus')?.textContent?.includes('Deletion '),
+  null,{timeout:45000})
+ let job
+ for(let i=0;i<100;i++){
+  const current=await db.doc('users/'+accounts[0].uid+'/deletionJobs/'+jobId).get()
+  job=current.data()
+  if(job && ['completed','failed','cancelled'].includes(String(job.state)))break
+  await wait(800)
+ }
+ assert.equal(job?.state,'completed','J9G canonical memory deletion did not complete: '+String(job?.failureCode??job?.state))
+ const queue=(await db.doc('deletionQueue/'+jobId).get()).data()
+ assert.equal(queue?.state,'completed','J9G deletionQueue did not report completion')
+ const durable=(await db.doc('deletionReceipts/'+receiptId).get()).data()
+ assert.equal(durable?.result,'completed','J9G durable server deletion receipt missing')
+ assert.equal(durable?.scope,'memories','J9G deletion scope changed')
+ assert.ok(durable?.removedMemoryStarEvents>=1,'J9G real Memory Star events were not removed')
+ assert.equal((await db.doc('users/'+accounts[0].uid+'/memories/fictional-memory-a').get()).exists,false)
+ assert.equal((await db.doc('users/'+accounts[0].uid+'/lifeMapEvents/fictional-star-a').get()).exists,false)
+ // Retry with the same original app-issued operation. A second deletion job
+ // must not be scheduled even after the first worker is terminal.
+ const retryLogin=await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fictional-emulator-key',{
+  method:'POST',headers:{'content-type':'application/json'},
+  body:JSON.stringify({email:accounts[0].email,password:accounts[0].password,returnSecureToken:true})})
+ assert.equal(retryLogin.status,200)
+ const retryToken=(await retryLogin.json()).idToken
+ assert.ok(retryToken,'J9G could not obtain a disposable current Auth token for idempotency')
+ const retry=await fetch('http://127.0.0.1:5001/'+project+'/us-central1/createSpatialDeletionRequest',{
+  method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+retryToken},
+  body:JSON.stringify({data:{scope:'memories',confirmation:'CONFIRM DELETE',operationId}})})
+ assert.equal(retry.status,200,'J9G callable idempotent retry failed')
+ const retryResult=(await retry.json()).result
+ assert.equal(retryResult?.jobId,jobId,'J9G idempotent retry generated a second job')
+ const duplicateJobs=await db.collection('users/'+accounts[0].uid+'/deletionJobs').get()
+ assert.equal(duplicateJobs.size,1,'J9G retry generated additional owner deletion jobs')
+ await page.goto(origin+'/replay?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
+ const deletedReplay=page.getByTestId('cinematic-replay-client')
+ await deletedReplay.waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(()=>{
+  const state=document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.memoryStatus
+  return state && state!=='loading'
+ },null,{timeout:60000})
+ assert.ok(['unavailable','unauthorized','deleted'].includes(await deletedReplay.getAttribute('data-memory-status')),
+  'J9G deleted memory became usable after browser navigation')
+ await screenshot(page,'J9-canonical-memory-deletion')
+ result.journey.privacy.deletion={scope:'memories',jobId,receiptId,
+  canonicalUIRequest:true,serverWorkerCompleted:true,retainedDurableReceipt:true,
+  removedMemoryStarEvents:durable.removedMemoryStarEvents,idempotentRetry:true,replayDenied:true}
+ mark('J9G-canonical-deletion',result.journey.privacy.deletion)
+ throw Error('J9_INCOMPLETE: stale Council asynchronous response and previously issued private-media capability revocation remain unaccepted')
 }
 
 await mkdir(out,{recursive:true})

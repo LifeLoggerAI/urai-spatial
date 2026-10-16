@@ -145,7 +145,7 @@ function fixture(options = {}) {
     const result = { exports: {} }
     vm.runInNewContext(fs.readFileSync(path.join(path.dirname(filename), 'memoryMedia.js'), 'utf8'), {
       module: result, exports: result.exports, Buffer, Error, Date: class extends Date { static now() { return options.clock?.value ?? now } },
-      require: name => { if (name === 'firebase-admin') return admin; if (name === 'firebase-admin/firestore') return { Timestamp, FieldValue: admin.firestore.FieldValue }; if (name === 'firebase-functions/v1') return functions;
+      require: name => { if (name === 'firebase-admin') return admin; if (name === 'firebase-admin/firestore') return { Timestamp, FieldPath: { documentId: () => '__name__' }, FieldValue: admin.firestore.FieldValue }; if (name === 'firebase-functions/v1') return functions;
         if (name === 'node:crypto') return crypto; if (name === 'node:stream/promises') return require(name); if (name === './exportPagination') return loadPagination(); if (name === './consentPolicyAuthority') return loadPolicyAuthority(); throw new Error(`Unexpected memory-media dependency ${name}`) },
     }, { filename: 'memoryMedia.strict-compiled.js' })
     return memoryMedia = result.exports
@@ -157,7 +157,7 @@ function fixture(options = {}) {
     require: name => {
       if (name === 'firebase-functions/v1') return functions
       if (name === 'firebase-admin') return admin
-      if (name === 'firebase-admin/firestore') return { FieldValue: admin.firestore.FieldValue, Timestamp }
+      if (name === 'firebase-admin/firestore') return { FieldPath: { documentId: () => '__name__' }, FieldValue: admin.firestore.FieldValue, Timestamp }
       if (name === 'node:crypto') return crypto
       if (name === 'node:stream/promises') return options.realPipeline ? require(name) : { pipeline: async (source, guard, response) => {
         assert.ok([...records.keys()].some(k => k.includes('/privacyAudit/') && records.get(k).action === 'export_download_authorized'), 'audit must commit before stream')

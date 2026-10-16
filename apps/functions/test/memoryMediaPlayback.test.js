@@ -106,7 +106,7 @@ function fixture({ modularFirestoreOnly = false } = {}) {
           stream.on('close', () => { stats.sourceDestroyed = true }); return stream },
       }
     } }
-  const admin = { apps: ['fictional'], firestore: Object.assign(() => db, { Timestamp, FieldValue: { serverTimestamp: () => new Timestamp(clock.value) } }),
+  const admin = { apps: ['fictional'], firestore: Object.assign(() => db, { Timestamp, FieldPath: { documentId: () => '__name__' }, FieldValue: { serverTimestamp: () => new Timestamp(clock.value) } }),
     auth: () => auth, storage: () => ({ bucket: () => bucket }) }
   const firestoreValues = { Timestamp, FieldValue: admin.firestore.FieldValue }
   if (modularFirestoreOnly) admin.firestore = () => db

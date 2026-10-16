@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
-import { FieldValue, Timestamp } from 'firebase-admin/firestore'
+import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { CONSENT_DOMAINS, CONSENT_MODES, STORED_DOMAIN_KEYS, ownPolicyRecord, isCanonicalStoredPolicy, type ConsentDomain, type ConsentMode, type ConsentDomainPolicy, type ConsentPolicy } from './consentPolicyAuthority'
 import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
@@ -1392,6 +1392,8 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'privacyPolicy',
     'privacyRuntime',
     'memories',
+    'lifeMapEvents',
+    'lifeMapEras',
     'replayEvents',
     'spatialMemories',
     'canonChains',
@@ -1463,6 +1465,40 @@ async function finishExportDeletionFence(uid: string, jobId: string) {
   })
 }
 
+// Scoped memory erasure must remove Memory Star event identities without
+// deleting unrelated Life Map seasons, relationships and rituals. The worker
+// holds its current deletion fence throughout this bounded source scan.
+async function deleteMemoryLifeMapEvents(uid: string, requireCurrent: () => Promise<unknown>) {
+  let last: FirebaseFirestore.QueryDocumentSnapshot | undefined
+  let removed = 0
+  while (true) {
+    await requireCurrent()
+    let query = db.collection(`users/${uid}/lifeMapEvents`).orderBy(FieldPath.documentId()).limit(200)
+    if (last) query = query.startAfter(last)
+    const page = await query.get()
+    await requireCurrent()
+    if (!page.size) break
+    const selected = page.docs.filter(event => {
+      const sourceOwner = event.get('userId')
+      if (sourceOwner !== undefined && sourceOwner !== uid) {
+        throw new functions.https.HttpsError('failed-precondition', 'LIFE_MAP_DELETION_OWNER_MISMATCH')
+      }
+      return event.get('type') === 'memory' || typeof event.get('memoryId') === 'string'
+    })
+    if (selected.length) {
+      await requireCurrent()
+      const batch = db.batch()
+      for (const event of selected) batch.delete(event.ref)
+      await batch.commit()
+      await requireCurrent()
+      removed += selected.length
+    }
+    last = page.docs[page.docs.length - 1]
+    if (page.size < 200) break
+  }
+  return removed
+}
+
 async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
   const job = snapshot.data() as JsonMap | undefined
   if (!job || typeof job.uid !== 'string') return
@@ -1504,6 +1540,7 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
     const userRef = db.doc(`users/${uid}`)
     const deletedCollections: string[] = []
     let memoryMediaObjectsFenced = 0
+    let removedMemoryStarEvents = 0
     if (['account', 'all-repository-data', 'memories'].includes(scope)) {
       const requireCurrentDeletion = () => db.runTransaction(async transaction => {
         const [queue, owner, fence] = await Promise.all([transaction.get(snapshot.ref), transaction.get(userJobRef), transaction.get(exportFenceRef(uid))])
@@ -1514,6 +1551,7 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
         }
       })
       memoryMediaObjectsFenced = await deleteMemoryMedia(db, uid, requireCurrentDeletion)
+      if (scope === 'memories') removedMemoryStarEvents = await deleteMemoryLifeMapEvents(uid, requireCurrentDeletion)
     }
     if (scope === 'account' || scope === 'all-repository-data' || scope === 'life-model') {
       await tombstonePrivateLifeModelInputs(db, uid, fieldValue.serverTimestamp())
@@ -1543,6 +1581,7 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
       result: 'completed',
       deletedCollections,
       memoryMediaObjectsFenced,
+      removedMemoryStarEvents,
       ...(memoryMediaObjectsFenced ? { memoryMediaDisposal: 'owned-active-generations-disposed', permanentMemoryMediaErasureProven: false } : {}),
       retainedExceptions: [...(Array.isArray(job.retainedExceptions) ? job.retainedExceptions : []),
         ...(memoryMediaObjectsFenced ? ['Zero-byte memory-media attempt tombstones retain hashes and nonce only to prevent delayed writes.',
