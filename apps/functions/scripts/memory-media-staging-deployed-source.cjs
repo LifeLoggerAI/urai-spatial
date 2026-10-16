@@ -1,6 +1,6 @@
 'use strict'
 // Pure validation of authenticated Google control-plane data. Fictional test fixtures are NOT deployment evidence.
-function verifyControlPlaneEvidence(x) {
+function verifyControlPlaneDeployment(x) {
   const bad = reason => { throw new Error('STAGING_DEPLOYED_SOURCE_UNVERIFIED:'+reason) }
   const P=x?.project,R=x?.region,F=x?.functionName,S=x?.expectedSha,trace=x?.traceId;
   const reSha=/^[a-f0-9]{40}$/i,reProject=/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/,reName=/^[a-zA-Z][a-zA-Z0-9_-]{2,90}$/;
@@ -36,6 +36,16 @@ function verifyControlPlaneEvidence(x) {
   const validGit=url=>typeof url==='string'&&/^https:\/\/github\.com\/LifeLoggerAI\/urai-spatial(?:\.git)?$/.test(url);
   if(!validGit(source?.url)||String(source.revision).toLowerCase()!==S.toLowerCase()
     ||(build.source?.gitSource&&!validGit(build.source.gitSource.url)))bad('UNTRUSTED_BUILD_SOURCE');
+  return {sourceSha:S.toLowerCase(),functionName:F,serviceName:servicePath.split('/').pop(),
+    revisionName:revisionId,imageDigest:digest,buildId:buildPath.split('/').pop()};
+}
+function verifyControlPlaneEvidence(x) {
+  const deployment=verifyControlPlaneDeployment(x)
+  const bad = reason => { throw new Error('STAGING_DEPLOYED_SOURCE_UNVERIFIED:'+reason) }
+  const P=x.project,R=x.region,F=x.functionName,trace=x.traceId
+  const servicePath=x.functionRecord.serviceConfig.service
+  const revisionId=deployment.revisionName
+  if(!/^[a-f0-9]{32}$/.test(trace||''))bad('INVALID_TRACE')
   const parseUri=value=>/^https:\/\/([^/?#]+)(\/[^?#]+)\?([^#]+)$/.exec(value||'');
   const expected=parseUri(x.requestUrl);
   if(!expected||expected[1]!==`${R}-${P}.cloudfunctions.net`||expected[2]!==`/${F}`
@@ -55,8 +65,6 @@ function verifyControlPlaneEvidence(x) {
       &&u[2].endsWith('/'+F)&&u[3]===expected[3]
       &&Number.isFinite(ts)&&ts>=Date.parse(x.probeStartedAt)-30000&&ts<=Date.parse(x.probeEndedAt)+30000
   }))bad('SERVING_REQUEST_UNBOUND');
-  return {verified:true,sourceSha:S.toLowerCase(),functionName:F,serviceName:servicePath.split('/').pop(),
-    revisionName:revisionId,imageDigest:digest,buildId:buildPath.split('/').pop(),
-    authoritativeRequestLog:true,servingInstanceBound:true};
+  return {...deployment,verified:true,authoritativeRequestLog:true,servingInstanceBound:true};
 }
-module.exports={verifyControlPlaneEvidence}
+module.exports={verifyControlPlaneEvidence,verifyControlPlaneDeployment}
