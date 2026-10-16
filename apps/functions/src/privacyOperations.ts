@@ -1755,6 +1755,9 @@ async function failInterruptedMemoryDeletion(item: FirebaseFirestore.QueryDocume
       && required.every(name => (durable.get('deletedCollections') as unknown[]).includes(name))
       && Number.isSafeInteger(durable.get('removedMemoryStarEvents'))
       && durable.get('removedMemoryStarEvents') >= 0
+      // No automatic legacy recovery where external Storage disposal is nonzero or unrecorded.
+      // Firestore absence alone cannot attest prior Storage generation erasure.
+      && durable.get('memoryMediaObjectsFenced') === 0
       && localReceipt.exists && localReceipt.get('ownerId') === uid
       && localReceipt.get('jobId') === item.id && localReceipt.get('receiptId') === receiptId
       && localReceipt.get('scope') === 'memories'

@@ -891,7 +891,7 @@ test('legacy receipt-before-queue crash reconciles only independently absent mem
     kind: 'deletion', result: 'completed', scope: 'memories', jobId: d.jobId, receiptId: d.receiptId,
     ownerDigest: hash('urai-owner:' + uid),
     deletedCollections: ['memories','memoryMediaReceipts','replayEvents','spatialMemories','canonChains'],
-    removedMemoryStarEvents: 0,
+    removedMemoryStarEvents: 0, memoryMediaObjectsFenced: 0,
   })
   await f.handlers.processDeletionGraceQueue()
   assert.equal(f.records.get(queue).state, 'completed')
@@ -915,7 +915,7 @@ test('legacy receipt with remaining memory is explicitly blocked and stays fence
     kind: 'deletion', result: 'completed', scope: 'memories', jobId: d.jobId, receiptId: d.receiptId,
     ownerDigest: hash('urai-owner:' + uid),
     deletedCollections: ['memories','memoryMediaReceipts','replayEvents','spatialMemories','canonChains'],
-    removedMemoryStarEvents: 0,
+    removedMemoryStarEvents: 0, memoryMediaObjectsFenced: 0,
   })
   const retained = prefix + '/memories/fictional-still-private'
   f.records.set(retained, { ownerId: uid, sourceMedia: [] })
@@ -924,6 +924,32 @@ test('legacy receipt with remaining memory is explicitly blocked and stays fence
   assert.equal(f.records.get(owner).state, 'reconciliation-required')
   assert.equal(f.records.has(retained), true)
   assert.equal(f.records.get(fencePath).pendingDeletions[d.jobId], true)
+})
+
+for (const [label, fields] of [
+  ['active media objects', { memoryMediaObjectsFenced: 2, permanentMemoryMediaErasureProven: false }],
+  ['missing media custody count', {}],
+]) test('legacy receipt with ' + label + ' retains privacy fence for independent review', async () => {
+  const f = fixture(), d = await f.handlers.createDeletionRequest({
+    operationId: 'synthetic-legacy-media-' + (fields.memoryMediaObjectsFenced ?? 'unknown'),
+    scope: 'memories', confirmation: 'CONFIRM DELETE',
+  }, f.context)
+  const queue = 'deletionQueue/' + d.jobId, owner = prefix + '/deletionJobs/' + d.jobId
+  for (const key of [queue, owner]) f.records.set(key, {
+    ...f.records.get(key), state: 'in-progress', startedAt: new f.Timestamp(now - 31 * 60 * 1000),
+  })
+  f.records.set('deletionReceipts/' + d.receiptId, {
+    kind: 'deletion', result: 'completed', scope: 'memories',
+    jobId: d.jobId, receiptId: d.receiptId, ownerDigest: hash('urai-owner:' + uid),
+    deletedCollections: ['memories','memoryMediaReceipts','replayEvents','spatialMemories','canonChains'],
+    removedMemoryStarEvents: 0, ...fields,
+  })
+  await f.handlers.processDeletionGraceQueue()
+  assert.equal(f.records.get(queue).state, 'reconciliation-required')
+  assert.equal(f.records.get(owner).state, 'reconciliation-required')
+  assert.equal(f.records.get(fencePath).pendingDeletions[d.jobId], true)
+  assert.equal(f.records.get('deletionReceipts/' + d.receiptId).result, 'completed')
+  assert.equal(f.stats.deleted.length, 0)
 })
 
 test('a stale queued deletion event cannot execute after current owner cancellation',async()=>{
