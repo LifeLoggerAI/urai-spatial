@@ -655,11 +655,45 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  const retry=await fetch('http://127.0.0.1:5001/'+project+'/us-central1/createSpatialDeletionRequest',{
   method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+retryToken},
   body:JSON.stringify({data:{scope:'memories',confirmation:'CONFIRM DELETE',operationId}})})
- assert.equal(retry.status,200,'J9G callable idempotent retry failed')
- const retryResult=(await retry.json()).result
- assert.equal(retryResult?.jobId,deletionJobId,'J9G idempotent retry generated a second job')
- const duplicateJobs=await db.collection('users/'+accounts[0].uid+'/deletionJobs').get()
- assert.equal(duplicateJobs.size,1,'J9G retry generated additional owner deletion jobs')
+ // Observe the callable response without logging bearer tokens or credentials.
+ // The raw HTTP protocol and SDK-compatible endpoints may use result/data.
+ let retryEnvelope
+ try { retryEnvelope=await retry.json() } catch { retryEnvelope=null }
+ const retryRecord=value=>value!==null&&typeof value==='object'&&!Array.isArray(value)
+ const envelopeKeys=retryRecord(retryEnvelope)?Object.keys(retryEnvelope).sort():[]
+ const envelopeKind=retryRecord(retryEnvelope?.result)?'result':
+  retryRecord(retryEnvelope?.data)?'data':'missing'
+ const retryResult=envelopeKind==='result'?retryEnvelope.result:
+  envelopeKind==='data'?retryEnvelope.data:null
+ const retryErrorCode=typeof retryEnvelope?.error?.status==='string'
+  ?retryEnvelope.error.status.replace(/[^A-Z_]/g,'').slice(0,48):null
+ const ownerJobs=await db.collection('users/'+accounts[0].uid+'/deletionJobs').get()
+ const ownerQueues=await db.collection('deletionQueue').where('uid','==',accounts[0].uid).get()
+ const ownerReceipts=await db.collection('users/'+accounts[0].uid+'/privacyReceipts')
+  .where('kind','==','deletion').get()
+ const persistedJob=(await db.doc('users/'+accounts[0].uid+'/deletionJobs/'+deletionJobId).get()).data()
+ const retryEvidence={
+  httpStatus:retry.status,envelopeKeys,envelopeKind,errorCode:retryErrorCode,
+  returnedKeys:retryRecord(retryResult)?Object.keys(retryResult).sort():[],
+  returnedJobId:typeof retryResult?.jobId==='string'?retryResult.jobId:null,
+  returnedState:typeof retryResult?.state==='string'?retryResult.state:null,
+  returnedReceiptId:typeof retryResult?.receiptId==='string'?retryResult.receiptId:null,
+  originalJobId:deletionJobId,originalReceiptId:deletionReceiptId,
+  ownerJobCount:ownerJobs.size,queueCount:ownerQueues.size,
+  ownerReceiptCount:ownerReceipts.size,persistedJobState:persistedJob?.state??null,
+ }
+ result.journey.privacy.deletionRetry=retryEvidence
+ mark('J9G-retry-observed',retryEvidence)
+ assert.equal(retry.status,200,'J9G retry returned non-200 HTTP; redacted: '+JSON.stringify(retryEvidence))
+ assert.equal(retryErrorCode,null,'J9G retry returned callable error; redacted: '+JSON.stringify(retryEvidence))
+ assert.equal(retryResult?.jobId,deletionJobId,
+  'J9G idempotent retry identity mismatched or response undecodable; redacted: '+JSON.stringify(retryEvidence))
+ assert.equal(retryResult?.state,'completed','J9G retry did not return the completed existing job')
+ assert.equal(retryResult?.receiptId,deletionReceiptId,'J9G retry changed receipt identity')
+ assert.equal(persistedJob?.state,'completed','J9G retry modified completed deletion job state')
+ assert.equal(ownerJobs.size,1,'J9G retry generated additional owner deletion jobs')
+ assert.equal(ownerQueues.size,1,'J9G retry generated additional deletion queues')
+ assert.equal(ownerReceipts.size,1,'J9G retry generated duplicate owner deletion receipts')
  await page.goto(origin+'/replay?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
  const deletedReplay=page.getByTestId('cinematic-replay-client')
  await deletedReplay.waitFor({state:'visible',timeout:90000})
