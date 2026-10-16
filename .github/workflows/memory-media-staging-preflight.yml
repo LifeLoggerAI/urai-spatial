@@ -16,6 +16,8 @@ on:
       - 'apps/functions/scripts/memory-media-staging-provenance.test.cjs'
       - 'apps/functions/scripts/memory-media-staging-runtime-attestation.cjs'
       - 'apps/functions/scripts/memory-media-staging-runtime-attestation.test.cjs'
+      - 'apps/functions/scripts/memory-media-staging-request-log-proof.cjs'
+      - 'apps/functions/scripts/memory-media-staging-request-log-proof.test.cjs'
       - '.github/workflows/memory-media-staging-preflight.yml'
   workflow_dispatch:
 
@@ -39,8 +41,9 @@ jobs:
           node --check apps/functions/scripts/memory-media-staging-positive-proof.cjs
           node --check apps/functions/scripts/memory-media-staging-provenance.cjs
           node --check apps/functions/scripts/memory-media-staging-runtime-attestation.cjs
+          node --check apps/functions/scripts/memory-media-staging-request-log-proof.cjs
           node --check apps/functions/scripts/memory-media-staging-source-check.cjs
-          node --test apps/functions/scripts/memory-media-staging-source-check.test.cjs apps/functions/scripts/memory-media-staging-admission.test.cjs apps/functions/scripts/memory-media-staging-deployed-source.test.cjs apps/functions/scripts/memory-media-staging-cloud-collector.test.cjs apps/functions/scripts/memory-media-staging-provenance.test.cjs apps/functions/scripts/memory-media-staging-runtime-attestation.test.cjs
+          node --test apps/functions/scripts/memory-media-staging-source-check.test.cjs apps/functions/scripts/memory-media-staging-admission.test.cjs apps/functions/scripts/memory-media-staging-deployed-source.test.cjs apps/functions/scripts/memory-media-staging-cloud-collector.test.cjs apps/functions/scripts/memory-media-staging-provenance.test.cjs apps/functions/scripts/memory-media-staging-runtime-attestation.test.cjs apps/functions/scripts/memory-media-staging-request-log-proof.test.cjs
           node apps/functions/scripts/memory-media-staging-positive-proof.cjs --preflight
           test -z "${URAI_MEDIA_STAGING_WRITE_APPROVAL:-}"
       - name: Prove unapproved source registry blocks cloud startup

@@ -6,7 +6,7 @@ const { readFileSync } = require('node:fs')
 const { stripTypeScriptTypes } = require('node:module')
 const { randomBytes } = require('node:crypto')
 const path = require('node:path')
-const { verifyControlPlaneEvidence } = require('./memory-media-staging-deployed-source.cjs')
+const { verifyServingRequestAfterIngestion } = require('./memory-media-staging-request-log-proof.cjs')
 const API = Object.freeze({
   function:'https://cloudfunctions.googleapis.com/v2/',
   build:'https://cloudbuild.googleapis.com/v1/',
@@ -144,18 +144,21 @@ async function readTrustedControlPlane(options){
   const bytes=await response.arrayBuffer()
   if(bytes.byteLength===0||bytes.byteLength>10*1024*1024)throw Error('STAGING_PROBE_SIZE_INVALID')
   const probeEndedAt=new Date().toISOString()
-  const logs=await readBoundedLogPages(async body=>{
-    const res=await fetch(API.logging,{method:'POST',headers:{
-      authorization:`Bearer ${googleToken}`,accept:'application/json',
-      'content-type':'application/json'},body:JSON.stringify(body),
-      redirect:'error',signal:AbortSignal.timeout(15000)})
-    if(!res.ok)throw Error('STAGING_CONTROL_PLANE_HTTP_'+res.status)
-    return res.json()
-  },{project,region,service:serviceName.split('/').pop(),revision:revisionName,
-    traceId,startedAt:probeStartedAt,endedAt:probeEndedAt})
-  const verified=verifyControlPlaneEvidence({project,region,functionName,expectedSha,
-    requestUrl:target,traceId,probeStartedAt,probeEndedAt,functionRecord,
-    cloudBuild,runService,runRevision,requestLogs:logs})
+  // Bounded ingestion polling: re-read only complete canonical pages and
+  // re-run the full source/build/revision/request validator on every attempt.
+  const verified=await verifyServingRequestAfterIngestion(
+    ()=>readBoundedLogPages(async body=>{
+      const res=await fetch(API.logging,{method:'POST',headers:{
+        authorization:`Bearer ${googleToken}`,accept:'application/json',
+        'content-type':'application/json'},body:JSON.stringify(body),
+        redirect:'error',signal:AbortSignal.timeout(15000)})
+      if(!res.ok)throw Error('STAGING_CONTROL_PLANE_HTTP_'+res.status)
+      return res.json()
+    },{project,region,service:serviceName.split('/').pop(),revision:revisionName,
+      traceId,startedAt:probeStartedAt,endedAt:probeEndedAt}),
+    {project,region,functionName,expectedSha,
+      requestUrl:target,traceId,probeStartedAt,probeEndedAt,functionRecord,
+      cloudBuild,runService,runRevision})
   return {verified:verified.verified,sourceSha:verified.sourceSha,
     functionName:verified.functionName,revisionName:verified.revisionName,
     imageDigest:verified.imageDigest,buildId:verified.buildId,
