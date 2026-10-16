@@ -686,7 +686,45 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  await memoryControls.getByRole('button',{name:'denied',exact:true}).click({timeout:15000})
  const confirm=page.getByRole('dialog',{name:'Confirm Memory'})
  await confirm.waitFor({state:'visible',timeout:15000})
- await confirm.getByRole('button',{name:'Confirm and request enforcement'}).click({timeout:15000})
+ // The actual hydrated React button is type=button and confirmChange()
+ // invokes a Firebase callable without scheduling navigation. In the previous
+ // source-bound receipt Playwright DISPATCHED the pointer click successfully
+ // but its locator.click() auto-wait hung on an unrelated scheduled navigation.
+ // Exercise a genuine unobstructed mouse click, then separately prove the
+ // real network callable, unchanged route and canonical server consequences.
+ // Do not dispatch synthetic DOM events or weaken consent authority checks.
+ const confirmationButton=confirm.getByRole('button',{name:'Confirm and request enforcement'})
+ await confirmationButton.scrollIntoViewIfNeeded()
+ assert.equal(await confirmationButton.getAttribute('type'),'button','Consent confirmation must not navigate or submit a form')
+ assert.equal(await confirmationButton.isEnabled(),true,'Consent confirmation button is not actionable')
+ const confirmationBox=await confirmationButton.boundingBox()
+ assert.ok(confirmationBox&&confirmationBox.width>0&&confirmationBox.height>0,'Consent confirmation button is not on screen')
+ const unobscured=await confirmationButton.evaluate(node=>{
+  const bounds=node.getBoundingClientRect()
+  const hit=document.elementFromPoint(bounds.left+bounds.width/2,bounds.top+bounds.height/2)
+  return hit===node||node.contains(hit)
+ })
+ assert.equal(unobscured,true,'Another element obscures the consent confirmation button')
+ const callableResponse=page.waitForResponse(response=>{
+  try{
+   const uri=new URL(response.url())
+   return response.request().method()==='POST' && uri.hostname==='127.0.0.1'
+    && uri.port==='5001' && uri.pathname.endsWith('/applyConsentPolicy')
+  }catch{return false}
+ },{timeout:60000})
+ await page.mouse.click(confirmationBox.x+confirmationBox.width/2,confirmationBox.y+confirmationBox.height/2)
+ const consentTransport=await callableResponse
+ const consentEnvelope=await consentTransport.json().catch(()=>null)
+ assert.equal(consentTransport.status(),200,'Consent confirmation did not reach original authenticated Firebase callable')
+ assert.ok(consentEnvelope && typeof consentEnvelope.result==='object' && !consentEnvelope.error,
+  'Consent callable did not return a successful result envelope')
+ assert.equal(new URL(page.url()).pathname,'/privacy-controls',
+  'Consent confirmation unexpectedly navigated away from the original Consent Sanctuary')
+ mark('J9-canonical-consent-pointer-confirmation',{
+  action:'real-unobscured-mouse-pointer',navigationExpected:false,
+  routeRetained:true,firestoreAuthorityRequired:true,
+  source:'original-hydrated-ConsentSanctuaryClient',callableTransportStatus:consentTransport.status()
+ })
  // A request/pending state is not enforcement. Require the real trigger and
  // server-controlled revision/receipt to complete on this isolated project.
  await page.waitForFunction(()=>{
