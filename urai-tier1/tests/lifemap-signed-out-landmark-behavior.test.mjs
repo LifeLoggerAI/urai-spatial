@@ -105,3 +105,144 @@ for (const mode of ['private', 'explicit-demo']) {
     assert.equal(walk(tree, node => node.props?.['data-testid'] === 'urai-life-map-signed-out-disclosure'), null)
   })
 }
+
+// Execute the actual diagnostic action block, including its browser predicate.
+// The DOM, asynchronous navigation and clock are synthetic; this is not a
+// browser capture or private-world acceptance substitute.
+const captureSource = fs.readFileSync(new URL('../../scripts/capture-lifemap-signed-out-authority.mjs', import.meta.url), 'utf8')
+const captureAst = ts.createSourceFile('capture.mjs', captureSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+const sampleActions = []
+const timeoutSetters = []
+function collectCaptureActions(node) {
+  if (ts.isIfStatement(node) && ts.isBinaryExpression(node.expression)
+    && ts.isIdentifier(node.expression.left) && node.expression.left.text === 'route'
+    && node.expression.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken
+    && ts.isStringLiteral(node.expression.right) && node.expression.right.text === '/life-map') {
+    sampleActions.push(node.thenStatement.getText(captureAst))
+  }
+  if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)
+    && ts.isIdentifier(node.expression.expression) && node.expression.expression.text === 'page'
+    && node.expression.name.text === 'setDefaultTimeout') timeoutSetters.push(node.getText(captureAst))
+  ts.forEachChild(node, collectCaptureActions)
+}
+collectCaptureActions(captureAst)
+assert.equal(sampleActions.length, 1, 'execute the sole actual disclosed-sample action block')
+assert.equal(timeoutSetters.length, 1, 'use the actual capture timeout configuration')
+
+function sampleNavigation({ modeAt = 0, urlAt = 200, destination = '/life-map/?demo=1&manifestId=replay-recovery-thread', inert, role = null } = {}) {
+  let now = 0
+  let access = 'signed-out'
+  let href = 'https://synthetic.invalid/life-map/?overview=1'
+  let defaultTimeout
+  const waits = []
+  const events = []
+  const record = {}
+  const settle = () => {
+    for (const event of events.filter(event => !event.done && event.at <= now)) {
+      event.done = true
+      event.apply()
+    }
+  }
+  const disclosure = { getByRole(kind, options) {
+    assert.equal(kind, 'button')
+    assert.deepEqual({ ...options }, { name: 'Open disclosed sample', exact: true })
+    return { async click() {
+      events.push({ at: modeAt, apply: () => { access = 'explicit-demo' } })
+      events.push({ at: urlAt, apply: () => { href = new URL(destination, href).href } })
+      settle()
+    } }
+  } }
+  const page = {
+    setDefaultTimeout(value) { defaultTimeout = value },
+    url: () => href,
+    async waitForFunction(predicate, argument, options) {
+      const timeout = options?.timeout ?? defaultTimeout
+      assert.ok(Number.isFinite(timeout) && timeout > 0, 'the actual wait must remain bounded')
+      const wait = { start: now, timeout, end: null }
+      waits.push(wait)
+      const deadline = now + timeout
+      try {
+        while (!predicate(argument)) {
+          const next = events.filter(event => !event.done && event.at > now).sort((a, b) => a.at - b.at)[0]
+          now = Math.min(next?.at ?? deadline, deadline)
+          settle()
+          if (now === deadline && !predicate(argument)) throw new Error('Synthetic capture readiness timeout')
+        }
+      } finally { wait.end = now }
+    },
+  }
+  const canonical = {
+    async getAttribute(name) { assert.equal(name, 'role'); return role },
+    locator(selector) {
+      assert.equal(selector, ':scope > div')
+      return { async getAttribute(name) {
+        assert.equal(name, 'inert')
+        return inert === undefined ? (access === 'explicit-demo' ? null : '') : inert
+      } }
+    },
+  }
+  const context = vm.createContext({
+    assert, URL, page, disclosure, canonical, record,
+    document: { querySelector(selector) {
+      assert.equal(selector, '[data-testid="urai-r3f-canonical-lifemap"]')
+      return { getAttribute(name) { assert.equal(name, 'data-life-map-access'); return access } }
+    } },
+    window: { location: { get href() { return href } } },
+  })
+  vm.runInContext(timeoutSetters[0], context)
+  return { run: () => vm.runInContext(`(async () => ${sampleActions[0]})()`, context), record, waits, now: () => now, timeout: () => defaultTimeout }
+}
+
+test('actual disclosed-sample capture waits for the URL after synchronous access mode', async () => {
+  const h = sampleNavigation()
+  await h.run()
+  assert.equal(h.record.explicitDemoOpened, true)
+  assert.equal(h.now(), 200)
+})
+
+test('actual capture allows delayed mode and URL within one original readiness budget', async () => {
+  const h = sampleNavigation({ modeAt: 29_000, urlAt: 29_999 })
+  await h.run()
+  assert.equal(h.timeout(), 30_000)
+  assert.equal(h.now(), 29_999)
+  assert.equal(h.record.explicitDemoOpened, true)
+})
+
+test('actual capture does not give URL settlement a new budget after delayed mode', async () => {
+  const h = sampleNavigation({ modeAt: 29_000, urlAt: 30_001 })
+  await assert.rejects(h.run(), /Synthetic capture readiness timeout/)
+  assert.equal(h.now(), 30_000)
+  assert.equal(h.record.explicitDemoOpened, undefined)
+})
+
+test('an exact URL cannot admit the sample while access mode is still signed out', async () => {
+  const h = sampleNavigation({ modeAt: 30_001, urlAt: 0 })
+  await assert.rejects(h.run(), /Synthetic capture readiness timeout/)
+  assert.equal(h.now(), 30_000)
+  assert.equal(h.record.explicitDemoOpened, undefined)
+})
+
+for (const destination of [
+  '/home/?demo=1&manifestId=replay-recovery-thread',
+  '/life-map/?demo=0&manifestId=replay-recovery-thread',
+  '/life-map/?demo=1&manifestId=wrong-manifest',
+]) {
+  test(`actual sample readiness rejects ${destination}`, async () => {
+    const h = sampleNavigation({ destination })
+    await assert.rejects(h.run(), /Synthetic capture readiness timeout/)
+    assert.equal(h.now(), 30_000)
+    assert.equal(h.record.explicitDemoOpened, undefined)
+  })
+}
+
+test('an already-settled exact sample keeps the retained role and inert checks', async () => {
+  const ready = sampleNavigation({ urlAt: 0 })
+  await ready.run()
+  assert.equal(ready.now(), 0)
+  assert.equal(ready.record.explicitDemoOpened, true)
+  for (const options of [{ role: 'main' }, { inert: '' }]) {
+    const invalid = sampleNavigation({ ...options, urlAt: 0 })
+    await assert.rejects(invalid.run(), assert.AssertionError)
+    assert.equal(invalid.record.explicitDemoOpened, undefined)
+  }
+})
