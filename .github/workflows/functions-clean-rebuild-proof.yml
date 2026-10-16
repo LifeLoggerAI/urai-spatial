@@ -81,7 +81,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/firebase-cli-v15" "$RUNNER_TEMP/urai-functions-proof"
-          npm install --prefix "$RUNNER_TEMP/firebase-cli-v15" --no-audit --no-fund --ignore-scripts --no-save --package-lock=false firebase-tools@15.22.3
+          # Keep the packaging CLI out of the tracked pnpm workspace.
+          # Pin the direct CLI version; retain the isolated resolved graph hash.
+          printf '%s\n' '{"name":"urai-firebase-native-packager","private":true,"version":"0.0.0","packageManager":"pnpm@10.0.0"}' > "$RUNNER_TEMP/firebase-cli-v15/package.json"
+          pnpm --dir "$RUNNER_TEMP/firebase-cli-v15" add --save-exact --ignore-scripts firebase-tools@15.22.3
+          test -s "$RUNNER_TEMP/firebase-cli-v15/pnpm-lock.yaml"
+          pnpm --dir "$RUNNER_TEMP/firebase-cli-v15" install --offline --frozen-lockfile --ignore-scripts
+          sha256sum "$RUNNER_TEMP/firebase-cli-v15/pnpm-lock.yaml" > "$RUNNER_TEMP/urai-functions-proof/firebase-cli-install-lock.sha256"
+          git diff --exit-code HEAD -- package.json pnpm-lock.yaml pnpm-workspace.yaml apps/functions/package.json
           test "$(node -p 'require(process.argv[1]).version' "$RUNNER_TEMP/firebase-cli-v15/node_modules/firebase-tools/package.json")" = '15.22.3'
       - name: Prepare exact Gen-2 ZIP through native Firebase CLI without upload
         shell: bash
@@ -133,5 +140,6 @@ jobs:
             ${{ runner.temp }}/urai-functions-proof/cli-package-receipt.json
             ${{ runner.temp }}/urai-functions-proof/rebuild-receipt.json
             ${{ runner.temp }}/urai-functions-proof/acceptance-boundary.txt
+            ${{ runner.temp }}/urai-functions-proof/firebase-cli-install-lock.sha256
           if-no-files-found: warn
           retention-days: 90
