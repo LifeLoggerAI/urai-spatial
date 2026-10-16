@@ -277,7 +277,7 @@ test('global Memory withdrawal clears mounted Focus without changing the memory 
   assert.equal(denied.status, 'unauthorized')
   assert.equal(denied.memory, null)
   assert.equal(h.subscriptions[0].stopped, true)
-  assert.equal(previousMemory.consentState, 'granted', 'Memory document was never changed')
+  assert.deepEqual(h.data(), previousMemory, 'Memory document was never changed')
   assert.equal(h.emit(0, previousMemory).memory, null, 'Queued memory data must not restore a revoked selection')
 })
 
