@@ -1,0 +1,29 @@
+name: Memory Media Staging Acceptance Preflight (No Cloud Writes)
+
+on:
+  pull_request:
+    paths:
+      - 'apps/functions/scripts/memory-media-staging-positive-proof.cjs'
+      - '.github/workflows/memory-media-staging-preflight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+      - name: Syntax and offline, non-spending preflight
+        run: |
+          set -euo pipefail
+          node --check apps/functions/scripts/memory-media-staging-positive-proof.cjs
+          node apps/functions/scripts/memory-media-staging-positive-proof.cjs --preflight
+          test -z "${URAI_MEDIA_STAGING_WRITE_APPROVAL:-}"
