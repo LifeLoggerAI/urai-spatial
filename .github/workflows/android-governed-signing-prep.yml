@@ -258,6 +258,9 @@ jobs:
       - name: Install canonical dependencies
         run: corepack pnpm install --frozen-lockfile
 
+      - name: Verify pinned native Gradle integrity preparation
+        run: node --test urai-tier1/tests/native-gradle-integrity.test.mjs
+
       - name: Verify candidate package identity
         shell: bash
         run: |
@@ -322,6 +325,7 @@ jobs:
           rm -rf android
           corepack pnpm exec cap add android
           node ../../scripts/prepare-native-links.mjs --android-project android
+          node ../../scripts/prepare-native-gradle-integrity.mjs --android-project android
           node ../../scripts/prepare-android-native-google-auth.mjs --apply-project android
           corepack pnpm exec cap sync android
           node ../../scripts/prepare-native-static-provenance.mjs --directory android/app/src/main/assets/public --source-sha "$SOURCE_SHA" --platform android --workflow-run-id "$GITHUB_RUN_ID" --verify-only
