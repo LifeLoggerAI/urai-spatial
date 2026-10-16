@@ -336,6 +336,69 @@ test('actual compiled HTTP handler delivers authenticated closed, open and suffi
   } finally { server.closeAllConnections(); await new Promise(done => server.close(done)) }
 })
 
+// A descriptor is only a reference to the authenticated proxy, not a portable
+// URL capability. Exercise the real compiled HTTP handler, not a simulated UI
+// teardown: an already issued descriptor must be denied on every new GET,
+// HEAD and range retry once the owner or canonical source authority changes.
+test('previously issued media descriptor is denied at real HTTP boundary after withdrawal, deletion and actor changes', async () => {
+  const changes = [
+    ['canonical C1 consent withdrawn', f => { f.docs.get(consentPath).status = 'revoked' }, 409],
+    ['canonical Memory permission withdrawn', f => { f.policy.domains.memory.mode = 'denied' }, 409],
+    ['Memory replay visibility withdrawn', f => { f.policy.domains.memory.replayVisible = false }, 409],
+    ['memory-only deletion removed source', f => { f.docs.delete(memoryPath) }, 409],
+    ['memory receipt erased', f => { f.docs.delete(receiptPath) }, 409],
+    ['deletion fence active before source removal', f => { f.docs.set('privacyDeletionTombstones/' + uid, { uid, active: true }) }, 409],
+    ['signed-in browser switched to another owner', f => f.foreign(), 409],
+    ['current owner Auth session revoked', f => f.revoke(), 401],
+    ['current owner disabled', f => f.disable(), 401],
+  ]
+  for (const [label, revoke, expectedStatus] of changes) {
+    const f = fixture(), descriptor = await f.descriptor()
+    const server = http.createServer(async (request, response) => {
+      request.query = Object.fromEntries(new URL(request.url, 'http://127.0.0.1').searchParams)
+      request.get = name => request.headers[name.toLowerCase()]
+      response.set = (key, value) => {
+        for (const [name, content] of Object.entries(typeof key === 'string' ? { [key]: value } : key)) response.setHeader(name, content)
+        return response
+      }
+      response.status = status => { response.statusCode = status; return response }
+      response.json = value => response.end(JSON.stringify(value))
+      await f.handler.streamMemoryMediaPlayback(request, response)
+    })
+    server.listen(0, '127.0.0.1')
+    await once(server, 'listening')
+    try {
+      const endpoint = 'http://127.0.0.1:' + server.address().port
+        + '/streamMemoryMediaPlayback?' + new URLSearchParams(f.query(descriptor))
+      const headers = { Authorization: 'Bearer fictional-token', Origin: 'https://urai.app',
+        Range: 'bytes=17-500', 'If-Range': '"' + descriptor.sha256 + '"' }
+      const first = await fetch(endpoint, { headers, redirect: 'error', cache: 'no-store' })
+      assert.equal(first.status, 206, label + ' before revocation must deliver authorized range')
+      assert.deepEqual(Buffer.from(await first.arrayBuffer()), f.bytes.subarray(17, 501))
+      assert.equal(first.headers.get('cache-control'), 'private, no-store')
+      assert.equal(first.headers.get('access-control-allow-origin'), 'https://urai.app')
+      const priorStreams = f.stats.streams
+      revoke(f)
+      for (const method of ['GET', 'HEAD', 'GET']) {
+        const denied = await fetch(endpoint, { method, headers, redirect: 'error', cache: 'no-store' })
+        assert.equal(denied.status, expectedStatus, label + ' (' + method + ')')
+        assert.equal(denied.headers.get('cache-control'), 'private, no-store', label)
+        for (const unsafeHeader of ['etag', 'content-range', 'accept-ranges', 'x-urai-checksum-sha256', 'x-urai-storage-generation']) {
+          assert.equal(denied.headers.get(unsafeHeader), null, label + ' leaked ' + unsafeHeader)
+        }
+        const deniedBytes = Buffer.from(await denied.arrayBuffer())
+        if (method === 'HEAD') assert.equal(deniedBytes.length, 0, label + ' HEAD must be empty')
+        else assert.deepEqual(JSON.parse(deniedBytes.toString('utf8')),
+          { error: 'memory_media_playback_unavailable' }, label + ' must return only generic denial')
+        assert.equal(f.stats.streams, priorStreams, label + ' reused issued descriptor to read source bytes')
+      }
+    } finally {
+      server.closeAllConnections()
+      await new Promise(done => server.close(done))
+    }
+  }
+})
+
 test('actual backend and browser adapter agree on private descriptor, full immutable bytes and per-mount Blob', async () => {
   const f = fixture(), d = await f.descriptor(), ts = require('typescript')
   const clientPath = path.resolve(__dirname, '../../../urai-tier1/src/spatial/memory/ownedMemoryMediaPlayback.ts'), client = { exports: {} }

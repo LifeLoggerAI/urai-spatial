@@ -7,6 +7,7 @@ on:
       - 'tests/firestore.privacyConsent.rules.test.mjs'
       - 'apps/functions/src/**'
       - 'apps/functions/test/memoryMediaPlayback.test.js'
+      - 'apps/functions/test/memoryMediaProjectBoundary.test.js'
       - 'apps/functions/test/captured-reality-replay-memory-authority.test.js'
       - 'apps/functions/scripts/memory-media-playback-emulator-proof.cjs'
       - 'urai-tier1/src/spatial/memory/**'
@@ -54,6 +55,7 @@ jobs:
           sha256sum \
             package.json pnpm-lock.yaml firebase/firestore.rules tests/firestore.privacyConsent.rules.test.mjs \
             apps/functions/src/memoryMedia.ts apps/functions/src/capturedReality.ts apps/functions/src/consentPolicyAuthority.ts apps/functions/src/index.ts \
+            apps/functions/src/memoryMediaProjectBoundary.ts apps/functions/test/memoryMediaProjectBoundary.test.js \
             apps/functions/test/memoryMediaPlayback.test.js apps/functions/test/captured-reality-replay-memory-authority.test.js \
             apps/functions/scripts/memory-media-playback-emulator-proof.cjs firebase.memory-media-playback-test.json .github/workflows/memory-media-playback-proof.yml \
             urai-tier1/src/spatial/memory/selectedMemoryContract.ts urai-tier1/src/spatial/memory/ownedMemoryMediaPlayback.ts \
@@ -79,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm --filter urai-functions build 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/build.log"
-          pnpm --dir apps/functions exec node --test test/memoryMediaPlayback.test.js test/captured-reality-replay-memory-authority.test.js 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/tests.tap"
+          pnpm --dir apps/functions exec node --test test/memoryMediaProjectBoundary.test.js test/memoryMediaPlayback.test.js test/captured-reality-replay-memory-authority.test.js 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/tests.tap"
           pnpm --dir urai-tier1 exec node --import tsx --test tests/captured-reality-replay-entry-behavior.test.mjs 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/captured-entry-source.tap"
           pnpm --dir urai-tier1 exec node --experimental-strip-types --test tests/replay-source-media-behavior.test.mjs 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/replay-source.tap"
       - name: Actual React consumers and Chromium decoding

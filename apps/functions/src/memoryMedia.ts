@@ -4,6 +4,7 @@ import * as functions from 'firebase-functions/v1'
 import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
+import { resolveMemoryMediaProject } from './memoryMediaProjectBoundary'
 import { chargeExportValue, requireExportReadBudget, type ExportReadBudget } from './exportPagination'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -470,9 +471,11 @@ export const getMemoryMediaPlaybackAuthority = functions.https.onCall(async (dat
 })
 
 function playbackProject() {
-  const project = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT
-  if (project === 'urai-4dc1d' || (process.env.FUNCTIONS_EMULATOR === 'true' && project && /^demo-[a-z0-9-]{1,50}$/.test(project))) return project
-  fail('MEMORY_MEDIA_PROJECT_UNBOUND')
+  try {
+    return resolveMemoryMediaProject(process.env)
+  } catch {
+    fail('MEMORY_MEDIA_PROJECT_UNBOUND')
+  }
 }
 function playbackOrigin(origin: string, project: string) {
   if (['https://urai.app', 'https://www.urai.app', 'https://urai.life', 'https://uraispatial.com', 'https://localhost',
