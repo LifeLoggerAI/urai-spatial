@@ -6,7 +6,8 @@
 const assert = require('node:assert/strict')
 const { createHash, randomBytes } = require('node:crypto')
 const path = require('node:path')
-const { pathToFileURL } = require('node:url')
+const { readFileSync } = require('node:fs')
+const { stripTypeScriptTypes } = require('node:module')
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const project = process.env.URAI_MEDIA_STAGING_PROJECT || ''
 const bucketName = process.env.URAI_MEDIA_STAGING_BUCKET || ''
@@ -22,7 +23,7 @@ assert.ok(execute || preflight, 'Use exactly --preflight or --execute')
 if (preflight) {
   console.log(JSON.stringify({ schema:'urai-staging-media-positive-v1',preflight:true,networkRequests:0,
     positiveAccepted:false,productionIamAccepted:false,requiresExternalApproval:true,
-    requiresNonproductionProject:true,sourceBoundExecution:true }))
+    requiresNonproductionProject:true,sourceBoundExecution:false,requiresExactHead:true }))
 } else {
   assert.ok(allowedProject && isolatedBucket, 'STAGING_PROJECT_AND_BUCKET_REQUIRED')
   assert.ok(gate, 'HUMAN_STAGING_WRITE_APPROVAL_REQUIRED')
@@ -47,7 +48,7 @@ async function main(){
   const admin = require('firebase-admin')
   const app = admin.initializeApp({ credential:admin.credential.applicationDefault(),projectId:project,storageBucket:bucketName })
   const auth = admin.auth(), db = admin.firestore(), bucket = admin.storage().bucket()
-  const cases = [], cleanupErrors = []; let owner, foreign, receipt, problem
+  const cases = [], cleanupErrors = []; let owner, foreign, receipt, problem, stagedMemoryId
   const evidence = {schema:'urai-staging-media-positive-v1',sourceSha,environment:'nonproduction-only',
     actualCloudBucketMetadata:false,actualNoPublicIam:false,positiveProxyPlaybackAccepted:false,
     exactClientBlobAccepted:false,privateFamilyDataUsed:false,runResult:'NOT_ACCEPTED'}
@@ -99,9 +100,10 @@ async function main(){
     const nonce=randomBytes(9).toString('hex'),password=randomBytes(25).toString('base64url')+'Aa1!'
     owner=await auth.createUser({email:'urai-media-'+nonce+'@example.invalid',password})
     foreign=await auth.createUser({email:'urai-media-other-'+nonce+'@example.invalid',password})
-    owner={...owner,email:'urai-media-'+nonce+'@example.invalid',password}
-    foreign={...foreign,email:'urai-media-other-'+nonce+'@example.invalid',password}
+    owner={uid:owner.uid,email:'urai-media-'+nonce+'@example.invalid',password}
+    foreign={uid:foreign.uid,email:'urai-media-other-'+nonce+'@example.invalid',password}
     const memoryId='fictional_'+nonce, bytes=fictionalWav()
+    stagedMemoryId=memoryId
     const userDoc=db.doc(userPath(owner.uid)),memoryDoc=db.doc(userPath(owner.uid)+'/memories/'+memoryId)
     const policyDoc=db.doc(userPath(owner.uid)+'/privacyPolicy/current')
     const consentDoc=db.doc('consentRecords/'+owner.uid+'_memory_storage')
@@ -163,7 +165,12 @@ async function main(){
     cases.push('real owner HEAD response bounded')
     // Compile/use the actual React-owned transport; no synthetic HTTP adapter.
     const transportFile=path.resolve(__dirname,'../../../urai-tier1/src/spatial/memory/ownedMemoryMediaPlayback.ts')
-    const client=await import(pathToFileURL(transportFile).href)
+    // Node 22 minor versions do not all load .ts files directly. Strip only
+    // type syntax from the actual checked-in client module; never use a fake
+    // transport implementation to claim positive browser-compatible playback.
+    const clientSource=readFileSync(transportFile,'utf8')
+    const client=await import('data:text/javascript;charset=utf-8,'+
+      encodeURIComponent(stripTypeScriptTypes(clientSource,{mode:'strip'})))
     assert.ok(client.validateOwnedMemoryPlaybackDescriptor(descriptor,
       {ownerId:owner.uid,memoryId,receipt:{mediaReceiptId:receiptId,kind:'audio'}}))
     const lifetime=new AbortController()
@@ -189,7 +196,9 @@ async function main(){
         const receipts=await db.collection(userPath(owner.uid)+'/memoryMediaReceipts').get()
         for(const doc of receipts.docs){
           const r=doc.data(),prefix='private-memory-media/'+sha(owner.uid)+'/'
-          if(r.ownerUid!==owner.uid || typeof r.objectPath!=='string' || !r.objectPath.startsWith(prefix))
+          if(!stagedMemoryId || r.ownerUid!==owner.uid || r.memoryId!==stagedMemoryId
+            || r.receiptId!==doc.id || typeof r.objectPath!=='string'
+            || !r.objectPath.startsWith(prefix+sha(stagedMemoryId)+'/'+doc.id+'/'))
             throw Error('UNSAFE_STAGING_CLEANUP_TARGET')
           await bucket.file(r.objectPath,{generation:String(r.storageGeneration||'')}).delete({ignoreNotFound:true})
         }
