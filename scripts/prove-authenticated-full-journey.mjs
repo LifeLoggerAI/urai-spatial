@@ -28,8 +28,22 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms))
 const mark=(name,data={})=>result.milestones.push({name,...data})
 
 async function assertFourIsolatedEmulators() {
- const endpoints=[['Authentication',9099],['Firestore',8080],['Functions',5001],['Storage',9199]]
+ const endpoints=[['auth',9099],['firestore',8080],['functions',5001],['storage',9199]]
+ const hubAddress=process.env.FIREBASE_EMULATOR_HUB
+ if(hubAddress && !['127.0.0.1:4400','localhost:4400'].includes(hubAddress))
+  throw Error('Refusing nonlocal Firebase Emulator Hub: '+JSON.stringify(hubAddress))
+ const hubResponse=await fetch('http://127.0.0.1:4400/emulators',{
+  signal:AbortSignal.timeout(5000)
+ })
+ assert.equal(hubResponse.ok,true,'Expected a live Firebase Emulator Hub on localhost:4400')
+ const registry=await hubResponse.json()
  for(const [name,port] of endpoints){
+  const declared=registry?.[name]
+  assert.ok(declared && typeof declared==='object' && !Array.isArray(declared),
+   'Firebase Emulator Hub does not advertise '+name)
+  assert.equal(declared.port,port,'Wrong Firebase '+name+' emulator port')
+  assert.ok(['127.0.0.1','localhost'].includes(declared.host),
+   'Refusing nonlocal Firebase '+name+' emulator host')
   await new Promise((resolve,reject)=>{
    const socket=connectTcp({host:'127.0.0.1',port})
    socket.setTimeout(5000,()=>socket.destroy(Error(name+' emulator TCP timeout')))
@@ -38,8 +52,8 @@ async function assertFourIsolatedEmulators() {
   })
  }
  mark('J0-four-isolated-emulators',{
-  project,transport:'127.0.0.1',services:endpoints.map(([service,port])=>({service,port})),
-  productionFallbackAllowed:false
+  project,hub:'127.0.0.1:4400',registryValidated:true,transport:'127.0.0.1',
+  services:endpoints.map(([service,port])=>({service,port})),productionFallbackAllowed:false
  })
 }
 
@@ -876,6 +890,18 @@ try{
  assert.match(sha,/^[a-f0-9]{40}$/)
  for(const [key,value] of Object.entries({GCLOUD_PROJECT:project,FIREBASE_AUTH_EMULATOR_HOST:'127.0.0.1:9099',FIRESTORE_EMULATOR_HOST:'127.0.0.1:8080',FIREBASE_FUNCTIONS_EMULATOR_HOST:'127.0.0.1:5001',FIREBASE_STORAGE_EMULATOR_HOST:'127.0.0.1:9199',NEXT_PUBLIC_FIREBASE_PROJECT_ID:project,NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR:'true'}))assert.equal(process.env[key],value,'isolated '+key)
  assert.equal(process.env.NODE_ENV||'development','development')
+  // The Admin project and browser Storage bucket must remain the fictional
+  // suite's identity even when CI/runner inherited other Firebase variables.
+  assert.equal(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,project+'.appspot.com',
+   'Refusing non-fictional Firebase Storage bucket in journey test')
+  if(process.env.FIREBASE_CONFIG){
+   let parsed
+   try{parsed=JSON.parse(process.env.FIREBASE_CONFIG)}
+   catch{throw Error('Refusing unreadable Firebase Admin runtime config')}
+   assert.equal(parsed?.projectId,project,'Refusing Firebase Admin runtime project mismatch')
+   if(parsed?.storageBucket)assert.ok(String(parsed.storageBucket).startsWith(project+'.'),
+    'Refusing non-fictional Firebase Admin storage bucket')
+  }
  await assertFourIsolatedEmulators()
  app=admin.initializeApp({projectId:project},'journey-wave41')
  const auth=app.auth(),db=app.firestore()
