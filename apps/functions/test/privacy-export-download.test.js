@@ -69,6 +69,45 @@ function fixture(options = {}) {
         return { docs, empty: docs.length === 0, size: docs.length, readTime:new Timestamp(options.snapshotChanged&&afterId?now+1:now) } } }
   }
   const db = { doc, collection, collectionGroup: name => collection(name, [], Infinity, '', false, true),
+    batch() {
+      // Match Firestore WriteBatch's deferred, all-or-nothing commit contract.
+      // Never mutate fixture records while writes are only being queued.
+      const operations = []
+      let committed = false
+      const enqueue = (type, ref, value, settings) => {
+        assert.equal(committed, false, 'batch cannot be reused after commit')
+        operations.push({ type, path: ref.path, value: clone(value), merge: Boolean(settings?.merge) })
+        return batch
+      }
+      const batch = {
+        delete: ref => enqueue('delete', ref),
+        set: (ref, value, settings) => enqueue('set', ref, value, settings),
+        update: (ref, value) => enqueue('update', ref, value),
+        create: (ref, value) => enqueue('create', ref, value),
+        async commit() {
+          assert.equal(committed, false, 'batch cannot be committed twice')
+          committed = true
+          const staged = new Map([...records].map(([key, value]) => [key, clone(value)]))
+          for (const { type, path, value, merge } of operations) {
+            if (type === 'delete') staged.delete(path)
+            else if (type === 'set') staged.set(path, clone(merge ? { ...staged.get(path), ...value } : value))
+            else if (type === 'update') {
+              assert.ok(staged.has(path), 'batch update requires an existing document')
+              staged.set(path, clone({ ...staged.get(path), ...value }))
+            } else if (type === 'create') {
+              assert.ok(!staged.has(path), 'batch create requires a missing document')
+              staged.set(path, clone(value))
+            }
+          }
+          // Nothing above touched records. Publish only once every operation
+          // has passed its preconditions, just like one atomic Firestore commit.
+          records.clear()
+          for (const [path, value] of staged) records.set(path, value)
+          return operations.map(() => ({ writeTime: new Timestamp(now) }))
+        },
+      }
+      return batch
+    },
     async runTransaction(callback, settings) {
       const writes = [], reads = new Map(), id = ++stats.transactions
       const view=settings?.readOnly ? new Map([...records].map(([key,value])=>[key,clone(value)])) : records
@@ -821,6 +860,26 @@ test('active and ambiguous completed deletion outcomes cannot be overwritten by 
   assert.equal(f.records.get(fencePath).pendingDeletions[deletion.jobId], true)
 })
 
+
+test('synthetic Firestore batch defers writes and rejects all changes on failed preconditions', async () => {
+  const f = fixture()
+  const memory = f.db.doc(prefix + '/lifeMapEvents/fixture-memory')
+  const ritual = f.db.doc(prefix + '/lifeMapEvents/fixture-ritual')
+  f.records.set(memory.path, { userId: uid, type: 'memory' })
+  const batch = f.db.batch().delete(memory).set(ritual, { userId: uid, type: 'ritual' })
+  assert.equal(f.records.has(memory.path), true, 'batch delete must wait for commit')
+  assert.equal(f.records.has(ritual.path), false, 'batch set must wait for commit')
+  await batch.commit()
+  assert.equal(f.records.has(memory.path), false)
+  assert.equal(f.records.get(ritual.path).type, 'ritual')
+  await assert.rejects(batch.commit(), /batch cannot be committed twice/)
+
+  const missing = f.db.doc(prefix + '/lifeMapEvents/fixture-missing')
+  const invalid = f.db.batch().set(memory, { userId: uid, type: 'memory' }).update(missing, { type: 'memory' })
+  await assert.rejects(invalid.commit(), /batch update requires an existing document/)
+  assert.equal(f.records.has(memory.path), false, 'failed batch must not partially commit a set')
+  assert.equal(f.records.get(ritual.path).type, 'ritual', 'failed batch must not change existing records')
+})
 
 test('memory-only terminal receipt, queue, owner, privacy receipt and fence commit together', async () => {
   const f = fixture()
