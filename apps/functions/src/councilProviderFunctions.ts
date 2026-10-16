@@ -345,12 +345,15 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
         if ([current.sceneTruthPacketId, current.packetHash, current.graphHash, ...current.entityIds].join('|') !== memoryFingerprint) {
           throw new CouncilProviderError(409, 'COUNCIL_MEMORY_CHANGED', 'Selected memory authority changed during this request.')
         }
+        return current
       }
       const graphEvidenceFingerprint = graphEvidence ? JSON.stringify(graphEvidence) : null
       const recheckGraph = async () => {
         if (graphRequest === undefined) return
+        // Enforce identical withdrawn-memory error semantics on graph and
+        // output rechecks: a raw HttpsError must not escape as HTTP 500.
         const current = memoryRequest === undefined
-          ? await loadGraph() : (await resolveCouncilMemoryGraph(db, uid, memoryRequest)).evidence
+          ? await loadGraph() : (await recheckMemory())?.evidence
         if (JSON.stringify(current) !== graphEvidenceFingerprint) {
           throw new CouncilProviderError(409, 'COUNCIL_GRAPH_CHANGED', 'Selected Life Graph evidence changed during this request.')
         }
