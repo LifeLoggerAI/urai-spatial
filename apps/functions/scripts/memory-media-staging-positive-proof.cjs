@@ -45,6 +45,16 @@ function fictionalWav() {
   return buffer
 }
 async function main(){
+  // This optional, human-approved runner must obey the SAME checked-in staging
+  // allowlist and exact deployed-runtime identity gate as the protected server.
+  // A project name, API key and operator flag alone can NEVER authorize cloud
+  // account creation or media upload. Keep this before Admin initialization.
+  const boundaryFile=path.resolve(__dirname,'../src/memoryMediaProjectBoundary.ts')
+  const boundarySource=readFileSync(boundaryFile,'utf8')
+  const boundary=await import('data:text/javascript;charset=utf-8,'+
+    encodeURIComponent(stripTypeScriptTypes(boundarySource,{mode:'strip'})))
+  assert.equal(boundary.resolveMemoryMediaProject(process.env),project,
+    'STAGING_SOURCE_AND_RUNTIME_APPROVAL_REQUIRED')
   const admin = require('firebase-admin')
   const app = admin.initializeApp({ credential:admin.credential.applicationDefault(),projectId:project,storageBucket:bucketName })
   const auth = admin.auth(), db = admin.firestore(), bucket = admin.storage().bucket()
