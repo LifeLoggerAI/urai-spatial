@@ -69,6 +69,13 @@ function fixture(options = {}) {
         return { docs, empty: docs.length === 0, size: docs.length, readTime:new Timestamp(options.snapshotChanged&&afterId?now+1:now) } } }
   }
   const db = { doc, collection, collectionGroup: name => collection(name, [], Infinity, '', false, true),
+    batch() {
+      const writes = []
+      return {
+        delete(ref) { writes.push(() => ref.delete()); return this },
+        async commit() { for (const write of writes) await write(); return [] },
+      }
+    },
     async runTransaction(callback, settings) {
       const writes = [], reads = new Map(), id = ++stats.transactions
       const view=settings?.readOnly ? new Map([...records].map(([key,value])=>[key,clone(value)])) : records
