@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { spawn } from 'node:child_process'
+import { connect as connectTcp } from 'node:net'
 import { createRequire } from 'node:module'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -25,6 +26,23 @@ const disposableUsers=[]
 const disposableDocs=[]
 const wait=ms=>new Promise(r=>setTimeout(r,ms))
 const mark=(name,data={})=>result.milestones.push({name,...data})
+
+async function assertFourIsolatedEmulators() {
+ const endpoints=[['Authentication',9099],['Firestore',8080],['Functions',5001],['Storage',9199]]
+ for(const [name,port] of endpoints){
+  await new Promise((resolve,reject)=>{
+   const socket=connectTcp({host:'127.0.0.1',port})
+   socket.setTimeout(5000,()=>socket.destroy(Error(name+' emulator TCP timeout')))
+   socket.once('error',()=>reject(Error(name+' emulator unavailable on 127.0.0.1:'+port)))
+   socket.once('connect',()=>{socket.end();resolve()})
+  })
+ }
+ mark('J0-four-isolated-emulators',{
+  project,transport:'127.0.0.1',services:endpoints.map(([service,port])=>({service,port})),
+  productionFallbackAllowed:false
+ })
+}
+
 async function screenshot(page,name){
  const image=await page.screenshot({path:path.join(out,name+'.png'),timeout:90000})
  result.screenshots.push({name,sha256:createHash('sha256').update(image).digest('hex')})
@@ -524,6 +542,30 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  await page.getByRole('button',{name:'Sign out'}).click()
  await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:30000})
  await login(page,accounts[0].email,accounts[0].password,accounts[0].uid)
+ // Two REAL, authenticated browser tabs retain visible source in the
+ // mounted Focus and Replay components during the original consent callable.
+ // A fresh route after withdrawal alone would not establish live revocation.
+ const ownerMemoryBefore=(await db.doc('users/'+accounts[0].uid+
+  '/memories/fictional-memory-a').get()).data()
+ assert.equal(ownerMemoryBefore?.consentState,'granted',
+  'Mounted withdrawal proof requires originally authorized unchanged source')
+ const mountedFocus=await page.context().newPage()
+ const mountedReplay=await page.context().newPage()
+ const liveViews=[
+  {name:'Focus',page:mountedFocus,route:'/focus?memoryId=fictional-memory-a&manifestId=fictional-manifest-a',
+   selector:'[data-testid="urai-final-focus-chamber"]'},
+  {name:'Replay',page:mountedReplay,route:'/replay?memoryId=fictional-memory-a&manifestId=fictional-manifest-a',
+   selector:'[data-testid="cinematic-replay-client"]'}
+ ]
+ for(const view of liveViews){
+  await view.page.goto(origin+view.route,{waitUntil:'domcontentloaded'})
+  await view.page.waitForFunction(selector=>
+   document.querySelector(selector)?.getAttribute('data-memory-status')==='ready',
+   view.selector,{timeout:90000})
+  assert.equal(await view.page.getByRole('heading',{name:'Fictional Lake',exact:true}).count(),1,
+   'Mounted '+view.name+' did not actually render originally authorized title')
+  await screenshot(view.page,'J9-mounted-'+view.name.toLowerCase()+'-before-withdrawal')
+ }
  // Drive the existing production Consent Sanctuary and its real callable.
  // Admin patching this test record would not exercise consent authority and
  // must never be represented as equivalent to applyConsentPolicy.
@@ -576,6 +618,43 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  }
  mark('J9-canonical-callable',result.journey.privacy.revocation)
  await screenshot(page,'J9-canonical-consent-enforced')
+ // This assertion observes the ALREADY mounted consumers, not re-created
+ // components, across the original user-initiated consent revision.
+ const mountedStates={}
+ for(const view of liveViews){
+  await view.page.waitForFunction(selector=>{
+   const status=document.querySelector(selector)?.getAttribute('data-memory-status')
+   return ['unavailable','unauthorized','deleted'].includes(status)
+  },view.selector,{timeout:90000})
+  mountedStates[view.name.toLowerCase()]=await view.page.locator(view.selector).getAttribute('data-memory-status')
+  assert.equal(await view.page.getByRole('heading',{name:'Fictional Lake',exact:true}).count(),0,
+   'Mounted '+view.name+' still displays revoked private title')
+  await screenshot(view.page,'J9-mounted-'+view.name.toLowerCase()+'-withdrawn')
+ }
+ assert.deepEqual((await db.doc('users/'+accounts[0].uid+
+  '/memories/fictional-memory-a').get()).data(),ownerMemoryBefore,
+  'Revocation must not be simulated by changing the memory document')
+ await wait(900)
+ for(const view of liveViews){
+  assert.ok(['unavailable','unauthorized','deleted'].includes(
+   await view.page.locator(view.selector).getAttribute('data-memory-status')),
+   'Late callback restored mounted '+view.name+' private memory')
+  await view.page.reload({waitUntil:'domcontentloaded'})
+  await view.page.waitForFunction(selector=>{
+   const status=document.querySelector(selector)?.getAttribute('data-memory-status')
+   return ['unavailable','unauthorized','deleted'].includes(status)
+  },view.selector,{timeout:90000})
+  assert.equal(await view.page.getByRole('heading',{name:'Fictional Lake',exact:true}).count(),0,
+   'Browser reload restored withdrawn '+view.name+' content')
+  await view.page.close()
+ }
+ result.journey.privacy.revocation.mounted={
+  focus:mountedStates.focus,replay:mountedStates.replay,
+  canonicalCallable:true,sourceUnchanged:true,privateTitlesRemoved:true,
+  staleCallbackDenied:true,reloadDenied:true
+ }
+ mark('J9-mounted-Focus-Replay-withdrawal',result.journey.privacy.revocation.mounted)
+
  // Preserve one honest test of the existing Replay consumer after global
  // denial. Never mutate the memory's own consentState with Admin to make it pass.
  await page.goto(origin+'/replay?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
@@ -734,6 +813,21 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  },null,{timeout:90000})
  assert.ok(['unavailable','unauthorized','deleted'].includes(await deletedFocus.getAttribute('data-memory-status')),
   'J9H original Focus recovered deleted private memory after reload')
+ // Browser back/forward is a real recovery path; never restore a stale
+ // authorized scene from history or the prior selected-memory state.
+ await page.goBack({waitUntil:'domcontentloaded'})
+ await routeIsPage(page,'/replay')
+ await page.waitForFunction(()=>{
+  const status=document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.memoryStatus
+  return ['unavailable','unauthorized','deleted'].includes(status)
+ },null,{timeout:90000})
+ await page.goForward({waitUntil:'domcontentloaded'})
+ await routeIsPage(page,'/focus')
+ await page.waitForFunction(()=>{
+  const status=document.querySelector('[data-testid="urai-final-focus-chamber"]')?.dataset.memoryStatus
+  return ['unavailable','unauthorized','deleted'].includes(status)
+ },null,{timeout:90000})
+ mark('J9H-history-restore-denied',{back:'Replay denied',forward:'Focus denied'})
  // Switching to owner B, then reauthenticating owner A, must not allow an
  // old browser, cached permission or selected manifest to restore authority.
  await page.goto(origin+'/login')
@@ -780,8 +874,9 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
 await mkdir(out,{recursive:true})
 try{
  assert.match(sha,/^[a-f0-9]{40}$/)
- for(const [key,value] of Object.entries({GCLOUD_PROJECT:project,FIREBASE_AUTH_EMULATOR_HOST:'127.0.0.1:9099',FIRESTORE_EMULATOR_HOST:'127.0.0.1:8080',FIREBASE_FUNCTIONS_EMULATOR_HOST:'127.0.0.1:5001',NEXT_PUBLIC_FIREBASE_PROJECT_ID:project,NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR:'true'}))assert.equal(process.env[key],value,'isolated '+key)
+ for(const [key,value] of Object.entries({GCLOUD_PROJECT:project,FIREBASE_AUTH_EMULATOR_HOST:'127.0.0.1:9099',FIRESTORE_EMULATOR_HOST:'127.0.0.1:8080',FIREBASE_FUNCTIONS_EMULATOR_HOST:'127.0.0.1:5001',FIREBASE_STORAGE_EMULATOR_HOST:'127.0.0.1:9199',NEXT_PUBLIC_FIREBASE_PROJECT_ID:project,NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR:'true'}))assert.equal(process.env[key],value,'isolated '+key)
  assert.equal(process.env.NODE_ENV||'development','development')
+ await assertFourIsolatedEmulators()
  app=admin.initializeApp({projectId:project},'journey-wave41')
  const auth=app.auth(),db=app.firestore()
  disposableAuth=auth;disposableDb=db
