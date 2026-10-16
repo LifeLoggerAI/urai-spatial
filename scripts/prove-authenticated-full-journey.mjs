@@ -591,6 +591,13 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  assert.ok(['unavailable','unauthorized','deleted'].includes(state),
   'J9 selected-memory access produced an unexpected state after revoked memory policy: '+state)
  mark('J9-partial',{...result.journey.privacy,staleReplayDenied:true})
+ // Synthetic input exists to test the original product deletion. Preserve
+ // unrelated ritual context while removing all owner-linked Memory Star nodes.
+ const ritualPath='users/'+accounts[0].uid+'/lifeMapEvents/fictional-independent-ritual'
+ const ritual={userId:accounts[0].uid,type:'ritual',title:'Fictional Independent Ritual',sourceType:'ritual',
+  occurredAt:'1989-08-01T12:00:00.000Z',replayAvailable:false}
+ disposableDocs.push(ritualPath)
+ await db.doc(ritualPath).set(ritual)
  // Prove the original authenticated product deletion, not fixture teardown.
  // This deliberately does not remove the independent Council/media NO-GO gate.
  await page.goto(origin+'/privacy-controls',{waitUntil:'domcontentloaded'})
@@ -631,6 +638,12 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  assert.ok(durable?.removedMemoryStarEvents>=1,'J9G real Memory Star events were not removed')
  assert.equal((await db.doc('users/'+accounts[0].uid+'/memories/fictional-memory-a').get()).exists,false)
  assert.equal((await db.doc('users/'+accounts[0].uid+'/lifeMapEvents/fictional-star-a').get()).exists,false)
+ assert.equal((await db.doc('users/'+accounts[0].uid+'/lifeMapEvents/fictional-orphan').get()).exists,false,
+  'J9G orphan Memory Star survives scoped deletion')
+ assert.deepEqual((await db.doc(ritualPath).get()).data(),ritual,
+  'J9G unrelated ritual must survive memory-only deletion')
+ assert.equal((await db.doc('users/'+accounts[1].uid+'/memories/fictional-memory-b').get()).exists,true,
+  'J9G owner A deletion touched account B')
  // Retry with the same original app-issued operation. A second deletion job
  // must not be scheduled even after the first worker is terminal.
  const retryLogin=await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fictional-emulator-key',{
