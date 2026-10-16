@@ -9,6 +9,7 @@ const path = require('node:path')
 const { readFileSync } = require('node:fs')
 const { stripTypeScriptTypes } = require('node:module')
 const { assertExactStagingCheckout } = require('./memory-media-staging-source-check.cjs')
+const { classifyStagingMediaAcceptance } = require('./memory-media-staging-admission.cjs')
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const project = process.env.URAI_MEDIA_STAGING_PROJECT || ''
 const bucketName = process.env.URAI_MEDIA_STAGING_BUCKET || ''
@@ -233,11 +234,18 @@ async function main(){
   }
   evidence.cases=cases
   evidence.cleanupComplete=cleanupErrors.length===0
-  evidence.runResult=problem||cleanupErrors.length?'NOT_ACCEPTED':'STAGING_POSITIVE_ACCEPTED'
+  // The checked-out Git SHA is not proof of the version currently deployed
+  // to Cloud Functions. Do not produce a positive staging acceptance without
+  // a separately trusted, source-bound deployment attestation.
+  const admission=classifyStagingMediaAcceptance(evidence,Boolean(problem)||cleanupErrors.length>0)
+  evidence.runResult=admission.runResult
+  evidence.unacceptedChecks=admission.unacceptedChecks
   evidence.productionReleaseCertified=false
   // Never report tokens, identity, passwords, object paths or direct URLs.
   console.log(JSON.stringify(evidence))
-  if(problem||cleanupErrors.length) {
+  if(evidence.runResult!=='STAGING_POSITIVE_ACCEPTED') {
+    if(!problem && !cleanupErrors.length && !evidence.deployedSourceExactHeadVerified)
+      console.error('STAGING_DEPLOYED_SOURCE_ATTESTATION_REQUIRED')
     if(problem)console.error('STAGING_MEDIA_EVIDENCE_BLOCKED:'+String(problem.code||problem.message).slice(0,110))
     if(cleanupErrors.length)console.error('STAGING_FIXTURE_CLEANUP_INCOMPLETE:'+cleanupErrors.join(','))
     process.exitCode=1
