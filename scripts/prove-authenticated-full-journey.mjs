@@ -557,19 +557,19 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  assert.equal(live?.domains?.memory?.replayVisible,true,
   'The user selected only the memory permission mode; do not fake unrelated toggle changes')
  assert.equal(live?.enforcement?.state,'fully-enforced','Canonical Functions job did not complete')
- const jobId=live?.enforcement?.jobId
- assert.match(jobId,/^[a-f0-9]{40}$/,'Canonical enforcement job missing')
- const job=(await db.doc('privacyEnforcementJobs/'+jobId).get()).data()
- assert.equal(job?.state,'fully-enforced','Canonical enforcement job did not reach completion')
+ const consentEnforcementJobId=live?.enforcement?.jobId
+ assert.match(consentEnforcementJobId,/^[a-f0-9]{40}$/,'Canonical enforcement job missing')
+ const consentEnforcementJob=(await db.doc('privacyEnforcementJobs/'+consentEnforcementJobId).get()).data()
+ assert.equal(consentEnforcementJob?.state,'fully-enforced','Canonical enforcement job did not reach completion')
  const receipts=await db.collection('users/fictional-urai-a/privacyReceipts')
-  .where('jobId','==',jobId).limit(2).get()
+  .where('jobId','==',consentEnforcementJobId).limit(2).get()
  assert.equal(receipts.size,1,'Canonical consent receipt missing or duplicated')
  assert.equal(receipts.docs[0].get('result'),'fully-enforced','Consent receipt not completed')
  const projection=(await db.doc('users/fictional-urai-a/privacyRuntime/replay-visibility').get()).data()
  assert.equal(projection?.revision,2,'Replay consent projection is stale')
  assert.equal(projection?.mode,'denied','Replay consent projection is not denied')
  result.journey.privacy.revocation={
-  revision:2,mode:'denied',jobId,receipts:1,
+  revision:2,mode:'denied',jobId:consentEnforcementJobId,receipts:1,
   canonicalUserConsentCallableVerified:true,repositoryEnforcementVerified:true,
   councilAsyncContextInvalidationVerified:false,privateMediaTokensVerified:false,
   userInterface:'actual-consent-sanctuary'
@@ -609,23 +609,23 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  // Never write Auth headers, bearer tokens or the raw operation ID to proof.
  const operationId=JSON.parse(request.postData()||'{}').data?.operationId
  assert.match(operationId,/^[A-Za-z0-9_-]{12,96}$/,'J9G must capture the actual original callable operation identity')
- const jobId=createHash('sha256').update('deletion:'+accounts[0].uid+':'+operationId).digest('hex').slice(0,40)
- const receiptId=createHash('sha256').update('deletion-receipt:'+accounts[0].uid+':'+operationId).digest('hex').slice(0,40)
- disposableDocs.push('deletionQueue/'+jobId,'deletionReceipts/'+receiptId,
-  'users/'+accounts[0].uid+'/deletionJobs/'+jobId)
+ const deletionJobId=createHash('sha256').update('deletion:'+accounts[0].uid+':'+operationId).digest('hex').slice(0,40)
+ const deletionReceiptId=createHash('sha256').update('deletion-receipt:'+accounts[0].uid+':'+operationId).digest('hex').slice(0,40)
+ disposableDocs.push('deletionQueue/'+deletionJobId,'deletionReceipts/'+deletionReceiptId,
+  'users/'+accounts[0].uid+'/deletionJobs/'+deletionJobId)
  await page.waitForFunction(()=>document.querySelector('.consentStatus')?.textContent?.includes('Deletion '),
   null,{timeout:45000})
- let job
+ let deletionJob
  for(let i=0;i<100;i++){
-  const current=await db.doc('users/'+accounts[0].uid+'/deletionJobs/'+jobId).get()
-  job=current.data()
-  if(job && ['completed','failed','cancelled'].includes(String(job.state)))break
+  const current=await db.doc('users/'+accounts[0].uid+'/deletionJobs/'+deletionJobId).get()
+  deletionJob=current.data()
+  if(deletionJob && ['completed','failed','cancelled'].includes(String(deletionJob.state)))break
   await wait(800)
  }
- assert.equal(job?.state,'completed','J9G canonical memory deletion did not complete: '+String(job?.failureCode??job?.state))
- const queue=(await db.doc('deletionQueue/'+jobId).get()).data()
+ assert.equal(deletionJob?.state,'completed','J9G canonical memory deletion did not complete: '+String(deletionJob?.failureCode??deletionJob?.state))
+ const queue=(await db.doc('deletionQueue/'+deletionJobId).get()).data()
  assert.equal(queue?.state,'completed','J9G deletionQueue did not report completion')
- const durable=(await db.doc('deletionReceipts/'+receiptId).get()).data()
+ const durable=(await db.doc('deletionReceipts/'+deletionReceiptId).get()).data()
  assert.equal(durable?.result,'completed','J9G durable server deletion receipt missing')
  assert.equal(durable?.scope,'memories','J9G deletion scope changed')
  assert.ok(durable?.removedMemoryStarEvents>=1,'J9G real Memory Star events were not removed')
@@ -644,7 +644,7 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
   body:JSON.stringify({data:{scope:'memories',confirmation:'CONFIRM DELETE',operationId}})})
  assert.equal(retry.status,200,'J9G callable idempotent retry failed')
  const retryResult=(await retry.json()).result
- assert.equal(retryResult?.jobId,jobId,'J9G idempotent retry generated a second job')
+ assert.equal(retryResult?.deletionJobId,deletionJobId,'J9G idempotent retry generated a second job')
  const duplicateJobs=await db.collection('users/'+accounts[0].uid+'/deletionJobs').get()
  assert.equal(duplicateJobs.size,1,'J9G retry generated additional owner deletion jobs')
  await page.goto(origin+'/replay?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
@@ -657,7 +657,7 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  assert.ok(['unavailable','unauthorized','deleted'].includes(await deletedReplay.getAttribute('data-memory-status')),
   'J9G deleted memory became usable after browser navigation')
  await screenshot(page,'J9-canonical-memory-deletion')
- result.journey.privacy.deletion={scope:'memories',jobId,receiptId,
+ result.journey.privacy.deletion={scope:'memories',jobId:deletionJobId,receiptId:deletionReceiptId,
   canonicalUIRequest:true,serverWorkerCompleted:true,retainedDurableReceipt:true,
   removedMemoryStarEvents:durable.removedMemoryStarEvents,idempotentRetry:true,replayDenied:true}
  mark('J9G-canonical-deletion',result.journey.privacy.deletion)
