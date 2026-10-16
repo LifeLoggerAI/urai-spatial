@@ -10,6 +10,7 @@ const { readFileSync } = require('node:fs')
 const { stripTypeScriptTypes } = require('node:module')
 const { assertExactStagingCheckout } = require('./memory-media-staging-source-check.cjs')
 const { classifyStagingMediaAcceptance } = require('./memory-media-staging-admission.cjs')
+const { verifyControlPlaneEvidence } = require('./memory-media-staging-deployed-source.cjs')
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const project = process.env.URAI_MEDIA_STAGING_PROJECT || ''
 const bucketName = process.env.URAI_MEDIA_STAGING_BUCKET || ''
@@ -66,6 +67,15 @@ async function main(){
     actualCloudBucketMetadata:false,actualNoPublicIam:false,positiveProxyPlaybackAccepted:false,
     exactClientBlobAccepted:false,sourceCheckoutVerified:true,deployedSourceExactHeadVerified:false,
     privateFamilyDataUsed:false,runResult:'NOT_ACCEPTED'}
+  // Caller data is never trusted as deployment proof. These records must be
+  // fetched independently by an approved read-only Google control-plane runner.
+  // Until that trusted acquisition and serving-request correlation exists,
+  // do not mark deployed-source identity verified.
+  const verifyDeployedSource = async () => {
+    const proof = undefined // no trusted live control-plane acquisition configured
+    if (!proof) return false
+    return verifyControlPlaneEvidence(proof).verified === true
+  }
   const endpoint = 'https://' + region + '-' + project + '.cloudfunctions.net/'
   const userPath = uid => 'users/' + uid
   const idTokenFor = async user => {
@@ -211,6 +221,7 @@ async function main(){
     await denied(await stream(descriptor,ownerToken,{range:'bytes=100-499'}),'withdrawn C1 denies issued ranged retry')
     await denied(await stream(descriptor,ownerToken,{method:'HEAD'}),'withdrawn C1 denies issued HEAD retry','HEAD')
     evidence.positiveProxyPlaybackAccepted=true
+    evidence.deployedSourceExactHeadVerified=await verifyDeployedSource()
   } catch(error){ problem=error }
   finally {
     if(owner){
