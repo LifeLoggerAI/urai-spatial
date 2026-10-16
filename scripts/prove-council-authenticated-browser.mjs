@@ -49,6 +49,14 @@ await db.doc('users/'+owner.uid+'/lifeMapEvents/star-a').set({userId:owner.uid,t
 await db.doc('users/'+owner.uid+'/lifeMapEvents/star-b').set({userId:owner.uid,type:'memory',title:'Map label B',summary:'Fictional map event',memoryId:'memory-b',sourceType:'manual_seed',occurredAt:'1996-08-01T12:00:00.000Z',replayAvailable:true})
 await db.doc('users/'+owner.uid+'/lifeMapEvents/orphan').set({userId:owner.uid,type:'memory',title:'Unresolved private event',summary:'Not a memory',memoryId:'no-such-memory',sourceType:'manual_seed',occurredAt:'1990-08-01T12:00:00.000Z',replayAvailable:true})
 await db.doc('users/'+other.uid+'/lifeMapEvents/foreign').set({userId:other.uid,type:'memory',title:"Other owner private constellation",summary:'Other private data',sourceType:'manual_seed',occurredAt:'1999-08-01T12:00:00.000Z'})
+const consentDomains=Object.fromEntries(['memory','location','models','exports','workforce','identity'].map(domain=>[domain,{
+  mode:'granted',retentionDays:365,precise:false,replayVisible:true,lifeMapVisible:true,
+  modelContext:false,sharingEnabled:false,automationEnabled:false,likenessEnabled:false,
+}]))
+await db.doc('users/'+owner.uid+'/privacyPolicy/current').set({
+  version:2,revision:1,ownerId:owner.uid,domains:consentDomains,
+  enforcement:{state:'fully-enforced',jobId:'council-browser-enforcement',affectedTargets:['memory'],providerState:'not-applicable'},
+})
 
 const entry=[
  "import React,{useEffect,useState} from 'react'",
