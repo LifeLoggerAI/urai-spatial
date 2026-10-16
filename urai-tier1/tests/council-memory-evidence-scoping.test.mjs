@@ -17,7 +17,7 @@ test('selected-memory dispatch uses scoped evidence and no previous unrelated di
   assert.match(provider, /graphEvidence = memoryBinding \? memoryBinding\.evidence/)
   // Never bypass the revocation-aware memory recheck during graph delivery.
   // The former direct resolver could convert a revoked source into HTTP 500.
-  assert.match(provider, /memoryRequest === undefined\\s*\\? await loadGraph\\(\\) : \\(await recheckMemory\\(\\)\\)\\?\\.evidence/)
+  assert.match(provider, /memoryRequest === undefined\s*\? await loadGraph\(\) : \(await recheckMemory\(\)\)\?\.evidence/)
   assert.match(provider, /COUNCIL_MEMORY_AUTHORITY_DENIED/)
   assert.match(provider, /Selected memory authority was withdrawn during this request/)
   assert.match(provider, /scopedContext = memoryRequest === undefined \? context : \[\]/)
