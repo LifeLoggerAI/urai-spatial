@@ -786,6 +786,16 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
   occurredAt:'1989-08-01T12:00:00.000Z',replayAvailable:false}
  disposableDocs.push(ritualPath)
  await db.doc(ritualPath).set(ritual)
+ // This journey can exceed the server's five-minute reauthentication window.
+ // Reauthenticate using the original LoginClient before destructive operations.
+ const signInsBefore=result.authTransport.filter(item=>item.status===200).length
+ await page.goto(origin+'/login',{waitUntil:'domcontentloaded'})
+ await page.getByRole('button',{name:'Sign out'}).click({timeout:15000})
+ await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:30000})
+ await login(page,accounts[0].email,accounts[0].password,accounts[0].uid)
+ assert.equal(result.authTransport.filter(item=>item.status===200).length,signInsBefore+1,
+  'J9G owner reauthentication must create a fresh successful browser Auth response')
+ mark('J9G-real-reauth',{source:'original-LoginClient-Firebase-SDK',signedOut:true,privilegeOverride:false})
  // Prove the original authenticated product deletion, not fixture teardown.
  // This deliberately does not remove the independent Council/media NO-GO gate.
  await page.goto(origin+'/privacy-controls',{waitUntil:'domcontentloaded'})
@@ -809,8 +819,10 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  const deletionJobId=createHash('sha256').update('deletion:'+accounts[0].uid+':'+operationId).digest('hex').slice(0,40)
  const deletionReceiptId=createHash('sha256').update('deletion-receipt:'+accounts[0].uid+':'+operationId).digest('hex').slice(0,40)
  const initialResponse=await emittedResponse
- assert.equal(initialResponse.status(),200,'J9G initial callable did not authorize the original owner')
- const initialEnvelope=await initialResponse.json()
+ const initialEnvelope=await initialResponse.json().catch(()=>null)
+ const code=typeof initialEnvelope?.error?.status==='string' ? initialEnvelope.error.status.replace(/[^A-Z_]/g,'').slice(0,48) : null
+ assert.equal(initialResponse.status(),200,'J9G current-owner deletion callable rejected: '+JSON.stringify({httpStatus:initialResponse.status(),code,
+  recentAuthRequired:String(initialEnvelope?.error?.message||'')==='RECENT_REAUTHENTICATION_REQUIRED'}))
  const initialResult=initialEnvelope?.result ?? initialEnvelope?.data
  assert.equal(initialResult?.jobId,deletionJobId,'J9G actual server-issued job differs from bounded operation identity')
  assert.equal(initialResult?.receiptId,deletionReceiptId,'J9G initial server-issued receipt identity differs')
