@@ -19,7 +19,7 @@ const staging={GCLOUD_PROJECT:project,GCP_PROJECT:project,GOOGLE_CLOUD_PROJECT:p
  FIREBASE_STORAGE_BUCKET:bucket,
  FIREBASE_CONFIG:JSON.stringify({projectId:project,storageBucket:bucket})}
 const registry={ [project]:bucket }
-const refuses=(env,allowed=registry)=>assert.throws(()=>resolve(env,allowed),/MEMORY_MEDIA_PROJECT_UNBOUND/)
+const refuses=(env,allowed)=>assert.throws(()=>resolve(env,allowed),/MEMORY_MEDIA_PROJECT_UNBOUND/)
 test('original production and explicit fictional emulators retain exact bindings',()=>{
  assert.equal(resolve(production),'urai-4dc1d')
  assert.equal(resolve(demo),'demo-memory-media-playback')
