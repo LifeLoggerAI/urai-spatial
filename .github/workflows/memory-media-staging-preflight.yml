@@ -27,3 +27,24 @@ jobs:
           node --check apps/functions/scripts/memory-media-staging-positive-proof.cjs
           node apps/functions/scripts/memory-media-staging-positive-proof.cjs --preflight
           test -z "${URAI_MEDIA_STAGING_WRITE_APPROVAL:-}"
+      - name: Prove unapproved source registry blocks cloud startup
+        env:
+          URAI_MEDIA_STAGING_PROJECT: urai-media-staging
+          URAI_MEDIA_STAGING_BUCKET: urai-media-staging.firebasestorage.app
+          URAI_MEDIA_STAGING_ENABLE: EXPLICIT_NONPRODUCTION_ONLY
+          URAI_MEDIA_STAGING_WRITE_APPROVAL: EXPLICIT_DISPOSABLE_STAGING_RUN
+          URAI_EXACT_HEAD: ${{ github.sha }}
+          URAI_MEDIA_STAGING_WEB_API_KEY: fictional-no-network
+          GCLOUD_PROJECT: urai-media-staging
+          GCP_PROJECT: urai-media-staging
+          GOOGLE_CLOUD_PROJECT: urai-media-staging
+          FIREBASE_STORAGE_BUCKET: urai-media-staging.firebasestorage.app
+          FIREBASE_CONFIG: '{"projectId":"urai-media-staging","storageBucket":"urai-media-staging.firebasestorage.app"}'
+        run: |
+          set -euo pipefail
+          if node apps/functions/scripts/memory-media-staging-positive-proof.cjs --execute > preflight.out 2>&1; then
+            echo "FAIL: unapproved staging reached execution"; exit 1
+          fi
+          grep -q 'MEMORY_MEDIA_PROJECT_UNBOUND' preflight.out
+          ! grep -q 'STAGING_MEDIA_EVIDENCE_BLOCKED' preflight.out
+          rm preflight.out
