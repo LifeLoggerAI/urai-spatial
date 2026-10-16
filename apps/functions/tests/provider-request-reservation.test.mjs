@@ -103,7 +103,7 @@ function responseDouble({ loseDelivery = false } = {}) {
   }
 }
 
-function fixture({ store = storage(), env = {}, fetchHook, authHook, outputHook, shortenDeadlineMs } = {}) {
+function fixture({ store = storage(), env = {}, fetchHook, authHook, outputHook, shortenDeadlineMs, deadlineClock } = {}) {
   for (const uid of ['alice', 'bob']) {
     if (!store.state.docs.has(`users/${uid}/privacyPolicy/current`)) store.state.docs.set(`users/${uid}/privacyPolicy/current`, clone({ ...policy, ownerId: uid }))
   }
@@ -140,7 +140,12 @@ function fixture({ store = storage(), env = {}, fetchHook, authHook, outputHook,
     'firebase-admin': admin,
     'firebase-functions/params': { defineSecret: () => ({ value: () => 'synthetic-test-only-key' }) },
     'firebase-functions/v2/https': { onRequest: (_options, handler) => handler },
-  }, { fetch, env, setTimeout: (callback, duration) => setTimeout(callback, shortenDeadlineMs ? Math.min(duration, shortenDeadlineMs) : duration) })
+  }, { fetch, env,
+    setTimeout: (callback, duration) => deadlineClock
+      ? deadlineClock.schedule(callback, duration)
+      : setTimeout(callback, shortenDeadlineMs ? Math.min(duration, shortenDeadlineMs) : duration),
+    clearTimeout: handle => deadlineClock ? deadlineClock.clear(handle) : clearTimeout(handle),
+  })
   const run = async ({ uid = 'alice', body = {}, loseDelivery = false, authorization = `Bearer ${uid}` } = {}) => {
     const response = responseDouble({ loseDelivery })
     await exports.openAiOrbProvider({ method: 'POST', headers: { authorization }, body: { message, context: [], aiProcessingConsent: true, requestId, locale: 'en-US', ...body }, on() {} }, response)
@@ -239,35 +244,73 @@ test('failure to durably settle an answer prevents HTTP success and keeps replay
   assert.equal((await f.run()).jsonBody.error, 'PROVIDER_REQUEST_HELD'); assert.equal(f.calls.length, 2)
 })
 
+// Exercise the real Node HTTP/fetch body stream while controlling only the
+// test-owned deadline timer. A loopback fetch resolving within 200 ms is not
+// guaranteed on a busy CI runner; make arrival observable, then fire the
+// unchanged handler's own abort callback before allowing any body bytes.
 for (const stage of ['moderations', 'responses']) test(`actual local HTTP ${stage} headers do not release the deadline before delayed body consumption`, async () => {
   let localRequests = 0
   let headersArrived = false
+  let signalHeaders, releaseBody
+  const headersReady = new Promise(resolve => { signalHeaders = resolve })
+  const bodyRelease = new Promise(resolve => { releaseBody = resolve })
+  const scheduled = new Map()
+  const deadlineClock = {
+    schedule(callback, duration) {
+      const handle = { callback, active: true }
+      scheduled.set(duration, handle)
+      return handle
+    },
+    clear(handle) { handle.active = false },
+    fire(duration) {
+      const handle = scheduled.get(duration)
+      assert.ok(handle?.active, 'the provider deadline must remain armed after HTTP headers arrive')
+      handle.active = false
+      handle.callback()
+    },
+  }
+  const bounded = async (promise, label) => {
+    let watchdog
+    try {
+      return await Promise.race([promise, new Promise((_, reject) => {
+        watchdog = setTimeout(() => reject(new Error(label)), 5_000)
+      })])
+    } finally { clearTimeout(watchdog) }
+  }
   const server = http.createServer((request, response) => {
     request.resume(); localRequests++
     response.writeHead(200, { 'Content-Type': stage === 'moderations' ? 'application/json' : 'text/event-stream' })
     response.flushHeaders()
-    const delayed = setTimeout(() => response.end(stage === 'moderations'
-      ? JSON.stringify({ results: [{ flagged: false }] })
-      : `data: ${JSON.stringify({ type: 'response.output_text.delta', delta: JSON.stringify(answer) })}\n\ndata: {"type":"response.completed"}\n\n`), 700)
-    response.on('close', () => clearTimeout(delayed))
+    // The real HTTP body cannot finish until the test explicitly releases it.
+    // Disconnect after the deadline is expected; no fake provider completion.
+    void bodyRelease.then(() => {
+      if (!response.destroyed) response.end(stage === 'moderations'
+        ? JSON.stringify({ results: [{ flagged: false }] })
+        : `data: ${JSON.stringify({ type: 'response.output_text.delta', delta: JSON.stringify(answer) })}\n\ndata: {"type":"response.completed"}\n\n`)
+    })
   })
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve) })
   try {
     const url = `http://127.0.0.1:${server.address().port}/${stage}`
-    const f = fixture({ shortenDeadlineMs: 200, fetchHook: async (call) => {
+    const f = fixture({ deadlineClock, fetchHook: async call => {
       if (!call.url.endsWith(`/${stage}`)) return undefined
       const upstream = await globalThis.fetch(url, { method: 'POST', body: JSON.stringify(call.body), signal: call.signal })
       headersArrived = true
+      signalHeaders()
       return upstream
     } })
-    const first = await f.run()
-    assert.equal(headersArrived, true, 'headers must arrive before the deadline')
+    const inFlight = f.run()
+    await bounded(headersReady, 'local HTTP headers never arrived')
+    assert.equal(headersArrived, true, 'real HTTP headers must arrive before the controlled deadline fires')
+    deadlineClock.fire(stage === 'moderations' ? 8_000 : 30_000)
+    const first = await bounded(inFlight, 'aborted provider body did not settle')
     assert.equal(first.statusCode, 503); assert.equal(first.jsonBody.error, 'PROVIDER_ATTEMPT_UNCERTAIN')
     assert.equal(f.reservations()[0][1].state, 'uncertain')
     assert.equal((await f.run()).jsonBody.error, 'PROVIDER_REQUEST_HELD')
     assert.equal(localRequests, 1)
     assert.equal(f.calls.length, stage === 'moderations' ? 1 : 2)
   } finally {
+    releaseBody()
     server.closeAllConnections()
     await new Promise(resolve => server.close(resolve))
   }
