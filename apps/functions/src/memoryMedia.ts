@@ -228,6 +228,7 @@ function authenticatedOwner(context: functions.https.CallableContext) {
 }
 
 export const getMemoryMediaUploadAuthority = functions.https.onCall(async (data, context) => {
+  playbackProject()
   const { uid, requireAuthentication } = authenticatedOwner(context), value = row(data), memoryId = id(value.memoryId)
   if (Object.keys(value).some(key => key !== 'memoryId')) fail('MEMORY_MEDIA_AUTHORITY_REQUEST_INVALID')
   await requireAuthentication()
@@ -238,6 +239,7 @@ export const getMemoryMediaUploadAuthority = functions.https.onCall(async (data,
 })
 
 export const registerMemoryMedia = functions.runWith({ timeoutSeconds: 180, memory: '256MB' }).https.onCall(async (data, context) => {
+  playbackProject()
   const { uid, requireAuthentication } = authenticatedOwner(context)
   await requireAuthentication()
   const value = row(data), memoryId = id(value.memoryId), operationId = id(value.operationId), contentType = String(value.contentType)
@@ -444,6 +446,7 @@ async function playbackObject(uid: string, r: MediaReceipt, requireCurrent: () =
 }
 
 export const getMemoryMediaPlaybackAuthority = functions.https.onCall(async (data, context) => {
+  playbackProject()
   const uid = context.auth?.uid, value = row(data), memoryId = id(value.memoryId), receiptId = String(value.receiptId)
   const bearer = context.rawRequest?.get('authorization')?.match(/^Bearer (\S+)$/)?.[1]
   if (!uid || !ID.test(uid) || !bearer) throw new functions.https.HttpsError('unauthenticated', 'Current authentication required.')
