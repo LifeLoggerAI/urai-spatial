@@ -1615,6 +1615,45 @@ export const processDeletionQueueItem = functions.firestore
   .document('deletionQueue/{jobId}')
   .onCreate(async (snapshot) => processDeletion(snapshot))
 
+// A crashed onCreate worker has no new create event to replay. Only fail closed
+// after the platform's entire execution window has elapsed: never claim an
+// interrupted operation erased data, clear its fence, or restart destruction
+// while another worker might still hold the previous deletion authority.
+// Account deletion is intentionally excluded; it must not recreate a deleted
+// user's records after an ambiguous post-delete interruption.
+const MEMORY_DELETION_INTERRUPTED_AFTER_MS = 30 * 60 * 1000
+async function failInterruptedMemoryDeletion(item: FirebaseFirestore.QueryDocumentSnapshot) {
+  if (item.get('scope') !== 'memories') return
+  const started = item.get('startedAt') as Timestamp | undefined
+  if (!(started instanceof Timestamp) || started.toMillis() > Date.now() - MEMORY_DELETION_INTERRUPTED_AFTER_MS) return
+  const uid = item.get('uid'), receiptId = item.get('receiptId')
+  if (typeof uid !== 'string' || !uid || typeof receiptId !== 'string' || !receiptId) return
+  const ownerRef = db.doc(`users/${uid}/deletionJobs/${item.id}`)
+  const ownerReceiptRef = db.doc(`users/${uid}/privacyReceipts/${receiptId}`)
+  const durableReceiptRef = db.doc(`deletionReceipts/${receiptId}`)
+  const failureCode = 'DELETION_INTERRUPTED_OUTCOME_UNVERIFIED'
+  await db.runTransaction(async transaction => {
+    const [queue, owner, fence, durable] = await Promise.all([
+      transaction.get(item.ref), transaction.get(ownerRef),
+      transaction.get(exportFenceRef(uid)), transaction.get(durableReceiptRef),
+    ])
+    if (!queue.exists || !owner.exists || queue.get('uid') !== uid || owner.get('uid') !== uid
+      || queue.get('scope') !== 'memories' || queue.get('state') !== 'in-progress'
+      || owner.get('state') !== 'in-progress' || durable.exists) return
+    const actualStarted = queue.get('startedAt') as Timestamp | undefined
+    if (!(actualStarted instanceof Timestamp)
+      || actualStarted.toMillis() > Date.now() - MEMORY_DELETION_INTERRUPTED_AFTER_MS
+      || !fence.exists || !isRecord(fence.get('pendingDeletions'))
+      || fence.get('pendingDeletions')[item.id] !== true) return
+    const now = fieldValue.serverTimestamp()
+    transaction.update(item.ref, { state: 'failed', failureCode, updatedAt: now })
+    transaction.update(ownerRef, { state: 'failed', failureCode, updatedAt: now })
+    transaction.set(ownerReceiptRef, { result: 'failed', failureCode, updatedAt: now }, { merge: true })
+    // Do not clear the pending-deletion fence: a new, explicitly approved
+    // operation or reviewer must reconcile any partial erasure safely.
+  })
+}
+
 export const processDeletionGraceQueue = functions.pubsub
   .schedule('every 15 minutes')
   .onRun(async () => {
@@ -1623,6 +1662,8 @@ export const processDeletionGraceQueue = functions.pubsub
       const executeAfter = item.get('executeAfter') as Timestamp | undefined
       if (executeAfter && executeAfter.toMillis() <= Date.now()) await processDeletion(item)
     }
+    const interrupted = await db.collection('deletionQueue').where('state', '==', 'in-progress').limit(25).get()
+    for (const item of interrupted.docs) await failInterruptedMemoryDeletion(item)
   })
 
 export const cancelDeletionRequest = functions.https.onCall(async (data, context) => {

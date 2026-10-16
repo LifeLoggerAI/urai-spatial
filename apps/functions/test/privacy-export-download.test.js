@@ -703,6 +703,46 @@ test('two concurrent deletion requests retain separate pending authority and inv
   assert.equal(f.records.get(`${prefix}/exportJobs/${fresh.jobId}`).exportFenceGeneration, 2)
 })
 
+test('interrupted scoped-memory deletion is reported as unverified and retains its privacy fence', async () => {
+  const f = fixture(), deletion = await f.handlers.createDeletionRequest({
+    operationId: 'synthetic-stale-memory-deletion', scope: 'memories', confirmation: 'CONFIRM DELETE',
+  }, f.context)
+  const queuePath = `deletionQueue/${deletion.jobId}`, ownerPath = `${prefix}/deletionJobs/${deletion.jobId}`
+  const started = new f.Timestamp(now - 31 * 60 * 1000)
+  f.records.set(queuePath, { ...f.records.get(queuePath), state: 'in-progress', startedAt: started })
+  f.records.set(ownerPath, { ...f.records.get(ownerPath), state: 'in-progress', startedAt: started })
+  const retainedMemory = `${prefix}/memories/synthetic-retained-after-interruption`
+  f.records.set(retainedMemory, { ownerId: uid, sourceMedia: [] })
+  await f.handlers.processDeletionGraceQueue()
+  assert.equal(f.records.get(queuePath).state, 'failed')
+  assert.equal(f.records.get(ownerPath).failureCode, 'DELETION_INTERRUPTED_OUTCOME_UNVERIFIED')
+  assert.equal(f.records.get(`${prefix}/privacyReceipts/${deletion.receiptId}`).result, 'failed')
+  assert.equal(f.records.get(fencePath).pendingDeletions[deletion.jobId], true)
+  assert.equal(f.records.has(retainedMemory), true, 'interruption detector must never perform destructive retry')
+  assert.equal(f.records.has(`deletionReceipts/${deletion.receiptId}`), false,
+    'interruption detector cannot invent a durable completed or failed erasure receipt')
+})
+
+test('active and ambiguous completed deletion outcomes cannot be overwritten by scheduled recovery', async () => {
+  const f = fixture(), deletion = await f.handlers.createDeletionRequest({
+    operationId: 'synthetic-fresh-memory-deletion', scope: 'memories', confirmation: 'CONFIRM DELETE',
+  }, f.context)
+  const queuePath = `deletionQueue/${deletion.jobId}`, ownerPath = `${prefix}/deletionJobs/${deletion.jobId}`
+  const recent = new f.Timestamp(now - 5 * 60 * 1000)
+  f.records.set(queuePath, { ...f.records.get(queuePath), state: 'in-progress', startedAt: recent })
+  f.records.set(ownerPath, { ...f.records.get(ownerPath), state: 'in-progress', startedAt: recent })
+  await f.handlers.processDeletionGraceQueue()
+  assert.equal(f.records.get(queuePath).state, 'in-progress')
+  const old = new f.Timestamp(now - 31 * 60 * 1000)
+  f.records.set(queuePath, { ...f.records.get(queuePath), startedAt: old })
+  f.records.set(ownerPath, { ...f.records.get(ownerPath), startedAt: old })
+  f.records.set(`deletionReceipts/${deletion.receiptId}`, { result: 'completed', scope: 'memories' })
+  await f.handlers.processDeletionGraceQueue()
+  assert.equal(f.records.get(queuePath).state, 'in-progress',
+    'a completed durable receipt and unfinished queue require reconciliation, not a fabricated failure')
+  assert.equal(f.records.get(fencePath).pendingDeletions[deletion.jobId], true)
+})
+
 test('a stale queued deletion event cannot execute after current owner cancellation',async()=>{
   const f=fixture(),created=await f.handlers.createDeletionRequest({operationId:'synthetic-cancelled-event',scope:'memories',confirmation:'CONFIRM DELETE'},f.context)
   const queued=await f.db.doc(`deletionQueue/${created.jobId}`).get()
