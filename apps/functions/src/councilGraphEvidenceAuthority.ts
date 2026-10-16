@@ -27,11 +27,13 @@ export async function readCouncilGraphEvidence(db: FirebaseFirestore.Firestore, 
   return db.runTransaction(async tx => {
     const policy = await tx.get(db.doc('users/' + uid + '/privacyPolicy/current'))
     const p = policy.data()
-    if (!policy.exists || !isCanonicalStoredPolicy(p, uid)
-      || p?.domains?.models?.modelContext !== true
-      || !['granted', 'limited'].includes(p?.domains?.models?.mode)
-      || !['granted', 'limited'].includes(p?.domains?.identity?.mode)
-      || p?.enforcement?.state !== 'fully-enforced') deny('COUNCIL_MODEL_CONSENT_REQUIRED')
+    // First validate owner and complete canonical shape. This fail-closed
+    // type guard narrows Firestore's possibly undefined document value.
+    if (!policy.exists || !isCanonicalStoredPolicy(p, uid)) deny('COUNCIL_MODEL_CONSENT_REQUIRED')
+    if (p.domains.models.modelContext !== true
+      || !['granted', 'limited'].includes(p.domains.models.mode)
+      || !['granted', 'limited'].includes(p.domains.identity.mode)
+      || p.enforcement.state !== 'fully-enforced') deny('COUNCIL_MODEL_CONSENT_REQUIRED')
     // A models grant never revives source memories when the owner withdraws
     // their independent Memory permission. Graph-selected memory evidence
     // inherits this same account-wide source authority.
