@@ -1584,6 +1584,7 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
     }
     const finalReceipt = {
       receiptId,
+      jobId: snapshot.id,
       ownerDigest: ownerDigest(uid),
       kind: 'deletion',
       scope,

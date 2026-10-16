@@ -611,6 +611,8 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  await page.getByLabel('Type CONFIRM DELETE').fill('CONFIRM DELETE')
  const emittedRequest=page.waitForRequest(request=>
   request.method()==='POST' && request.url().includes('/createSpatialDeletionRequest'),{timeout:30000})
+ const emittedResponse=page.waitForResponse(response=>
+  response.request().method()==='POST' && response.url().includes('/createSpatialDeletionRequest'),{timeout:45000})
  await page.getByRole('button',{name:'Create deletion request'}).click({timeout:15000})
  const request=await emittedRequest
  // Never write Auth headers, bearer tokens or the raw operation ID to proof.
@@ -618,6 +620,13 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  assert.match(operationId,/^[A-Za-z0-9_-]{12,96}$/,'J9G must capture the actual original callable operation identity')
  const deletionJobId=createHash('sha256').update('deletion:'+accounts[0].uid+':'+operationId).digest('hex').slice(0,40)
  const deletionReceiptId=createHash('sha256').update('deletion-receipt:'+accounts[0].uid+':'+operationId).digest('hex').slice(0,40)
+ const initialResponse=await emittedResponse
+ assert.equal(initialResponse.status(),200,'J9G initial callable did not authorize the original owner')
+ const initialEnvelope=await initialResponse.json()
+ const initialResult=initialEnvelope?.result ?? initialEnvelope?.data
+ assert.equal(initialResult?.jobId,deletionJobId,'J9G actual server-issued job differs from bounded operation identity')
+ assert.equal(initialResult?.receiptId,deletionReceiptId,'J9G initial server-issued receipt identity differs')
+ assert.equal(initialResult?.state,'queued','J9G unexpected initial scoped deletion state')
  disposableDocs.push('deletionQueue/'+deletionJobId,'deletionReceipts/'+deletionReceiptId,
   'users/'+accounts[0].uid+'/deletionJobs/'+deletionJobId)
  await page.waitForFunction(()=>document.querySelector('.consentStatus')?.textContent?.includes('Deletion '),
@@ -634,6 +643,10 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  assert.equal(queue?.state,'completed','J9G deletionQueue did not report completion')
  const durable=(await db.doc('deletionReceipts/'+deletionReceiptId).get()).data()
  assert.equal(durable?.result,'completed','J9G durable server deletion receipt missing')
+ assert.equal(durable?.receiptId,deletionReceiptId,'J9G durable receipt has wrong immutable identity')
+ assert.equal(durable?.jobId,deletionJobId,'J9G durable receipt must name the actual server job')
+ assert.equal(durable?.ownerDigest,createHash('sha256').update('urai-owner:'+accounts[0].uid).digest('hex'),
+  'J9G durable receipt has wrong nonidentifying owner digest')
  assert.equal(durable?.scope,'memories','J9G deletion scope changed')
  assert.ok(durable?.removedMemoryStarEvents>=1,'J9G real Memory Star events were not removed')
  assert.equal((await db.doc('users/'+accounts[0].uid+'/memories/fictional-memory-a').get()).exists,false)
