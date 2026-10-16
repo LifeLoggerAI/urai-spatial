@@ -355,6 +355,9 @@ try {
     await context.close()
   })
   for (const [label, mutation] of [
+    // A fully schema-valid Memory permission withdrawal must stop an already
+    // decoded owned-media Blob; a malformed policy is not a revocation proof.
+    ['canonical revision-2 Memory permission denied', `const p=base+'/privacyPolicy/current';const previous=f.docs[p];const next={...previous,revision:previous.revision+1,domains:{...previous.domains,memory:{...previous.domains.memory,mode:'denied'}}};if(!window.__fixtureIsConsentPolicy(next,f.auth.currentUser.uid))throw Error('CANONICAL_MEMORY_WITHDRAWAL_FIXTURE_INVALID');f.update(p,next)`],
     ['canonical C1 status revoked', `const p='consentRecords/'+f.auth.currentUser.uid+'_memory_storage';f.update(p,{...f.docs[p],status:'revoked'})`],
     ['canonical C1 receipt hash replaced', `const p='consentRecords/'+f.auth.currentUser.uid+'_memory_storage';f.update(p,{...f.docs[p],receiptHash:'e'.repeat(64)})`],
     ['canonical C1 expiry replaced', `const p='consentRecords/'+f.auth.currentUser.uid+'_memory_storage';f.update(p,{...f.docs[p],expiresAt:Date.now()-1})`],
