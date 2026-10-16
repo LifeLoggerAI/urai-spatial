@@ -10,7 +10,7 @@ const { readFileSync } = require('node:fs')
 const { stripTypeScriptTypes } = require('node:module')
 const { assertExactStagingCheckout } = require('./memory-media-staging-source-check.cjs')
 const { classifyStagingMediaAcceptance } = require('./memory-media-staging-admission.cjs')
-const { readTrustedControlPlane } = require('./memory-media-staging-cloud-collector.cjs')
+const { attestStagingPlayback } = require('./memory-media-staging-runtime-attestation.cjs')
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const project = process.env.URAI_MEDIA_STAGING_PROJECT || ''
 const bucketName = process.env.URAI_MEDIA_STAGING_BUCKET || ''
@@ -202,24 +202,14 @@ async function main(){
     assert.deepEqual(Buffer.from(await blob.arrayBuffer()),bytes)
     evidence.exactClientBlobAccepted=true
     cases.push('actual owned-memory client accepted fixed authenticated Blob')
-    // Probe while the fictional owner's descriptor is still valid. The
-    // collector uses independently authenticated Google deployment records
-    // and revision-scoped request logs, never caller-provided attestations.
-    // On a proof failure, continue denial checks and fixture cleanup.
-    try {
-      const attestation=await readTrustedControlPlane({
-        project,region,functionName:'streamMemoryMediaPlayback',expectedSha:sourceSha,
-        requestUrl:endpoint+'streamMemoryMediaPlayback?'+selection(descriptor),
-        ownerIdToken:ownerToken
-      })
-      evidence.deployedSourceExactHeadVerified=attestation.verified===true
-        &&attestation.sourceSha===sourceSha
-        &&attestation.functionName==='streamMemoryMediaPlayback'
-    } catch(error) {
-      const reason=String(error?.message||'')
-      evidence.deployedSourceAttestationError=/^STAGING_[A-Z0-9_]+/.exec(reason)?.[0]
-        ||'STAGING_DEPLOYED_SOURCE_UNVERIFIED'
-    }
+    // The collector has no caller-controlled provider or approval seam.
+    const attestation=await attestStagingPlayback({
+      project,region,expectedSha:sourceSha,
+      requestUrl:endpoint+'streamMemoryMediaPlayback?'+selection(descriptor),
+      ownerIdToken:ownerToken
+    })
+    evidence.deployedSourceExactHeadVerified=attestation.verified
+    if(attestation.errorCode)evidence.deployedSourceAttestationError=attestation.errorCode
     await denied(await stream(descriptor,foreignToken),'foreign account cannot reuse descriptor')
     await denied(await stream(descriptor,foreignToken,{range:'bytes=100-499'}),'foreign account ranged retry denied')
     await memoryDoc.delete()

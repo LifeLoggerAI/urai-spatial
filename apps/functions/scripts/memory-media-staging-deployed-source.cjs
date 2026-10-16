@@ -1,4 +1,5 @@
 'use strict'
+const {requireSupportedSourceProvenance} = require('./memory-media-staging-provenance.cjs')
 // Pure validation of authenticated Google control-plane data. Fictional test fixtures are NOT deployment evidence.
 function verifyControlPlaneDeployment(x) {
   const bad = reason => { throw new Error('STAGING_DEPLOYED_SOURCE_UNVERIFIED:'+reason) }
@@ -32,6 +33,7 @@ function verifyControlPlaneDeployment(x) {
   if(build?.name!==buildPath||build.projectId!==P||build.status!=='SUCCESS'
     ||!Array.isArray(build.results?.images)||!build.results.images.some(i=>i.digest===digest
       && typeof i.name==='string'&&(i.name===m[1]||i.name.startsWith(m[1]+':'))))bad('BUILD_IMAGE_MISMATCH');
+  requireSupportedSourceProvenance(fn,build)
   const source=build.sourceProvenance?.resolvedGitSource;
   const validGit=url=>typeof url==='string'&&/^https:\/\/github\.com\/LifeLoggerAI\/urai-spatial(?:\.git)?$/.test(url);
   if(!validGit(source?.url)||String(source.revision).toLowerCase()!==S.toLowerCase()

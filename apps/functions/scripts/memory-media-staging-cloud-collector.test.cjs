@@ -64,10 +64,10 @@ test('missing options fail by contract rather than a runtime TypeError',async()=
 
 test('positive staging runner uses independent collector before fixture revocation',()=>{
  const source=readFileSync(join(__dirname,'memory-media-staging-positive-proof.cjs'),'utf8')
- assert.ok(source.includes("const { readTrustedControlPlane } = require('./memory-media-staging-cloud-collector.cjs')"))
- const probe=source.indexOf('await readTrustedControlPlane({')
+ assert.ok(source.includes("const { attestStagingPlayback } = require('./memory-media-staging-runtime-attestation.cjs')"))
+ const probe=source.indexOf('await attestStagingPlayback({')
  const revoked=source.indexOf("await consentDoc.update({status:'revoked'})")
  assert.ok(probe>0&&revoked>probe,'attestation must precede revoked fixture')
- assert.ok(source.includes('deployedSourceExactHeadVerified=attestation.verified===true'))
+ assert.ok(source.includes('evidence.deployedSourceExactHeadVerified=attestation.verified'))
  assert.ok(!source.includes('const proof = undefined')&&!source.includes('verifyDeployedSource()'))
 })
