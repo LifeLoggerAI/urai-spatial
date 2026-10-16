@@ -62,7 +62,7 @@ const shims = {
   '@/spatial/captured-reality/CapturedRealityPrivateScene': `import {useEffect} from 'react';export default function Scene({decision}){useEffect(()=>{if(decision.mode!=='gaussian-splat')return;window.__fixture.sceneMounts++;return()=>{window.__fixture.sceneDisposals++}},[decision.mode]);return <div data-scene-fixture={decision.mode} style={{minHeight:'100svh'}}>Synthetic scene-disposal boundary — no reconstructed geometry</div>}`,
 }
 const compiled = await build({
-  stdin: { contents: `import React from 'react';import{createRoot}from'react-dom/client';import{localizedMessage,ENGLISH_LOCALE_PREFERENCE}from'./src/lib/i18n/localePreference';window.__fixtureLocaleText=(id,values)=>localizedMessage(ENGLISH_LOCALE_PREFERENCE,id,values).text;import Replay from './src/app/replay/CinematicReplayClient';import Movie from './src/app/life-movie/LifeMovieClient';import Place from './src/app/spatial/captured-reality/CapturedRealityRouteClient';const Component=location.pathname==='/life-movie'?Movie:location.pathname==='/spatial/captured-reality'?Place:Replay;const root=createRoot(document.getElementById('root'));root.render(<Component/>);window.__unmount=()=>root.unmount();`, resolveDir: path.join(repo, 'urai-tier1'), loader: 'tsx' },
+  stdin: { contents: `import React from 'react';import{createRoot}from'react-dom/client';import{localizedMessage,ENGLISH_LOCALE_PREFERENCE}from'./src/lib/i18n/localePreference';window.__fixtureLocaleText=(id,values)=>localizedMessage(ENGLISH_LOCALE_PREFERENCE,id,values).text;import{isConsentPolicy}from'./src/app/privacy-controls/consentModel';window.__fixtureIsConsentPolicy=isConsentPolicy;import Replay from './src/app/replay/CinematicReplayClient';import Movie from './src/app/life-movie/LifeMovieClient';import Place from './src/app/spatial/captured-reality/CapturedRealityRouteClient';const Component=location.pathname==='/life-movie'?Movie:location.pathname==='/spatial/captured-reality'?Place:Replay;const root=createRoot(document.getElementById('root'));root.render(<Component/>);window.__unmount=()=>root.unmount();`, resolveDir: path.join(repo, 'urai-tier1'), loader: 'tsx' },
   bundle: true, write: false, metafile: true, format: 'iife', platform: 'browser', jsx: 'automatic',
   define: { 'process.env.NODE_ENV': '"test"', 'process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID': '"urai-4dc1d"', 'process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET': '"urai-4dc1d.firebasestorage.app"' },
   plugins: [{ name: 'sdk-only-fixtures', setup(plugin) {
@@ -100,12 +100,29 @@ async function open(route = '/replay', settings = {}) {
     const memory = { ownerId, title: settings.title ?? 'Synthetic receipt source — not family media', occurredAt: '2026-01-01T12:00:00.000Z', summary: 'A synthetic control fixture.', emotionalState: 'calm', privacy: 'private', sourceMedia: [{ kind: settings.audio ? 'audio' : 'video', mediaReceiptId: receiptId }], star: { position: [0, 0, -4] }, replayManifest: { id: 'synthetic-manifest', version: 1, durationMs: 3000, segments: ['memory', 'emotion', 'pattern', 'return'].map((id, i) => ({ id, label: id, caption: `Synthetic ${id}`, narratorLine: settings.narration ?? 'Synthetic narration caption only', startsAtMs: i * 750, durationMs: 750 })) } }
     const kind = settings.audio ? 'audio' : 'video', mime = settings.audio ? 'audio/wav' : 'video/mp4'
     const receipt = { schemaVersion: 'urai-owned-memory-media-v1', ownerUid: ownerId, memoryId, receiptId, kind, state: 'ready', sha256: fixture.sha256, byteLength: fixture.byteLength, contentType: mime, storageGeneration: '123', consentRevision: 1, consentReceiptHash: 'b'.repeat(64), consentExpiresAt: Date.now() + 600000, deletionGeneration: 0, attemptNonce: 'synthetic-private-nonce', bucketName: 'synthetic-opaque-bucket', objectPath: 'synthetic-private-object' }
-    const policy = { ownerId, version: 2, revision: 1, domains: { memory: { mode: 'granted', replayVisible: true }, location: { mode: 'granted' } }, enforcement: { state: 'fully-enforced' } }
+    // Match the strict canonical policy. An older two-domain shortcut is now
+    // intentionally rejected by the real selected-memory authorization hook.
+    const domain = () => ({ mode: 'limited', retentionDays: 365, precise: false, replayVisible: true,
+      lifeMapVisible: true, modelContext: false, sharingEnabled: false, automationEnabled: false, likenessEnabled: false })
+    const policy = { ownerId, version: 2, revision: 1,
+      domains: { memory: { ...domain(), mode: 'granted', modelContext: true }, location: domain(),
+        models: { ...domain(), modelContext: true }, exports: { ...domain(), mode: 'denied' },
+        workforce: { ...domain(), mode: 'paused' }, identity: domain() },
+      enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } }
     const base = `users/${ownerId}`
     const auth = { currentUser: { uid: ownerId, getIdToken: async () => 'synthetic-sdk-token' } }
     const f = window.__fixture = { auth, authObservers: new Set(), watchers: new Set(), allWatchers: [], holdSnapshots: settings.hold ? [`${base}/memoryMediaReceipts/${receiptId}`] : [], docs: { ['consentRecords/'+ownerId+'_memory_storage']: { uid: ownerId, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: receipt.consentReceiptHash, expiresAt: receipt.consentExpiresAt }, [base]: { accountStatus: 'active' }, [`${base}/memories/${memoryId}`]: memory, [`${base}/privacyPolicy/current`]: policy, [`${base}/privacyRuntime/exportAuthority`]: { generation: 0, pendingDeletions: {} }, [`${base}/memoryMediaReceipts/${receiptId}`]: receipt, [`${base}/privacyRuntime/location-collection`]: { enabled: true }, [`${base}/capturedRealityReplayBindings/${memoryId}`]: { ownerId, memoryId, state: 'accepted', capturedRealityAssetId: 'synthetic-accepted-place' }, [`${base}/capturedRealityAssets/synthetic-accepted-place`]: { ownerId, state: 'ready', reviewState: 'accepted', releaseState: 'private-pilot' }, [`${base}/lifeMovies/synthetic-movie`]: { id: 'synthetic-movie', version: 1, ownerId, status: 'ready', consentState: 'authorized', chapters: [{ id: 'synthetic-chapter', memoryId, order: 0, truthClass: 'RECORDED_SOURCE_TRUTH', confidence: 1, consentState: 'authorized', provenance: { sourceIds: ['synthetic-source'], objectIds: [], storyNodeIds: [], providerTaskIds: [] } }] } }, calls: [], creates: [], revocations: [], heldMedia: [], sceneMounts: 0, sceneDisposals: 0, denyAuthority: false, tamper: !!settings.tamper }
     const snapshot = p => { const value = f.docs[p]; return { exists: () => value != null, data: () => value == null ? undefined : structuredClone(value), get: k => k.split('.').reduce((v, key) => v?.[key], value) } }
     f.update = (p, value) => { f.docs[p] = value; for (const w of [...f.watchers]) if (w.p === p) w.callback(snapshot(p)) }
+    // Revocation must itself retain a valid schema and advance its revision:
+    // a malformed policy-denial test is not proof of live privacy enforcement.
+    f.setReplayVisible = visible => {
+      const p = `${base}/privacyPolicy/current`, before = f.docs[p]
+      const next = { ...before, revision: before.revision + 1,
+        domains: { ...before.domains, memory: { ...before.domains.memory, replayVisible: visible } } }
+      if (!window.__fixtureIsConsentPolicy(next, ownerId)) throw Error('SYNTHETIC_CANONICAL_POLICY_INVALID')
+      f.update(p, next)
+    }
     f.emitAuth = user => { auth.currentUser = user; for (const callback of [...f.authObservers]) callback(user) }
     f.call = async (name, data) => {
       f.calls.push({ name, data })
@@ -137,6 +154,11 @@ async function open(route = '/replay', settings = {}) {
   })
   const query = route === '/spatial/captured-reality' ? `?assetId=synthetic-accepted-place${settings.standalone ? '' : `&memoryId=${memoryId}`}` : route === '/life-movie' ? `?movieId=synthetic-movie&memoryId=${memoryId}` : `?memoryId=${memoryId}`
   await page.goto(origin + route + query)
+  await page.waitForFunction(() => !!window.__fixtureIsConsentPolicy && !!window.__fixture)
+  assert.equal(await page.evaluate(() => {
+    const f = window.__fixture, owner = f.auth.currentUser.uid
+    return window.__fixtureIsConsentPolicy(f.docs[`users/${owner}/privacyPolicy/current`], owner)
+  }), true, 'Synthetic positive playback must start from a valid canonical consent policy')
   return { page, context }
 }
 async function check(name, task) { await task(); cases.push({ name, passed: true }); console.log(`PASS ${name}`) }
@@ -247,7 +269,7 @@ try {
     await page.locator('.memorySeek').evaluate(input => { const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set; setter.call(input,'1500'); input.dispatchEvent(new Event('input',{bubbles:true})); input.dispatchEvent(new Event('change',{bubbles:true})) })
     await page.waitForFunction(() => Math.abs(document.querySelector('video').currentTime - 1.5) < .1)
     await page.screenshot({ path: path.join(output, 'synthetic-replay-desktop.png') })
-    await page.evaluate(() => { const f=window.__fixture,p=`users/${f.auth.currentUser.uid}/privacyPolicy/current`; f.update(p,{...f.docs[p],domains:{...f.docs[p].domains,memory:{mode:'granted',replayVisible:false}}}) })
+    await page.evaluate(() => window.__fixture.setReplayVisible(false))
     await assertDisposed(page); assert.equal(await page.getByText('Synthetic receipt source — not family media', { exact: true }).count(), 0)
     await context.close()
   })
@@ -363,12 +385,12 @@ try {
   for (const field of ['privacy','deleted','replayVisible']) await check(`Mounted query-memory captured route suppresses on ${field} withdrawal`, async () => {
     const { page, context } = await open('/spatial/captured-reality'); await page.locator('[data-testid="captured-reality-private-route"][data-state="ready"]').waitFor()
     assert.equal(await page.evaluate(() => window.__fixture.calls.filter(x => x.name === 'getCapturedRealityMeshUrl').length), 1, 'Private route must request live mesh authority before honoring explicit disabled-mesh transport fixture')
-    await page.evaluate(({field,memoryId})=>{const f=window.__fixture,base=`users/${f.auth.currentUser.uid}`,p=field==='replayVisible'?base+'/privacyPolicy/current':base+'/memories/'+memoryId; const old=f.docs[p];f.update(p,field==='replayVisible'?{...old,domains:{...old.domains,memory:{mode:'granted',replayVisible:false}}}:{...old,[field]:field==='privacy'?'hidden':true})},{field,memoryId})
+    await page.evaluate(({field,memoryId})=>{const f=window.__fixture,base=`users/${f.auth.currentUser.uid}`,p=field==='replayVisible'?base+'/privacyPolicy/current':base+'/memories/'+memoryId; const old=f.docs[p];if(field==='replayVisible')f.setReplayVisible(false);else f.update(p,{...old,[field]:field==='privacy'?'hidden':true})},{field,memoryId})
     await page.locator('[data-testid="captured-reality-private-route"][data-state="suppressed"]').waitFor();assert.ok(await page.evaluate(()=>window.__fixture.sceneDisposals>0));await context.close()
   })
   await check('Standalone captured place does not acquire a Replay-memory requirement',async()=>{
     const {page,context}=await open('/spatial/captured-reality',{standalone:true});await page.locator('[data-testid="captured-reality-private-route"][data-state="ready"]').waitFor()
-    await page.evaluate(()=>{const f=window.__fixture,p=`users/${f.auth.currentUser.uid}/privacyPolicy/current`;f.update(p,{...f.docs[p],domains:{...f.docs[p].domains,memory:{mode:'granted',replayVisible:false}}})})
+    await page.evaluate(()=>window.__fixture.setReplayVisible(false))
     assert.equal(await page.locator('[data-testid="captured-reality-private-route"]').getAttribute('data-state'),'ready');await context.close()
   })
   assert.deepEqual(errors,[], 'actual bundled React consumer has no page errors')
