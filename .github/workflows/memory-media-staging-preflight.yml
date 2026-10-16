@@ -18,6 +18,8 @@ on:
       - 'apps/functions/scripts/memory-media-staging-runtime-attestation.test.cjs'
       - 'apps/functions/scripts/memory-media-staging-request-log-proof.cjs'
       - 'apps/functions/scripts/memory-media-staging-request-log-proof.test.cjs'
+      - 'scripts/verify_functions_source_archive.py'
+      - 'scripts/test_verify_functions_source_archive.py'
       - '.github/workflows/memory-media-staging-preflight.yml'
   workflow_dispatch:
 
@@ -46,6 +48,11 @@ jobs:
           node --test apps/functions/scripts/memory-media-staging-source-check.test.cjs apps/functions/scripts/memory-media-staging-admission.test.cjs apps/functions/scripts/memory-media-staging-deployed-source.test.cjs apps/functions/scripts/memory-media-staging-cloud-collector.test.cjs apps/functions/scripts/memory-media-staging-provenance.test.cjs apps/functions/scripts/memory-media-staging-runtime-attestation.test.cjs apps/functions/scripts/memory-media-staging-request-log-proof.test.cjs
           node apps/functions/scripts/memory-media-staging-positive-proof.cjs --preflight
           test -z "${URAI_MEDIA_STAGING_WRITE_APPROVAL:-}"
+      - name: Verify fictional Firebase archive content boundaries without cloud access
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts -p 'test_verify_functions_source_archive.py' -v
+          python3 -m py_compile scripts/verify_functions_source_archive.py scripts/test_verify_functions_source_archive.py
       - name: Prove unapproved source registry blocks cloud startup
         env:
           URAI_MEDIA_STAGING_PROJECT: urai-media-staging
