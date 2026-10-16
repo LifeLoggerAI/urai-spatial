@@ -8,6 +8,7 @@ const { createHash, randomBytes } = require('node:crypto')
 const path = require('node:path')
 const { readFileSync } = require('node:fs')
 const { stripTypeScriptTypes } = require('node:module')
+const { assertExactStagingCheckout } = require('./memory-media-staging-source-check.cjs')
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const project = process.env.URAI_MEDIA_STAGING_PROJECT || ''
 const bucketName = process.env.URAI_MEDIA_STAGING_BUCKET || ''
@@ -32,6 +33,7 @@ if (preflight) {
   assert.ok(!process.env.FIREBASE_AUTH_EMULATOR_HOST && !process.env.FIRESTORE_EMULATOR_HOST
     && !process.env.FIREBASE_STORAGE_EMULATOR_HOST && !process.env.FUNCTIONS_EMULATOR,
     'STAGING_ACCEPTANCE_MUST_USE_REAL_BUCKET')
+  assertExactStagingCheckout(sourceSha)
   main().catch(error => { console.error('STAGING_MEDIA_ACCEPTANCE_FAILED:' + String(error.code || error.message).slice(0,90)); process.exitCode = 1 })
 }
 function fictionalWav() {
@@ -61,7 +63,8 @@ async function main(){
   const cases = [], cleanupErrors = []; let owner, foreign, receipt, problem, stagedMemoryId
   const evidence = {schema:'urai-staging-media-positive-v1',sourceSha,environment:'nonproduction-only',
     actualCloudBucketMetadata:false,actualNoPublicIam:false,positiveProxyPlaybackAccepted:false,
-    exactClientBlobAccepted:false,privateFamilyDataUsed:false,runResult:'NOT_ACCEPTED'}
+    exactClientBlobAccepted:false,sourceCheckoutVerified:true,deployedSourceExactHeadVerified:false,
+    privateFamilyDataUsed:false,runResult:'NOT_ACCEPTED'}
   const endpoint = 'https://' + region + '-' + project + '.cloudfunctions.net/'
   const userPath = uid => 'users/' + uid
   const idTokenFor = async user => {
@@ -86,15 +89,19 @@ async function main(){
   const selection = d => new URLSearchParams({memoryId:d.memoryId,receiptId:d.receiptId,
     authorityHash:d.authorityHash,expiresAt:String(d.expiresAt),storageGeneration:d.storageGeneration})
   const stream = async(d,token,headers={}) => fetch(endpoint+'streamMemoryMediaPlayback?'+selection(d),{
-    method:headers.method || 'GET',headers:{authorization:'Bearer '+token,
+    method:headers.method || 'GET',headers:{...(token ? { authorization:'Bearer '+token } : {}),
       origin:'https://'+project+'.web.app',...(headers.range?{range:headers.range}:{}) ,
       ...(headers.ifRange?{'if-range':headers.ifRange}:{})},
     cache:'no-store',redirect:'error',signal:AbortSignal.timeout(65000)
   })
-  const denied = async(resp,label) => {
+  const denied = async(resp,label,method='GET') => {
     assert.ok([401,403,404,409].includes(resp.status),label+': expected a current-authority denial')
-    const value=await resp.json()
-    assert.deepEqual(value,{error:'memory_media_playback_unavailable'},label+': generic denial only')
+    assert.equal(resp.headers.get('cache-control'),'private, no-store',label+': denied bytes cannot be cached')
+    if(method==='HEAD') assert.equal((await resp.arrayBuffer()).byteLength,0,label+': HEAD denial sent body')
+    else {
+      const value=await resp.json()
+      assert.deepEqual(value,{error:'memory_media_playback_unavailable'},label+': generic denial only')
+    }
     cases.push(label)
   }
   try{
@@ -157,6 +164,7 @@ async function main(){
     assert.equal(String(descriptor?.storageGeneration),String(receipt.storageGeneration))
     assert.equal(descriptor?.requiresAuthorization,true)
     assert.ok(!JSON.stringify(descriptor).includes(receipt.objectPath),'SOURCE_OBJECT_PATH_MUST_NOT_LEAK')
+    await denied(await stream(descriptor,undefined),'anonymous actor cannot reuse issued descriptor')
     const full=await stream(descriptor,ownerToken)
     assert.equal(full.status,200,'POSITIVE_AUTHENTICATED_STREAM_REQUIRED')
     assert.equal(full.headers.get('cache-control'),'private, no-store')
@@ -193,11 +201,14 @@ async function main(){
     evidence.exactClientBlobAccepted=true
     cases.push('actual owned-memory client accepted fixed authenticated Blob')
     await denied(await stream(descriptor,foreignToken),'foreign account cannot reuse descriptor')
+    await denied(await stream(descriptor,foreignToken,{range:'bytes=100-499'}),'foreign account ranged retry denied')
     await memoryDoc.delete()
     await denied(await stream(descriptor,ownerToken),'deleted source denies issued descriptor')
     await memoryDoc.set({ownerId:owner.uid,privacy:'private',sourceMedia:[{kind:'audio',mediaReceiptId:receiptId}]})
     await consentDoc.update({status:'revoked'})
     await denied(await stream(descriptor,ownerToken),'withdrawn C1 denies issued descriptor')
+    await denied(await stream(descriptor,ownerToken,{range:'bytes=100-499'}),'withdrawn C1 denies issued ranged retry')
+    await denied(await stream(descriptor,ownerToken,{method:'HEAD'}),'withdrawn C1 denies issued HEAD retry','HEAD')
     evidence.positiveProxyPlaybackAccepted=true
   } catch(error){ problem=error }
   finally {

@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'apps/functions/scripts/memory-media-staging-positive-proof.cjs'
+      - 'apps/functions/scripts/memory-media-staging-source-check.cjs'
+      - 'apps/functions/scripts/memory-media-staging-source-check.test.cjs'
       - '.github/workflows/memory-media-staging-preflight.yml'
   workflow_dispatch:
 
@@ -25,6 +27,8 @@ jobs:
         run: |
           set -euo pipefail
           node --check apps/functions/scripts/memory-media-staging-positive-proof.cjs
+          node --check apps/functions/scripts/memory-media-staging-source-check.cjs
+          node --test apps/functions/scripts/memory-media-staging-source-check.test.cjs
           node apps/functions/scripts/memory-media-staging-positive-proof.cjs --preflight
           test -z "${URAI_MEDIA_STAGING_WRITE_APPROVAL:-}"
       - name: Prove unapproved source registry blocks cloud startup
