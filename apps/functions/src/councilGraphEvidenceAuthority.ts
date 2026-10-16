@@ -29,7 +29,7 @@ export async function readCouncilGraphEvidence(db: FirebaseFirestore.Firestore, 
     const p = policy.data()
     // First validate owner and complete canonical shape. This fail-closed
     // type guard narrows Firestore's possibly undefined document value.
-    if (!policy.exists || !isCanonicalStoredPolicy(p, uid)) deny('COUNCIL_MODEL_CONSENT_REQUIRED')
+    if (!policy.exists || !isCanonicalStoredPolicy(p, uid)) return deny('COUNCIL_MODEL_CONSENT_REQUIRED')
     if (p.domains.models.modelContext !== true
       || !['granted', 'limited'].includes(p.domains.models.mode)
       || !['granted', 'limited'].includes(p.domains.identity.mode)
