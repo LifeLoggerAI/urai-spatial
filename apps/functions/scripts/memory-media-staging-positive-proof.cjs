@@ -7,7 +7,6 @@ const assert = require('node:assert/strict')
 const { createHash, randomBytes } = require('node:crypto')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
-const admin = require('firebase-admin')
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const project = process.env.URAI_MEDIA_STAGING_PROJECT || ''
 const bucketName = process.env.URAI_MEDIA_STAGING_BUCKET || ''
@@ -45,6 +44,7 @@ function fictionalWav() {
   return buffer
 }
 async function main(){
+  const admin = require('firebase-admin')
   const app = admin.initializeApp({ credential:admin.credential.applicationDefault(),projectId:project,storageBucket:bucketName })
   const auth = admin.auth(), db = admin.firestore(), bucket = admin.storage().bucket()
   const cases = [], cleanupErrors = []; let owner, foreign, receipt, problem
