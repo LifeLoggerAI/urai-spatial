@@ -1,41 +1,61 @@
 'use strict'
 const {test}=require('node:test')
 const assert=require('node:assert/strict')
-const {readTrustedControlPlane,projectPath}=require('./memory-media-staging-cloud-collector.cjs')
+const {readTrustedControlPlane,projectPath,readBoundedLogPages}=require('./memory-media-staging-cloud-collector.cjs')
 const base={project:'urai-media-staging',region:'us-central1',functionName:'streamMemoryMediaPlayback',
- expectedSha:'a'.repeat(40),approvedProject:'urai-media-staging',
- probeObservedByHarness:true,requestUrl:'https://us-central1-urai-media-staging.cloudfunctions.net/streamMemoryMediaPlayback?receiptId=x&authorityHash=y',
- traceId:'b'.repeat(32),probeStartedAt:'2026-10-16T18:00:00Z',probeEndedAt:'2026-10-16T18:00:10Z'}
-test('project and region must be exactly staging-scoped',()=>{
+ expectedSha:'a'.repeat(40),requestUrl:'https://us-central1-urai-media-staging.cloudfunctions.net/streamMemoryMediaPlayback?memoryId=fictional&receiptId=fictional&authorityHash=fictional&expiresAt=1840000000000&storageGeneration=1',
+ ownerIdToken:'x'.repeat(120)}
+test('rejects production and malformed project scopes',()=>{
  assert.throws(()=>projectPath('urai-4dc1d','us-central1','streamMemoryMediaPlayback'),/STAGING_CONTROL_PLANE_INPUT_REJECTED/)
  assert.throws(()=>projectPath('urai-media-staging','../prod','streamMemoryMediaPlayback'),/STAGING_CONTROL_PLANE_INPUT_REJECTED/)
 })
-test('unapproved project rejected without acquiring credentials',async()=>{
- let called=false
- await assert.rejects(readTrustedControlPlane({...base,approvedProject:'urai-other-staging',
-  getAccessToken:()=>{called=true;return 'x'.repeat(64)}}),/STAGING_PROJECT_NOT_APPROVED/)
- assert.equal(called,false)
+test('no caller approval, observer claim or provider injection can authorize acceptance',async()=>{
+ for(const extra of [{approvedProject:'urai-media-staging'}, {probeObservedByHarness:true},
+   {getAccessToken:()=>{throw Error('BAD_AUTH')}}, {fetcher:()=>{throw Error('BAD_HTTP')}}, {records:{verified:true}}]) {
+  await assert.rejects(readTrustedControlPlane({...base,...extra}),/STAGING_CALLER_EVIDENCE_REJECTED/)
+ }
 })
-test('missing harness-observed request rejected before credentials',async()=>{
- let called=false
- await assert.rejects(readTrustedControlPlane({...base,probeObservedByHarness:false,
-  getAccessToken:()=>{called=true;return 'x'.repeat(64)}}),/STAGING_PROBE_NOT_BOUND/)
- assert.equal(called,false)
+test('empty canonical registry rejects before acquiring cloud credentials or network',async()=>{
+ await assert.rejects(readTrustedControlPlane(base),/STAGING_PROJECT_NOT_APPROVED/)
 })
-test('permission denial fails closed without accepting media',async()=>{
- let calls=0
- await assert.rejects(readTrustedControlPlane({...base,getAccessToken:()=> 'x'.repeat(64),
-  fetcher:async()=>{calls++;return {ok:false,status:403}}}),/STAGING_CONTROL_PLANE_HTTP_403/)
- assert.equal(calls,1)
+test('bounded logging uses newest-first, source-bound filters and page tokens',async()=>{
+ const bodies=[]
+ const rows=await readBoundedLogPages(async body=>{
+  bodies.push(body)
+  return bodies.length===1?{entries:[{insertId:'fictional-1'}],nextPageToken:'next-page'}
+   :{entries:[{insertId:'fictional-2'}]}
+ },{project:'urai-media-staging',region:'us-central1',service:'streammemorymediaplayback',
+   revision:'streammemorymediaplayback-00001-abc',traceId:'b'.repeat(32),
+   startedAt:'2026-10-16T18:00:00Z',endedAt:'2026-10-16T18:00:10Z'})
+ assert.equal(rows.length,2)
+ assert.equal(bodies.length,2)
+ assert.equal(bodies[0].orderBy,'timestamp desc')
+ assert.equal(bodies[1].pageToken,'next-page')
+ assert.match(bodies[0].filter,/revision_name="streammemorymediaplayback-00001-abc"/)
+ assert.match(bodies[0].filter,/timestamp>=/)
 })
-test('incomplete Functions record fails before any further control-plane reads',async()=>{
- let calls=0
- await assert.rejects(readTrustedControlPlane({...base,getAccessToken:()=> 'x'.repeat(64),
-  fetcher:async()=>{calls++;return {ok:true,json:async()=>({name:'wrong-project'})}}}),
-  /STAGING_CONTROL_PLANE_INPUT_REJECTED/)
- assert.equal(calls,1)
+test('rejects repeated pagination tokens',async()=>{
+ await assert.rejects(readBoundedLogPages(async()=>({entries:[],nextPageToken:'same'}),{
+  project:'urai-media-staging',region:'us-central1',service:'streammemorymediaplayback',
+  revision:'streammemorymediaplayback-00001-abc',traceId:'b'.repeat(32),
+  startedAt:'2026-10-16T18:00:00Z',endedAt:'2026-10-16T18:00:10Z'
+ }),/STAGING_LOG_PAGE_TOKEN_REPEATED/)
 })
-test('operator JSON is not an accepted evidence input',async()=>{
- await assert.rejects(readTrustedControlPlane({...base,records:{verified:true},
-   approvedProject:undefined,getAccessToken:()=>{throw Error('SHOULD_NOT_CALL')}}),/STAGING_PROJECT_NOT_APPROVED/)
+test('rejects pagination truncated by the resource cap',async()=>{
+ let i=0
+ await assert.rejects(readBoundedLogPages(async()=>({entries:[],nextPageToken:'page'+(++i)}),{
+  project:'urai-media-staging',region:'us-central1',service:'streammemorymediaplayback',
+  revision:'streammemorymediaplayback-00001-abc',traceId:'b'.repeat(32),
+  startedAt:'2026-10-16T18:00:00Z',endedAt:'2026-10-16T18:00:10Z'
+ }),/STAGING_LOG_PAGINATION_INCOMPLETE/)
+})
+test('malformed page and time window fail closed',async()=>{
+ const a={project:'urai-media-staging',region:'us-central1',service:'streammemorymediaplayback',
+  revision:'streammemorymediaplayback-00001-abc',traceId:'b'.repeat(32),
+  startedAt:'2026-10-16T18:00:00Z',endedAt:'2026-10-16T18:00:10Z'}
+ await assert.rejects(readBoundedLogPages(async()=>({entries:'fake'}),a),/STAGING_LOG_PAGE_MALFORMED/)
+ await assert.rejects(readBoundedLogPages(async()=>({entries:[]}),{...a,endedAt:'2026-10-17T18:00:00Z'}),/STAGING_LOG_WINDOW_INVALID/)
+})
+test('missing options fail by contract rather than a runtime TypeError',async()=>{
+ await assert.rejects(readTrustedControlPlane(),/STAGING_CONTROL_PLANE_INPUT_REJECTED/)
 })
