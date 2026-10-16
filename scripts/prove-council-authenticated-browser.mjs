@@ -31,6 +31,21 @@ const emulatorApp=admin.initializeApp({projectId:project},'urai-council-emulator
 // back to a default Firebase Admin app or production credentials.
 const db=emulatorApp.firestore(),auth=emulatorApp.auth()
 await auth.createUser(owner);await auth.createUser(other)
+// Real selected-memory subscribers are fail-closed until the exact signed-in
+// owner has a valid canonical revisioned privacy policy. Match the isolated
+// full-journey emulator's canonical fixture rather than bypassing that gate.
+const domain=()=>({mode:'limited',retentionDays:365,precise:false,replayVisible:true,lifeMapVisible:true,modelContext:false,sharingEnabled:false,automationEnabled:false,likenessEnabled:false})
+const policyFor=uid=>({version:2,revision:1,ownerId:uid,
+  domains:{memory:{...domain(),mode:'granted',modelContext:true},location:domain(),
+    models:{...domain(),modelContext:true},exports:{...domain(),mode:'denied'},
+    workforce:{...domain(),mode:'paused'},identity:domain()},
+  enforcement:{state:'fully-enforced',jobId:null,affectedTargets:[],providerState:'not-applicable'}})
+for(const account of [owner,other]){
+  const policy=policyFor(account.uid)
+  await db.doc('users/'+account.uid+'/privacyPolicy/current').set(policy)
+  const saved=(await db.doc('users/'+account.uid+'/privacyPolicy/current').get()).data()
+  assert.deepEqual(saved,policy,'Isolated policy fixture must persist for the exact account')
+}
 function memory(id,title,year){
   return {ownerId:owner.uid,title,occurredAt:year+'-08-01T12:00:00.000Z',
     summary:'Fictional memory only',emotionalState:'calm',deleted:false,demo:false,
