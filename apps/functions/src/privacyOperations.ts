@@ -1300,8 +1300,17 @@ export const createDeletionRequest = functions.https.onCall(async (data, context
   const jobRef = db.doc(`users/${uid}/deletionJobs/${jobId}`)
   const queueRef = db.doc(`deletionQueue/${jobId}`)
   const receiptRef = db.doc(`users/${uid}/privacyReceipts/${receiptId}`)
+  // The operation identity must never be rebound to a different deletion scope
+  // or a forged/stale owner job. This applies both before and *inside* the
+  // Firestore transaction: another client may commit after the initial read.
+  const boundExisting = (value: JsonMap) => {
+    if (value.uid !== uid || value.jobId !== jobId || value.receiptId !== receiptId || value.scope !== scope) {
+      throw new functions.https.HttpsError('failed-precondition', 'DELETION_OPERATION_IDENTITY_MISMATCH')
+    }
+    return publicJobState(value)
+  }
   const existing = await jobRef.get()
-  if (existing.exists) return publicJobState(existing.data() as JsonMap)
+  if (existing.exists) return boundExisting(existing.data() as JsonMap)
   const executeAfter = scope === 'account'
     ? timestamp.fromMillis(Date.now() + ACCOUNT_GRACE_MS)
     : timestamp.fromMillis(Date.now())
@@ -1323,9 +1332,9 @@ export const createDeletionRequest = functions.https.onCall(async (data, context
     createdAt: now,
     updatedAt: now,
   }
-  await db.runTransaction(async (transaction) => {
+  return db.runTransaction(async (transaction) => {
     const [existingJob, fence] = await Promise.all([transaction.get(jobRef), transaction.get(exportFenceRef(uid))])
-    if (existingJob.exists) return
+    if (existingJob.exists) return boundExisting(existingJob.data() as JsonMap)
     const generation = fence.exists ? fence.get('generation') : 0
     if (!Number.isSafeInteger(generation) || generation < 0 || generation >= Number.MAX_SAFE_INTEGER
       || (fence.exists && !isRecord(fence.get('pendingDeletions')))) {
@@ -1337,8 +1346,8 @@ export const createDeletionRequest = functions.https.onCall(async (data, context
     transaction.create(receiptRef, { receiptId, ownerId: uid, kind: 'deletion', jobId, scope, result: initialState,
       retainedExceptions: record.retainedExceptions, createdAt: now, updatedAt: now })
     transaction.set(exportFenceRef(uid), { generation: generation + 1, pendingDeletions: { ...pending, [jobId]: true }, updatedAt: now })
+    return { jobId, state: initialState, receiptId, executeAfter: executeAfter.toDate().toISOString() }
   })
-  return { jobId, state: initialState, receiptId, executeAfter: executeAfter.toDate().toISOString() }
 })
 
 const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> = {

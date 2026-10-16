@@ -703,6 +703,83 @@ test('two concurrent deletion requests retain separate pending authority and inv
   assert.equal(f.records.get(`${prefix}/exportJobs/${fresh.jobId}`).exportFenceGeneration, 2)
 })
 
+test('deletion operation identity cannot be rebound to another deletion scope', async () => {
+  const f = fixture(), operationId = 'synthetic-bound-delete-operation'
+  const first = await f.handlers.createDeletionRequest({ operationId, scope: 'memories', confirmation: 'CONFIRM DELETE' }, f.context)
+  const repeat = await f.handlers.createDeletionRequest({ operationId, scope: 'memories', confirmation: 'CONFIRM DELETE' }, f.context)
+  assert.equal(repeat.jobId, first.jobId); assert.equal(repeat.receiptId, first.receiptId)
+  const ownerPath = `${prefix}/deletionJobs/${first.jobId}`
+  const initial = { ...f.records.get(ownerPath) }
+  await assert.rejects(
+    f.handlers.createDeletionRequest({ operationId, scope: 'intelligence', confirmation: 'CONFIRM DELETE' }, f.context),
+    { code: 'failed-precondition', message: 'DELETION_OPERATION_IDENTITY_MISMATCH' },
+  )
+  assert.deepEqual(f.records.get(ownerPath), initial)
+  assert.equal(f.records.get(ownerPath).scope, 'memories')
+  assert.deepEqual(Object.keys(f.records.get(fencePath).pendingDeletions), [first.jobId])
+})
+
+test('concurrent deletion scope switch is rejected by the transaction after a stale initial read', async () => {
+  const f = fixture(), operationId = 'synthetic-race-scope-operation'
+  const boundId = hash(`deletion:${uid}:${operationId}`).slice(0, 40)
+  const ownerPath = `${prefix}/deletionJobs/${boundId}`
+  const previousDoc = f.db.doc.bind(f.db)
+  let injected = false
+  f.db.doc = location => {
+    const ref = previousDoc(location)
+    if (location === ownerPath) {
+      const get = ref.get.bind(ref)
+      ref.get = async () => {
+        const before = await get()
+        if (!injected) {
+          injected = true
+          await f.handlers.createDeletionRequest({ operationId, scope: 'intelligence', confirmation: 'CONFIRM DELETE' }, f.context)
+        }
+        return before
+      }
+    }
+    return ref
+  }
+  await assert.rejects(
+    f.handlers.createDeletionRequest({ operationId, scope: 'memories', confirmation: 'CONFIRM DELETE' }, f.context),
+    { code: 'failed-precondition', message: 'DELETION_OPERATION_IDENTITY_MISMATCH' },
+  )
+  assert.equal(injected, true)
+  assert.equal(f.records.get(ownerPath).scope, 'intelligence')
+  assert.deepEqual(Object.keys(f.records.get(fencePath).pendingDeletions), [boundId])
+  assert.equal([...f.records.keys()].filter(k => k.startsWith('deletionQueue/')).length, 1)
+})
+
+test('concurrent identical deletion retry returns actual terminal job rather than an invented queued result', async () => {
+  const f = fixture(), operationId = 'synthetic-race-same-operation'
+  const boundId = hash(`deletion:${uid}:${operationId}`).slice(0, 40)
+  const ownerPath = `${prefix}/deletionJobs/${boundId}`
+  const previousDoc = f.db.doc.bind(f.db)
+  let injected = false
+  f.db.doc = location => {
+    const ref = previousDoc(location)
+    if (location === ownerPath) {
+      const get = ref.get.bind(ref)
+      ref.get = async () => {
+        const before = await get()
+        if (!injected) {
+          injected = true
+          await f.handlers.createDeletionRequest({ operationId, scope: 'memories', confirmation: 'CONFIRM DELETE' }, f.context)
+          f.records.set(ownerPath, { ...f.records.get(ownerPath), state: 'completed' })
+        }
+        return before
+      }
+    }
+    return ref
+  }
+  const result = await f.handlers.createDeletionRequest({ operationId, scope: 'memories', confirmation: 'CONFIRM DELETE' }, f.context)
+  assert.equal(injected, true)
+  assert.equal(result.jobId, boundId)
+  assert.equal(result.state, 'completed')
+  assert.deepEqual(Object.keys(f.records.get(fencePath).pendingDeletions), [boundId])
+  assert.equal([...f.records.keys()].filter(k => k.startsWith('deletionQueue/')).length, 1)
+})
+
 test('interrupted scoped-memory deletion is reported as unverified and retains its privacy fence', async () => {
   const f = fixture(), deletion = await f.handlers.createDeletionRequest({
     operationId: 'synthetic-stale-memory-deletion', scope: 'memories', confirmation: 'CONFIRM DELETE',
