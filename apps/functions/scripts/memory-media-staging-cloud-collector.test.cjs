@@ -1,6 +1,8 @@
 'use strict'
 const {test}=require('node:test')
 const assert=require('node:assert/strict')
+const {readFileSync}=require('node:fs')
+const {join}=require('node:path')
 const {readTrustedControlPlane,projectPath,readBoundedLogPages}=require('./memory-media-staging-cloud-collector.cjs')
 const base={project:'urai-media-staging',region:'us-central1',functionName:'streamMemoryMediaPlayback',
  expectedSha:'a'.repeat(40),requestUrl:'https://us-central1-urai-media-staging.cloudfunctions.net/streamMemoryMediaPlayback?memoryId=fictional&receiptId=fictional&authorityHash=fictional&expiresAt=1840000000000&storageGeneration=1',
@@ -58,4 +60,14 @@ test('malformed page and time window fail closed',async()=>{
 })
 test('missing options fail by contract rather than a runtime TypeError',async()=>{
  await assert.rejects(readTrustedControlPlane(),/STAGING_CONTROL_PLANE_INPUT_REJECTED/)
+})
+
+test('positive staging runner uses independent collector before fixture revocation',()=>{
+ const source=readFileSync(join(__dirname,'memory-media-staging-positive-proof.cjs'),'utf8')
+ assert.ok(source.includes("const { readTrustedControlPlane } = require('./memory-media-staging-cloud-collector.cjs')"))
+ const probe=source.indexOf('await readTrustedControlPlane({')
+ const revoked=source.indexOf("await consentDoc.update({status:'revoked'})")
+ assert.ok(probe>0&&revoked>probe,'attestation must precede revoked fixture')
+ assert.ok(source.includes('deployedSourceExactHeadVerified=attestation.verified===true'))
+ assert.ok(!source.includes('const proof = undefined')&&!source.includes('verifyDeployedSource()'))
 })
