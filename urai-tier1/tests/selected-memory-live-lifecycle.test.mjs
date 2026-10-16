@@ -267,8 +267,9 @@ test('explicitly disclosed demo never starts a private source subscription', () 
 test('global Memory withdrawal clears mounted Focus without changing the memory record', () => {
   const h = harness()
   assert.equal(h.signIn('account-a').status, 'loading')
-  assert.equal(h.emit(0, h.data()).status, 'ready')
   const previousMemory = h.data()
+  const previousMemoryContents = JSON.stringify(previousMemory)
+  assert.equal(h.emit(0, previousMemory).status, 'ready')
   const previousPolicy = h.policy()
   const denied = h.emitPolicy({
     ...previousPolicy, revision: 2,
@@ -277,7 +278,8 @@ test('global Memory withdrawal clears mounted Focus without changing the memory 
   assert.equal(denied.status, 'unauthorized')
   assert.equal(denied.memory, null)
   assert.equal(h.subscriptions[0].stopped, true)
-  assert.deepEqual(h.data(), previousMemory, 'Memory document was never changed')
+  assert.deepEqual(h.data(), previousMemory, 'Current source Memory document remains unchanged')
+  assert.equal(JSON.stringify(previousMemory), previousMemoryContents, 'Captured original Memory document remains unchanged')
   assert.equal(h.emit(0, previousMemory).memory, null, 'Queued memory data must not restore a revoked selection')
 })
 

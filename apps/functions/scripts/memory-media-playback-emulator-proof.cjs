@@ -2,6 +2,13 @@
 const assert = require('node:assert/strict')
 const crypto = require('node:crypto')
 const admin = require('firebase-admin')
+const { createRequire } = require('node:module')
+const path = require('node:path')
+// Resolve the installed, production-client Firebase SDK without adding a dependency.
+const tier1Require = createRequire(path.resolve(__dirname, '../../../urai-tier1/package.json'))
+const { initializeApp, deleteApp } = tier1Require('firebase/app')
+const { getAuth, connectAuthEmulator, signInWithEmailAndPassword, signOut } = tier1Require('firebase/auth')
+const { getStorage, connectStorageEmulator, ref, getBytes, getMetadata, getDownloadURL, uploadBytes } = tier1Require('firebase/storage')
 const project = 'demo-memory-media-playback'
 for (const [key, value] of Object.entries({ GCLOUD_PROJECT: project, FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9549',
   FIRESTORE_EMULATOR_HOST: '127.0.0.1:8249', STORAGE_EMULATOR_HOST: 'http://127.0.0.1:9249' })) {
@@ -10,11 +17,12 @@ for (const [key, value] of Object.entries({ GCLOUD_PROJECT: project, FIREBASE_AU
 admin.initializeApp({ projectId: project, storageBucket: `${project}.appspot.com` })
 const db = admin.firestore(), sha = value => crypto.createHash('sha256').update(value).digest('hex')
 const base = `http://127.0.0.1:5549/${project}/us-central1`, cases = []
-async function signup() {
+async function signup(email) {
+  const password = 'Only_Fictional_Emulator_2026!'
   const response = await fetch('http://127.0.0.1:9549/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fictional-emulator-key', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ returnSecureToken: true }), signal: AbortSignal.timeout(10000) })
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, returnSecureToken: true }), signal: AbortSignal.timeout(10000) })
   assert.equal(response.status, 200); const value = await response.json()
-  assert.ok(value.localId && value.idToken); return value
+  assert.ok(value.localId && value.idToken); return { ...value, email, password }
 }
 async function call(name, data, token) {
   const response = await fetch(`${base}/${name}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -24,8 +32,45 @@ async function call(name, data, token) {
 function denied(result, status, label) {
   assert.equal(result.body.error?.status, status, label); assert.ok(result.response.status >= 400, label); cases.push(label)
 }
+async function proveNativeStorageRules(owner, foreign, receipt, bytes) {
+ // These calls execute the unmocked production Firebase Auth and Storage SDKs
+ // against local emulator Auth/Storage + the deployed-in-test deny-all rules.
+ // Admin source registration succeeds only through its existing trusted callable.
+ const app = initializeApp({ apiKey: 'fictional-emulator-key', authDomain: project + '.firebaseapp.com',
+  projectId: project, storageBucket: project + '.appspot.com', appId: '1:123456789:web:media-rules-proof' },
+  'urai-fictional-native-storage-rules')
+ const auth = getAuth(app), storage = getStorage(app)
+ connectAuthEmulator(auth, 'http://127.0.0.1:9549', { disableWarnings: true })
+ connectStorageEmulator(storage, '127.0.0.1', 9249)
+ const object = ref(storage, receipt.objectPath)
+ const requiredDenial = async (work, label, signedIn) => {
+  await assert.rejects(work, error => {
+   const code = String(error?.code || '')
+   assert.ok(signedIn ? code === 'storage/unauthorized' : ['storage/unauthorized', 'storage/unauthenticated'].includes(code),
+    label + ' must fail for actual Storage rules, not transport or SDK errors: ' + code)
+   return true
+  }, label)
+  cases.push(label)
+ }
+ try {
+  await signInWithEmailAndPassword(auth, owner.email, owner.password)
+  assert.equal(auth.currentUser?.uid, owner.localId, 'SDK sign-in selected wrong fictional source owner')
+  await requiredDenial(getMetadata(object), 'real Storage SDK owner metadata denied by rules', true)
+  await requiredDenial(getBytes(object), 'real Storage SDK owner direct private bytes denied by rules', true)
+  await requiredDenial(getDownloadURL(object), 'real Storage SDK rejects portable download URL', true)
+  const deniedUpload=ref(storage, 'private-memory-media/fictional-direct-write-denied')
+  await requiredDenial(uploadBytes(deniedUpload, bytes.subarray(0, 128), { contentType: 'video/mp4' }),
+   'real Storage SDK owner direct upload denied by rules', true)
+  await signOut(auth)
+  await requiredDenial(getBytes(object), 'real Storage SDK anonymous private bytes denied by rules', false)
+  await signInWithEmailAndPassword(auth, foreign.email, foreign.password)
+  assert.equal(auth.currentUser?.uid, foreign.localId, 'SDK foreign Auth session did not switch')
+  await requiredDenial(getBytes(object), 'real Storage SDK foreign actor private bytes denied by rules', true)
+ } finally { await signOut(auth).catch(() => {}); await deleteApp(app) }
+}
+
 async function main() {
-  const owner = await signup(), foreign = await signup(), uid = owner.localId
+  const owner = await signup('fictional-media-owner@example.invalid'), foreign = await signup('fictional-media-foreign@example.invalid'), uid = owner.localId
   const memoryId = 'fictional-native-memory', userPath = `users/${uid}`, memoryPath = `${userPath}/memories/${memoryId}`
   const sourceReceiptRef = 'psr_fictional_native_capture_000001', sourceReceiptPath = `uraiPrivateSourceReceipts/${sha(sourceReceiptRef)}`
   const policyPath = `${userPath}/privacyPolicy/current`, consentPath = `consentRecords/${uid}_memory_storage`
@@ -56,6 +101,7 @@ async function main() {
     assert.equal(metadata.generation, receipt.storageGeneration); assert.equal(metadata.metadata.ownerHash, sha(uid))
     assert.equal(metadata.metadata.memoryHash, sha(memoryId)); assert.equal(sha(storedBytes), receipt.sha256); assert.deepEqual(storedBytes, bytes)
     cases.push('actual receipt-only upload and exact stored generation bytes')
+    await proveNativeStorageRules(owner, foreign, receipt, bytes)
     // These isolated catalog rows are deliberately fictional approval-shaped
     // fixtures. They test the loaded entry's selected-memory authority; they
     // do not certify a source, place, reconstruction or private runtime bytes.
@@ -119,7 +165,9 @@ async function main() {
     denied(await authority(), 'UNAUTHENTICATED', 'revoked real emulator token')
     proof = { proof: 'PASS', project, sourceCommit: process.env.URAI_EXACT_HEAD || null,
       actualFunctionsLoaded: true, actualAuthLoaded: true, actualFirestoreLoaded: true, actualStorageLoaded: true,
-      actualReceiptAndStoredByteBinding: true, bucketPrivacyMetadataUnavailable, nativePositivePlaybackAccepted: false,
+      actualReceiptAndStoredByteBinding: true, nativeStorageSdkRulesBoundaryChecked: true,
+      directOwnerReadWriteAndPortableUrlDenied: true, foreignAndAnonymousDirectReadDenied: true,
+      bucketPrivacyMetadataUnavailable, nativePositivePlaybackAccepted: false,
       actualCapturedEntryMemoryAuthority: true, capturedAuthorityCatalogFixturesOnly: true, capturedPrivateRuntimeAccepted: false,
       rangeAndMidStreamEvidence: 'separate actual compiled handlers and real Node HTTP fixtures', cases: cases.length, passedCases: cases,
       syntheticFixture: true, visualOrMovieAcceptance: false, providerOrDeployedAcceptance: false, noProductionOrPrivateFamilyData: true }

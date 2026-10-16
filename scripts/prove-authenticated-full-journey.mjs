@@ -525,13 +525,101 @@ async function proveMapFocusReplayReturn(page,uid){
  mark('J8',result.journey.return)
  await screenshot(page,'J8-real-control-return-home')
 }
+/** One actual Next Council UI request held by a fictional HTTP interceptor.
+ * This verifies client publication races across live Firebase auth/consent.
+ * It is NOT a paid provider call or backend provider-delivery acceptance.
+ */
+async function holdActualCouncilResponse(context, scenario) {
+ const page=await context.newPage()
+ const syntheticAnswer='FICTIONAL_LATE_COUNCIL_RESPONSE_MUST_NOT_RENDER_'+scenario
+ let releaseRequest
+ const held=new Promise(resolve=>{releaseRequest=resolve})
+ let intercepted=0, released=false
+ let interceptedReady
+ const arrived=new Promise(resolve=>{interceptedReady=resolve})
+ try {
+  await page.route('**/api/urai/council/anthropic',async route=>{
+   intercepted++
+   interceptedReady()
+   try {
+    await held
+    await route.fulfill({status:200,contentType:'application/json',
+     headers:{'Cache-Control':'private, no-store, max-age=0'},
+     body:JSON.stringify({provider:'anthropic',model:'fictional-browser-intercept',
+      message:syntheticAnswer,caption:syntheticAnswer,
+      disclosure:'Isolated fictional HTTP fixture; no model processed this request.',
+      suggestedActions:[]})})
+    released=true
+   } catch { /* Browser abort is a permitted suppression path. */ }
+  })
+  await page.goto(origin+'/council?memoryId=fictional-memory-a',{waitUntil:'domcontentloaded'})
+  const panel=page.locator('[data-testid="urai-council-route"] .councilConversation')
+  await panel.waitFor({state:'visible',timeout:90000})
+  await panel.getByText(/Selected Memory Star: Fictional Lake/).waitFor({timeout:90000})
+  const options=await panel.locator('#urai-council-provider option').allTextContents()
+  assert.ok(options.some(value=>/Anthropic/.test(value)),
+   'The isolated client-only Anthropic request flag must be enabled for real Council UI proof')
+  await panel.locator('#urai-council-provider').selectOption('anthropic')
+  await panel.locator('#urai-council-message').fill('Which fictional lake was visited?')
+  const checks=panel.locator('input[type="checkbox"]')
+  assert.ok(await checks.count()>=4)
+  await checks.nth(0).check()
+  assert.equal(await panel.getByRole('button',{name:'Ask Council'}).isDisabled(),true)
+  await checks.nth(3).check()
+  assert.equal(await panel.getByRole('button',{name:'Ask Council'}).isEnabled(),true)
+  const outbound=page.waitForRequest(request=>new URL(request.url()).pathname==='/api/urai/council/anthropic',{timeout:60000})
+  await panel.getByRole('button',{name:'Ask Council'}).click()
+  const request=await outbound
+  await arrived
+  const payload=request.postDataJSON()
+  assert.equal(request.method(),'POST')
+  assert.match(request.headers().authorization||'',/^Bearer /,
+   'Real Firebase Auth must be attached to the synthetic request')
+  assert.equal(payload.memorySelection,'fictional-memory-a')
+  assert.equal(payload.graphShareConsent,true)
+  assert.equal(payload.aiProcessingConsent,true)
+  assert.deepEqual(payload.context,[],
+   'Selected memory cannot leak unrelated preceding chat history')
+  assert.equal(intercepted,1,'Exactly one held outbound request expected')
+  return {
+   page, panel, scenario,
+   release:()=>releaseRequest(),
+   async assertSuppressed(expectedNotice){
+    if(expectedNotice)await panel.getByText(expectedNotice).waitFor({timeout:45000})
+    releaseRequest()
+    await page.waitForTimeout(400)
+    assert.equal(intercepted,1)
+    assert.equal(await panel.locator('.councilResponse').count(),0,
+     'A formerly authorized response cannot reappear after the actor or policy changed')
+    const visible=await page.locator('body').innerText()
+    assert.ok(!visible.includes(syntheticAnswer),'Held private response leaked to original React app')
+    assert.ok(!visible.includes('Selected Memory Star: Fictional Lake'),
+     'Prior source title remained visible after authorization change')
+    assert.equal(await panel.locator('input[type="checkbox"]').nth(0).isChecked(),false,
+     'Processing consent must be reset')
+    const graphChecks=panel.locator('input[type="checkbox"]')
+    assert.equal(await graphChecks.nth(3).isChecked(),false,'Private disclosure consent must be reset')
+    return {scenario,realNextCouncilUI:true,currentAuthFirestoreSubscribers:true,
+     syntheticInterceptedCalls:intercepted,paidProviderCalls:0,replyRendered:false,
+     networkReplyFulfilled:released,consentReset:true}
+   },
+   async close(){releaseRequest();await page.close()}
+  }
+ } catch(error){releaseRequest();await page.close().catch(()=>{});throw error}
+}
+
 async function provePrivacyAfterJourney(page,accounts,db,policy){
+ const actorSwitchCouncil=await holdActualCouncilResponse(page.context(),'cross-account')
  await page.goto(origin+'/login')
  await page.getByRole('button',{name:'Sign out'}).click()
  await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:30000})
  await login(page,accounts[1].email,accounts[1].password,accounts[1].uid)
  await page.getByTestId('urai-e2e-owner-read').click({timeout:15000})
  await page.getByTestId('urai-e2e-owner-read-result').getByText('permission-denied').waitFor({timeout:30000})
+ const switchProof=await actorSwitchCouncil.assertSuppressed(/Selected Memory Star: Private memory consent authority is unavailable/)
+ mark('J9-council-real-app-actor-switch',switchProof)
+ await screenshot(actorSwitchCouncil.page,'J9-council-real-app-actor-switch')
+ await actorSwitchCouncil.close()
  await page.goto(origin+'/life-map')
  const map=page.getByTestId('urai-true-3d-life-map')
  await map.waitFor({state:'visible',timeout:90000})
@@ -556,6 +644,7 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  await page.getByRole('button',{name:'Sign out'}).click()
  await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:30000})
  await login(page,accounts[0].email,accounts[0].password,accounts[0].uid)
+ const consentCouncil=await holdActualCouncilResponse(page.context(),'canonical-memory-consent-withdrawal')
  // Two REAL, authenticated browser tabs retain visible source in the
  // mounted Focus and Replay components during the original consent callable.
  // A fresh route after withdrawal alone would not establish live revocation.
@@ -668,6 +757,12 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
   staleCallbackDenied:true,reloadDenied:true
  }
  mark('J9-mounted-Focus-Replay-withdrawal',result.journey.privacy.revocation.mounted)
+ const withdrawCouncilProof=await consentCouncil.assertSuppressed(/Selected Memory Star: Memory access is not currently permitted/)
+ await screenshot(consentCouncil.page,'J9-council-real-app-canonical-withdrawal')
+ await consentCouncil.close()
+ result.journey.privacy.revocation.councilAsyncContextInvalidationVerified=true
+ result.journey.privacy.revocation.councilRealApp={actorSwitch:switchProof,canonicalWithdrawal:withdrawCouncilProof}
+ mark('J9-council-real-app-canonical-withdrawal',withdrawCouncilProof)
 
  // Preserve one honest test of the existing Replay consumer after global
  // denial. Never mutate the memory's own consentState with Admin to make it pass.
@@ -691,6 +786,16 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
   occurredAt:'1989-08-01T12:00:00.000Z',replayAvailable:false}
  disposableDocs.push(ritualPath)
  await db.doc(ritualPath).set(ritual)
+ // This journey can exceed the server's five-minute reauthentication window.
+ // Reauthenticate using the original LoginClient before destructive operations.
+ const signInsBefore=result.authTransport.filter(item=>item.status===200).length
+ await page.goto(origin+'/login',{waitUntil:'domcontentloaded'})
+ await page.getByRole('button',{name:'Sign out'}).click({timeout:15000})
+ await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:30000})
+ await login(page,accounts[0].email,accounts[0].password,accounts[0].uid)
+ assert.equal(result.authTransport.filter(item=>item.status===200).length,signInsBefore+1,
+  'J9G owner reauthentication must create a fresh successful browser Auth response')
+ mark('J9G-real-reauth',{source:'original-LoginClient-Firebase-SDK',signedOut:true,privilegeOverride:false})
  // Prove the original authenticated product deletion, not fixture teardown.
  // This deliberately does not remove the independent Council/media NO-GO gate.
  await page.goto(origin+'/privacy-controls',{waitUntil:'domcontentloaded'})
@@ -714,8 +819,10 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  const deletionJobId=createHash('sha256').update('deletion:'+accounts[0].uid+':'+operationId).digest('hex').slice(0,40)
  const deletionReceiptId=createHash('sha256').update('deletion-receipt:'+accounts[0].uid+':'+operationId).digest('hex').slice(0,40)
  const initialResponse=await emittedResponse
- assert.equal(initialResponse.status(),200,'J9G initial callable did not authorize the original owner')
- const initialEnvelope=await initialResponse.json()
+ const initialEnvelope=await initialResponse.json().catch(()=>null)
+ const code=typeof initialEnvelope?.error?.status==='string' ? initialEnvelope.error.status.replace(/[^A-Z_]/g,'').slice(0,48) : null
+ assert.equal(initialResponse.status(),200,'J9G current-owner deletion callable rejected: '+JSON.stringify({httpStatus:initialResponse.status(),code,
+  recentAuthRequired:String(initialEnvelope?.error?.message||'')==='RECENT_REAUTHENTICATION_REQUIRED'}))
  const initialResult=initialEnvelope?.result ?? initialEnvelope?.data
  assert.equal(initialResult?.jobId,deletionJobId,'J9G actual server-issued job differs from bounded operation identity')
  assert.equal(initialResult?.receiptId,deletionReceiptId,'J9G initial server-issued receipt identity differs')
@@ -882,7 +989,13 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
   focusDenied:true,focusReloadDenied:true,crossOwnerReplayDenied:true,ownerReauthenticationDenied:true,
   unrelatedRitualPreservedAfterReauthentication:true}
  mark('J9G-canonical-deletion',result.journey.privacy.deletion)
- throw Error('J9_INCOMPLETE: stale Council asynchronous response and previously issued private-media capability revocation remain unaccepted')
+ // Council now has its own original Next UI + canonical callable race proof.
+ // The memory-media suite proves bounded source/HTTP revocation separately,
+ // but this journey still lacks a single-source native positive Storage IAM
+ // playback acceptance; do not silently convert a focused success into J9.
+ assert.equal(result.journey.privacy.revocation.councilAsyncContextInvalidationVerified,true)
+ mark('J9-council-async-client-accepted',{scenarios:2,providerCalls:0,scope:'original-app-browser-only'})
+ throw Error('J9_INCOMPLETE: original-app Council client revocation proven; native positive private-media playback and combined admission remain unverified')
 }
 
 await mkdir(out,{recursive:true})
@@ -949,7 +1062,7 @@ try{
  await db.doc(orphanEvent).set({userId:'fictional-urai-a',type:'memory',title:'Unresolved Fictional Event',
    memoryId:'missing-fictional-memory',sourceType:'manual_seed',occurredAt:'1995-08-01T12:00:00.000Z',replayAvailable:true})
 
- server=spawn('pnpm',['--dir','urai-tier1','exec','next','dev','--hostname','127.0.0.1','--port','4173'],{env:{...process.env,NODE_ENV:'development',NEXT_TELEMETRY_DISABLED:'1'},stdio:'ignore'})
+ server=spawn('pnpm',['--dir','urai-tier1','exec','next','dev','--hostname','127.0.0.1','--port','4173'],{env:{...process.env,NODE_ENV:'development',NEXT_TELEMETRY_DISABLED:'1',NEXT_PUBLIC_URAI_COUNCIL_ANTHROPIC_ENABLED:'true',URAI_COUNCIL_ANTHROPIC_ENABLED:'false'},stdio:'ignore'})
  let live=false
  for(let i=0;i<110;i++){if(server.exitCode!==null)throw Error('Next server exited');try{let r=await fetch(origin+'/login',{signal:AbortSignal.timeout(3500)});if(r.ok){live=true;break}}catch{}await wait(1500)}
  assert.ok(live,'Real Next application not ready')

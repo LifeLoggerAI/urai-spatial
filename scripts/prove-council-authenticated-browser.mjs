@@ -31,6 +31,21 @@ const emulatorApp=admin.initializeApp({projectId:project},'urai-council-emulator
 // back to a default Firebase Admin app or production credentials.
 const db=emulatorApp.firestore(),auth=emulatorApp.auth()
 await auth.createUser(owner);await auth.createUser(other)
+// Real selected-memory subscribers are fail-closed until the exact signed-in
+// owner has a valid canonical revisioned privacy policy. Match the isolated
+// full-journey emulator's canonical fixture rather than bypassing that gate.
+const domain=()=>({mode:'limited',retentionDays:365,precise:false,replayVisible:true,lifeMapVisible:true,modelContext:false,sharingEnabled:false,automationEnabled:false,likenessEnabled:false})
+const policyFor=uid=>({version:2,revision:1,ownerId:uid,
+  domains:{memory:{...domain(),mode:'granted',modelContext:true},location:domain(),
+    models:{...domain(),modelContext:true},exports:{...domain(),mode:'denied'},
+    workforce:{...domain(),mode:'paused'},identity:domain()},
+  enforcement:{state:'fully-enforced',jobId:null,affectedTargets:[],providerState:'not-applicable'}})
+for(const account of [owner,other]){
+  const policy=policyFor(account.uid)
+  await db.doc('users/'+account.uid+'/privacyPolicy/current').set(policy)
+  const saved=(await db.doc('users/'+account.uid+'/privacyPolicy/current').get()).data()
+  assert.deepEqual(saved,policy,'Isolated policy fixture must persist for the exact account')
+}
 function memory(id,title,year){
   return {ownerId:owner.uid,title,occurredAt:year+'-08-01T12:00:00.000Z',
     summary:'Fictional memory only',emotionalState:'calm',deleted:false,demo:false,
@@ -49,14 +64,6 @@ await db.doc('users/'+owner.uid+'/lifeMapEvents/star-a').set({userId:owner.uid,t
 await db.doc('users/'+owner.uid+'/lifeMapEvents/star-b').set({userId:owner.uid,type:'memory',title:'Map label B',summary:'Fictional map event',memoryId:'memory-b',sourceType:'manual_seed',occurredAt:'1996-08-01T12:00:00.000Z',replayAvailable:true})
 await db.doc('users/'+owner.uid+'/lifeMapEvents/orphan').set({userId:owner.uid,type:'memory',title:'Unresolved private event',summary:'Not a memory',memoryId:'no-such-memory',sourceType:'manual_seed',occurredAt:'1990-08-01T12:00:00.000Z',replayAvailable:true})
 await db.doc('users/'+other.uid+'/lifeMapEvents/foreign').set({userId:other.uid,type:'memory',title:"Other owner private constellation",summary:'Other private data',sourceType:'manual_seed',occurredAt:'1999-08-01T12:00:00.000Z'})
-const consentDomains=Object.fromEntries(['memory','location','models','exports','workforce','identity'].map(domain=>[domain,{
-  mode:'granted',retentionDays:365,precise:false,replayVisible:true,lifeMapVisible:true,
-  modelContext:false,sharingEnabled:false,automationEnabled:false,likenessEnabled:false,
-}]))
-await db.doc('users/'+owner.uid+'/privacyPolicy/current').set({
-  version:2,revision:1,ownerId:owner.uid,domains:consentDomains,
-  enforcement:{state:'fully-enforced',jobId:'council-browser-enforcement',affectedTargets:['memory'],providerState:'not-applicable'},
-})
 
 const entry=[
  "import React,{useEffect,useState} from 'react'",
@@ -154,7 +161,7 @@ try{
    await page.getByText(/Sign in to open this private memory/).waitFor({timeout:30000})
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Beta 1996'))
    await page.evaluate(()=>window.__uraiProofOther())
-   await page.getByText(/Private memory consent authority is unavailable/).waitFor({timeout:30000})
+   await page.getByText(/Selected memory could not be found/).waitFor({timeout:30000})
    await page.waitForFunction(()=>{const el=document.querySelector('[data-proof-map-nodes]');return el&&JSON.parse(el.getAttribute('data-proof-map-nodes')||'[]').every(n=>n.id!=='star-a'&&n.id!=='star-b')})
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Beta 1996'))
    // The UI must hide private data, but Firestore must also refuse a direct
@@ -184,6 +191,82 @@ try{
      correctedMemoryPersistedAcrossActorSwitchAndReauthentication:true,
      screenshotBytes:image.length,screenshotSha256:createHash('sha256').update(image).digest('hex')})
   }finally{await context.close()}
+ }
+ // Held synthetic HTTP response exercises the actual compiled React and
+ // Firebase Auth/Firestore clients without external providers or paid calls.
+ // Server-side post-dispatch consent and actor checks have separate tests.
+ evidence.inFlight=[]
+ for(const scenario of ['memory-consent-withdrawn','account-switched']){
+  await memoryA.set(memory('memory-a','Lake Alpha 1988','1988'))
+  await db.doc('users/'+owner.uid+'/privacyPolicy/current').set(policyFor(owner.uid))
+  const context=await browser.newContext({viewport:{width:960,height:760},reducedMotion:'reduce'})
+  let releaseRequest
+  const gate=new Promise(resolve=>{releaseRequest=resolve})
+  let intercepted=0,transportOutcome='not-released'
+  const privateReply='FICTIONAL_HELD_COUNCIL_REPLY_MUST_NOT_APPEAR_'+scenario
+  try{
+   await context.route('**/api/urai/council/anthropic',async route=>{
+    intercepted++
+    try{
+     await gate
+     await route.fulfill({status:200,contentType:'application/json',
+      headers:{'Cache-Control':'private, no-store'},
+      body:JSON.stringify({provider:'anthropic',model:'fictional-intercept-only',message:privateReply,
+       caption:privateReply,disclosure:'Synthetic intercept; no real provider called.',suggestedActions:[]})})
+     transportOutcome='fulfilled'
+    }catch{transportOutcome='aborted'}
+   })
+   const page=await context.newPage(),errors=[]
+   page.on('pageerror',error=>errors.push(String(error.message).slice(0,300)))
+   await page.addInitScript(value=>{window.__uraiFictionalAccounts=value},{owner,other})
+   await page.goto('http://127.0.0.1:4176/?memoryId=memory-a',{waitUntil:'domcontentloaded'})
+   await page.locator('[data-proof-auth="ready"]').waitFor({timeout:30000})
+   await page.getByText(/Selected Memory Star: Lake Alpha 1988/).waitFor({timeout:30000})
+   const checks=page.locator('.councilConversation input[type="checkbox"]')
+   await page.locator('#urai-council-message').fill('Which lake was visited?')
+   await checks.nth(0).check()
+   await checks.nth(3).check()
+   const requested=page.waitForRequest(req=>new URL(req.url()).pathname==='/api/urai/council/anthropic',{timeout:30000})
+   await page.getByRole('button',{name:'Ask Council'}).click()
+   const request=await requested,sent=request.postDataJSON()
+   assert.equal(request.method(),'POST')
+   assert.match(request.headers().authorization||'',/^Bearer /)
+   assert.equal(sent.memorySelection,'memory-a')
+   assert.equal(sent.graphShareConsent,true)
+   assert.equal(sent.aiProcessingConsent,true)
+   assert.deepEqual(sent.context,[],'Private selected evidence must not inherit earlier conversation')
+   if(scenario==='memory-consent-withdrawn'){
+    const withdrawn=policyFor(owner.uid)
+    withdrawn.revision=2
+    withdrawn.domains.memory.mode='denied'
+    await db.doc('users/'+owner.uid+'/privacyPolicy/current').set(withdrawn)
+    await page.getByText(/Selected Memory Star: Memory access is not currently permitted/).waitFor({timeout:30000})
+   }else{
+    await page.evaluate(()=>window.__uraiProofOther())
+    await page.getByText(/Selected memory could not be found/).waitFor({timeout:30000})
+    // Controller's independent missing-canonical-policy regression retained:
+    // hide private source data when this *signed-in* actor loses its policy,
+    // not merely when the owner's Memory is missing from their collection.
+    await db.doc('users/'+other.uid+'/privacyPolicy/current').delete()
+    await page.getByText(/Private memory consent authority is unavailable/).waitFor({timeout:30000})
+    assert.ok(!(await page.locator('body').innerText()).includes('Lake Beta 1996'),
+      'Missing foreign-owner canonical policy may never expose original-owner Memory')
+    await db.doc('users/'+other.uid+'/privacyPolicy/current').set(policyFor(other.uid))
+    await page.getByText(/Selected memory could not be found/).waitFor({timeout:30000})
+    assert.deepEqual(await page.evaluate(()=>window.__uraiProofReadFirstOwnerMemory()),
+     {allowed:false,code:'permission-denied'})
+   }
+   releaseRequest()
+   await page.waitForTimeout(350)
+   assert.equal(intercepted,1,'Exactly one synthetic request must be intercepted')
+   assert.equal(await page.locator('.councilResponse').count(),0,'No revoked answer can mount')
+   assert.ok(!(await page.locator('body').innerText()).includes(privateReply),'Late Council reply must not rehydrate')
+   assert.equal(await checks.nth(0).isChecked(),false,'Processing consent must clear')
+   assert.equal(await checks.nth(3).isChecked(),false,'Separate private disclosure grant must clear')
+   assert.deepEqual(errors,[],'Real React proof must not produce page errors')
+   evidence.inFlight.push({scenario,passed:true,paidProviderCalls:0,interceptedRequests:intercepted,
+    staleReplySuppressed:true,transportOutcome})
+  }finally{releaseRequest();await context.close()}
  }
  evidence.passed=true
 }catch(error){evidence.errors.push(String(error.stack||error).slice(0,2600))}
