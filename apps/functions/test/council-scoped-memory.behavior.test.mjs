@@ -176,6 +176,24 @@ test('real memory resolver denies wrong scene, foreign owner, demo, deletion and
     await assert.rejects(f.authority.resolveCouncilMemoryGraph(f.db, uid, 'memory-a'))
   }
 })
+test('real resolver and graph reader deny global Memory withdrawal independently of model consent', async () => {
+  const f = makeFixture()
+  const before = await f.authority.resolveCouncilMemoryGraph(f.db, uid, 'memory-a')
+  assert.equal(before.memoryId, 'memory-a')
+  const p = f.read('privacyPolicy/current')
+  p.revision = 2
+  p.domains.memory.mode = 'denied'
+  // Keep models consent granted: only the withdrawn Memory domain must block.
+  assert.equal(p.domains.models.mode, 'granted')
+  assert.equal(p.domains.models.modelContext, true)
+  f.put('privacyPolicy/current', p)
+  await assert.rejects(f.authority.resolveCouncilMemoryGraph(f.db, uid, 'memory-a'),
+    /COUNCIL_MEMORY_CONSENT_REQUIRED/)
+  await assert.rejects(f.authority.readCouncilGraphEvidence(f.db, uid, {
+    snapshotId: 'graph-shared', entityIds: ['person-one'],
+  }), /COUNCIL_MEMORY_CONSENT_REQUIRED/)
+})
+
 test('real resolver rejects revoked model-context consent', async () => {
   const f = makeFixture()
   const p = f.read('privacyPolicy/current')
@@ -188,7 +206,7 @@ test('real resolver rejects revoked model-context consent', async () => {
 // Full local trust-path integration: both the real SceneTruth/Life Graph
 // resolver and the production HTTP handler execute in one test. Only the
 // persisted database, receipt service, and paid-provider transport are mocked.
-function integratedCouncilHarness() {
+function integratedCouncilHarness(options = {}) {
   const f = makeFixture()
   f.put('providerConnections/xai', { processingAllowed: true, revocationState: 'not-required' })
   const sent = []
@@ -231,6 +249,9 @@ function integratedCouncilHarness() {
         assert.equal(family, 'xai')
         assert.equal(model, 'fictional-transport')
         sent.push({ body: String(init.body), sourceInput, endpoint: String(endpoint) })
+        // Hold an actual production-handler await without dispatching to any
+        // paid provider. The serialized fictional context is already observable.
+        await options.onProviderDispatch?.({ sent, actor, memorySelection: sourceInput.memorySelection })
         return {
           ok: true, status: 200, headers: { get: () => 'fictional-request-id' },
           async json() { return { choices: [{ message: { content: 'Answer from fictional evidence only.' } }] } },
@@ -300,4 +321,59 @@ test('integrated real resolver and handler deny revoked provider processing', as
   assert.equal(result.statusCode, 403)
   assert.equal(result.body.error, 'PROVIDER_PROCESSING_REVOKED')
   assert.equal(f.sent.length, 0)
+})
+
+
+test('in-flight real Council handler rejects previously authorized memory after Memory consent withdrawal', async () => {
+  let providerEntered
+  let releaseProvider
+  const entered = new Promise(resolve => { providerEntered = resolve })
+  const held = new Promise(resolve => { releaseProvider = resolve })
+  const f = integratedCouncilHarness({
+    async onProviderDispatch() { providerEntered(); await held },
+  })
+  const previous = f.read('privacyPolicy/current')
+  assert.equal(previous.revision, 1)
+  assert.equal(previous.domains.memory.mode, 'granted')
+  assert.equal(previous.domains.models.modelContext, true)
+  const pending = f.invoke('memory-a')
+  await entered
+  assert.equal(f.sent.length, 1, 'The previously authorized request must reach the deterministic provider')
+  assert.match(f.sent[0].body, /Lake Alpha in 1988/)
+  const withdrawn = structuredClone(previous)
+  withdrawn.revision = 2
+  withdrawn.domains.memory.mode = 'denied'
+  // Local authority transition simulates the already separately proven
+  // canonical callable. This unit test does not impersonate that callable.
+  f.put('privacyPolicy/current', withdrawn)
+  releaseProvider()
+  const result = await pending
+  assert.equal(result.statusCode, 403)
+  assert.equal(result.body.error, 'COUNCIL_MEMORY_AUTHORITY_DENIED')
+  assert.notEqual(result.body.message, 'Answer from fictional evidence only.')
+  assert.equal(f.sent.length, 1)
+  const subsequent = await f.invoke('memory-a')
+  assert.notEqual(subsequent.statusCode, 200)
+  assert.equal(f.sent.length, 1, 'Revoked memory cannot be used in another provider request')
+})
+
+test('in-flight real Council handler cannot deliver prior actor context after account switch', async () => {
+  let providerEntered
+  let releaseProvider
+  const entered = new Promise(resolve => { providerEntered = resolve })
+  const held = new Promise(resolve => { releaseProvider = resolve })
+  const f = integratedCouncilHarness({
+    async onProviderDispatch() { providerEntered(); await held },
+  })
+  const pending = f.invoke('memory-a')
+  await entered
+  assert.equal(f.sent.length, 1)
+  assert.match(f.sent[0].body, /Lake Alpha in 1988/)
+  f.changeActor('fictional-other-actor')
+  releaseProvider()
+  const response = await pending
+  assert.equal(response.statusCode, 401)
+  assert.equal(response.body.error, 'UNAUTHORIZED')
+  assert.notEqual(response.body.message, 'Answer from fictional evidence only.')
+  assert.equal(f.sent.length, 1)
 })

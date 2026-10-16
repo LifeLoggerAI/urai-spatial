@@ -32,6 +32,10 @@ export async function readCouncilGraphEvidence(db: FirebaseFirestore.Firestore, 
       || !['granted', 'limited'].includes(p?.domains?.models?.mode)
       || !['granted', 'limited'].includes(p?.domains?.identity?.mode)
       || p?.enforcement?.state !== 'fully-enforced') deny('COUNCIL_MODEL_CONSENT_REQUIRED')
+    // A models grant never revives source memories when the owner withdraws
+    // their independent Memory permission. Graph-selected memory evidence
+    // inherits this same account-wide source authority.
+    if (!['granted', 'limited'].includes(p.domains.memory.mode)) deny('COUNCIL_MEMORY_CONSENT_REQUIRED')
     const graph = await tx.get(db.doc('users/' + uid + '/lifeGraphSnapshots/' + selection.snapshotId))
     const data = graph.data() ?? {}
     if (!graph.exists || data.ownerId !== uid || data.state !== 'current'
@@ -122,6 +126,17 @@ export async function resolveCouncilMemoryGraph(
   }
   const memoryId = memoryIdInput as string
   const binding = await db.runTransaction(async tx => {
+    // Deny BEFORE loading a selected memory or its SceneTruth packet. This
+    // same resolver is used by every post-provider delivery recheck.
+    const policy = await tx.get(db.doc('users/' + uid + '/privacyPolicy/current'))
+    const active = policy.data()
+    if (!policy.exists || !isCanonicalStoredPolicy(active, uid)
+      || !['granted', 'limited'].includes(active.domains.memory.mode)
+      || !['granted', 'limited'].includes(active.domains.models.mode)
+      || active.domains.models.modelContext !== true
+      || active.enforcement.state !== 'fully-enforced') {
+      deny('COUNCIL_MEMORY_CONSENT_REQUIRED')
+    }
     const memory = await tx.get(db.doc('users/' + uid + '/memories/' + memoryId))
     const m = memory.data() ?? {}
     if (!memory.exists || (m.ownerId ?? m.userId) !== uid || m.deleted === true

@@ -333,7 +333,15 @@ function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof de
       const memoryFingerprint = memoryBinding ? [memoryBinding.sceneTruthPacketId, memoryBinding.packetHash, memoryBinding.graphHash, ...memoryBinding.entityIds].join('|') : null
       const recheckMemory = async () => {
         if (memoryRequest === undefined) return
-        const current = await resolveCouncilMemoryGraph(db, uid, memoryRequest)
+        let current: Awaited<ReturnType<typeof resolveCouncilMemoryGraph>>
+        try {
+          current = await resolveCouncilMemoryGraph(db, uid, memoryRequest)
+        } catch {
+          // Never map a revoked selected-memory authority to an internal
+          // error that obscures which privacy boundary suppressed delivery.
+          throw new CouncilProviderError(403, 'COUNCIL_MEMORY_AUTHORITY_DENIED',
+            'Selected memory authority was withdrawn during this request.')
+        }
         if ([current.sceneTruthPacketId, current.packetHash, current.graphHash, ...current.entityIds].join('|') !== memoryFingerprint) {
           throw new CouncilProviderError(409, 'COUNCIL_MEMORY_CHANGED', 'Selected memory authority changed during this request.')
         }
