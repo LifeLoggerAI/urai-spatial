@@ -1599,19 +1599,101 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
       completedAt: fieldValue.serverTimestamp(),
       createdAt: fieldValue.serverTimestamp(),
     }
-    await durableReceiptRef.set(finalReceipt)
-    if (scope !== 'account') {
-      await Promise.all([
-        snapshot.ref.update({ state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }),
-        userJobRef.set({ state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-        userReceiptRef.set({ result: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-      ])
-      await finishExportDeletionFence(uid, snapshot.id)
+    if (scope === 'memories') {
+      // All Firestore terminal records and the privacy-fence transition must
+      // commit together. This transaction follows verified Storage disposal
+      // and recursive source deletion; it does not make those external effects
+      // atomic or prove permanent provider erasure.
+      await db.runTransaction(async transaction => {
+        const [queue, owner, localReceipt, fence, durable] = await Promise.all([
+          transaction.get(snapshot.ref), transaction.get(userJobRef),
+          transaction.get(userReceiptRef), transaction.get(exportFenceRef(uid)),
+          transaction.get(durableReceiptRef),
+        ])
+        if (!queue.exists || !owner.exists || !localReceipt.exists || durable.exists
+          || queue.get('uid') !== uid || owner.get('uid') !== uid || localReceipt.get('ownerId') !== uid
+          || queue.get('jobId') !== snapshot.id || owner.get('jobId') !== snapshot.id
+          || localReceipt.get('jobId') !== snapshot.id || localReceipt.get('receiptId') !== receiptId
+          || queue.get('receiptId') !== receiptId || owner.get('receiptId') !== receiptId
+          || queue.get('scope') !== 'memories' || owner.get('scope') !== 'memories'
+          || localReceipt.get('scope') !== 'memories'
+          || queue.get('state') !== 'in-progress' || owner.get('state') !== 'in-progress'
+          || !fence.exists || !isRecord(fence.get('pendingDeletions'))
+          || fence.get('pendingDeletions')[snapshot.id] !== true) {
+          throw new functions.https.HttpsError('failed-precondition', 'MEMORY_DELETION_FINALIZATION_AUTHORITY_CHANGED')
+        }
+        const pending = { ...(fence.get('pendingDeletions') as JsonMap) }
+        delete pending[snapshot.id]
+        const now = fieldValue.serverTimestamp()
+        transaction.create(durableReceiptRef, finalReceipt)
+        transaction.update(snapshot.ref, { state: 'completed', deletedCollections, completedAt: now, updatedAt: now })
+        transaction.update(userJobRef, { state: 'completed', deletedCollections, completedAt: now, updatedAt: now })
+        transaction.set(userReceiptRef, { result: 'completed', deletedCollections, updatedAt: now }, { merge: true })
+        transaction.update(exportFenceRef(uid), { pendingDeletions: pending, updatedAt: now })
+      })
     } else {
-      await snapshot.ref.delete()
+      // Auth and Storage cannot join a Firestore transaction; non-memory
+      // scopes retain their distinct release-blocking reconciliation limits.
+      await durableReceiptRef.set(finalReceipt)
+      if (scope !== 'account') {
+        await Promise.all([
+          snapshot.ref.update({ state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }),
+          userJobRef.set({ state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
+          userReceiptRef.set({ result: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
+        ])
+        await finishExportDeletionFence(uid, snapshot.id)
+      } else {
+        await snapshot.ref.delete()
+      }
     }
   } catch (error) {
     const failure = error instanceof Error ? error.message.slice(0, 240) : 'UNKNOWN_DELETION_FAILURE'
+    if (scope === 'memories') {
+      // An uncertain Firestore transaction acknowledgement is not evidence
+      // of failure. Inspect all independently persisted terminal fields
+      // before recording a fail-closed result.
+      const resolution = await db.runTransaction(async transaction => {
+        const [queue, owner, localReceipt, fence, durable] = await Promise.all([
+          transaction.get(snapshot.ref), transaction.get(userJobRef),
+          transaction.get(userReceiptRef), transaction.get(exportFenceRef(uid)),
+          transaction.get(durableReceiptRef),
+        ])
+        const pending = fence.exists && isRecord(fence.get('pendingDeletions'))
+          ? fence.get('pendingDeletions') as JsonMap : null
+        const bound = durable.exists && durable.get('jobId') === snapshot.id
+          && durable.get('receiptId') === receiptId && durable.get('ownerDigest') === ownerDigest(uid)
+          && durable.get('scope') === scope && durable.get('kind') === 'deletion'
+          && durable.get('result') === 'completed'
+        if (bound && queue.get('state') === 'completed' && owner.get('state') === 'completed'
+          && localReceipt.get('result') === 'completed' && pending && pending[snapshot.id] !== true) return 'committed'
+        if (durable.exists || queue.get('state') === 'completed' || owner.get('state') === 'completed') return 'ambiguous'
+        if (!queue.exists || !owner.exists || queue.get('uid') !== uid || owner.get('uid') !== uid
+          || queue.get('state') !== 'in-progress' || owner.get('state') !== 'in-progress'
+          || !pending || pending[snapshot.id] !== true) return 'changed'
+        const now = fieldValue.serverTimestamp()
+        transaction.update(snapshot.ref, { state: 'failed', failureCode: 'DELETION_INTERRUPTED_OUTCOME_UNVERIFIED', updatedAt: now })
+        transaction.update(userJobRef, { state: 'failed', failureCode: 'DELETION_INTERRUPTED_OUTCOME_UNVERIFIED', updatedAt: now })
+        transaction.set(userReceiptRef, { result: 'failed', failureCode: 'DELETION_INTERRUPTED_OUTCOME_UNVERIFIED', updatedAt: now }, { merge: true })
+        // Never release the fence or repeat destructive work on an uncertain outcome.
+        return 'failed-unverified'
+      })
+      if (resolution === 'committed') return
+      throw error
+    }
+    if (scope === 'account') {
+      // Recursive account deletion may already have removed user-owned docs.
+      // Never recreate those documents in a failed account-deletion catch.
+      await snapshot.ref.set({ state: 'reconciliation-required', failureCode: 'ACCOUNT_DELETION_OUTCOME_UNVERIFIED',
+        updatedAt: fieldValue.serverTimestamp() }, { merge: true })
+      throw error
+    }
+    const durable = await durableReceiptRef.get()
+    if (durable.exists) {
+      // Other scopes still need their own proven atomic reconciliation.
+      await snapshot.ref.set({ state: 'reconciliation-required', failureCode: 'DELETION_DURABLE_COMPLETION_UNVERIFIED',
+        updatedAt: fieldValue.serverTimestamp() }, { merge: true })
+      throw error
+    }
     await Promise.all([
       snapshot.ref.set({ state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
       userJobRef.set({ state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
@@ -1641,26 +1723,67 @@ async function failInterruptedMemoryDeletion(item: FirebaseFirestore.QueryDocume
   const ownerRef = db.doc(`users/${uid}/deletionJobs/${item.id}`)
   const ownerReceiptRef = db.doc(`users/${uid}/privacyReceipts/${receiptId}`)
   const durableReceiptRef = db.doc(`deletionReceipts/${receiptId}`)
-  const failureCode = 'DELETION_INTERRUPTED_OUTCOME_UNVERIFIED'
   await db.runTransaction(async transaction => {
-    const [queue, owner, fence, durable] = await Promise.all([
-      transaction.get(item.ref), transaction.get(ownerRef),
+    const [queue, owner, localReceipt, fence, durable] = await Promise.all([
+      transaction.get(item.ref), transaction.get(ownerRef), transaction.get(ownerReceiptRef),
       transaction.get(exportFenceRef(uid)), transaction.get(durableReceiptRef),
     ])
     if (!queue.exists || !owner.exists || queue.get('uid') !== uid || owner.get('uid') !== uid
-      || queue.get('scope') !== 'memories' || queue.get('state') !== 'in-progress'
-      || owner.get('state') !== 'in-progress' || durable.exists) return
-    const actualStarted = queue.get('startedAt') as Timestamp | undefined
-    if (!(actualStarted instanceof Timestamp)
-      || actualStarted.toMillis() > Date.now() - MEMORY_DELETION_INTERRUPTED_AFTER_MS
+      || queue.get('jobId') !== item.id || owner.get('jobId') !== item.id
+      || queue.get('receiptId') !== receiptId || owner.get('receiptId') !== receiptId
+      || queue.get('scope') !== 'memories' || owner.get('scope') !== 'memories'
+      || queue.get('state') !== 'in-progress' || owner.get('state') !== 'in-progress') return
+    const startedAt = queue.get('startedAt') as Timestamp | undefined
+    if (!(startedAt instanceof Timestamp)
+      || startedAt.toMillis() > Date.now() - MEMORY_DELETION_INTERRUPTED_AFTER_MS
       || !fence.exists || !isRecord(fence.get('pendingDeletions'))
       || fence.get('pendingDeletions')[item.id] !== true) return
     const now = fieldValue.serverTimestamp()
-    transaction.update(item.ref, { state: 'failed', failureCode, updatedAt: now })
-    transaction.update(ownerRef, { state: 'failed', failureCode, updatedAt: now })
-    transaction.set(ownerReceiptRef, { result: 'failed', failureCode, updatedAt: now }, { merge: true })
-    // Do not clear the pending-deletion fence: a new, explicitly approved
-    // operation or reviewer must reconcile any partial erasure safely.
+    if (!durable.exists) {
+      transaction.update(item.ref, { state: 'failed', failureCode: 'DELETION_INTERRUPTED_OUTCOME_UNVERIFIED', updatedAt: now })
+      transaction.update(ownerRef, { state: 'failed', failureCode: 'DELETION_INTERRUPTED_OUTCOME_UNVERIFIED', updatedAt: now })
+      transaction.set(ownerReceiptRef, { result: 'failed', failureCode: 'DELETION_INTERRUPTED_OUTCOME_UNVERIFIED', updatedAt: now }, { merge: true })
+      return
+    }
+    // Legacy post-receipt interruptions require BOTH a bound server receipt
+    // and independently absent persisted sources before completion is restored.
+    const required = DELETION_COLLECTIONS.memories
+    const trusted = durable.get('kind') === 'deletion' && durable.get('result') === 'completed'
+      && durable.get('receiptId') === receiptId && durable.get('jobId') === item.id
+      && durable.get('ownerDigest') === ownerDigest(uid) && durable.get('scope') === 'memories'
+      && Array.isArray(durable.get('deletedCollections'))
+      && required.every(name => (durable.get('deletedCollections') as unknown[]).includes(name))
+      && Number.isSafeInteger(durable.get('removedMemoryStarEvents'))
+      && durable.get('removedMemoryStarEvents') >= 0
+      && localReceipt.exists && localReceipt.get('ownerId') === uid
+      && localReceipt.get('jobId') === item.id && localReceipt.get('receiptId') === receiptId
+      && localReceipt.get('scope') === 'memories'
+    let sourcesAbsent = false
+    if (trusted) {
+      const [collections, events] = await Promise.all([
+        Promise.all(required.map(name =>
+          transaction.get(db.collection('users/' + uid + '/' + name).limit(1)))),
+        transaction.get(db.collection('users/' + uid + '/lifeMapEvents').limit(201)),
+      ])
+      // An unbounded unrelated Life Map cannot be certified by a limited scan.
+      sourcesAbsent = collections.every(snapshot => snapshot.empty) && events.size < 201
+        && events.docs.every(event =>
+          event.get('type') !== 'memory' && typeof event.get('memoryId') !== 'string')
+    }
+    if (trusted && sourcesAbsent) {
+      const pending = { ...(fence.get('pendingDeletions') as JsonMap) }
+      delete pending[item.id]
+      transaction.update(item.ref, { state: 'completed', deletedCollections: durable.get('deletedCollections'), completedAt: now, updatedAt: now })
+      transaction.update(ownerRef, { state: 'completed', deletedCollections: durable.get('deletedCollections'), completedAt: now, updatedAt: now })
+      transaction.set(ownerReceiptRef, { result: 'completed', deletedCollections: durable.get('deletedCollections'), updatedAt: now }, { merge: true })
+      transaction.update(exportFenceRef(uid), { pendingDeletions: pending, updatedAt: now })
+      return
+    }
+    transaction.update(item.ref, { state: 'reconciliation-required', failureCode: 'DELETION_DURABLE_COMPLETION_UNVERIFIED', updatedAt: now })
+    transaction.update(ownerRef, { state: 'reconciliation-required', failureCode: 'DELETION_DURABLE_COMPLETION_UNVERIFIED', updatedAt: now })
+    transaction.set(ownerReceiptRef, { result: 'reconciliation-required',
+      failureCode: 'DELETION_DURABLE_COMPLETION_UNVERIFIED', updatedAt: now }, { merge: true })
+    // Ambiguous durable evidence retains its fence for independent review.
   })
 }
 

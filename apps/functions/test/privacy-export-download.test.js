@@ -84,7 +84,7 @@ function fixture(options = {}) {
       if (writes.length && [...reads].some(([key, before]) => JSON.stringify(clone(records.get(key))) !== before)) {
         return db.runTransaction(callback, settings)
       }
-      if (options.failCommit === id) throw new Error('synthetic audit commit outage')
+      if (options.failCommit === id || (typeof options.failCommit === 'function' && options.failCommit(id, records, writes))) throw new Error('synthetic audit commit outage')
       for (const write of writes) await write()
       if (options.failAfterCommit === id || (typeof options.failAfterCommit==='function'&&options.failAfterCommit(id,records))) throw new Error('synthetic uncertain commit reply')
       await options.afterTransaction?.(id, records)
@@ -815,9 +815,115 @@ test('active and ambiguous completed deletion outcomes cannot be overwritten by 
   f.records.set(ownerPath, { ...f.records.get(ownerPath), startedAt: old })
   f.records.set(`deletionReceipts/${deletion.receiptId}`, { result: 'completed', scope: 'memories' })
   await f.handlers.processDeletionGraceQueue()
-  assert.equal(f.records.get(queuePath).state, 'in-progress',
-    'a completed durable receipt and unfinished queue require reconciliation, not a fabricated failure')
+  assert.equal(f.records.get(queuePath).state, 'reconciliation-required',
+    'unbound durable completion must require review rather than fabricate erasure')
+  assert.equal(f.records.get(ownerPath).state, 'reconciliation-required')
   assert.equal(f.records.get(fencePath).pendingDeletions[deletion.jobId], true)
+})
+
+
+test('memory-only terminal receipt, queue, owner, privacy receipt and fence commit together', async () => {
+  const f = fixture()
+  const star = prefix + '/lifeMapEvents/fictional-source-star'
+  const ritual = prefix + '/lifeMapEvents/fictional-independent-ritual'
+  f.records.set(star, { userId: uid, type: 'memory', memoryId: 'fictional-memory' })
+  f.records.set(ritual, { userId: uid, type: 'ritual' })
+  const d = await f.handlers.createDeletionRequest({
+    operationId: 'synthetic-atomic-memory-end', scope: 'memories', confirmation: 'CONFIRM DELETE',
+  }, f.context)
+  const original = await f.db.doc('deletionQueue/' + d.jobId).get()
+  await f.handlers.processDeletionQueueItem(original)
+  const durable = f.records.get('deletionReceipts/' + d.receiptId)
+  assert.equal(durable.result, 'completed')
+  assert.equal(durable.jobId, d.jobId)
+  assert.equal(durable.receiptId, d.receiptId)
+  assert.equal(f.records.get('deletionQueue/' + d.jobId).state, 'completed')
+  assert.equal(f.records.get(prefix + '/deletionJobs/' + d.jobId).state, 'completed')
+  assert.equal(f.records.get(prefix + '/privacyReceipts/' + d.receiptId).result, 'completed')
+  assert.equal(f.records.get(fencePath).pendingDeletions[d.jobId], undefined)
+  assert.equal(f.records.has(star), false)
+  assert.equal(f.records.has(ritual), true)
+  await f.handlers.processDeletionQueueItem(original)
+  assert.equal(f.records.get('deletionReceipts/' + d.receiptId).result, 'completed')
+})
+
+test('precommit crash cannot publish a durable completion or remove the deletion fence', async () => {
+  const f = fixture({ failCommit: (_id, _records, writes) => writes.length === 5 })
+  const d = await f.handlers.createDeletionRequest({
+    operationId: 'synthetic-memory-precommit-crash', scope: 'memories', confirmation: 'CONFIRM DELETE',
+  }, f.context)
+  await assert.rejects(f.handlers.processDeletionQueueItem(
+    await f.db.doc('deletionQueue/' + d.jobId).get()), /synthetic audit commit outage/)
+  assert.equal(f.records.has('deletionReceipts/' + d.receiptId), false)
+  assert.equal(f.records.get('deletionQueue/' + d.jobId).state, 'failed')
+  assert.equal(f.records.get(prefix + '/deletionJobs/' + d.jobId).state, 'failed')
+  assert.equal(f.records.get(fencePath).pendingDeletions[d.jobId], true)
+})
+
+test('lost acknowledgement AFTER atomic commit cannot fabricate a failed deletion', async () => {
+  let crashInjected = false
+  const f = fixture({ afterTransaction: (_id, records) => {
+    if (crashInjected || ![...records.values()].some(v =>
+      v.kind === 'deletion' && v.result === 'completed' && v.ownerDigest)) return
+    crashInjected = true
+    throw new Error('synthetic lost final transaction acknowledgement')
+  } })
+  const d = await f.handlers.createDeletionRequest({
+    operationId: 'synthetic-memory-uncertain-commit', scope: 'memories', confirmation: 'CONFIRM DELETE',
+  }, f.context)
+  await f.handlers.processDeletionQueueItem(await f.db.doc('deletionQueue/' + d.jobId).get())
+  assert.equal(crashInjected, true)
+  assert.equal(f.records.get('deletionReceipts/' + d.receiptId).result, 'completed')
+  assert.equal(f.records.get('deletionQueue/' + d.jobId).state, 'completed')
+  assert.equal(f.records.get(prefix + '/deletionJobs/' + d.jobId).state, 'completed')
+  assert.equal(f.records.get(fencePath).pendingDeletions[d.jobId], undefined)
+})
+
+test('legacy receipt-before-queue crash reconciles only independently absent memory sources', async () => {
+  const f = fixture()
+  const d = await f.handlers.createDeletionRequest({
+    operationId: 'synthetic-legacy-postreceipt-crash', scope: 'memories', confirmation: 'CONFIRM DELETE',
+  }, f.context)
+  const queue = 'deletionQueue/' + d.jobId, owner = prefix + '/deletionJobs/' + d.jobId
+  for (const key of [queue, owner])
+    f.records.set(key, { ...f.records.get(key), state: 'in-progress', startedAt: new f.Timestamp(now - 31 * 60 * 1000) })
+  f.records.set('deletionReceipts/' + d.receiptId, {
+    kind: 'deletion', result: 'completed', scope: 'memories', jobId: d.jobId, receiptId: d.receiptId,
+    ownerDigest: hash('urai-owner:' + uid),
+    deletedCollections: ['memories','memoryMediaReceipts','replayEvents','spatialMemories','canonChains'],
+    removedMemoryStarEvents: 0,
+  })
+  await f.handlers.processDeletionGraceQueue()
+  assert.equal(f.records.get(queue).state, 'completed')
+  assert.equal(f.records.get(owner).state, 'completed')
+  assert.equal(f.records.get(prefix + '/privacyReceipts/' + d.receiptId).result, 'completed')
+  assert.equal(f.records.get(fencePath).pendingDeletions[d.jobId], undefined)
+  assert.equal(f.stats.deleted.length, 0, 'reconciliation must not replay a destructive worker')
+  await f.handlers.processDeletionGraceQueue()
+  assert.equal(f.records.get(queue).state, 'completed')
+})
+
+test('legacy receipt with remaining memory is explicitly blocked and stays fenced', async () => {
+  const f = fixture()
+  const d = await f.handlers.createDeletionRequest({
+    operationId: 'synthetic-legacy-incomplete-erase', scope: 'memories', confirmation: 'CONFIRM DELETE',
+  }, f.context)
+  const queue = 'deletionQueue/' + d.jobId, owner = prefix + '/deletionJobs/' + d.jobId
+  for (const key of [queue, owner])
+    f.records.set(key, { ...f.records.get(key), state: 'in-progress', startedAt: new f.Timestamp(now - 31 * 60 * 1000) })
+  f.records.set('deletionReceipts/' + d.receiptId, {
+    kind: 'deletion', result: 'completed', scope: 'memories', jobId: d.jobId, receiptId: d.receiptId,
+    ownerDigest: hash('urai-owner:' + uid),
+    deletedCollections: ['memories','memoryMediaReceipts','replayEvents','spatialMemories','canonChains'],
+    removedMemoryStarEvents: 0,
+  })
+  const retained = prefix + '/memories/fictional-still-private'
+  f.records.set(retained, { ownerId: uid, sourceMedia: [] })
+  await f.handlers.processDeletionGraceQueue()
+  assert.equal(f.records.get(queue).state, 'reconciliation-required')
+  assert.equal(f.records.get(owner).state, 'reconciliation-required')
+  assert.equal(f.records.has(retained), true)
+  assert.equal(f.records.get(fencePath).pendingDeletions[d.jobId], true)
 })
 
 test('a stale queued deletion event cannot execute after current owner cancellation',async()=>{
