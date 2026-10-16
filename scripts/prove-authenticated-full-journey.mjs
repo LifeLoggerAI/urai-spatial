@@ -644,7 +644,7 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
   body:JSON.stringify({data:{scope:'memories',confirmation:'CONFIRM DELETE',operationId}})})
  assert.equal(retry.status,200,'J9G callable idempotent retry failed')
  const retryResult=(await retry.json()).result
- assert.equal(retryResult?.deletionJobId,deletionJobId,'J9G idempotent retry generated a second job')
+ assert.equal(retryResult?.jobId,deletionJobId,'J9G idempotent retry generated a second job')
  const duplicateJobs=await db.collection('users/'+accounts[0].uid+'/deletionJobs').get()
  assert.equal(duplicateJobs.size,1,'J9G retry generated additional owner deletion jobs')
  await page.goto(origin+'/replay?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
