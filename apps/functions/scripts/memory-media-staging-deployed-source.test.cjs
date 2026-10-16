@@ -15,4 +15,30 @@ test('unbound trace fails closed',()=>{const x=deep(); (x=>x.requestLogs[0].trac
 test('missing instance fails closed',()=>{const x=deep(); (x=>delete x.requestLogs[0].labels.instanceId)(x);assert.throws(()=>verifyControlPlaneEvidence(x),/STAGING_DEPLOYED_SOURCE_UNVERIFIED/)})
 test('stale request fails closed',()=>{const x=deep(); (x=>x.requestLogs[0].timestamp="2026-10-14T18:00:00Z")(x);assert.throws(()=>verifyControlPlaneEvidence(x),/STAGING_DEPLOYED_SOURCE_UNVERIFIED/)})
 test('missing image fails closed',()=>{const x=deep(); (x=>x.runRevision={})(x);assert.throws(()=>verifyControlPlaneEvidence(x),/STAGING_DEPLOYED_SOURCE_UNVERIFIED/)})
+test('missing and empty serving logs reject for explicit reasons',()=>{
+ for(const value of [undefined,null,[],{}]){
+  const x=deep()
+  if(value===undefined) delete x.requestLogs
+  else x.requestLogs=value
+  assert.throws(()=>verifyControlPlaneEvidence(x),e=>e instanceof Error
+   && e.message==='STAGING_DEPLOYED_SOURCE_UNVERIFIED:MISSING_REQUEST_LOGS')
+ }
+})
+test('malformed and unrelated log entries cannot produce positive evidence',()=>{
+ for(const entry of [null,{},[],{httpRequest:{status:200}},{resource:null}]){
+  const x=deep();x.requestLogs=[entry]
+  assert.throws(()=>verifyControlPlaneEvidence(x),e=>e instanceof Error
+    && e.message==='STAGING_DEPLOYED_SOURCE_UNVERIFIED:SERVING_REQUEST_UNBOUND')
+ }
+})
+test('wrong request method, response status and request path deny exact serving claim',()=>{
+ for(const field of ['method','status','path']){
+  const x=deep(),log=x.requestLogs[0]
+  if(field==='method')log.httpRequest.requestMethod='POST'
+  if(field==='status')log.httpRequest.status=403
+  if(field==='path')log.httpRequest.requestUrl=log.httpRequest.requestUrl.replace('/streamMemoryMediaPlayback?','/incorrect/streamMemoryMediaPlayback?')
+  assert.throws(()=>verifyControlPlaneEvidence(x),e=>e instanceof Error
+    && e.message==='STAGING_DEPLOYED_SOURCE_UNVERIFIED:SERVING_REQUEST_UNBOUND')
+ }
+})
 test('missing control plane evidence fails closed',()=>assert.throws(()=>verifyControlPlaneEvidence({}),/STAGING_DEPLOYED_SOURCE_UNVERIFIED/))
