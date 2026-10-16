@@ -154,7 +154,7 @@ try{
    await page.getByText(/Sign in to open this private memory/).waitFor({timeout:30000})
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Beta 1996'))
    await page.evaluate(()=>window.__uraiProofOther())
-   await page.getByText(/Selected memory could not be found/).waitFor({timeout:30000})
+   await page.getByText(/Private memory consent authority is unavailable/).waitFor({timeout:30000})
    await page.waitForFunction(()=>{const el=document.querySelector('[data-proof-map-nodes]');return el&&JSON.parse(el.getAttribute('data-proof-map-nodes')||'[]').every(n=>n.id!=='star-a'&&n.id!=='star-b')})
    assert.ok(!(await page.locator('body').innerText()).includes('Lake Beta 1996'))
    // The UI must hide private data, but Firestore must also refuse a direct
