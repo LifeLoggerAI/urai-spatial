@@ -594,10 +594,10 @@ test('reserve round trip consumes local runtime even if the server commits late'
   const f=fixture({
     // Leave headroom for a loaded CI runner to reach dispatch. The virtual
     // reserve + response delay still exceeds the SAME absolute 2s deadline.
-    reserve:async(_body,{advanceTime})=>{await Promise.resolve();advanceTime(400)},
+    reserve:async(_body,{advanceTime})=>{await Promise.resolve();advanceTime(100)},
     reserveReply:(reply,_body,{now})=>{reply.reserved_at=new Date(now()).toISOString();reply.admission_expires_at=new Date(now()+2000).toISOString()},
   })
-  f.setProvider(async()=>{await Promise.resolve();f.advanceTime(1800);return new Response('LATE OUTPUT')})
+  f.setProvider(async()=>{await Promise.resolve();f.advanceTime(1950);return new Response('LATE OUTPUT')})
   await assert.rejects(f.paidFetch(...f.directArgs()))
   assert.equal(f.providerCalls.length,1);assertUnsettled(f)
 })
