@@ -669,10 +669,63 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  },null,{timeout:60000})
  assert.ok(['unavailable','unauthorized','deleted'].includes(await deletedReplay.getAttribute('data-memory-status')),
   'J9G deleted memory became usable after browser navigation')
+ // Original Focus and Replay must deny deleted memory before and after
+ // browser recovery. No Admin deletions count toward this product proof.
+ await page.goto(origin+'/focus?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
+ const deletedFocus=page.getByTestId('urai-final-focus-chamber')
+ await deletedFocus.waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(()=>{
+  const status=document.querySelector('[data-testid="urai-final-focus-chamber"]')?.dataset.memoryStatus
+  return status && status!=='loading'
+ },null,{timeout:60000})
+ assert.ok(['unavailable','unauthorized','deleted'].includes(await deletedFocus.getAttribute('data-memory-status')),
+  'J9H original Focus recovered deleted private memory')
+ await page.reload({waitUntil:'domcontentloaded'})
+ await page.waitForFunction(()=>{
+  const status=document.querySelector('[data-testid="urai-final-focus-chamber"]')?.dataset.memoryStatus
+  return status && status!=='loading'
+ },null,{timeout:90000})
+ assert.ok(['unavailable','unauthorized','deleted'].includes(await deletedFocus.getAttribute('data-memory-status')),
+  'J9H original Focus recovered deleted private memory after reload')
+ // Switching to owner B, then reauthenticating owner A, must not allow an
+ // old browser, cached permission or selected manifest to restore authority.
+ await page.goto(origin+'/login')
+ await page.getByRole('button',{name:'Sign out'}).click({timeout:15000})
+ await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:30000})
+ await login(page,accounts[1].email,accounts[1].password,accounts[1].uid)
+ await page.goto(origin+'/replay?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
+ const foreignDeletedReplay=page.getByTestId('cinematic-replay-client')
+ await foreignDeletedReplay.waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(()=>{
+  const status=document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.memoryStatus
+  return status && status!=='loading'
+ },null,{timeout:60000})
+ assert.ok(['unavailable','unauthorized','deleted'].includes(await foreignDeletedReplay.getAttribute('data-memory-status')),
+  'J9H account B recovered deleted account A Replay')
+ await page.goto(origin+'/login')
+ await page.getByRole('button',{name:'Sign out'}).click({timeout:15000})
+ await page.getByTestId('urai-e2e-login-form').waitFor({state:'visible',timeout:30000})
+ await login(page,accounts[0].email,accounts[0].password,accounts[0].uid)
+ await page.goto(origin+'/replay?memoryId=fictional-memory-a&manifestId=fictional-manifest-a')
+ await page.reload({waitUntil:'domcontentloaded'})
+ const reauthenticatedReplay=page.getByTestId('cinematic-replay-client')
+ await reauthenticatedReplay.waitFor({state:'visible',timeout:90000})
+ await page.waitForFunction(()=>{
+  const status=document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.memoryStatus
+  return status && status!=='loading'
+ },null,{timeout:60000})
+ assert.ok(['unavailable','unauthorized','deleted'].includes(await reauthenticatedReplay.getAttribute('data-memory-status')),
+  'J9H owner reauthentication restored deleted private Replay')
+ assert.equal((await db.doc('users/'+accounts[0].uid+'/memories/fictional-memory-a').get()).exists,false,
+  'J9H old memory was resurrected after owner reauthentication')
+ assert.deepEqual((await db.doc(ritualPath).get()).data(),ritual,
+  'J9H unrelated ritual changed during owner recovery')
  await screenshot(page,'J9-canonical-memory-deletion')
  result.journey.privacy.deletion={scope:'memories',jobId:deletionJobId,receiptId:deletionReceiptId,
   canonicalUIRequest:true,serverWorkerCompleted:true,retainedDurableReceipt:true,
-  removedMemoryStarEvents:durable.removedMemoryStarEvents,idempotentRetry:true,replayDenied:true}
+  removedMemoryStarEvents:durable.removedMemoryStarEvents,idempotentRetry:true,replayDenied:true,
+  focusDenied:true,focusReloadDenied:true,crossOwnerReplayDenied:true,ownerReauthenticationDenied:true,
+  unrelatedRitualPreservedAfterReauthentication:true}
  mark('J9G-canonical-deletion',result.journey.privacy.deletion)
  throw Error('J9_INCOMPLETE: stale Council asynchronous response and previously issued private-media capability revocation remain unaccepted')
 }
