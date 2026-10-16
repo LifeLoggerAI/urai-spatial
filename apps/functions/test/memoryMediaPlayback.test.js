@@ -20,7 +20,7 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
 
 // The SDK boundary is fictional. All authority/delivery code and helpers below
 // are the actual strict-tsc output; Node streams/pipeline and HTTP are real.
-function fixture({ modularFirestoreOnly = false } = {}) {
+function fixture({ modularFirestoreOnly = false, projectEnv = {} } = {}) {
   const clock = { value: Date.now() }
   class ClockDate extends Date { static now() { return clock.value } }
   class Timestamp {
@@ -119,7 +119,7 @@ function fixture({ modularFirestoreOnly = false } = {}) {
     const result = { exports: {} }; modules.set(compiled, result)
     vm.runInNewContext(fs.readFileSync(compiled, 'utf8'), { module: result, exports: result.exports, Buffer, URL, URLSearchParams,
       Date: ClockDate, console: Object.fromEntries(['log', 'warn', 'error'].map(key => [key, (...args) => stats.logs.push(args)])),
-      process: { env: { GCLOUD_PROJECT: 'urai-4dc1d', FIREBASE_STORAGE_BUCKET: bucket.name } }, require: name => {
+      process: { env: { GCLOUD_PROJECT: 'urai-4dc1d', FIREBASE_STORAGE_BUCKET: bucket.name, ...projectEnv } }, require: name => {
         if (name === 'firebase-admin') return admin
         if (name === 'firebase-admin/firestore') return firestoreValues
         if (name === 'firebase-functions/v1') return functions
@@ -160,6 +160,32 @@ function assertDenied(output) {
   assert.equal(output.response.headers['X-URAI-Checksum-SHA256'], undefined)
   assert.equal(output.response.headers['Cache-Control'], 'private, no-store')
 }
+
+test('unapproved staging blocks private media callables before any Auth or Storage access', async () => {
+  const project = 'urai-media-staging', bucket = project + '.firebasestorage.app'
+  const f = fixture({projectEnv:{
+    GCLOUD_PROJECT:project, GCP_PROJECT:project, GOOGLE_CLOUD_PROJECT:project,
+    URAI_MEDIA_STAGING_ENABLE:'EXPLICIT_NONPRODUCTION_ONLY',
+    URAI_MEDIA_STAGING_PROJECT:project, URAI_MEDIA_STAGING_BUCKET:bucket,
+    FIREBASE_STORAGE_BUCKET:bucket,
+    FIREBASE_CONFIG:JSON.stringify({projectId:project,storageBucket:bucket}),
+  }})
+  const operations = [
+    () => f.handler.getMemoryMediaUploadAuthority({memoryId},f.context),
+    () => f.handler.registerMemoryMedia({memoryId,operationId:'fictional-unapproved',
+      kind:'video',contentType:'video/mp4',base64:f.bytes.toString('base64')},f.context),
+    () => f.handler.getMemoryMediaPlaybackAuthority({memoryId,receiptId},f.context),
+  ]
+  for(const operation of operations) await assert.rejects(operation, e => {
+    assert.equal(e.code,'failed-precondition')
+    assert.equal(e.message,'MEMORY_MEDIA_PROJECT_UNBOUND')
+    return true
+  })
+  assert.equal(f.stats.auth,0)
+  assert.equal(f.stats.transactions,0)
+  assert.equal(f.stats.bucketMetadata,0)
+  assert.equal(f.stats.streams,0)
+})
 
 test('actual immutable receipt descriptor exposes no bearer, URL, bucket, object path or input bytes', async () => {
   const f = fixture(), d = await f.descriptor()
