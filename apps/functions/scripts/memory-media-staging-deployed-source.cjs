@@ -43,6 +43,8 @@ function verifyControlPlaneEvidence(x) {
   const deployment=verifyControlPlaneDeployment(x)
   const bad = reason => { throw new Error('STAGING_DEPLOYED_SOURCE_UNVERIFIED:'+reason) }
   const P=x.project,R=x.region,F=x.functionName,trace=x.traceId
+  const logs=x.requestLogs
+  if(!Array.isArray(logs)||logs.length===0)bad('MISSING_REQUEST_LOGS')
   const servicePath=x.functionRecord.serviceConfig.service
   const revisionId=deployment.revisionName
   if(!/^[a-f0-9]{32}$/.test(trace||''))bad('INVALID_TRACE')
@@ -52,6 +54,7 @@ function verifyControlPlaneEvidence(x) {
     ||!/(?:^|&)authorityHash=[a-z0-9%]+(?:&|$)/i.test(expected[3])
     ||!/(?:^|&)receiptId=[a-z0-9%]+(?:&|$)/i.test(expected[3]))bad('INVALID_PROBE_URL');
   if(!Array.isArray(logs)||!logs.some(log=>{
+    if(!log||typeof log!=='object'||Array.isArray(log))return false
     const u=parseUri(log.httpRequest?.requestUrl);
     const instance=log.labels?.instanceId,ts=Date.parse(log.timestamp);
     return u&&log.logName===`projects/${P}/logs/run.googleapis.com%2Frequests`
@@ -62,7 +65,7 @@ function verifyControlPlaneEvidence(x) {
       &&log.trace===`projects/${P}/traces/${trace}`
       &&typeof instance==='string'&&/^[A-Za-z0-9_-]{8,256}$/.test(instance)
       &&log.httpRequest?.requestMethod==='GET'&&log.httpRequest?.status===200
-      &&u[2].endsWith('/'+F)&&u[3]===expected[3]
+      &&u[2]===expected[2]&&u[3]===expected[3]
       &&Number.isFinite(ts)&&ts>=Date.parse(x.probeStartedAt)-30000&&ts<=Date.parse(x.probeEndedAt)+30000
   }))bad('SERVING_REQUEST_UNBOUND');
   return {...deployment,verified:true,authoritativeRequestLog:true,servingInstanceBound:true};
