@@ -161,6 +161,7 @@ async function readTrustedControlPlane(options){
   const response=await fetch(target,{method:'GET',headers:{
     authorization:`Bearer ${ownerIdToken}`,'x-cloud-trace-context':`${traceId}/1;o=1`,
     origin:`https://${project}.web.app`,
+    'accept-encoding':'identity','cache-control':'no-transform',
   },cache:'no-store',redirect:'error',signal:AbortSignal.timeout(65000)})
   if(response.status!==200)throw Error('STAGING_PROBE_NOT_ACCEPTED')
   // Consume a bounded complete identity-encoded body, not arrayBuffer() on an

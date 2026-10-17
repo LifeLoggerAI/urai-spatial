@@ -83,6 +83,12 @@ test('collector consumes bounded provider bodies across GET, log POST and privat
  assert.ok(!source.includes('result.json()')&&!source.includes('res.json()'))
  assert.ok(!source.includes('response.arrayBuffer()'))
  assert.ok(source.includes("'accept-encoding':'identity'"))
+ // The protected private-media probe must request untransformed bytes as well,
+ // not just the Google JSON GET/log POST requests above.
+ const probe=source.split('const response=await fetch(target,')[1]?.split('if(response.status!==200)')[0]
+ assert.ok(probe,'protected probe source exists')
+ assert.ok(probe.includes("'accept-encoding':'identity'"),'protected probe requires identity encoding')
+ assert.ok(probe.includes("'cache-control':'no-transform'"),'protected probe forbids transcoding')
 })
 test('fictional source-mode claims and unsigned direct Git cannot trigger collection',async()=>{
  for(const extra of [{sourceMode:'DIRECT_GIT_SOURCE'},{authenticatedOrigin:{uploaderIdentityVerified:true}},
