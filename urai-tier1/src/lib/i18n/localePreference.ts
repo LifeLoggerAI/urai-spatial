@@ -44,7 +44,7 @@ export function localizedMessage(preference: LocalePreference, id: UraiMessageId
 
 const SPEECH_TAGS: Record<UraiLaunchLocale, string> = {
   en:'en-US', 'zh-Hans':'zh-CN', hi:'hi-IN', es:'es-ES', fr:'fr-FR', ar:'ar-SA', bn:'bn-BD', 'pt-BR':'pt-BR', ru:'ru-RU', ur:'ur-PK',
-  id:'id-ID', de:'de-DE', ja:'ja-JP', sw:'sw-KE', tr:'tr-TR', vi:'vi-VN', fil:'fil-PH', ko:'ko-KR', it:'it-IT', fa:'fa-IR',
+  id:'id-ID', de:'de-DE', ja:'ja-JP', sw:'sw-KE', tr:'tr-TR', vi:'vi-VN', fil:'fil-PH', ko:'ko-KR', it:'it-IT', fa:'fa-IR', pl:'pl-PL',
 }
 export function speechTagFor(preference: LocalePreference) { return SPEECH_TAGS[displayLocale(preference)] }
 

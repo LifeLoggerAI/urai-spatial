@@ -14,8 +14,8 @@ function storage(initial = {}) {
   return {getItem:key => values.get(key) ?? null, setItem:(key,value) => values.set(key,value)}
 }
 
-test('all twenty catalogs retain matching placeholders without granting language acceptance', () => {
-  assert.equal(URAI_LAUNCH_LOCALES.length, 20)
+test('all twenty-one catalogs retain matching placeholders without granting language acceptance', () => {
+  assert.equal(URAI_LAUNCH_LOCALES.length, 21)
   assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES], ['en'])
   assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length, 20 + Object.keys(URAI_JOURNEY_MESSAGES).length + Object.keys(URAI_JOURNEY_CONTROL_MESSAGES).length + Object.keys(URAI_GEOGRAPHIC_MESSAGES).length + Object.keys(URAI_FOUNDER_MESSAGES).length + Object.keys(URAI_FOCUS_COMPATIBILITY_MESSAGES).length)
   for (const code of URAI_LAUNCH_LOCALES) {
@@ -51,6 +51,17 @@ test('language-specific preview persists, while another URL language and unsuppo
   const blocked = {getItem:()=>{throw new Error('blocked')},setItem:()=>{throw new Error('blocked')}}
   assert.deepEqual(readLocalePreference({storage:blocked,languages:['xx']}), {requested:'en',preview:false})
   assert.equal(writeLocalePreference(blocked, {requested:'fr',preview:true}), false)
+})
+
+test('Polish working preview has an explicit speech tag and never bypasses English admission', () => {
+ const polish={requested:'pl',preview:true}
+ assert.equal(localizedMessage(polish,'nav.home').text,'Strona główna')
+ assert.equal(localizedMessage(polish,'nav.home').locale,'pl')
+ assert.equal(localizedMessage(polish,'privacy.reviewRequired').locale,'en')
+ assert.equal(speechTagFor(polish),'pl-PL')
+ assert.equal(speechTagFor({requested:'pl',preview:false}),'en-US')
+ assert.equal(localeNumber(polish,12.5).includes(',5'),true)
+ assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES],['en'])
 })
 
 test('selected French and Arabic formats, direction and speech tags agree with working UI', () => {
