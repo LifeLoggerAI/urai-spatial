@@ -20,6 +20,8 @@ on:
       - 'apps/functions/scripts/memory-media-staging-request-log-proof.test.cjs'
       - 'apps/functions/scripts/memory-media-staging-upload-origin.cjs'
       - 'apps/functions/scripts/memory-media-staging-upload-origin.test.cjs'
+      - 'apps/functions/scripts/memory-media-staging-provider-body.cjs'
+      - 'apps/functions/scripts/memory-media-staging-provider-body.test.cjs'
       - 'scripts/verify_functions_source_archive.py'
       - 'scripts/test_verify_functions_source_archive.py'
       - '.github/workflows/memory-media-staging-preflight.yml'
@@ -47,8 +49,9 @@ jobs:
           node --check apps/functions/scripts/memory-media-staging-runtime-attestation.cjs
           node --check apps/functions/scripts/memory-media-staging-request-log-proof.cjs
           node --check apps/functions/scripts/memory-media-staging-upload-origin.cjs
+          node --check apps/functions/scripts/memory-media-staging-provider-body.cjs
           node --check apps/functions/scripts/memory-media-staging-source-check.cjs
-          node --test apps/functions/scripts/memory-media-staging-source-check.test.cjs apps/functions/scripts/memory-media-staging-admission.test.cjs apps/functions/scripts/memory-media-staging-deployed-source.test.cjs apps/functions/scripts/memory-media-staging-cloud-collector.test.cjs apps/functions/scripts/memory-media-staging-provenance.test.cjs apps/functions/scripts/memory-media-staging-runtime-attestation.test.cjs apps/functions/scripts/memory-media-staging-request-log-proof.test.cjs apps/functions/scripts/memory-media-staging-upload-origin.test.cjs
+          node --test apps/functions/scripts/memory-media-staging-source-check.test.cjs apps/functions/scripts/memory-media-staging-admission.test.cjs apps/functions/scripts/memory-media-staging-deployed-source.test.cjs apps/functions/scripts/memory-media-staging-cloud-collector.test.cjs apps/functions/scripts/memory-media-staging-provenance.test.cjs apps/functions/scripts/memory-media-staging-runtime-attestation.test.cjs apps/functions/scripts/memory-media-staging-request-log-proof.test.cjs apps/functions/scripts/memory-media-staging-upload-origin.test.cjs apps/functions/scripts/memory-media-staging-provider-body.test.cjs
           node apps/functions/scripts/memory-media-staging-positive-proof.cjs --preflight
           test -z "${URAI_MEDIA_STAGING_WRITE_APPROVAL:-}"
       - name: Verify fictional Firebase archive content boundaries without cloud access

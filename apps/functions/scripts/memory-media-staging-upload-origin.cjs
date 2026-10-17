@@ -9,6 +9,7 @@ const {readFileSync,statSync} = require('node:fs')
 const {stripTypeScriptTypes} = require('node:module')
 const {resolve} = require('node:path')
 const {projectPath} = require('./memory-media-staging-cloud-collector.cjs')
+const {readBoundedProviderBody,readBoundedProviderJson,MAX_MEDIA_BYTES} = require('./memory-media-staging-provider-body.cjs')
 
 // The Firebase media bucket and the Google-managed Functions *source* bucket
 // are different resources. Never infer one from the other. Approval registry
@@ -100,25 +101,13 @@ async function jsonGet(url,token){
  const result=await fetch(url,{method:'GET',headers:{authorization:`Bearer ${token}`,accept:'application/json'},
   redirect:'error',signal:AbortSignal.timeout(20000)})
  if(!result.ok)bad('PROVIDER_HTTP_'+result.status)
- const json=await result.json()
- if(!json||typeof json!=='object'||Array.isArray(json))bad('PROVIDER_RESPONSE_INVALID')
- return json
+ return readBoundedProviderJson(result)
 }
 async function boundedMediaGet(url,token){
  const result=await fetch(url,{method:'GET',headers:{authorization:`Bearer ${token}`},
   redirect:'error',signal:AbortSignal.timeout(60000)})
  if(!result.ok)bad('PROVIDER_HTTP_'+result.status)
- const header=Number(result.headers.get('content-length'))
- if(Number.isFinite(header)&&header>MAX_SOURCE_BYTES)bad('SOURCE_OBJECT_TOO_LARGE')
- if(!result.body)bad('SOURCE_OBJECT_MISSING')
- const chunks=[];let count=0
- const reader=result.body.getReader()
- try {
-  while(true){const {value,done}=await reader.read();if(done)break
-   count+=value.length;if(count>MAX_SOURCE_BYTES)bad('SOURCE_OBJECT_TOO_LARGE')
-   chunks.push(Buffer.from(value))}
- }finally{reader.releaseLock()}
- return Buffer.concat(chunks)
+ return readBoundedProviderBody(result,MAX_MEDIA_BYTES)
 }
 
 // Production entrypoint: no caller-supplied provider records, token, fetcher,
