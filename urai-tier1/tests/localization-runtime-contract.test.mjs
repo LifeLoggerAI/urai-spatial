@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   URAI_LAUNCH_LOCALES,
+  URAI_GLOBAL_LANGUAGE_TARGETS,
+  URAI_UNPREPARED_LANGUAGE_TARGETS,
   localizationCompleteness,
   messageFor,
   negotiateUraiLocale,
@@ -57,4 +59,13 @@ test('unreviewed locale preferences do not mislabel English fallback copy or for
   assert.equal(runtimeUraiLocale('ar'), 'en')
   assert.equal(uraiTextDirection(runtimeUraiLocale('ar')), 'ltr')
   assert.equal(runtimeUraiLocale('en'), 'en')
+})
+
+test('21 distinct global language targets do not imply 21 runtime languages', () => {
+  assert.equal(URAI_GLOBAL_LANGUAGE_TARGETS.length, 21)
+  assert.equal(new Set(URAI_GLOBAL_LANGUAGE_TARGETS.map(code => code.split('-')[0])).size, 21)
+  assert.deepEqual([...URAI_UNPREPARED_LANGUAGE_TARGETS], ['pl'])
+  assert.equal(URAI_GLOBAL_LANGUAGE_TARGETS.at(-1), 'pl')
+  assert.equal(normalizeUraiLocale('pl'), null)
+  assert.equal(negotiateUraiLocale({languages:['pl-PL','en-US']}), 'en')
 })

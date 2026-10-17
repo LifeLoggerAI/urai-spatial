@@ -3,6 +3,8 @@ import path from 'node:path'
 import { localizationMessageBindings } from './lib/localization-message-bindings.mjs'
 import {
   URAI_LAUNCH_LOCALES,
+  URAI_GLOBAL_LANGUAGE_TARGETS,
+  URAI_UNPREPARED_LANGUAGE_TARGETS,
   URAI_NATIVE_REVIEWED_LOCALES,
   URAI_RTL_LOCALES,
   URAI_SOURCE_MESSAGES,
@@ -85,6 +87,21 @@ const receipt = {
   generatedAt: new Date().toISOString(),
   containsPrivateUserData: false,
   governedLocaleCount: URAI_LAUNCH_LOCALES.length,
+  // Distinct target count does not imply machine catalogs, native approval,
+  // production availability or the right to advertise 21 supported languages.
+  distinctGlobalLanguageTargetCount: URAI_GLOBAL_LANGUAGE_TARGETS.length,
+  distinctGlobalLanguageTargets: [...URAI_GLOBAL_LANGUAGE_TARGETS],
+  unpreparedLanguageTargets: URAI_UNPREPARED_LANGUAGE_TARGETS.map(locale => ({
+    locale,
+    preparationState: 'NOT_STARTED',
+    sourceCatalog: false,
+    wholeProductTranslated: false,
+    nativeReviewed: false,
+    runtimeAdmitted: false,
+    productionAdmission: 'blocked',
+    blockingReasons: ['CATALOG_NOT_PREPARED', 'NATIVE_REVIEW_REQUIRED',
+      'FULL_PRODUCT_LOCALE_ACCEPTANCE_REQUIRED'],
+  })),
   runtimeAdmittedLocales: locales.filter((locale) => locale.runtimeAdmitted).map((locale) => locale.locale),
   preparationOnlyLocales: locales.filter((locale) => !locale.runtimeAdmitted).map((locale) => locale.locale),
   uiCoverage: {

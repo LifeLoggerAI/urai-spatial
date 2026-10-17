@@ -10,6 +10,13 @@ export const URAI_LAUNCH_LOCALES = [
   'id','de','ja','sw','tr','vi','fil','ko','it','fa',
 ] as const
 
+// These are distinct LANGUAGE targets, not language variants counted twice.
+// A target is not a prepared catalog or a launch-admitted locale. New languages
+// enter URAI_LAUNCH_LOCALES only after substantive translation preparation.
+export const URAI_GLOBAL_LANGUAGE_TARGETS = [...URAI_LAUNCH_LOCALES, 'pl'] as const
+export type UraiGlobalLanguageTarget = typeof URAI_GLOBAL_LANGUAGE_TARGETS[number]
+export const URAI_UNPREPARED_LANGUAGE_TARGETS = ['pl'] as const
+
 export type UraiLaunchLocale = typeof URAI_LAUNCH_LOCALES[number]
 export type UraiTextDirection = 'ltr' | 'rtl'
 
