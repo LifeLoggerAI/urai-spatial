@@ -8,6 +8,7 @@ const worldTypes = read('src/spatial/world/worldTypes.ts')
 const registry = read('src/spatial/world/destinationRegistry.ts')
 const provider = read('src/spatial/world/WorldStateProvider.tsx')
 const controller = read('src/spatial/world/WorldTransitionController.tsx')
+const homeCheckpoint = read('src/spatial/world/homeWorldCheckpointPersistence.ts')
 const gateway = read('src/spatial/world/GroundGateway.tsx')
 const shell = read('src/spatial/world/UraiWorldShell.tsx')
 const layout = read('src/app/layout.tsx')
@@ -15,6 +16,11 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const homeCanvas = read('src/app/HomeSpatialCanvas.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const homeScene = read('src/scene/HomeScene.tsx')
+const spatialShell = read('src/spatial/layout/SpatialShell.tsx')
+const assetSpineBridge = read('src/app/UraiFinalAssetSpineBridge.tsx')
+const assetSpineSceneLayer = read('src/app/UraiFinalAssetSpineSceneLayer.tsx')
+const memoryStarJourney = read('src/app/MemoryStarJourneyWorld.tsx')
+const focusChamber = read('src/spatial/scene/FocusChamber.tsx')
 
 test('Tier-0 canon defines the required persistent-world destinations', () => {
   for (const destination of [
@@ -76,6 +82,24 @@ test('Focus and Replay use the current memory-star and inside-memory canon', () 
 
   assert.doesNotMatch(homeScene, /label:\s*['"]Replay Theater['"]/)
   assert.doesNotMatch(homeScene, /detail:\s*['"]Step into the focused memory chamber\./)
+
+  assert.match(spatialShell, /title:\s*['"]Focus Memory Star['"]/)
+  assert.match(spatialShell, /title:\s*['"]Replay['"]/)
+  assert.doesNotMatch(spatialShell, /title:\s*['"]Focus Chamber['"]/)
+  assert.doesNotMatch(spatialShell, /title:\s*['"]Replay Chamber['"]/)
+
+  assert.match(assetSpineBridge, /canon:\s*['"]Focus Memory Star['"]/)
+  assert.match(assetSpineBridge, /canon:\s*['"]Replay['"]/)
+  assert.match(assetSpineSceneLayer, /canon:\s*['"]Focus Memory Star['"]/)
+  assert.match(assetSpineSceneLayer, /canon:\s*['"]Replay['"]/)
+  assert.doesNotMatch(assetSpineBridge, /canon:\s*['"]Focus Chamber['"]/)
+  assert.doesNotMatch(assetSpineBridge, /canon:\s*['"]Replay Realm['"]/)
+  assert.doesNotMatch(assetSpineSceneLayer, /canon:\s*['"]Focus Chamber['"]/)
+  assert.doesNotMatch(assetSpineSceneLayer, /canon:\s*['"]Replay Realm['"]/)
+
+  assert.match(memoryStarJourney, /selected memory opens inside its stellar Memory Star/)
+  assert.doesNotMatch(memoryStarJourney, /private Focus chamber/)
+  assert.match(focusChamber, /focus memory star/)
 })
 
 test('The root application owns one persistent world shell', () => {
@@ -93,7 +117,10 @@ test('Travel preserves context and supports deterministic reversal', () => {
   assert.match(provider, /previousDestination/)
   assert.match(provider, /cameraCheckpoint/)
   assert.match(controller, /event\.key !== ['"]Escape['"]/)
-  assert.match(controller, /urai-world-home-checkpoint/)
+  assert.ok(controller.includes('persistHomeWorldCheckpoint({'), 'navigation must use optional guarded Home checkpoint')
+  assert.ok(homeCheckpoint.includes("HOME_WORLD_CHECKPOINT_STORAGE_KEY = 'urai-world-home-checkpoint'"), 'checkpoint key must stay canonical')
+  assert.ok(homeCheckpoint.includes('storage().setItem(HOME_WORLD_CHECKPOINT_STORAGE_KEY'), 'checkpoint helper must persist the canonical key')
+  assert.ok(!controller.includes('window.sessionStorage.setItem('), 'navigation must not directly write optional session storage')
   assert.match(controller, /router\.push\(href\)/)
 })
 

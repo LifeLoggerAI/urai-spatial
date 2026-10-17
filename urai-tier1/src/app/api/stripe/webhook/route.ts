@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { assertCheckoutSubscriptionMatch, invoiceSubscriptionId, invoiceBelongsToSubscription, settledStripeSubscriptionStatus } from '@/lib/server/stripe-entitlement-event';
 import type Stripe from 'stripe';
 import type { InsightPlanId } from '@/lib/entitlementStore';
 import {
@@ -21,6 +22,8 @@ const WEBHOOK_EVENTS = new Set([
   'customer.subscription.created',
   'customer.subscription.updated',
   'customer.subscription.deleted',
+  'invoice.paid',
+  'invoice.payment_failed',
   'charge.refunded',
   'charge.dispute.created',
   'charge.dispute.closed',
@@ -76,7 +79,7 @@ async function resolveSubscription(
   stripe: Stripe,
   eventType: string,
   payload: Stripe.Event.Data.Object,
-): Promise<ResolvedEntitlementEvent> {
+): Promise<ResolvedEntitlementEvent | null> {
   let metadata: Stripe.Metadata | undefined;
   let customerId: string | null = null;
   let subscriptionId: string | null = null;
@@ -102,16 +105,34 @@ async function resolveSubscription(
 
     if (subscriptionId) {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      assertCheckoutSubscriptionMatch(session, subscription);
       metadata = { ...(subscription.metadata ?? {}), ...(metadata ?? {}) };
       customerId = customerId ?? customerIdFrom(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer);
-      stripeStatus = subscription.status;
+      stripeStatus = await settledStripeSubscriptionStatus(subscription, (id) => stripe.invoices.retrieve(id));
     }
+  } else if (eventType === 'invoice.paid' || eventType === 'invoice.payment_failed') {
+    const invoice = payload as Stripe.Invoice;
+    const id = invoiceSubscriptionId(invoice);
+    // One-off invoices are not subscription entitlement authority.
+    if (!id) return null;
+    const subscription = await stripe.subscriptions.retrieve(id);
+    // Old invoices cannot revoke a newer billing period. Customer/subscription
+    // mismatches are retryable errors, never acknowledged as successful updates.
+    if (!invoiceBelongsToSubscription(invoice, subscription)) return null;
+    metadata = subscription.metadata ?? undefined;
+    customerId = customerIdFrom(subscription.customer);
+    subscriptionId = subscription.id;
+    stripeStatus = await settledStripeSubscriptionStatus(
+      subscription, (latestId) => stripe.invoices.retrieve(latestId),
+      eventType === 'invoice.payment_failed',
+    );
   } else {
     const subscription = payload as Stripe.Subscription;
     metadata = subscription.metadata ?? undefined;
     customerId = customerIdFrom(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer);
     subscriptionId = subscription.id;
-    stripeStatus = eventType === 'customer.subscription.deleted' ? 'canceled' : subscription.status;
+    stripeStatus = eventType === 'customer.subscription.deleted' ? 'canceled'
+      : await settledStripeSubscriptionStatus(subscription, (id) => stripe.invoices.retrieve(id));
   }
 
   const identity = await resolveMetadataIdentity(metadata, customerId);
@@ -248,7 +269,25 @@ export async function POST(request: Request) {
   }, {
     id: event.id,
     created: event.created,
+    resolveCurrentSubscription: async () => {
+      if (!resolved.subscriptionId) throw new Error('Missing Stripe subscription authority');
+      const current = await stripe.subscriptions.retrieve(resolved.subscriptionId);
+      const customerId = customerIdFrom(current.customer);
+      const identity = await resolveMetadataIdentity(current.metadata ?? undefined, customerId);
+      return {
+        ...defaultEntitlement(identity.userId ?? ''),
+        userId: identity.userId ?? '', planId: identity.planId ?? 'free',
+        stripeCustomerId: customerId, stripeSubscriptionId: current.id,
+        subscriptionStatus: await settledStripeSubscriptionStatus(
+          current, (id) => stripe.invoices.retrieve(id), event.type === 'invoice.payment_failed',
+        ),
+      };
+    },
   });
+
+  if (application.retryable) {
+    return NextResponse.json({ error: 'Stripe provider state could not be resolved' }, { status: 500 });
+  }
 
   return NextResponse.json({
     received: true,
@@ -256,3 +295,4 @@ export async function POST(request: Request) {
     reason: application.reason,
   });
 }
+

@@ -384,7 +384,9 @@ html.urai-spatial-warping .urai-spatial-warp-flash {
     radial-gradient(ellipse at 50% 50%, transparent 0 36%, rgba(0,0,0,0.34) 78%, rgba(0,0,0,0.72) 100%);
 }
 
-body > *:not(.urai-final-asset-spine-scene-layer) {
+/* Exclude the hydrated body-portaled Adam control: page-layer positioning
+   must not turn its fixed 48px launcher into an offscreen flow child. */
+body > *:not(.urai-final-asset-spine-scene-layer):not([data-urai-adam-launcher]) {
   position: relative;
   z-index: 1;
 }

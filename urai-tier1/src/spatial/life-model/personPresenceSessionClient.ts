@@ -7,12 +7,15 @@ export type PersonPresenceMode='HISTORICAL_AS_OF'|'ARCHIVE_PRESENT'|'SIMULATION_
 
 export async function preparePersonPresenceSession(input:{
   bundleId:string
+  sceneTruthPacketId:string
   mode:PersonPresenceMode
 }){
   const callable=httpsCallable<typeof input & {interactivePresenceConsent:true},{
     sessionId:string
     personId:string
     bundleId:string
+    sceneTruthPacketId:string
+    authorityDigest:string
     mode:PersonPresenceMode
     knowledgeCutoff:string|null
     presentationClass:'SIMULATED'

@@ -132,7 +132,7 @@ async function runReleaseControlSmoke() {
   }
   mkdirSync(out, { recursive: true })
 
-  const routes = ['/', '/home', '/ground', '/life-map', '/focus', '/replay', '/life-movie', '/council', '/mirror', '/passport', '/privacy-controls', '/location-map', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr', '/xr', '/settings', '/launch', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug', '/terms', '/login', '/account-deletion', '/privacy-policy']
+  const routes = ['/', '/home', '/ground', '/life-map', '/focus', '/replay', '/life-movie', '/council', '/mirror', '/passport', '/privacy-controls', '/location-map', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr', '/xr', '/settings', '/settings/communications', '/sms-opt-in', '/launch', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug', '/privacy', '/terms', '/login', '/account-deletion', '/privacy-policy']
   const identity = {
     memoryId: 'demo:quiet-reset',
     manifestId: 'replay-recovery-thread',
@@ -144,7 +144,6 @@ async function runReleaseControlSmoke() {
     ['overview', '1'],
   ].sort(([leftKey, leftValue], [rightKey, rightValue]) => leftKey.localeCompare(rightKey) || leftValue.localeCompare(rightValue))
   const compatibilityBrowserRoutes = new Map([
-    ['/privacy', { pathname: '/privacy-controls', searchEntries: [['from', 'privacy']] }],
     ['/ascent/life-map', { pathname: '/life-map', searchEntries: [['from', 'ascent-life-map']] }],
     ['/waitlist', { pathname: '/status', searchEntries: [['from', 'waitlist']] }],
     ['/system', { pathname: '/status', searchEntries: [['from', 'system']] }],
@@ -412,7 +411,7 @@ async function runReleaseControlSmoke() {
           report.consoleErrors.push({ profile: profileName, url: page.url(), message: message.text() })
         }
       })
-      const browserRoutes = ['/', '/life-map', queryCases[0].path, queryCases[1].path, '/life-movie', '/council', '/privacy-controls', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr', '/xr', '/settings', '/launch', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug', '/terms', '/login', '/account-deletion', '/privacy-policy', '/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind']
+      const browserRoutes = ['/', '/life-map', queryCases[0].path, queryCases[1].path, '/life-movie', '/council', '/privacy-controls', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr', '/xr', '/settings', '/settings/communications', '/sms-opt-in', '/launch', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug', '/privacy', '/terms', '/login', '/account-deletion', '/privacy-policy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind']
       for (const route of browserRoutes) {
         const requestedUrl = new URL(route, `${base}/`).toString()
         const response = await page.goto(requestedUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })

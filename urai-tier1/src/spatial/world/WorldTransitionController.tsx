@@ -2,12 +2,16 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { subscribeBrowserLocation } from '@/lib/browserLocationStore'
 import { definitionForDestination } from './destinationRegistry'
+import { persistHomeWorldCheckpoint } from './homeWorldCheckpointPersistence'
 import { useUraiWorldState } from './WorldStateProvider'
 import {
   URAI_WORLD_RETURN_EVENT,
   URAI_WORLD_TRAVEL_EVENT,
+  destinationSurfaceReady,
 } from './worldEvents'
+import { previousDestinationForReturn } from './worldTypes'
 import type { UraiDestination, UraiOriginRealm, UraiWorldTravelRequest } from './worldTypes'
 
 const CONTEXT_KEYS = [
@@ -39,19 +43,36 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
 
   const target = new URL(request.href ?? definition.href, window.location.origin)
   const current = new URLSearchParams(window.location.search)
+  const context = request.context
+  const selectedMemoryId = context?.memoryId ?? target.searchParams.get('memoryId')
+  const currentMemoryId = current.get('memoryId')
+  const sameMemory = Boolean(selectedMemoryId && currentMemoryId && selectedMemoryId === currentMemoryId)
+  const memoryDestination = request.destination === 'life-map' || request.destination === 'focus'
+    || request.destination === 'replay' || request.destination === 'council'
+    || request.destination === 'life-movie'
 
   for (const key of CONTEXT_KEYS) {
+    // An old visual node is never an implicit private memory identity.
+    // Reuse node/manifest metadata only when an explicit selected memory
+    // matches the current memory. Cross-realm travel must not leak it.
+    if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
+    if ((key === 'node' || key === 'manifestId') && (!memoryDestination || !sameMemory)) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
     }
   }
 
-  const context = request.context
-  if (context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
+  if (!memoryDestination) {
+    target.searchParams.delete('memoryId')
+    target.searchParams.delete('node')
+    target.searchParams.delete('manifestId')
+  }
+
+  if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
-  if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
+  if (memoryDestination && context?.replayManifestId && selectedMemoryId) target.searchParams.set('manifestId', context.replayManifestId)
   if (context?.movieId) target.searchParams.set('movieId', context.movieId)
   if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
@@ -67,14 +88,8 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
-  const memoryId = target.searchParams.get('memoryId')
-  const nodeId = target.searchParams.get('node')
-  if (request.destination === 'life-map') {
-    if (!nodeId && memoryId) target.searchParams.set('node', memoryId)
-  } else if (!memoryId && nodeId) {
-    target.searchParams.set('memoryId', nodeId)
-  }
-
+  // No node-to-memory or memory-to-node inference: these are separate
+  // identities, and each consumer must independently validate access.
   return `${target.pathname}${target.search}${target.hash}`
 }
 
@@ -105,6 +120,8 @@ export function WorldTransitionController() {
   const { world, phase, beginTravel } = useUraiWorldState()
   const timer = useRef<number | null>(null)
   const navigationWatchdog = useRef<number | null>(null)
+  const navigationGeneration = useRef(0)
+  const stopNavigationObservation = useRef<(() => void) | null>(null)
   const worldRef = useRef(world)
   const phaseRef = useRef(phase)
   const beginTravelRef = useRef(beginTravel)
@@ -114,6 +131,8 @@ export function WorldTransitionController() {
   useEffect(() => { beginTravelRef.current = beginTravel }, [beginTravel])
 
   const clearTimer = useCallback(() => {
+    // Also invalidate callbacks already queued before their timer was cleared.
+    navigationGeneration.current += 1
     if (timer.current !== null) {
       window.clearTimeout(timer.current)
       timer.current = null
@@ -122,6 +141,8 @@ export function WorldTransitionController() {
       window.clearTimeout(navigationWatchdog.current)
       navigationWatchdog.current = null
     }
+    stopNavigationObservation.current?.()
+    stopNavigationObservation.current = null
   }, [])
 
   const executeTravel = useCallback((request: UraiWorldTravelRequest) => {
@@ -130,26 +151,77 @@ export function WorldTransitionController() {
     beginTravelRef.current(request)
 
     if (currentWorld.destination === 'home') {
-      window.sessionStorage.setItem('urai-world-home-checkpoint', JSON.stringify({
+      // This checkpoint is optional continuity, not authorization to travel.
+      // Browsers may deny access to sessionStorage in strict privacy contexts.
+      persistHomeWorldCheckpoint({
         destination: currentWorld.destination,
         entryPortal: request.entryPortal ?? 'ground-gateway',
         cameraCheckpoint: currentWorld.cameraCheckpoint ?? 'home-threshold',
         savedAt: Date.now(),
-      }))
+      })
     }
 
     const href = buildTravelHref(request)
-    const targetPathname = normalizedPathname(new URL(href, window.location.origin).pathname)
-    timer.current = window.setTimeout(() => {
-      router.push(href)
-      timer.current = null
+    const target = new URL(href, window.location.origin)
+    const targetPathname = normalizedPathname(target.pathname)
+    const targetLocation = `${targetPathname}${target.search}${target.hash}`
+    const locationKey = () => `${normalizedPathname(window.location.pathname)}${window.location.search}${window.location.hash}`
+    const startingLocation = locationKey()
+    const generation = navigationGeneration.current
+    let navigationStarted = false
+    let reachedTarget = false
 
+    const observeNavigation = () => {
+      if (generation !== navigationGeneration.current) return
+      const currentLocation = locationKey()
+      if (navigationStarted && currentLocation === targetLocation) {
+        reachedTarget = true
+        if (destinationSurfaceReady(request.destination)) clearTimer()
+        return
+      }
+      // A later route (including returning to the origin after reaching the
+      // target) owns navigation now. This attempt may no longer recover it.
+      if (currentLocation !== startingLocation || reachedTarget) clearTimer()
+    }
+    const unsubscribeLocation = subscribeBrowserLocation(observeNavigation)
+    const surfaceObserver = new MutationObserver(observeNavigation)
+    surfaceObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-testid', 'data-route-owner'],
+    })
+    stopNavigationObservation.current = () => {
+      unsubscribeLocation()
+      surfaceObserver.disconnect()
+    }
+
+    timer.current = window.setTimeout(() => {
+      if (generation !== navigationGeneration.current) return
+      timer.current = null
+      navigationStarted = true
+      // Use the governed client-router path for every realm transition, including
+      // Mirror -> Replay. A prior Replay-only hard-document shortcut could stall
+      // before navigation committed under the patched Next runtime.
+      router.push(href)
+      if (generation !== navigationGeneration.current) return
+
+      // Route ownership is not proven by pathname alone. If the router changes
+      // the URL but the destination surface never mounts, force one deterministic
+      // document handoff after the client-router grace period.
       navigationWatchdog.current = window.setTimeout(() => {
-        navigationWatchdog.current = null
-        if (normalizedPathname(window.location.pathname) !== targetPathname) {
+        if (generation !== navigationGeneration.current) return
+        observeNavigation()
+        if (generation !== navigationGeneration.current) return
+        clearTimer()
+        if (
+          normalizedPathname(window.location.pathname) !== targetPathname ||
+          !destinationSurfaceReady(request.destination)
+        ) {
           window.location.assign(href)
         }
       }, 2500)
+      observeNavigation()
     }, transitionDuration(request.destination))
   }, [clearTimer, router])
 
@@ -158,7 +230,7 @@ export function WorldTransitionController() {
     if (phaseRef.current !== 'idle') return
     const destination = currentWorld.destination === 'possible-futures' && currentWorld.scenarioOrigin
       ? destinationFromOriginRealm(currentWorld.scenarioOrigin)
-      : currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
+      : previousDestinationForReturn(currentWorld) ?? fallbackReturnDestination(currentWorld.destination)
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
@@ -191,8 +263,13 @@ export function WorldTransitionController() {
       if (event.defaultPrevented || event.key !== 'Escape' || isEditableTarget(event.target)) return
       if (currentWorld.destination === 'home' && phaseRef.current === 'idle') return
       // Life Map and Location Map own their realm-specific Escape contracts.
-      // The global reverse-travel fallback must not race either realm-owned handler.
-      if (currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map') return
+      // Consent Sanctuary owns audit/pending dismissal and its history/Passport return.
+      // The global reverse-travel fallback must not race a realm-owned handler.
+      // Replay has its own Escape handler that pauses media and dispatches one
+      // URAI_WORLD_RETURN_EVENT. Handling the same key here as well can issue
+      // two reverse travels against the same transition state and leave the
+      // client URL on Replay while the Focus surface is already changing.
+      if (currentWorld.destination === 'replay' || currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map' || currentWorld.destination === 'privacy-controls') return
       event.preventDefault()
       reverseTravel()
     }

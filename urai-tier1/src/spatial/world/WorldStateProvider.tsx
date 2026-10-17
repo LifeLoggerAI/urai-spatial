@@ -9,6 +9,7 @@ import {
   useReducer,
   type ReactNode,
 } from 'react'
+import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import {
   definitionForDestination,
   destinationForPathname,
@@ -199,12 +200,13 @@ function transitionPhaseFor(state: UraiWorldState, destination: UraiDestination)
 
 export function UraiWorldStateProvider({ pathname, children }: { pathname: string; children: ReactNode }) {
   const [runtime, dispatch] = useReducer(reducer, pathname, initialRuntimeState)
+  const location = useBrowserLocation()
 
   useEffect(() => {
     const destination = destinationForPathname(pathname)
     if (!destination) return
     dispatch({ type: 'SYNC_ROUTE', destination, context: contextFromLocation() })
-  }, [pathname])
+  }, [pathname, location])
 
   const beginTravel = useCallback((request: UraiWorldTravelRequest) => {
     dispatch({

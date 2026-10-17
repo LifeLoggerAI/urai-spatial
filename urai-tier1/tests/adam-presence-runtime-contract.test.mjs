@@ -6,6 +6,7 @@ const root = new URL('../', import.meta.url)
 const layout = fs.readFileSync(new URL('src/app/layout.tsx', root), 'utf8')
 const runtime = fs.readFileSync(new URL('src/spatial/adam/AdamPresenceRuntime.tsx', root), 'utf8')
 const adamStyles = fs.readFileSync(new URL('src/spatial/adam/AdamPresenceRuntime.module.css', root), 'utf8')
+const pageLayerCss = fs.readFileSync(new URL('src/app/urai-aaaa-final-pass.css', root), 'utf8')
 const client = fs.readFileSync(new URL('src/spatial/adam/adamClient.ts', root), 'utf8')
 const surfaces = fs.readFileSync(new URL('src/spatial/adam/adamSurfaceContext.ts', root), 'utf8')
 const adamRoute = fs.readFileSync(new URL('src/app/adam/page.tsx', root), 'utf8')
@@ -58,7 +59,7 @@ test('Adam conversation and Founder voice use dedicated protected server boundar
   assert.match(functions, /not the live human Adam/)
   assert.match(functions, /requiresHumanFounder/)
   assert.doesNotMatch(functions, /request\.on\('close', \(\) => controller\.abort\(\)\)/)
-  assert.equal((functions.match(/response\.on\('close', \(\) => \{ if \(!response\.writableEnded\) controller\.abort\(\) \}\)/g) ?? []).length, 2)
+  assert.equal((functions.match(/response\.on\('close', \(\) => \{ if \(!response\.writableEnded\) upstreamController\.abort\(\) \}\)/g) ?? []).length, 2)
 })
 
 test('Founder voice cannot silently fall back to a stock identity', () => {
@@ -120,4 +121,16 @@ test('cross-property Adam contexts are allowlisted and remain inside the one can
   assert.match(surfaces, /CROSS_PROPERTY_SURFACES\.has\(requestedSurface as AdamSurfaceId\)/)
   assert.match(functions, /readSurface\(body\.surface\)/)
   assert.match(functions, /INVALID_SURFACE/)
+})
+
+
+test('free-floating founder launcher portals above Life Map WebGL stacking after hydration', () => {
+  assert.match(runtime, /launcherPortalReady/)
+  assert.match(runtime, /createPortal\(launcher, document\.body\)/)
+})
+
+test('body-portal launcher is exempt from generic page-layer relative positioning', () => {
+  assert.match(adamStyles, /\.launcher\s*\{\s*position:\s*fixed;/)
+  assert.ok(pageLayerCss.includes('body > *:not(.urai-final-asset-spine-scene-layer):not([data-urai-adam-launcher]) {'), 'Portaled Adam must not inherit body-page position:relative')
+  assert.match(runtime, /launcherPortalReady\s*\?\s*createPortal\(launcher, document\.body\)/)
 })

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { detectSoftwareWebGLRenderer, softwareWebGLPixelRatioForViewport } from './softwareWebGLRenderer'
 
 export type SpatialQualityTier = 'low' | 'medium' | 'high'
 
@@ -56,24 +57,37 @@ function initialDocumentVisible() {
 }
 
 export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
-  const [reducedMotion, setReducedMotion] = useState(initialReducedMotion)
-  const [documentVisible, setDocumentVisible] = useState(initialDocumentVisible)
-  const [tier, setTier] = useState<SpatialQualityTier>(() => deriveTier(initialReducedMotion()))
+  // SSR and the browser's first hydration render must share one deterministic
+  // profile. Device/browser hints are applied immediately after hydration.
+  const [reducedMotion, setReducedMotion] = useState(false)
+  const [documentVisible, setDocumentVisible] = useState(true)
+  const [tier, setTier] = useState<SpatialQualityTier>('medium')
+  const [softwareRenderer, setSoftwareRenderer] = useState(false)
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
 
   useEffect(() => {
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     const narrow = window.matchMedia('(max-width: 760px)')
     const coarsePointer = window.matchMedia('(pointer: coarse)')
     const connection = (navigator as NavigatorHints).connection
+    const softwareWebGL = detectSoftwareWebGLRenderer()
+    setSoftwareRenderer(softwareWebGL)
+    const updateViewport = () => setViewportSize({ width: window.innerWidth, height: window.innerHeight })
     const updateMotion = () => setReducedMotion(motion.matches)
     const updateVisibility = () => setDocumentVisible(document.visibilityState === 'visible')
-    const updateTier = () => setTier(deriveTier(motion.matches))
+    const updateTier = () => setTier(softwareWebGL ? 'low' : deriveTier(motion.matches))
+
+    updateMotion()
+    updateVisibility()
+    updateTier()
+    updateViewport()
 
     motion.addEventListener('change', updateMotion)
     motion.addEventListener('change', updateTier)
     narrow.addEventListener('change', updateTier)
     coarsePointer.addEventListener('change', updateTier)
     document.addEventListener('visibilitychange', updateVisibility)
+    window.addEventListener('resize', updateViewport)
     connection?.addEventListener?.('change', updateTier)
 
     return () => {
@@ -82,11 +96,20 @@ export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
       narrow.removeEventListener('change', updateTier)
       coarsePointer.removeEventListener('change', updateTier)
       document.removeEventListener('visibilitychange', updateVisibility)
+      window.removeEventListener('resize', updateViewport)
       connection?.removeEventListener?.('change', updateTier)
     }
   }, [])
 
-  return useMemo(() => ({ tier, ...PROFILE[tier], reducedMotion, documentVisible }), [documentVisible, reducedMotion, tier])
+  return useMemo(() => ({
+    tier,
+    ...PROFILE[tier],
+    pixelRatioMax: softwareRenderer
+      ? softwareWebGLPixelRatioForViewport(viewportSize.width, viewportSize.height)
+      : PROFILE[tier].pixelRatioMax,
+    reducedMotion,
+    documentVisible,
+  }), [documentVisible, reducedMotion, tier, softwareRenderer, viewportSize.width, viewportSize.height])
 }
 
 export function markFirstSpatialFrame(route: string, tier: SpatialQualityTier) {

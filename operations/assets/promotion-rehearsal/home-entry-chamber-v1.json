@@ -4,8 +4,8 @@
   "repository": "LifeLoggerAI/urai-spatial",
   "assetId": "home-entry-chamber-v1",
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
-  "bytes": 1786808,
-  "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
+  "bytes": 186040,
+  "sha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "fallback": "procedural-home-threshold",
   "license": "URAI Labs internal proprietary production asset",
@@ -19,6 +19,32 @@
   "licenseApproved": true,
   "optimizationVerified": true,
   "visualProofVerified": false,
-  "exactHeadChecksPassed": true,
-  "notes": "Fail-closed exact-binary replacement rehearsal rebound to the bounded Home pole-normal repair. Only two invalid pole NORMAL vectors on embodied-presence-face-light-geometry and the corresponding NORMAL accessor Y bounds numeric lexemes are corrected in place; GLB byte length and all unrelated JSON/BIN bytes remain unchanged. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and founder acceptance."
+  "exactHeadChecksPassed": false,
+  "notes": "Exact NORMAL-only candidate from immutable restored51db/b7bd predecessor:14zero normals replaced with valid normals at exactly identical positions, pinned meshoptimizer1.0 reencoding only7NORMAL streams. All177views and204accessors compared; no positions, topology, materials, nodes, skin or animation changes. Original59876BINbytes preserved. The old embodied-presence-face-light-geometry pole repair is N/A only for this exact proof/receipt/pack-bound successor after full decoded normal validation. promote/humanReviewApproved/visualProofVerified/exactHeadChecksPassed remain false. Historical73f2 rehearsal andb7bd predecessor retained; no approval transfers.",
+  "supersededRehearsalIdentity": {
+    "bytes": 1786808,
+    "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
+    "notes": "Fail-closed exact-binary replacement rehearsal rebound to the bounded Home pole-normal repair. Only two invalid pole NORMAL vectors on embodied-presence-face-light-geometry and the corresponding NORMAL accessor Y bounds numeric lexemes are corrected in place; GLB byte length and all unrelated JSON/BIN bytes remain unchanged. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and founder acceptance.",
+    "status": "historical predecessor only; not current binary authority"
+  },
+  "normalRepair": {
+    "receiptPath": "operations/assets/normal-repair-receipts/home-entry-chamber-v1.json",
+    "receiptSha256": "5f57bbee1123e418456d13e240fdf5dc9812b2fd017d10292c46fae975d221e4",
+    "predecessorPath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+    "predecessorBytes": 184160,
+    "predecessorSha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "candidateBytes": 186040,
+    "candidateSha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+    "visualAcceptance": false,
+    "humanReviewApproved": false,
+    "deviceAcceptance": false,
+    "productionPromotion": false,
+    "exactHeadChecksPassed": false
+  },
+  "normalRepairPredecessorIdentity": {
+    "bytes": 184160,
+    "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "archivePath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+    "status": "immutable historical normal-integrity failure:14zeros; not successor acceptance"
+  }
 }

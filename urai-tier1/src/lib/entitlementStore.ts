@@ -59,13 +59,14 @@ export async function upsertEntitlement(record: StoredEntitlement): Promise<Stor
 
 export type StripeEventApplicationResult = {
   applied: boolean;
-  reason: 'applied' | 'duplicate-event' | 'stale-event' | 'equal-time-precedence';
+  reason: 'applied' | 'duplicate-event' | 'stale-event' | 'equal-time-precedence' | 'provider-state-unresolved';
   entitlement: StoredEntitlement;
+  retryable?: boolean;
 };
 
 export async function applyStripeEventEntitlement(
   record: StoredEntitlement,
-  event: { id: string; created: number },
+  event: { id: string; created: number; resolveCurrentSubscription?: () => Promise<StoredEntitlement> },
 ): Promise<StripeEventApplicationResult> {
   const db = await getAdminFirestore();
   const ref = db.collection(COLLECTION).doc(record.userId);
@@ -79,18 +80,51 @@ export async function applyStripeEventEntitlement(
       return { applied: false, reason: 'duplicate-event' as const, entitlement: current };
     }
 
+    let nextRecord = record;
+    let currentProviderResolved = false;
+    const equalTime = (current.stripeLastEventCreated ?? 0) === event.created;
+    if (
+      equalTime && current.subscriptionStatus !== 'canceled' && record.subscriptionStatus !== 'canceled'
+      && current.stripeSubscriptionId && record.stripeSubscriptionId
+      && (current.subscriptionStatus !== record.subscriptionStatus || current.planId !== record.planId)
+    ) {
+      const sameBinding = Boolean(current.stripeCustomerId
+        && current.stripeCustomerId === record.stripeCustomerId
+        && current.stripeSubscriptionId === record.stripeSubscriptionId);
+      try {
+        if (!sameBinding || !event.resolveCurrentSubscription) throw new Error('Unresolved Stripe subscription authority');
+        const latest = await event.resolveCurrentSubscription();
+        if (latest.userId !== record.userId || latest.planId !== record.planId
+          || latest.stripeCustomerId !== record.stripeCustomerId
+          || latest.stripeSubscriptionId !== record.stripeSubscriptionId) {
+          throw new Error('Stripe subscription authority mismatch');
+        }
+        nextRecord = latest;
+        currentProviderResolved = true;
+      } catch {
+        // Retain a known nonpaid state while Stripe retries. Never acknowledge
+        // this unresolved event or reopen access from a conflicting snapshot.
+        const currentPaid = current.subscriptionStatus === 'active' || current.subscriptionStatus === 'trialing';
+        const incomingPaid = record.subscriptionStatus === 'active' || record.subscriptionStatus === 'trialing';
+        const denied = sameBinding && currentPaid && !incomingPaid
+          ? { ...current, subscriptionStatus: record.subscriptionStatus, updatedAt: Date.now() } : current;
+        if (denied !== current) transaction.set(ref, denied, { merge: true });
+        return { applied: false, reason: 'provider-state-unresolved' as const, entitlement: denied, retryable: true };
+      }
+    }
+
     const decision = decideStripeEventApplication({
       currentEventCreated: current.stripeLastEventCreated ?? 0,
       currentStatus: current.subscriptionStatus,
       incomingEventCreated: event.created,
-      incomingStatus: record.subscriptionStatus,
+      incomingStatus: nextRecord.subscriptionStatus,
     });
-    if (!decision.apply) {
+    if (!decision.apply && !currentProviderResolved) {
       return { applied: false, reason: decision.reason, entitlement: current };
     }
 
     const next: StoredEntitlement = {
-      ...record,
+      ...nextRecord,
       stripeLastEventCreated: event.created,
       stripeLastEventId: event.id,
       updatedAt: Date.now(),
@@ -112,3 +146,4 @@ export function mapStripeStatus(status?: string | null): SubscriptionStatus {
   if (status === 'active' || status === 'trialing' || status === 'past_due' || status === 'canceled' || status === 'incomplete') return status;
   return 'none';
 }
+

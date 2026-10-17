@@ -1,9 +1,21 @@
 import path from "node:path";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const isFirebaseStaticExport = process.env.URAI_FIREBASE_STATIC_EXPORT === "true";
+
+// A query-string toggle does not protect an asset placed under public/.
+// Refuse any production build while the disposable modeled V3 file is staged.
+const WORLD001_V3_PUBLIC = path.join(
+  projectRoot,
+  "public/assets/urai/world001-preview/URAI_WORLD001_FOUNDER_HOME_ARCHITECTURE_v3.glb",
+);
+if ((process.env.NODE_ENV === "production" || isFirebaseStaticExport) && existsSync(WORLD001_V3_PUBLIC)) {
+  throw new Error("Release blocked: nonproduction World001 V3 model is staged under Next public/");
+}
+
 
 const cloudWorkstationDevOriginBase =
   "firebase-urai-spatial-1769687960051.cluster-c72u3gwiofapkvxrcwjq5zllcu.cloudworkstations.dev";
@@ -20,6 +32,8 @@ const uraiAllowedDevOrigins = [
 ]);
 
 const nextConfig: NextConfig = {
+  // Keep the full build within bounded worker memory without skipping analysis.
+  experimental: { cpus: 1, webpackBuildWorker: true, webpackMemoryOptimizations: true },
   outputFileTracingRoot: projectRoot,
   ...(isFirebaseStaticExport
     ? {

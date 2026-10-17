@@ -35,7 +35,6 @@ const redirectAliases = [
   ['src/app/spatial/life-map/page.tsx', '/life-map?from=spatial-life-map'],
   ['src/app/spatial/life-map-r3f/page.tsx', '/life-map?from=spatial-life-map-r3f'],
   ['src/app/spatial/life-map-orbit/page.tsx', '/life-map?from=spatial-life-map-orbit'],
-  ['src/app/privacy/page.tsx', '/privacy-controls?from=privacy'],
 ]
 
 for (const [file, destination] of redirectAliases) {
@@ -44,6 +43,15 @@ for (const [file, destination] of redirectAliases) {
   assert.ok(source.includes(destination), `${file} must resolve to ${destination}.`)
   assert.doesNotMatch(source, /TierOneExperience|UraiV1Experience|UraiSpatialStage|SpatialLifeMapCanonical/, `${file} must not own another product runtime.`)
 }
+
+
+const privacy = read('src/app/privacy/page.tsx')
+assert.match(privacy, /export default function PrivacyPolicyPage/, 'Privacy must remain its canonical legal-policy owner.')
+assert.match(privacy, /id="privacy-policy-heading"/, 'Privacy must retain an explicit policy heading.')
+assert.match(privacy, /We do not sell or share your SMS opt-in data or personal information with third parties for marketing purposes\./, 'Privacy must retain the Twilio-required SMS non-sharing statement.')
+assert.match(privacy, /href="\/privacy-controls"/, 'Privacy policy must preserve the path into canonical privacy controls.')
+assert.doesNotMatch(privacy, /redirect\(/, 'Privacy must remain a direct public policy route, not a compatibility redirect.')
+assert.doesNotMatch(privacy, /TierOneExperience|UraiV1Experience|UraiSpatialStage|SpatialLifeMapCanonical/, 'Privacy must not mount a parallel product runtime.')
 
 for (const file of ['src/app/u/[handle]/page.tsx', 'src/app/u/adamclamp/page.tsx', 'src/app/demo/life-map/page.tsx']) {
   const source = read(file)
@@ -71,4 +79,4 @@ const spatialRuntime = read('src/spatial/realms/SpatialRealmRuntime.tsx')
 assert.match(spatialRuntime, /SpatialRealmExperience/, 'Capability-aware realm runtime must preserve the canonical R3F owner.')
 assert.match(spatialRuntime, /semantic-no-webgl-fallback/, 'Capability-aware realm runtime must preserve semantic no-WebGL access.')
 
-console.log('URAI static route smoke canon passed.')
+console.log('URAI static route smoke canon passed: compatibility aliases converge correctly and Privacy remains a direct canonical legal-policy surface.')

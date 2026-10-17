@@ -1,10 +1,16 @@
 # URAI Canon Index
 
-Last verified: 2026-07-03
+Historical source-map checkpoint: 2026-07-03. This date records the original snapshot, not present verification.
 
-## Authoritative current sources
+## Current evidence refresh
 
-1. `docs/system/SYSTEM_INVENTORY.json` — machine-readable repository and evidence inventory.
+Use the existing [Labs estate completion register](https://github.com/LifeLoggerAI/urai-labs-llc/issues/61) to find the current owning issues and candidate references. The register is mutable execution control, not a frozen release certificate. Before execution, read back the relevant default-branch and candidate heads, exact-head workflow results, protected deployment receipts, and deployed runtime fingerprints. Required human or legal acceptance remains separate.
+
+The July inventory below preserves historical heads, counts, classifications, and evidence claims. It is not current repository, provider, deployment, or legal authority. Its `generatedAt` and recorded repository entries must not be relabeled as a fresh verification. A new readback expires whenever its relevant source, configuration, approval, or deployed artifact changes.
+
+## Source map recorded at the historical checkpoint
+
+1. `docs/system/SYSTEM_INVENTORY.json` — historical machine-readable repository and evidence inventory; refresh through the register above before use.
 2. `docs/system/REPOSITORY_OWNERSHIP.md` — subsystem ownership boundaries.
 3. `docs/system/DEPLOYMENT_AUTHORITY.md` — canonical runtime and release authority.
 4. `docs/system/SERVICE_DEPENDENCIES.md` — cross-repository contracts.
@@ -17,9 +23,9 @@ Last verified: 2026-07-03
 
 Repository source, current workflow evidence, and deployed runtime fingerprints outrank historical planning documents when they conflict.
 
-## Product route authority
+## Product route snapshot (2026-07-03)
 
-The current public route contract is owned by `LifeLoggerAI/urai-spatial/urai-tier1`:
+The following route description is retained from the July checkpoint. Current route and canon contracts are owned by `LifeLoggerAI/urai-spatial/urai-tier1` and require fresh source readback:
 
 `/` → `/home` → `/ground` or `/life-map` → `/focus` → `/replay`, with `/mirror`, `/passport`, and `/status` as separate realms/control surfaces.
 
@@ -34,7 +40,7 @@ The following connected Drive materials remain useful historical inputs but are 
 
 These documents should be marked `SUPERSEDED FOR RUNTIME AND DEPLOYMENT AUTHORITY` and link to this index. They should not be deleted.
 
-## Entity and naming rules
+## Entity and naming rules recorded at the historical checkpoint
 
 - Person name for project records: Adam Clamp.
 - Do not label Adam “founder” unless he requests that wording.

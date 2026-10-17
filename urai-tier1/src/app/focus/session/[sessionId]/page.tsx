@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
+import { FocusSessionUnavailable } from '../FocusSessionUnavailable'
 
 import { DEMO_MEMORY_STAR_NODES, resolveDemoMemoryStar, type MemoryStarResolution } from '@/spatial/memory/memoryStarSchema'
 
@@ -23,9 +23,7 @@ function isUnavailableMemoryStarResolution(resolution: MemoryStarResolution): re
 function UnavailableFocusSession({ resolution }: { resolution: UnavailableMemoryStarResolution }) {
   return (
     <main data-testid="urai-focus-session-direct-route" data-status={resolution.status} data-reason={resolution.reason}>
-      <h1>Focus session unavailable</h1>
-      <p>This focus session is unavailable, private, locked, deleted, or not part of the launch-safe demo set.</p>
-      <Link href={resolution.safeHref}>Return to Life Map</Link>
+      <FocusSessionUnavailable safeHref={resolution.safeHref} />
     </main>
   )
 }
@@ -40,3 +38,4 @@ export default async function FocusSessionRoute({ params }: FocusSessionRoutePro
 
   redirect(resolution.star.focusHref)
 }
+

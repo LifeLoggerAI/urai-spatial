@@ -6,6 +6,7 @@ const read = (relativePath) => fs.readFileSync(new URL(`../${relativePath}`, imp
 const world = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const navigator = read('src/components/lifemap/LifeMapSemanticNavigator.tsx')
 const selectionBroker = read('src/components/lifemap/lifeMapSelection.ts')
+const corona = read('src/spatial/stellar/StellarCorona.tsx')
 
 function sliceBetween(source, start, end) {
   const from = source.indexOf(start)
@@ -50,14 +51,19 @@ test('pattern memories retain authored settling geometry inside the selected arr
   assert.doesNotMatch(arrival, /useGLTF|Focus_Arrival|Focus_Breathing|ringGeometry|torusGeometry|icosahedronGeometry|octahedronGeometry|tetrahedronGeometry/)
 })
 
-test('Memory Stars use a convective stellar photosphere with layered corona and reject flat wireframe authority', () => {
+test('Memory Stars use a convective stellar photosphere with irregular corona and reject uniform bubble shells', () => {
   const star = sliceBetween(world, 'function AuthoredMemoryStar', 'function LifeCore')
   assert.match(star, /new THREE\.ShaderMaterial/)
   assert.match(star, /artRevision: "v302-stellar-limb-galaxy-depth"/)
   assert.match(star, /visualAuthority: "stellar-body-not-geology"/)
   assert.match(star, /name="memory-star-photosphere"/)
-  assert.match(star, /name="memory-star-inner-corona"/)
-  assert.match(star, /name="memory-star-outer-corona"/)
+  assert.match(star, /<StellarCorona radius=\{0\.38 \* \(active \? 1\.12 : 1\.08\)\} color=\{aura\} reducedMotion=\{reducedMotion\}/)
+  assert.doesNotMatch(star, /THREE\.BackSide|memory-star-inner-corona|memory-star-outer-corona/)
+  assert.match(corona, /depthTest: true/)
+  assert.match(corona, /depthWrite: false/)
+  assert.match(corona, /float plume =/)
+  assert.match(corona, /float envelope = exp\(-outside \/ reach/)
+  assert.match(corona, /if \(alpha < 0\.003\) discard/)
   assert.match(star, /convection/)
   assert.match(star, /granule/)
   assert.match(star, /limbFalloff/)
@@ -67,9 +73,6 @@ test('Memory Stars use a convective stellar photosphere with layered corona and 
   assert.ok(maximumDisplacement > 0 && maximumDisplacement <= 0.38 * 0.012,
     'convection must preserve the stellar limb rather than deform it into geology')
   assert.match(star, /active \? 1\.12 : 1\.08/)
-  assert.match(star, /active \? 0\.04 : 0\.022/)
-  assert.match(star, /active \? 1\.42 : 1\.30/)
-  assert.match(star, /active \? 0\.008 : 0\.005/)
   assert.doesNotMatch(star, /active \? 0\.24 : 0\.11/)
   assert.doesNotMatch(star, /wireframe/)
   assert.doesNotMatch(star, /memory-star-chromosphere/)

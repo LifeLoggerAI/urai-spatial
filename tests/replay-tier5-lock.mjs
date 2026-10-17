@@ -5,6 +5,7 @@ import process from 'node:process';
 
 const REQUESTED_BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
+const SERVER_MODE = process.env.URAI_SPATIAL_SERVER_MODE === 'production' ? 'production' : 'development';
 const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/replay-tier5-lock';
 const REQUESTED_PORT = Number(new URL(REQUESTED_BASE_URL).port || 3000);
 const FALLBACK_PORT = Number(process.env.URAI_SPATIAL_TEST_PORT || REQUESTED_PORT + 1);
@@ -39,11 +40,16 @@ async function waitForServer(url, timeoutMs = 90000) {
 }
 
 async function startServer() {
-  if (USE_EXISTING || (await serverResponds(REQUESTED_BASE_URL))) {
+  if (USE_EXISTING) {
+    if (SERVER_MODE === 'production') throw new Error('Production Replay proof must own the exact built server; existing-server reuse is forbidden.');
+    return { child: null, baseUrl: REQUESTED_BASE_URL.replace(/\/$/, '') };
+  }
+  if (SERVER_MODE !== 'production' && (await serverResponds(REQUESTED_BASE_URL))) {
     return { child: null, baseUrl: REQUESTED_BASE_URL.replace(/\/$/, '') };
   }
   const baseUrl = baseUrlForPort(FALLBACK_PORT);
-  const child = spawn('pnpm', ['--filter', 'urai-tier1', 'dev', '--port', String(FALLBACK_PORT)], {
+  const serverScript = SERVER_MODE === 'production' ? 'start' : 'dev';
+  const child = spawn('pnpm', ['--filter', 'urai-tier1', serverScript, '--port', String(FALLBACK_PORT)], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1' },
     stdio: 'inherit',
@@ -136,6 +142,28 @@ async function expectInsideViewport(locator, page, label, padding = 2) {
   }
 }
 
+// Exercise a genuine pointer hit and assert the native <details> state. In a
+// real earlier Chromium trace the click OPENED the panel, but locator.click()
+// never returned from its post-action wait under a loaded WebGL compositor.
+// A hit-test, native mouse event and explicit state assertion measure the
+// product interaction without treating an automation wait as product failure.
+async function toggleReplayMemoryDisclosure(page, summary, expectedOpen) {
+  await expectVisible(summary, 'Replay memory controls summary');
+  const bounds = await summary.boundingBox();
+  if (!bounds || bounds.width < 1 || bounds.height < 1) throw new Error('Replay controls have no pointer target');
+  const point = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  const actionable = await page.evaluate(({ x, y }) => {
+    const hit = document.elementFromPoint(x, y);
+    return Boolean(hit?.closest('summary[aria-label="Replay memory controls"]'));
+  }, point);
+  if (!actionable) throw new Error('Replay memory controls pointer hit is occluded by another element');
+  await page.mouse.click(point.x, point.y);
+  await page.waitForFunction((open) => {
+    const details = document.querySelector('details.replayProduct');
+    return details instanceof HTMLDetailsElement && details.open === open;
+  }, expectedOpen, { timeout: 10000 });
+}
+
 async function openDemoReplay(page, baseUrl) {
   const focusUrl = `${baseUrl}/focus?memoryId=${encodeURIComponent(MEMORY_ID)}&demo=1`;
   await page.goto(focusUrl, { waitUntil: 'domcontentloaded' });
@@ -167,10 +195,14 @@ async function validateReplay(page, report, screenshotName) {
   await expectAttribute(proof, 'data-playing', 'true');
   await expectVisible(client, 'cinematic Replay client');
   await expectAttribute(client, 'data-memory-status', 'demo');
+  // Geometry read-through is not enough: wait until the actual licensed
+  // GLTF scene has hydrated, not just until the generic Canvas first frame.
+  // Console and network errors remain unconditional test failures.
+  await expectAttribute(client, 'data-replay-cc0-understory-ready', 'true', 60000);
   await expectAttribute(client, 'data-manifest-id', MANIFEST_ID);
   await expectAttribute(client, 'data-playing', 'false');
   await expectVisible(controls, 'Memory controls disclosure');
-  await controls.click();
+  await toggleReplayMemoryDisclosure(page, controls, true);
   await expectVisible(productControls, 'Memory controls action panel');
   await expectVisible(companion, 'persistent Orb travel control');
   await expectVisible(heading, 'Replay heading');
@@ -178,7 +210,7 @@ async function validateReplay(page, report, screenshotName) {
   await expectVisible(unwind, 'Replay unwind control');
   await expectNoOverlap(heading, unwind, 'Replay heading and unwind control', 4);
   await expectNoOverlap(productControls, companion, 'Replay memory controls and persistent Orb', 4);
-  await controls.click();
+  await toggleReplayMemoryDisclosure(page, controls, false);
   await productControls.waitFor({ state: 'hidden', timeout: 10000 });
 
   const play = page.getByRole('button', { name: 'Continue memory' }).first();
@@ -201,7 +233,7 @@ async function validateReplay(page, report, screenshotName) {
 async function run() {
   const server = await startServer();
   const report = {
-    schemaVersion: 'urai-replay-tier5-report-4',
+    schemaVersion: 'urai-replay-tier5-report-5',
     screenshots: [],
     console: [],
     pageErrors: [],
@@ -211,6 +243,7 @@ async function run() {
     bodyHtml: '',
     finalUrl: null,
     baseUrl: server.baseUrl,
+    serverMode: SERVER_MODE,
     failure: null,
   };
   const consoleErrors = [];
@@ -239,8 +272,11 @@ async function run() {
     await validateReplay(page, report, '02-memory-theater-replay.png');
 
     await page.keyboard.press('Escape');
-    await page.waitForURL(/\/(focus|unwind)(\?|$)/, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    report.audits.push('Escape returns Replay through the deterministic world unwind path');
+    await page.waitForURL(/\/(focus|unwind)(\?|$)/, { timeout: 15000 });
+    // URL changes alone are insufficient: the destination must actually own
+    // a mounted surface and Replay must have unmounted after this return.
+    await page.getByTestId('cinematic-replay-client').waitFor({ state: 'detached', timeout: 15000 });
+    report.audits.push('Escape completes one Replay return route transition and removes the old immersive scene');
 
     await page.setViewportSize({ width: 390, height: 844 });
     const mobileUrl = `${server.baseUrl}/replay?memoryId=${encodeURIComponent(MEMORY_ID)}&manifestId=${MANIFEST_ID}&demo=1`;
@@ -258,8 +294,16 @@ async function run() {
     const modeContract = '[data-scene-mode="replay"]';
     report.audits.push(`canonical data-scene-mode contract retained: ${modeContract}`);
 
+    if (SERVER_MODE === 'production') {
+      const developmentConsole = report.console.filter(({ text }) => /Fast Refresh|React DevTools for a better development experience/i.test(text));
+      const hotUpdateFailures = report.requestFailures.filter(({ url }) => /\.hot-update\.(?:json|js)(?:\?|$)/i.test(url));
+      if (developmentConsole.length || hotUpdateFailures.length) {
+        throw new Error(`Production Replay proof observed development-runtime signals: ${JSON.stringify({ developmentConsole, hotUpdateFailures })}`);
+      }
+      report.audits.push('production Replay proof owned a next start server and observed no Fast Refresh, React development tooling, or hot-update request failures');
+    }
     if (consoleErrors.length) throw new Error(`Console errors detected:\n${consoleErrors.join('\n')}`);
-    console.log(`URAI Replay Tier 5 Memory Theater validation passed at ${server.baseUrl}.`);
+    console.log(`URAI Replay Tier 5 Memory Theater validation passed at ${server.baseUrl} in ${SERVER_MODE} mode.`);
   } catch (error) {
     report.failure = error instanceof Error ? error.stack || error.message : String(error);
     if (page) {

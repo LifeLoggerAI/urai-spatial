@@ -2,6 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
+import { CANONICAL_HOME_SUCCESSOR, verifyCanonicalHomeRepairRetirement } from './lib/glb-normal-integrity.mjs'
 
 const root = process.cwd()
 const modelRoot = path.join(root, 'urai-tier1/public/assets/urai/generated/models')
@@ -83,10 +84,24 @@ for (const [fileName, contract] of Object.entries(contracts)) {
   if ((record.triangleCount || Infinity) > contract.maxTriangles) errors.push(`${fileName}: triangle budget exceeded`)
   for (const node of contract.nodes) if (!nodes.has(node)) errors.push(`${fileName}: missing node ${node}`)
   for (const clip of contract.clips) if (!clips.has(clip)) errors.push(`${fileName}: missing clip ${clip}`)
-  for (const extension of ['KHR_materials_emissive_strength','KHR_materials_transmission','KHR_materials_clearcoat']) {
-    if (!json.extensionsUsed?.includes(extension)) errors.push(`${fileName}: missing material extension ${extension}`)
+  const normalRepairedHome = fileName === 'home-entry-chamber-v1.glb'
+    && payload.length === 186040
+    && hash === '808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17'
+    && record.sourceHead === '51db7b3ba77a657659da34ca5e146e049dd03d31'
+  if (fileName === 'home-entry-chamber-v1.glb') {
+    try {
+      await verifyCanonicalHomeRepairRetirement(payload, { assetId: CANONICAL_HOME_SUCCESSOR.assetId, glbPath: CANONICAL_HOME_SUCCESSOR.path, targetMesh: CANONICAL_HOME_SUCCESSOR.retiredTarget, packFileName: fileName, label: 'Home' }, receipt, JSON.parse(fs.readFileSync('operations/assets/generated-receipts/home-entry-chamber-v1.json', 'utf8')), JSON.parse(fs.readFileSync('operations/assets/promotion-rehearsal/home-entry-chamber-v1.json', 'utf8')))
+    } catch (error) { errors.push(`${fileName}: normal-repair proof rejected: ${error.message}`) }
   }
-  if (json.asset?.generator !== 'URAI Labs Final GLB Forge 1.0') errors.push(`${fileName}: generator identity mismatch`)
+  const requiredExtensions = normalRepairedHome
+    ? ['EXT_meshopt_compression', 'KHR_mesh_quantization']
+    : ['KHR_materials_emissive_strength','KHR_materials_transmission','KHR_materials_clearcoat']
+  for (const extension of requiredExtensions) {
+    if (!json.extensionsUsed?.includes(extension)) errors.push(`${fileName}: missing source-required extension ${extension}`)
+  }
+  const expectedGenerator = normalRepairedHome ? 'glTF-Transform v4.4.2' : 'URAI Labs Final GLB Forge 1.0'
+  if (json.asset?.generator !== expectedGenerator) errors.push(`${fileName}: generator identity mismatch`)
+  if (normalRepairedHome && json.asset?.extras?.source !== 'scripts/author-home-finalization-assets.mjs') errors.push(`${fileName}: reviewed source provenance mismatch`)
 }
 
 const report = {

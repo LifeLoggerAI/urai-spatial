@@ -33,9 +33,11 @@ test('generated receipt keeps provider integration language provenance-qualified
   assert.match(runner, /unqualified provider-integration claim/)
 })
 
-test('provider verifier certifies the current procedural Home owner', () => {
-  assert.match(verifier, /urai-tier1\/src\/app\/FinalHomeWorld\.tsx/)
-  assert.match(verifier, /data-home-visual-owner=\"final-coherent-sanctuary\"/)
-  assert.match(verifier, /data-home-visible-world=\"final-physical-sanctuary-memory-rooms\"/)
-  assert.doesNotMatch(verifier, /forbidden:\s*\[[^\]]*FinalHomeWorld from/)
+test('provider verifier certifies the active Home mounting graph', () => {
+  assert.match(verifier, /urai-tier1\/src\/app\/AssetDrivenHomeWorld\.tsx/)
+  assert.match(verifier, /data-home-visual-owner="asset-driven-personalized-sanctuary"/)
+  assert.match(verifier, /data-home-visible-world="moonlit-natural-inhabited-sanctuary"/)
+  assert.match(verifier, /requiredByFile/)
+  assert.match(verifier, /'<AssetDrivenHomeWorld'/)
+  assert.match(verifier, /'<HomeWorldProduction'/)
 })

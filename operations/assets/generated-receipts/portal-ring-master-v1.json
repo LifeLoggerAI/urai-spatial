@@ -5,43 +5,56 @@
   "bytes": 242072,
   "sha256": "5b751cc6e7caa9667d48e4860e76a7b39f6cf84a60afb252497a19f323bb19c5",
   "measured": {
-    "triangleCount": 7576,
-    "boundsMeters": {
-      "min": [
-        -1.9753,
-        -2.52,
-        -1.02
-      ],
-      "max": [
-        2,
-        2.9579,
-        1.2349
-      ],
-      "size": [
-        3.9753,
-        5.4779,
-        2.2549
-      ]
-    },
-    "repairedEulerRotations": 2,
-    "nodeCount": 53,
-    "materialCount": 8,
-    "animationClips": [
-      "Portal_Closed",
-      "Portal_Available",
-      "Portal_Attention",
-      "Portal_Active",
-      "Portal_Opening",
-      "Portal_Traversal",
-      "Portal_Closing"
-    ]
+    "format": "glb",
+    "version": 2,
+    "generator": "URAI Labs Final GLB Forge 1.0",
+    "nodes": 40,
+    "meshes": 6,
+    "materials": 8,
+    "triangleCount": 3816,
+    "boundsMin": [
+      -2.8773183822631836,
+      -0.5,
+      -1.3569406270980835
+    ],
+    "boundsMax": [
+      2.722681760787964,
+      5.805578231811523,
+      1.3222899436950684
+    ],
+    "boundsMeters": [
+      5.6,
+      6.306,
+      2.679
+    ],
+    "extensionsUsed": [
+      "KHR_materials_clearcoat",
+      "KHR_materials_emissive_strength",
+      "KHR_materials_transmission"
+    ],
+    "extensionsRequired": []
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "uncompressed-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-portal-ring",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
   "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Portal Ring shard pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
   "generatedAt": "2026-08-09T00:24:37.168Z",
-  "releaseState": "candidate-not-production-ready"
+  "releaseState": "candidate-not-production-ready",
+  "targetRoutes": [
+    "/",
+    "/home",
+    "/ground",
+    "/life-map",
+    "/focus",
+    "/replay"
+  ],
+  "measurementReconciliation": {
+    "sourceSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
+    "observedAt": "2026-10-06T17:20:57.484950+00:00",
+    "method": "audit-launch-critical-artifact.mjs actual-byte inspection",
+    "assetBytesChanged": false,
+    "finalReviewGranted": false
+  }
 }

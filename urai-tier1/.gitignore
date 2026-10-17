@@ -51,3 +51,6 @@ _backup/
 _audit/
 _backup/
 .next/
+
+# Disposable nonproduction preview copy; canonical modeled GLB is in dev-preview-sources/.
+public/assets/urai/world001-preview/URAI_WORLD001_FOUNDER_HOME_ARCHITECTURE_v3.glb

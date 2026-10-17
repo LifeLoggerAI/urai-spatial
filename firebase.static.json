@@ -11,6 +11,40 @@
     "redirects": [],
     "headers": [
       {
+        "source": "**",
+        "headers": [
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "no-referrer"
+          },
+          {
+            "key": "Content-Security-Policy",
+            "value": "base-uri 'self'; object-src 'none'; frame-ancestors 'self'"
+          }
+        ]
+      },
+      {
+        "source": "/api/system/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store, max-age=0"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json; charset=utf-8"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          }
+        ]
+      },
+      {
         "source": "**/*.html",
         "headers": [
           {
@@ -25,11 +59,33 @@
           {
             "key": "Cache-Control",
             "value": "no-store, max-age=0"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json; charset=utf-8"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
           }
         ]
       }
     ],
     "rewrites": [
+      {
+        "source": "/api/privacy/export/download",
+        "function": {
+          "functionId": "downloadOperationalExportPackage",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/maps/elevation",
+        "function": {
+          "functionId": "mapsElevationProvider",
+          "region": "us-central1"
+        }
+      },
       {
         "source": "/api/google/oauth/start",
         "function": {
@@ -90,6 +146,20 @@
         "source": "/api/urai/adam/voice",
         "function": {
           "functionId": "adamFounderVoiceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/person-presence/conversation",
+        "function": {
+          "functionId": "personPresenceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/person-presence/voice",
+        "function": {
+          "functionId": "personPresenceVoiceProvider",
           "region": "us-central1"
         }
       },

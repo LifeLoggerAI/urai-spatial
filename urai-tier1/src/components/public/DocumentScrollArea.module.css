@@ -1,0 +1,27 @@
+.scrollArea {
+  width: 100%;
+  min-width: 0;
+  overscroll-behavior-y: contain;
+  overflow-wrap: anywhere;
+  scroll-padding-block: 24px;
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
+}
+
+.scrollArea:focus-visible {
+  outline: 2px solid #b9f4ff;
+  outline-offset: -4px;
+}
+
+.scrollArea > * {
+  min-width: 0;
+}
+
+.scrollArea :where(input, select, textarea) {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.scrollArea :where(a, button, input, select, textarea, summary) {
+  scroll-margin-block: 24px;
+}

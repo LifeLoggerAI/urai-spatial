@@ -24,11 +24,11 @@ export function initialReplayVideoSnapshot(): ReplayVideoSnapshot {
   return { status: 'loading', ready: false, playing: false, muted: true, audioAllowed: true, currentTimeMs: 0, durationMs: null, error: null }
 }
 
-function finiteDurationMs(video: HTMLVideoElement) {
+function finiteDurationMs(video: HTMLMediaElement) {
   return Number.isFinite(video.duration) && video.duration > 0 ? Math.round(video.duration * 1000) : null
 }
 
-function mediaFailure(video: HTMLVideoElement) {
+function mediaFailure(video: HTMLMediaElement) {
   switch (video.error?.code) {
     case 2: return 'The recorded video could not be downloaded. Retry when the connection is available.'
     case 3: return 'The recorded video could not be decoded. Retry or choose another memory.'
@@ -38,11 +38,11 @@ function mediaFailure(video: HTMLVideoElement) {
 }
 
 /** The decoded source video, rather than a separate animation timer, owns video time. */
-export function createReplayVideoSession(
-  video: HTMLVideoElement,
+export function createReplayMediaSession(
+  video: HTMLMediaElement,
   url: string,
   onSnapshot: (snapshot: ReplayVideoSnapshot) => void,
-  options: { audioAllowed?: () => boolean } = {},
+  options: { audioAllowed?: () => boolean; nativeControls?: boolean } = {},
 ): ReplayVideoSession {
   let disposed = false
   let requestVersion = 0
@@ -95,6 +95,7 @@ export function createReplayVideoSession(
     if (!wantsPlayback) { video.pause(); return }
     publish({ status: 'ready', ready: decoded(), playing: true, error: null })
   })
+  listen('play', () => { if (options.nativeControls) wantsPlayback = true })
   listen('pause', () => publish({ playing: false }))
   listen('waiting', () => publish({ status: 'buffering', ready: false }))
   listen('seeking', () => publish({ status: 'buffering', ready: false }))
@@ -107,7 +108,7 @@ export function createReplayVideoSession(
   })
   listen('error', () => fail(mediaFailure(video)))
 
-  video.playsInline = true
+  if ('playsInline' in video) (video as HTMLVideoElement).playsInline = true
   video.muted = true
   video.loop = false
   video.preload = 'auto'
@@ -176,4 +177,9 @@ export function createReplayVideoSession(
       video.load()
     },
   }
+}
+
+export function createReplayVideoSession(video: HTMLVideoElement, url: string,
+  onSnapshot: (snapshot: ReplayVideoSnapshot) => void, options: { audioAllowed?: () => boolean } = {}): ReplayVideoSession {
+  return createReplayMediaSession(video, url, onSnapshot, options)
 }

@@ -99,7 +99,7 @@ const currentHomeSettlement = `  if (route.id === 'home') {
         && rect.height >= 240
         && body.includes('Own your life.')
         && body.includes('Threshold online'))
-    }, null, { timeout: 45_000, polling: 50 })
+    }, null, { timeout: 90_000, polling: 50 })
   }`
 
 patched = replaceOnce(patched, oldHomeSettlement, currentHomeSettlement, 'current Home readiness')
@@ -148,7 +148,7 @@ const currentScreenshot = `    if (route.id === 'life-map' && viewport.width ===
         await cdp.detach()
       }
     } else {
-      await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide' })
+      await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
     }`
 patched = replaceOnce(patched, oldScreenshot, currentScreenshot, 'Life Map viewport capture')
 

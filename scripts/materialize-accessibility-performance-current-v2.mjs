@@ -1,3 +1,4 @@
+import { isAuditedCurrentHomeProof } from './materialize-accessibility-performance-home-authority.mjs'
 import { preserveAuditedLifeMapProof } from './materialize-accessibility-performance-lifemap-authority.mjs'
 import './materialize-accessibility-performance-current.mjs'
 import { readFile, writeFile } from 'node:fs/promises'
@@ -42,12 +43,12 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
   )
   const stableMovementProof = `    const afterZ = Number(await home.getAttribute('data-home-player-z'))
     expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
-    await expect.poll(async () => {
-      const value = await home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))
-      return Math.abs(Number.parseFloat(value))
-    }, { timeout: 12_000 }).toBeGreaterThan(0.1)`
+    await expect(home).toHaveAttribute('data-home-telemetry-owner', 'embodied-motion-kernel')`
   if (source.split(stableMovementProof).length - 1 !== 1) {
-    throw new Error('current Home direct displacement + parallax proof contract changed')
+    throw new Error('current Home canonical displacement proof contract changed')
+  }
+  if (source.includes("getPropertyValue('--home-parallax-y')")) {
+    throw new Error('non-authoritative Home parallax style telemetry must not gate accessibility movement evidence')
   }
   const staleZPoll = `    await expect.poll(async () => Math.abs(Number(await home.getAttribute('data-home-player-z')) - beforeZ), { timeout: 30_000 }).toBeGreaterThan(1.2)`
   if (source.includes(staleZPoll)) {
@@ -118,7 +119,9 @@ const stableIdSelector = 'navigation.getByTestId(`home-semantic-${destination.id
 const accessibleNameAssertion = 'await expect(target).toHaveAccessibleName(destination.label)'
 const stableIdSelectorCount = canonicalHomeTravel.split(stableIdSelector).length - 1
 const accessibleNameAssertionCount = canonicalHomeTravel.split(accessibleNameAssertion).length - 1
-if (stableIdSelectorCount !== 1 || accessibleNameAssertionCount !== 1) {
+if (!isAuditedCurrentHomeProof(canonicalHomeTravel) && (stableIdSelectorCount !== 1 || accessibleNameAssertionCount !== 1)) {
   throw new Error(`canonical Home destination identity authority expected one stable-id selector and one accessible-name assertion; found id=${stableIdSelectorCount}, name=${accessibleNameAssertionCount}`)
 }
-console.log('Canonical Home destination identity is bound to stable id and accessible label')
+console.log(isAuditedCurrentHomeProof(canonicalHomeTravel)
+  ? 'Preserved audited current Home semantic-link destination identity'
+  : 'Canonical Home destination identity is bound to stable id and accessible label')

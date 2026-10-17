@@ -2,6 +2,8 @@ import { getAuth } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { clientApiUrl } from '@/lib/clientApiUrl'
 import type { AdamSurfaceId } from './adamSurfaceContext'
+import { contentLanguage, type UraiContentLanguageTag } from '@/lib/i18n/contentLanguage'
+import { readPresenceContentStream } from '@/lib/i18n/presenceContentStream'
 
 export type AdamConversationMessage = {
   role: 'user' | 'assistant'
@@ -9,6 +11,7 @@ export type AdamConversationMessage = {
 }
 
 export type AdamProviderResult = {
+  locale: UraiContentLanguageTag
   message: string
   caption: string
   suggestedActions: string[]
@@ -18,8 +21,8 @@ export type AdamProviderResult = {
 }
 
 export type AdamProviderEvent =
-  | { type: 'status'; status: string; surface?: AdamSurfaceId }
-  | { type: 'delta'; text: string }
+  | { type: 'status'; status: string; surface?: AdamSurfaceId; locale: UraiContentLanguageTag }
+  | { type: 'delta'; text: string; locale: UraiContentLanguageTag }
   | ({ type: 'done' } & AdamProviderResult)
   | { type: 'error'; code: string; message: string }
 
@@ -65,8 +68,10 @@ export async function requestAdamPresence(input: {
   signal: AbortSignal
   onEvent?: (event: AdamProviderEvent) => void
 }): Promise<AdamProviderResult> {
+  const locale = typeof input.locale === 'string' ? contentLanguage(input.locale)?.speechTag : null
+  if (!locale) throw new AdamProviderError('INVALID_LOCALE', 'Choose a supported content language.')
   const token = await bearerToken()
-  const requestId = await stableAdamRequestId(input)
+  const requestId = await stableAdamRequestId({ ...input, locale })
   if (!requestId || input.signal.aborted) throw new AdamProviderError('REQUEST_ID_UNAVAILABLE', 'Adam could not establish a stable request identity.')
   let response: Response
   try {
@@ -82,7 +87,7 @@ export async function requestAdamPresence(input: {
         message: input.message,
         context: input.context.slice(-10),
         surface: input.surface,
-        locale: input.locale,
+        locale,
         aiProcessingConsent: input.aiProcessingConsent,
         requestId,
       }),
@@ -105,36 +110,27 @@ export async function requestAdamPresence(input: {
     throw new AdamProviderError(code, message)
   }
 
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-  let finalResult: AdamProviderResult | null = null
-
-  while (true) {
-    const { value, done } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() ?? ''
-    for (const line of lines) {
-      if (!line.trim()) continue
-      let event: AdamProviderEvent
-      try { event = JSON.parse(line) as AdamProviderEvent } catch { continue }
-      input.onEvent?.(event)
-      if (event.type === 'done') finalResult = event
-      if (event.type === 'error') throw new AdamProviderError(event.code, event.message)
-    }
-  }
-
-  if (!finalResult) throw new AdamProviderError('ADAM_RESPONSE_INCOMPLETE', 'Adam returned an incomplete response.')
-  return finalResult
+  return readPresenceContentStream<AdamProviderResult, AdamProviderEvent>(response, {
+    locale, signal: input.signal, onEvent: input.onEvent, incompleteCode: 'ADAM_RESPONSE_INCOMPLETE',
+    error: (code, message) => new AdamProviderError(code, message),
+    validateDone: (event) => {
+      if (event.provider !== 'openai' || typeof event.requiresHumanFounder !== 'boolean' || typeof event.handoffReason !== 'string' || event.handoffReason.length > 240
+        || !Array.isArray(event.suggestedActions) || event.suggestedActions.length > 3
+        || event.suggestedActions.some((action) => typeof action !== 'string' || !action.trim() || action.length > 80)) {
+        throw new AdamProviderError('INVALID_PROVIDER_RESPONSE', 'Adam returned invalid response metadata.')
+      }
+    },
+  })
 }
 
 export async function requestAdamFounderVoice(input: {
   text: string
+  locale: UraiContentLanguageTag
   externalProcessingConsent: boolean
   signal: AbortSignal
 }): Promise<{ blob: Blob | null; errorCode: string | null }> {
+  const locale = typeof input.locale === 'string' ? contentLanguage(input.locale)?.speechTag : null
+  if (!locale) return { blob: null, errorCode: 'INVALID_LOCALE' }
   const token = await bearerToken()
   let response: Response
   try {
@@ -148,6 +144,7 @@ export async function requestAdamFounderVoice(input: {
       signal: input.signal,
       body: JSON.stringify({
         text: input.text,
+        locale,
         externalProcessingConsent: input.externalProcessingConsent,
       }),
     })

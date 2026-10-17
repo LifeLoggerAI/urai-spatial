@@ -28,6 +28,12 @@ export type SelectedMemoryMedia = {
   caption?: string
 }
 
+export type SelectedMemoryMediaReceipt = {
+  kind: 'image' | 'video' | 'audio'
+  mediaReceiptId: string
+  caption?: string
+}
+
 export type SelectedMemoryReplaySegment = {
   id: 'memory' | 'emotion' | 'pattern' | 'return'
   label: string
@@ -76,6 +82,7 @@ export type SelectedMemory = {
   emotionalState: string
   emotionalArc: string[]
   sourceMedia: SelectedMemoryMedia[]
+  sourceMediaReceipts?: SelectedMemoryMediaReceipt[]
   privacy: SelectedMemoryPrivacy
   replayManifest: SelectedMemoryReplayManifest
   narrator: {
@@ -292,6 +299,19 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
   const privacy = raw.privacy === 'hidden' || raw.privacy === 'shareable' ? raw.privacy : 'private'
   const starRaw = raw.star && typeof raw.star === 'object' ? raw.star as Record<string, unknown> : {}
   const visualsRaw = raw.visuals && typeof raw.visuals === 'object' ? raw.visuals as Record<string, unknown> : {}
+  const sourceMediaReceipts: SelectedMemoryMediaReceipt[] = []
+  for (const item of Array.isArray(raw.sourceMedia) ? raw.sourceMedia : []) {
+    if (!item || typeof item !== 'object' || !Object.prototype.hasOwnProperty.call(item, 'mediaReceiptId')) continue
+    const value = item as Record<string, unknown>
+    if (typeof value.mediaReceiptId !== 'string' || !/^[a-f0-9]{64}$/.test(value.mediaReceiptId)
+      || !['image', 'video', 'audio'].includes(String(value.kind))
+      || Object.keys(value).some(key => !['kind', 'mediaReceiptId', 'caption'].includes(key))
+      || sourceMediaReceipts.some(entry => entry.mediaReceiptId === value.mediaReceiptId) || sourceMediaReceipts.length >= 64) {
+      return { status: 'corrupt', memory: null, message: 'This memory contains invalid private media references.' }
+    }
+    sourceMediaReceipts.push({ kind: value.kind as SelectedMemoryMediaReceipt['kind'], mediaReceiptId: value.mediaReceiptId,
+      ...(stringValue(value.caption) ? { caption: stringValue(value.caption)! } : {}) })
+  }
 
   return {
     status: 'ready',
@@ -314,6 +334,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
         const url = trustedMemoryMediaUrl(value.url, trustedStorageBucket)
         return url && (kind === 'image' || kind === 'video' || kind === 'audio') ? [{ kind, url, caption: stringValue(value.caption) ?? undefined }] : []
       }) : [],
+      ...(sourceMediaReceipts.length ? { sourceMediaReceipts } : {}),
       privacy,
       replayManifest: {
         id: replayId,

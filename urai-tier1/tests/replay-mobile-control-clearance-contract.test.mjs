@@ -14,3 +14,15 @@ test('mobile Replay controls reserve the persistent lower-left world-control cor
   assert.match(clearance, /width: auto/)
   assert.match(clearance, /transform: none/)
 })
+
+test('expanded Replay actions mask memory copy and retain actual browser opacity assertions', () => {
+  const actionsRule = clearance.match(/\.replayWorld \.replayProductActions \{([^}]+)\}/)?.[1] ?? ''
+  assert.match(actionsRule, /background: #02070e;/)
+  assert.match(actionsRule, /backdrop-filter: none;/)
+  const capture = fs.readFileSync('../scripts/capture-replay-product-clearance.mjs', 'utf8')
+  assert.match(capture, /assert\.equal\(bounds\.actionPanel\.background, 'rgb\(2, 7, 14\)'/)
+  assert.match(capture, /assert\.equal\(bounds\.actionPanel\.backdropFilter, 'none'/)
+  assert.match(capture, /assert\.equal\(bounds\.actionPanel\.opacity, 1/)
+  assert.match(capture, /await verifyControlLayout\('open', true\)/)
+  assert.match(capture, /await verifyControlLayout\('history', true\)/)
+})

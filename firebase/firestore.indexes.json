@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "memoryMediaReceipts",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "state", "order": "ASCENDING" },
+        { "fieldPath": "leaseExpiresAt", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "canonChains",
       "queryScope": "COLLECTION",
       "fields": [

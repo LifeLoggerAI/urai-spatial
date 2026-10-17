@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const providerFunctions = fs.readFileSync(new URL('../../apps/functions/src/providerFunctions.ts', import.meta.url), 'utf8')
 const openAiClient = fs.readFileSync(new URL('../src/spatial/orb/openaiClient.ts', import.meta.url), 'utf8')
+const actorBoundary = fs.readFileSync(new URL('../src/lib/privacy/aiActorBoundary.ts', import.meta.url), 'utf8')
 const orbPanel = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.tsx', import.meta.url), 'utf8')
 const narratorClient = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
 const narratorPlayback = fs.readFileSync(new URL('../src/spatial/narrator/narratorPlayback.ts', import.meta.url), 'utf8')
@@ -25,7 +26,15 @@ test('OpenAI Orb is authenticated, moderated, non-stored, structured and cancell
 })
 
 test('Orb UI keeps external consent off and excludes rejected provider turns from future context', () => {
-  assert.match(openAiClient, /getAuth\(app\)\.currentUser/)
+  assert.match(openAiClient, /import \{ beginAIActorRequest, cancelAIResponse \} from '@\/lib\/privacy\/aiActorBoundary'/)
+  assert.match(openAiClient, /const actor = beginAIActorRequest\(input\.signal\)\s*if \(!actor\) return null/)
+  assert.match(openAiClient, /actor\.wait\(actor\.actor\.getIdToken\(\)\)/)
+  assert.match(openAiClient, /signal: actor\.signal/)
+  assert.match(openAiClient, /finally \{ actor\.dispose\(\) \}/)
+  assert.match(actorBoundary, /getAuth\(app\)\.currentUser/)
+  assert.match(actorBoundary, /const actor = currentActor\(\), uid = actorUid\(actor\)/)
+  assert.match(actorBoundary, /if \(!actor \|\| !uid \|\| auth\.currentUser !== actor\) return null/)
+  assert.match(actorBoundary, /auth\.currentUser === actor && actorUid\(actor\) === uid/)
   assert.match(openAiClient, /Authorization/)
   assert.match(openAiClient, /deterministicOrbFallback/)
   assert.match(orbPanel, /const \[aiConsent, setAiConsent\] = useState\(false\)/)

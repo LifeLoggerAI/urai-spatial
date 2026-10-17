@@ -298,8 +298,22 @@ jobs:
           [[ "$ANDROID_VERSION_CODE" =~ ^[1-9][0-9]*$ ]]
           [[ "$ANDROID_VERSION_NAME" =~ ^[0-9A-Za-z][0-9A-Za-z._+-]{0,63}$ ]]
 
+      - name: Require canonical Android Google sign-in configuration
+        env:
+          ANDROID_FIREBASE_GOOGLE_SERVICES_JSON: ${{ secrets.ANDROID_FIREBASE_GOOGLE_SERVICES_JSON }}
+        run: |
+          node scripts/prepare-android-native-google-auth.mjs \
+            --config-output "$RUNNER_TEMP/urai-google-services.json" \
+            --receipt-output android-native-auth-receipt.json
+
       - name: Build governed static export
+        env:
+          VERCEL_GIT_COMMIT_SHA: ${{ env.SOURCE_SHA }}
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.SOURCE_SHA }}
         run: corepack pnpm build:static
+
+      - name: Bind and verify exact native static identity
+        run: node scripts/prepare-native-static-provenance.mjs --directory urai-tier1/out --source-sha "$SOURCE_SHA" --platform android --workflow-run-id "$GITHUB_RUN_ID"
 
       - name: Generate and sync Android project
         working-directory: distribution/android-shell
@@ -307,7 +321,10 @@ jobs:
           set -euo pipefail
           rm -rf android
           corepack pnpm exec cap add android
+          node ../../scripts/prepare-native-links.mjs --android-project android
+          node ../../scripts/prepare-android-native-google-auth.mjs --apply-project android
           corepack pnpm exec cap sync android
+          node ../../scripts/prepare-native-static-provenance.mjs --directory android/app/src/main/assets/public --source-sha "$SOURCE_SHA" --platform android --workflow-run-id "$GITHUB_RUN_ID" --verify-only
 
       - name: Apply governed Android version
         working-directory: distribution/android-shell/android
@@ -374,6 +391,7 @@ jobs:
             echo "version_name=$ANDROID_VERSION_NAME"
             echo "api_origin=$NEXT_PUBLIC_URAI_API_ORIGIN"
             echo "firebase_project=$NEXT_PUBLIC_FIREBASE_PROJECT_ID"
+            echo "native_google_auth_configured=$URAI_ANDROID_NATIVE_GOOGLE_AUTH_READY"
             echo "aab_path=$AAB"
           } | tee android-signed-package-receipt.txt
 
@@ -386,6 +404,7 @@ jobs:
             android-signed-aab.sha256
             android-upload-certificate.txt
             android-signed-package-receipt.txt
+            android-native-auth-receipt.json
           retention-days: 30
 
       - name: Remove local keystore

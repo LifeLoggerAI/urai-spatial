@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { createHash } from 'node:crypto'
 
 const runtime = fs.readFileSync(new URL('../src/app/AssetDrivenHomeWorld.tsx', import.meta.url), 'utf8')
 const productionEntry = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProduction.tsx', import.meta.url), 'utf8')
@@ -19,7 +20,10 @@ assert.match(production, /home-authored-embodied-self/)
 assert.match(production, /home-orb-sanctuary/)
 assert.match(production, /next === 'orb' && previousNearby !== 'orb'/)
 assert.match(production, /yaw\.current = Math\.atan2\(dx, -dz\)/)
-assert.match(production, /pitch\.current = THREE\.MathUtils\.clamp\(ORB\.y - 1\.22, -\.42, \.18\)/)
+assert.match(production, /pitch\.current = THREE\.MathUtils\.clamp\(ORB\.y - position\.current\.y - 1\.22, -\.42, \.18\)/)
+assert.match(production, /position\.current\.y = homeWalkSurfaceHeight\(position\.current\.x, position\.current\.z\)/)
+assert.match(production, /camera\.lookAt\(look\.current\.x, position\.current\.y \+ 1\.22 \+ pitch\.current, look\.current\.z\)/)
+assert.doesNotMatch(production, /pitch\.current = THREE\.MathUtils\.clamp\(ORB\.y - 1\.22,/, 'Orb attention must account for the actual sloped walk surface')
 assert.match(production, /This is not a camera lock/)
 assert.match(production, /home-ground-environmental-threshold/)
 assert.match(production, /home-life-map-sky-lookout/)
@@ -44,7 +48,7 @@ for (const id of [
 assert.match(manifest, /status: 'ready'/)
 assert.match(manifest, /Rendered visual acceptance remains an exact-head review gate/)
 
-for (const fileName of [
+const authoredFiles = [
   'home-entry-chamber-v1.glb',
   'portal-ring-master-v1.glb',
   'ground-world-terrain-v1.glb',
@@ -53,15 +57,26 @@ for (const fileName of [
   'replay-memory-environment-v1.glb',
   'urai-orb-avatar-v1.glb',
   'passport-status-room-v1.glb',
-]) {
-  assert.match(forge, new RegExp(fileName.replaceAll('.', '\\.')))
+]
+const authoredReceipt = JSON.parse(fs.readFileSync(new URL('../../operations/assets/generated-receipts/urai-final-glb-pack-v1.json', import.meta.url), 'utf8'))
+assert.equal(authoredReceipt.packId, 'urai-final-glb-production-pack-v1')
+assert.deepEqual(authoredReceipt.assets.map(asset => asset.fileName).sort(), [...authoredFiles].sort(), 'all eight governed assets must remain bound to their immutable receipt')
+for (const fileName of authoredFiles) {
+  const asset = authoredReceipt.assets.find(asset => asset.fileName === fileName)
+  const bytes = fs.readFileSync(new URL(`../public/assets/urai/generated/models/${fileName}`, import.meta.url))
+  assert.equal(bytes.length, asset.bytes, `${fileName}: governed byte count changed`)
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), asset.sha256, `${fileName}: governed hash changed`)
+  assert.equal(bytes.readUInt32LE(0), 0x46546c67, `${fileName}: invalid GLB magic`)
+  assert.equal(bytes.readUInt32LE(4), 2, `${fileName}: glTF2 identity changed`)
+  assert.equal(bytes.readUInt32LE(8), bytes.length, `${fileName}: incomplete GLB`)
   assert.match(verifier, new RegExp(fileName.replaceAll('.', '\\.')))
 }
 
-assert.match(forge, /URAI Labs Final GLB Forge 1\.0/)
-assert.match(forge, /KHR_materials_emissive_strength/)
-assert.match(forge, /KHR_materials_transmission/)
-assert.match(forge, /KHR_materials_clearcoat/)
+assert.match(forge, /production builds never generate substitute geometry/)
+assert.match(forge, /immutable authored binary does not match its receipt/)
+assert.match(forge, /generatedSubstitutes: 0/)
+assert.match(forge, /receipt\.assets\.length !== 8/)
+for (const extension of ['KHR_materials_emissive_strength', 'KHR_materials_transmission', 'KHR_materials_clearcoat']) assert.ok(verifier.includes(extension), `${extension} must remain governed by the native verifier`)
 assert.match(verifier, /receipt hash mismatch/)
 assert.match(verifier, /triangle budget exceeded/)
 assert.match(verifier, /missing clip/)

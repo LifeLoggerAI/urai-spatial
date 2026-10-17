@@ -3,6 +3,10 @@ import { spawnSync } from "node:child_process";
 
 const steps = [
   {
+    name: "Verify production route renderer contract",
+    command: ["node", "--test", "tests/production-route-render-contract.test.mjs"],
+  },
+  {
     name: "Verify production routes",
     command: ["node", "scripts/check-production-route-exposure.mjs"],
   },

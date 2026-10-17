@@ -36,3 +36,12 @@ test('canonical visual audit waits for settled Ground and atomic route travel', 
   assert.match(driver, /48px touch-target contract/)
   assert.match(driver, /urai-canonical-live-visual-audit-2/)
 })
+
+
+test('current Home visual audit keeps asset-driven ownership and cold-start budget', () => {
+  const currentHome = fs.readFileSync('../scripts/run-canonical-live-visual-audit-current-home.mjs', 'utf8')
+  assert.match(currentHome, /\.urai-asset-home-world\[data-home-primary-owner="asset-driven"\]/)
+  assert.match(currentHome, /data-home-assets-ready/)
+  assert.match(currentHome, /const currentHomeSettlement[\s\S]*timeout: 90_000/)
+  assert.doesNotMatch(currentHome, /const currentHomeSettlement[\s\S]*timeout: 45_000/)
+})

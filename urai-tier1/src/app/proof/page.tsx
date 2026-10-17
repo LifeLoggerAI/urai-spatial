@@ -1,5 +1,6 @@
 import { receiptSystems } from '@/data/receipts'
 import { EvidenceCard } from '@/components/evidence/EvidenceCard'
+import InstitutionalPublicSurface from '../InstitutionalPublicSurface'
 
 export const metadata = {
   title: 'URAI Proof',
@@ -8,12 +9,15 @@ export const metadata = {
 
 export default function ProofPage() {
   return (
-    <main className="container">
-      <h1>Proof, not promises.</h1>
-      <p>URAI separates built systems, verified systems, previews, and launch gates.</p>
+    <InstitutionalPublicSurface
+      eyebrow="UrAi · Evidence"
+      title="Know what is ready."
+      lede="See the distinction between available experiences, previews, and the checks still required before release."
+      links={[{ href: '/status', label: 'Current release status', primary: true }, { href: '/home', label: 'Return Home' }]}
+    >
       <section>
         {receiptSystems.map((system) => <EvidenceCard key={system.name} system={system} />)}
       </section>
-    </main>
+    </InstitutionalPublicSurface>
   )
 }

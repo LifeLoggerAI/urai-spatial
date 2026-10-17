@@ -1,7 +1,9 @@
 import UraiFinalAssetSpineBridge from './UraiFinalAssetSpineBridge'
+import ManualEmotionalWeatherProvider from '@/lib/uraiEmotion/ManualEmotionalWeatherProvider'
 import './home-spatial-world-final.css'
 import './home-one-world-owner.css'
 import type { Metadata, Viewport } from 'next'
+import { blockedRobotsMetadata, BLOCKED_INDEXING_STATE } from '@/lib/release/discoverability'
 import { Suspense } from 'react'
 import './globals.css'
 import './launch-home-polish.css'
@@ -56,10 +58,12 @@ import './route-layering-hotfix.css'
 import './native-doorway-final-fix.css'
 import './location-map-header-evidence-fix.css'
 import './urai-production-system.css'
+import './home-recovery-layout.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
 import PassiveSignalRuntime from '@/spatial/signals/PassiveSignalRuntime'
 import SensorySafeRuntime from '@/spatial/accessibility/SensorySafeRuntime'
 import LocaleRuntime from './LocaleRuntime'
+import NativeLinkRuntime from './NativeLinkRuntime'
 import AdamPresenceRuntime from '@/spatial/adam/AdamPresenceRuntime'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
@@ -69,12 +73,14 @@ const previewChannel = process.env.NEXT_PUBLIC_URAI_PREVIEW_CHANNEL?.trim() || '
 const embeddedIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2307111c'/%3E%3Cpath d='M6 44c9-8 43-8 52 0v14H6z' fill='%23152f28'/%3E%3Ccircle cx='32' cy='27' r='14' fill='%238ce7ee'/%3E%3Ccircle cx='32' cy='27' r='19' fill='none' stroke='%238ce7ee' stroke-opacity='.22' stroke-width='2'/%3E%3C/svg%3E"
 
 export const metadata: Metadata = {
+  robots: blockedRobotsMetadata(),
   title: previewMode ? 'PREVIEW — URAI Spatial' : 'URAI Spatial',
   description: 'A private spatial world for memory, reflection, relationships, and personal intelligence.',
   icons: {
     icon: embeddedIcon,
   },
   other: {
+    'urai-indexing-state': BLOCKED_INDEXING_STATE,
     'urai-deployed-sha': deployedSha,
     'urai-preview-mode': previewMode ? 'true' : 'false',
   },
@@ -132,18 +138,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         ) : null}
         <WorldRuntimeBoundary>
-          <SensorySafeRuntime />
-          <LocaleRuntime />
-          <PassiveSignalRuntime />
-          <UraiAAAARoutePolish />
-          <UraiFinalAssetSpineBridge />
-          {children}
-          <UraiAutonomousV1Layer />
-          <UraiV2StateController />
-          <UraiV2OnboardingLayer />
-          <Suspense fallback={null}>
-            <AdamPresenceRuntime />
-          </Suspense>
+          <ManualEmotionalWeatherProvider>
+            <SensorySafeRuntime />
+            <LocaleRuntime />
+            <NativeLinkRuntime />
+            <PassiveSignalRuntime />
+            <UraiAAAARoutePolish />
+            <UraiFinalAssetSpineBridge />
+            {children}
+            <UraiAutonomousV1Layer />
+            <UraiV2StateController />
+            <UraiV2OnboardingLayer />
+            <Suspense fallback={null}>
+              <AdamPresenceRuntime />
+            </Suspense>
+          </ManualEmotionalWeatherProvider>
         </WorldRuntimeBoundary>
       </body>
     </html>
