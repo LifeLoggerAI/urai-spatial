@@ -14,7 +14,8 @@ const args = {project: 'urai-fictional-staging', region: 'us-central1', expected
   requestUrl: 'https://example.invalid/fictional-media', ownerIdToken: 'fictional-private-token'}
 const proof = { verified: true, sourceSha: sha, functionName: 'streamMemoryMediaPlayback',
   servingInstanceBound: true, authenticatedArchiveOriginBound: true,
-  uploaderIdentityVerified: true, revisionName: 'fictional-revision', imageDigest: 'sha256:' + 'c'.repeat(64) }
+  uploaderIdentityVerified: true, sourceMode: 'AUTHENTICATED_FIREBASE_SOURCE_ARCHIVE',
+  revisionName: 'fictional-revision', imageDigest: 'sha256:' + 'c'.repeat(64) }
 function offline(collector) {
   const m = { exports: {} }
   runInNewContext(source, {module:m, exports:m.exports, require: id => {
