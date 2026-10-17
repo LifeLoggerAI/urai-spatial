@@ -98,13 +98,13 @@ function googleToken(){
  return t
 }
 async function jsonGet(url,token){
- const result=await fetch(url,{method:'GET',headers:{authorization:`Bearer ${token}`,accept:'application/json'},
+ const result=await fetch(url,{method:'GET',headers:{authorization:`Bearer ${token}`,accept:'application/json','accept-encoding':'identity'},
   redirect:'error',signal:AbortSignal.timeout(20000)})
  if(!result.ok)bad('PROVIDER_HTTP_'+result.status)
  return readBoundedProviderJson(result)
 }
 async function boundedMediaGet(url,token){
- const result=await fetch(url,{method:'GET',headers:{authorization:`Bearer ${token}`},
+ const result=await fetch(url,{method:'GET',headers:{authorization:`Bearer ${token}`,'accept-encoding':'identity','cache-control':'no-transform'},
   redirect:'error',signal:AbortSignal.timeout(60000)})
  if(!result.ok)bad('PROVIDER_HTTP_'+result.status)
  return readBoundedProviderBody(result,MAX_MEDIA_BYTES)
