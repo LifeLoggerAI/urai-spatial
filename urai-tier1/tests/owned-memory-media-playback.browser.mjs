@@ -333,7 +333,12 @@ try {
     try{
       const captions=page.locator('[data-private-life-movie-captions="verified"]')
       await captions.waitFor()
-      assert.match(await captions.innerText(),/Fictional matched protected memory caption/)
+      // The real Replay presents protected SRT in a collapsed <details>. Open
+      // its existing accessible disclosure before inspecting the mounted cue.
+      await captions.locator('summary').click()
+      const visibleCue = captions.locator('pre')
+      await visibleCue.waitFor({ state: 'visible' })
+      assert.match(await visibleCue.innerText(),/Fictional matched protected memory caption/)
       const source=page.locator('video[aria-label="Authorized private Life Movie"]')
       await source.waitFor()
       await playable(page,'video[aria-label="Authorized private Life Movie"]')
