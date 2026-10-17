@@ -4,6 +4,8 @@ on:
     paths:
       - '.github/workflows/authenticated-full-journey.yml'
       - 'scripts/prove-authenticated-full-journey.mjs'
+      - 'scripts/report-authenticated-journey.cjs'
+      - 'scripts/report-authenticated-journey.test.cjs'
       - 'urai-tier1/src/lib/firebase/client.ts'
       - 'urai-tier1/src/app/login/LoginClient.tsx'
   workflow_dispatch:
@@ -41,6 +43,7 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           node --check scripts/prove-authenticated-full-journey.mjs
+          node --test scripts/report-authenticated-journey.test.cjs
       - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
         with:
           distribution: temurin
@@ -62,6 +65,14 @@ jobs:
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
       - name: Nonrelease emulator integration proof
         run: pnpm exec firebase emulators:exec --project demo-urai-auth-journey --only auth,firestore,functions,storage --config firebase.captured-reality-emulator.json 'node scripts/prove-authenticated-full-journey.mjs'
+      - name: Show bounded journey receipt classification
+        if: always()
+        run: |
+          if test -f scripts/report-authenticated-journey.cjs; then
+            node scripts/report-authenticated-journey.cjs
+          else
+            echo "URAI_JOURNEY_CI_DIAGNOSTIC_UNAVAILABLE"
+          fi
       - name: Keep redacted failure receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
