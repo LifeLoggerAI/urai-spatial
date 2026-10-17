@@ -35,7 +35,10 @@ const audioFixture = { ...fixture, bytes: audioBytes.toString('base64'), byteLen
 // The consumers, receipt parser, transport, Blob ownership and decoded clock
 // below are the actual repository sources, not reimplementations.
 const shims = {
-  'firebase/auth': `export const getAuth=()=>window.__fixture.auth; export const onAuthStateChanged=(auth,callback)=>{window.__fixture.authObservers.add(callback);queueMicrotask(()=>callback(auth.currentUser));return()=>window.__fixture.authObservers.delete(callback)};`,
+  // Two distinct SDK sessions, never a fabricated shared-UID shortcut. Both
+  // remain synthetic browser boundary fixtures, not real Firebase IAM evidence.
+  'firebase/app': `export const getApps=()=>window.__fixture.studioApp?[window.__fixture.studioApp]:[];export const initializeApp=(options,name)=>{const app={name,options};window.__fixture.studioApp=app;return app};export const getApp=()=>window.__fixture.studioApp;`,
+  'firebase/auth': `export const getAuth=app=>app?.name==='urai-studio-private-replay'?window.__fixture.studioAuth:window.__fixture.auth;export const onAuthStateChanged=(auth,callback)=>{const observers=auth===window.__fixture.studioAuth?window.__fixture.studioObservers:window.__fixture.authObservers;observers.add(callback);queueMicrotask(()=>callback(auth.currentUser));return()=>observers.delete(callback)};`,
   'firebase/firestore': `export { Timestamp } from '@firebase/firestore';const snap=(p)=>{const v=window.__fixture.docs[p];return {id:p.split('/').at(-1),exists:()=>v!=null,data:()=>v==null?undefined:structuredClone(v),get:(k)=>k.split('.').reduce((x,key)=>x?.[key],v)}};export const doc=(db,...p)=>p.join('/');export const collection=(db,...p)=>p.join('/');export const limit=()=>null;export const query=(p)=>p;export const getDoc=async p=>snap(p);export const getDocs=async p=>({docs:Object.keys(window.__fixture.docs).filter(k=>k.startsWith(p+'/')&&k.slice(p.length+1).indexOf('/')<0).map(snap)});export const onSnapshot=(p,callback,error)=>{const w={p,callback,error};window.__fixture.watchers.add(w);window.__fixture.allWatchers.push(w);if(!window.__fixture.holdSnapshots.includes(p))queueMicrotask(()=>callback(snap(p)));return()=>window.__fixture.watchers.delete(w)};export const __snapshot=snap;`,
   'firebase/functions': `export const httpsCallable=(functions,name)=>async data=>({data:await window.__fixture.call(name,data)});`,
   '@/lib/firebase/client': `export const app={options:{projectId:'urai-4dc1d'}};export const firebasePublicEnvReady=true;export const functions={};export const getFirebaseDb=()=>({});`,
@@ -61,7 +64,7 @@ const shims = {
   'next/navigation': `export const useSearchParams=()=>new URLSearchParams(location.search);export const useRouter=()=>({push:(href)=>{window.__fixture.navigation=href}});`,
   '@/spatial/captured-reality/CapturedRealityPrivateScene': `import {useEffect} from 'react';export default function Scene({decision}){useEffect(()=>{if(decision.mode!=='gaussian-splat')return;window.__fixture.sceneMounts++;return()=>{window.__fixture.sceneDisposals++}},[decision.mode]);return <div data-scene-fixture={decision.mode} style={{minHeight:'100svh'}}>Synthetic scene-disposal boundary — no reconstructed geometry</div>}`,
 }
-const compiled = await build({
+const buildOptions = {
   stdin: { contents: `import React from 'react';import{createRoot}from'react-dom/client';import{localizedMessage,ENGLISH_LOCALE_PREFERENCE}from'./src/lib/i18n/localePreference';window.__fixtureLocaleText=(id,values)=>localizedMessage(ENGLISH_LOCALE_PREFERENCE,id,values).text;import{isConsentPolicy}from'./src/app/privacy-controls/consentModel';window.__fixtureIsConsentPolicy=isConsentPolicy;import Replay from './src/app/replay/CinematicReplayClient';import Movie from './src/app/life-movie/LifeMovieClient';import Place from './src/app/spatial/captured-reality/CapturedRealityRouteClient';const Component=location.pathname==='/life-movie'?Movie:location.pathname==='/spatial/captured-reality'?Place:Replay;const root=createRoot(document.getElementById('root'));root.render(<Component/>);window.__unmount=()=>root.unmount();`, resolveDir: path.join(repo, 'urai-tier1'), loader: 'tsx' },
   bundle: true, write: false, metafile: true, format: 'iife', platform: 'browser', jsx: 'automatic',
   // Next normally substitutes public env reads at build time. The original
@@ -81,27 +84,43 @@ const compiled = await build({
     })
     plugin.onLoad({ filter: /.*/, namespace: 'fixture' }, args => ({ contents: shims[args.path], loader: 'tsx', resolveDir: path.join(repo, 'urai-tier1') }))
   } }],
-})
+}
+const compiled = await build(buildOptions)
+const privateCompiled = await build({...buildOptions,define:{...buildOptions.define,
+  'process.env.NEXT_PUBLIC_URAI_SPATIAL_PRIVATE_MOVIE_ENABLED':'"true"',
+  'process.env.NEXT_PUBLIC_URAI_STUDIO_FIREBASE_API_KEY':'"synthetic-public-key"',
+  'process.env.NEXT_PUBLIC_URAI_STUDIO_FIREBASE_AUTH_DOMAIN':'"studio-replay.invalid"',
+  'process.env.NEXT_PUBLIC_URAI_STUDIO_FIREBASE_PROJECT_ID':'"urai-studio"',
+  'process.env.NEXT_PUBLIC_URAI_STUDIO_PRIVATE_MEDIA_ORIGIN':'"https://studio-replay.invalid"'
+}})
 assert.ok(Object.keys(compiled.metafile.inputs).some(file => file.replaceAll('\\','/').endsWith('/lib/i18n/useUraiLocale.ts')),'Actual locale hook must be compiled, not a raw-key fixture')
 assert.ok(Object.keys(compiled.metafile.inputs).some(file => file.replaceAll('\\','/').endsWith('/app/replay/useProtectedLifeMovieReplay.ts')),
   'Compile actual optional protected Replay adapter; do not bypass its source')
 
 const bundle = compiled.outputFiles[0].text
+const privateBundle = privateCompiled.outputFiles[0].text
+assert.ok(Object.keys(privateCompiled.metafile.inputs).some(file =>
+  file.replaceAll('\\','/').endsWith('/app/replay/useProtectedLifeMovieReplay.ts')),
+  'Dual-identity browser test must compile the real private Replay hook')
 const server = createServer((request, response) => {
-  if (request.url === '/fixture.js') { response.setHeader('Content-Type', 'text/javascript'); response.end(bundle); return }
-  response.setHeader('Content-Type', 'text/html'); response.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><div id="root"></div><script src="/fixture.js"></script>')
+  if (request.url === '/fixture.js' || request.url === '/fixture-private.js') { response.setHeader('Content-Type', 'text/javascript'); response.end(request.url === '/fixture-private.js' ? privateBundle : bundle); return }
+  const script = request.url?.includes('dualPrivate=1') ? '/fixture-private.js' : '/fixture.js'
+  response.setHeader('Content-Type', 'text/html'); response.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><div id="root"></div><script src="' + script + '"></script>')
 })
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
 const origin = `http://127.0.0.1:${server.address().port}`
 const browser = await chromium.launch({ executablePath: chromium.executablePath(), headless: true, args: ['--no-sandbox'] })
 const cases = [], errors = []
 const memoryId = 'synthetic-receipt-memory', receiptId = 'a'.repeat(64), ownerId = 'synthetic-owner'
+const privatePlanId = 'lmp_' + 'a'.repeat(24), privatePlaylistDigest = 'c'.repeat(64)
+const privateCaptions = Buffer.from('1\n00:00:00,000 --> 00:00:02,000\nFictional matched protected memory caption\n')
 
 async function open(route = '/replay', settings = {}) {
   const mediaFixture = settings.audio ? audioFixture : fixture
   const mediaBytes = settings.audio ? audioBytes : bytes
   const context = await browser.newContext({ viewport: settings.viewport ?? (settings.mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }), isMobile: !!settings.mobile, hasTouch: !!settings.mobile })
   const page = await context.newPage()
+  const privateRequests = []
   page.on('pageerror', error => errors.push(error.stack || error.message))
   await page.addInitScript(({ fixture, memoryId, receiptId, ownerId, settings }) => {
     const memory = { ownerId, title: settings.title ?? 'Synthetic receipt source — not family media', occurredAt: '2026-01-01T12:00:00.000Z', summary: 'A synthetic control fixture.', emotionalState: 'calm', privacy: 'private', sourceMedia: [{ kind: settings.audio ? 'audio' : 'video', mediaReceiptId: receiptId }], star: { position: [0, 0, -4] }, replayManifest: { id: 'synthetic-manifest', version: 1, durationMs: 3000, segments: ['memory', 'emotion', 'pattern', 'return'].map((id, i) => ({ id, label: id, caption: `Synthetic ${id}`, narratorLine: settings.narration ?? 'Synthetic narration caption only', startsAtMs: i * 750, durationMs: 750 })) } }
@@ -118,7 +137,9 @@ async function open(route = '/replay', settings = {}) {
       enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } }
     const base = `users/${ownerId}`
     const auth = { currentUser: { uid: ownerId, getIdToken: async () => 'synthetic-sdk-token' } }
-    const f = window.__fixture = { auth, authObservers: new Set(), watchers: new Set(), allWatchers: [], holdSnapshots: settings.hold ? [`${base}/memoryMediaReceipts/${receiptId}`] : [], docs: { ['consentRecords/'+ownerId+'_memory_storage']: { uid: ownerId, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: receipt.consentReceiptHash, expiresAt: receipt.consentExpiresAt }, [base]: { accountStatus: 'active' }, [`${base}/memories/${memoryId}`]: memory, [`${base}/privacyPolicy/current`]: policy, [`${base}/privacyRuntime/exportAuthority`]: { generation: 0, pendingDeletions: {} }, [`${base}/memoryMediaReceipts/${receiptId}`]: receipt, [`${base}/privacyRuntime/location-collection`]: { enabled: true }, [`${base}/capturedRealityReplayBindings/${memoryId}`]: { ownerId, memoryId, state: 'accepted', capturedRealityAssetId: 'synthetic-accepted-place' }, [`${base}/capturedRealityAssets/synthetic-accepted-place`]: { ownerId, state: 'ready', reviewState: 'accepted', releaseState: 'private-pilot' }, [`${base}/lifeMovies/synthetic-movie`]: { id: 'synthetic-movie', version: 1, ownerId, status: 'ready', consentState: 'authorized', chapters: [{ id: 'synthetic-chapter', memoryId, order: 0, truthClass: 'RECORDED_SOURCE_TRUTH', confidence: 1, consentState: 'authorized', provenance: { sourceIds: ['synthetic-source'], objectIds: [], storyNodeIds: [], providerTaskIds: [] } }] } }, calls: [], creates: [], revocations: [], heldMedia: [], sceneMounts: 0, sceneDisposals: 0, denyAuthority: false, tamper: !!settings.tamper }
+    const studioAuth = { currentUser: {uid:settings.privateWrongStudio?'synthetic-studio-user-b':'synthetic-studio-user-a',
+      getIdToken:async()=>settings.privateWrongStudio?'synthetic-studio-token-b':'synthetic-studio-token-a'} }
+    const f = window.__fixture = { auth, authObservers: new Set(), studioAuth, studioObservers:new Set(), watchers: new Set(), allWatchers: [], holdSnapshots: settings.hold ? [`${base}/memoryMediaReceipts/${receiptId}`] : [], docs: { ['consentRecords/'+ownerId+'_memory_storage']: { uid: ownerId, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: receipt.consentReceiptHash, expiresAt: receipt.consentExpiresAt }, [base]: { accountStatus: 'active' }, [`${base}/memories/${memoryId}`]: memory, [`${base}/privacyPolicy/current`]: policy, [`${base}/privacyRuntime/exportAuthority`]: { generation: 0, pendingDeletions: {} }, [`${base}/memoryMediaReceipts/${receiptId}`]: receipt, [`${base}/privacyRuntime/location-collection`]: { enabled: true }, [`${base}/capturedRealityReplayBindings/${memoryId}`]: { ownerId, memoryId, state: 'accepted', capturedRealityAssetId: 'synthetic-accepted-place' }, [`${base}/capturedRealityAssets/synthetic-accepted-place`]: { ownerId, state: 'ready', reviewState: 'accepted', releaseState: 'private-pilot' }, [`${base}/lifeMovies/synthetic-movie`]: { id: 'synthetic-movie', version: 1, ownerId, status: 'ready', consentState: 'authorized', chapters: [{ id: 'synthetic-chapter', memoryId, order: 0, truthClass: 'RECORDED_SOURCE_TRUTH', confidence: 1, consentState: 'authorized', provenance: { sourceIds: ['synthetic-source'], objectIds: [], storyNodeIds: [], providerTaskIds: [] } }] } }, calls: [], creates: [], revocations: [], heldMedia: [], sceneMounts: 0, sceneDisposals: 0, denyAuthority: false, tamper: !!settings.tamper }
     const snapshot = p => { const value = f.docs[p]; return { exists: () => value != null, data: () => value == null ? undefined : structuredClone(value), get: k => k.split('.').reduce((v, key) => v?.[key], value) } }
     f.update = (p, value) => { f.docs[p] = value; for (const w of [...f.watchers]) if (w.p === p) w.callback(snapshot(p)) }
     // Revocation must itself retain a valid schema and advance its revision:
@@ -131,6 +152,7 @@ async function open(route = '/replay', settings = {}) {
       f.update(p, next)
     }
     f.emitAuth = user => { auth.currentUser = user; for (const callback of [...f.authObservers]) callback(user) }
+    f.emitStudioAuth = user => { studioAuth.currentUser = user; for (const callback of [...f.studioObservers]) callback(user) }
     f.call = async (name, data) => {
       f.calls.push({ name, data })
       if (f.deferName === name) await new Promise(resolve => { f.releaseDeferred = resolve })
@@ -159,14 +181,40 @@ async function open(route = '/replay', settings = {}) {
     const body = url.pathname === '/streamCapturedRealityRuntime' ? Buffer.alloc(32) : tamper ? Buffer.alloc(mediaBytes.length) : mediaBytes
     await intercepted.fulfill({ status: 200, body, headers: { 'Access-Control-Allow-Origin': origin, 'Access-Control-Expose-Headers': 'Content-Length,X-URAI-Checksum-SHA256,X-URAI-Storage-Generation', 'Content-Type': url.pathname === '/streamCapturedRealityRuntime' ? 'application/octet-stream' : settings.audio ? 'audio/wav' : 'video/mp4', 'Content-Length': String(body.length), 'X-URAI-Checksum-SHA256': url.pathname === '/streamCapturedRealityRuntime' ? 'f'.repeat(64) : mediaFixture.sha256, 'X-URAI-Storage-Generation': url.pathname === '/streamCapturedRealityRuntime' ? '321' : '123' } })
   })
+  if (settings.dualPrivate) await page.route('https://studio-replay.invalid/**', async intercepted => {
+    const request=intercepted.request(), headers=request.headers()
+    const cors={ 'Access-Control-Allow-Origin':origin,
+      'Access-Control-Allow-Methods':'POST, OPTIONS',
+      'Access-Control-Allow-Headers':'authorization, content-type, x-urai-spatial-id-token',
+      'Access-Control-Expose-Headers':'content-type, content-length, x-urai-private-playlist-digest',
+      'Cache-Control':'private, no-store, max-age=0' }
+    if (request.method()==='OPTIONS') { await intercepted.fulfill({status:204,headers:cors});return }
+    assert.equal(request.method(),'POST','private media never uses public GET')
+    const body=JSON.parse(request.postData()??'{}')
+    assert.deepEqual(body,{action:'deliver-spatial-final',memoryId,movieId:'synthetic-movie',
+      planId:privatePlanId,kind:body.kind},'actual original Replay selectors must match')
+    assert.ok(body.kind==='mp4'||body.kind==='srt')
+    privateRequests.push({kind:body.kind,studioToken:headers.authorization,spatialToken:headers['x-urai-spatial-id-token']})
+    const authorized=!settings.privateWrongStudio && !settings.privateDenied &&
+      headers.authorization==='Bearer synthetic-studio-token-a' &&
+      headers['x-urai-spatial-id-token']==='synthetic-sdk-token'
+    if (!authorized) { await intercepted.fulfill({status:403,headers:{...cors,'Content-Type':'application/json'},
+      body:'{"ok":false,"error":"synthetic_authority_denied"}'});return }
+    const payload=body.kind==='mp4'?bytes:privateCaptions
+    const digest=settings.privatePlaylistMismatch && body.kind==='srt'?'e'.repeat(64):privatePlaylistDigest
+    await intercepted.fulfill({status:200,body:payload,headers:{...cors,
+      'Content-Type':body.kind==='mp4'?'video/mp4':'application/x-subrip',
+      'Content-Length':String(payload.length),'X-URAI-PRIVATE-PLAYLIST-DIGEST':digest}})
+  })
   const query = route === '/spatial/captured-reality' ? `?assetId=synthetic-accepted-place${settings.standalone ? '' : `&memoryId=${memoryId}`}` : route === '/life-movie' ? `?movieId=synthetic-movie&memoryId=${memoryId}` : `?memoryId=${memoryId}`
-  await page.goto(origin + route + query)
+  const privateQuery = settings.dualPrivate ? '&dualPrivate=1&movieId=synthetic-movie&lifeMoviePlanId='+privatePlanId : ''
+  await page.goto(origin + route + query + privateQuery)
   await page.waitForFunction(() => !!window.__fixtureIsConsentPolicy && !!window.__fixture)
   assert.equal(await page.evaluate(() => {
     const f = window.__fixture, owner = f.auth.currentUser.uid
     return window.__fixtureIsConsentPolicy(f.docs[`users/${owner}/privacyPolicy/current`], owner)
   }), true, 'Synthetic positive playback must start from a valid canonical consent policy')
-  return { page, context }
+  return { page, context, privateRequests }
 }
 async function check(name, task) { await task(); cases.push({ name, passed: true }); console.log(`PASS ${name}`) }
 async function playable(page, element = 'video') { await page.waitForFunction(selector => { const source = document.querySelector(selector); return source?.readyState >= 2 && Number.isFinite(source.duration) && source.duration > 0 }, element) }
@@ -279,6 +327,55 @@ try {
     await page.evaluate(() => window.__fixture.setReplayVisible(false))
     await assertDisposed(page); assert.equal(await page.getByText('Synthetic receipt source — not family media', { exact: true }).count(), 0)
     await context.close()
+  })
+  await check('Original Replay decodes dual-session Studio-protected MP4 and matching captions in real Chromium',async()=>{
+    const {page,context,privateRequests}=await open('/replay',{dualPrivate:true})
+    try{
+      const captions=page.locator('[data-private-life-movie-captions="verified"]')
+      await captions.waitFor()
+      assert.match(await captions.innerText(),/Fictional matched protected memory caption/)
+      const source=page.locator('video[aria-label="Authorized private Life Movie"]')
+      await source.waitFor()
+      await playable(page,'video[aria-label="Authorized private Life Movie"]')
+      assert.deepEqual(privateRequests.map(r=>r.kind),['mp4','srt'])
+      for(const r of privateRequests) {
+        assert.equal(r.studioToken,'Bearer synthetic-studio-token-a')
+        assert.equal(r.spatialToken,'synthetic-sdk-token')
+      }
+      await page.locator('.memoryPulse').click()
+      await page.waitForFunction(()=>Number(document.querySelector('[data-testid="cinematic-replay-client"]').dataset.currentTimeMs)>300)
+      await page.locator('.memoryPulse').click()
+      const pause=await source.evaluate(element=>element.currentTime)
+      await page.waitForTimeout(180)
+      assert.ok(Math.abs(await source.evaluate(element=>element.currentTime)-pause)<0.04)
+      await page.screenshot({path:path.join(output,'synthetic-original-dual-identity-replay.png')})
+      await page.evaluate(()=>window.__fixture.emitStudioAuth(null))
+      await page.waitForFunction(()=>!document.querySelector('[data-private-life-movie-captions="verified"]'))
+      assert.equal(await page.locator('video[aria-label="Authorized private Life Movie"]').count(),0)
+      assert.ok(await page.evaluate(()=>window.__fixture.revocations.some(v=>v.media.length>0)))
+      await page.locator('.unwind').click()
+      assert.equal(await page.evaluate(()=>window.__fixture.worldReturnRequests),1)
+    } finally {await context.close()}
+  })
+  await check('Wrong Studio user receives no protected output or captions in original Replay',async()=>{
+    const {page,context,privateRequests}=await open('/replay',{dualPrivate:true,privateWrongStudio:true})
+    try {
+      await page.waitForResponse(response=>response.url().includes('/api/studio/spatial-private-media')&&response.request().method()==='POST')
+      assert.equal(privateRequests.length,1)
+      assert.equal(privateRequests[0].studioToken,'Bearer synthetic-studio-token-b')
+      assert.equal(await page.locator('[data-private-life-movie-captions="verified"]').count(),0)
+      assert.equal(await page.locator('video[aria-label="Authorized private Life Movie"]').count(),0)
+    } finally {await context.close()}
+  })
+  await check('Mismatched protected MP4 and SRT playlist identity releases no private video',async()=>{
+    const {page,context,privateRequests}=await open('/replay',{dualPrivate:true,privatePlaylistMismatch:true})
+    try {
+      await page.waitForResponse(response=>response.url().includes('/api/studio/spatial-private-media')&&
+        response.request().method()==='POST'&&JSON.parse(response.request().postData()??'{}').kind==='srt')
+      assert.deepEqual(privateRequests.map(r=>r.kind),['mp4','srt'])
+      assert.equal(await page.locator('[data-private-life-movie-captions="verified"]').count(),0)
+      assert.equal(await page.locator('video[aria-label="Authorized private Life Movie"]').count(),0)
+    } finally {await context.close()}
   })
   const longNarration = "Synthetic narration fixture only. This complete narration deliberately exceeds two lines on a narrow viewport. It is retained as real mounted copy so every sentence must become visible through the caption region's own scrolling. No family recording, person, private runtime, movie, or world is accepted by these synthetic words. The final sentence must remain reachable alongside the memory controls."
   for (const profile of [
