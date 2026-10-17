@@ -155,6 +155,12 @@ async function readAuthenticatedUploadOrigin(options={}){
    metadata,cloudFunction:fn,cloudBuild:build,sourceBucket:approvedSourceBucket})
  return Object.freeze({...result,
    classification:'AUTHENTICATED_OBJECT_READBACK_AND_BUILD_SOURCE_LINK_ONLY',
+   // These identities come from independently checked source bytes and
+   // authenticated Google function/build/object readback, not caller JSON.
+   sourceSha:expectedSha,functionResource:functionPath,
+   sourceArchiveSha256:result.localArchiveSha256,
+   sourceBucket:source.bucket,sourceObject:source.object,
+   sourceGeneration:String(source.generation),buildName:buildPath,
    localSourceBuildVerified:true,authenticatedProviderReadback:true,
    uploaderIdentityVerified:false,cloudRunImageVerified:false,cloudRunRevisionVerified:false,
    protectedMediaAccepted:false,releaseCertified:false})
