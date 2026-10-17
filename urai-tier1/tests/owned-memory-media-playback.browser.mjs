@@ -64,7 +64,11 @@ const shims = {
 const compiled = await build({
   stdin: { contents: `import React from 'react';import{createRoot}from'react-dom/client';import{localizedMessage,ENGLISH_LOCALE_PREFERENCE}from'./src/lib/i18n/localePreference';window.__fixtureLocaleText=(id,values)=>localizedMessage(ENGLISH_LOCALE_PREFERENCE,id,values).text;import{isConsentPolicy}from'./src/app/privacy-controls/consentModel';window.__fixtureIsConsentPolicy=isConsentPolicy;import Replay from './src/app/replay/CinematicReplayClient';import Movie from './src/app/life-movie/LifeMovieClient';import Place from './src/app/spatial/captured-reality/CapturedRealityRouteClient';const Component=location.pathname==='/life-movie'?Movie:location.pathname==='/spatial/captured-reality'?Place:Replay;const root=createRoot(document.getElementById('root'));root.render(<Component/>);window.__unmount=()=>root.unmount();`, resolveDir: path.join(repo, 'urai-tier1'), loader: 'tsx' },
   bundle: true, write: false, metafile: true, format: 'iife', platform: 'browser', jsx: 'automatic',
-  define: { 'process.env.NODE_ENV': '"test"', 'process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID': '"urai-4dc1d"', 'process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET': '"urai-4dc1d.firebasestorage.app"' },
+  // Next normally substitutes public env reads at build time. The original
+  // private-Life-Movie adapter was added after this standalone esbuild harness;
+  // bind its disabled-by-default flag explicitly without inventing window.process.
+  define: { 'process.env.NODE_ENV': '"test"', 'process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID': '"urai-4dc1d"', 'process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET': '"urai-4dc1d.firebasestorage.app"',
+    'process.env.NEXT_PUBLIC_URAI_SPATIAL_PRIVATE_MOVIE_ENABLED': '"false"' },
   plugins: [{ name: 'sdk-only-fixtures', setup(plugin) {
     plugin.onResolve({ filter: /.*/ }, args => {
       if (Object.hasOwn(shims, args.path)) return { path: args.path, namespace: 'fixture' }
@@ -79,6 +83,9 @@ const compiled = await build({
   } }],
 })
 assert.ok(Object.keys(compiled.metafile.inputs).some(file => file.replaceAll('\\','/').endsWith('/lib/i18n/useUraiLocale.ts')),'Actual locale hook must be compiled, not a raw-key fixture')
+assert.ok(Object.keys(compiled.metafile.inputs).some(file => file.replaceAll('\\','/').endsWith('/app/replay/useProtectedLifeMovieReplay.ts')),
+  'Compile actual optional protected Replay adapter; do not bypass its source')
+
 const bundle = compiled.outputFiles[0].text
 const server = createServer((request, response) => {
   if (request.url === '/fixture.js') { response.setHeader('Content-Type', 'text/javascript'); response.end(bundle); return }
@@ -95,7 +102,7 @@ async function open(route = '/replay', settings = {}) {
   const mediaBytes = settings.audio ? audioBytes : bytes
   const context = await browser.newContext({ viewport: settings.viewport ?? (settings.mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }), isMobile: !!settings.mobile, hasTouch: !!settings.mobile })
   const page = await context.newPage()
-  page.on('pageerror', error => errors.push(error.message))
+  page.on('pageerror', error => errors.push(error.stack || error.message))
   await page.addInitScript(({ fixture, memoryId, receiptId, ownerId, settings }) => {
     const memory = { ownerId, title: settings.title ?? 'Synthetic receipt source — not family media', occurredAt: '2026-01-01T12:00:00.000Z', summary: 'A synthetic control fixture.', emotionalState: 'calm', privacy: 'private', sourceMedia: [{ kind: settings.audio ? 'audio' : 'video', mediaReceiptId: receiptId }], star: { position: [0, 0, -4] }, replayManifest: { id: 'synthetic-manifest', version: 1, durationMs: 3000, segments: ['memory', 'emotion', 'pattern', 'return'].map((id, i) => ({ id, label: id, caption: `Synthetic ${id}`, narratorLine: settings.narration ?? 'Synthetic narration caption only', startsAtMs: i * 750, durationMs: 750 })) } }
     const kind = settings.audio ? 'audio' : 'video', mime = settings.audio ? 'audio/wav' : 'video/mp4'
