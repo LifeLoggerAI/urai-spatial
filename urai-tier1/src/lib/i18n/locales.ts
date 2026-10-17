@@ -31,11 +31,15 @@ export function isUraiLaunchLocale(value: string | null | undefined): value is U
 
 export function normalizeUraiLocale(value: string | null | undefined): UraiLaunchLocale | null {
   if (!value) return null
-  const candidate = value.trim().replace('_','-')
+  const candidate = value.trim().replace(/_/g,'-')
   if (isUraiLaunchLocale(candidate)) return candidate
   const lower = candidate.toLowerCase()
   const exact = URAI_LAUNCH_LOCALES.find(locale => locale.toLowerCase() === lower)
   if (exact) return exact
+  // Traditional-script Chinese has no admitted launch catalog yet. Do not
+  // silently coerce zh-Hant, zh-TW, zh-HK or zh-MO to Simplified Chinese.
+  // Leave the preference unresolved so negotiation can check the next choice.
+  if (/^zh-(?:hant|tw|hk|mo)(?:-|$)/.test(lower)) return null
   const base = lower.split('-')[0]
   if (BASE_LANGUAGE[base]) return BASE_LANGUAGE[base]!
   const launchBase = URAI_LAUNCH_LOCALES.find(locale => locale.toLowerCase() === base)
