@@ -1,3 +1,4 @@
+import { URAI_POLISH_PREPARED_MESSAGES } from './polishPrepared'
 import { URAI_CORE_CATALOGS, URAI_CORE_MESSAGES } from './coreMessages'
 import { URAI_JOURNEY_CATALOGS, URAI_JOURNEY_MESSAGES } from './journeyMessages'
 import { URAI_JOURNEY_CONTROL_CATALOGS, URAI_JOURNEY_CONTROL_MESSAGES } from './journeyControlMessages'
@@ -7,15 +8,15 @@ import { URAI_FOCUS_COMPATIBILITY_CATALOGS, URAI_FOCUS_COMPATIBILITY_MESSAGES } 
 
 export const URAI_LAUNCH_LOCALES = [
   'en','zh-Hans','hi','es','fr','ar','bn','pt-BR','ru','ur',
-  'id','de','ja','sw','tr','vi','fil','ko','it','fa',
+  'id','de','ja','sw','tr','vi','fil','ko','it','fa','pl',
 ] as const
 
 // These are distinct LANGUAGE targets, not language variants counted twice.
 // A target is not a prepared catalog or a launch-admitted locale. New languages
 // enter URAI_LAUNCH_LOCALES only after substantive translation preparation.
-export const URAI_GLOBAL_LANGUAGE_TARGETS = [...URAI_LAUNCH_LOCALES, 'pl'] as const
+export const URAI_GLOBAL_LANGUAGE_TARGETS = [...URAI_LAUNCH_LOCALES] as const
 export type UraiGlobalLanguageTarget = typeof URAI_GLOBAL_LANGUAGE_TARGETS[number]
-export const URAI_UNPREPARED_LANGUAGE_TARGETS = ['pl'] as const
+export const URAI_UNPREPARED_LANGUAGE_TARGETS = [] as const
 
 export type UraiLaunchLocale = typeof URAI_LAUNCH_LOCALES[number]
 export type UraiTextDirection = 'ltr' | 'rtl'
@@ -102,6 +103,7 @@ export type UraiCatalog = Partial<Record<UraiMessageId,string>>
 // review a complete string set instead of an empty shell. They are NOT runtime
 // eligible until the locale is explicitly added to URAI_NATIVE_REVIEWED_LOCALES.
 export const URAI_CATALOGS: Record<UraiLaunchLocale,UraiCatalog> = {
+  pl: Object.fromEntries((['nav.home','nav.lifeMap','nav.focus','nav.replay','common.loading','common.unavailable','privacy.reviewRequired'] as const).map(id => [id, URAI_POLISH_PREPARED_MESSAGES[id]])) as UraiCatalog,
   en: {
     'nav.home': 'Home',
     'nav.lifeMap': 'Life Map',
@@ -316,6 +318,14 @@ export function formatUraiDate(locale: UraiLaunchLocale, value: Date | number | 
 
 export function formatUraiNumber(locale: UraiLaunchLocale, value: number, options: Intl.NumberFormatOptions = {}) {
   return new Intl.NumberFormat(locale, options).format(value)
+}
+
+export function formatUraiCurrency(locale: UraiLaunchLocale, value: number, currency: string, options: Intl.NumberFormatOptions = {}) {
+  return new Intl.NumberFormat(locale, { ...options, style: 'currency', currency }).format(value)
+}
+
+export function formatUraiRelativeTime(locale: UraiLaunchLocale, value: number, unit: Intl.RelativeTimeFormatUnit, options: Intl.RelativeTimeFormatOptions = {}) {
+  return new Intl.RelativeTimeFormat(locale, options).format(value, unit)
 }
 
 export function formatUraiList(locale: UraiLaunchLocale, values: string[], options: Intl.ListFormatOptions = {}) {

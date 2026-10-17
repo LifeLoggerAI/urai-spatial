@@ -1,5 +1,6 @@
 import type { UraiCatalog, UraiLaunchLocale, UraiMessageDefinition } from './locales'
 import { URAI_FOUNDER_TRANSLATIONS } from './founderTranslations'
+import { URAI_POLISH_PREPARED_MESSAGES } from './polishPrepared'
 
 // Review catalogs are preparation only. Privacy disclosure uses the admitted
 // runtime locale and English fallback; no translation grants language acceptance.
@@ -14,5 +15,6 @@ export const URAI_FOUNDER_MESSAGES = {
 
 export const URAI_FOUNDER_CATALOGS: Record<UraiLaunchLocale, UraiCatalog> = {
   ...URAI_FOUNDER_TRANSLATIONS,
+  pl: { 'founder.disclosure': URAI_POLISH_PREPARED_MESSAGES['founder.disclosure'] },
   en: { 'founder.disclosure': URAI_FOUNDER_MESSAGES['founder.disclosure'].source },
 }

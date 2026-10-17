@@ -1,5 +1,6 @@
 import type { UraiCatalog, UraiLaunchLocale, UraiMessageDefinition } from './locales'
 import { URAI_JOURNEY_CONTROL_TRANSLATIONS } from './journeyControlTranslations'
+import { URAI_POLISH_PREPARED_MESSAGES } from './polishPrepared'
 
 // Registered source copy and preparation status are separate from locale admission.
 // Working translations are review material. Any missing/blank entry falls back
@@ -110,5 +111,6 @@ export type UraiJourneyControlMessageId = keyof typeof URAI_JOURNEY_CONTROL_MESS
 
 export const URAI_JOURNEY_CONTROL_CATALOGS: Record<UraiLaunchLocale,UraiCatalog> = {
   ...URAI_JOURNEY_CONTROL_TRANSLATIONS,
+  pl: Object.fromEntries((Object.keys(URAI_JOURNEY_CONTROL_MESSAGES) as UraiJourneyControlMessageId[]).map(id => [id, URAI_POLISH_PREPARED_MESSAGES[id]])) as UraiCatalog,
   en: Object.fromEntries(Object.entries(URAI_JOURNEY_CONTROL_MESSAGES).map(([id,message]) => [id,message.source])) as UraiCatalog,
 }

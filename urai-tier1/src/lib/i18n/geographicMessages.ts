@@ -1,4 +1,5 @@
 import type { UraiLaunchLocale, UraiMessageDefinition } from './locales'
+import { URAI_POLISH_PREPARED_MESSAGES } from './polishPrepared'
 import geographic_0 from './geographic-en.prepared.json'
 import geographic_1 from './geographic-zh-Hans.prepared.json'
 import geographic_2 from './geographic-hi.prepared.json'
@@ -468,6 +469,7 @@ export type GeographicStatusId = Extract<GeographicMessageId, `geographic.status
 export type GeographicStatusMessage = {id: GeographicStatusId; mode?: 'granted' | 'limited' | 'paused' | 'denied'}
 export const URAI_GEOGRAPHIC_CATALOGS = {
   "en": geographic_0,
+  "pl": Object.fromEntries((Object.keys(URAI_GEOGRAPHIC_MESSAGES) as GeographicMessageId[]).map(id => [id, URAI_POLISH_PREPARED_MESSAGES[id]])) as Record<GeographicMessageId,string>,
   "zh-Hans": geographic_1,
   "hi": geographic_2,
   "es": geographic_3,

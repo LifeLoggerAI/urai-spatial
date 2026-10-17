@@ -22,4 +22,4 @@ export const URAI_FOUNDER_TRANSLATIONS = {
   ko: {'founder.disclosure': '창업자의 디지털 존재감'},
   it: {'founder.disclosure': 'Presenza digitale del fondatore'},
   fa: {'founder.disclosure': 'حضور دیجیتال بنیان‌گذار'},
-} as const satisfies Record<Exclude<UraiLaunchLocale, 'en'>, {'founder.disclosure': string}>
+} as const satisfies Record<Exclude<UraiLaunchLocale, 'en' | 'pl'>, {'founder.disclosure': string}>

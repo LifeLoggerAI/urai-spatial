@@ -5,7 +5,7 @@ import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 
 const names: Record<UraiLaunchLocale,string> = {
   en:'English', 'zh-Hans':'简体中文', hi:'हिन्दी', es:'Español', fr:'Français', ar:'العربية', bn:'বাংলা', 'pt-BR':'Português (Brasil)', ru:'Русский', ur:'اردو',
-  id:'Bahasa Indonesia', de:'Deutsch', ja:'日本語', sw:'Kiswahili', tr:'Türkçe', vi:'Tiếng Việt', fil:'Filipino', ko:'한국어', it:'Italiano', fa:'فارسی',
+  id:'Bahasa Indonesia', de:'Deutsch', ja:'日本語', sw:'Kiswahili', tr:'Türkçe', vi:'Tiếng Việt', fil:'Filipino', ko:'한국어', it:'Italiano', fa:'فارسی', pl:'Polski',
 }
 
 export default function LanguageSettings() {

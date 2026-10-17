@@ -1923,4 +1923,4 @@ export const URAI_JOURNEY_CONTROL_TRANSLATIONS = {
     "memoryMedia.attach": "پیوست فایل",
     "focus.openLifeMap": "باز کردن نقشه زندگی"
   }
-} as const satisfies Record<Exclude<UraiLaunchLocale,'en'>,Record<UraiJourneyControlMessageId,string>>
+} as const satisfies Record<Exclude<UraiLaunchLocale,'en'|'pl'>,Record<UraiJourneyControlMessageId,string>>

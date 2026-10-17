@@ -1,4 +1,5 @@
 import type { UraiCatalog, UraiLaunchLocale, UraiMessageDefinition } from './locales'
+import { URAI_POLISH_PREPARED_MESSAGES } from './polishPrepared'
 
 // These catalogs prepare review material. Sensitive unavailable-memory copy
 // remains in the admitted runtime language; preparation admits no language.
@@ -9,6 +10,7 @@ export const URAI_FOCUS_COMPATIBILITY_MESSAGES = {
 } as const satisfies Record<string, UraiMessageDefinition>
 
 const prepared: Record<UraiLaunchLocale, readonly [string, string, string]> = {
+  pl: [URAI_POLISH_PREPARED_MESSAGES['focus.compatibility.unavailableTitle'], URAI_POLISH_PREPARED_MESSAGES['focus.compatibility.unavailableDescription'], URAI_POLISH_PREPARED_MESSAGES['focus.compatibility.returnLifeMap']],
   en: ['Selected memory unavailable', 'This memory cannot be opened in Focus because it is unavailable, private, locked, deleted, or not part of the launch-safe demo set.', 'Return to Life Map'],
   'zh-Hans': ['所选记忆不可用', '此记忆无法在聚焦中打开，因为它不可用、属于私人内容、已锁定、已删除，或不属于可安全发布的演示集合。', '返回生命地图'],
   hi: ['चुनी गई स्मृति उपलब्ध नहीं है', 'यह स्मृति फोकस में नहीं खोली जा सकती क्योंकि यह उपलब्ध नहीं है, निजी है, लॉक की गई है, हटाई गई है, या लॉन्च के लिए सुरक्षित डेमो संग्रह का हिस्सा नहीं है।', 'जीवन मानचित्र पर लौटें'],

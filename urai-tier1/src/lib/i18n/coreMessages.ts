@@ -1,3 +1,5 @@
+import { URAI_POLISH_PREPARED_MESSAGES } from './polishPrepared'
+
 // Working general-interface translations. These rows do not grant native-language
 // acceptance or translate private memory content, legal terms, or consent policy.
 export const URAI_CORE_MESSAGES = {
@@ -19,6 +21,7 @@ export const URAI_CORE_MESSAGES = {
 const ids = Object.keys(URAI_CORE_MESSAGES) as Array<keyof typeof URAI_CORE_MESSAGES>
 const rows: Record<string, readonly string[]> = {
   en: ids.map(id => URAI_CORE_MESSAGES[id].source),
+  pl: ids.map(id => URAI_POLISH_PREPARED_MESSAGES[id]),
   'zh-Hans': ['语言','翻译预览','关闭','搜索','全部','概览','结果：{count}','历史记录','进入回放','重新居中','探索','返回聚焦','直接打开生命地图'],
   hi: ['भाषा','अनुवाद पूर्वावलोकन','बंद करें','खोजें','सभी','अवलोकन','परिणाम: {count}','इतिहास','रीप्ले में जाएँ','फिर से केंद्रित करें','अन्वेषण करें','फोकस पर लौटें','जीवन मानचित्र सीधे खोलें'],
   es: ['Idioma','Vista previa de traducción','Cerrar','Buscar','Todos','Vista general','Resultados: {count}','Historial','Entrar en la repetición','Centrar de nuevo','Explorar','Volver al enfoque','Abrir el mapa de vida directamente'],
