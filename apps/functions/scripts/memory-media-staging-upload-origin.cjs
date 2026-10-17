@@ -11,7 +11,7 @@ const {stripTypeScriptTypes} = require('node:module')
 const {resolve} = require('node:path')
 const {projectPath} = require('./memory-media-staging-cloud-collector.cjs')
 const {readBoundedProviderBody,readBoundedProviderJson,MAX_MEDIA_BYTES} = require('./memory-media-staging-provider-body.cjs')
-const {readBoundedUploaderAudit,verifyUploaderAudit} = require('./memory-media-staging-uploader-audit.cjs')
+const {verifyUploaderAuditAfterIngestion} = require('./memory-media-staging-uploader-audit.cjs')
 
 // The Firebase media bucket and the Google-managed Functions *source* bucket
 // are different resources. Never infer one from the other. Approval registry
@@ -177,7 +177,7 @@ async function readAuthenticatedUploadOrigin(options={}){
  const auditScope={project,bucket:source.bucket,object:source.object,
    generation:String(source.generation),createdAt:metadata.timeCreated,
    approvedServiceAccount}
- const auditEntries=await readBoundedUploaderAudit(async body=>{
+ const audit=await verifyUploaderAuditAfterIngestion(async body=>{
    const response=await fetch('https://logging.googleapis.com/v2/entries:list',{
      method:'POST',headers:{authorization:`Bearer ${token}`,accept:'application/json',
        'accept-encoding':'identity','cache-control':'no-transform',
@@ -186,7 +186,6 @@ async function readAuthenticatedUploadOrigin(options={}){
    if(response.status!==200)bad('AUDIT_LOGS_HTTP_'+response.status)
    return readBoundedProviderJson(response)
  },auditScope)
- const audit=verifyUploaderAudit(auditEntries,auditScope)
  if(audit.audited!==true||audit.sourceGeneration!==String(source.generation))
    bad('AUDIT_SOURCE_GENERATION_UNVERIFIED')
  return Object.freeze({...result,

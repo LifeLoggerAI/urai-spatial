@@ -1,7 +1,8 @@
 'use strict'
 const {test} = require('node:test')
 const assert = require('node:assert/strict')
-const {uploaderAuditQuery,readBoundedUploaderAudit,verifyUploaderAudit} = require('./memory-media-staging-uploader-audit.cjs')
+const {uploaderAuditQuery,readBoundedUploaderAudit,verifyUploaderAudit,
+ verifyUploaderAuditAfterIngestion} = require('./memory-media-staging-uploader-audit.cjs')
 const x={project:'urai-fixture-staging',bucket:'gcf-v2-sources-fixture',
  object:'uploads/fictional-source.zip',generation:'123456789',
  createdAt:'2026-10-16T18:00:00Z',
@@ -105,4 +106,67 @@ test('self-declared editable object metadata cannot replace audit generation',()
 
 test('nonstring pagination token cannot truncate audit read',async()=>{
  await assert.rejects(readBoundedUploaderAudit(async()=>({entries:[],nextPageToken:false}),x),/AUDIT_PAGE_TOKEN_INVALID/)
+})
+
+test('delayed authenticated creation becomes visible only on a later full query',async()=>{
+ let reads=0;const pauses=[]
+ const proof=await verifyUploaderAuditAfterIngestion(async ()=>{
+  reads++;return {entries:reads===3?[event()]:[]}
+ },x,async ms=>{pauses.push(ms)})
+ assert.equal(proof.audited,true);assert.equal(proof.sourceGeneration,x.generation)
+ assert.equal(reads,3);assert.deepEqual(pauses,[1500,3000])
+})
+test('delayed exact generation may follow a different generation without trusting it',async()=>{
+ let reads=0
+ const proof=await verifyUploaderAuditAfterIngestion(async ()=>{
+  reads++;const e=event()
+  if(reads===1)e.protoPayload.response.generation='999'
+  return {entries:[e]}
+ },x,async()=>{})
+ assert.equal(reads,2);assert.equal(proof.sourceGeneration,x.generation)
+})
+test('wrong uploader identity is a terminal denial, never retried into a pass',async()=>{
+ let reads=0
+ await assert.rejects(verifyUploaderAuditAfterIngestion(async ()=>{
+  reads++;const e=event();e.protoPayload.authenticationInfo.principalEmail='unapproved@example.com'
+  return {entries:[e]}
+ },x,async()=>{throw Error('UNAUTHORIZED_RETRY')}),/UPLOADER_PRINCIPAL_NOT_APPROVED/)
+ assert.equal(reads,1)
+})
+test('missing genuine audit after four complete reads remains denied',async()=>{
+ let reads=0;const pauses=[]
+ await assert.rejects(verifyUploaderAuditAfterIngestion(async ()=>{
+  reads++;return {entries:[]}
+ },x,async ms=>{pauses.push(ms)}),/CREATE_AUDIT_NOT_FOUND/)
+ assert.equal(reads,4);assert.deepEqual(pauses,[1500,3000,6000])
+})
+test('pagination truncation is never reinterpreted as log ingestion delay',async()=>{
+ let reads=0
+ await assert.rejects(verifyUploaderAuditAfterIngestion(async()=>{
+  reads++;return {entries:[],nextPageToken:'page'+reads}
+ },x,async()=>{throw Error('UNAUTHORIZED_RETRY')}),/AUDIT_PAGINATION_INCOMPLETE/)
+ assert.equal(reads,4)
+})
+test('provider error is terminal, without retry',async()=>{
+ let reads=0
+ await assert.rejects(verifyUploaderAuditAfterIngestion(async()=>{
+  reads++;throw Error('STAGING_UPLOAD_ORIGIN_UNVERIFIED:AUDIT_LOGS_HTTP_403')
+ },x,async()=>{throw Error('UNAUTHORIZED_RETRY')}),/AUDIT_LOGS_HTTP_403/)
+ assert.equal(reads,1)
+})
+test('malformed provider page is terminal, without retry',async()=>{
+ let reads=0
+ await assert.rejects(verifyUploaderAuditAfterIngestion(async()=>{
+  reads++;return {entries:{unauthenticated:true}}
+ },x,async()=>{throw Error('UNAUTHORIZED_RETRY')}),/AUDIT_PAGE_INVALID/)
+ assert.equal(reads,1)
+})
+test('delayed read still completely exhausts its per-attempt pagination',async()=>{
+ let calls=0, attempts=0
+ const proof=await verifyUploaderAuditAfterIngestion(async body=>{
+  calls++
+  if(!body.pageToken){attempts++;return {entries:[],nextPageToken:'page'} }
+  return attempts===1?{entries:[]}:{entries:[event()]}
+ },x,async()=>{})
+ assert.equal(attempts,2);assert.equal(calls,4);assert.equal(proof.audited,true)
 })

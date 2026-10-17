@@ -6,7 +6,13 @@
 const MAX_AUDIT_PAGES = 4
 const PAGE_SIZE = 50
 const MAX_CLOCK_SKEW_MS = 10 * 60 * 1000
+// Bounded eventual-ingestion recovery only for absent/stale audit evidence.
+const INGESTION_DELAYS_MS = Object.freeze([0, 1500, 3000, 6000])
 const deny = code => { throw Error('STAGING_UPLOAD_AUDIT_UNVERIFIED:' + code) }
+const RETRYABLE_AUDIT_ERRORS = new Set([
+  'STAGING_UPLOAD_AUDIT_UNVERIFIED:CREATE_AUDIT_NOT_FOUND',
+  'STAGING_UPLOAD_AUDIT_UNVERIFIED:OBJECT_GENERATION_NOT_ATTESTED',
+])
 const record = x => !!x && typeof x === 'object' && !Array.isArray(x)
 const decimal = x => typeof x === 'string' && /^[1-9][0-9]{0,19}$/.test(x)
 const simpleProject = x => typeof x === 'string' && /^urai-[a-z0-9-]+-(?:staging|sandbox|test)(?:-[a-z0-9]+)?$/.test(x)
@@ -107,4 +113,30 @@ function verifyUploaderAudit(entries, x) {
   return Object.freeze({ audited: true, insertId: event.insertId,
     logName, sourceGeneration: x.generation, timestamp: event.timestamp })
 }
-module.exports = { uploaderAuditQuery, readBoundedUploaderAudit, verifyUploaderAudit }
+// Retry only after a COMPLETE authenticated log-page read returned no exact
+// object-generation event. Never retry provider errors, broken pagination,
+// ambiguous events, unapproved principals or malformed evidence. Each attempt
+// exhausts bounded pages anew; no stale or partial query can grant approval.
+// A caller-injected postPage is used ONLY by pure unit tests; production calls
+// this via the fixed authenticated ADC Cloud Logging adapter in upload-origin.
+async function verifyUploaderAuditAfterIngestion(postPage, x,
+  pause = ms => new Promise(resolve => setTimeout(resolve, ms))) {
+  if (typeof postPage !== 'function' || typeof pause !== 'function')
+    deny('AUDIT_READER_MISSING')
+  expectedObject(x)
+  let lastFailure
+  for (let attempt = 0; attempt < INGESTION_DELAYS_MS.length; attempt++) {
+    if (attempt) await pause(INGESTION_DELAYS_MS[attempt])
+    const entries = await readBoundedUploaderAudit(postPage, x)
+    try {
+      return verifyUploaderAudit(entries, x)
+    } catch (error) {
+      if (!RETRYABLE_AUDIT_ERRORS.has(error?.message)) throw error
+      lastFailure = error
+    }
+  }
+  // A missing audit trail never becomes a synthetic success after the window.
+  throw lastFailure || Error('STAGING_UPLOAD_AUDIT_UNVERIFIED:CREATE_AUDIT_NOT_FOUND')
+}
+module.exports = { uploaderAuditQuery, readBoundedUploaderAudit, verifyUploaderAudit,
+  verifyUploaderAuditAfterIngestion }
