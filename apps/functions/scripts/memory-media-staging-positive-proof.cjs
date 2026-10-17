@@ -11,6 +11,7 @@ const { stripTypeScriptTypes } = require('node:module')
 const { assertExactStagingCheckout } = require('./memory-media-staging-source-check.cjs')
 const { classifyStagingMediaAcceptance } = require('./memory-media-staging-admission.cjs')
 const { attestStagingPlayback } = require('./memory-media-staging-runtime-attestation.cjs')
+const { approvedFunctionsSourceBucket } = require('./memory-media-staging-upload-origin.cjs')
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const project = process.env.URAI_MEDIA_STAGING_PROJECT || ''
 const bucketName = process.env.URAI_MEDIA_STAGING_BUCKET || ''
@@ -59,6 +60,13 @@ async function main(){
     encodeURIComponent(stripTypeScriptTypes(boundarySource,{mode:'strip'})))
   assert.equal(boundary.resolveMemoryMediaProject(process.env),project,
     'STAGING_SOURCE_AND_RUNTIME_APPROVAL_REQUIRED')
+  // Mandatory source-controlled bucket authorization BEFORE any provider
+  // credentials, uploads, account creation, or private-media requests.
+  const approvedSourceBucket=approvedFunctionsSourceBucket(project)
+  const sourceArchivePath=process.env.URAI_MEDIA_STAGING_SOURCE_ARCHIVE_PATH || ''
+  assert.ok(path.isAbsolute(sourceArchivePath),'STAGING_REVIEWED_SOURCE_ARCHIVE_PATH_REQUIRED')
+  // A path only SELECTS the local archive; the authenticated origin reader
+  // independently rebuilds exact HEAD and compares the actual provider bytes.
   const admin = require('firebase-admin')
   const app = admin.initializeApp({ credential:admin.credential.applicationDefault(),projectId:project,storageBucket:bucketName })
   const auth = admin.auth(), db = admin.firestore(), bucket = admin.storage().bucket()
@@ -206,7 +214,7 @@ async function main(){
     const attestation=await attestStagingPlayback({
       project,region,expectedSha:sourceSha,
       requestUrl:endpoint+'streamMemoryMediaPlayback?'+selection(descriptor),
-      ownerIdToken:ownerToken
+      ownerIdToken:ownerToken,archivePath:sourceArchivePath,approvedSourceBucket
     })
     evidence.deployedSourceExactHeadVerified=attestation.verified
     if(attestation.errorCode)evidence.deployedSourceAttestationError=attestation.errorCode

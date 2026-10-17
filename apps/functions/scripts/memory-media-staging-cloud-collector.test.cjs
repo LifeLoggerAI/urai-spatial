@@ -71,3 +71,27 @@ test('positive staging runner uses independent collector before fixture revocati
  assert.ok(source.includes('evidence.deployedSourceExactHeadVerified=attestation.verified'))
  assert.ok(!source.includes('const proof = undefined')&&!source.includes('verifyDeployedSource()'))
 })
+
+// Source-level wiring regressions: the complete response consumer has its own
+// streaming/encoding negative matrix in memory-media-staging-provider-body.test.cjs.
+test('collector consumes bounded provider bodies across GET, log POST and private probe',()=>{
+ const source=readFileSync(join(__dirname,'memory-media-staging-cloud-collector.cjs'),'utf8')
+ assert.ok(source.includes("require('./memory-media-staging-provider-body.cjs')"))
+ assert.ok(source.includes('return readBoundedProviderJson(result)'))
+ assert.ok(source.includes('return readBoundedProviderJson(res)'))
+ assert.ok(source.includes('await readBoundedProviderBody(response,10*1024*1024)'))
+ assert.ok(!source.includes('result.json()')&&!source.includes('res.json()'))
+ assert.ok(!source.includes('response.arrayBuffer()'))
+ assert.ok(source.includes("'accept-encoding':'identity'"))
+})
+test('fictional source-mode claims and unsigned direct Git cannot trigger collection',async()=>{
+ for(const extra of [{sourceMode:'DIRECT_GIT_SOURCE'},{authenticatedOrigin:{uploaderIdentityVerified:true}},
+  {archiveRequested:false},{approvedProject:true}]){
+   await assert.rejects(readTrustedControlPlane({...base,...extra}),/STAGING_CALLER_EVIDENCE_REJECTED/)
+ }
+ const source=readFileSync(join(__dirname,'memory-media-staging-positive-proof.cjs'),'utf8')
+ const approve=source.indexOf('const approvedSourceBucket=approvedFunctionsSourceBucket(project)')
+ const credentials=source.indexOf("const admin = require('firebase-admin')")
+ assert.ok(approve>0&&credentials>approve)
+ assert.ok(source.includes('archivePath:sourceArchivePath,approvedSourceBucket'))
+})

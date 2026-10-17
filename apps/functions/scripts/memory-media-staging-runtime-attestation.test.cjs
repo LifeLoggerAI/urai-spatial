@@ -72,11 +72,18 @@ test('failed attestation and incomplete cleanup never classify as positive stagi
   assert.equal(classifyStagingMediaAcceptance(completeEvidence(),true).runResult,'NOT_ACCEPTED')
 })
 
-test('fictional direct-Git proof uses its own verified mode, never archive claims',async()=>{
- const accepted=await offline(async()=>({...proof,sourceMode:'DIRECT_GIT_SOURCE',
-  directGitSourceVerified:true,authenticatedArchiveOriginBound:false,uploaderIdentityVerified:false}))(args)
- assert.equal(accepted.verified,true)
- const denied=await offline(async()=>({...proof,sourceMode:'DIRECT_GIT_SOURCE',
-  directGitSourceVerified:false,authenticatedArchiveOriginBound:false,uploaderIdentityVerified:false}))(args)
- assert.equal(denied.verified,false)
+test('direct Git source check is NOT itself protected-media staging approval',async()=>{
+ for(const fake of [
+  {...proof,sourceMode:'DIRECT_GIT_SOURCE',directGitSourceVerified:true,
+   authenticatedArchiveOriginBound:false,uploaderIdentityVerified:false},
+  {...proof,sourceMode:'DIRECT_GIT_SOURCE',directGitSourceVerified:true,
+   authenticatedArchiveOriginBound:true,uploaderIdentityVerified:true},
+  {...proof,sourceMode:'AUTHENTICATED_FIREBASE_SOURCE_ARCHIVE',
+   authenticatedArchiveOriginBound:true,uploaderIdentityVerified:false},
+  {...proof,sourceMode:'UNTRUSTED_SOURCE_MODE'},
+ ]) {
+  const result=await offline(async()=>fake)(args)
+  assert.equal(result.verified,false)
+  assert.equal(result.errorCode,'STAGING_DEPLOYED_SOURCE_UNVERIFIED')
+ }
 })

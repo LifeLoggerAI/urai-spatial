@@ -8,6 +8,7 @@ const { randomBytes } = require('node:crypto')
 const path = require('node:path')
 const { verifyServingRequestAfterIngestion } = require('./memory-media-staging-request-log-proof.cjs')
 const { verifyControlPlaneDeployment } = require('./memory-media-staging-deployed-source.cjs')
+const { readBoundedProviderBody, readBoundedProviderJson } = require('./memory-media-staging-provider-body.cjs')
 const API = Object.freeze({
   function:'https://cloudfunctions.googleapis.com/v2/',
   build:'https://cloudbuild.googleapis.com/v1/',
@@ -114,14 +115,14 @@ async function readTrustedControlPlane(options){
     throw Error('STAGING_ARCHIVE_REQUEST_INCOMPLETE')
   // Lazy import avoids a CommonJS initialization cycle: upload-origin
   // currently imports projectPath from this already-initialized collector.
+  if(functionName!=='streamMemoryMediaPlayback')throw Error('STAGING_FUNCTION_NOT_ALLOWED')
+  check(ownerIdToken,/^[A-Za-z0-9._~-]{100,4096}$/)
+  const target=validateProbeUrl(requestUrl,project,region,functionName)
   const authenticatedOrigin=archiveRequested
     ? await require('./memory-media-staging-upload-origin.cjs').readAuthenticatedUploadOrigin({
       project,region,functionName,expectedSha,
       archivePath:input.archivePath,approvedSourceBucket:input.approvedSourceBucket
     }) : undefined
-  if(functionName!=='streamMemoryMediaPlayback')throw Error('STAGING_FUNCTION_NOT_ALLOWED')
-  check(ownerIdToken,/^[A-Za-z0-9._~-]{100,4096}$/)
-  const target=validateProbeUrl(requestUrl,project,region,functionName)
   const googleToken=adcToken()
   const get=async url=>{
     const u=new URL(url)
@@ -129,12 +130,10 @@ async function readTrustedControlPlane(options){
       'run.googleapis.com','logging.googleapis.com'].includes(u.hostname))
       throw Error('STAGING_API_ORIGIN_REJECTED')
     const result=await fetch(url,{method:'GET',headers:{authorization:`Bearer ${googleToken}`,
-      accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(15000)})
-    if(!result.ok)throw Error('STAGING_CONTROL_PLANE_HTTP_'+result.status)
-    const data=await result.json()
-    if(!data||typeof data!=='object'||Array.isArray(data))
-      throw Error('STAGING_CONTROL_PLANE_INVALID_RESPONSE')
-    return data
+      accept:'application/json','accept-encoding':'identity','cache-control':'no-transform'},
+      redirect:'error',signal:AbortSignal.timeout(15000)})
+    if(result.status!==200)throw Error('STAGING_CONTROL_PLANE_HTTP_'+result.status)
+    return readBoundedProviderJson(result)
   }
   const functionRecord=await get(API.function+resource)
   const buildName=functionRecord?.buildConfig?.build,serviceName=functionRecord?.serviceConfig?.service
@@ -164,10 +163,9 @@ async function readTrustedControlPlane(options){
     origin:`https://${project}.web.app`,
   },cache:'no-store',redirect:'error',signal:AbortSignal.timeout(65000)})
   if(response.status!==200)throw Error('STAGING_PROBE_NOT_ACCEPTED')
-  const length=Number(response.headers.get('content-length'))
-  if(Number.isFinite(length)&&length>10*1024*1024)throw Error('STAGING_PROBE_SIZE_INVALID')
-  const bytes=await response.arrayBuffer()
-  if(bytes.byteLength===0||bytes.byteLength>10*1024*1024)throw Error('STAGING_PROBE_SIZE_INVALID')
+  // Consume a bounded complete identity-encoded body, not arrayBuffer() on an
+  // untrusted Content-Length and not a silently transformed stream.
+  await readBoundedProviderBody(response,10*1024*1024)
   const probeEndedAt=new Date().toISOString()
   // Bounded ingestion polling: re-read only complete canonical pages and
   // re-run the full source/build/revision/request validator on every attempt.
@@ -175,10 +173,11 @@ async function readTrustedControlPlane(options){
     ()=>readBoundedLogPages(async body=>{
       const res=await fetch(API.logging,{method:'POST',headers:{
         authorization:`Bearer ${googleToken}`,accept:'application/json',
+        'accept-encoding':'identity','cache-control':'no-transform',
         'content-type':'application/json'},body:JSON.stringify(body),
         redirect:'error',signal:AbortSignal.timeout(15000)})
-      if(!res.ok)throw Error('STAGING_CONTROL_PLANE_HTTP_'+res.status)
-      return res.json()
+      if(res.status!==200)throw Error('STAGING_CONTROL_PLANE_HTTP_'+res.status)
+      return readBoundedProviderJson(res)
     },{project,region,service:serviceName.split('/').pop(),revision:revisionName,
       traceId,startedAt:probeStartedAt,endedAt:probeEndedAt}),
     {project,region,functionName,expectedSha,

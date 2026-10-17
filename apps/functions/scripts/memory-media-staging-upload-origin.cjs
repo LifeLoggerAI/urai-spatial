@@ -165,4 +165,17 @@ async function readAuthenticatedUploadOrigin(options={}){
    uploaderIdentityVerified:false,cloudRunImageVerified:false,cloudRunRevisionVerified:false,
    protectedMediaAccepted:false,releaseCertified:false})
 }
-module.exports={evaluateOfflineUploadOriginContract,readAuthenticatedUploadOrigin,crc32cBase64}
+// The positive runner may read this source-controlled selector BEFORE using
+// cloud credentials or writing fictional fixtures. Operator environment data
+// and custom CLI flags cannot expand the approved Functions source buckets.
+function approvedFunctionsSourceBucket(project){
+ if(typeof project!=='string'
+    ||!Object.prototype.hasOwnProperty.call(APPROVED_FUNCTIONS_SOURCE_BUCKETS,project))
+   bad('SOURCE_BUCKET_NOT_APPROVED')
+ const bucket=APPROVED_FUNCTIONS_SOURCE_BUCKETS[project]
+ if(typeof bucket!=='string'||!/^[a-z0-9][a-z0-9._-]{2,220}$/.test(bucket))
+   bad('SOURCE_BUCKET_INVALID')
+ return bucket
+}
+module.exports={evaluateOfflineUploadOriginContract,readAuthenticatedUploadOrigin,
+  approvedFunctionsSourceBucket,crc32cBase64}

@@ -14,10 +14,13 @@ async function attestStagingPlayback(options) {
     })
     const verified = proof?.verified === true && proof.sourceSha === expectedSha
       && proof.functionName === FUNCTION_NAME && proof.servingInstanceBound === true
-      && ((proof.authenticatedArchiveOriginBound === true && proof.uploaderIdentityVerified === true
-        && proof.sourceMode !== 'DIRECT_GIT_SOURCE')
-        || (proof.sourceMode === 'DIRECT_GIT_SOURCE' && proof.directGitSourceVerified === true
-          && proof.authenticatedArchiveOriginBound === false && proof.uploaderIdentityVerified === false))
+      // Source-format support is not authorization to weaken protected-media
+      // staging policy. Direct-Git evidence may be validated by the control
+      // plane but cannot admit private media without independent archive/uploader
+      // approval, until a separately reviewed policy explicitly changes it.
+      && proof.sourceMode === 'AUTHENTICATED_FIREBASE_SOURCE_ARCHIVE'
+      && proof.authenticatedArchiveOriginBound === true
+      && proof.uploaderIdentityVerified === true
       && /^sha256:[a-f0-9]{64}$/.test(proof.imageDigest || '')
       && typeof proof.revisionName === 'string' && proof.revisionName.length > 0
     return { verified, errorCode: verified ? null : 'STAGING_DEPLOYED_SOURCE_UNVERIFIED' }
