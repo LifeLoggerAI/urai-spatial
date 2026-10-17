@@ -208,13 +208,20 @@ async function open(route = '/replay', settings = {}) {
   })
   const query = route === '/spatial/captured-reality' ? `?assetId=synthetic-accepted-place${settings.standalone ? '' : `&memoryId=${memoryId}`}` : route === '/life-movie' ? `?movieId=synthetic-movie&memoryId=${memoryId}` : `?memoryId=${memoryId}`
   const privateQuery = settings.dualPrivate ? '&dualPrivate=1&movieId=synthetic-movie&lifeMoviePlanId='+privatePlanId : ''
+  // Arm response observation BEFORE navigation; a fast synthetic 403/SRT can
+  // finish before open() returns. Never replace a missed response with a sleep.
+  const observedPrivateResponse = (settings.privateWrongStudio || settings.privatePlaylistMismatch)
+    ? page.waitForResponse(response => response.url().includes('/api/studio/spatial-private-media') &&
+      response.request().method() === 'POST' &&
+      JSON.parse(response.request().postData() ?? '{}').kind === (settings.privatePlaylistMismatch ? 'srt' : 'mp4'))
+    : null
   await page.goto(origin + route + query + privateQuery)
   await page.waitForFunction(() => !!window.__fixtureIsConsentPolicy && !!window.__fixture)
   assert.equal(await page.evaluate(() => {
     const f = window.__fixture, owner = f.auth.currentUser.uid
     return window.__fixtureIsConsentPolicy(f.docs[`users/${owner}/privacyPolicy/current`], owner)
   }), true, 'Synthetic positive playback must start from a valid canonical consent policy')
-  return { page, context, privateRequests }
+  return { page, context, privateRequests, observedPrivateResponse }
 }
 async function check(name, task) { await task(); cases.push({ name, passed: true }); console.log(`PASS ${name}`) }
 async function playable(page, element = 'video') { await page.waitForFunction(selector => { const source = document.querySelector(selector); return source?.readyState >= 2 && Number.isFinite(source.duration) && source.duration > 0 }, element) }
@@ -363,9 +370,12 @@ try {
     } finally {await context.close()}
   })
   await check('Wrong Studio user receives no protected output or captions in original Replay',async()=>{
-    const {page,context,privateRequests}=await open('/replay',{dualPrivate:true,privateWrongStudio:true})
+    const {page,context,privateRequests,observedPrivateResponse}=await open('/replay',{dualPrivate:true,privateWrongStudio:true})
     try {
-      await page.waitForResponse(response=>response.url().includes('/api/studio/spatial-private-media')&&response.request().method()==='POST')
+      const denied = await observedPrivateResponse
+      assert.equal(denied.status(),403,'wrong Studio user must get explicit HTTP denial')
+      assert.equal(denied.headers()['content-type'],'application/json')
+      assert.equal((await denied.body()).includes(bytes),false,'denial cannot contain private MP4 bytes')
       assert.equal(privateRequests.length,1)
       assert.equal(privateRequests[0].studioToken,'Bearer synthetic-studio-token-b')
       assert.equal(await page.locator('[data-private-life-movie-captions="verified"]').count(),0)
@@ -373,10 +383,11 @@ try {
     } finally {await context.close()}
   })
   await check('Mismatched protected MP4 and SRT playlist identity releases no private video',async()=>{
-    const {page,context,privateRequests}=await open('/replay',{dualPrivate:true,privatePlaylistMismatch:true})
+    const {page,context,privateRequests,observedPrivateResponse}=await open('/replay',{dualPrivate:true,privatePlaylistMismatch:true})
     try {
-      await page.waitForResponse(response=>response.url().includes('/api/studio/spatial-private-media')&&
-        response.request().method()==='POST'&&JSON.parse(response.request().postData()??'{}').kind==='srt')
+      const captionsResponse = await observedPrivateResponse
+      assert.equal(captionsResponse.status(),200,'mismatched captions must reach the client integrity check')
+      assert.equal(captionsResponse.headers()['x-urai-private-playlist-digest'],'e'.repeat(64))
       assert.deepEqual(privateRequests.map(r=>r.kind),['mp4','srt'])
       assert.equal(await page.locator('[data-private-life-movie-captions="verified"]').count(),0)
       assert.equal(await page.locator('video[aria-label="Authorized private Life Movie"]').count(),0)
