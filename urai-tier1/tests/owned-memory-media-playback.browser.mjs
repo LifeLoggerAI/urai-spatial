@@ -110,8 +110,12 @@ if (realStudioOrigin) {
   assert.equal(createHash('sha256').update(readFileSync(process.env.URAI_JOBS_SYNTH_MP4)).digest('hex'),
     'c4ba548d480d7c71fb8e9efa496f1282bb833cdbb5303c868aa2a5e685c6fe91')
 }
+// The server under test remains NODE_ENV=development. Its browser-side
+// React bundle must use the already-proven standalone "test" build mode:
+// enabling the React development path left a bare process reference in
+// Chromium (Wave 156 bootstrap diagnostic), before the original Replay mount.
 const integratedCompiled = realStudioOrigin ? await build({...buildOptions,define:{
-  ...privateDefines,'process.env.NODE_ENV':'"development"',
+  ...privateDefines,
   'process.env.NEXT_PUBLIC_URAI_STUDIO_PRIVATE_MEDIA_ORIGIN':JSON.stringify(realStudioOrigin)
 }}) : null
 assert.ok(Object.keys(compiled.metafile.inputs).some(file => file.replaceAll('\\','/').endsWith('/lib/i18n/useUraiLocale.ts')),'Actual locale hook must be compiled, not a raw-key fixture')
@@ -121,6 +125,13 @@ assert.ok(Object.keys(compiled.metafile.inputs).some(file => file.replaceAll('\\
 const bundle = compiled.outputFiles[0].text
 const privateBundle = privateCompiled.outputFiles[0].text
 const integratedBundle = integratedCompiled?.outputFiles[0].text ?? null
+if(integratedCompiled) {
+  assert.equal(privateDefines['process.env.NODE_ENV'],'"test"',
+    'Only the isolated browser compilation uses proven test-mode React')
+  assert.ok(Object.keys(integratedCompiled.metafile.inputs).some(file =>
+    file.replaceAll('\\','/').endsWith('/app/replay/useProtectedLifeMovieReplay.ts')),
+    'Actual-server Chromium bundle must include original protected Replay source')
+}
 assert.ok(Object.keys(privateCompiled.metafile.inputs).some(file =>
   file.replaceAll('\\','/').endsWith('/app/replay/useProtectedLifeMovieReplay.ts')),
   'Dual-identity browser test must compile the real private Replay hook')
@@ -299,6 +310,16 @@ async function open(route = '/replay', settings = {}) {
   await page.goto(origin + route + query + privateQuery)
   try {
     await page.waitForFunction(() => !!window.__fixtureIsConsentPolicy && !!window.__fixture)
+    if(settings.realHandler) {
+      await page.waitForFunction(() => (document.querySelector('#root')?.childElementCount ?? 0) > 0)
+      const scripts = await page.evaluate(() =>
+        [...document.scripts].map(s => new URL(s.src,location.href).pathname))
+      assert.ok(scripts.includes('/fixture-integrated.js'),
+        'Original Replay must mount from feature-enabled real-handler bundle')
+      assert.deepEqual(bootstrapDiagnostics.filter(e => e.event === 'pageerror'),[],
+        'Browser bootstrap must not throw uncaught JavaScript exceptions')
+      console.log('PASS Original Replay integrated browser bootstrap: script, consent, React root, no pageerror')
+    }
   } catch (error) {
     if (settings.realHandler) {
       // Preserve the true bootstrap defect; never fake SDK readiness.
