@@ -180,7 +180,14 @@ async function open(route = '/replay', settings = {}) {
         workforce: { ...domain(), mode: 'paused' }, identity: domain() },
       enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } }
     const base = `users/${ownerId}`
-    const auth = { currentUser: { uid: ownerId, getIdToken: async () => settings.realHandlerForeignSpatial ? 'synthetic-foreign-spatial-token' : 'synthetic-sdk-token' } }
+    // Genuine Studio account-link parsing requires a JWT-shaped Spatial token.
+    // Only the explicitly isolated real-handler test uses synthetic JWT-shaped
+    // fixtures. The server still verifies them through its test-only provider.
+    const fixtureSpatialToken = 'a'.repeat(45)+'.'+'b'.repeat(45)+'.'+'c'.repeat(45)
+    const foreignSpatialToken = 'd'.repeat(45)+'.'+'e'.repeat(45)+'.'+'f'.repeat(45)
+    const auth = { currentUser: { uid: ownerId, getIdToken: async () => settings.realHandler
+      ? settings.realHandlerForeignSpatial ? foreignSpatialToken : fixtureSpatialToken
+      : 'synthetic-sdk-token' } }
     const studioAuth = { currentUser: {uid:settings.privateWrongStudio?'synthetic-studio-user-b':'synthetic-studio-user-a',
       getIdToken:async()=>settings.privateWrongStudio?'synthetic-studio-token-b':'synthetic-studio-token-a'} }
     const f = window.__fixture = { auth, authObservers: new Set(), studioAuth, studioObservers:new Set(), watchers: new Set(), allWatchers: [], holdSnapshots: settings.hold ? [`${base}/memoryMediaReceipts/${receiptId}`] : [], docs: { ['consentRecords/'+ownerId+'_memory_storage']: { uid: ownerId, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: receipt.consentReceiptHash, expiresAt: receipt.consentExpiresAt }, [base]: { accountStatus: 'active' }, [`${base}/memories/${memoryId}`]: memory, [`${base}/privacyPolicy/current`]: policy, [`${base}/privacyRuntime/exportAuthority`]: { generation: 0, pendingDeletions: {} }, [`${base}/memoryMediaReceipts/${receiptId}`]: receipt, [`${base}/privacyRuntime/location-collection`]: { enabled: true }, [`${base}/capturedRealityReplayBindings/${memoryId}`]: { ownerId, memoryId, state: 'accepted', capturedRealityAssetId: 'synthetic-accepted-place' }, [`${base}/capturedRealityAssets/synthetic-accepted-place`]: { ownerId, state: 'ready', reviewState: 'accepted', releaseState: 'private-pilot' }, [`${base}/lifeMovies/synthetic-movie`]: { id: 'synthetic-movie', version: 1, ownerId, status: 'ready', consentState: 'authorized', chapters: [{ id: 'synthetic-chapter', memoryId, order: 0, truthClass: 'RECORDED_SOURCE_TRUTH', confidence: 1, consentState: 'authorized', provenance: { sourceIds: ['synthetic-source'], objectIds: [], storyNodeIds: [], providerTaskIds: [] } }] } }, calls: [], creates: [], revocations: [], heldMedia: [], sceneMounts: 0, sceneDisposals: 0, denyAuthority: false, tamper: !!settings.tamper }
@@ -220,7 +227,11 @@ async function open(route = '/replay', settings = {}) {
   await page.route('https://us-central1-urai-4dc1d.cloudfunctions.net/**', async intercepted => {
     const request = intercepted.request(), url = new URL(request.url())
     if (request.method() === 'OPTIONS') { await intercepted.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'authorization', 'Access-Control-Allow-Methods': 'GET' } }); return }
-    assert.match(request.headers().authorization ?? '', /^Bearer synthetic-sdk-token$/)
+    const expectedSDKToken = settings.realHandler
+      ? 'a'.repeat(45)+'.'+'b'.repeat(45)+'.'+'c'.repeat(45)
+      : 'synthetic-sdk-token'
+    assert.equal(request.headers().authorization,'Bearer '+expectedSDKToken,
+      'unrelated SDK transport must retain the correct synthetic Spatial identity')
     const tamper = await page.evaluate(() => window.__fixture.tamper)
     const body = url.pathname === '/streamCapturedRealityRuntime' ? Buffer.alloc(32) : tamper ? Buffer.alloc(mediaBytes.length) : mediaBytes
     await intercepted.fulfill({ status: 200, body, headers: { 'Access-Control-Allow-Origin': origin, 'Access-Control-Expose-Headers': 'Content-Length,X-URAI-Checksum-SHA256,X-URAI-Storage-Generation', 'Content-Type': url.pathname === '/streamCapturedRealityRuntime' ? 'application/octet-stream' : settings.audio ? 'audio/wav' : 'video/mp4', 'Content-Length': String(body.length), 'X-URAI-Checksum-SHA256': url.pathname === '/streamCapturedRealityRuntime' ? 'f'.repeat(64) : mediaFixture.sha256, 'X-URAI-Storage-Generation': url.pathname === '/streamCapturedRealityRuntime' ? '321' : '123' } })
