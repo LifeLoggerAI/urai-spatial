@@ -3,6 +3,12 @@ import test from 'node:test'
 import {
   URAI_LAUNCH_LOCALES,
   URAI_GLOBAL_LANGUAGE_TARGETS,
+  URAI_SOURCE_MESSAGES,
+  URAI_CATALOGS,
+  formatUraiCurrency,
+  formatUraiRelativeTime,
+  formatUraiDate,
+  formatUraiNumber,
   URAI_UNPREPARED_LANGUAGE_TARGETS,
   localizationCompleteness,
   messageFor,
@@ -12,11 +18,11 @@ import {
   uraiTextDirection,
 } from '../src/lib/i18n/locales.ts'
 
-test('governed launch locale set remains exact and twenty-wide', () => {
-  assert.equal(URAI_LAUNCH_LOCALES.length, 20)
+test('governed launch locale set remains twenty-one distinct languages', () => {
+  assert.equal(URAI_LAUNCH_LOCALES.length, 21)
   assert.deepEqual(URAI_LAUNCH_LOCALES, [
     'en','zh-Hans','hi','es','fr','ar','bn','pt-BR','ru','ur',
-    'id','de','ja','sw','tr','vi','fil','ko','it','fa',
+    'id','de','ja','sw','tr','vi','fil','ko','it','fa','pl',
   ])
 })
 
@@ -64,8 +70,33 @@ test('unreviewed locale preferences do not mislabel English fallback copy or for
 test('21 distinct global language targets do not imply 21 runtime languages', () => {
   assert.equal(URAI_GLOBAL_LANGUAGE_TARGETS.length, 21)
   assert.equal(new Set(URAI_GLOBAL_LANGUAGE_TARGETS.map(code => code.split('-')[0])).size, 21)
-  assert.deepEqual([...URAI_UNPREPARED_LANGUAGE_TARGETS], ['pl'])
+  assert.deepEqual([...URAI_UNPREPARED_LANGUAGE_TARGETS], [])
   assert.equal(URAI_GLOBAL_LANGUAGE_TARGETS.at(-1), 'pl')
-  assert.equal(normalizeUraiLocale('pl'), null)
-  assert.equal(negotiateUraiLocale({languages:['pl-PL','en-US']}), 'en')
+  assert.equal(normalizeUraiLocale('pl'), 'pl')
+  assert.equal(negotiateUraiLocale({languages:['pl-PL','en-US']}), 'pl')
+})
+
+test('Polish catalog preserves all 240 message IDs and named placeholders',()=>{
+  const ids=Object.keys(URAI_SOURCE_MESSAGES).sort()
+  assert.equal(ids.length,240)
+  assert.deepEqual(Object.keys(URAI_CATALOGS.pl).sort(),ids)
+  const tokens=s=>[...s.matchAll(/\{[A-Za-z][A-Za-z0-9]*\}/g)].map(m=>m[0]).sort()
+  for(const id of ids){
+    assert.ok(URAI_CATALOGS.pl[id]?.trim(),id)
+    assert.deepEqual(tokens(URAI_CATALOGS.pl[id]),tokens(URAI_SOURCE_MESSAGES[id].source),id)
+  }
+  assert.equal(localizationCompleteness('pl').complete,true)
+  assert.equal(localizationCompleteness('pl').nativeReviewRequired,true)
+  assert.equal(runtimeUraiLocale('pl'),'en')
+  assert.equal(messageFor('pl','nav.home'),'Home')
+})
+test('Polish number/date/currency and relative time, Chinese script and RTL',()=>{
+  assert.equal(normalizeUraiLocale('pl-PL'),'pl')
+  assert.equal(normalizeUraiLocale('zh-Hant'),null)
+  for(const id of ['ar','ur','fa']) assert.equal(uraiTextDirection(id),'rtl')
+  assert.equal(uraiTextDirection('pl'),'ltr')
+  assert.match(formatUraiNumber('pl',12.5),/,5/)
+  assert.match(formatUraiCurrency('pl',12.5,'PLN'),/zł|PLN/)
+  assert.match(formatUraiRelativeTime('pl',2,'day'),/dni/)
+  assert.match(formatUraiDate('pl','2026-10-16T00:00:00Z',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}),/października/)
 })

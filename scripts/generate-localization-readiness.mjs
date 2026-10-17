@@ -87,6 +87,7 @@ const receipt = {
   generatedAt: new Date().toISOString(),
   containsPrivateUserData: false,
   governedLocaleCount: URAI_LAUNCH_LOCALES.length,
+  catalogPreparedLocaleCount: locales.filter(locale => locale.complete).length,
   // Distinct target count does not imply machine catalogs, native approval,
   // production availability or the right to advertise 21 supported languages.
   distinctGlobalLanguageTargetCount: URAI_GLOBAL_LANGUAGE_TARGETS.length,
