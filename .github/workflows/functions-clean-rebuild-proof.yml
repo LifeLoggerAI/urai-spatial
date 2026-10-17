@@ -13,6 +13,8 @@ on:
       - 'scripts/test_verify_functions_source_archive.py'
       - 'scripts/prove-firebase-functions-package.mjs'
       - 'scripts/prove-firebase-functions-package.test.mjs'
+      - 'scripts/compare_firebase_zip_identity.py'
+      - 'scripts/test_compare_firebase_zip_identity.py'
       - '.github/workflows/functions-clean-rebuild-proof.yml'
   workflow_dispatch:
     inputs:
@@ -102,6 +104,26 @@ jobs:
             --archive "$RUNNER_TEMP/urai-functions-proof/functions-source.zip" \
             --receipt "$RUNNER_TEMP/urai-functions-proof/cli-package-receipt.json" \
             --expected-sha "$URAI_EXACT_HEAD"
+      - name: Compare two independent native Firebase ZIPs by bytes and source content
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts -p 'test_compare_firebase_zip_identity.py'
+          node scripts/prove-firebase-functions-package.mjs \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --cli-root "$RUNNER_TEMP/firebase-cli-v15" \
+            --archive "$RUNNER_TEMP/urai-functions-proof/functions-source-second.zip" \
+            --receipt "$RUNNER_TEMP/urai-functions-proof/cli-package-second-receipt.json" \
+            --expected-sha "$URAI_EXACT_HEAD"
+          python3 scripts/compare_firebase_zip_identity.py \
+            --first-archive "$RUNNER_TEMP/urai-functions-proof/functions-source.zip" \
+            --second-archive "$RUNNER_TEMP/urai-functions-proof/functions-source-second.zip" \
+            --first-receipt "$RUNNER_TEMP/urai-functions-proof/cli-package-receipt.json" \
+            --second-receipt "$RUNNER_TEMP/urai-functions-proof/cli-package-second-receipt.json" \
+            --expected-sha "$URAI_EXACT_HEAD" \
+            > "$RUNNER_TEMP/urai-functions-proof/zip-byte-comparison.json"
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          git diff --exit-code HEAD
       - name: Independently replay exact reviewed Functions build offline
         shell: bash
         run: |
@@ -141,5 +163,6 @@ jobs:
             ${{ runner.temp }}/urai-functions-proof/rebuild-receipt.json
             ${{ runner.temp }}/urai-functions-proof/acceptance-boundary.txt
             ${{ runner.temp }}/urai-functions-proof/firebase-cli-install-lock.sha256
+            ${{ runner.temp }}/urai-functions-proof/zip-byte-comparison.json
           if-no-files-found: warn
           retention-days: 90
