@@ -13,6 +13,7 @@ import { createReplayMediaSession, initialReplayVideoSnapshot, type ReplayVideoS
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { lifeMovieReplayHref, type LifeMovieRuntimeChapter } from '@/spatial/life-movie/lifeMovieRuntimeContract'
 import { useLifeMovieRuntimeManifest } from '@/spatial/life-movie/useLifeMovieRuntimeManifest'
+import { captionSegmentForMediaTime } from '@/spatial/life-movie/lifeMovieCaptionTimeline'
 import { revokeLifeMovieManifest, saveLifeMovieManifest } from '@/spatial/life-movie/lifeMovieManifestOperations'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { sensorySafeEnabled, URAI_SENSORY_SAFE_EVENT, URAI_SENSORY_SAFE_STORAGE_KEY } from '@/spatial/accessibility/SensorySafeRuntime'
@@ -309,7 +310,20 @@ export default function LifeMovieClient() {
     }
   }
 
-  const currentSegment = active.replayManifest.segments[0]
+  // Follow the real decoded recording clock for video/audio. Reusing the
+  // first authored caption through the whole film misstates later memories.
+  // An unapproved private source, unknown media duration or incompatible
+  // recording is never given a guessed timed caption.
+  const currentSegment = expectsPrivateSource && ownedPlayback.status !== 'ready'
+    ? null
+    : timedSource
+      ? captionSegmentForMediaTime(
+          active.replayManifest.segments,
+          mediaSnapshot.currentTimeMs,
+          active.replayManifest.durationMs,
+          mediaSnapshot.durationMs,
+        )
+      : active.replayManifest.segments[0] ?? null
   return (
     <main
       className="lifeMovie"
@@ -341,7 +355,12 @@ export default function LifeMovieClient() {
           <h2>{active.title}</h2>
           <time dateTime={active.occurredAt}>{new Date(active.occurredAt).toLocaleDateString()}</time>
           <p>{active.summary}</p>
-          <blockquote>{currentSegment?.caption || active.narrator.replay}</blockquote>
+          <blockquote aria-live="polite">{currentSegment?.caption
+            ?? (expectsPrivateSource && ownedPlayback.status !== 'ready'
+              ? 'The private source is not yet authorized for playback.'
+              : timedSource
+                ? 'Timed captions are unavailable for this recording.'
+                : active.narrator.replay)}</blockquote>
           <small>Private owner memory · {active.privacy}{activeChapter ? ` · ${activeChapter.truthClass.replaceAll('_', ' ').toLowerCase()} · confidence ${Math.round(activeChapter.confidence * 100)}%` : ''} · no silent provider substitution</small>
         </div>
       </section>
