@@ -19,6 +19,7 @@ import { replayAssets } from '@/spatial/assets/uraiAssets'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import { useOwnedMemoryMediaPlayback } from '@/spatial/memory/useOwnedMemoryMediaPlayback'
+import { useProtectedLifeMovieReplay } from './useProtectedLifeMovieReplay'
 import { useReplayMemoryVisibility } from '@/spatial/memory/useReplayMemoryVisibility'
 import { useReplayLifeModelAuthority } from '@/spatial/life-model/useReplayLifeModelAuthority'
 import { useCapturedRealityReplayLookup } from '@/spatial/captured-reality/useCapturedRealityReplayEntry'
@@ -447,8 +448,19 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     videoSession.current = null
   }, [])
   const ownedPlayback = useOwnedMemoryMediaPlayback(memory, () => { sourceRelease.current?.(); videoSession.current?.dispose() })
+  // Selectors locate only a candidate; Studio independently verifies its
+  // real owner, account link, consent, SceneTruth and Jobs binding.
+  const playbackSelection = useMemo(() => {
+    if (typeof window === 'undefined') return { movieId: null, planId: null }
+    const query = new URLSearchParams(window.location.search)
+    return { movieId: query.get('movieId'), planId: query.get('lifeMoviePlanId') }
+  }, [memory.id])
+  const protectedMovie = useProtectedLifeMovieReplay(memory, playbackSelection.planId, playbackSelection.movieId)
   const expectsPrivateSource = Boolean(memory.sourceMediaReceipts?.length)
-  const playableMemory = useMemo(() => expectsPrivateSource ? { ...memory, sourceMedia: ownedPlayback.media } : memory, [expectsPrivateSource, memory, ownedPlayback.media])
+  const hasProtectedMovie = protectedMovie.status === 'ready' && protectedMovie.media !== null
+  const playableMemory = useMemo(() => hasProtectedMovie ? { ...memory, sourceMedia: [protectedMovie.media!] }
+    : expectsPrivateSource ? { ...memory, sourceMedia: ownedPlayback.media } : memory,
+    [hasProtectedMovie, expectsPrivateSource, memory, ownedPlayback.media, protectedMovie.media])
   const { world } = useUraiWorldState()
   const lifeModelAuthority = useReplayLifeModelAuthority(memory.id, memory.demo === true)
   const governedMemoryId = lifeModelAuthority.available ? memory.id : null
@@ -472,7 +484,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const onVideoSession = useCallback((session: ReplayVideoSession | null) => { videoSession.current = session }, [])
   const mediaStatus = video ? videoSnapshot.status : admission.kind === 'neutral' ? 'absent' : imageState.status
   const mediaReady = video ? videoSnapshot.ready : admission.kind !== 'neutral' && imageState.status === 'ready'
-  const canPlay = (!expectsPrivateSource || ownedPlayback.status === 'ready') && (video ? videoSnapshot.durationMs !== null && videoSnapshot.status !== 'loading' && videoSnapshot.status !== 'error' : admission.kind === 'neutral' || imageState.status === 'ready')
+  const canPlay = (!expectsPrivateSource || ownedPlayback.status === 'ready' || hasProtectedMovie) && (video ? videoSnapshot.durationMs !== null && videoSnapshot.status !== 'loading' && videoSnapshot.status !== 'error' : admission.kind === 'neutral' || imageState.status === 'ready')
   const playing = video ? videoSnapshot.playing : narrativePlaying
   const progressMs = video ? videoSnapshot.currentTimeMs : narrativeProgressMs
   const duration = video ? videoSnapshot.durationMs ?? memory.replayManifest.durationMs : memory.replayManifest.durationMs
@@ -490,7 +502,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     return () => window.removeEventListener('urai:world-return', onReplayReturn, true)
   }, [world.previousDestination])
   const pauseMemory = useCallback(() => { setNarrativePlaying(false); videoSession.current?.pause() }, [])
-  useEffect(() => { if (expectsPrivateSource && ownedPlayback.status !== 'ready') pauseMemory() }, [expectsPrivateSource, ownedPlayback.status, pauseMemory])
+  useEffect(() => { if (expectsPrivateSource && ownedPlayback.status !== 'ready' && !hasProtectedMovie) pauseMemory() }, [expectsPrivateSource, ownedPlayback.status, hasProtectedMovie, pauseMemory])
   const togglePlayback = useCallback(() => {
     if (!canPlay) return
     if (video) {
@@ -581,7 +593,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
         {demoEnvironment ? <ReplaySpatialScene memory={memory} progressMs={progressMs} onMediaState={onImageState} /> : <ReplayNeutralSpatialScene />}
       </Canvas>
     </ReplayCanvasBoundary> : null}
-    {media ? <ReplayRecordedSource key={mediaAttempt} media={media} title={memory.title} demo={memory.demo} onImageState={onImageState} onVideoSnapshot={onVideoSnapshot} onVideoSession={onVideoSession} onSourceRelease={onSourceRelease} /> : demoEnvironment && webgl.state !== 'ready' ? <ReplayRecordedSource key={`demo-fallback:${mediaAttempt}`} media={{ kind: 'image', url: replayAssets.primary.src, caption: 'Disclosed demonstration memory environment' }} title={memory.title} demo onImageState={onImageState} onVideoSnapshot={onVideoSnapshot} onVideoSession={onVideoSession} /> : null}
+    {media ? <ReplayRecordedSource key={`${mediaAttempt}:${media?.url}`} media={media} title={memory.title} demo={memory.demo} onImageState={onImageState} onVideoSnapshot={onVideoSnapshot} onVideoSession={onVideoSession} onSourceRelease={onSourceRelease} /> : demoEnvironment && webgl.state !== 'ready' ? <ReplayRecordedSource key={`demo-fallback:${mediaAttempt}`} media={{ kind: 'image', url: replayAssets.primary.src, caption: 'Disclosed demonstration memory environment' }} title={memory.title} demo onImageState={onImageState} onVideoSnapshot={onVideoSnapshot} onVideoSession={onVideoSession} /> : null}
     <section
       aria-hidden="true"
       data-proof-only="true"
@@ -612,6 +624,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       {webgl.state !== 'ready' && admission.kind !== 'recorded-source' ? <div className="replaySpatialNotice"><span {...locale.props(webgl.state === 'checking' ? 'replay.checkingSpatial' : 'replay.spatialUnavailable')}>{locale.text(webgl.state === 'checking' ? 'replay.checkingSpatial' : 'replay.spatialUnavailable')}</span>{webgl.state !== 'checking' ? <button type="button" onClick={webgl.retry} {...locale.props('replay.retrySpatial')}>{locale.text('replay.retrySpatial')}</button> : null}</div> : null}
       <JourneyOfflineNotice />
     </section> : null}
+    {hasProtectedMovie && protectedMovie.captions ? <details className="transcript" data-private-life-movie-captions="verified"><summary>Protected Life Movie captions</summary><pre>{protectedMovie.captions}</pre></details> : null}
     {memory.replayManifest.transcript ? <details className="transcript"><summary {...locale.props('replay.transcript')}>{locale.text('replay.transcript')}</summary><p dir="auto">{memory.replayManifest.transcript}</p></details> : null}
     </header>
     <section className="caption" aria-live="polite"><small>{active?.label ?? 'Replay'}</small><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>
