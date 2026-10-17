@@ -143,9 +143,9 @@ const home='../src/app/HomeSpatialRuntimeLayer.tsx'
 const ascent='../src/spatial/layout/HomeWorldProductionPolished.tsx'
 const lifeMap='../src/components/lifemap/LifeMapSemanticNavigator.tsx'
 
-test('new journey catalog is exact, nonempty and prepared for the twenty governed locales',()=>{
+test('new journey catalog is exact, nonempty and prepared for the twenty-one governed locales',()=>{
   assert.equal(journeyIds.length,44)
-  assert.equal(URAI_LAUNCH_LOCALES.length,20)
+  assert.equal(URAI_LAUNCH_LOCALES.length,21)
   assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES],['en'])
   assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length,64 + Object.keys(URAI_JOURNEY_CONTROL_MESSAGES).length + Object.keys(URAI_GEOGRAPHIC_MESSAGES).length + Object.keys(URAI_FOUNDER_MESSAGES).length + Object.keys(URAI_FOCUS_COMPATIBILITY_MESSAGES).length)
   for(const locale of URAI_LAUNCH_LOCALES) for(const id of journeyIds) {
@@ -351,7 +351,7 @@ test('readiness resolves lexical const branches while rejecting false and unreso
 })
 
 
-test('remaining journey catalogs are prepared for twenty locales without granting runtime or sensitive-copy acceptance',()=>{
+test('remaining journey catalogs are prepared for twenty-one locales without granting runtime or sensitive-copy acceptance',()=>{
   const ids=Object.keys(URAI_JOURNEY_CONTROL_MESSAGES)
   assert.equal(ids.length,99)
   const values={title:'عنوان خاص <script>private</script>',count:'2',action:'save',percent:'50',elapsed:'0:10',duration:'0:20'}
