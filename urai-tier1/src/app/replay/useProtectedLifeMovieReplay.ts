@@ -53,18 +53,19 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
         projectId: config.projectId }, 'urai-studio-private-replay')
     const studioAuth = getAuth(studioApp), spatialAuth = getAuth(spatialApp)
     let generation = 0, active = true, revoke: (() => void) | null = null
+    let stopStudio: (() => void) | null = null
     const clean = () => { generation++; revoke?.(); revoke = null; setState({status:'unavailable',media:null,captions:null}) }
     const stopSpatial = onAuthStateChanged(spatialAuth, spatialUser => {
-      revoke?.(); revoke = null
+      revoke?.(); revoke = null; stopStudio?.(); stopStudio = null
       const current = ++generation
       if (!active || !spatialUser || spatialUser.uid !== memory.ownerId) { clean(); return }
-      const stopStudio = onAuthStateChanged(studioAuth, studioUser => {
+      stopStudio = onAuthStateChanged(studioAuth, studioUser => {
         revoke?.(); revoke = null
         const version = ++generation
         if (!active || !studioUser) { clean(); return }
         const controller = new AbortController()
         const urls: string[] = []
-        const expired = window.setTimeout(() => controller.abort(), EXPIRY_MS)
+        const expired = window.setTimeout(() => { if (active && version === generation) clean() }, EXPIRY_MS)
         const release = () => { controller.abort(); clearTimeout(expired); urls.forEach(url => URL.revokeObjectURL(url)) }
         revoke = release
         setState({status:'loading',media:null,captions:null})
@@ -107,12 +108,10 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
           } catch { if (active && version === generation) clean() }
         })()
       })
-      const previousRevoke = revoke
-      revoke = () => { previousRevoke?.(); stopStudio() }
     })
     const offline = () => clean()
     window.addEventListener('offline',offline)
-    return () => { active = false; generation++; revoke?.(); stopSpatial(); window.removeEventListener('offline',offline) }
+    return () => { active = false; generation++; revoke?.(); stopStudio?.(); stopSpatial(); window.removeEventListener('offline',offline) }
   }, [key, config, memory, planId, movieId])
   return state
 }
