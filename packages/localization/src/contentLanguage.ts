@@ -1,10 +1,11 @@
-// Transport tags derived from the governed twenty-locale preparation set.
+// Transport tags derived from the governed twenty-one-locale preparation set.
 // Per-response language does not grant native review, voice identity or release acceptance.
 export const URAI_CONTENT_LANGUAGES = [
   ['en','en-US','ltr'], ['zh-Hans','zh-CN','ltr'], ['hi','hi-IN','ltr'], ['es','es-ES','ltr'], ['fr','fr-FR','ltr'],
   ['ar','ar-SA','rtl'], ['bn','bn-BD','ltr'], ['pt-BR','pt-BR','ltr'], ['ru','ru-RU','ltr'], ['ur','ur-PK','rtl'],
   ['id','id-ID','ltr'], ['de','de-DE','ltr'], ['ja','ja-JP','ltr'], ['sw','sw-KE','ltr'], ['tr','tr-TR','ltr'],
   ['vi','vi-VN','ltr'], ['fil','fil-PH','ltr'], ['ko','ko-KR','ltr'], ['it','it-IT','ltr'], ['fa','fa-IR','rtl'],
+  ['pl','pl-PL','ltr'],
 ] as const
 export type UraiContentLanguageTag = typeof URAI_CONTENT_LANGUAGES[number][1]
 export const URAI_CONTENT_LANGUAGE_TAGS = URAI_CONTENT_LANGUAGES.map(row => row[1])

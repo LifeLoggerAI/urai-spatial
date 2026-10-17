@@ -184,9 +184,9 @@ function providerFixture({ output = doneEvent('en-US'), policyGranted = true, po
   return { calls, stored, invoke, get verifiedSyntheticOutputs() { return verifiedSyntheticOutputs } }
 }
 
-test('content transport covers exactly the governed twenty tags and preserves review gates', () => {
+test('content transport covers twenty-one governed preview tags and preserves review gates', () => {
   assert.deepEqual(URAI_CONTENT_LANGUAGES.map(row => row[0]), URAI_LAUNCH_LOCALES)
-  assert.equal(new Set(URAI_CONTENT_LANGUAGE_TAGS).size, 20)
+  assert.equal(new Set(URAI_CONTENT_LANGUAGE_TAGS).size, 21)
   assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES], ['en'])
   for (const [locale, speechTag, direction] of URAI_CONTENT_LANGUAGES) {
     assert.deepEqual(contentLanguage(locale), { locale, speechTag, direction })
@@ -198,6 +198,21 @@ test('content transport covers exactly the governed twenty tags and preserves re
     assert.deepEqual(contentLanguageProps(speechTag), { lang: speechTag, dir: direction })
   }
   assert.deepEqual(URAI_CONTENT_LANGUAGES.filter(row => row[2] === 'rtl').map(row => row[0]), ['ar', 'ur', 'fa'])
+})
+
+test('Polish preview content remains language-bound and owner-consent guarded', async () => {
+  assert.deepEqual(contentLanguage('pl-PL'), { locale:'pl', speechTag:'pl-PL', direction:'ltr' })
+  const f = clientFixture({ initialLocale:'pl-PL' })
+  const result = await f.request()
+  assert.equal(result.locale, 'pl-PL')
+  assert.equal(f.calls.length,1)
+  assert.equal(f.calls[0].body.locale,'pl-PL')
+  assert.equal(f.calls[0].body.aiProcessingConsent,true)
+  const denied = providerFixture({ policyGranted:false })
+  const blocked = await denied.invoke({ locale:'pl-PL' })
+  assert.equal(blocked.code,403)
+  assert.equal(denied.calls.length,0)
+  assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES],['en'])
 })
 
 test('unsupported or instruction-bearing tags never become provider instructions or guessed languages', () => {
@@ -224,7 +239,7 @@ test('actual Orb client sends each governed language and uses a language-bound s
     await f.request()
     assert.equal(f.calls[1].body.requestId, identity)
   }
-  assert.equal(identities.size, 20)
+  assert.equal(identities.size, 21)
 })
 
 test('language is captured before authentication waits and does not drift with the UI preference', async () => {
@@ -296,7 +311,7 @@ test('actual Council fallback satisfies the shared response type with authored E
   }
 })
 
-test('actual server routes all twenty languages into strict response schema, instruction, caption and stream metadata', async () => {
+test('actual server routes all twenty-one languages into strict response schema, instruction, caption and stream metadata', async () => {
   const identities = new Set()
   for (const [, locale] of URAI_CONTENT_LANGUAGES) {
     const f = providerFixture({ output: doneEvent(locale) })
@@ -316,7 +331,7 @@ test('actual server routes all twenty languages into strict response schema, ins
     assert.equal(response.events.at(-1).locale, locale)
     assert.equal(response.headers['Cache-Control'], 'private, no-store, max-age=0')
   }
-  assert.equal(identities.size, 20)
+  assert.equal(identities.size, 21)
 })
 
 test('unsupported server language and saved consent denial do not call moderation or generation', async () => {
