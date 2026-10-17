@@ -1,8 +1,9 @@
 'use strict'
 // Read-only, SOURCE-CONTROLLED staging-only bridge from a locally reviewed
 // Firebase ZIP to an authenticated GCS object generation and Cloud Build input.
-// This is NOT a Firebase deploy/upload, an uploader-identity attestation,
-// Cloud Run revision proof, or protected-media admission.
+// This is NOT a Firebase deploy/upload, a Cloud Run serving-revision proof,
+// or protected-media admission. Independent uploader identity requires real
+// authenticated Cloud Logging Data Access evidence.
 const {createHash} = require('node:crypto')
 const {execFileSync} = require('node:child_process')
 const {readFileSync,statSync} = require('node:fs')
@@ -10,11 +11,18 @@ const {stripTypeScriptTypes} = require('node:module')
 const {resolve} = require('node:path')
 const {projectPath} = require('./memory-media-staging-cloud-collector.cjs')
 const {readBoundedProviderBody,readBoundedProviderJson,MAX_MEDIA_BYTES} = require('./memory-media-staging-provider-body.cjs')
+const {readBoundedUploaderAudit,verifyUploaderAudit} = require('./memory-media-staging-uploader-audit.cjs')
 
 // The Firebase media bucket and the Google-managed Functions *source* bucket
 // are different resources. Never infer one from the other. Approval registry
 // remains intentionally EMPTY until independently reviewed source governance.
 const APPROVED_FUNCTIONS_SOURCE_BUCKETS = Object.freeze({})
+// Separate, source-reviewed identity allowlist. Bucket approval alone cannot
+// authorize the uploader. Deliberately empty pending independent staging IAM
+// and service-account approval; never read this identity from caller/env JSON.
+const APPROVED_FUNCTIONS_SOURCE_UPLOADERS = Object.freeze({
+  // 'urai-approved-staging': 'approved-uploader@urai-approved-staging.iam.gserviceaccount.com',
+})
 const MAX_SOURCE_BYTES = 128 * 1024 * 1024
 const bad = code => {throw Error('STAGING_UPLOAD_ORIGIN_UNVERIFIED:' + code)}
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
@@ -91,6 +99,15 @@ async function assertCanonicalApprovedMediaAndSourceBucket(project,bucket){
  try {if(boundary.resolveMemoryMediaProject(process.env)!==project)bad('PROJECT_NOT_APPROVED')}
  catch {bad('PROJECT_NOT_APPROVED')}
 }
+function approvedFunctionsSourceUploader(project){
+ if(!Object.prototype.hasOwnProperty.call(APPROVED_FUNCTIONS_SOURCE_UPLOADERS,project))
+   bad('SOURCE_UPLOADER_NOT_APPROVED')
+ const account=APPROVED_FUNCTIONS_SOURCE_UPLOADERS[project]
+ if(typeof account!=='string' ||
+   !/^[a-z][a-z0-9._-]{2,120}@[a-z][a-z0-9-]{4,61}[a-z0-9]\\.iam\\.gserviceaccount\\.com$/.test(account))
+   bad('SOURCE_UPLOADER_IDENTITY_INVALID')
+ return account
+}
 function googleToken(){
  const t=execFileSync('gcloud',['auth','application-default','print-access-token'],
    {encoding:'utf8',timeout:10000,stdio:['ignore','pipe','pipe']}).trim()
@@ -123,6 +140,7 @@ async function readAuthenticatedUploadOrigin(options={}){
  projectPath(project,region,functionName)
  if(functionName!=='streamMemoryMediaPlayback'||!(/^[a-f0-9]{40}$/.test(expectedSha||'')))bad('INVALID_REQUEST')
  await assertCanonicalApprovedMediaAndSourceBucket(project,approvedSourceBucket)
+ const approvedServiceAccount=approvedFunctionsSourceUploader(project)
  const root=resolve(__dirname,'../../..'), archive=resolve(archivePath||'')
  const stdout=execFileSync('python3',[
   resolve(root,'scripts/verify_functions_source_archive.py'),
@@ -153,6 +171,24 @@ async function readAuthenticatedUploadOrigin(options={}){
  const bytes=await boundedMediaGet(objUrl+'?'+generation+'&alt=media',token)
  const result=evaluateOfflineUploadOriginContract({project,region,functionName,localBytes,providerBytes:bytes,
    metadata,cloudFunction:fn,cloudBuild:build,sourceBucket:approvedSourceBucket})
+ // Only after independent ZIP, immutable object generation and Cloud Build
+ // source readback may the same ADC token read Google Cloud Logging DATA_WRITE.
+ // This is a read-only entries:list POST, not a cloud mutation or local mock.
+ const auditScope={project,bucket:source.bucket,object:source.object,
+   generation:String(source.generation),createdAt:metadata.timeCreated,
+   approvedServiceAccount}
+ const auditEntries=await readBoundedUploaderAudit(async body=>{
+   const response=await fetch('https://logging.googleapis.com/v2/entries:list',{
+     method:'POST',headers:{authorization:`Bearer ${token}`,accept:'application/json',
+       'accept-encoding':'identity','cache-control':'no-transform',
+       'content-type':'application/json'},
+     body:JSON.stringify(body),redirect:'error',signal:AbortSignal.timeout(20000)})
+   if(response.status!==200)bad('AUDIT_LOGS_HTTP_'+response.status)
+   return readBoundedProviderJson(response)
+ },auditScope)
+ const audit=verifyUploaderAudit(auditEntries,auditScope)
+ if(audit.audited!==true||audit.sourceGeneration!==String(source.generation))
+   bad('AUDIT_SOURCE_GENERATION_UNVERIFIED')
  return Object.freeze({...result,
    classification:'AUTHENTICATED_OBJECT_READBACK_AND_BUILD_SOURCE_LINK_ONLY',
    // These identities come from independently checked source bytes and
@@ -162,7 +198,10 @@ async function readAuthenticatedUploadOrigin(options={}){
    sourceBucket:source.bucket,sourceObject:source.object,
    sourceGeneration:String(source.generation),buildName:buildPath,
    localSourceBuildVerified:true,authenticatedProviderReadback:true,
-   uploaderIdentityVerified:false,cloudRunImageVerified:false,cloudRunRevisionVerified:false,
+   uploaderIdentityVerified:audit.audited===true && audit.sourceGeneration===String(source.generation),
+   uploaderAuditLogName:audit.logName,uploaderAuditInsertId:audit.insertId,
+   uploaderAuditTimestamp:audit.timestamp,
+   cloudRunImageVerified:false,cloudRunRevisionVerified:false,
    protectedMediaAccepted:false,releaseCertified:false})
 }
 // The positive runner may read this source-controlled selector BEFORE using

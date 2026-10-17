@@ -3,6 +3,8 @@ const {test}=require('node:test')
 const assert=require('node:assert/strict')
 const {evaluateOfflineUploadOriginContract:proof,readAuthenticatedUploadOrigin,crc32cBase64}=require('./memory-media-staging-upload-origin.cjs')
 const {createHash}=require('node:crypto')
+const {readFileSync}=require('node:fs')
+const {join}=require('node:path')
 const project='urai-fixture-staging',region='us-central1',fnName='streamMemoryMediaPlayback'
 const prefix=`projects/${project}/locations/${region}`
 const bucket='gcf-v2-sources-fictional',object='uploads/fake-source.zip',generation='123'
@@ -60,4 +62,33 @@ test('canonical registry blocks cloud access before attempting local files or AD
  await assert.rejects(readAuthenticatedUploadOrigin({project,region,functionName:fnName,
    expectedSha:'a'.repeat(40),archivePath:'/fictional',approvedSourceBucket:bucket}),
    /STAGING_UPLOAD_ORIGIN_UNVERIFIED:PROJECT_NOT_APPROVED/)
+})
+
+test('production archive reader uses actual authenticated bounded Cloud Logging before origin binding',()=>{
+ const source=readFileSync(join(__dirname,'memory-media-staging-upload-origin.cjs'),'utf8')
+ const gate=source.indexOf('const approvedServiceAccount=approvedFunctionsSourceUploader(project)')
+ const storage=source.indexOf('const result=evaluateOfflineUploadOriginContract(')
+ const audit=source.indexOf('const auditEntries=await readBoundedUploaderAudit(')
+ const verified=source.indexOf('const audit=verifyUploaderAudit(auditEntries,auditScope)')
+ const claimed=source.indexOf('uploaderIdentityVerified:audit.audited===true')
+ assert.ok(gate>0&&storage>gate&&audit>storage&&verified>audit&&claimed>verified)
+ assert.match(source,/metadata\.timeCreated/)
+ assert.match(source,/method:'POST',headers:\{authorization:`Bearer \$\{token\}`/)
+ assert.match(source,/https:\/\/logging\.googleapis\.com\/v2\/entries:list/)
+ assert.match(source,/return readBoundedProviderJson\(response\)/)
+ assert.match(source,/bad\('AUDIT_LOGS_HTTP_'\+response\.status\)/)
+ assert.ok(!source.includes('uploaderIdentityVerified:true'))
+})
+test('uploader identity is source-allowlisted and caller cannot inject an audit record',async()=>{
+ const source=readFileSync(join(__dirname,'memory-media-staging-upload-origin.cjs'),'utf8')
+ const map=source.match(/const APPROVED_FUNCTIONS_SOURCE_UPLOADERS = Object\.freeze\(\{([\s\S]*?)\}\)/)
+ assert.ok(map)
+ assert.equal(map[1].replace(/\/\/[^\n]*/g,'').trim(),'')
+ assert.match(source,/bad\('SOURCE_UPLOADER_NOT_APPROVED'\)/)
+ assert.match(source,/const approvedServiceAccount=approvedFunctionsSourceUploader\(project\)/)
+ for(const name of ['approvedServiceAccount','auditEntries','uploaderIdentityVerified','postPage']){
+  await assert.rejects(readAuthenticatedUploadOrigin({project,region,functionName:fnName,
+    expectedSha:'a'.repeat(40),archivePath:'/fictional',approvedSourceBucket:bucket,
+    [name]:true}),/STAGING_UPLOAD_ORIGIN_UNVERIFIED:CALLER_EVIDENCE_REJECTED/)
+ }
 })
