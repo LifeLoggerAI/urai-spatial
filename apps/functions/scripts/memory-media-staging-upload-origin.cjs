@@ -104,7 +104,7 @@ function approvedFunctionsSourceUploader(project){
    bad('SOURCE_UPLOADER_NOT_APPROVED')
  const account=APPROVED_FUNCTIONS_SOURCE_UPLOADERS[project]
  if(typeof account!=='string' ||
-   !/^[a-z][a-z0-9._-]{2,120}@[a-z][a-z0-9-]{4,61}[a-z0-9]\\.iam\\.gserviceaccount\\.com$/.test(account))
+   !/^[a-z][a-z0-9._-]{2,120}@[a-z][a-z0-9-]{4,61}[a-z0-9]\.iam\.gserviceaccount\.com$/.test(account))
    bad('SOURCE_UPLOADER_IDENTITY_INVALID')
  return account
 }
