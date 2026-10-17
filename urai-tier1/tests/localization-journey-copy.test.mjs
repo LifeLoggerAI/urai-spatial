@@ -37,7 +37,11 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
   }
   const browser = new EventTarget()
   browser.navigator = {onLine:online}
-  const params = new URLSearchParams()
+  // In this controlled copy-only runtime, the real Replay reads the current
+  // browser URL to locate optional private movie selectors. Model a valid
+  // empty query rather than crashing before its localized controls mount.
+  browser.location = { search: '' }
+  const params = new URLSearchParams(browser.location.search)
   const hooks = {...React,
     useState:initial => [stateIndex in states ? states[stateIndex++] : (stateIndex++, typeof initial==='function' ? initial() : initial),()=>{}],
     useEffect:()=>{}, useLayoutEffect:()=>{}, useMemo:fn=>fn(), useCallback:fn=>fn, useRef:value=>({current:value}),
