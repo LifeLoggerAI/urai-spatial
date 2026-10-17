@@ -73,6 +73,10 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(id.includes('useSelectedMemory')) return {useSelectedMemory:()=>({memory,status,message})}
     if(id.includes('useReplayMemoryVisibility')) return {useReplayMemoryVisibility:()=>memory ? 'visible' : 'unavailable'}
     if(id.includes('useOwnedMemoryMediaPlayback')) return {useOwnedMemoryMediaPlayback:()=>({status:'absent',media:[]})}
+    // This fixture tests copy and controls, not protected network playback.
+    // The actual private-Life-Movie adapter remains exercised by separate
+    // source, handler and browser tests; the inert state must disclose absence.
+    if(id.includes('useProtectedLifeMovieReplay')) return {useProtectedLifeMovieReplay:()=>({status:'absent',media:null,captions:null})}
     if(id.includes('useAdaptiveSpatialQuality')) return {useAdaptiveSpatialQuality:()=>quality}
     if(id.includes('useReducedMotion')) return {useReducedMotion:()=>true}
     if(id.includes('useReplayLifeModelAuthority')) return {useReplayLifeModelAuthority:()=>({available:false,status:'blocked',decision:'fixture',people:[]})}
