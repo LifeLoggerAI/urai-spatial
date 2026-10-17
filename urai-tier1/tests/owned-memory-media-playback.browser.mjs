@@ -165,7 +165,33 @@ async function open(route = '/replay', settings = {}) {
         cors:response.headers()['access-control-allow-origin']})
     })
   }
-  page.on('pageerror', error => errors.push(error.stack || error.message))
+  const bootstrapDiagnostics = []
+  page.on('pageerror', error => {
+    errors.push(error.stack || error.message)
+    if (settings.realHandler) bootstrapDiagnostics.push({
+      event: 'pageerror', detail: String(error.stack || error.message).slice(0, 1200)
+    })
+  })
+  if (settings.realHandler) {
+    // Do not print bearer headers, request bodies or protected response bytes.
+    page.on('console', message => {
+      if (message.type() === 'error') bootstrapDiagnostics.push({
+        event: 'console-error', detail: message.text().slice(0, 700)
+      })
+    })
+    page.on('requestfailed', request => bootstrapDiagnostics.push({
+      event: 'request-failed', method: request.method(),
+      pathname: new URL(request.url()).pathname,
+      reason: request.failure()?.errorText?.slice(0, 250)
+    }))
+    page.on('response', response => {
+      if (response.status() >= 400 && new URL(response.url()).origin === origin)
+        bootstrapDiagnostics.push({
+          event: 'local-script-response', status: response.status(),
+          pathname: new URL(response.url()).pathname
+        })
+    })
+  }
   await page.addInitScript(({ fixture, memoryId, receiptId, ownerId, settings }) => {
     const memory = { ownerId, title: settings.title ?? 'Synthetic receipt source — not family media', occurredAt: '2026-01-01T12:00:00.000Z', summary: 'A synthetic control fixture.', emotionalState: 'calm', privacy: 'private', sourceMedia: [{ kind: settings.audio ? 'audio' : 'video', mediaReceiptId: receiptId }], star: { position: [0, 0, -4] }, replayManifest: { id: 'synthetic-manifest', version: 1, durationMs: 3000, segments: ['memory', 'emotion', 'pattern', 'return'].map((id, i) => ({ id, label: id, caption: `Synthetic ${id}`, narratorLine: settings.narration ?? 'Synthetic narration caption only', startsAtMs: i * 750, durationMs: 750 })) } }
     const kind = settings.audio ? 'audio' : 'video', mime = settings.audio ? 'audio/wav' : 'video/mp4'
@@ -271,7 +297,28 @@ async function open(route = '/replay', settings = {}) {
       JSON.parse(response.request().postData() ?? '{}').kind === (settings.privatePlaylistMismatch ? 'srt' : 'mp4'))
     : null
   await page.goto(origin + route + query + privateQuery)
-  await page.waitForFunction(() => !!window.__fixtureIsConsentPolicy && !!window.__fixture)
+  try {
+    await page.waitForFunction(() => !!window.__fixtureIsConsentPolicy && !!window.__fixture)
+  } catch (error) {
+    if (settings.realHandler) {
+      // Preserve the true bootstrap defect; never fake SDK readiness.
+      const probe = await page.evaluate(() => ({
+        fixtureReady: !!window.__fixture,
+        consentFunctionReady: !!window.__fixtureIsConsentPolicy,
+        pathname: location.pathname,
+        scriptPaths: [...document.scripts].map(s => new URL(s.src, location.href).pathname),
+        rootMounted: !!document.querySelector('#root')?.childElementCount
+      })).catch(e => ({ browserProbeFailed: String(e).slice(0, 300) }))
+      const report = { probe, bootstrapDiagnostics }
+      writeFileSync(path.join(output, 'original-replay-real-handler-bootstrap-failure.json'),
+        JSON.stringify(report, null, 2))
+      await page.screenshot({
+        path: path.join(output, 'original-replay-real-handler-bootstrap-failure.png')
+      }).catch(() => {})
+      console.error('URAI_REAL_HANDLER_BROWSER_BOOTSTRAP_DIAGNOSTIC '+JSON.stringify(report))
+    }
+    throw error
+  }
   assert.equal(await page.evaluate(() => {
     const f = window.__fixture, owner = f.auth.currentUser.uid
     return window.__fixtureIsConsentPolicy(f.docs[`users/${owner}/privacyPolicy/current`], owner)
