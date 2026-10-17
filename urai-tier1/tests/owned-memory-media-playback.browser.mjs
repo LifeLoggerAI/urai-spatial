@@ -86,29 +86,53 @@ const buildOptions = {
   } }],
 }
 const compiled = await build(buildOptions)
-const privateCompiled = await build({...buildOptions,define:{...buildOptions.define,
+// The existing private bundle remains the independent synthetic-browser regression.
+const privateDefines = {...buildOptions.define,
   'process.env.NEXT_PUBLIC_URAI_SPATIAL_PRIVATE_MOVIE_ENABLED':'"true"',
   'process.env.NEXT_PUBLIC_URAI_STUDIO_FIREBASE_API_KEY':'"synthetic-public-key"',
   'process.env.NEXT_PUBLIC_URAI_STUDIO_FIREBASE_AUTH_DOMAIN':'"studio-replay.invalid"',
   'process.env.NEXT_PUBLIC_URAI_STUDIO_FIREBASE_PROJECT_ID':'"urai-studio"',
   'process.env.NEXT_PUBLIC_URAI_STUDIO_PRIVATE_MEDIA_ORIGIN':'"https://studio-replay.invalid"'
-}})
+}
+const privateCompiled = await build({...buildOptions,define:privateDefines})
+// Separate, explicit, nonproduction integration: original Replay source and
+// real HTTP requests to the actual exported Studio route, NEVER Playwright
+// fulfillment of the protected media request.
+const realStudioOrigin = process.env.URAI_STUDIO_REAL_HANDLER_ORIGIN || null
+if (realStudioOrigin) {
+  assert.equal(process.env.NODE_ENV,'development')
+  assert.equal(process.env.URAI_STUDIO_PROTECTED_BROWSER_LOOPBACK,'true')
+  const url = new URL(realStudioOrigin)
+  assert.equal(url.origin,realStudioOrigin)
+  assert.equal(url.protocol,'http:')
+  assert.equal(url.hostname,'127.0.0.1')
+  assert.ok(process.env.URAI_JOBS_SYNTH_MP4 && process.env.URAI_JOBS_SYNTH_SRT)
+  assert.equal(createHash('sha256').update(readFileSync(process.env.URAI_JOBS_SYNTH_MP4)).digest('hex'),
+    'c4ba548d480d7c71fb8e9efa496f1282bb833cdbb5303c868aa2a5e685c6fe91')
+}
+const integratedCompiled = realStudioOrigin ? await build({...buildOptions,define:{
+  ...privateDefines,'process.env.NODE_ENV':'"development"',
+  'process.env.NEXT_PUBLIC_URAI_STUDIO_PRIVATE_MEDIA_ORIGIN':JSON.stringify(realStudioOrigin)
+}}) : null
 assert.ok(Object.keys(compiled.metafile.inputs).some(file => file.replaceAll('\\','/').endsWith('/lib/i18n/useUraiLocale.ts')),'Actual locale hook must be compiled, not a raw-key fixture')
 assert.ok(Object.keys(compiled.metafile.inputs).some(file => file.replaceAll('\\','/').endsWith('/app/replay/useProtectedLifeMovieReplay.ts')),
   'Compile actual optional protected Replay adapter; do not bypass its source')
 
 const bundle = compiled.outputFiles[0].text
 const privateBundle = privateCompiled.outputFiles[0].text
+const integratedBundle = integratedCompiled?.outputFiles[0].text ?? null
 assert.ok(Object.keys(privateCompiled.metafile.inputs).some(file =>
   file.replaceAll('\\','/').endsWith('/app/replay/useProtectedLifeMovieReplay.ts')),
   'Dual-identity browser test must compile the real private Replay hook')
 const server = createServer((request, response) => {
+  if (request.url === '/fixture-integrated.js' && integratedBundle) { response.setHeader('Content-Type','text/javascript'); response.end(integratedBundle); return }
   if (request.url === '/fixture.js' || request.url === '/fixture-private.js') { response.setHeader('Content-Type', 'text/javascript'); response.end(request.url === '/fixture-private.js' ? privateBundle : bundle); return }
-  const script = request.url?.includes('dualPrivate=1') ? '/fixture-private.js' : '/fixture.js'
+  const script = request.url?.includes('realHandler=1') && integratedBundle ? '/fixture-integrated.js' : request.url?.includes('dualPrivate=1') ? '/fixture-private.js' : '/fixture.js'
   response.setHeader('Content-Type', 'text/html'); response.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><div id="root"></div><script src="' + script + '"></script>')
 })
-await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+await new Promise(resolve => server.listen(realStudioOrigin ? 4173 : 0, '127.0.0.1', resolve))
 const origin = `http://127.0.0.1:${server.address().port}`
+if(realStudioOrigin)assert.equal(origin,'http://127.0.0.1:4173','Studio must explicitly approve actual Chromium origin')
 const browser = await chromium.launch({ executablePath: chromium.executablePath(), headless: true, args: ['--no-sandbox'] })
 const cases = [], errors = []
 const memoryId = 'synthetic-receipt-memory', receiptId = 'a'.repeat(64), ownerId = 'synthetic-owner'
@@ -121,6 +145,26 @@ async function open(route = '/replay', settings = {}) {
   const context = await browser.newContext({ viewport: settings.viewport ?? (settings.mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }), isMobile: !!settings.mobile, hasTouch: !!settings.mobile })
   const page = await context.newPage()
   const privateRequests = []
+  const realResponses = []
+  if (settings.realHandler) {
+    assert.ok(realStudioOrigin,'missing real protected server readiness')
+    page.on('request',request=>{
+      if(request.url()!==realStudioOrigin+'/api/studio/spatial-private-media' ||
+          request.method()!=='POST')return
+      const payload=JSON.parse(request.postData() ?? '{}')
+      privateRequests.push({kind:payload.kind,method:request.method()})
+    })
+    page.on('response',response=>{
+      if(response.url()!==realStudioOrigin+'/api/studio/spatial-private-media')return
+      realResponses.push({method:response.request().method(),status:response.status(),
+        kind:response.request().method()==='POST'?
+          JSON.parse(response.request().postData()??'{}').kind:null,
+        contentType:response.headers()['content-type'],
+        contentLength:response.headers()['content-length'],
+        playlistDigest:response.headers()['x-urai-private-playlist-digest'],
+        cors:response.headers()['access-control-allow-origin']})
+    })
+  }
   page.on('pageerror', error => errors.push(error.stack || error.message))
   await page.addInitScript(({ fixture, memoryId, receiptId, ownerId, settings }) => {
     const memory = { ownerId, title: settings.title ?? 'Synthetic receipt source — not family media', occurredAt: '2026-01-01T12:00:00.000Z', summary: 'A synthetic control fixture.', emotionalState: 'calm', privacy: 'private', sourceMedia: [{ kind: settings.audio ? 'audio' : 'video', mediaReceiptId: receiptId }], star: { position: [0, 0, -4] }, replayManifest: { id: 'synthetic-manifest', version: 1, durationMs: 3000, segments: ['memory', 'emotion', 'pattern', 'return'].map((id, i) => ({ id, label: id, caption: `Synthetic ${id}`, narratorLine: settings.narration ?? 'Synthetic narration caption only', startsAtMs: i * 750, durationMs: 750 })) } }
@@ -136,7 +180,7 @@ async function open(route = '/replay', settings = {}) {
         workforce: { ...domain(), mode: 'paused' }, identity: domain() },
       enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } }
     const base = `users/${ownerId}`
-    const auth = { currentUser: { uid: ownerId, getIdToken: async () => 'synthetic-sdk-token' } }
+    const auth = { currentUser: { uid: ownerId, getIdToken: async () => settings.realHandlerForeignSpatial ? 'synthetic-foreign-spatial-token' : 'synthetic-sdk-token' } }
     const studioAuth = { currentUser: {uid:settings.privateWrongStudio?'synthetic-studio-user-b':'synthetic-studio-user-a',
       getIdToken:async()=>settings.privateWrongStudio?'synthetic-studio-token-b':'synthetic-studio-token-a'} }
     const f = window.__fixture = { auth, authObservers: new Set(), studioAuth, studioObservers:new Set(), watchers: new Set(), allWatchers: [], holdSnapshots: settings.hold ? [`${base}/memoryMediaReceipts/${receiptId}`] : [], docs: { ['consentRecords/'+ownerId+'_memory_storage']: { uid: ownerId, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: receipt.consentReceiptHash, expiresAt: receipt.consentExpiresAt }, [base]: { accountStatus: 'active' }, [`${base}/memories/${memoryId}`]: memory, [`${base}/privacyPolicy/current`]: policy, [`${base}/privacyRuntime/exportAuthority`]: { generation: 0, pendingDeletions: {} }, [`${base}/memoryMediaReceipts/${receiptId}`]: receipt, [`${base}/privacyRuntime/location-collection`]: { enabled: true }, [`${base}/capturedRealityReplayBindings/${memoryId}`]: { ownerId, memoryId, state: 'accepted', capturedRealityAssetId: 'synthetic-accepted-place' }, [`${base}/capturedRealityAssets/synthetic-accepted-place`]: { ownerId, state: 'ready', reviewState: 'accepted', releaseState: 'private-pilot' }, [`${base}/lifeMovies/synthetic-movie`]: { id: 'synthetic-movie', version: 1, ownerId, status: 'ready', consentState: 'authorized', chapters: [{ id: 'synthetic-chapter', memoryId, order: 0, truthClass: 'RECORDED_SOURCE_TRUTH', confidence: 1, consentState: 'authorized', provenance: { sourceIds: ['synthetic-source'], objectIds: [], storyNodeIds: [], providerTaskIds: [] } }] } }, calls: [], creates: [], revocations: [], heldMedia: [], sceneMounts: 0, sceneDisposals: 0, denyAuthority: false, tamper: !!settings.tamper }
@@ -181,7 +225,7 @@ async function open(route = '/replay', settings = {}) {
     const body = url.pathname === '/streamCapturedRealityRuntime' ? Buffer.alloc(32) : tamper ? Buffer.alloc(mediaBytes.length) : mediaBytes
     await intercepted.fulfill({ status: 200, body, headers: { 'Access-Control-Allow-Origin': origin, 'Access-Control-Expose-Headers': 'Content-Length,X-URAI-Checksum-SHA256,X-URAI-Storage-Generation', 'Content-Type': url.pathname === '/streamCapturedRealityRuntime' ? 'application/octet-stream' : settings.audio ? 'audio/wav' : 'video/mp4', 'Content-Length': String(body.length), 'X-URAI-Checksum-SHA256': url.pathname === '/streamCapturedRealityRuntime' ? 'f'.repeat(64) : mediaFixture.sha256, 'X-URAI-Storage-Generation': url.pathname === '/streamCapturedRealityRuntime' ? '321' : '123' } })
   })
-  if (settings.dualPrivate) await page.route('https://studio-replay.invalid/**', async intercepted => {
+  if (settings.dualPrivate && !settings.realHandler) await page.route('https://studio-replay.invalid/**', async intercepted => {
     const request=intercepted.request(), headers=request.headers()
     const cors={ 'Access-Control-Allow-Origin':origin,
       'Access-Control-Allow-Methods':'POST, OPTIONS',
@@ -207,10 +251,10 @@ async function open(route = '/replay', settings = {}) {
       'Content-Length':String(payload.length),'X-URAI-PRIVATE-PLAYLIST-DIGEST':digest}})
   })
   const query = route === '/spatial/captured-reality' ? `?assetId=synthetic-accepted-place${settings.standalone ? '' : `&memoryId=${memoryId}`}` : route === '/life-movie' ? `?movieId=synthetic-movie&memoryId=${memoryId}` : `?memoryId=${memoryId}`
-  const privateQuery = settings.dualPrivate ? '&dualPrivate=1&movieId=synthetic-movie&lifeMoviePlanId='+privatePlanId : ''
+  const privateQuery = settings.dualPrivate ? '&dualPrivate=1&movieId=synthetic-movie&lifeMoviePlanId='+privatePlanId+(settings.realHandler?'&realHandler=1':'') : ''
   // Arm response observation BEFORE navigation; a fast synthetic 403/SRT can
   // finish before open() returns. Never replace a missed response with a sleep.
-  const observedPrivateResponse = (settings.privateWrongStudio || settings.privatePlaylistMismatch)
+  const observedPrivateResponse = (settings.privateWrongStudio || settings.privatePlaylistMismatch || settings.realHandlerForeignSpatial)
     ? page.waitForResponse(response => response.url().includes('/api/studio/spatial-private-media') &&
       response.request().method() === 'POST' &&
       JSON.parse(response.request().postData() ?? '{}').kind === (settings.privatePlaylistMismatch ? 'srt' : 'mp4'))
@@ -221,7 +265,7 @@ async function open(route = '/replay', settings = {}) {
     const f = window.__fixture, owner = f.auth.currentUser.uid
     return window.__fixtureIsConsentPolicy(f.docs[`users/${owner}/privacyPolicy/current`], owner)
   }), true, 'Synthetic positive playback must start from a valid canonical consent policy')
-  return { page, context, privateRequests, observedPrivateResponse }
+  return { page, context, privateRequests, realResponses, observedPrivateResponse }
 }
 async function check(name, task) { await task(); cases.push({ name, passed: true }); console.log(`PASS ${name}`) }
 async function playable(page, element = 'video') { await page.waitForFunction(selector => { const source = document.querySelector(selector); return source?.readyState >= 2 && Number.isFinite(source.duration) && source.duration > 0 }, element) }
@@ -393,6 +437,78 @@ try {
       assert.equal(await page.locator('video[aria-label="Authorized private Life Movie"]').count(),0)
     } finally {await context.close()}
   })
+
+  // This runs ONLY under Video Factory's explicitly isolated, pinned local
+  // Studio-handler bridge. The protected Studio route is never intercepted.
+  if(realStudioOrigin) {
+    const authenticVideo=readFileSync(process.env.URAI_JOBS_SYNTH_MP4)
+    const authenticSrt=readFileSync(process.env.URAI_JOBS_SYNTH_SRT,'utf8')
+    await check('Original Chromium Replay delivers pinned Jobs MP4/SRT through ACTUAL Studio HTTP POST handler',async()=>{
+      const {page,context,privateRequests,realResponses}=await open('/replay',{dualPrivate:true,realHandler:true})
+      try{
+        const captions=page.locator('[data-private-life-movie-captions="verified"]')
+        await captions.waitFor()
+        await captions.locator('summary').click()
+        const cue=captions.locator('pre')
+        await cue.waitFor({state:'visible'})
+        assert.equal((await cue.innerText()).trim(),authenticSrt.trim())
+        const video=page.locator('video[aria-label="Authorized private Life Movie"]')
+        await video.waitFor()
+        await playable(page,'video[aria-label="Authorized private Life Movie"]')
+        assert.deepEqual(privateRequests.map(r=>r.kind),['mp4','srt'])
+        assert.deepEqual(realResponses.filter(r=>r.method==='POST').map(r=>r.status),[200,200])
+        const media=realResponses.filter(r=>r.method==='POST')
+        assert.deepEqual(media.map(r=>r.contentType),['video/mp4','application/x-subrip'])
+        assert.equal(Number(media[0].contentLength),authenticVideo.length)
+        assert.equal(Number(media[1].contentLength),Buffer.byteLength(authenticSrt))
+        assert.equal(media[0].playlistDigest,media[1].playlistDigest)
+        assert.match(media[0].playlistDigest,/^[a-f0-9]{64}$/)
+        assert.ok(media.every(r=>r.cors===origin),'actual HTTP response must permit only the bound Spatial origin')
+        const decoded=await video.evaluate(v=>({width:v.videoWidth,height:v.videoHeight,duration:v.duration}))
+        assert.ok(decoded.width>0&&decoded.height>0&&decoded.duration>2,JSON.stringify(decoded))
+        assert.ok((await page.evaluate(()=>window.__fixture.creates))
+          .some(b=>b.type==='video/mp4'&&b.size===authenticVideo.length))
+        await page.locator('.memoryPulse').click()
+        await page.waitForFunction(()=>document.querySelector('video[aria-label="Authorized private Life Movie"]')?.currentTime>.4)
+        await page.locator('.memoryPulse').click()
+        const stopped=await video.evaluate(v=>v.currentTime)
+        await page.waitForTimeout(180)
+        assert.ok(Math.abs((await video.evaluate(v=>v.currentTime))-stopped)<.05)
+        await page.locator('.memoryPulse').click()
+        await page.waitForFunction(t=>document.querySelector('video[aria-label="Authorized private Life Movie"]')?.currentTime>t+.1,stopped)
+        await page.screenshot({path:path.join(output,'original-replay-actual-studio-handler.png')})
+        writeFileSync(path.join(output,'original-replay-actual-studio-http.json'),JSON.stringify({
+          spatialOrigin:origin,studioOrigin:realStudioOrigin,requests:privateRequests,responses:realResponses,
+          videoSha256:createHash('sha256').update(authenticVideo).digest('hex'),
+          decoded,captionsMatched:true,pausedAndResumed:true,
+          firebaseProvider:'synthetic',jobsProvider:'synthetic-owned-http',j9Accepted:false
+        },null,2))
+        await page.evaluate(()=>window.__fixture.emitStudioAuth(null))
+        await page.waitForFunction(()=>!document.querySelector('video[aria-label="Authorized private Life Movie"]'))
+        assert.ok(await page.evaluate(()=>window.__fixture.revocations.some(v=>v.media.length>0)))
+        await page.locator('.unwind').click()
+        assert.equal(await page.evaluate(()=>window.__fixture.worldReturnRequests),1)
+      }finally{await context.close()}
+    })
+    for(const [label,settings] of [
+      ['wrong Studio user',{privateWrongStudio:true}],
+      ['foreign Spatial token',{realHandlerForeignSpatial:true}]
+    ])await check('Actual Studio exported handler denies '+label+' without MP4 or captions',async()=>{
+      const {page,context,privateRequests,realResponses,observedPrivateResponse}=
+        await open('/replay',{dualPrivate:true,realHandler:true,...settings})
+      try{
+        const denied=await observedPrivateResponse
+        assert.equal(denied.status(),403)
+        const deniedBody=Buffer.from(await denied.body())
+        assert.ok(!deniedBody.includes(authenticVideo))
+        assert.ok(!deniedBody.includes(Buffer.from(authenticSrt)))
+        assert.deepEqual(privateRequests.map(x=>x.kind),['mp4'])
+        assert.equal(realResponses.filter(r=>r.method==='POST')[0].status,403)
+        assert.equal(await page.locator('video[aria-label="Authorized private Life Movie"]').count(),0)
+        assert.equal(await page.locator('[data-private-life-movie-captions="verified"]').count(),0)
+      }finally{await context.close()}
+    })
+  }
   const longNarration = "Synthetic narration fixture only. This complete narration deliberately exceeds two lines on a narrow viewport. It is retained as real mounted copy so every sentence must become visible through the caption region's own scrolling. No family recording, person, private runtime, movie, or world is accepted by these synthetic words. The final sentence must remain reachable alongside the memory controls."
   for (const profile of [
     { name: 'desktop', viewport: { width: 1280, height: 800 } },
