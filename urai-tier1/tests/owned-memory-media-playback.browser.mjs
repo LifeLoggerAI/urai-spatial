@@ -540,7 +540,23 @@ try {
       const {page,context,privateRequests,realResponses}=await open('/replay',{dualPrivate:true,realHandler:true})
       try{
         const captions=page.locator('[data-private-life-movie-captions="verified"]')
-        await captions.waitFor()
+        try {
+          await captions.waitFor()
+        } catch (error) {
+          // Retain the actual network statuses and server boundary evidence.
+          // Never include authorization headers, tokens or response bytes.
+          const report = {
+            privateRequests, realResponses,
+            videoCount:await page.locator('video[aria-label="Authorized private Life Movie"]').count(),
+            captionsCount:await captions.count(),
+            bootstrapErrors:errors.slice(-5).map(x=>String(x).slice(0,500)),
+            pagePath:await page.evaluate(()=>location.pathname)
+          }
+          writeFileSync(path.join(output,'original-replay-actual-handler-delivery-failure.json'),
+            JSON.stringify(report,null,2))
+          console.error('URAI_REAL_HANDLER_DELIVERY_DIAGNOSTIC '+JSON.stringify(report))
+          throw error
+        }
         await captions.locator('summary').click()
         const cue=captions.locator('pre')
         await cue.waitFor({state:'visible'})
