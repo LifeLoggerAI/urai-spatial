@@ -43,6 +43,23 @@ test('rejects repeated pagination tokens',async()=>{
   startedAt:'2026-10-16T18:00:00Z',endedAt:'2026-10-16T18:00:10Z'
  }),/STAGING_LOG_PAGE_TOKEN_REPEATED/)
 })
+test('falsy malformed Cloud Logging pagination tokens never truncate serving proof',async()=>{
+ const params={project:'urai-media-staging',region:'us-central1',
+   service:'streammemorymediaplayback',revision:'streammemorymediaplayback-00001-abc',
+   traceId:'b'.repeat(32),startedAt:'2026-10-16T18:00:00Z',
+   endedAt:'2026-10-16T18:00:10Z'}
+ for(const malformed of [false,0,[],{},' ']){
+   let queries=0
+   await assert.rejects(readBoundedLogPages(async()=>{queries++;
+     return {entries:[],nextPageToken:malformed}
+   },params),/STAGING_CONTROL_PLANE_INPUT_REJECTED/)
+   assert.equal(queries,1,'malformed pagination must not trigger a second query or complete scan')
+ }
+ for(const terminal of [undefined,null,'']){
+   const logs=await readBoundedLogPages(async()=>({entries:[],nextPageToken:terminal}),params)
+   assert.deepEqual(logs,[],'only canonical terminal markers complete a read')
+ }
+})
 test('rejects pagination truncated by the resource cap',async()=>{
  let i=0
  await assert.rejects(readBoundedLogPages(async()=>({entries:[],nextPageToken:'page'+(++i)}),{

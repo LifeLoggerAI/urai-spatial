@@ -87,7 +87,11 @@ async function readBoundedLogPages(postPage,{project,region,service,revision,tra
       throw Error('STAGING_LOG_PAGE_MALFORMED')
     if((response.entries||[]).length>LOG_PAGE_SIZE)throw Error('STAGING_LOG_PAGE_MALFORMED')
     entries.push(...(response.entries||[]))
-    if(!response.nextPageToken)return entries
+    // A falsy but malformed pagination marker is NOT end-of-log evidence.
+    // Only the provider's absent, null or empty-string terminal tokens close a
+    // complete scan. Reject 0, false, arrays and objects before source binding.
+    if(response.nextPageToken===undefined||response.nextPageToken===null
+       ||response.nextPageToken==='')return entries
     check(response.nextPageToken,/^[A-Za-z0-9_~+\/=.-]{1,2048}$/)
     if(seen.has(response.nextPageToken))throw Error('STAGING_LOG_PAGE_TOKEN_REPEATED')
     seen.add(response.nextPageToken)
