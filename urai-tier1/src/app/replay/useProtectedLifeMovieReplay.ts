@@ -48,9 +48,15 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
       setState(EMPTY)
       return
     }
+    // Preserve the validated configuration and selected identifiers across
+    // async auth observers and nested media requests without null assertions.
+    const approvedConfig = config
+    const selectedMemory = memory
+    const selectedMovieId = movieId
+    const selectedPlanId = planId
     const studioApp = getApps().find(value => value.name === 'urai-studio-private-replay') ??
-      initializeApp({ apiKey: config.apiKey, authDomain: config.authDomain,
-        projectId: config.projectId }, 'urai-studio-private-replay')
+      initializeApp({ apiKey: approvedConfig.apiKey, authDomain: approvedConfig.authDomain,
+        projectId: approvedConfig.projectId }, 'urai-studio-private-replay')
     const studioAuth = getAuth(studioApp), spatialAuth = getAuth(spatialApp)
     let generation = 0, active = true, revoke: (() => void) | null = null
     let stopStudio: (() => void) | null = null
@@ -58,7 +64,7 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
     const stopSpatial = onAuthStateChanged(spatialAuth, spatialUser => {
       revoke?.(); revoke = null; stopStudio?.(); stopStudio = null
       const current = ++generation
-      if (!active || !spatialUser || spatialUser.uid !== memory.ownerId) { clean(); return }
+      if (!active || !spatialUser || spatialUser.uid !== selectedMemory.ownerId) { clean(); return }
       stopStudio = onAuthStateChanged(studioAuth, studioUser => {
         revoke?.(); revoke = null
         const version = ++generation
@@ -79,12 +85,12 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
             ])
             if (!currentSession()) throw new Error('private_movie_identity_changed')
             async function retrieve(kind: 'mp4' | 'srt') {
-              const result = await fetch(new URL('/api/studio/spatial-private-media', config.url), {
+              const result = await fetch(new URL('/api/studio/spatial-private-media', approvedConfig.url), {
                 method:'POST',mode:'cors',credentials:'omit',cache:'no-store',
                 headers:{authorization:'Bearer '+studioToken,
                   'x-urai-spatial-id-token':spatialToken,'content-type':'application/json'},
                 body:JSON.stringify({action:'deliver-spatial-final',
-                  memoryId:memory!.id,movieId,planId,kind}),signal:controller.signal,
+                  memoryId:selectedMemory.id,movieId:selectedMovieId,planId:selectedPlanId,kind}),signal:controller.signal,
                 redirect:'error',referrerPolicy:'no-referrer',
               })
               const mime = kind === 'mp4' ? 'video/mp4' : 'application/x-subrip'
