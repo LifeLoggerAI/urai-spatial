@@ -30,7 +30,7 @@ test('browser does not receive privileged Studio bridge tokens or fake account-l
     "NEXT_PUBLIC_URAI_SPATIAL_PRIVATE_MOVIE_ENABLED",
     "getAuth(spatialApp)",
     "getAuth(studioApp)",
-    "spatialUser.uid !== memory.ownerId",
+    "spatialUser.uid !== selectedMemory.ownerId",
     "studioUser.getIdToken(true)",
     "spatialUser.getIdToken(true)",
     "credentials:'omit'",
@@ -54,11 +54,20 @@ test('no cross-origin, huge response, demo or wrong identity fallback',()=>{
     "result.headers.get('cache-control')?.includes('no-store')",
     "result.headers.get('content-type') !== mime",
     "result.headers.get('x-urai-private-playlist-digest')",
-    "config.url",
+    "approvedConfig.url",
     "url.username || url.password || url.search || url.hash",
     "studioAuth.currentUser === studioUser",
     "spatialAuth.currentUser === spatialUser",
   ]) assert.ok(hook.includes(marker),marker)
+  // The nested async retrieval must use immutable values narrowed after the
+  // optional private-media guard, without assertions that bypass validation.
+  for (const capture of ['const approvedConfig = config','const selectedMemory = memory',
+    'const selectedMovieId = movieId','const selectedPlanId = planId',
+    'memoryId:selectedMemory.id,movieId:selectedMovieId,planId:selectedPlanId']) {
+    assert.ok(hook.includes(capture),'missing stable async delivery binding: '+capture)
+  }
+  assert.equal(hook.includes('config!'),false)
+  assert.equal(hook.includes('memory!'),false)
   assert.ok(!hook.includes("NEXT_PUBLIC_URAI_STUDIO_JOBS_BRIDGE_TOKEN"))
 })
 console.log('[PASS] Original Spatial Replay private Life Movie source-wire safeguards; source-only, NOT actual browser or cloud acceptance; Studio delivery remains default-off')
