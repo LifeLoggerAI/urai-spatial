@@ -5,14 +5,19 @@ const { readTrustedControlPlane } = require('./memory-media-staging-cloud-collec
 const FUNCTION_NAME = 'streamMemoryMediaPlayback'
 
 async function attestStagingPlayback(options) {
-  const { project, region, expectedSha, requestUrl, ownerIdToken } = options || {}
+  const { project, region, expectedSha, requestUrl, ownerIdToken, archivePath, approvedSourceBucket } = options || {}
   try {
     const proof = await readTrustedControlPlane({
       project, region, functionName: FUNCTION_NAME, expectedSha, requestUrl, ownerIdToken,
+      ...(archivePath===undefined?{}:{archivePath}),
+      ...(approvedSourceBucket===undefined?{}:{approvedSourceBucket}),
     })
     const verified = proof?.verified === true && proof.sourceSha === expectedSha
       && proof.functionName === FUNCTION_NAME && proof.servingInstanceBound === true
-      && proof.authenticatedArchiveOriginBound === true && proof.uploaderIdentityVerified === true
+      && ((proof.authenticatedArchiveOriginBound === true && proof.uploaderIdentityVerified === true
+        && proof.sourceMode !== 'DIRECT_GIT_SOURCE')
+        || (proof.sourceMode === 'DIRECT_GIT_SOURCE' && proof.directGitSourceVerified === true
+          && proof.authenticatedArchiveOriginBound === false && proof.uploaderIdentityVerified === false))
       && /^sha256:[a-f0-9]{64}$/.test(proof.imageDigest || '')
       && typeof proof.revisionName === 'string' && proof.revisionName.length > 0
     return { verified, errorCode: verified ? null : 'STAGING_DEPLOYED_SOURCE_UNVERIFIED' }

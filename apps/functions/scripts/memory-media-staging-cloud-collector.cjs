@@ -7,6 +7,7 @@ const { stripTypeScriptTypes } = require('node:module')
 const { randomBytes } = require('node:crypto')
 const path = require('node:path')
 const { verifyServingRequestAfterIngestion } = require('./memory-media-staging-request-log-proof.cjs')
+const { verifyControlPlaneDeployment } = require('./memory-media-staging-deployed-source.cjs')
 const API = Object.freeze({
   function:'https://cloudfunctions.googleapis.com/v2/',
   build:'https://cloudbuild.googleapis.com/v1/',
@@ -99,10 +100,25 @@ async function readTrustedControlPlane(options){
   const resource=projectPath(project,region,functionName)
   check(expectedSha,/^[a-f0-9]{40}$/)
   // A previously supplied observer flag, approval, or HTTP mock is never proof.
-  if(input.approvedProject!==undefined||input.probeObservedByHarness!==undefined
-    ||input.getAccessToken!==undefined||input.fetcher!==undefined||input.records!==undefined)
+  const allowed=['project','region','functionName','expectedSha','requestUrl','ownerIdToken',
+    'archivePath','approvedSourceBucket']
+  if(!input||typeof input!=='object'||Array.isArray(input)
+    ||Object.keys(input).some(k=>!allowed.includes(k)))
     throw Error('STAGING_CALLER_EVIDENCE_REJECTED')
   await assertCanonicalStaging(project) // Mandatory before credentials or network I/O.
+  // These caller fields are local selectors, not evidence or approval.
+  // Source-controlled media and Functions-source bucket approval, independent
+  // rebuild, and authenticated Google readback occur inside the provider.
+  const archiveRequested=input.archivePath!==undefined||input.approvedSourceBucket!==undefined
+  if(archiveRequested&&(!input.archivePath||!input.approvedSourceBucket))
+    throw Error('STAGING_ARCHIVE_REQUEST_INCOMPLETE')
+  // Lazy import avoids a CommonJS initialization cycle: upload-origin
+  // currently imports projectPath from this already-initialized collector.
+  const authenticatedOrigin=archiveRequested
+    ? await require('./memory-media-staging-upload-origin.cjs').readAuthenticatedUploadOrigin({
+      project,region,functionName,expectedSha,
+      archivePath:input.archivePath,approvedSourceBucket:input.approvedSourceBucket
+    }) : undefined
   if(functionName!=='streamMemoryMediaPlayback')throw Error('STAGING_FUNCTION_NOT_ALLOWED')
   check(ownerIdToken,/^[A-Za-z0-9._~-]{100,4096}$/)
   const target=validateProbeUrl(requestUrl,project,region,functionName)
@@ -130,9 +146,18 @@ async function readTrustedControlPlane(options){
     get(API.build+buildName),get(API.run+serviceName),
     get(API.run+serviceName+'/revisions/'+revisionName),
   ])
-  // This correlation ID is generated internally; no caller may claim a probe
-  // was observed. A successful HTTP response is necessary, never sufficient.
+  const archiveSource=[functionRecord?.buildConfig?.source?.storageSource,
+    functionRecord?.buildConfig?.sourceProvenance?.resolvedStorageSource,
+    cloudBuild?.source?.storageSource,cloudBuild?.sourceProvenance?.resolvedStorageSource]
+      .some(Boolean)
+  if(archiveSource!==archiveRequested)
+    throw Error('STAGING_SOURCE_MODE_MISMATCH')
+  // The source/build/image/serving revision must already be verified
+  // BEFORE making a protected private-media request.
+  // An unaudited uploader always fails this check, even with a valid ZIP.
   const traceId=randomBytes(16).toString('hex')
+  verifyControlPlaneDeployment({project,region,functionName,expectedSha,traceId,
+    functionRecord,cloudBuild,runService,runRevision,authenticatedOrigin})
   const probeStartedAt=new Date().toISOString()
   const response=await fetch(target,{method:'GET',headers:{
     authorization:`Bearer ${ownerIdToken}`,'x-cloud-trace-context':`${traceId}/1;o=1`,
@@ -158,10 +183,13 @@ async function readTrustedControlPlane(options){
       traceId,startedAt:probeStartedAt,endedAt:probeEndedAt}),
     {project,region,functionName,expectedSha,
       requestUrl:target,traceId,probeStartedAt,probeEndedAt,functionRecord,
-      cloudBuild,runService,runRevision})
+      cloudBuild,runService,runRevision,authenticatedOrigin})
   return {verified:verified.verified,sourceSha:verified.sourceSha,
     functionName:verified.functionName,revisionName:verified.revisionName,
     imageDigest:verified.imageDigest,buildId:verified.buildId,
-    servingInstanceBound:verified.servingInstanceBound}
+    servingInstanceBound:verified.servingInstanceBound,
+    sourceMode:verified.sourceMode,authenticatedArchiveOriginBound:verified.authenticatedArchiveOriginBound,
+    uploaderIdentityVerified:verified.uploaderIdentityVerified,
+    directGitSourceVerified:verified.directGitSourceVerified}
 }
 module.exports={readTrustedControlPlane,projectPath,readBoundedLogPages}

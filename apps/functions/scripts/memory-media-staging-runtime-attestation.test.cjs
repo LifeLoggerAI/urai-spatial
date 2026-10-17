@@ -70,3 +70,12 @@ test('failed attestation and incomplete cleanup never classify as positive stagi
   assert.equal(classifyStagingMediaAcceptance(dirty).runResult,'NOT_ACCEPTED')
   assert.equal(classifyStagingMediaAcceptance(completeEvidence(),true).runResult,'NOT_ACCEPTED')
 })
+
+test('fictional direct-Git proof uses its own verified mode, never archive claims',async()=>{
+ const accepted=await offline(async()=>({...proof,sourceMode:'DIRECT_GIT_SOURCE',
+  directGitSourceVerified:true,authenticatedArchiveOriginBound:false,uploaderIdentityVerified:false}))(args)
+ assert.equal(accepted.verified,true)
+ const denied=await offline(async()=>({...proof,sourceMode:'DIRECT_GIT_SOURCE',
+  directGitSourceVerified:false,authenticatedArchiveOriginBound:false,uploaderIdentityVerified:false}))(args)
+ assert.equal(denied.verified,false)
+})

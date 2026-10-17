@@ -33,13 +33,22 @@ function verifyControlPlaneDeployment(x) {
   if(build?.name!==buildPath||build.projectId!==P||build.status!=='SUCCESS'
     ||!Array.isArray(build.results?.images)||!build.results.images.some(i=>i.digest===digest
       && typeof i.name==='string'&&(i.name===m[1]||i.name.startsWith(m[1]+':'))))bad('BUILD_IMAGE_MISMATCH');
-  requireSupportedSourceProvenance(fn,build)
-  const source=build.sourceProvenance?.resolvedGitSource;
-  const validGit=url=>typeof url==='string'&&/^https:\/\/github\.com\/LifeLoggerAI\/urai-spatial(?:\.git)?$/.test(url);
-  if(!validGit(source?.url)||String(source.revision).toLowerCase()!==S.toLowerCase()
-    ||(build.source?.gitSource&&!validGit(build.source.gitSource.url)))bad('UNTRUSTED_BUILD_SOURCE');
+  const archive=requireSupportedSourceProvenance(fn,build,x.authenticatedOrigin,{
+    project:P,region:R,functionName:F,expectedSha:S.toLowerCase()
+  })
+  if(!archive){
+    const source=build.sourceProvenance?.resolvedGitSource;
+    const validGit=url=>typeof url==='string'&&/^https:\/\/github\.com\/LifeLoggerAI\/urai-spatial(?:\.git)?$/.test(url);
+    if(!validGit(source?.url)||String(source?.revision).toLowerCase()!==S.toLowerCase()
+      ||!validGit(build.source.gitSource.url)
+      ||(build.source.gitSource.revision&&String(build.source.gitSource.revision).toLowerCase()!==S.toLowerCase()))
+      bad('UNTRUSTED_BUILD_SOURCE');
+  }
   return {sourceSha:S.toLowerCase(),functionName:F,serviceName:servicePath.split('/').pop(),
-    revisionName:revisionId,imageDigest:digest,buildId:buildPath.split('/').pop()};
+    revisionName:revisionId,imageDigest:digest,buildId:buildPath.split('/').pop(),
+    sourceMode:archive?'AUTHENTICATED_FIREBASE_SOURCE_ARCHIVE':'DIRECT_GIT_SOURCE',
+    authenticatedArchiveOriginBound:!!archive,uploaderIdentityVerified:!!archive,
+    directGitSourceVerified:!archive};
 }
 function verifyControlPlaneEvidence(x) {
   const deployment=verifyControlPlaneDeployment(x)

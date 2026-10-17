@@ -42,3 +42,34 @@ test('wrong request method, response status and request path deny exact serving 
  }
 })
 test('missing control plane evidence fails closed',()=>assert.throws(()=>verifyControlPlaneEvidence({}),/STAGING_DEPLOYED_SOURCE_UNVERIFIED/))
+
+test('fictional archive chain cannot borrow the direct-Git identity',()=>{
+ const x=deep(),s={bucket:'gcf-v2-sources-fixture',object:'uploads/fictional-source.zip',generation:'123456'}
+ x.functionRecord.buildConfig.source={storageSource:s}
+ x.functionRecord.buildConfig.sourceProvenance={resolvedStorageSource:s}
+ x.cloudBuild.source={storageSource:s}
+ x.cloudBuild.sourceProvenance={resolvedStorageSource:s}
+ assert.throws(()=>verifyControlPlaneEvidence(x),/SOURCE_ARCHIVE_UNATTESTED/)
+ x.authenticatedOrigin={classification:'AUTHENTICATED_OBJECT_READBACK_AND_BUILD_SOURCE_LINK_ONLY',
+   localSourceBuildVerified:true,authenticatedProviderReadback:true,
+   sourceObjectMatchesLocalArchive:true,cloudBuildSourceObjectMatches:true,
+   sourceSha:x.expectedSha,functionResource:x.functionRecord.name,buildName:x.cloudBuild.name,
+   sourceArchiveSha256:'d'.repeat(64),sourceBucket:s.bucket,sourceObject:s.object,
+   sourceGeneration:s.generation,uploaderIdentityVerified:false}
+ assert.throws(()=>verifyControlPlaneEvidence(x),/UPLOADER_IDENTITY_NOT_ATTESTED/)
+ // Pure FICTIONAL contract only; production collection cannot inject this record.
+ x.authenticatedOrigin.uploaderIdentityVerified=true
+ const ok=verifyControlPlaneEvidence(x)
+ assert.equal(ok.verified,true)
+ assert.equal(ok.sourceMode,'AUTHENTICATED_FIREBASE_SOURCE_ARCHIVE')
+ assert.equal(ok.authenticatedArchiveOriginBound,true)
+ for(const badField of ['sourceSha','sourceBucket','sourceGeneration','buildName']){
+  const y=deep()
+  y.functionRecord.buildConfig.source={storageSource:s}
+  y.functionRecord.buildConfig.sourceProvenance={resolvedStorageSource:s}
+  y.cloudBuild.source={storageSource:s}
+  y.cloudBuild.sourceProvenance={resolvedStorageSource:s}
+  y.authenticatedOrigin={...x.authenticatedOrigin,[badField]:'incorrect'}
+  assert.throws(()=>verifyControlPlaneEvidence(y),/STAGING_SOURCE_ORIGIN_UNVERIFIED/)
+ }
+})
