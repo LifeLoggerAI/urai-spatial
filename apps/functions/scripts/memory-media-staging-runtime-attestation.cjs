@@ -12,6 +12,7 @@ async function attestStagingPlayback(options) {
     })
     const verified = proof?.verified === true && proof.sourceSha === expectedSha
       && proof.functionName === FUNCTION_NAME && proof.servingInstanceBound === true
+      && proof.authenticatedArchiveOriginBound === true && proof.uploaderIdentityVerified === true
       && /^sha256:[a-f0-9]{64}$/.test(proof.imageDigest || '')
       && typeof proof.revisionName === 'string' && proof.revisionName.length > 0
     return { verified, errorCode: verified ? null : 'STAGING_DEPLOYED_SOURCE_UNVERIFIED' }

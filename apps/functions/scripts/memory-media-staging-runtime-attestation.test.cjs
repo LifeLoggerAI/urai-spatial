@@ -13,7 +13,8 @@ const sha = 'a'.repeat(40)
 const args = {project: 'urai-fictional-staging', region: 'us-central1', expectedSha: sha,
   requestUrl: 'https://example.invalid/fictional-media', ownerIdToken: 'fictional-private-token'}
 const proof = { verified: true, sourceSha: sha, functionName: 'streamMemoryMediaPlayback',
-  servingInstanceBound: true, revisionName: 'fictional-revision', imageDigest: 'sha256:' + 'c'.repeat(64) }
+  servingInstanceBound: true, authenticatedArchiveOriginBound: true,
+  uploaderIdentityVerified: true, revisionName: 'fictional-revision', imageDigest: 'sha256:' + 'c'.repeat(64) }
 function offline(collector) {
   const m = { exports: {} }
   runInNewContext(source, {module:m, exports:m.exports, require: id => {
@@ -40,7 +41,8 @@ test('offline fictional match invokes collector with exact SHA and fixed functio
 })
 test('wrong source, function, revision, digest, and serving identity fail closed', async () => {
   for(const extra of [{sourceSha:'f'.repeat(40)},{functionName:'wrongFunction'},
-    {revisionName:''},{imageDigest:'unbound-tag'}, {servingInstanceBound:false},{verified:false}]){
+    {revisionName:''},{imageDigest:'unbound-tag'}, {servingInstanceBound:false},{authenticatedArchiveOriginBound:false},
+    {uploaderIdentityVerified:false},{verified:false}]){
     const result = await offline(async () => ({...proof,...extra}))(args)
     assert.equal(result.verified,false)
     assert.equal(result.errorCode,'STAGING_DEPLOYED_SOURCE_UNVERIFIED')
