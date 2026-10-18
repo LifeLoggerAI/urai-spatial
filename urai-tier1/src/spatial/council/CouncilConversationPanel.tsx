@@ -233,7 +233,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
             explicitSecondProviderConsent: true,
             signal: controller.signal,
           })
-          if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
+          if (controller.signal.aborted || aborter.current !== controller || encounterGeneration.current !== turnGeneration || !encounterNearRef.current || !sceneSession.current.isCurrent(sceneTurn,actor.generation,agent.id) || !isCurrentAIActorSnapshot(actor)) return
           if (review) {
             setReviewResult(review)
             setStatus(`First answer and ${COUNCIL_PROVIDER_REGISTRY[selectedReviewerId].label} second opinion received. No automatic correction or factual certification.`)
@@ -241,7 +241,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
             setStatus('First answer preserved. The second provider was unavailable before processing. No automatic correction.')
           }
         } catch {
-          if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
+          if (controller.signal.aborted || aborter.current !== controller || encounterGeneration.current !== turnGeneration || !encounterNearRef.current || !sceneSession.current.isCurrent(sceneTurn,actor.generation,agent.id) || !isCurrentAIActorSnapshot(actor)) return
           setStatus('First answer preserved. The second opinion failed or could not be confirmed. No automatic correction.')
         }
       } else {
