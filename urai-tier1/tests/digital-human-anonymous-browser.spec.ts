@@ -1,0 +1,33 @@
+import {test,expect} from '@playwright/test'
+const origin=process.env.URAI_PROOF_BASE_URL || 'http://127.0.0.1:4290'
+test.use({viewport:{width:1280,height:800}})
+test('Original Council WebGL renders anonymous GLB and morphs track audible media clock',async({page},info)=>{
+ const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message))
+ await page.goto(new URL('/council?anonymousFaceLab=1',origin).href,{waitUntil:'domcontentloaded',timeout:45000})
+ const realm=page.locator('[data-spatial-realm="council"]')
+ await expect(realm).toBeVisible({timeout:45000})
+ const canvas=realm.locator('canvas');await expect(canvas).toBeVisible({timeout:45000})
+ const lab=page.getByTestId('anonymous-facial-calibration');await expect(lab).toBeVisible({timeout:45000})
+ await expect(lab).toHaveAttribute('data-identity','anonymous-nonproduction-not-founder')
+ const telemetry=page.getByTestId('calibration-telemetry')
+ await expect.poll(async()=>Number(await telemetry.getAttribute('data-morph-bindings')),{timeout:20000}).toBeGreaterThan(0)
+ await page.getByTestId('calibration-play').click()
+ await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight')),{timeout:12000}).toBeGreaterThan(.05)
+ const playing={timestamp:await telemetry.getAttribute('data-time'),weight:await telemetry.getAttribute('data-max-weight')}
+ await info.attach('anonymous-morph-actual-playback.png',{body:await page.screenshot(),contentType:'image/png'})
+ await page.getByTestId('calibration-mute').click()
+ await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight'))).toBe(0)
+ await page.getByTestId('calibration-mute').click()
+ await page.getByLabel('Calibration audio seek').fill('1.36')
+ await expect.poll(async()=>Number(await telemetry.getAttribute('data-time'))).toBeGreaterThan(1.3)
+ await page.getByTestId('calibration-stop').click()
+ await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight'))).toBe(0)
+ await info.attach('anonymous-face-neutral.png',{body:await page.screenshot(),contentType:'image/png'})
+ await info.attach('anonymous-face-receipt.json',{body:JSON.stringify({type:'ACTUAL_APP_WEBGL_ANONYMOUS_TONE_NOT_SPEECH',head:process.env.URAI_EXACT_HEAD,playing,errors}),contentType:'application/json'})
+ expect(errors).toEqual([])
+})
+test('development fixture never loads without explicit URL opt-in',async({page})=>{
+ await page.goto(new URL('/council',origin).href,{waitUntil:'domcontentloaded',timeout:45000})
+ await expect(page.locator('[data-spatial-realm="council"]')).toBeVisible({timeout:45000})
+ await expect(page.getByTestId('anonymous-facial-calibration')).toHaveCount(0)
+})
