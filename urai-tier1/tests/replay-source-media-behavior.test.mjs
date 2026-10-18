@@ -680,3 +680,41 @@ test('an obsolete play resolution must not interrupt a newer user-initiated Repl
   assert.equal(video.paused, false)
   controls.dispose()
 })
+
+test('natural media end invalidates an unresolved Replay play and retains ended state', async () => {
+  const { video, controls, latest, decode } = session()
+  decode()
+  let settle
+  video.playOutcome = () => new Promise(resolve => {
+    settle = () => { video.paused = false; resolve() }
+  })
+  const pending = controls.play()
+  video.ended = true
+  video.emit('ended')
+  assert.equal(latest().status, 'ended')
+  settle()
+  await pending
+  assert.equal(video.paused, true, 'an obsolete play must not restart naturally finished Replay')
+  assert.equal(latest().status, 'ended', 'late settlement must preserve ended instead of ready')
+  controls.dispose()
+})
+test('an explicit Replay restart after natural end is not suppressed by prior request invalidation', async () => {
+  const { video, controls, latest, decode } = session()
+  decode()
+  let settle
+  video.playOutcome = () => new Promise(resolve => {
+    settle = () => { video.paused = false; resolve() }
+  })
+  const first = controls.play()
+  video.ended = true
+  video.emit('ended')
+  settle()
+  await first
+  assert.equal(video.paused, true)
+  video.ended = false
+  video.playOutcome = null
+  await controls.play()
+  assert.equal(latest().playing, true)
+  assert.equal(video.paused, false)
+  controls.dispose()
+})

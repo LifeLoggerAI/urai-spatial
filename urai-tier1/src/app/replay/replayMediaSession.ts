@@ -134,6 +134,9 @@ export function createReplayMediaSession(
   listen('volumechange', () => publish())
   listen('ended', () => {
     wantsPlayback = false
+    // A natural end must invalidate any unresolved play() fulfillment.
+    // Explicit user playback after ending receives a new request version.
+    requestVersion += 1
     publish({ status: 'ended', ready: decoded(), playing: false })
   })
   listen('error', () => fail(mediaFailure(video)))
