@@ -4,6 +4,7 @@ import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import CouncilHumanProximity from '@/spatial/digital-human/CouncilHumanProximity'
 import AnonymousFacialFixture, { type AnonymousRenderFrame } from '@/spatial/digital-human/AnonymousFacialFixture'
 import AnonymousCalibrationControls from '@/spatial/digital-human/AnonymousCalibrationControls'
+import { calibrationPose, writeMorphs, clearMorphs } from '@/spatial/digital-human/anonymousCalibration.mjs'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, Lightformer, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
 import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
@@ -34,6 +35,7 @@ const HUMAN_MODELS = [
   `${HUMAN_ROOT}/council-trickster-human-makehuman-v4.glb`,
 ] as const
 
+const UNIFIED_GUIDE_DEV_MODEL = '/__digital-human-dev/council-guide-v4-unified-face.glb'
 const COUNCIL_FLOOR_Y = 0.05
 const COUNCIL_ENTRY: [number, number, number] = [-1.4, 1.66, 6]
 const COUNCIL_NARROW_ENTRY_X = -2
@@ -127,6 +129,10 @@ function RiggedCouncilHuman({
   reducedMotion,
   onSelect,
   ownerRef,
+  unifiedGuideLab,
+  calibrationMedia,
+  calibrationMuted,
+  calibrationFrozen,
 }: {
   modelUrl: string
   index: number
@@ -134,6 +140,10 @@ function RiggedCouncilHuman({
   reducedMotion: boolean
   onSelect: () => void
   ownerRef: MutableRefObject<HTMLDivElement | null>
+  unifiedGuideLab: boolean
+  calibrationMedia: HTMLAudioElement | null
+  calibrationMuted: boolean
+  calibrationFrozen: boolean
 }) {
   const model = useGLTF(modelUrl)
   // Each scene owns a separate skeleton; no cached GLTF scene is shared between humans.
@@ -141,6 +151,19 @@ function RiggedCouncilHuman({
   const { camera } = useThree()
   const root = useRef<THREE.Group>(null)
   const { actions } = useAnimations(model.animations, root)
+  // The original V4 glTF mesh and skin are cloned for this exact Council actor.
+  // A non-release GLB variant adds morph targets to THIS SAME skinned body head;
+  // there is never a second head object or an overlapping bust.
+  const unifiedMeshOwners = useMemo(() => {
+    let skinned=0,morphable=0
+    instance.traverse(object => {
+      if(object instanceof THREE.SkinnedMesh){
+        skinned++
+        if(object.morphTargetDictionary && object.morphTargetInfluences?.length) morphable++
+      }
+    })
+    return {skinned,morphable}
+  },[instance])
 
   useEffect(() => {
     return playCouncilBodyIdle(actions, reducedMotion)
@@ -149,6 +172,21 @@ function RiggedCouncilHuman({
   useEffect(() => {
     return playCouncilListening(actions, selected, reducedMotion)
   }, [actions, reducedMotion, selected])
+
+  useEffect(() => {
+    if(!unifiedGuideLab || !calibrationMedia || !selected || reducedMotion) return
+    // Technical gesture only. The audible sample is explicitly non-speech and
+    // must NOT be routed through the Council persona-approved voice provider.
+    const gesture=actions.gesture_open
+    const onPlay=()=>{gesture?.reset().setLoop(THREE.LoopOnce,1).fadeIn(.15).play()}
+    calibrationMedia.addEventListener('play',onPlay)
+    return ()=>{calibrationMedia.removeEventListener('play',onPlay);gesture?.stop()}
+  },[actions,calibrationMedia,reducedMotion,selected,unifiedGuideLab])
+
+  useEffect(() => {
+    if(!unifiedGuideLab)return
+    return ()=>{clearMorphs(instance)}
+  },[instance,unifiedGuideLab])
 
   useEffect(() => {
     instance.traverse((object) => {
@@ -176,6 +214,23 @@ function RiggedCouncilHuman({
       ownerRef.current.dataset[`councilListeningActive${index}`] = actions.listen_acknowledge?.isRunning() ? 'true' : 'false'
       if (body) ownerRef.current.dataset[`councilBodyY${index}`] = body.position.y.toFixed(8)
       if (head) ownerRef.current.dataset[`councilHeadX${index}`] = head.quaternion.x.toFixed(8)
+    }
+    if(unifiedGuideLab && index===0){
+      const t=calibrationMedia?.currentTime ?? 0
+      const active=Boolean(selected && calibrationMedia && !calibrationMedia.paused && !calibrationMedia.ended && !calibrationMuted)
+      const pose=calibrationPose(t,active && !calibrationFrozen,reducedMotion,calibrationMuted,'capture')
+      const facial=writeMorphs(instance,pose)
+      if(ownerRef.current){
+        ownerRef.current.dataset.councilUnifiedGuideModel=UNIFIED_GUIDE_DEV_MODEL
+        ownerRef.current.dataset.councilUnifiedGuideSkinnedOwners=String(unifiedMeshOwners.skinned)
+        ownerRef.current.dataset.councilUnifiedGuideMorphOwners=String(unifiedMeshOwners.morphable)
+        ownerRef.current.dataset.councilUnifiedGuideMorphBindings=String(facial.written)
+        ownerRef.current.dataset.councilUnifiedGuideMorphMax=facial.max.toFixed(6)
+        ownerRef.current.dataset.councilUnifiedGuideAudioSeconds=t.toFixed(6)
+        ownerRef.current.dataset.councilUnifiedGuidePlaying=active?'true':'false'
+        ownerRef.current.dataset.councilUnifiedGuideHeadParent=instance.getObjectByName('head')?.parent?.name??'missing'
+        ownerRef.current.dataset.councilUnifiedGuideGesture=actions.gesture_open?.isRunning()?'true':'false'
+      }
     }
   })
 
@@ -274,6 +329,7 @@ function CouncilStage() {
   const [encounterPhase, setEncounterPhase] = useState<'idle' | 'thinking' | 'responded'>('idle')
   const onEncounterPhase = useCallback((phase: 'idle' | 'thinking' | 'responded') => setEncounterPhase(previous => previous === phase ? previous : phase), [])
   const [fixtureEnabled,setFixtureEnabled] = useState(false)
+  const [unifiedGuideLabEnabled,setUnifiedGuideLabEnabled] = useState(false)
   const [fixtureMedia,setFixtureMedia] = useState<HTMLAudioElement|null>(null)
   const [fixtureMuted,setFixtureMuted] = useState(false)
   const [fixtureFrozen,setFixtureFrozen] = useState(false)
@@ -281,9 +337,12 @@ function CouncilStage() {
   const onFixtureFrame = useCallback((frame:AnonymousRenderFrame) => setFixtureFrame(previous=>previous?.time===frame.time && previous.max===frame.max ? previous : frame),[])
   useEffect(()=>{
     // Both an explicit compile-time gate and the URL opt-in are necessary.
-    const enabled=process.env.NEXT_PUBLIC_URAI_ANONYMOUS_FACE_CALIBRATION==='true' && new URLSearchParams(window.location.search).get('anonymousFaceLab')==='1'
+    const query=new URLSearchParams(window.location.search)
+    const enabled=process.env.NEXT_PUBLIC_URAI_ANONYMOUS_FACE_CALIBRATION==='true' && query.get('anonymousFaceLab')==='1'
+    const unified=process.env.NEXT_PUBLIC_URAI_UNIFIED_COUNCIL_GUIDE_LAB==='true' && query.get('unifiedGuideLab')==='1' && !enabled
     setFixtureEnabled(enabled)
-    return ()=>{setFixtureEnabled(false)}
+    setUnifiedGuideLabEnabled(unified)
+    return ()=>{setFixtureEnabled(false);setUnifiedGuideLabEnabled(false)}
   },[])
   const [humanNear, setHumanNear] = useState(false)
   const [humanDistance, setHumanDistance] = useState<number | null>(null)
@@ -316,7 +375,8 @@ function CouncilStage() {
       ref={shellRef}
       className="urai-spatial-realm-experience relative min-h-screen overflow-hidden bg-[#10151a] text-white"
       data-spatial-realm="council"
-      data-digital-human-integration="rigged-council-preview-no-founder-likeness"
+      data-digital-human-integration={unifiedGuideLabEnabled?'original-guide-skinned-head-morph-dev-only-not-approved':'rigged-council-preview-no-founder-likeness'}
+      data-council-unified-guide-lab={unifiedGuideLabEnabled?'true':'false'}
       data-digital-human-near={humanNear ? 'true' : 'false'}
       data-digital-human-conversation-phase={encounterPhase}
       data-council-human-authority="human-makehuman-v4-preview"
@@ -368,12 +428,16 @@ function CouncilStage() {
             {COUNCIL_AGENTS.map((agent, index) => (
               <RiggedCouncilHuman
                 key={agent.id}
-                modelUrl={HUMAN_MODELS[index] ?? HUMAN_MODELS[0]}
+                modelUrl={unifiedGuideLabEnabled && index===0 ? UNIFIED_GUIDE_DEV_MODEL : (HUMAN_MODELS[index] ?? HUMAN_MODELS[0])}
                 index={index}
                 selected={selected === index}
                 reducedMotion={reducedMotion}
                 onSelect={() => setSelected(index)}
                 ownerRef={shellRef}
+                unifiedGuideLab={unifiedGuideLabEnabled && index===0}
+                calibrationMedia={fixtureMedia}
+                calibrationMuted={fixtureMuted}
+                calibrationFrozen={fixtureFrozen}
               />
             ))}
 
@@ -387,7 +451,7 @@ function CouncilStage() {
       </div>
 
       <div className="absolute left-4 top-4 z-30"><AdamLauncherSlot name="council-world" /></div>
-      {fixtureEnabled ? <AnonymousCalibrationControls onMedia={setFixtureMedia} onMute={setFixtureMuted} onFreeze={setFixtureFrozen} onFrame={fixtureFrame} /> : null}
+      {fixtureEnabled || unifiedGuideLabEnabled ? <AnonymousCalibrationControls labMode={unifiedGuideLabEnabled?'unified-guide':'anonymous-face'} onMedia={setFixtureMedia} onMute={setFixtureMuted} onFreeze={setFixtureFrozen} onFrame={fixtureFrame} /> : null}
       <section className="council-conversation pointer-events-none absolute bottom-5 left-5 z-10 w-[min(430px,calc(100vw-40px))] rounded-3xl border border-white/15 bg-black/45 p-5 shadow-2xl backdrop-blur-xl md:bottom-8 md:left-8">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/55">URAI Council</p>
         <h1 className="mt-2 text-3xl font-medium tracking-tight md:text-4xl">{selectedAgent.name}</h1>

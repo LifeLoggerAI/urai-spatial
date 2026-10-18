@@ -5,6 +5,7 @@ on:
       - '.github/workflows/digital-human-original-council-browser.yml'
       - 'urai-tier1/tests/digital-human-council-browser.spec.ts'
       - 'urai-tier1/tests/digital-human-anonymous-browser.spec.ts'
+      - 'urai-tier1/tests/digital-human-unified-guide-browser.spec.ts'
       - 'urai-tier1/scripts/digital-human/**'
       - 'urai-tier1/src/spatial/council/**'
       - 'urai-tier1/src/spatial/digital-human/**'
@@ -21,6 +22,7 @@ jobs:
       NEXT_PUBLIC_URAI_PREVIEW_MODE: 'true'
       NEXT_PUBLIC_URAI_PREVIEW_CHANNEL: digital-human-non-release
       NEXT_PUBLIC_URAI_ANONYMOUS_FACE_CALIBRATION: 'true'
+      NEXT_PUBLIC_URAI_UNIFIED_COUNCIL_GUIDE_LAB: 'true'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -54,6 +56,17 @@ jobs:
             urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-guide-human-makehuman-v4.glb \
             operations/assets/generated-receipts/council-guide-human-makehuman-v4.json \
             "$RUNNER_TEMP/urai-v4-binary/council-v4-original-geometry.json"
+      - name: Derive original v4 skinned Guide expression prototype from exact original source bytes
+        run: |
+          set -eu
+          node --check urai-tier1/scripts/digital-human/derive-council-v4-unified-face.mjs
+          node urai-tier1/scripts/digital-human/derive-council-v4-unified-face.mjs \
+            urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-guide-human-makehuman-v4.glb \
+            operations/assets/generated-receipts/council-guide-human-makehuman-v4.json \
+            urai-tier1/public/__digital-human-dev/council-guide-v4-unified-face.glb \
+            urai-tier1/public/__digital-human-dev/council-guide-v4-unified-face-receipt.json
+          node --test urai-tier1/tests/digital-human-unified-face-generation.test.mjs
+          node -e "const r=require('./urai-tier1/public/__digital-human-dev/council-guide-v4-unified-face-receipt.json');if(r.sourceSha256!=='fd71bed01e3216b2b60c88a34bb37465ecd49d331f089ccba830e23df1446756'||r.originalJoints!==17||r.originalClips!==5||r.derivedMorphChannels.length!==10||r.channelStats.some(s=>s.movedVertices<8)||r.approvedForProduction)process.exit(1)"
       - name: Start actual UrAi app and execute browser proof
         run: |
           set -eu
@@ -71,7 +84,7 @@ jobs:
             exit 1
           fi
           cd urai-tier1
-          pnpm exec playwright test tests/digital-human-council-browser.spec.ts tests/digital-human-anonymous-browser.spec.ts --reporter=line
+          pnpm exec playwright test tests/digital-human-council-browser.spec.ts tests/digital-human-anonymous-browser.spec.ts tests/digital-human-unified-guide-browser.spec.ts --reporter=line
       - name: Upload non-release browser receipts and startup logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -83,5 +96,7 @@ jobs:
             /tmp/urai-council-next.log
             /tmp/urai-anonymous-fixture-receipt.json
             ${{ runner.temp }}/urai-v4-binary/
+            urai-tier1/public/__digital-human-dev/council-guide-v4-unified-face.glb
+            urai-tier1/public/__digital-human-dev/council-guide-v4-unified-face-receipt.json
           if-no-files-found: warn
           retention-days: 30
