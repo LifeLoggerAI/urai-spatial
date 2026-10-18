@@ -40,7 +40,7 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
   // In this controlled copy-only runtime, the real Replay reads the current
   // browser URL to locate optional private movie selectors. Model a valid
   // empty query rather than crashing before its localized controls mount.
-  browser.location = { search: '' }
+  browser.location = { pathname: '/home', search: '', hash: '' }
   const params = new URLSearchParams(browser.location.search)
   const hooks = {...React,
     useState:initial => [stateIndex in states ? states[stateIndex++] : (stateIndex++, typeof initial==='function' ? initial() : initial),()=>{}],
@@ -62,6 +62,8 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(id.includes('RoundedBoxGeometry')) return {RoundedBoxGeometry:require('three').BoxGeometry}
     if(id==='next/navigation') return {usePathname:()=>'/home',useSearchParams:()=>params,useRouter:()=>({push:href=>travels.push(href),replace:href=>travels.push(href)})}
     if(id==='next/link') return {__esModule:true,default:FixtureNextLink}
+    // Match the production location snapshot contract without mounting a browser router.
+    if(id.includes('useBrowserLocation')) return {useBrowserLocation:()=>`${browser.location.pathname}${browser.location.search}${browser.location.hash}`}
     if(id.includes('ownedMemoryMediaClient')) return {MEMORY_MEDIA_TYPES:'image/png,audio/mpeg,video/mp4',attachOwnedMemoryFile:async()=>{throw new Error('INERT_NO_UPLOAD')}}
     if(id.includes('localePreference')) return {localizedMessage}
     if(id.includes('journeyControlCopy')) return journeyControlCopy
@@ -125,6 +127,11 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
   }
   function render(file,exportName='default',props={}) {
     stateIndex=0
+    // Reflect the actual fixture route while preserving the selected search/hash.
+    if(file.includes('/app/focus/')) browser.location.pathname='/focus'
+    else if(file.includes('/app/replay/')) browser.location.pathname='/replay'
+    else if(file.includes('/components/lifemap/')) browser.location.pathname='/life-map'
+    else if(file.includes('/app/')) browser.location.pathname='/home'
     return expand(load(file)[exportName](props))
   }
   return {render,load,browser,travels}
