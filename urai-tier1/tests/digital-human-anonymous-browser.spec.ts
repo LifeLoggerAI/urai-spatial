@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test'
+import {compareChromiumPngRegion} from './digital-human-png-comparison.mjs'
 import {mkdirSync,writeFileSync} from 'node:fs'
 import {dirname} from 'node:path'
 const origin=process.env.URAI_PROOF_BASE_URL || 'http://127.0.0.1:4290'
@@ -28,52 +29,40 @@ async function captureOriginalWebGLFrame(page:any,bounds:CanvasCaptureBounds){
  // original WebGL canvas. Unlike locator.screenshot it does not scroll or wait
  // for a continuously rendered canvas to become element-actionability-stable.
  const began=Date.now()
- // Chromium DevTools captures the live compositor frame directly, bypassing
- // Playwright screenshot lifecycle/stability waiting on a busy WebGL page.
- // It still reads original Chromium-rendered scene pixels; no mocked canvas.
- const session=await page.context().newCDPSession(page)
- try {
-  const result=await session.send('Page.captureScreenshot',{
-   format:'png',captureBeyondViewport:false,fromSurface:true,
-   clip:{...bounds.clip,scale:1}
-  })
-  const bytes=Buffer.from(result.data,'base64')
-  if(bytes.length<500)throw new Error('original-webgl-capture-empty')
-  return {bytes,elapsedMs:Date.now()-began}
- } finally { await session.detach() }
+ // The development UI overlaps the geometrically projected face. We hide only
+ // that DOM panel while capturing the REAL active Council WebGL compositor.
+ // No renderer or facial geometry is mocked, frozen, edited, or replaced.
+ const lab=page.getByTestId('anonymous-facial-calibration')
+ const previousVisibility=await lab.evaluate((el:HTMLElement)=>{
+  const previous=el.style.visibility
+  el.style.visibility='hidden'
+  return previous
+ })
+ try{
+  // Give the compositor one live frame to remove the occluding DOM overlay.
+  await page.waitForTimeout(80)
+  const session=await page.context().newCDPSession(page)
+  try{
+   const result=await session.send('Page.captureScreenshot',{
+    format:'png',captureBeyondViewport:false,fromSurface:true,
+    clip:{...bounds.clip,scale:1}
+   })
+   const bytes=Buffer.from(result.data,'base64')
+   if(bytes.length<500)throw new Error('original-webgl-capture-empty')
+   return {bytes,elapsedMs:Date.now()-began}
+  } finally { await session.detach() }
+ } finally {
+  await lab.evaluate((el:HTMLElement,visibility:string)=>{el.style.visibility=visibility},previousVisibility)
+ }
 }
 
-async function compareRenderedFace(page:any,neutral:Buffer,animated:Buffer,region:Region){
- // Decode ACTUAL Chromium screenshots inside Chromium and compare pixels, not DOM/CSS.
- return page.evaluate(async({a,b,r}:{a:string;b:string;r:Region})=>{
-  const decode=async(base64:string)=>{
-   const blob=await (await fetch('data:image/png;base64,'+base64)).blob()
-   const bmp=await createImageBitmap(blob)
-   const cv=document.createElement('canvas');cv.width=bmp.width;cv.height=bmp.height
-   const ctx=cv.getContext('2d',{willReadFrequently:true});if(!ctx)throw Error('no-2d-context')
-   ctx.drawImage(bmp,0,0);return {data:ctx.getImageData(0,0,bmp.width,bmp.height).data,width:bmp.width,height:bmp.height}
-  }
-  const before=await decode(a),after=await decode(b)
-  if(before.width!==after.width || before.height!==after.height)throw Error('screenshot-size-mismatch')
-  const cx=r.cx,cy=r.cy
-  const left=Math.max(0,Math.floor(cx-r.rx)),right=Math.min(before.width,Math.ceil(cx+r.rx))
-  const top=Math.max(0,Math.floor(cy-r.ry)),bottom=Math.min(before.height,Math.ceil(cy+r.ry))
-  if(right-left<28||bottom-top<28)throw Error('face-roi-not-visible')
-  let changed=0,delta=0,checked=0
-  for(let y=top;y<bottom;y++)for(let x=left;x<right;x++){
-   const dx=(x-cx)/r.rx,dy=(y-cy)/r.ry
-   if(dx*dx+dy*dy>1)continue
-   const i=4*(y*before.width+x)
-   const value=Math.abs(before.data[i]-after.data[i])+Math.abs(before.data[i+1]-after.data[i+1])+Math.abs(before.data[i+2]-after.data[i+2])
-   delta+=value;checked++;if(value>42)changed++
-  }
-  return {changed,checked,meanRgbDelta:checked?delta/checked:0,roi:{left,top,right,bottom}}
- },{a:neutral.toString('base64'),b:animated.toString('base64'),r:region})
-}
+
 test('original Council WebGL visually changes actual anonymous facial mesh during audible media playback',async({page},info)=>{
  const receipt: Record<string, unknown> = {
   schema: 'urai.digital-human.original-webgl.visual-evidence.v2',
   classification: 'ANONYMOUS_TECHNICAL_FIXTURE_NOT_ADAM_NOT_SPEECH_NOT_RELEASE',
+  capturePolicy: 'original-WebGL-compositor-with-development-DOM-panel-hidden-during-screenshot',
+  pixelComparison: 'node22-in-process-zlib-png-no-browser-side-decode',
   head: process.env.URAI_EXACT_HEAD ?? 'unknown',
   assetSha256: '3a6a44f9a2d7a666c15cb345852977c663d17f688eec8816def2237a53fd16bc',
   phase: 'starting',
@@ -150,8 +139,8 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
  expect(activeBefore.time).toBeGreaterThan(.18)
  expect(activeAfter.time).toBeLessThan(8)
  expect(activeAfter.weight).toBeGreaterThan(.32)
- const diff=await compareRenderedFace(page,neutral,animated,captureFace)
- const backgroundPositive=await compareRenderedFace(page,neutral,animated,nearbyControl)
+ const diff=await compareChromiumPngRegion(neutral,animated,captureFace)
+ const backgroundPositive=await compareChromiumPngRegion(neutral,animated,nearbyControl)
  Object.assign(receipt,{phase:'positive-measured',playbackRate,mediaTime,activeBefore,activeAfter,diff,backgroundPositive})
  persistReceipt()
  // Actual screenshot region MUST change, not merely a reported morph weight.
@@ -179,8 +168,8 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
  const frozenAfter=Number(await telemetry.getAttribute('data-time'))
  expect(frozenBefore).toBeGreaterThan(.25)
  expect(frozenAfter).toBeLessThan(8)
- const negative=await compareRenderedFace(page,frozenNeutral,frozenPlaying,captureFace)
- const backgroundFrozen=await compareRenderedFace(page,frozenNeutral,frozenPlaying,nearbyControl)
+ const negative=await compareChromiumPngRegion(frozenNeutral,frozenPlaying,captureFace)
+ const backgroundFrozen=await compareChromiumPngRegion(frozenNeutral,frozenPlaying,nearbyControl)
  Object.assign(receipt,{phase:'negative-measured',frozenBefore,frozenAfter,negative,backgroundFrozen,
   positiveCaptureMs:animatedCapture.elapsedMs,negativeCaptureMs:frozenPlayingCapture.elapsedMs,
   errors,facialFreezeConfirmed:(await telemetry.getAttribute('data-max-weight'))==='0'})
