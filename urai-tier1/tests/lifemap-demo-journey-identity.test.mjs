@@ -9,6 +9,7 @@ import { withLifeMapSelectionIdentity } from '../src/spatial/memory/lifeMapSelec
 import { buildNamedExplicitDemoMemory } from '../src/spatial/memory/explicitDemoMemory.ts'
 import * as selectedMemoryContract from '../src/spatial/memory/selectedMemoryContract.ts'
 import * as consentModel from '../src/app/privacy-controls/consentModel.ts'
+import * as privateLifeMovieRouteSelection from '../src/spatial/life-movie/privateLifeMovieRouteSelection.ts'
 import { canonicalLifeMapDemoNodes } from '../src/components/lifemap/canonicalLifeMapDemoNodes.ts'
 import { DEMO_MEMORY_STAR_NODES } from '../src/spatial/memory/memoryStarSchema.ts'
 import { definitionForDestination } from '../src/spatial/world/destinationRegistry.ts'
@@ -69,6 +70,7 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     '@/hooks/useBrowserLocation':{useBrowserLocation:()=>browser.location.pathname+browser.location.search+browser.location.hash},
     './selectedMemoryContract':selectedMemoryContract,
     '@/app/privacy-controls/consentModel':consentModel,
+    '@/spatial/life-movie/privateLifeMovieRouteSelection':privateLifeMovieRouteSelection,
     './explicitDemoMemory':{buildNamedExplicitDemoMemory},
   }
   const adamSlotModule = {exports:{}}
