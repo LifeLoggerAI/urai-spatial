@@ -18,6 +18,7 @@ jobs:
       URAI_PROOF_BASE_URL: http://127.0.0.1:4290
       NEXT_PUBLIC_URAI_PREVIEW_MODE: 'true'
       NEXT_PUBLIC_URAI_PREVIEW_CHANNEL: digital-human-non-release
+      NEXT_PUBLIC_URAI_ANONYMOUS_FACE_CALIBRATION: 'true'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -39,6 +40,10 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+      - name: Generate deterministic anonymous face exclusively for development browser job
+        run: |
+          node urai-tier1/scripts/digital-human/generate-anonymous-face-glb.mjs urai-tier1/public/__digital-human-dev/anonymous-face-morph-v1.glb > /tmp/urai-anonymous-fixture-receipt.json
+          node -e "const fs=require('fs');const r=JSON.parse(fs.readFileSync('/tmp/urai-anonymous-fixture-receipt.json'));if(r.sha256!=='3a6a44f9a2d7a666c15cb345852977c663d17f688eec8816def2237a53fd16bc'||r.morphableMeshes!==6)process.exit(1)"
       - name: Start actual UrAi app and execute browser proof
         run: |
           set -eu
@@ -56,7 +61,7 @@ jobs:
             exit 1
           fi
           cd urai-tier1
-          pnpm exec playwright test tests/digital-human-council-browser.spec.ts --reporter=line
+          pnpm exec playwright test tests/digital-human-council-browser.spec.ts tests/digital-human-anonymous-browser.spec.ts --reporter=line
       - name: Upload non-release browser receipts and startup logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -66,5 +71,6 @@ jobs:
             urai-tier1/test-results/
             urai-tier1/playwright-report/
             /tmp/urai-council-next.log
+            /tmp/urai-anonymous-fixture-receipt.json
           if-no-files-found: warn
           retention-days: 30
