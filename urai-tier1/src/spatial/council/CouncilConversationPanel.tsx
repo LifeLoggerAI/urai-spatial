@@ -211,7 +211,6 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
         return
       }
       const resolved = response ?? deterministicOrbFallback(trimmed)
-      sceneSession.current.finish(sceneTurn)
       setResult(resolved)
       onEncounterPhase?.(response && response.provider !== 'fallback' ? 'responded' : 'idle')
       if (response) {
