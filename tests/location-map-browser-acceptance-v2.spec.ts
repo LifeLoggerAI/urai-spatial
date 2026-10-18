@@ -59,7 +59,7 @@ async function recoveredNavigationStylesheetAborts(page: Page, evidence: Evidenc
         const url = new URL(link.href)
         return url.origin === window.location.origin
           && (url.pathname === '/_next/static/css/app/location-map/page.css'
-            || /^\\/_next\\/static\\/css\\/[a-f0-9]{16}\\.css$/.test(url.pathname))
+            || /^\/_next\/static\/css\/[a-f0-9]{16}\.css$/.test(url.pathname))
       })
     const atlas = document.querySelector<HTMLElement>('.locationAtlas')
     const stage = document.querySelector<HTMLElement>('.locationAtlasStage')
