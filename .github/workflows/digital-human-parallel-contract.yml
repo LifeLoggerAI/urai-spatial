@@ -23,4 +23,5 @@ jobs:
           node --check urai-tier1/src/spatial/digital-human/humanEncounter.mjs
           node --check urai-tier1/src/spatial/digital-human/humanMorphDriver.mjs
           node --check urai-tier1/src/spatial/digital-human/councilApprovedAudioClock.mjs
-          node --test urai-tier1/tests/digital-human-encounter-contract.test.mjs urai-tier1/tests/digital-human-morph-driver-contract.test.mjs urai-tier1/tests/digital-human-council-proximity.test.mjs urai-tier1/tests/digital-human-council-session.test.mjs urai-tier1/tests/digital-human-approved-audio-clock.test.mjs
+          node --check urai-tier1/src/spatial/digital-human/anonymousCalibration.mjs
+          node --test urai-tier1/tests/digital-human-encounter-contract.test.mjs urai-tier1/tests/digital-human-morph-driver-contract.test.mjs urai-tier1/tests/digital-human-council-proximity.test.mjs urai-tier1/tests/digital-human-council-session.test.mjs urai-tier1/tests/digital-human-approved-audio-clock.test.mjs urai-tier1/tests/digital-human-anonymous-calibration.test.mjs
