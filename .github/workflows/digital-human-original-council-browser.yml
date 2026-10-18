@@ -13,7 +13,7 @@ permissions:
   contents: read
 jobs:
   original-council-chromium:
-    runs-on: ubuntu-24.04
+    runs-on: macos-latest
     timeout-minutes: 35
     env:
       URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -41,7 +41,7 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
-          pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+          pnpm --dir urai-tier1 exec playwright install chromium
       - name: Generate deterministic anonymous face exclusively for development browser job
         run: |
           node urai-tier1/scripts/digital-human/generate-anonymous-face-glb.mjs urai-tier1/public/__digital-human-dev/anonymous-face-morph-v1.glb > /tmp/urai-anonymous-fixture-receipt.json

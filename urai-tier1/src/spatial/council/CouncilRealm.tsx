@@ -276,6 +276,7 @@ function CouncilStage() {
   const [fixtureEnabled,setFixtureEnabled] = useState(false)
   const [fixtureMedia,setFixtureMedia] = useState<HTMLAudioElement|null>(null)
   const [fixtureMuted,setFixtureMuted] = useState(false)
+  const [fixtureFrozen,setFixtureFrozen] = useState(false)
   const [fixtureFrame,setFixtureFrame] = useState<AnonymousRenderFrame|null>(null)
   const onFixtureFrame = useCallback((frame:AnonymousRenderFrame) => setFixtureFrame(previous=>previous?.time===frame.time && previous.max===frame.max ? previous : frame),[])
   useEffect(()=>{
@@ -338,7 +339,7 @@ function CouncilStage() {
             <PerspectiveCamera makeDefault position={COUNCIL_ENTRY} fov={COUNCIL_FOV} />
             <CouncilCamera input={input} yaw={yaw} pitch={pitch} reducedMotion={reducedMotion} ownerRef={shellRef} />
             <CouncilHumanProximity position={POSITIONS[selected] ?? POSITIONS[0]} onRange={onHumanRange} />
-            {fixtureEnabled ? <Suspense fallback={null}><AnonymousFacialFixture media={fixtureMedia} muted={fixtureMuted} reducedMotion={reducedMotion} onFrame={onFixtureFrame} /></Suspense> : null}
+            {fixtureEnabled ? <Suspense fallback={null}><AnonymousFacialFixture media={fixtureMedia} muted={fixtureMuted} reducedMotion={reducedMotion} freezeMorphs={fixtureFrozen} onFrame={onFixtureFrame} /></Suspense> : null}
 
             <ambientLight intensity={0.48} color="#dfe8ea" />
             <hemisphereLight intensity={0.85} color="#dcecf0" groundColor="#50483e" />
@@ -386,7 +387,7 @@ function CouncilStage() {
       </div>
 
       <div className="absolute left-4 top-4 z-30"><AdamLauncherSlot name="council-world" /></div>
-      {fixtureEnabled ? <AnonymousCalibrationControls onMedia={setFixtureMedia} onMute={setFixtureMuted} onFrame={fixtureFrame} /> : null}
+      {fixtureEnabled ? <AnonymousCalibrationControls onMedia={setFixtureMedia} onMute={setFixtureMuted} onFreeze={setFixtureFrozen} onFrame={fixtureFrame} /> : null}
       <section className="council-conversation pointer-events-none absolute bottom-5 left-5 z-10 w-[min(430px,calc(100vw-40px))] rounded-3xl border border-white/15 bg-black/45 p-5 shadow-2xl backdrop-blur-xl md:bottom-8 md:left-8">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/55">URAI Council</p>
         <h1 className="mt-2 text-3xl font-medium tracking-tight md:text-4xl">{selectedAgent.name}</h1>

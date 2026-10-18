@@ -4,11 +4,12 @@ import { makeToneWav } from './anonymousCalibration.mjs'
 
 import type { AnonymousRenderFrame } from './AnonymousFacialFixture'
 type Frame = AnonymousRenderFrame
-export default function AnonymousCalibrationControls({onMedia,onMute,onFrame}:{onMedia:(media:HTMLAudioElement|null)=>void;onMute:(muted:boolean)=>void;onFrame:Frame|null}) {
+export default function AnonymousCalibrationControls({onMedia,onMute,onFreeze,onFrame}:{onMedia:(media:HTMLAudioElement|null)=>void;onMute:(muted:boolean)=>void;onFreeze:(frozen:boolean)=>void;onFrame:Frame|null}) {
  const audioRef=useRef<HTMLAudioElement|null>(null)
  const urlRef=useRef<string|null>(null)
  const [ready,setReady]=useState(false)
  const [muted,setMuted]=useState(false)
+ const [frozen,setFrozen]=useState(false)
  const [playing,setPlaying]=useState(false)
  useEffect(()=>{
   const wav=makeToneWav()
@@ -35,11 +36,12 @@ export default function AnonymousCalibrationControls({onMedia,onMute,onFrame}:{o
  <button type="button" data-testid="calibration-pause" onClick={()=>{audioRef.current?.pause();setPlaying(false)}}>Pause</button>
  <button type="button" data-testid="calibration-stop" onClick={stop}>Stop</button>
  <button type="button" data-testid="calibration-mute" aria-pressed={muted} onClick={()=>{const next=!muted;setMuted(next);onMute(next);if(audioRef.current)audioRef.current.muted=next}}>{muted?'Unmute':'Mute'}</button>
+ <button type="button" data-testid="calibration-freeze" aria-pressed={frozen} onClick={()=>{const next=!frozen;setFrozen(next);onFreeze(next)}}>{frozen?'Unfreeze face':'Freeze facial morphs (negative control)'}</button>
  </div>
  <label className="block text-xs">Seek position
   <input aria-label="Calibration audio seek" className="w-full" type="range" min="0" max="2.3" step=".01" defaultValue="0" onChange={e=>{if(audioRef.current)audioRef.current.currentTime=Number(e.target.value)}}/>
  </label>
  <p aria-live="polite" className="text-xs" data-testid="calibration-status">Audio {playing?'playing':'stopped'}; sample clock {onFrame?.time.toFixed(3)??'0.000'} seconds; geometry weight {onFrame?.max.toFixed(3)??'0.000'}.</p>
- <span data-testid="calibration-telemetry" data-playing={onFrame?.playing?'true':'false'} data-max-weight={onFrame?.max??0} data-time={onFrame?.time??0} data-morph-bindings={onFrame?.written??0} data-face-visible={onFrame?.face.visible?'true':'false'} data-face-cx={onFrame?.face.cx??0} data-face-cy={onFrame?.face.cy??0} data-face-rx={onFrame?.face.rx??0} data-face-ry={onFrame?.face.ry??0} hidden />
+ <span data-testid="calibration-telemetry" data-morphs-frozen={frozen?'true':'false'} data-playing={onFrame?.playing?'true':'false'} data-max-weight={onFrame?.max??0} data-time={onFrame?.time??0} data-morph-bindings={onFrame?.written??0} data-face-visible={onFrame?.face.visible?'true':'false'} data-face-cx={onFrame?.face.cx??0} data-face-cy={onFrame?.face.cy??0} data-face-rx={onFrame?.face.rx??0} data-face-ry={onFrame?.face.ry??0} hidden />
  </aside>
 }

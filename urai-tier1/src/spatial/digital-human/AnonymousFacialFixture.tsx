@@ -19,10 +19,11 @@ export type AnonymousRenderFrame = {
 const ORIGIN = new THREE.Vector3(0, 1.63, 0)
 const TOP = new THREE.Vector3(0, 2.03, 0)
 const RIGHT = new THREE.Vector3(.36, 1.63, 0)
-export default function AnonymousFacialFixture({media, muted, reducedMotion, onFrame}: {
+export default function AnonymousFacialFixture({media, muted, reducedMotion, freezeMorphs = false, onFrame}: {
   media: HTMLAudioElement | null
   muted: boolean
   reducedMotion: boolean
+  freezeMorphs?: boolean
   onFrame: (frame: AnonymousRenderFrame) => void
 }) {
   const gltf = useGLTF('/__digital-human-dev/anonymous-face-morph-v1.glb')
@@ -53,7 +54,7 @@ export default function AnonymousFacialFixture({media, muted, reducedMotion, onF
   useFrame(({clock, camera, size}) => {
     const playing = !!media && !media.paused && !media.ended && !media.muted && !muted
     const time = media?.currentTime ?? 0
-    const pose = calibrationPose(time, playing, reducedMotion, muted)
+    const pose = calibrationPose(time, playing && !freezeMorphs, reducedMotion, muted)
     const result = writeMorphs(instance, pose)
     if (!root.current || clock.elapsedTime - lastReport.current < .06) return
     root.current.updateWorldMatrix(true, true)
