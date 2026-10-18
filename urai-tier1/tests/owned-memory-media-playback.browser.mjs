@@ -607,12 +607,26 @@ try {
         await open('/replay',{dualPrivate:true,realHandler:true,...settings})
       try{
         const denied=await observedPrivateResponse
-        assert.equal(denied.status(),403)
-        const deniedBody=Buffer.from(await denied.body())
-        assert.ok(!deniedBody.includes(authenticVideo))
-        assert.ok(!deniedBody.includes(Buffer.from(authenticSrt)))
+        assert.equal(denied.status(),403,'actual handler must deny foreign principal')
+        assert.equal(denied.headers()['content-type'],'application/json',
+          'server must not label denied output as protected media')
+        assert.match(denied.headers()['cache-control']??'',/no-store/,
+          'denied authority must not be cached')
+        assert.equal(denied.headers()['x-urai-private-playlist-digest'],undefined,
+          'denial must not disclose protected playlist identity')
+        assert.equal(denied.headers()['access-control-allow-origin'],origin,
+          'approved origin must receive and enforce the actual 403')
+        // Chromium may cancel the rejected fetch before CDP can retain its
+        // response body. The SAME HTTP server bridge independently reads every
+        // denied response and asserts exact JSON denial, no protected MP4/SRT
+        // bytes, and emits an auditable zero-disclosure receipt. Do not replace
+        // that server assertion with Playwright's unreliable Network.getResponseBody.
         assert.deepEqual(privateRequests.map(x=>x.kind),['mp4'])
-        assert.equal(realResponses.filter(r=>r.method==='POST')[0].status,403)
+        assert.deepEqual(realResponses.filter(r=>r.method==='POST').map(r=>r.status),[403])
+        const privateMediaMounted=await page.evaluate(expectedSize =>
+          window.__fixture.creates.some(item=>item.type==='video/mp4' && item.size===expectedSize),
+          authenticVideo.length)
+        assert.equal(privateMediaMounted,false,'denied browser must create no protected video Blob')
         assert.equal(await page.locator('video[aria-label="Authorized private Life Movie"]').count(),0)
         assert.equal(await page.locator('[data-private-life-movie-captions="verified"]').count(),0)
       }finally{await context.close()}
