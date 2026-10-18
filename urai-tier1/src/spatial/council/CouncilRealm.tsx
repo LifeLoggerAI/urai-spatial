@@ -1,9 +1,10 @@
 "use client"
 
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+import CouncilHumanProximity from '@/spatial/digital-human/CouncilHumanProximity'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, Lightformer, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
-import { Component, Suspense, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
+import { Component, Suspense, useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { COUNCIL_AGENTS } from './councilAgentSchema'
 import CouncilConversationPanel from './CouncilConversationPanel'
@@ -258,6 +259,13 @@ function CouncilStage() {
   const shadowMapSize = quality.tier === 'high' ? 2048 : 1024
   const environmentIntensity = quality.tier === 'high' ? 0.55 : quality.tier === 'medium' ? 0.42 : 0.28
   const shellRef = useRef<HTMLDivElement | null>(null)
+  const [humanNear, setHumanNear] = useState(false)
+  const [humanDistance, setHumanDistance] = useState<number | null>(null)
+  // Development telemetry only: the Council preview is not Founder Adam.
+  const onHumanRange = useCallback((inRange: boolean, distance: number) => {
+    setHumanNear(previous => previous === inRange ? previous : inRange)
+    setHumanDistance(previous => Number.isFinite(distance) && (previous === null || Math.abs(previous - distance) > 0.35) ? distance : previous)
+  }, [])
   const yaw = useRef(0)
   const pitch = useRef(COUNCIL_ENTRY_PITCH)
   const input = useMovementInput({ onEscape: () => requestUraiWorldReturn() })
@@ -282,6 +290,8 @@ function CouncilStage() {
       ref={shellRef}
       className="urai-spatial-realm-experience relative min-h-screen overflow-hidden bg-[#10151a] text-white"
       data-spatial-realm="council"
+      data-digital-human-integration="rigged-council-preview-no-founder-likeness"
+      data-digital-human-near={humanNear ? 'true' : 'false'}
       data-council-human-authority="human-makehuman-v4-preview"
       data-council-lighting-authority="physical-pbr-v1"
       data-council-embodied="true"
@@ -301,6 +311,7 @@ function CouncilStage() {
             <fog attach="fog" args={['#253337', 12, 30]} />
             <PerspectiveCamera makeDefault position={COUNCIL_ENTRY} fov={COUNCIL_FOV} />
             <CouncilCamera input={input} yaw={yaw} pitch={pitch} reducedMotion={reducedMotion} ownerRef={shellRef} />
+            <CouncilHumanProximity position={POSITIONS[selected] ?? POSITIONS[0]} onRange={onHumanRange} />
 
             <ambientLight intensity={0.48} color="#dfe8ea" />
             <hemisphereLight intensity={0.85} color="#dcecf0" groundColor="#50483e" />
@@ -353,6 +364,10 @@ function CouncilStage() {
         <h1 className="mt-2 text-3xl font-medium tracking-tight md:text-4xl">{selectedAgent.name}</h1>
         <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#e8d8b9]/80">{selectedAgent.role}</p>
         <p className="mt-3 max-w-[38ch] text-sm leading-6 text-white/72">{selectedAgent.focus}</p>
+        <p role="status" aria-live="polite" className="mt-2 text-xs text-[#e8d8b9]/80" data-testid="council-human-distance">
+          {humanNear ? 'In conversational range of this Council preview' : 'Approach the selected Council preview to enter conversational range'}
+          {humanDistance !== null ? ` · approximately ${humanDistance.toFixed(1)} scene units` : ''}. No private likeness or character voice is approved here.
+        </p>
         <CouncilConversationPanel agent={selectedAgent} />
         <div className="pointer-events-auto mt-4 flex flex-wrap gap-2">
           <button className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950" type="button" onClick={() => travel('home', '/home?returnFrom=council')}>Return Home</button>
