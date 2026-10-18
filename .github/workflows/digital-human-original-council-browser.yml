@@ -5,7 +5,7 @@ on:
       - '.github/workflows/digital-human-original-council-browser.yml'
       - 'urai-tier1/tests/digital-human-council-browser.spec.ts'
       - 'urai-tier1/tests/digital-human-anonymous-browser.spec.ts'
-      - 'urai-tier1/scripts/digital-human/generate-anonymous-face-glb.mjs'
+      - 'urai-tier1/scripts/digital-human/**'
       - 'urai-tier1/src/spatial/council/**'
       - 'urai-tier1/src/spatial/digital-human/**'
   workflow_dispatch:
@@ -46,6 +46,14 @@ jobs:
         run: |
           node urai-tier1/scripts/digital-human/generate-anonymous-face-glb.mjs urai-tier1/public/__digital-human-dev/anonymous-face-morph-v1.glb > /tmp/urai-anonymous-fixture-receipt.json
           node -e "const fs=require('fs');const r=JSON.parse(fs.readFileSync('/tmp/urai-anonymous-fixture-receipt.json'));if(r.sha256!=='3a6a44f9a2d7a666c15cb345852977c663d17f688eec8816def2237a53fd16bc'||r.morphableMeshes!==6)process.exit(1)"
+      - name: Read original Council v4 binary and write measured head, skin and animation receipt
+        run: |
+          set -eu
+          mkdir -p "$RUNNER_TEMP/urai-v4-binary"
+          node urai-tier1/scripts/digital-human/inspect-council-v4-glb.mjs \
+            urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-guide-human-makehuman-v4.glb \
+            operations/assets/generated-receipts/council-guide-human-makehuman-v4.json \
+            "$RUNNER_TEMP/urai-v4-binary/council-v4-original-geometry.json"
       - name: Start actual UrAi app and execute browser proof
         run: |
           set -eu
@@ -74,5 +82,6 @@ jobs:
             urai-tier1/playwright-report/
             /tmp/urai-council-next.log
             /tmp/urai-anonymous-fixture-receipt.json
+            ${{ runner.temp }}/urai-v4-binary/
           if-no-files-found: warn
           retention-days: 30
