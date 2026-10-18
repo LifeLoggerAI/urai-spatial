@@ -1,6 +1,11 @@
 name: iOS Source Preparation
 
 on:
+  # The workflow is not present on main; workflow_dispatch cannot register it
+  # until an independently approved default-branch CI admission. A source-branch
+  # push runs the unsigned, read-only preparation without merging application code.
+  push:
+    branches: [repair/release-closure-integration-20261007]
   pull_request:
     branches: [main]
   workflow_dispatch:
