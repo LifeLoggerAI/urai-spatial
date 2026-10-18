@@ -1,0 +1,52 @@
+'use client'
+import { useCallback,useEffect,useRef,useState } from 'react'
+import { makeToneWav } from './anonymousCalibration.mjs'
+
+type Frame={time:number;max:number;written:number;playing:boolean;geometryX:number}
+export default function AnonymousCalibrationControls({onMedia,onMute,onFrame}:{onMedia:(media:HTMLAudioElement|null)=>void;onMute:(muted:boolean)=>void;onFrame:Frame|null}) {
+ const audioRef=useRef<HTMLAudioElement|null>(null)
+ const urlRef=useRef<string|null>(null)
+ const [ready,setReady]=useState(false)
+ const [muted,setMuted]=useState(false)
+ const [playing,setPlaying]=useState(false)
+ const dispose=useCallback(()=>{
+  const audio=audioRef.current
+  if(audio){audio.pause();audio.removeAttribute('src');audio.load()}
+  audioRef.current=null
+  onMedia(null);onMute(false)
+  if(urlRef.current)URL.revokeObjectURL(urlRef.current)
+  urlRef.current=null;setPlaying(false)
+ },[onMedia,onMute])
+ useEffect(()=>{
+  const wav=makeToneWav()
+  const url=URL.createObjectURL(new Blob([new Uint8Array(wav)],{type:'audio/wav'}))
+  const audio=new Audio(url)
+  audio.preload='auto';urlRef.current=url;audioRef.current=audio
+  const ended=()=>setPlaying(false)
+  audio.addEventListener('ended',ended)
+  onMedia(audio);setReady(true)
+  return ()=>{audio.removeEventListener('ended',ended);audio.pause();audio.removeAttribute('src');audio.load();URL.revokeObjectURL(url);onMedia(null)}
+ },[onMedia])
+ const play=async()=>{
+  const a=audioRef.current;if(!a)return
+  try{await a.play();setPlaying(true)}catch{setPlaying(false)}
+ }
+ const stop=()=>{const a=audioRef.current;if(!a)return;a.pause();a.currentTime=0;setPlaying(false)}
+ return <aside data-testid="anonymous-facial-calibration" data-identity="anonymous-nonproduction-not-founder"
+ className="pointer-events-auto absolute right-4 top-16 z-30 max-w-72 rounded-lg border border-amber-300/50 bg-black/85 p-3 text-white"
+ aria-label="Anonymous technical facial calibration">
+ <strong className="text-sm">Anonymous facial animation lab</strong>
+ <p className="text-xs">Non-speech test tone and synthetic face. Not Adam, not a Council provider, not production.</p>
+ <div className="flex flex-wrap gap-2">
+ <button type="button" data-testid="calibration-play" disabled={!ready} onClick={play}>Play test tone</button>
+ <button type="button" data-testid="calibration-pause" onClick={()=>{audioRef.current?.pause();setPlaying(false)}}>Pause</button>
+ <button type="button" data-testid="calibration-stop" onClick={stop}>Stop</button>
+ <button type="button" data-testid="calibration-mute" aria-pressed={muted} onClick={()=>{const next=!muted;setMuted(next);onMute(next);if(audioRef.current)audioRef.current.muted=next}}>{muted?'Unmute':'Mute'}</button>
+ </div>
+ <label className="block text-xs">Seek position
+  <input aria-label="Calibration audio seek" className="w-full" type="range" min="0" max="2.3" step=".01" defaultValue="0" onChange={e=>{if(audioRef.current)audioRef.current.currentTime=Number(e.target.value)}}/>
+ </label>
+ <p aria-live="polite" className="text-xs" data-testid="calibration-status">Audio {playing?'playing':'stopped'}; sample clock {onFrame?.time.toFixed(3)??'0.000'} seconds; geometry weight {onFrame?.max.toFixed(3)??'0.000'}.</p>
+ <span data-testid="calibration-telemetry" data-playing={onFrame?.playing?'true':'false'} data-max-weight={onFrame?.max??0} data-time={onFrame?.time??0} data-morph-bindings={onFrame?.written??0} hidden />
+ </aside>
+}
