@@ -53,18 +53,28 @@ export function deriveUnifiedCouncilFace(originalBytes,manifest){
  if(headJoint<0||neckJoint<0||!nodes[skin.joints[neckJoint]].children?.includes(skin.joints[headJoint]))throw Error('head-must-be-attached-to-original-neck')
  const bodyNode=nodes.find(n=>n.mesh===0&&n.skin===0)
  if(!bodyNode||mesh.primitives.some(p=>p.targets?.length))throw Error('original-skinned-body-or-zero-morph-assumption-failed')
+ // MATERIAL 'skin' is the original face/body surface. Do not deform the
+ // neighboring shirt, trousers, or shoes sharing this GLB vertex layout.
+ const skinPrimitives=mesh.primitives.filter(p=>doc.materials?.[p.material]?.name==='skin')
+ if(skinPrimitives.length!==1||skinPrimitives[0].indices===undefined)throw Error('original-guide-skin-material-index-required')
+ const skinIndices=reader(doc,bin,skinPrimitives[0].indices)
+ const skinVertices=new Set(Array.from({length:skinIndices.a.count},(_,i)=>skinIndices.read(i,0)))
+ if(skinVertices.size<5000)throw Error('original-guide-skin-surface-insufficient')
+ const normalsIds=new Set(mesh.primitives.map(p=>p.attributes?.NORMAL))
+ if(normalsIds.size!==1||[...normalsIds][0]===undefined)throw Error('original-guide-shared-normal-attribute-required')
  const positionsIds=new Set(mesh.primitives.map(p=>p.attributes?.POSITION))
  const jointsIds=new Set(mesh.primitives.map(p=>p.attributes?.JOINTS_0))
  const weightsIds=new Set(mesh.primitives.map(p=>p.attributes?.WEIGHTS_0))
  if(positionsIds.size!==1||jointsIds.size!==1||weightsIds.size!==1)throw Error('material-primitives-not-sharing-one-original-vertex-layout')
- const p=reader(doc,bin,[...positionsIds][0]),j=reader(doc,bin,[...jointsIds][0]),w=reader(doc,bin,[...weightsIds][0])
- if(p.width!==3||j.width!==4||w.width!==4||p.a.count!==j.a.count||p.a.count!==w.a.count)throw Error('invalid-original-body-vertex-skin-layout')
+ const p=reader(doc,bin,[...positionsIds][0]),j=reader(doc,bin,[...jointsIds][0]),w=reader(doc,bin,[...weightsIds][0]),normals=reader(doc,bin,[...normalsIds][0])
+ if(p.width!==3||j.width!==4||w.width!==4||normals.width!==3||p.a.count!==j.a.count||p.a.count!==w.a.count||p.a.count!==normals.a.count)throw Error('invalid-original-body-vertex-skin-layout')
  const anchors=[];let influenced=0
  for(let i=0;i<p.a.count;i++){
   const headWeight=Array.from({length:4},(_,k)=>(j.read(i,k)===headJoint||j.read(i,k)===neckJoint)?w.read(i,k):0).reduce((s,x)=>s+x,0)
   const [x,y,z]=[p.read(i,0),p.read(i,1),p.read(i,2)]
-  if(![x,y,z,headWeight].every(Number.isFinite))throw Error('nonfinite-original-vertex-or-skin')
-  anchors.push({x,y,z,h:headWeight});if(headWeight>0.0001)influenced++
+  const nz=normals.read(i,2),isSkin=skinVertices.has(i)
+  if(![x,y,z,headWeight,nz].every(Number.isFinite))throw Error('nonfinite-original-vertex-or-skin-normal')
+  anchors.push({x,y,z,h:headWeight,nz,isSkin});if(headWeight>0.0001)influenced++
  }
  const head=anchors.filter(v=>v.h>=.5)
  if(head.length<500||head.length>p.a.count||influenced<head.length)throw Error('insufficient-original-skinned-head-surface')
@@ -72,8 +82,19 @@ export function deriveUnifiedCouncilFace(originalBytes,manifest){
  for(const v of head){for(const [q,value] of [v.x,v.y,v.z].entries()){mins[q]=Math.min(mins[q],value);maxs[q]=Math.max(maxs[q],value)}}
  const span=maxs[1]-mins[1]
  if(span<.23||span>.65)throw Error('head-height-geometry-outside-supported-candidate-range')
- const forward=Math.abs(mins[2])>Math.abs(maxs[2])?-1:1
- const front=forward<0?mins[2]:maxs[2]
+ // The original Council arrival is on +Z, with Guide yaw 0.08 rad.
+ // On the actual SHA-verified v4 skin mesh the facial central band has
+ // ~2,830 anterior-normal (+Z) vertices versus ~1,054 posterior (-Z).
+ // The previous farthest-absolute-Z heuristic incorrectly selected the back.
+ // Fail closed rather than guessing a forward direction on a different asset.
+ const centralFace=v=>v.isSkin&&v.h>=.5&&Math.abs(v.x)<.19
+   &&v.y>mins[1]+span*.30&&v.y<mins[1]+span*.86
+ const anteriorCount=head.filter(v=>centralFace(v)&&v.nz>.35).length
+ const posteriorCount=head.filter(v=>centralFace(v)&&v.nz<-.35).length
+ if(anteriorCount<200||anteriorCount<=posteriorCount*1.3)
+   throw Error('original-guide-front-anatomy-not-verified')
+ const forward=1
+ const front=maxs[2]
  const mouthY=mins[1]+span*.30,eyesY=mins[1]+span*.70,browY=mins[1]+span*.78
  const seamFloor=mins[1]+span*.19
  const buffers=CHANNELS.map(()=>Buffer.alloc(p.a.count*3*4))
@@ -81,7 +102,9 @@ export function deriveUnifiedCouncilFace(originalBytes,manifest){
  for(let i=0;i<anchors.length;i++){
   const v=anchors[i]
   // Never deform the neck seam or any non-head-owned body vertices.
-  if(v.h<.45||v.y<=seamFloor)continue
+  // Original skin material, head-owned vertices, anterior normals only.
+  // Never touch back-of-head, scalp posterior, neck seam, or clothing.
+  if(v.h<.45||v.y<=seamFloor||!v.isSkin||v.nz<=.25)continue
   const surface=clamp(1-Math.abs(front-v.z)/.12)
   if(surface<=0)continue
   const lip=gaussian(v.y,mouthY,span*.125)*gaussian(v.x,0,.105)*surface*v.h
@@ -131,7 +154,7 @@ export function deriveUnifiedCouncilFace(originalBytes,manifest){
  const newBytes=encodeGlb(doc,nextBin)
  const check=parseGlb(newBytes)
  if(check.doc.meshes[0].primitives.some(p=>p.targets?.length!==10)||check.doc.skins[0].joints.length!==17||check.doc.animations.length!==5)throw Error('derived-asset-structural-validation-failed')
- return {bytes:newBytes,receipt:{schema:'urai.digital-human.v4-unified-original-mesh-prototype.v1',classification:'ANONYMOUS_DEV_ONLY_NOT_A_BELIEVABLE_HUMAN_NOT_PRODUCTION_APPROVED',sourceSha256:actualSha,derivedSha256:sha256(newBytes),sourceBytes:original.length,derivedBytes:newBytes.length,originalJoints:17,originalClips:5,originalMaterialPrimitives:4,derivedMorphChannels:[...CHANNELS],headBoneNode:skin.joints[headJoint],neckBoneNode:skin.joints[neckJoint],headVertexCount:head.length,influencedHeadVertexCount:influenced,headSurfaceBounds:{min:mins,max:maxs},anteriorDirection:forward<0?'-Z':'+Z',mouthRestY:mouthY,neckSeamFloorY:seamFloor,channelStats:stats,unchangedOriginalSkinAndAnimation:true,oneExistingSkinnedMesh:true,privateFounderDataUsed:false,approvedForProduction:false}}
+ return {bytes:newBytes,receipt:{schema:'urai.digital-human.v4-unified-original-mesh-prototype.v1',classification:'ANONYMOUS_DEV_ONLY_NOT_A_BELIEVABLE_HUMAN_NOT_PRODUCTION_APPROVED',sourceSha256:actualSha,derivedSha256:sha256(newBytes),sourceBytes:original.length,derivedBytes:newBytes.length,originalJoints:17,originalClips:5,originalMaterialPrimitives:4,derivedMorphChannels:[...CHANNELS],headBoneNode:skin.joints[headJoint],neckBoneNode:skin.joints[neckJoint],headVertexCount:head.length,influencedHeadVertexCount:influenced,headSurfaceBounds:{min:mins,max:maxs},anteriorDirection:'+Z',anteriorEvidence:{method:'original-skin-material-head-weights-and-vertex-normals',anteriorNormalCount:anteriorCount,posteriorNormalCount:posteriorCount,anteriorNormalThreshold:.35,skinMaterialVertexCount:skinVertices.size,visitorFacingLocal:'+Z',guideYawRadians:.08,previousHeuristic:'negative-Z-back-facing-rejected'},mouthRestY:mouthY,neckSeamFloorY:seamFloor,channelStats:stats,unchangedOriginalSkinAndAnimation:true,oneExistingSkinnedMesh:true,privateFounderDataUsed:false,approvedForProduction:false}}
 }
 if(process.argv[1]&&process.argv[1].endsWith('derive-council-v4-unified-face.mjs')&&process.argv.length>=6){
  const [source,manifestFile,outFile,receiptFile]=process.argv.slice(2)

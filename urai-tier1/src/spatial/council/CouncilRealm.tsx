@@ -178,9 +178,15 @@ function RiggedCouncilHuman({
       }
       if(head.length<500)continue
       const minY=Math.min(...head.map(v=>v.y)),maxY=Math.max(...head.map(v=>v.y))
-      const frontZ=Math.min(...head.map(v=>v.z))
-      const face=head.filter(v=>v.z<=frontZ+.12 && v.y>minY+(maxY-minY)*.25
-        && v.y<minY+(maxY-minY)*.93 && Math.abs(v.x)<.20)
+      const normal=mesh.geometry.getAttribute('normal')
+      if(!normal || normal.count!==position.count)continue
+      // Original v4 Guide: visible skin faces local +Z toward Council arrival.
+      // Match the verified source material, head weights and anterior normals,
+      // instead of the previous back-of-head minimum-Z probe.
+      const frontZ=Math.max(...head.map(v=>v.z))
+      const face=head.filter(v=>v.z>=frontZ-.12 && normal.getZ(v.index)>.35
+        && v.y>minY+(maxY-minY)*.25 && v.y<minY+(maxY-minY)*.93
+        && Math.abs(v.x)<.20)
       // Confirmed on the original derived Guide input: >700 possible
       // frontal vertices; sample their actual skinned positions during render.
       if(face.length<90)continue
