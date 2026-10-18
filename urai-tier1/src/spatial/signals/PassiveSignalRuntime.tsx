@@ -7,8 +7,10 @@ import { httpsCallable } from 'firebase/functions'
 import { app, firebasePublicEnvReady, functions, getFirebaseDb } from '@/lib/firebase/client'
 
 type RuntimeAuthority = {
+  ownerId: string | null
   workforce: boolean
   location: boolean
+  revision: number
 }
 
 const STILLNESS_MS = 120_000
@@ -23,28 +25,58 @@ function boundedMotion(event: DeviceMotionEvent) {
 
 export default function PassiveSignalRuntime() {
   const [user, setUser] = useState<User | null>(null)
-  const [authority, setAuthority] = useState<RuntimeAuthority>({ workforce: false, location: false })
+  const [authority, setAuthority] = useState<RuntimeAuthority>({ ownerId: null, workforce: false, location: false, revision: 0 })
+  // Increment synchronously with each auth event; React effect cleanup may run later.
+  const authEpoch = useRef({ ownerId: null as string | null, revision: 0 })
+  // Snapshot callbacks revoke client authority synchronously, before next render.
+  const currentConsent = useRef<RuntimeAuthority>({ ownerId: null, workforce: false, location: false, revision: 0 })
   const lastSent = useRef<Record<string, number>>({})
+  const lastSentOwner = useRef<string | null>(null)
   const lastActivityAt = useRef(Date.now())
   const cancelTimes = useRef<number[]>([])
   const motionSamples = useRef<number[]>([])
 
   useEffect(() => {
     if (!firebasePublicEnvReady) return
-    return onAuthStateChanged(getAuth(app), setUser)
+    return onAuthStateChanged(getAuth(app), (nextUser) => {
+      authEpoch.current = { ownerId: nextUser?.uid ?? null, revision: authEpoch.current.revision + 1 }
+      // A newly authenticated session must not inherit another session's cooldown.
+      lastSent.current = {}
+      lastSentOwner.current = null
+      setUser(nextUser)
+    })
   }, [])
 
   useEffect(() => {
+    const resetConsent = (ownerId: string | null) => {
+      const next: RuntimeAuthority = {
+        ownerId, workforce: false, location: false,
+        revision: currentConsent.current.revision + 1,
+      }
+      currentConsent.current = next
+      setAuthority(next)
+    }
     if (!user) {
-      setAuthority({ workforce: false, location: false })
+      resetConsent(null)
+      lastSent.current = {}
+      lastSentOwner.current = null
       return
     }
 
+    resetConsent(user.uid)
     const workforceRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyRuntime', 'workforce-actions')
     const locationRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyRuntime', 'location-collection')
     let workforce = false
     let location = false
-    const publish = () => setAuthority({ workforce, location })
+    let subscribed = true
+    const publish = () => {
+      if (!subscribed) return
+      const previous = currentConsent.current
+      if (previous.ownerId === user.uid && previous.workforce === workforce && previous.location === location) return
+      const next: RuntimeAuthority = { ownerId: user.uid, workforce, location, revision: previous.revision + 1 }
+      currentConsent.current = next
+      setAuthority(next)
+    }
     const offWorkforce = onSnapshot(workforceRef, (snapshot) => {
       workforce = snapshot.exists() && snapshot.get('enabled') === true && snapshot.get('automationEnabled') === true
       publish()
@@ -53,15 +85,43 @@ export default function PassiveSignalRuntime() {
       location = snapshot.exists() && snapshot.get('enabled') === true
       publish()
     }, () => { location = false; publish() })
-    return () => { offWorkforce(); offLocation() }
+    return () => {
+      subscribed = false
+      offWorkforce(); offLocation()
+      // Revokes callbacks captured by this subscription, including same-user
+      // permission requests that would otherwise outlive a consent transition.
+      if (currentConsent.current.ownerId === user.uid) {
+        currentConsent.current = { ownerId: null, workforce: false, location: false, revision: currentConsent.current.revision + 1 }
+      }
+    }
   }, [user])
 
   useEffect(() => {
-    if (!user || !authority.workforce) return
+    if (!user || authority.ownerId !== user.uid || !authority.workforce) return
+
+    // A pending browser permission or geolocation callback may outlive this
+    // owner's effect. A later signed-in account must not inherit its payload.
+    const ownerId = user.uid
+    const authRevision = authEpoch.current.revision
+    const consentRevision = authority.revision
+    let active = true
+    const currentSession = (type?: string) => {
+      const liveConsent = currentConsent.current
+      return active && authEpoch.current.revision === authRevision && authEpoch.current.ownerId === ownerId
+        && getAuth(app).currentUser?.uid === ownerId
+        && liveConsent.ownerId === ownerId && liveConsent.revision === consentRevision && liveConsent.workforce
+        && (type !== 'location' || liveConsent.location)
+    }
+    if (lastSentOwner.current !== ownerId) {
+      lastSentOwner.current = ownerId
+      lastSent.current = {}
+    }
 
     const record = async (type: string, payload: Record<string, unknown>, force = false) => {
+      if (!currentSession(type)) return
       const now = Date.now()
       if (!force && now - (lastSent.current[type] ?? 0) < SIGNAL_COOLDOWN_MS) return
+      if (!currentSession(type)) return
       lastSent.current[type] = now
       try {
         const callable = httpsCallable(functions, 'recordPassiveSignal')
@@ -128,8 +188,9 @@ export default function PassiveSignalRuntime() {
 
     if (authority.location && 'permissions' in navigator && 'geolocation' in navigator) {
       void navigator.permissions.query({ name: 'geolocation' }).then((permission) => {
-        if (permission.state !== 'granted') return
+        if (!currentSession('location') || permission.state !== 'granted') return
         navigator.geolocation.getCurrentPosition((position) => {
+          if (!currentSession('location')) return
           void record('location', {
             source: 'browser-geolocation',
             precision: position.coords.accuracy <= 250 ? 'precise' : 'approximate',
@@ -142,6 +203,7 @@ export default function PassiveSignalRuntime() {
     }
 
     return () => {
+      active = false
       activityEvents.forEach((name) => window.removeEventListener(name, markActivity))
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('devicemotion', onMotion)
@@ -149,7 +211,7 @@ export default function PassiveSignalRuntime() {
       motionSamples.current = []
       cancelTimes.current = []
     }
-  }, [authority.location, authority.workforce, user])
+  }, [authority.ownerId, authority.location, authority.workforce, authority.revision, user])
 
   return null
 }
