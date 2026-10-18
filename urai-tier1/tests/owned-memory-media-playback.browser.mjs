@@ -116,6 +116,14 @@ if (realStudioOrigin) {
 // to satisfy a demonstrated bare reference (Wave 156 browser diagnostic).
 // This shim exists ONLY inside the explicit localhost Chromium test bundle;
 // it exports no process object or privileged credentials to window.
+const segmentedCompiled = realStudioOrigin ? await build({...buildOptions,
+  define:{...privateDefines,'process.env.NODE_ENV':'"development"',
+    'process.env.NEXT_PUBLIC_URAI_SPATIAL_SEGMENTED_MOVIE_ENABLED':'"true"',
+    'process.env.NEXT_PUBLIC_URAI_STUDIO_PRIVATE_MEDIA_ORIGIN':JSON.stringify(realStudioOrigin)},
+  banner:{js:'(()=>{const process=Object.freeze({env:Object.freeze({NODE_ENV:"development"})});'},
+  footer:{js:'})();'}
+}) : null
+const segmentedBundle=segmentedCompiled?.outputFiles[0].text??null
 const integratedCompiled = realStudioOrigin ? await build({...buildOptions,
   define:{
     ...privateDefines,
@@ -146,9 +154,10 @@ assert.ok(Object.keys(privateCompiled.metafile.inputs).some(file =>
   file.replaceAll('\\','/').endsWith('/app/replay/useProtectedLifeMovieReplay.ts')),
   'Dual-identity browser test must compile the real private Replay hook')
 const server = createServer((request, response) => {
+  if (request.url === '/fixture-segmented.js' && segmentedBundle) { response.setHeader('Content-Type','text/javascript'); response.end(segmentedBundle); return }
   if (request.url === '/fixture-integrated.js' && integratedBundle) { response.setHeader('Content-Type','text/javascript'); response.end(integratedBundle); return }
   if (request.url === '/fixture.js' || request.url === '/fixture-private.js') { response.setHeader('Content-Type', 'text/javascript'); response.end(request.url === '/fixture-private.js' ? privateBundle : bundle); return }
-  const script = request.url?.includes('realHandler=1') && integratedBundle ? '/fixture-integrated.js' : request.url?.includes('dualPrivate=1') ? '/fixture-private.js' : '/fixture.js'
+  const script = request.url?.includes('segmentMode=1') && segmentedBundle ? '/fixture-segmented.js' : request.url?.includes('realHandler=1') && integratedBundle ? '/fixture-integrated.js' : request.url?.includes('dualPrivate=1') ? '/fixture-private.js' : '/fixture.js'
   response.setHeader('Content-Type', 'text/html'); response.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><div id="root"></div><script src="' + script + '"></script>')
 })
 await new Promise(resolve => server.listen(realStudioOrigin ? 4173 : 0, '127.0.0.1', resolve))
@@ -173,13 +182,15 @@ async function open(route = '/replay', settings = {}) {
       if(request.url()!==realStudioOrigin+'/api/studio/spatial-private-media' ||
           request.method()!=='POST')return
       const payload=JSON.parse(request.postData() ?? '{}')
-      privateRequests.push({kind:payload.kind,method:request.method()})
+      privateRequests.push({kind:payload.kind,action:payload.action,segmentIndex:payload.segmentIndex??null,method:request.method()})
     })
     page.on('response',response=>{
       if(response.url()!==realStudioOrigin+'/api/studio/spatial-private-media')return
       realResponses.push({method:response.request().method(),status:response.status(),
         kind:response.request().method()==='POST'?
           JSON.parse(response.request().postData()??'{}').kind:null,
+        action:response.request().method()==='POST'?JSON.parse(response.request().postData()??'{}').action:null,
+        segmentIndex:response.request().method()==='POST'?JSON.parse(response.request().postData()??'{}').segmentIndex??null:null,
         contentType:response.headers()['content-type'],
         contentLength:response.headers()['content-length'],
         playlistDigest:response.headers()['x-urai-private-playlist-digest'],
@@ -315,7 +326,7 @@ async function open(route = '/replay', settings = {}) {
       'Content-Length':String(payload.length),'X-URAI-PRIVATE-PLAYLIST-DIGEST':digest}})
   })
   const query = route === '/spatial/captured-reality' ? `?assetId=synthetic-accepted-place${settings.standalone ? '' : `&memoryId=${memoryId}`}` : route === '/life-movie' ? `?movieId=synthetic-movie&memoryId=${memoryId}` : `?memoryId=${memoryId}`
-  const privateQuery = settings.dualPrivate ? '&dualPrivate=1&movieId=synthetic-movie&lifeMoviePlanId='+privatePlanId+(settings.realHandler?'&realHandler=1':'') : ''
+  const privateQuery = settings.dualPrivate ? '&dualPrivate=1&movieId=synthetic-movie&lifeMoviePlanId='+privatePlanId+(settings.realHandler?'&realHandler=1':'')+(settings.segmentMode?'&segmentMode=1':'') : ''
   // Arm response observation BEFORE navigation; a fast synthetic 403/SRT can
   // finish before open() returns. Never replace a missed response with a sleep.
   const observedPrivateResponse = (settings.privateWrongStudio || settings.privatePlaylistMismatch || settings.realHandlerForeignSpatial)
@@ -332,7 +343,7 @@ async function open(route = '/replay', settings = {}) {
         scripts:[...document.scripts].map(s => new URL(s.src,location.href).pathname),
         processExposed:typeof window.process !== 'undefined'
       }))
-      assert.ok(bootstrap.scripts.includes('/fixture-integrated.js'),
+      assert.ok(bootstrap.scripts.includes(settings.segmentMode?'/fixture-segmented.js':'/fixture-integrated.js'),
         'Original Replay must mount from feature-enabled real-handler bundle')
       assert.equal(bootstrap.processExposed,false,
         'Nonproduction build shim must not expose Node process to the browser window')
@@ -605,6 +616,63 @@ try {
         assert.equal(await page.evaluate(()=>window.__fixture.worldReturnRequests),1)
       }finally{await context.close()}
     })
+    if(process.env.URAI_STUDIO_PROTECTED_MULTI_SEGMENT_BROWSER_LOOPBACK==='true'){
+      await check('Original Replay three-segment Chromium seeks forward and backward over ACTUAL Studio HTTP',async()=>{
+        const {page,context,privateRequests,realResponses}=await open('/replay',
+          {dualPrivate:true,realHandler:true,segmentMode:true})
+        try {
+          const movie=page.locator('[data-testid="cinematic-replay-client"]')
+          await page.waitForFunction(()=>document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.privateSegmentIndex==='0')
+          await playable(page,'video[aria-label="Authorized private Life Movie"]')
+          await page.waitForFunction(()=>document.querySelector('[data-private-life-movie-live-caption]')?.textContent?.includes('Fictional'))
+          assert.deepEqual(privateRequests.slice(0,3).map(x=>[x.action,x.kind,x.segmentIndex]),
+            [['read-spatial-timeline',undefined,null],['deliver-spatial-segment','mp4',0],['deliver-spatial-segment','srt',0]])
+          const first=await page.locator('video').evaluate(v=>({width:v.videoWidth,height:v.videoHeight}))
+          assert.ok(first.width>0&&first.height>0)
+          await page.locator('.memoryPulse').click()
+          await page.waitForFunction(()=>Number(document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.currentTimeMs)>300)
+          await page.locator('.memoryPulse').click()
+          const paused=await page.locator('video').evaluate(v=>v.currentTime)
+          await page.waitForTimeout(180)
+          assert.ok(Math.abs((await page.locator('video').evaluate(v=>v.currentTime))-paused)<.06)
+          const setSeek=async(ms)=>{
+            await page.locator('.memorySeek').evaluate((input,value)=>{
+              const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set
+              setter.call(input,String(value))
+              input.dispatchEvent(new Event('input',{bubbles:true}))
+              input.dispatchEvent(new Event('change',{bubbles:true}))
+            },ms)
+          }
+          await setSeek(7500)
+          await page.waitForFunction(()=>document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.privateSegmentIndex==='1')
+          await playable(page,'video[aria-label="Authorized private Life Movie"]')
+          await page.waitForFunction(()=>document.querySelector('[data-private-life-movie-live-caption]')?.textContent?.includes('middle'))
+          assert.ok(privateRequests.some(r=>r.action==='deliver-spatial-segment'&&r.segmentIndex===1&&r.kind==='mp4'))
+          await setSeek(13000)
+          await page.waitForFunction(()=>document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.privateSegmentIndex==='2')
+          await playable(page,'video[aria-label="Authorized private Life Movie"]')
+          await page.waitForFunction(()=>document.querySelector('[data-private-life-movie-live-caption]')?.textContent?.includes('ending'))
+          await setSeek(500)
+          await page.waitForFunction(()=>document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.privateSegmentIndex==='0')
+          await playable(page,'video[aria-label="Authorized private Life Movie"]')
+          await page.waitForFunction(()=>document.querySelector('[data-private-life-movie-live-caption]')?.textContent?.includes('Fictional'))
+          const delivered=realResponses.filter(r=>r.action==='deliver-spatial-segment')
+          assert.ok(delivered.length>=8&&delivered.every(r=>r.status===200))
+          await page.screenshot({path:path.join(output,'original-replay-real-multisegment-chromium.png')})
+          writeFileSync(path.join(output,'original-replay-real-multisegment.json'),JSON.stringify({
+            source:'actual Studio exported route, fictional identities',
+            requests:privateRequests,responses:realResponses,decoded:first,
+            forwardSeek:true,backwardSeek:true,captionsContinuity:true,cloudJ9:false
+          },null,2))
+          await page.evaluate(()=>window.__fixture.emitStudioAuth(null))
+          await page.waitForFunction(()=>!document.querySelector('[data-private-life-movie-live-caption]'))
+          await page.waitForFunction(()=>!document.querySelector('video[aria-label="Authorized private Life Movie"]'))
+          assert.ok(await page.evaluate(()=>window.__fixture.revocations.some(x=>x.media.length>0)))
+          await page.locator('.unwind').click()
+          assert.equal(await page.evaluate(()=>window.__fixture.worldReturnRequests),1)
+        }finally{await context.close()}
+      })
+    }
     for(const [label,settings] of [
       ['wrong Studio user',{privateWrongStudio:true}],
       ['foreign Spatial token',{realHandlerForeignSpatial:true}]
