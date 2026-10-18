@@ -250,8 +250,8 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
           : 'The selected provider was unavailable before external processing; a disclosed local fallback is shown.')
       }
     } catch (error) {
+      if (controller.signal.aborted || aborter.current !== controller || encounterGeneration.current !== turnGeneration || !encounterNearRef.current || !sceneSession.current.isCurrent(sceneTurn,actor.generation,agent.id) || !isCurrentAIActorSnapshot(actor)) return
       onEncounterPhase?.('idle')
-      if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
       if (graphRequested) {
         setResult(null)
         setGraphShareConsent(false)
