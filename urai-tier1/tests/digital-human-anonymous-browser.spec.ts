@@ -2,6 +2,36 @@ import {test,expect} from '@playwright/test'
 const origin=process.env.URAI_PROOF_BASE_URL || 'http://127.0.0.1:4290'
 test.use({viewport:{width:1280,height:800},reducedMotion:'reduce'})
 type Region={cx:number;cy:number;rx:number;ry:number}
+type CanvasCaptureBounds={
+ clip:{x:number;y:number;width:number;height:number}
+ offsetX:number;offsetY:number
+}
+async function measureCanvasViewport(canvas:any):Promise<CanvasCaptureBounds>{
+ // Read the real renderer element's geometry without locator screenshot actionability waits.
+ return canvas.evaluate((element:HTMLCanvasElement)=>{
+  const rect=element.getBoundingClientRect()
+  const left=Math.max(0,Math.floor(rect.left)),top=Math.max(0,Math.floor(rect.top))
+  const right=Math.min(window.innerWidth,Math.ceil(rect.right))
+  const bottom=Math.min(window.innerHeight,Math.ceil(rect.bottom))
+  if(!Number.isFinite(rect.width)||!Number.isFinite(rect.height)||right-left<80||bottom-top<80)
+   throw new Error('original-webgl-canvas-not-visible-in-fixed-viewport')
+  return {
+   clip:{x:left+window.scrollX,y:top+window.scrollY,width:right-left,height:bottom-top},
+   offsetX:left-rect.left,offsetY:top-rect.top
+  }
+ })
+}
+async function captureOriginalWebGLFrame(page:any,bounds:CanvasCaptureBounds){
+ // The screenshot is of the actual Chromium page, explicitly cropped to the
+ // original WebGL canvas. Unlike locator.screenshot it does not scroll or wait
+ // for a continuously rendered canvas to become element-actionability-stable.
+ const began=Date.now()
+ const bytes:Buffer=await page.screenshot({
+  clip:bounds.clip,scale:'css',animations:'allow',timeout:7000
+ })
+ return {bytes,elapsedMs:Date.now()-began}
+}
+
 async function compareRenderedFace(page:any,neutral:Buffer,animated:Buffer,region:Region){
  // Decode ACTUAL Chromium screenshots inside Chromium and compare pixels, not DOM/CSS.
  return page.evaluate(async({a,b,r}:{a:string;b:string;r:Region})=>{
@@ -30,6 +60,7 @@ async function compareRenderedFace(page:any,neutral:Buffer,animated:Buffer,regio
  },{a:neutral.toString('base64'),b:animated.toString('base64'),r:region})
 }
 test('original Council WebGL visually changes actual anonymous facial mesh during audible media playback',async({page},info)=>{
+ test.setTimeout(120000) // first Next cold boot plus four real Chromium captures
  const errors:string[]=[]
  page.on('pageerror',error=>errors.push(error.message))
  await page.goto(new URL('/council?anonymousFaceLab=1',origin).href,{waitUntil:'domcontentloaded',timeout:45000})
@@ -48,13 +79,24 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
   cx:Number(await telemetry.getAttribute('data-face-cx')),cy:Number(await telemetry.getAttribute('data-face-cy')),
   rx:Number(await telemetry.getAttribute('data-face-rx')),ry:Number(await telemetry.getAttribute('data-face-ry'))
  }
- const neutral=await canvas.screenshot()
+ const bounds=await measureCanvasViewport(canvas)
+ const captureFace:Region={...face,cx:face.cx-bounds.offsetX,cy:face.cy-bounds.offsetY}
+ const neutralCapture=await captureOriginalWebGLFrame(page,bounds)
+ const neutral=neutralCapture.bytes
  await page.getByTestId('calibration-play').click()
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight')),{timeout:12000}).toBeGreaterThan(.32)
  const mediaTime=Number(await telemetry.getAttribute('data-time'))
  expect(mediaTime).toBeGreaterThan(.18)
- const animated=await canvas.screenshot()
- const diff=await compareRenderedFace(page,neutral,animated,face)
+ const activeBefore={time:Number(await telemetry.getAttribute('data-time')),weight:Number(await telemetry.getAttribute('data-max-weight'))}
+ const animatedCapture=await captureOriginalWebGLFrame(page,bounds)
+ const animated=animatedCapture.bytes
+ const activeAfter={time:Number(await telemetry.getAttribute('data-time')),weight:Number(await telemetry.getAttribute('data-max-weight'))}
+ // A 2.3s actual audible sample must still be inside its non-neutral mouth interval
+ // when captured. A late neutral frame cannot be misreported as animation.
+ expect(activeBefore.weight).toBeGreaterThan(.32)
+ expect(activeBefore.time).toBeGreaterThan(.18)
+ expect(activeAfter.time).toBeLessThan(.73)
+ const diff=await compareRenderedFace(page,neutral,animated,captureFace)
  // Actual screenshot region MUST change, not merely a reported morph weight.
  expect(diff.checked).toBeGreaterThan(400)
  expect(diff.changed).toBeGreaterThan(20)
@@ -68,13 +110,19 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
  await page.getByTestId('calibration-freeze').click()
  await expect(telemetry).toHaveAttribute('data-morphs-frozen','true')
  await page.waitForTimeout(250)
- const frozenNeutral=await canvas.screenshot()
+ const frozenNeutralCapture=await captureOriginalWebGLFrame(page,bounds)
+ const frozenNeutral=frozenNeutralCapture.bytes
  await page.getByTestId('calibration-play').click()
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-time')),{timeout:12000}).toBeGreaterThan(.25)
  await expect(telemetry).toHaveAttribute('data-playing','true')
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight'))).toBe(0)
- const frozenPlaying=await canvas.screenshot()
- const negative=await compareRenderedFace(page,frozenNeutral,frozenPlaying,face)
+ const frozenBefore=Number(await telemetry.getAttribute('data-time'))
+ const frozenPlayingCapture=await captureOriginalWebGLFrame(page,bounds)
+ const frozenPlaying=frozenPlayingCapture.bytes
+ const frozenAfter=Number(await telemetry.getAttribute('data-time'))
+ expect(frozenBefore).toBeGreaterThan(.25)
+ expect(frozenAfter).toBeLessThan(2.3)
+ const negative=await compareRenderedFace(page,frozenNeutral,frozenPlaying,captureFace)
  expect(negative.checked).toBeGreaterThan(400)
  expect(negative.changed).toBeLessThan(Math.max(20,diff.changed*.40))
  expect(negative.meanRgbDelta).toBeLessThan(Math.max(1,diff.meanRgbDelta*.40))
@@ -94,7 +142,7 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight')),{timeout:10000}).toBeGreaterThan(.05)
  await page.getByTestId('calibration-stop').click()
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight'))).toBe(0)
- await info.attach('anonymous-face-render-proof.json',{body:JSON.stringify({classification:'ORIGINAL_COUNCIL_WEBGL_ANONYMOUS_TONE_ONLY_NOT_SPEECH',head:process.env.URAI_EXACT_HEAD??'unknown',face,mediaTime,diff,negative,errors}),contentType:'application/json'})
+ await info.attach('anonymous-face-render-proof.json',{body:JSON.stringify({classification:'ORIGINAL_COUNCIL_WEBGL_ANONYMOUS_TONE_ONLY_NOT_SPEECH',head:process.env.URAI_EXACT_HEAD??'unknown',assetSha256:'3a6a44f9a2d7a666c15cb345852977c663d17f688eec8816def2237a53fd16bc',face,canvasCrop:bounds,captureFace,mediaTime,activeBefore,activeAfter,frozenBefore,frozenAfter,positiveCaptureMs:animatedCapture.elapsedMs,negativeCaptureMs:frozenPlayingCapture.elapsedMs,diff,negative,errors}),contentType:'application/json'})
  expect(errors).toEqual([])
 })
 test('production route omits fixture without explicit URL opt-in',async({page})=>{
