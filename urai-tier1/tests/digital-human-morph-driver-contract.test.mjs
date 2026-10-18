@@ -45,7 +45,7 @@ test('6 oversized declared length is rejected',async()=>{const b=glb();b.writeUI
 test('7 incomplete chunk header is rejected',async()=>{const b=glb();b.writeUInt32LE(b.readUInt32LE(12)+8,12);assert.equal((await verifyPrivateGlbBytes(b,sha(b))).ok,false)})
 test('8 missing root fails explicit construction',()=>assert.throws(()=>createHumanMorphDriver({}),/scene-root/))
 test('9 missing morph name approval fails construction',()=>assert.throws(()=>createHumanMorphDriver({root:root(),morphNames:[]}),/approved-morph/))
-test('10 model lacking permitted morph targets is rejected',async()=>{const r=await rig();r.driver.dispose();assert.throws(()=>createHumanMorphDriver({root:root(['jawOpen']),manifest:r.manifest,modelProof:r.modelProof,getAuthority:()=>r.authority,morphNames:['AA']}),/no-approved/targets)})
+test('10 model lacking permitted morph targets is rejected',async()=>{const r=await rig();r.driver.dispose();assert.throws(()=>createHumanMorphDriver({root:root(['jawOpen']),manifest:r.manifest,modelProof:r.modelProof,getAuthority:()=>r.authority,morphNames:['AA']}),/no-approved-facial-targets/)})
 test('11 exact approved manifest and current auth allow driver',async()=>{const r=await rig();assert.equal(r.driver.snapshot().permitted,true);r.driver.dispose()})
 test('12 no proximity disallows starting speech',async()=>{const r=await rig();r.encounter.track(8);assert.equal(r.driver.beginAudio({turnId:1,audioSha256:r.hash}),false);r.driver.dispose()})
 test('13 unapproved identity blocks real frames',async()=>{const r=await rig();const turn=r.begin();r.manifest.identity.approved=false;assert.equal(r.driver.frame({turnId:turn,audioSha256:r.hash,audioSeconds:.2,playing:true,rms:.8}).permitted,false);r.driver.dispose()})
