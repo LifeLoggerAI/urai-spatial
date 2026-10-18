@@ -60,13 +60,24 @@ export function createCouncilApprovedAudioClock({ media, proof, speaker, getAuth
       neutral(media.muted ? 'muted' : 'audio-not-playing');
       return { mode: 'neutral', status };
     }
-    const rms = typeof getRms === 'function' ? getRms() : null;
+    let rms = null;
+    try { rms = typeof getRms === 'function' ? getRms() : null; }
+    catch {
+      // A disconnected audio analyzer cannot leave speech running unobserved.
+      end('audio-level-failed');
+      return { mode: 'neutral', status };
+    }
     const frame = Object.freeze({
       actorGeneration: speaker.actorGeneration, agentId: speaker.agentId,
       turnId: speaker.turnId, audioSha256: proof.audioSha256,
       audioSeconds: media.currentTime, playing: true, rms: Number.isFinite(rms) ? rms : null,
     });
-    onFrame(frame);
+    try { onFrame(frame); }
+    catch {
+      // Rendering failure must not leave an approved voice audibly playing.
+      end('audio-frame-failed');
+      return { mode: 'neutral', status };
+    }
     status = 'playing';
     return { mode: 'audio-clock', audioSeconds: frame.audioSeconds, status };
   }

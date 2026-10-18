@@ -57,3 +57,30 @@ test('morph stop followed by dispose still unregisters terminal clock handlers',
   assert.equal([...r.media.handlers.values()].flat().length,0);
   assert.equal(interruptions,1);
 })
+
+test('failed facial frame callback fails closed without leaving audio playing',async()=>{
+  const r=await setup();let frames=0;
+  const clock=createCouncilApprovedAudioClock({media:r.media,proof:r.proof,speaker:r.speaker,getAuthority:()=>r.authority,
+    getRms:()=>.12,onFrame:()=>{frames++;throw Error('render-context-lost')},onNeutral:reason=>r.neutral.push(reason)})
+  assert.equal(await clock.start(),true)
+  assert.equal(clock.tick().mode,'neutral')
+  assert.equal(r.media.paused,true)
+  assert.equal(clock.snapshot().stopped,true)
+  assert.ok(r.neutral.includes('audio-frame-failed'))
+  assert.equal(clock.tick().mode,'neutral')
+  assert.equal(frames,1)
+  clock.dispose();r.clock.dispose()
+})
+test('failed audio analyser callback fails closed before facial animation',async()=>{
+  const r=await setup();let frames=0;
+  const clock=createCouncilApprovedAudioClock({media:r.media,proof:r.proof,speaker:r.speaker,getAuthority:()=>r.authority,
+    getRms:()=>{throw Error('analyser-detached')},onFrame:()=>frames++,onNeutral:reason=>r.neutral.push(reason)})
+  assert.equal(await clock.start(),true)
+  assert.equal(clock.tick().mode,'neutral')
+  assert.equal(r.media.paused,true)
+  assert.equal(clock.snapshot().stopped,true)
+  assert.ok(r.neutral.includes('audio-level-failed'))
+  assert.equal(clock.tick().mode,'neutral')
+  assert.equal(frames,0)
+  clock.dispose();r.clock.dispose()
+})
