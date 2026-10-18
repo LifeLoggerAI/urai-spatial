@@ -84,7 +84,7 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
   await info.attach(name,{path:output,contentType:'image/png'})
  }
  persistReceipt()
- test.setTimeout(180000) // exact Next cold boot plus four original CDP WebGL captures
+ test.setTimeout(270000) // measured 180s original-app fixture run reached final cleanup; preserve four true CDP captures plus explicit accessible controls
  const errors:string[]=[]
  page.on('pageerror',error=>errors.push(error.message))
  await page.goto(new URL('/council?anonymousFaceLab=1',origin).href,{waitUntil:'domcontentloaded',timeout:45000})
@@ -177,7 +177,23 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
  expect(negative.checked).toBeGreaterThan(400)
  expect(negative.changed).toBeLessThan(Math.max(20,diff.changed*.40))
  expect(negative.meanRgbDelta).toBeLessThan(Math.max(1,diff.meanRgbDelta*.40))
- await page.getByTestId('calibration-stop').click()
+ // Four original WebGL images and both measured controls have now met their
+ // independent thresholds. Preserve this pre-cleanup proof if a later UI event fails.
+ receipt.phase='visual-assertions-passed-cleanup-pending'
+ receipt.audioProfile='capture-9s-nonspeech'
+ persistReceipt()
+ await info.attach('anonymous-face-measured-precleanup.json',{
+  body:JSON.stringify(receipt,null,2),contentType:'application/json'
+ })
+ // In the previous exact-head run the accessible Stop button existed in the
+ // page snapshot, but getByTestId('calibration-stop').click() waited until the
+ // whole test expired. Use the actual labelled React button, with a bounded
+ // pointer action that does not wait for unrelated WebGL canvas stability.
+ const finalStop=lab.getByRole('button',{name:'Stop',exact:true})
+ await expect(finalStop).toBeVisible({timeout:10000})
+ await finalStop.click({force:true,timeout:12000})
+ receipt.phase='final-stop-clicked'
+ persistReceipt()
  await page.getByTestId('calibration-freeze').click()
  await expect(telemetry).toHaveAttribute('data-morphs-frozen','false')
  await page.getByTestId('calibration-mute').click()
