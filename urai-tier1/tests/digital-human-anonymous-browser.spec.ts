@@ -26,10 +26,19 @@ async function captureOriginalWebGLFrame(page:any,bounds:CanvasCaptureBounds){
  // original WebGL canvas. Unlike locator.screenshot it does not scroll or wait
  // for a continuously rendered canvas to become element-actionability-stable.
  const began=Date.now()
- const bytes:Buffer=await page.screenshot({
-  clip:bounds.clip,scale:'css',animations:'allow',timeout:7000
- })
- return {bytes,elapsedMs:Date.now()-began}
+ // Chromium DevTools captures the live compositor frame directly, bypassing
+ // Playwright screenshot lifecycle/stability waiting on a busy WebGL page.
+ // It still reads original Chromium-rendered scene pixels; no mocked canvas.
+ const session=await page.context().newCDPSession(page)
+ try {
+  const result=await session.send('Page.captureScreenshot',{
+   format:'png',captureBeyondViewport:false,fromSurface:true,
+   clip:{...bounds.clip,scale:1}
+  })
+  const bytes=Buffer.from(result.data,'base64')
+  if(bytes.length<500)throw new Error('original-webgl-capture-empty')
+  return {bytes,elapsedMs:Date.now()-began}
+ } finally { await session.detach() }
 }
 
 async function compareRenderedFace(page:any,neutral:Buffer,animated:Buffer,region:Region){
