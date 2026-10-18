@@ -13,12 +13,13 @@ type Props = {
   demo?: boolean
   onImageState: (state: ReplayImageState) => void
   onVideoSnapshot: (state: ReplayVideoSnapshot) => void
+  initialSeekMs?: number
   onVideoSession: (session: ReplayVideoSession | null) => void
   onSourceRelease?: (release: (() => void) | null) => void
 }
 
 /** sourceMedia has no panorama/reconstruction attestation: preserve the recorded framing. */
-export function ReplayRecordedSource({ media, title, demo = false, onImageState, onVideoSnapshot, onVideoSession, onSourceRelease }: Props) {
+export function ReplayRecordedSource({ media, title, demo = false, onImageState, onVideoSnapshot, initialSeekMs, onVideoSession, onSourceRelease }: Props) {
   const imageRef = useRef<HTMLImageElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -36,7 +37,10 @@ export function ReplayRecordedSource({ media, title, demo = false, onImageState,
     }
     const source = media.kind === 'audio' ? audioRef.current : videoRef.current
     if (!source) return
-    const session = createReplayMediaSession(source, media.url, onVideoSnapshot, { audioAllowed: () => !sensorySafeEnabled() })
+    const session = createReplayMediaSession(source, media.url, onVideoSnapshot, {
+      audioAllowed: () => !sensorySafeEnabled(),
+      initialSeekMs: media.kind === 'video' ? initialSeekMs : undefined,
+    })
     const refreshPolicy = () => session.refreshAudioPolicy()
     const onStorage = (event: StorageEvent) => {
       if (event.key === URAI_SENSORY_SAFE_STORAGE_KEY || event.key === null) refreshPolicy()
@@ -53,7 +57,7 @@ export function ReplayRecordedSource({ media, title, demo = false, onImageState,
       onVideoSession(null)
       release(); onSourceRelease?.(null)
     }
-  }, [media.kind, media.url, onImageState, onVideoSession, onVideoSnapshot, onSourceRelease])
+  }, [media.kind, media.url, initialSeekMs, onImageState, onVideoSession, onVideoSnapshot, onSourceRelease])
 
   const imageLoaded = async () => {
     const image = imageRef.current

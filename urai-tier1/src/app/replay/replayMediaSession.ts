@@ -42,11 +42,14 @@ export function createReplayMediaSession(
   video: HTMLMediaElement,
   url: string,
   onSnapshot: (snapshot: ReplayVideoSnapshot) => void,
-  options: { audioAllowed?: () => boolean; nativeControls?: boolean } = {},
+  options: { audioAllowed?: () => boolean; nativeControls?: boolean; initialSeekMs?: number } = {},
 ): ReplayVideoSession {
   let disposed = false
   let requestVersion = 0
   let wantsPlayback = false
+  // This offset belongs to this decoded media session, not to a parent render.
+  let pendingInitialSeekMs: number | null = options.initialSeekMs ?? null
+  let initialSeekIssued = false
   let snapshot = initialReplayVideoSnapshot()
   const listeners = new Map<string, EventListener>()
 
@@ -79,16 +82,40 @@ export function createReplayMediaSession(
     publish({ status: 'error', ready: false, playing: false, error })
   }
   const updateReadiness = () => {
-    if (!finiteDurationMs(video)) {
+    const durationMs = finiteDurationMs(video)
+    if (!durationMs) {
       fail('The recorded video has no usable duration. Retry or choose another memory.')
       return
     }
     if (snapshot.status === 'error' || snapshot.status === 'blocked') return
+    if (pendingInitialSeekMs !== null) {
+      const target = pendingInitialSeekMs
+      if (!Number.isSafeInteger(target) || target < 0 || target >= durationMs) {
+        fail('The recorded video has an invalid initial seek. Retry the recorded source.')
+        return
+      }
+      if (target > 0 && !initialSeekIssued) {
+        initialSeekIssued = true
+        try { video.currentTime = target / 1000 }
+        catch {
+          fail('The recorded video could not seek to this time. Retry the recorded source.')
+          return
+        }
+      }
+      // Assigning currentTime is not proof it was restored. Wait for the
+      // decoded replacement video's own observed clock and seeked event.
+      const actual = Number.isFinite(video.currentTime) ? Math.round(video.currentTime * 1000) : -1
+      if (video.seeking || !decoded() || Math.abs(actual - target) > 100) {
+        publish({ status: 'loading', ready: false, playing: false })
+        return
+      }
+      pendingInitialSeekMs = null
+    }
     publish({ ready: decoded(), status: decoded() ? 'ready' : 'loading', error: null })
   }
 
   listen('loadedmetadata', updateReadiness)
-  listen('durationchange', () => publish())
+  listen('durationchange', () => { if (pendingInitialSeekMs !== null) updateReadiness(); else publish() })
   listen('loadeddata', updateReadiness)
   listen('canplay', updateReadiness)
   listen('playing', () => {
@@ -99,7 +126,10 @@ export function createReplayMediaSession(
   listen('pause', () => publish({ playing: false }))
   listen('waiting', () => publish({ status: 'buffering', ready: false }))
   listen('seeking', () => publish({ status: 'buffering', ready: false }))
-  listen('seeked', () => publish({ status: video.ended ? 'ended' : 'ready', ready: decoded() }))
+  listen('seeked', () => {
+    if (pendingInitialSeekMs !== null) updateReadiness()
+    else publish({ status: video.ended ? 'ended' : 'ready', ready: decoded() })
+  })
   listen('timeupdate', () => publish())
   listen('volumechange', () => publish())
   listen('ended', () => {
@@ -169,6 +199,7 @@ export function createReplayMediaSession(
     dispose() {
       if (disposed) return
       disposed = true
+      pendingInitialSeekMs = null
       wantsPlayback = false
       requestVersion += 1
       for (const [event, listener] of listeners) video.removeEventListener(event, listener)

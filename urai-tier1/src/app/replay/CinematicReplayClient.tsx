@@ -507,14 +507,13 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const segments = memory?.replayManifest.segments ?? []
   const active = useMemo(() => segments.find((segment) => progressMs >= segment.startsAtMs && progressMs < segment.startsAtMs + segment.durationMs) ?? segments.at(-1), [progressMs, segments])
 
-  // Segment videos are independently decoded MP4s. Keep the original Replay
-  // player and apply the requested LOCAL offset only after real decoding.
+  // The decoded media session restores its own segment-local offset before
+  // advertising readiness. The parent only resumes an authorized transition.
   useEffect(() => {
     const url = protectedMovie.media?.kind === 'video' ? protectedMovie.media.url : null
     if (!url || !protectedMovie.segment || media?.url !== url ||
         !videoSnapshot.ready || !videoSession.current || mountedSegmentUrl.current === url) return
     mountedSegmentUrl.current = url
-    videoSession.current.seek(protectedMovie.seekOffsetMs ?? 0)
     if (protectedMovie.resumeAfterSwitch) void videoSession.current.play()
   }, [media?.url, protectedMovie.media, protectedMovie.segment,
       protectedMovie.seekOffsetMs, protectedMovie.resumeAfterSwitch, videoSnapshot.ready])
@@ -636,7 +635,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
         {demoEnvironment ? <ReplaySpatialScene memory={memory} progressMs={progressMs} onMediaState={onImageState} /> : <ReplayNeutralSpatialScene />}
       </Canvas>
     </ReplayCanvasBoundary> : null}
-    {media ? <ReplayRecordedSource key={`${mediaAttempt}:${media?.url}`} media={media} title={memory.title} demo={memory.demo} onImageState={onImageState} onVideoSnapshot={onVideoSnapshot} onVideoSession={onVideoSession} onSourceRelease={onSourceRelease} /> : demoEnvironment && webgl.state !== 'ready' ? <ReplayRecordedSource key={`demo-fallback:${mediaAttempt}`} media={{ kind: 'image', url: replayAssets.primary.src, caption: 'Disclosed demonstration memory environment' }} title={memory.title} demo onImageState={onImageState} onVideoSnapshot={onVideoSnapshot} onVideoSession={onVideoSession} /> : null}
+    {media ? <ReplayRecordedSource key={`${mediaAttempt}:${media?.url}`} media={media} title={memory.title} demo={memory.demo} onImageState={onImageState} onVideoSnapshot={onVideoSnapshot} initialSeekMs={protectedMovie.segment && protectedMovie.media?.url === media.url ? protectedMovie.seekOffsetMs ?? 0 : undefined} onVideoSession={onVideoSession} onSourceRelease={onSourceRelease} /> : demoEnvironment && webgl.state !== 'ready' ? <ReplayRecordedSource key={`demo-fallback:${mediaAttempt}`} media={{ kind: 'image', url: replayAssets.primary.src, caption: 'Disclosed demonstration memory environment' }} title={memory.title} demo onImageState={onImageState} onVideoSnapshot={onVideoSnapshot} onVideoSession={onVideoSession} /> : null}
     <section
       aria-hidden="true"
       data-proof-only="true"

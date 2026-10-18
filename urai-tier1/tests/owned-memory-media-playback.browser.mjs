@@ -696,6 +696,12 @@ try {
           await page.waitForFunction(()=>document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.privateSegmentIndex==='0')
           await playable(page,'video[aria-label="Authorized private Life Movie"]')
           try {
+            await page.waitForFunction(()=>{
+              const video=document.querySelector('video[aria-label="Authorized private Life Movie"]')
+              const replay=document.querySelector('[data-testid="cinematic-replay-client"]')
+              return !!video && !video.seeking && Math.abs(video.currentTime*1000-500)<=100 &&
+                Math.abs(Number(replay?.dataset.currentTimeMs)-500)<=100
+            })
             await page.waitForFunction(()=>document.querySelector('[data-private-life-movie-live-caption="verified"]')?.textContent?.trim()==='This is a synthetic UrAi narration.')
           } catch (error) {
             // Real mounted media and React state only. No identities, storage
