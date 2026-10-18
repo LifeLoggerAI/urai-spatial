@@ -18,7 +18,7 @@ test('Original Council WebGL renders anonymous GLB and morphs track audible medi
  await page.getByTestId('calibration-mute').click()
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight'))).toBe(0)
  await page.getByTestId('calibration-mute').click()
- await page.getByLabel('Calibration audio seek').fill('1.36')
+ await page.getByLabel('Calibration audio seek').evaluate((element:HTMLInputElement)=>{element.value='1.36';element.dispatchEvent(new Event('input',{bubbles:true}));element.dispatchEvent(new Event('change',{bubbles:true}))})
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-time'))).toBeGreaterThan(1.3)
  await page.getByTestId('calibration-stop').click()
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight'))).toBe(0)
