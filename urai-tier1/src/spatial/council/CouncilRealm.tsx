@@ -154,6 +154,43 @@ function RiggedCouncilHuman({
   // The original V4 glTF mesh and skin are cloned for this exact Council actor.
   // A non-release GLB variant adds morph targets to THIS SAME skinned body head;
   // there is never a second head object or an overlapping bust.
+  // Face bounds are sampled from this actor's ACTUAL skinned head-front
+  // vertices, not a guessed ellipse, another character, or a detached bust.
+  // Only the double-gated nonrelease v4 Guide lab performs this measurement.
+  const guideFaceSurface = useMemo(() => {
+    if(!unifiedGuideLab || index!==0) return null
+    const candidates: THREE.SkinnedMesh[]=[]
+    instance.traverse(object => { if(object instanceof THREE.SkinnedMesh) candidates.push(object) })
+    for(const mesh of candidates){
+      const position=mesh.geometry.getAttribute('position')
+      const skinIndex=mesh.geometry.getAttribute('skinIndex')
+      const skinWeight=mesh.geometry.getAttribute('skinWeight')
+      const headIndex=mesh.skeleton.bones.findIndex(bone=>bone.name==='head')
+      const neckIndex=mesh.skeleton.bones.findIndex(bone=>bone.name==='neck')
+      if(!position || !skinIndex || !skinWeight || headIndex<0 || neckIndex<0)continue
+      const head: Array<{index:number;x:number;y:number;z:number}> = []
+      for(let vertex=0;vertex<position.count;vertex++){
+        const bones=[skinIndex.getX(vertex),skinIndex.getY(vertex),skinIndex.getZ(vertex),skinIndex.getW(vertex)]
+        const weights=[skinWeight.getX(vertex),skinWeight.getY(vertex),skinWeight.getZ(vertex),skinWeight.getW(vertex)]
+        const headInfluence=bones.reduce((sum,bone,k)=>sum+(bone===headIndex||bone===neckIndex?weights[k]:0),0)
+        if(headInfluence<.5)continue
+        head.push({index:vertex,x:position.getX(vertex),y:position.getY(vertex),z:position.getZ(vertex)})
+      }
+      if(head.length<500)continue
+      const minY=Math.min(...head.map(v=>v.y)),maxY=Math.max(...head.map(v=>v.y))
+      const frontZ=Math.min(...head.map(v=>v.z))
+      const face=head.filter(v=>v.z<=frontZ+.12 && v.y>minY+(maxY-minY)*.25
+        && v.y<minY+(maxY-minY)*.93 && Math.abs(v.x)<.20)
+      // Confirmed on the original derived Guide input: >700 possible
+      // frontal vertices; sample their actual skinned positions during render.
+      if(face.length<90)continue
+      const stride=Math.max(1,Math.floor(face.length/110))
+      return {mesh,indices:face.filter((_,i)=>i%stride===0).map(v=>v.index)}
+    }
+    throw Error('unified-v4-original-head-surface-not-measurable')
+  },[instance,index,unifiedGuideLab])
+  const guideFaceProjectionTick = useRef(0)
+
   const unifiedMeshOwners = useMemo(() => {
     let skinned=0,morphable=0
     instance.traverse(object => {
@@ -216,6 +253,34 @@ function RiggedCouncilHuman({
       if (head) ownerRef.current.dataset[`councilHeadX${index}`] = head.quaternion.x.toFixed(8)
     }
     if(unifiedGuideLab && index===0){
+      if(guideFaceSurface && ownerRef.current && (++guideFaceProjectionTick.current%9===0)){
+        const canvas=ownerRef.current.querySelector('canvas')
+        const rect=canvas?.getBoundingClientRect()
+        guideFaceSurface.mesh.updateWorldMatrix(true,false)
+        let left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity,valid=0
+        const target=new THREE.Vector3()
+        for(const vertex of guideFaceSurface.indices){
+          guideFaceSurface.mesh.getVertexPosition(vertex,target)
+          target.applyMatrix4(guideFaceSurface.mesh.matrixWorld).project(camera)
+          if(target.z<-1||target.z>1||!Number.isFinite(target.x)||!Number.isFinite(target.y))continue
+          const x=(rect?.left??0)+(target.x+1)*(rect?.width??0)/2
+          const y=(rect?.top??0)+(1-target.y)*(rect?.height??0)/2
+          left=Math.min(left,x);right=Math.max(right,x)
+          top=Math.min(top,y);bottom=Math.max(bottom,y)
+          valid++
+        }
+        const visible=Boolean(rect&&valid>=40&&right-left>=16&&bottom-top>=20
+          &&left>=rect.left&&right<=rect.right&&top>=rect.top&&bottom<=rect.bottom)
+        ownerRef.current.dataset.councilUnifiedGuideFaceBasis='original-v4-skinned-head-front-vertex-projection'
+        ownerRef.current.dataset.councilUnifiedGuideFaceSampleCount=String(valid)
+        ownerRef.current.dataset.councilUnifiedGuideFaceVisible=visible?'true':'false'
+        if(valid>0){
+          ownerRef.current.dataset.councilUnifiedGuideFaceCx=((left+right)/2).toFixed(4)
+          ownerRef.current.dataset.councilUnifiedGuideFaceCy=((top+bottom)/2).toFixed(4)
+          ownerRef.current.dataset.councilUnifiedGuideFaceRx=((right-left)/2).toFixed(4)
+          ownerRef.current.dataset.councilUnifiedGuideFaceRy=((bottom-top)/2).toFixed(4)
+        }
+      }
       const t=calibrationMedia?.currentTime ?? 0
       const active=Boolean(selected && calibrationMedia && !calibrationMedia.paused && !calibrationMedia.ended && !calibrationMuted)
       const pose=calibrationPose(t,active && !calibrationFrozen,reducedMotion,calibrationMuted,'capture')

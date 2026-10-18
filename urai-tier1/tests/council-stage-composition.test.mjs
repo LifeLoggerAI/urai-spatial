@@ -42,9 +42,15 @@ test('actual presence frame keeps the retained foot plane on the room floor in b
   assert.ok(callback)
   for (const reducedMotion of [false, true]) for (let index = 0; index < models.length; index += 1) {
     const root = { current: new THREE.Group() }
+    // Supply the actual Three.js camera captured by useThree(), with the
+    // canonical Council entry transform; never bypass the floor assertions.
+    const camera = new THREE.PerspectiveCamera(settings.COUNCIL_FOV, 1280 / 800, .1, 100)
+    camera.position.set(...settings.COUNCIL_ENTRY)
+    camera.lookAt(settings.POSITIONS[0][0], settings.COUNCIL_ENTRY[1], settings.POSITIONS[0][2])
+    camera.updateMatrixWorld(true)
     const frame = vm.runInNewContext(ts.transpileModule('(' + callback.getText(ast) + ')', {
       compilerOptions: { target: ts.ScriptTarget.ES2022 },
-    }).outputText, { ...settings, root, index, reducedMotion, ownerRef: { current: null } })
+    }).outputText, { ...settings, root, camera, index, selected: index === 0, unifiedGuideLab: false, reducedMotion, ownerRef: { current: null } })
     for (const elapsedTime of [0, 1, 7, 100]) {
       frame({ clock: { elapsedTime } })
       assert.equal(root.current.position.y, settings.COUNCIL_FLOOR_Y)
