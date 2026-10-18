@@ -20,6 +20,7 @@ import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import { useOwnedMemoryMediaPlayback } from '@/spatial/memory/useOwnedMemoryMediaPlayback'
 import { useProtectedLifeMovieReplay } from './useProtectedLifeMovieReplay'
+import { currentPrivateLifeMovieCaption } from './privateLifeMovieSegmentTimeline'
 import { useReplayMemoryVisibility } from '@/spatial/memory/useReplayMemoryVisibility'
 import { useReplayLifeModelAuthority } from '@/spatial/life-model/useReplayLifeModelAuthority'
 import { useCapturedRealityReplayLookup } from '@/spatial/captured-reality/useCapturedRealityReplayEntry'
@@ -479,17 +480,46 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const [imageState, setImageState] = useState<ReplayImageState>({ status: 'loading', error: null })
   const [videoSnapshot, setVideoSnapshot] = useState(initialReplayVideoSnapshot)
   const [mediaAttempt, setMediaAttempt] = useState(0)
+  const mountedSegmentUrl = useRef<string | null>(null)
+  const advancingSegmentUrl = useRef<string | null>(null)
   const onImageState = useCallback((state: ReplayImageState) => setImageState(state), [])
   const onVideoSnapshot = useCallback((state: ReplayVideoSnapshot) => setVideoSnapshot(state), [])
-  const onVideoSession = useCallback((session: ReplayVideoSession | null) => { videoSession.current = session }, [])
+  const onVideoSession = useCallback((session: ReplayVideoSession | null) => {
+    videoSession.current = session
+    if (session) setVideoSnapshot(initialReplayVideoSnapshot())
+  }, [])
   const mediaStatus = video ? videoSnapshot.status : admission.kind === 'neutral' ? 'absent' : imageState.status
   const mediaReady = video ? videoSnapshot.ready : admission.kind !== 'neutral' && imageState.status === 'ready'
   const canPlay = (!expectsPrivateSource || ownedPlayback.status === 'ready' || hasProtectedMovie) && (video ? videoSnapshot.durationMs !== null && videoSnapshot.status !== 'loading' && videoSnapshot.status !== 'error' : admission.kind === 'neutral' || imageState.status === 'ready')
   const playing = video ? videoSnapshot.playing : narrativePlaying
-  const progressMs = video ? videoSnapshot.currentTimeMs : narrativeProgressMs
-  const duration = video ? videoSnapshot.durationMs ?? memory.replayManifest.durationMs : memory.replayManifest.durationMs
+  const progressMs = video ? (protectedMovie.segment ? protectedMovie.segment.startMs + videoSnapshot.currentTimeMs : videoSnapshot.currentTimeMs) : narrativeProgressMs
+  const duration = protectedMovie.timeline?.durationMs ?? (video ? videoSnapshot.durationMs ?? memory.replayManifest.durationMs : memory.replayManifest.durationMs)
+  const liveProtectedCaption = useMemo(() => protectedMovie.segment
+    ? currentPrivateLifeMovieCaption(protectedMovie.captions,videoSnapshot.currentTimeMs)
+    : null, [protectedMovie.segment, protectedMovie.captions, videoSnapshot.currentTimeMs])
   const segments = memory?.replayManifest.segments ?? []
   const active = useMemo(() => segments.find((segment) => progressMs >= segment.startsAtMs && progressMs < segment.startsAtMs + segment.durationMs) ?? segments.at(-1), [progressMs, segments])
+
+  // Segment videos are independently decoded MP4s. Keep the original Replay
+  // player and apply the requested LOCAL offset only after real decoding.
+  useEffect(() => {
+    const url = protectedMovie.media?.kind === 'video' ? protectedMovie.media.url : null
+    if (!url || !protectedMovie.segment || media?.url !== url ||
+        !videoSnapshot.ready || !videoSession.current || mountedSegmentUrl.current === url) return
+    mountedSegmentUrl.current = url
+    videoSession.current.seek(protectedMovie.seekOffsetMs ?? 0)
+    if (protectedMovie.resumeAfterSwitch) void videoSession.current.play()
+  }, [media?.url, protectedMovie.media, protectedMovie.segment,
+      protectedMovie.seekOffsetMs, protectedMovie.resumeAfterSwitch, videoSnapshot.ready])
+  useEffect(() => {
+    const segment = protectedMovie.segment, timeline = protectedMovie.timeline
+    const url = protectedMovie.media?.kind === 'video' ? protectedMovie.media.url : null
+    if (!segment || !timeline || !url || videoSnapshot.status !== 'ended' ||
+        advancingSegmentUrl.current === url || segment.index + 1 >= timeline.segments.length) return
+    advancingSegmentUrl.current = url
+    protectedMovie.advance()
+  }, [protectedMovie.segment, protectedMovie.timeline, protectedMovie.media,
+      protectedMovie.advance, videoSnapshot.status])
   const unwind = useCallback(() => requestUraiWorldReturn(), [])
   useEffect(() => {
     // Observe Replay-owned returns without modifying the canonical reverse-travel
@@ -514,9 +544,15 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     }
   }, [canPlay, duration, playing, progressMs, video])
   const seek = useCallback((timeMs: number) => {
-    if (video) videoSession.current?.seek(timeMs)
+    if (video && protectedMovie.segment && protectedMovie.timeline) {
+      if (!Number.isFinite(timeMs) || timeMs < 0 || timeMs > protectedMovie.timeline.durationMs) return
+      const segment = protectedMovie.segment
+      if (timeMs >= segment.startMs && timeMs < segment.endMs)
+        videoSession.current?.seek(timeMs - segment.startMs)
+      else protectedMovie.seekTo(timeMs,playing)
+    } else if (video) videoSession.current?.seek(timeMs)
     else setNarrativeProgressMs(clamp(timeMs, duration))
-  }, [duration, video])
+  }, [duration, video, protectedMovie.segment, protectedMovie.timeline, protectedMovie.seekTo, playing])
   const retryMedia = useCallback(() => {
     pauseMemory()
     setImageState({ status: 'loading', error: null })
@@ -587,7 +623,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-replay-frame-policy={framePolicy} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
+  return <main className="replayWorld" style={style} data-replay-frame-policy={framePolicy} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-private-segment-index={protectedMovie.segment?.index ?? undefined} data-private-timeline-ms={protectedMovie.timeline?.durationMs ?? undefined} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
     {admission.kind !== 'recorded-source' && webgl.state === 'ready' ? <ReplayCanvasBoundary key={`${webgl.attempt}:${mediaAttempt}`} onFailure={webgl.fail}>
       <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[Math.min(1, quality.pixelRatioMax), quality.pixelRatioMax]} frameloop={framePolicy} camera={{ position: [0, 0.28, 7.25], fov: 50, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
         {demoEnvironment ? <ReplaySpatialScene memory={memory} progressMs={progressMs} onMediaState={onImageState} /> : <ReplayNeutralSpatialScene />}
@@ -625,6 +661,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       <JourneyOfflineNotice />
     </section> : null}
     {hasProtectedMovie && protectedMovie.captions ? <details className="transcript" data-private-life-movie-captions="verified"><summary>Protected Life Movie captions</summary><pre>{protectedMovie.captions}</pre></details> : null}
+    {hasProtectedMovie && protectedMovie.segment ? <div className="replayProtectedCaption" role="status" aria-live="polite" data-private-life-movie-active-segment={protectedMovie.segment.index} data-private-life-movie-live-caption="verified">{liveProtectedCaption}</div> : null}
     {memory.replayManifest.transcript ? <details className="transcript"><summary {...locale.props('replay.transcript')}>{locale.text('replay.transcript')}</summary><p dir="auto">{memory.replayManifest.transcript}</p></details> : null}
     </header>
     <section className="caption" aria-live="polite"><small>{active?.label ?? 'Replay'}</small><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>

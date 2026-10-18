@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app as spatialApp } from '@/lib/firebase/client'
 import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selectedMemoryContract'
+import { parsePrivateLifeMovieTimeline, selectPrivateLifeMovieSegment, type PrivateLifeMovieTimeline, type PrivateLifeMovieSegment } from './privateLifeMovieSegmentTimeline'
 
 const PLAN = /^lmp_[A-Za-z0-9_-]{20,64}$/
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
@@ -15,6 +16,10 @@ type Playback = {
   status: 'absent' | 'loading' | 'ready' | 'unavailable'
   media: SelectedMemoryMedia | null
   captions: string | null
+  timeline?: PrivateLifeMovieTimeline
+  segment?: PrivateLifeMovieSegment
+  seekOffsetMs?: number
+  resumeAfterSwitch?: boolean
 }
 
 function configuration() {
@@ -30,7 +35,8 @@ function configuration() {
       ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
     if (url.origin !== raw || url.username || url.password || url.search || url.hash ||
       (url.protocol !== 'https:' && !(local && url.protocol === 'http:'))) return null
-    return { url, apiKey, authDomain, projectId }
+    return { url, apiKey, authDomain, projectId,
+      segmented: process.env.NEXT_PUBLIC_URAI_SPATIAL_SEGMENTED_MOVIE_ENABLED === 'true' }
   } catch { return null }
 }
 
@@ -40,6 +46,13 @@ function configuration() {
  * must already exist for the separately configured Firebase project. */
 export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planId: string | null, movieId: string | null) {
   const [state, setState] = useState<Playback>(EMPTY)
+  const segmentSelect = useRef<((globalMs: number, resume: boolean) => void) | null>(null)
+  const seekTo = useCallback((globalMs: number, resume = false) => segmentSelect.current?.(globalMs, resume), [])
+  const advance = useCallback(() => {
+    const timeline = state.timeline, segment = state.segment
+    if (timeline && segment && segment.index + 1 < timeline.segments.length)
+      segmentSelect.current?.(timeline.segments[segment.index + 1].startMs, true)
+  }, [state.timeline, state.segment])
   const key = JSON.stringify([memory?.ownerId, memory?.id, memory?.demo, memory?.privacy, planId, movieId])
   const config = useMemo(configuration, [])
   useEffect(() => {
@@ -59,8 +72,9 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
         projectId: approvedConfig.projectId }, 'urai-studio-private-replay')
     const studioAuth = getAuth(studioApp), spatialAuth = getAuth(spatialApp)
     let generation = 0, active = true, revoke: (() => void) | null = null
+    segmentSelect.current = null
     let stopStudio: (() => void) | null = null
-    const clean = () => { generation++; revoke?.(); revoke = null; setState({status:'unavailable',media:null,captions:null}) }
+    const clean = () => { generation++; revoke?.(); revoke = null; segmentSelect.current = null; setState({status:'unavailable',media:null,captions:null}) }
     const stopSpatial = onAuthStateChanged(spatialAuth, spatialUser => {
       revoke?.(); revoke = null; stopStudio?.(); stopStudio = null
       const current = ++generation
@@ -71,8 +85,18 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
         if (!active || !studioUser) { clean(); return }
         const controller = new AbortController()
         const urls: string[] = []
-        const expired = window.setTimeout(() => { if (active && version === generation) clean() }, EXPIRY_MS)
-        const release = () => { controller.abort(); clearTimeout(expired); urls.forEach(url => URL.revokeObjectURL(url)) }
+        let expiryTimer: number | null = null
+        let segmentController: AbortController | null = null
+        let segmentVersion = 0
+        const clearUrls = () => { for(const url of urls.splice(0)) URL.revokeObjectURL(url) }
+        const release = () => {
+          controller.abort(); segmentController?.abort(); segmentVersion++
+          if (expiryTimer !== null) window.clearTimeout(expiryTimer)
+          clearUrls(); segmentSelect.current = null
+        }
+        if (!approvedConfig.segmented) expiryTimer = window.setTimeout(() => {
+          if (active && version === generation) clean()
+        }, EXPIRY_MS)
         revoke = release
         setState({status:'loading',media:null,captions:null})
         const currentSession = () => active && version === generation &&
@@ -84,6 +108,115 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
               spatialUser.getIdToken(true), studioUser.getIdToken(true),
             ])
             if (!currentSession()) throw new Error('private_movie_identity_changed')
+
+            // Strictly opt-in: the accepted original final-file path below is
+            // untouched unless the approved public segmented feature flag is on.
+            if (approvedConfig.segmented) {
+              let timeline: PrivateLifeMovieTimeline | null = null
+              async function authenticatedPost(body: Record<string, unknown>, signal: AbortSignal) {
+                const [currentSpatialToken, currentStudioToken] = await Promise.all([
+                  spatialUser.getIdToken(true), studioUser.getIdToken(true),
+                ])
+                if (!currentSession() || signal.aborted) throw new Error('private_movie_identity_changed')
+                return fetch(new URL('/api/studio/spatial-private-media', approvedConfig.url), {
+                  method:'POST',mode:'cors',credentials:'omit',cache:'no-store',
+                  headers:{authorization:'Bearer '+currentStudioToken,
+                    'x-urai-spatial-id-token':currentSpatialToken,'content-type':'application/json'},
+                  body:JSON.stringify(body),signal,redirect:'error',referrerPolicy:'no-referrer',
+                })
+              }
+              async function readTimeline(signal: AbortSignal) {
+                const response = await authenticatedPost({action:'read-spatial-timeline',
+                  memoryId:selectedMemory.id,movieId:selectedMovieId,planId:selectedPlanId}, signal)
+                if (!currentSession() || signal.aborted || response.status !== 200 ||
+                    !response.headers.get('content-type')?.startsWith('application/json') ||
+                    !response.headers.get('cache-control')?.includes('no-store'))
+                  throw new Error('private_timeline_delivery_denied')
+                const body = await response.text()
+                if (!currentSession() || signal.aborted || body.length > 96 * 1024)
+                  throw new Error('private_timeline_size_invalid')
+                return parsePrivateLifeMovieTimeline(JSON.parse(body),selectedMovieId,selectedPlanId)
+              }
+              async function loadSegment(index: number, localMs: number, resume: boolean) {
+                const requestNumber = ++segmentVersion
+                segmentController?.abort()
+                const requestController = new AbortController()
+                segmentController = requestController
+                const cancelWithSession = () => requestController.abort()
+                controller.signal.addEventListener('abort',cancelWithSession,{once:true})
+                const inSession = () => currentSession() && !requestController.signal.aborted &&
+                  requestNumber === segmentVersion
+                clearUrls()
+                setState({status:'loading',media:null,captions:null,timeline:timeline ?? undefined})
+                try {
+                  if (!timeline || timeline.expiresAt <= Date.now() + 5000) {
+                    const refreshed = await readTimeline(requestController.signal)
+                    if (timeline && refreshed.playlistDigest !== timeline.playlistDigest)
+                      throw new Error('private_timeline_changed')
+                    timeline = refreshed
+                  }
+                  if (!inSession()) throw new Error('private_segment_request_superseded')
+                  const segment = timeline.segments[index]
+                  if (!segment || !Number.isFinite(localMs) || localMs < 0 ||
+                      localMs >= segment.endMs - segment.startMs)
+                    throw new Error('private_segment_selector_invalid')
+                  async function getSegment(kind: 'mp4' | 'srt') {
+                    const result = await authenticatedPost({action:'deliver-spatial-segment',
+                      memoryId:selectedMemory.id,movieId:selectedMovieId,planId:selectedPlanId,
+                      kind,segmentIndex:index},requestController.signal)
+                    const mime = kind === 'mp4' ? 'video/mp4' : 'application/x-subrip'
+                    const length = Number(result.headers.get('content-length'))
+                    if (!inSession() || result.status !== 200 ||
+                        result.headers.get('content-type') !== mime ||
+                        !result.headers.get('cache-control')?.includes('no-store') ||
+                        !Number.isSafeInteger(length) || length < 1 ||
+                        length > (kind === 'mp4' ? MAX_BYTES : 2 * 1024 * 1024) ||
+                        result.headers.get('x-urai-private-playlist-digest') !== timeline?.playlistDigest ||
+                        result.headers.get('x-urai-private-segment-index') !== String(segment.index) ||
+                        result.headers.get('x-urai-private-segment-start-ms') !== String(segment.startMs) ||
+                        result.headers.get('x-urai-private-segment-end-ms') !== String(segment.endMs))
+                      throw new Error('private_segment_metadata_invalid')
+                    const bytes = await result.arrayBuffer()
+                    if (!inSession() || bytes.byteLength !== length)
+                      throw new Error('private_segment_integrity_invalid')
+                    return { blob: new Blob([bytes], { type:mime }),
+                      playlist:result.headers.get('x-urai-private-playlist-digest') }
+                  }
+                  const video = await getSegment('mp4'), captions = await getSegment('srt')
+                  if (!inSession() || !video.playlist || video.playlist !== captions.playlist)
+                    throw new Error('private_movie_caption_binding_invalid')
+                  const transcript = await captions.blob.text()
+                  if (!inSession() || transcript.length > 2 * 1024 * 1024)
+                    throw new Error('private_movie_caption_unavailable')
+                  // Only one private video Blob URL exists at a time.
+                  const url = URL.createObjectURL(video.blob)
+                  if (!inSession()) { URL.revokeObjectURL(url); return }
+                  urls.push(url)
+                  setState({status:'ready',media:{kind:'video',url,caption:'Authorized private Life Movie'},
+                    captions:transcript,timeline,segment,seekOffsetMs:localMs,resumeAfterSwitch:resume})
+                  if (expiryTimer !== null) window.clearTimeout(expiryTimer)
+                  expiryTimer = window.setTimeout(() => {
+                    if (inSession() && timeline && timeline.expiresAt <= Date.now()) clean()
+                  }, Math.max(1,timeline.expiresAt - Date.now()))
+                } catch {
+                  if (inSession()) clean()
+                } finally {
+                  controller.signal.removeEventListener('abort',cancelWithSession)
+                }
+              }
+              const authorizedTimeline = await readTimeline(controller.signal)
+              if (!currentSession()) throw new Error('private_timeline_identity_changed')
+              timeline = authorizedTimeline
+              segmentSelect.current = (globalMs, resume) => {
+                if (!currentSession() || !timeline) return
+                try {
+                  const choice = selectPrivateLifeMovieSegment(timeline,globalMs)
+                  void loadSegment(choice.segment.index,choice.localMs,resume)
+                } catch { clean() }
+              }
+              await loadSegment(authorizedTimeline.segments[0].index,0,false)
+              return
+            }
             async function retrieve(kind: 'mp4' | 'srt') {
               const result = await fetch(new URL('/api/studio/spatial-private-media', approvedConfig.url), {
                 method:'POST',mode:'cors',credentials:'omit',cache:'no-store',
@@ -119,5 +252,5 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
     window.addEventListener('offline',offline)
     return () => { active = false; generation++; revoke?.(); stopStudio?.(); stopSpatial(); window.removeEventListener('offline',offline) }
   }, [key, config, memory, planId, movieId])
-  return state
+  return { ...state, seekTo, advance }
 }
