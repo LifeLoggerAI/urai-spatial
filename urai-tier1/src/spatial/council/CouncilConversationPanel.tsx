@@ -30,6 +30,7 @@ import {
   uncertainCouncilProviderFallback,
 } from './councilClient'
 import { requestCouncilSecondOpinion } from './councilSecondOpinion'
+import { createCouncilEncounterSession } from '@/spatial/digital-human/councilEncounterSession.mjs'
 
 export default function CouncilConversationPanel({ agent, inRange, onEncounterPhase }: { agent: CouncilAgent; inRange?: boolean; onEncounterPhase?: (phase: 'idle' | 'thinking' | 'responded') => void }) {
   const actor = useSyncExternalStore(subscribeAIActor, getAIActorSnapshot, getServerAIActorSnapshot)
@@ -83,12 +84,18 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
   const [busy, setBusy] = useState(false)
   const [consent, setConsent] = useState(false)
   const aborter = useRef<AbortController | null>(null)
+  const sceneSession = useRef(createCouncilEncounterSession())
   const encounterGeneration = useRef(0)
   const encounterNearRef = useRef(inRange !== false)
   const [nonSpatialMode, setNonSpatialMode] = useState(false)
   const encounterEnabled = inRange !== false || nonSpatialMode
   encounterNearRef.current = encounterEnabled
+  useEffect(() => {
+    sceneSession.current.update({actorGeneration: actor.generation, agentId: agent.id, inRange: encounterEnabled, processingConsent: consent})
+    return () => { sceneSession.current.interrupt() }
+  }, [actor.generation, agent.id, encounterEnabled, consent])
   const cancelEncounter = () => {
+    sceneSession.current.interrupt()
     encounterGeneration.current += 1
     aborter.current?.abort()
     aborter.current = null
@@ -101,6 +108,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
     if (inRange !== false || nonSpatialMode) return
     // A departure must invalidate both first and second provider replies.
     encounterGeneration.current += 1
+    sceneSession.current.interrupt()
     aborter.current?.abort()
     aborter.current = null
     setBusy(false)
@@ -158,6 +166,9 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
     }
 
     aborter.current?.abort()
+    sceneSession.current.update({actorGeneration: actor.generation, agentId: agent.id, inRange: encounterEnabled, processingConsent: consent})
+    const sceneTurn = sceneSession.current.begin({actorGeneration:actor.generation,agentId:agent.id})
+    if (sceneTurn === null) return
     const turnGeneration = ++encounterGeneration.current
     const controller = new AbortController()
     aborter.current = controller
@@ -186,7 +197,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
           : graphRequested && graphSelection ? { graphSelection, graphShareConsent: true } : {}),
         signal: controller.signal,
       })
-      if (controller.signal.aborted || aborter.current !== controller || encounterGeneration.current !== turnGeneration || !encounterNearRef.current || !isCurrentAIActorSnapshot(actor)) return
+      if (controller.signal.aborted || aborter.current !== controller || encounterGeneration.current !== turnGeneration || !encounterNearRef.current || !sceneSession.current.isCurrent(sceneTurn,actor.generation,agent.id) || !isCurrentAIActorSnapshot(actor)) return
       if (graphRequested && selectedMemoryRequest && (typeof window === 'undefined' || new URLSearchParams(window.location.search).get('memoryId') !== selectedMemoryRequest)) {
         setResult(null)
         setGraphShareConsent(false)
@@ -200,6 +211,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
         return
       }
       const resolved = response ?? deterministicOrbFallback(trimmed)
+      sceneSession.current.finish(sceneTurn)
       setResult(resolved)
       onEncounterPhase?.(response && response.provider !== 'fallback' ? 'responded' : 'idle')
       if (response) {
@@ -259,6 +271,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
       setResult(fallback)
       setStatus('The selected Council provider did not return a usable answer; a disclosed local fallback is shown.')
     } finally {
+      sceneSession.current.finish(sceneTurn)
       if (!controller.signal.aborted && aborter.current === controller && isCurrentAIActorSnapshot(actor)) setBusy(false)
       if (aborter.current === controller) aborter.current = null
     }
