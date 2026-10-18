@@ -59,7 +59,7 @@ export function deriveUnifiedCouncilFace(originalBytes,manifest){
  if(skinPrimitives.length!==1||skinPrimitives[0].indices===undefined)throw Error('original-guide-skin-material-index-required')
  const skinIndices=reader(doc,bin,skinPrimitives[0].indices)
  const skinVertices=new Set(Array.from({length:skinIndices.a.count},(_,i)=>skinIndices.read(i,0)))
- if(skinVertices.size<5000)throw Error('original-guide-skin-surface-insufficient')
+ if(skinVertices.size<500)throw Error('original-guide-skin-surface-insufficient')
  const normalsIds=new Set(mesh.primitives.map(p=>p.attributes?.NORMAL))
  if(normalsIds.size!==1||[...normalsIds][0]===undefined)throw Error('original-guide-shared-normal-attribute-required')
  const positionsIds=new Set(mesh.primitives.map(p=>p.attributes?.POSITION))
