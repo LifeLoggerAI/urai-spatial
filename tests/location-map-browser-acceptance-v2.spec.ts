@@ -2,15 +2,70 @@ import { expect, test, type Locator, type Page, type TestInfo } from '@playwrigh
 
 const route = '/location-map/?privacyMode=private&entryPortal=location-beacon&cameraCheckpoint=atlas-world-view'
 
-type Evidence = { consoleErrors: string[]; pageErrors: string[]; failedRequests: string[] }
+type Evidence = {
+  consoleErrors: string[]
+  pageErrors: string[]
+  failedRequests: string[]
+  locationCssCompleted: number[]
+  locationCssAborted: { failedRequestIndex: number; sequence: number }[]
+}
 type ScreenPoint = { x: number; y: number }
 
+function isLocationMapStylesheet(url: string) {
+  try {
+    const parsed = new URL(url)
+    return (parsed.origin === 'http://localhost:3000' || parsed.origin === 'http://127.0.0.1:4173')
+      && parsed.pathname === '/_next/static/css/app/location-map/page.css'
+      && parsed.searchParams.has('v')
+  } catch {
+    return false
+  }
+}
+
 function monitor(page: Page): Evidence {
-  const evidence: Evidence = { consoleErrors: [], pageErrors: [], failedRequests: [] }
+  const evidence: Evidence = { consoleErrors: [], pageErrors: [], failedRequests: [], locationCssCompleted: [], locationCssAborted: [] }
+  let sequence = 0
   page.on('console', message => { if (message.type() === 'error') evidence.consoleErrors.push(message.text()) })
   page.on('pageerror', error => evidence.pageErrors.push(error.message))
-  page.on('requestfailed', request => evidence.failedRequests.push(`${request.method()} ${request.url()} :: ${request.failure()?.errorText || 'unknown'}`))
+  page.on('requestfinished', request => {
+    const order = ++sequence
+    if (request.method() !== 'GET' || !isLocationMapStylesheet(request.url())) return
+    void request.response().then(response => {
+      if (response?.status() === 200) evidence.locationCssCompleted.push(order)
+    })
+  })
+  page.on('requestfailed', request => {
+    const order = ++sequence
+    const failedRequestIndex = evidence.failedRequests.push(`${request.method()} ${request.url()} :: ${request.failure()?.errorText || 'unknown'}`) - 1
+    if (request.method() === 'GET' && isLocationMapStylesheet(request.url())
+      && request.failure()?.errorText === 'net::ERR_ABORTED') {
+      evidence.locationCssAborted.push({ failedRequestIndex, sequence: order })
+    }
+  })
   return evidence
+}
+
+async function recoveredNavigationStylesheetAborts(page: Page, evidence: Evidence) {
+  // An aborted development-server CSS request is safe to classify as navigation-
+  // superseded only when a later complete HTTP 200 stylesheet is applied in the
+  // final document. A missing stylesheet, non-200 response, or repeated abort
+  // is an actionable browser failure, not an exception to the acceptance gate.
+  const finalCssApplied = await page.evaluate(() => {
+    const stylesheet = [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')]
+      .find(link => new URL(link.href).pathname === '/_next/static/css/app/location-map/page.css')
+    const atlas = document.querySelector<HTMLElement>('.locationAtlas')
+    const stage = document.querySelector<HTMLElement>('.locationAtlasStage')
+    return Boolean(stylesheet?.sheet && atlas && stage
+      && getComputedStyle(atlas).position === 'fixed'
+      && getComputedStyle(stage).position === 'absolute'
+      && getComputedStyle(stage).overflow === 'hidden')
+  })
+  expect(finalCssApplied).toBe(true)
+  expect(evidence.locationCssAborted.length).toBeLessThanOrEqual(1)
+  return new Set(evidence.locationCssAborted.flatMap(event => (
+    evidence.locationCssCompleted.some(completed => completed > event.sequence)
+      ? [event.failedRequestIndex] : []
+  )))
 }
 
 function isExpectedNavigationAbort(request: string) {
@@ -291,6 +346,8 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
       isExpectedNavigationAbort(request) ? [index] : []
     )))
     const expectedNavigationAborts = [...expectedNavigationAbortIndexes].map(index => errors.failedRequests[index])
+    const recoveredStylesheetIndexes = await recoveredNavigationStylesheetAborts(page, errors)
+    const recoveredStylesheetAborts = [...recoveredStylesheetIndexes].map(index => errors.failedRequests[index])
     const unexpectedConsoleErrors = [
       ...errors.consoleErrors.slice(0, offlineStart.consoleErrors),
       ...offlineConsoleErrors.filter(message => !expectedOfflineConsoleErrors.includes(message)),
@@ -304,6 +361,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     const unexpectedFailedRequests = errors.failedRequests.filter((request, index) => (
       !expectedOfflineRequests.includes(request)
       && !expectedNavigationAbortIndexes.has(index)
+      && !recoveredStylesheetIndexes.has(index)
     ))
     const expectedOfflineSignals = expectedOfflineConsoleErrors.length + expectedOfflinePageErrors.length + expectedOfflineRequests.length
     expect(expectedOfflineSignals).toBeGreaterThan(0)
@@ -320,6 +378,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
       expectedOfflineRequests,
       expectedOfflineProbeRequests,
       expectedNavigationAborts,
+      recoveredStylesheetAborts,
       unexpectedConsoleErrors,
       unexpectedPageErrors,
       unexpectedFailedRequests,
@@ -416,13 +475,17 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
       isExpectedNavigationAbort(request) ? [index] : []
     )))
     const expectedNavigationAborts = [...expectedNavigationAbortIndexes].map(index => errors.failedRequests[index])
-    const unexpectedFailedRequests = errors.failedRequests.filter((_, index) => !expectedNavigationAbortIndexes.has(index))
+    const recoveredStylesheetIndexes = await recoveredNavigationStylesheetAborts(page, errors)
+    const recoveredStylesheetAborts = [...recoveredStylesheetIndexes].map(index => errors.failedRequests[index])
+    const unexpectedFailedRequests = errors.failedRequests.filter((_, index) =>
+      !expectedNavigationAbortIndexes.has(index) && !recoveredStylesheetIndexes.has(index))
     expect(errors.consoleErrors).toEqual([])
     expect(errors.pageErrors).toEqual([])
     expect(unexpectedFailedRequests).toEqual([])
     await attachJson(testInfo, 'mobile-console-network-receipt.json', {
       ...errors,
       expectedNavigationAborts,
+      recoveredStylesheetAborts,
       unexpectedFailedRequests,
     })
     await attachJson(testInfo, 'mobile-interaction-receipt.json', {
