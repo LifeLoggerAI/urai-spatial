@@ -12,7 +12,7 @@ export default function XrPage() {
   return (
     <>
       <h1 className="sr-only">URAI XR World</h1>
-      <UraiQuestEntryWorldV2 />
+      <UraiQuestEntryWorldV2 immersiveSessionEnabled={spatialLaunchBoundary.liveArWebXrEnabled} />
     </>
   )
 }
