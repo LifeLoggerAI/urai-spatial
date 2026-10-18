@@ -274,11 +274,17 @@ async function open(route = '/replay', settings = {}) {
   await page.route('https://us-central1-urai-4dc1d.cloudfunctions.net/**', async intercepted => {
     const request = intercepted.request(), url = new URL(request.url())
     if (request.method() === 'OPTIONS') { await intercepted.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'authorization', 'Access-Control-Allow-Methods': 'GET' } }); return }
+    // This unrelated SDK request must carry the SAME Spatial identity chosen
+    // for this browser scenario, including the deliberately foreign identity.
+    // Studio's actual exported handler must still independently deny that
+    // foreign token; never substitute the owner's token to make the test pass.
     const expectedSDKToken = settings.realHandler
-      ? 'a'.repeat(45)+'.'+'b'.repeat(45)+'.'+'c'.repeat(45)
+      ? settings.realHandlerForeignSpatial
+        ? 'd'.repeat(45)+'.'+'e'.repeat(45)+'.'+'f'.repeat(45)
+        : 'a'.repeat(45)+'.'+'b'.repeat(45)+'.'+'c'.repeat(45)
       : 'synthetic-sdk-token'
     assert.equal(request.headers().authorization,'Bearer '+expectedSDKToken,
-      'unrelated SDK transport must retain the correct synthetic Spatial identity')
+      'unrelated SDK transport must preserve the selected fictional Spatial identity')
     const tamper = await page.evaluate(() => window.__fixture.tamper)
     const body = url.pathname === '/streamCapturedRealityRuntime' ? Buffer.alloc(32) : tamper ? Buffer.alloc(mediaBytes.length) : mediaBytes
     await intercepted.fulfill({ status: 200, body, headers: { 'Access-Control-Allow-Origin': origin, 'Access-Control-Expose-Headers': 'Content-Length,X-URAI-Checksum-SHA256,X-URAI-Storage-Generation', 'Content-Type': url.pathname === '/streamCapturedRealityRuntime' ? 'application/octet-stream' : settings.audio ? 'audio/wav' : 'video/mp4', 'Content-Length': String(body.length), 'X-URAI-Checksum-SHA256': url.pathname === '/streamCapturedRealityRuntime' ? 'f'.repeat(64) : mediaFixture.sha256, 'X-URAI-Storage-Generation': url.pathname === '/streamCapturedRealityRuntime' ? '321' : '123' } })
