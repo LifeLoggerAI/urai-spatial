@@ -4,8 +4,9 @@ import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import CouncilHumanProximity from '@/spatial/digital-human/CouncilHumanProximity'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, Lightformer, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
-import { Component, Suspense, useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
+import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
+import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { COUNCIL_AGENTS } from './councilAgentSchema'
 import CouncilConversationPanel from './CouncilConversationPanel'
 import { playCouncilBodyIdle, playCouncilListening } from './CouncilAnimationLayers'
@@ -133,6 +134,9 @@ function RiggedCouncilHuman({
   ownerRef: MutableRefObject<HTMLDivElement | null>
 }) {
   const model = useGLTF(modelUrl)
+  // Each scene owns a separate skeleton; no cached GLTF scene is shared between humans.
+  const instance = useMemo(() => cloneSkeleton(model.scene), [model.scene])
+  const { camera } = useThree()
   const root = useRef<THREE.Group>(null)
   const { actions } = useAnimations(model.animations, root)
 
@@ -145,21 +149,27 @@ function RiggedCouncilHuman({
   }, [actions, reducedMotion, selected])
 
   useEffect(() => {
-    model.scene.traverse((object) => {
+    instance.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
       object.castShadow = true
       object.receiveShadow = true
       object.frustumCulled = true
     })
-  }, [model.scene])
+  }, [instance])
 
   useFrame(() => {
     if (!root.current) return
-    root.current.rotation.y = ROTATIONS[index]?.[1] ?? 0
+    const defaultYaw = ROTATIONS[index]?.[1] ?? 0
+    // Rotate the selected preview toward the embodied visitor without altering walking paths.
+    const point = POSITIONS[index] ?? POSITIONS[0]
+    const dx = camera.position.x - point[0], dz = camera.position.z - point[2]
+    const targetYaw = selected && !reducedMotion ? Math.atan2(dx, dz) : defaultYaw
+    let offset = ((targetYaw - root.current.rotation.y + Math.PI * 3) % (Math.PI * 2)) - Math.PI
+    root.current.rotation.y += Math.max(-0.03, Math.min(0.03, offset))
     root.current.position.y = COUNCIL_FLOOR_Y
     if (ownerRef.current) {
-      const body = model.scene.getObjectByName('hips')
-      const head = model.scene.getObjectByName('head')
+      const body = instance.getObjectByName('hips')
+      const head = instance.getObjectByName('head')
       ownerRef.current.dataset[`councilIdleActive${index}`] = actions.idle_breath?.isRunning() ? 'true' : 'false'
       ownerRef.current.dataset[`councilListeningActive${index}`] = actions.listen_acknowledge?.isRunning() ? 'true' : 'false'
       if (body) ownerRef.current.dataset[`councilBodyY${index}`] = body.position.y.toFixed(8)
@@ -178,7 +188,7 @@ function RiggedCouncilHuman({
       }}
       userData={{ representation: 'skinned-animated-human-v4-preview', modelUrl, lighting: 'physical-scene' }}
     >
-      <primitive object={model.scene} />
+      <primitive object={instance} />
       <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.28, 0.34, 64]} />
         <meshBasicMaterial color={selected ? '#e9d6b7' : '#b8c7cf'} transparent opacity={selected ? 0.28 : 0.05} depthWrite={false} />
@@ -259,6 +269,8 @@ function CouncilStage() {
   const shadowMapSize = quality.tier === 'high' ? 2048 : 1024
   const environmentIntensity = quality.tier === 'high' ? 0.55 : quality.tier === 'medium' ? 0.42 : 0.28
   const shellRef = useRef<HTMLDivElement | null>(null)
+  const [encounterPhase, setEncounterPhase] = useState<'idle' | 'thinking' | 'responded'>('idle')
+  const onEncounterPhase = useCallback((phase: 'idle' | 'thinking' | 'responded') => setEncounterPhase(previous => previous === phase ? previous : phase), [])
   const [humanNear, setHumanNear] = useState(false)
   const [humanDistance, setHumanDistance] = useState<number | null>(null)
   // Development telemetry only: the Council preview is not Founder Adam.
@@ -292,6 +304,7 @@ function CouncilStage() {
       data-spatial-realm="council"
       data-digital-human-integration="rigged-council-preview-no-founder-likeness"
       data-digital-human-near={humanNear ? 'true' : 'false'}
+      data-digital-human-conversation-phase={encounterPhase}
       data-council-human-authority="human-makehuman-v4-preview"
       data-council-lighting-authority="physical-pbr-v1"
       data-council-embodied="true"
@@ -368,7 +381,7 @@ function CouncilStage() {
           {humanNear ? 'In conversational range of this Council preview' : 'Approach the selected Council preview to enter conversational range'}
           {humanDistance !== null ? ` · approximately ${humanDistance.toFixed(1)} scene units` : ''}. No private likeness or character voice is approved here.
         </p>
-        <CouncilConversationPanel agent={selectedAgent} />
+        <CouncilConversationPanel agent={selectedAgent} inRange={humanNear} onEncounterPhase={onEncounterPhase} />
         <div className="pointer-events-auto mt-4 flex flex-wrap gap-2">
           <button className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950" type="button" onClick={() => travel('home', '/home?returnFrom=council')}>Return Home</button>
           <button className="rounded-full border border-white/20 px-4 py-2 text-xs text-white" type="button" onClick={() => travel('mirror', '/mirror?from=council')}>Mirror</button>
