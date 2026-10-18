@@ -17,6 +17,10 @@ const compile = relative => ts.transpileModule(
 const sceneCode = compile('../src/components/lifemap/ComposedLifeMapScene.tsx')
 const canonicalCode = compile('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const homeCode = compile('../src/spatial/navigation/homeSkyInteraction.ts')
+const privateMovieCode = compile('../src/spatial/life-movie/privateLifeMovieRouteSelection.ts')
+const privateMovieModule = { exports: {} }
+vm.runInNewContext(privateMovieCode, { module: privateMovieModule, exports: privateMovieModule.exports, URL, URLSearchParams },
+  { filename: 'actual-privateLifeMovieRouteSelection.ts' })
 const childNodes = node => [node?.props?.children].flat(Infinity)
 const nodes = tree => tree && typeof tree === 'object' ? [tree, ...childNodes(tree).flatMap(nodes)] : []
 const text = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tree === 'object' ? childNodes(tree).map(text).join('') : String(tree)
@@ -59,6 +63,7 @@ function fixture({ component = 'scene', sourceMode = 'signed-out', pathname = '/
     '@/spatial/performance/useAdaptiveSpatialQuality': { useAdaptiveSpatialQuality: () => profile },
     '@/spatial/navigation/homeSkyInteraction': homeModule.exports,
     '@/spatial/memory/lifeMapSelectionJourney': { withLifeMapSelectionIdentity },
+    '@/spatial/life-movie/privateLifeMovieRouteSelection': privateMovieModule.exports,
     './useLifeMapEvents': { useLifeMapEvents: () => ({ nodes: memoryNodes, loading: false, sourceMode }) },
     './LifeMapProductionWorld': { LifeMapProductionWorld: 'synthetic-production-world-boundary' },
     './lifeMapVisualSystem': { artifactFamilyLabel: () => 'Visual memory', resolveArtifactFamily: () => 'visual' },
@@ -95,6 +100,26 @@ function fixture({ component = 'scene', sourceMode = 'signed-out', pathname = '/
     unmount() { for (const slot of slots) slot.cleanup?.() },
   }
 }
+
+test('real private route helper requires owner, manifest and one non-demo movie/plan pair', () => {
+  const { forwardPrivateMovieRouteSelection } = privateMovieModule.exports
+  const params = new URLSearchParams('memoryId=owner-memory&manifestId=manifest-1&movieId=movie-1&lifeMoviePlanId=lmp_'+'a'.repeat(20))
+  const owner = { memoryId: 'owner-memory', manifestId: 'manifest-1', authorizedOwner: true, demo: false }
+  const granted = new URLSearchParams()
+  assert.equal(forwardPrivateMovieRouteSelection(granted, params, owner), true)
+  assert.equal(granted.get('movieId'), 'movie-1')
+  assert.equal(granted.get('lifeMoviePlanId'), 'lmp_'+'a'.repeat(20))
+  for (const denied of [{ ...owner, authorizedOwner: false }, { ...owner, demo: true },
+    { ...owner, manifestId: 'foreign-manifest' }, { ...owner, memoryId: 'foreign-memory' }]) {
+    const target = new URLSearchParams()
+    assert.equal(forwardPrivateMovieRouteSelection(target, params, denied), false)
+    assert.equal(target.toString(), '')
+  }
+  for (const bad of [new URLSearchParams(params.toString()+'&movieId=other'),
+    new URLSearchParams(params.toString()+'&demo=1')]) {
+    assert.equal(forwardPrivateMovieRouteSelection(new URLSearchParams(), bad, owner), false)
+  }
+})
 
 test('signed-out scene leaves Home navigation solely to its canonical disclosure', () => {
   const f = fixture()
