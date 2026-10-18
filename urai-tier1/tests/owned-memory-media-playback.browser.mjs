@@ -623,7 +623,34 @@ try {
           {dualPrivate:true,realHandler:true,segmentMode:true})
         try {
           const movie=page.locator('[data-testid="cinematic-replay-client"]')
-          await page.waitForFunction(()=>document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.privateSegmentIndex==='0')
+          const privateDiagnostics=[]
+          page.on('console',message=>{
+            const value=message.text()
+            if(value.startsWith('URAI_SEGMENT_DEV_DIAGNOSTIC ')) privateDiagnostics.push(value.slice(0,160))
+          })
+          try {
+            await page.waitForFunction(()=>document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.privateSegmentIndex==='0')
+          } catch (error) {
+            const dom=await page.evaluate(()=>{
+              const main=document.querySelector('[data-testid="cinematic-replay-client"]')
+              return {found:!!main,segmentIndex:main?.getAttribute('data-private-segment-index')??null,
+                status:main?.getAttribute('data-replay-media-status')??null,
+                videoCount:document.querySelectorAll('video[aria-label="Authorized private Life Movie"]').length,
+                captionCount:document.querySelectorAll('[data-private-life-movie-captions]').length,
+                createdVideoBlobs:window.__fixture?.creates?.filter(v=>v.type==='video/mp4').length??null,
+                revokedMediaUrls:window.__fixture?.revocations?.length??null}
+            })
+            const diagnostic={kind:'synthetic-multisegment-local-browser-initial-state',
+              requests:privateRequests.map(v=>({action:v.action,kind:v.kind,segmentIndex:v.segmentIndex})),
+              responses:realResponses.map(v=>({action:v.action,kind:v.kind,segmentIndex:v.segmentIndex,
+                status:v.status,contentType:v.contentType,contentLength:v.contentLength,
+                playlistDigestPresent:typeof v.playlistDigest==='string'})),
+              dom,privateDiagnostics}
+            writeFileSync(path.join(output,'original-replay-multisegment-initial-failure.json'),
+              JSON.stringify(diagnostic,null,2))
+            console.error('URAI_MULTISEGMENT_INITIAL_DIAGNOSTIC '+JSON.stringify(diagnostic))
+            throw error
+          }
           await playable(page,'video[aria-label="Authorized private Life Movie"]')
           await page.waitForFunction(()=>document.querySelector('[data-private-life-movie-live-caption]')?.textContent?.includes('Fictional'))
           assert.deepEqual(privateRequests.slice(0,3).map(x=>[x.action,x.kind,x.segmentIndex]),

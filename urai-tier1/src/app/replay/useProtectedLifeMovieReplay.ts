@@ -201,7 +201,13 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
                   expiryTimer = window.setTimeout(() => {
                     if (inSession() && timeline && timeline.expiresAt <= Date.now()) clean()
                   }, Math.max(1,timeline.expiresAt - Date.now()))
-                } catch {
+                } catch (error) {
+                  // Development-only opaque cause; no tokens, identities or bytes.
+                  if (process.env.NODE_ENV === 'development' && approvedConfig.segmented) {
+                    const message = error instanceof Error ? error.message : ''
+                    const code = /^[a-z][a-z0-9_]{2,79}$/.test(message) ? message : 'segment_delivery_error'
+                    console.warn('URAI_SEGMENT_DEV_DIAGNOSTIC '+code)
+                  }
                   if (inSession()) clean()
                 } finally {
                   controller.signal.removeEventListener('abort',cancelWithSession)
