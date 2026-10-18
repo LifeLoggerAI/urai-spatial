@@ -83,6 +83,9 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
         revoke?.(); revoke = null
         const version = ++generation
         if (!active || !studioUser) { clean(); return }
+        // Capture the validated identities before nested asynchronous callbacks;
+        // currentSession() still checks their live Firebase sessions before delivery.
+        const verifiedSpatialUser = spatialUser, verifiedStudioUser = studioUser
         const controller = new AbortController()
         const urls: string[] = []
         let expiryTimer: number | null = null
@@ -115,7 +118,7 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
               let timeline: PrivateLifeMovieTimeline | null = null
               async function authenticatedPost(body: Record<string, unknown>, signal: AbortSignal) {
                 const [currentSpatialToken, currentStudioToken] = await Promise.all([
-                  spatialUser.getIdToken(true), studioUser.getIdToken(true),
+                  verifiedSpatialUser.getIdToken(true), verifiedStudioUser.getIdToken(true),
                 ])
                 if (!currentSession() || signal.aborted) throw new Error('private_movie_identity_changed')
                 return fetch(new URL('/api/studio/spatial-private-media', approvedConfig.url), {
