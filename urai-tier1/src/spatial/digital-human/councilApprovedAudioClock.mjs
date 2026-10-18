@@ -31,7 +31,7 @@ export function createCouncilApprovedAudioClock({ media, proof, speaker, getAuth
     || speaker.audioSha256 !== proof.audioSha256) throw new Error('council-voice-not-admitted');
   if (typeof getAuthority !== 'function' || typeof onFrame !== 'function' || typeof onNeutral !== 'function')
     throw new TypeError('playback-lifetime-callbacks-required');
-  let disposed = false, stopped = false, played = false, epoch = 0;
+  let disposed = false, stopped = false, played = false, epoch = 0, starting = false;
   let status = 'idle';
   function authorized() {
     try {
@@ -72,9 +72,21 @@ export function createCouncilApprovedAudioClock({ media, proof, speaker, getAuth
   }
   async function start() {
     if (!authorized() || disposed) { end('authority-revoked'); return false; }
+    // Only one pending media.play() per speaker. Competing promises could
+    // resume revoked audio or wrongly pause a newer authorized playback.
+    if (starting || (played && !media.paused)) return false;
+    starting = true;
     const ticket = ++epoch;
-    try { await media.play(); } catch { end('audio-playback-failed'); return false; }
+    try { await media.play(); } catch {
+      starting = false;
+      if (!disposed && !stopped) end('audio-playback-failed');
+      return false;
+    }
+    starting = false;
     if (ticket !== epoch || !authorized() || media.paused) {
+      // A late play() fulfillment may begin audio *after* interrupt/dispose.
+      // Re-pause even when end() already marked the turn terminal.
+      try { media.pause(); } catch { /* no frames or authority resurrected */ }
       if (!disposed && !stopped) end('stale-audio-start');
       return false;
     }
@@ -100,7 +112,7 @@ export function createCouncilApprovedAudioClock({ media, proof, speaker, getAuth
 export function bindCouncilAudioMorph({ clock, morphDriver, turnId, audioSha256, timeline, reducedMotion = false } = {}) {
   if (!clock || !morphDriver || !Number.isSafeInteger(turnId) || turnId < 1
     || !SHA.test(String(audioSha256 ?? ''))) throw new TypeError('admitted-morph-and-clock-required');
-  let active = true;
+  let active = true, disposed = false;
   return Object.freeze({
     start() { return Boolean(active && morphDriver.beginAudio({ turnId, audioSha256 })); },
     tick() { return active ? clock.tick() : { mode: 'neutral' }; },
@@ -110,6 +122,14 @@ export function bindCouncilAudioMorph({ clock, morphDriver, turnId, audioSha256,
         rms: frame.rms, playing: frame.playing, timeline, reducedMotion });
     },
     stop() { if (!active) return; active = false; clock.interrupt(); morphDriver.interrupt(); },
-    dispose() { if (!active) return; active = false; clock.dispose(); morphDriver.interrupt(); },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      const wasActive = active;
+      active = false;
+      // stop() interrupts the turn but cannot suppress listener cleanup.
+      clock.dispose();
+      if (wasActive) morphDriver.interrupt();
+    },
   });
 }
