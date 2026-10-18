@@ -82,6 +82,9 @@ jobs:
           node ../../scripts/prepare-ios-shell.mjs --optional --project ios --receipt-output ../../ios-source-receipt.json
           node ../../scripts/prepare-native-static-provenance.mjs --directory ios/App/App/public --source-sha "$URAI_EXACT_HEAD" --platform ios --workflow-run-id "$GITHUB_RUN_ID" --verify-only
 
+      - name: Apply approved foreground-only native privacy purposes
+        run: python3 scripts/urai-ios-preenrollment-policy.py --project distribution/ios-shell/ios --source-sha "$URAI_EXACT_HEAD" --apply --receipt distribution/ios-shell/ios/ios-preenrollment-contract.json
+
       - name: Retain locked local Swift package inside generated project
         run: python3 scripts/prepare-ios-source-archive.py vendor --project distribution/ios-shell/ios --capacitor-app-package node_modules/@capacitor/app
 
@@ -183,6 +186,7 @@ jobs:
           name: urai-ios-source-preparation-${{ env.URAI_EXACT_HEAD }}
           path: |
             ios-source-receipt.json
+            distribution/ios-shell/ios/ios-preenrollment-contract.json
             distribution/ios-shell/ios/App/App/public/native-build-fingerprint.json
             ios-project-source.sha256
             distribution/ios-shell/ios/App/App.xcodeproj/project.pbxproj
@@ -290,6 +294,24 @@ jobs:
           set -euo pipefail
           xcodebuild -project distribution/ios-shell/ios/App/App.xcodeproj -scheme App -configuration Release -sdk "${{ matrix.sdk }}" -destination "${{ matrix.destination }}" -derivedDataPath "native-derived-${{ matrix.sdk }}" -clonedSourcePackagesDirPath "$RUNNER_TEMP/urai-native-spm" -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= DEVELOPMENT_TEAM= build 2>&1 | tee "ios-xcodebuild-${{ matrix.sdk }}.log"
           node scripts/prepare-native-static-provenance.mjs --directory "native-derived-${{ matrix.sdk }}/Build/Products/Release-${{ matrix.sdk }}/App.app/public" --source-sha "$URAI_EXACT_HEAD" --platform ios --workflow-run-id "$GITHUB_RUN_ID" --verify-only
+
+      - name: Actual iPhone and iPad simulator smoke (unsigned, non-release)
+        if: matrix.sdk == 'iphonesimulator'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for category in iPhone iPad; do
+            python3 scripts/urai-ios-simulator-smoke.py --app "native-derived-${{ matrix.sdk }}/Build/Products/Release-${{ matrix.sdk }}/App.app" --source-sha "$URAI_EXACT_HEAD" --source-workflow-run-id "$GITHUB_RUN_ID" --device-category "$category" --output-directory "ios-sim-evidence/$category"
+          done
+
+      - name: Retain real simulator screenshots and receipts
+        if: always() && matrix.sdk == 'iphonesimulator'
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-real-simulator-${{ env.URAI_EXACT_HEAD }}
+          path: ios-sim-evidence/
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Hash actual compiler output and prepare bounded transport
         shell: bash
