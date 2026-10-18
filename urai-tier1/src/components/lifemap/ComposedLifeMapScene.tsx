@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import { homeJourneyHref } from "@/spatial/navigation/homeSkyInteraction";
 import { withLifeMapSelectionIdentity } from "@/spatial/memory/lifeMapSelectionJourney";
+import { forwardPrivateMovieRouteSelection } from "@/spatial/life-movie/privateLifeMovieRouteSelection";
 import { useLifeMapEvents, type LifeMapSourceMode } from "./useLifeMapEvents";
 import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
@@ -298,9 +299,17 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       next.delete("manifestId");
       if (node.authorizedMemory && node.replayManifestId) next.set("manifestId", node.replayManifestId);
     }
+    // Forward only this already-selected owner's exact movie and plan pair.
+    // Neither route metadata nor this source-side flag grants Studio authority.
+    if (!explicitDemoRequested && node.authorizedMemory && !node.locked && node.memoryId && node.replayManifestId) {
+      forwardPrivateMovieRouteSelection(next, params, {
+        memoryId: node.memoryId, manifestId: node.replayManifestId,
+        authorizedOwner: true, demo: false,
+      });
+    }
     if (node.eraId) next.set("era", node.eraId);
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [explicitDemoRequested, profile.reducedMotion, router, withIdentity]);
+  }, [explicitDemoRequested, params, profile.reducedMotion, router, withIdentity]);
 
   const overview = useCallback(() => {
     const retainedId = selectedId || queryNode;
@@ -338,6 +347,13 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       next.delete("manifestId");
       if (selected.authorizedMemory && selected.replayManifestId) next.set("manifestId", selected.replayManifestId);
     }
+    if (!explicitDemoRequested && selected.authorizedMemory && !selected.locked &&
+        selected.memoryId && selected.replayManifestId) {
+      forwardPrivateMovieRouteSelection(next, params, {
+        memoryId: selected.memoryId, manifestId: selected.replayManifestId,
+        authorizedOwner: true, demo: false,
+      });
+    }
     next.set("returnNode", selected.id);
     next.set("artifactFamily", resolveArtifactFamily(selected));
     next.set("from", "life-map");
@@ -354,7 +370,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       }
     }
     return `/${route}?${next.toString()}`;
-  }, [explicitDemoRequested, phase, selected, withIdentity]);
+  }, [explicitDemoRequested, params, phase, selected, withIdentity]);
 
   useEffect(() => {
     if (!overviewRequested) return;

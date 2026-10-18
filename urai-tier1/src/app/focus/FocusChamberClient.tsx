@@ -18,6 +18,8 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets, replayAssets } from '@/spatial/assets/uraiAssets'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import { useBrowserLocation } from '@/hooks/useBrowserLocation'
+import { forwardPrivateMovieRouteSelection } from '@/spatial/life-movie/privateLifeMovieRouteSelection'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { focusMemoryAppearance } from './focusMemoryAppearance'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
@@ -325,6 +327,7 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
 export default function FocusChamberClient() {
   const locale = useUraiLocale()
   const result = useSelectedMemory()
+  const location = useBrowserLocation()
   const memory = result.memory
   const adaptiveProfile = useAdaptiveSpatialQuality()
   const [softwareRenderer, setSoftwareRenderer] = useState(false)
@@ -388,8 +391,15 @@ export default function FocusChamberClient() {
     if (!memory) return null
     const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: memory.star.id, from: 'focus-artifact' })
     if (memory.demo) next.set('demo', '1')
+    if (!memory.demo && memory.privacy === 'private' && memory.authorization === 'owner') {
+      const search = location.includes('?') ? location.slice(location.indexOf('?') + 1).split('#')[0] : ''
+      forwardPrivateMovieRouteSelection(next, new URLSearchParams(search), {
+        memoryId: memory.id, manifestId: memory.replayManifest.id,
+        authorizedOwner: true, demo: false,
+      })
+    }
     return `/replay?${next.toString()}`
-  }, [memory])
+  }, [memory, location])
 
   const enterReplay = useCallback(() => {
     if (!memory || !replayHref || committed) return

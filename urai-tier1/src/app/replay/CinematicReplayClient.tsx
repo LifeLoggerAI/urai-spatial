@@ -18,6 +18,8 @@ import * as THREE from 'three'
 import { replayAssets } from '@/spatial/assets/uraiAssets'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import { useBrowserLocation } from '@/hooks/useBrowserLocation'
+import { selectedPrivateMovieFromBrowserLocation } from '@/spatial/life-movie/privateLifeMovieRouteSelection'
 import { useOwnedMemoryMediaPlayback } from '@/spatial/memory/useOwnedMemoryMediaPlayback'
 import { useProtectedLifeMovieReplay } from './useProtectedLifeMovieReplay'
 import { currentPrivateLifeMovieCaption } from './privateLifeMovieSegmentTimeline'
@@ -438,6 +440,7 @@ function replayTimeLabel(timeMs: number) {
 
 function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: SelectedMemory; memoryStatus: string; quality: SpatialQualityProfile }) {
   const locale = useUraiLocale()
+  const location = useBrowserLocation()
   const videoSession = useRef<ReplayVideoSession | null>(null)
   const sourceRelease = useRef<(() => void) | null>(null)
   const onSourceRelease = useCallback((release: (() => void) | null) => { sourceRelease.current = release }, [])
@@ -451,11 +454,12 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const ownedPlayback = useOwnedMemoryMediaPlayback(memory, () => { sourceRelease.current?.(); videoSession.current?.dispose() })
   // Selectors locate only a candidate; Studio independently verifies its
   // real owner, account link, consent, SceneTruth and Jobs binding.
-  const playbackSelection = useMemo(() => {
-    if (typeof window === 'undefined') return { movieId: null, planId: null }
-    const query = new URLSearchParams(window.location.search)
-    return { movieId: query.get('movieId'), planId: query.get('lifeMoviePlanId') }
-  }, [memory.id])
+  const playbackSelection = useMemo(() => selectedPrivateMovieFromBrowserLocation(location, {
+    memoryId: memory.id, manifestId: memory.replayManifest.id,
+    authorizedOwner: memory.authorization === 'owner' && memory.privacy === 'private',
+    demo: memory.demo,
+  }) ?? { movieId: null, planId: null },
+  [location, memory.id, memory.replayManifest.id, memory.authorization, memory.privacy, memory.demo])
   const protectedMovie = useProtectedLifeMovieReplay(memory, playbackSelection.planId, playbackSelection.movieId)
   const expectsPrivateSource = Boolean(memory.sourceMediaReceipts?.length)
   const hasProtectedMovie = protectedMovie.status === 'ready' && protectedMovie.media !== null
