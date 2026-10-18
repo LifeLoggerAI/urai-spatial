@@ -2,7 +2,7 @@
 
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import CouncilHumanProximity from '@/spatial/digital-human/CouncilHumanProximity'
-import AnonymousFacialFixture from '@/spatial/digital-human/AnonymousFacialFixture'
+import AnonymousFacialFixture, { type AnonymousRenderFrame } from '@/spatial/digital-human/AnonymousFacialFixture'
 import AnonymousCalibrationControls from '@/spatial/digital-human/AnonymousCalibrationControls'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, Lightformer, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
@@ -276,8 +276,8 @@ function CouncilStage() {
   const [fixtureEnabled,setFixtureEnabled] = useState(false)
   const [fixtureMedia,setFixtureMedia] = useState<HTMLAudioElement|null>(null)
   const [fixtureMuted,setFixtureMuted] = useState(false)
-  const [fixtureFrame,setFixtureFrame] = useState<{time:number;max:number;written:number;playing:boolean;geometryX:number}|null>(null)
-  const onFixtureFrame = useCallback((frame:{time:number;max:number;written:number;playing:boolean;geometryX:number}) => setFixtureFrame(previous=>previous?.time===frame.time && previous.max===frame.max ? previous : frame),[])
+  const [fixtureFrame,setFixtureFrame] = useState<AnonymousRenderFrame|null>(null)
+  const onFixtureFrame = useCallback((frame:AnonymousRenderFrame) => setFixtureFrame(previous=>previous?.time===frame.time && previous.max===frame.max ? previous : frame),[])
   useEffect(()=>{
     // Both an explicit compile-time gate and the URL opt-in are necessary.
     const enabled=process.env.NEXT_PUBLIC_URAI_ANONYMOUS_FACE_CALIBRATION==='true' && new URLSearchParams(window.location.search).get('anonymousFaceLab')==='1'
