@@ -652,7 +652,27 @@ try {
             throw error
           }
           await playable(page,'video[aria-label="Authorized private Life Movie"]')
-          await page.waitForFunction(()=>document.querySelector('[data-private-life-movie-live-caption]')?.textContent?.includes('Fictional'))
+          // The pinned Jobs SRT has NO text at t=0: its first cue starts at
+          // 400 ms and says "This is a synthetic UrAi narration." The
+          // previous "Fictional" expectation belonged to an unrelated shim
+          // and could never prove real Jobs caption synchronization.
+          assert.match(authenticSrt,/00:00:00,400 --> 00:00:02,300\s+This is a synthetic UrAi narration\./)
+          const localCaption=page.locator('[data-private-life-movie-live-caption="verified"]')
+          assert.equal((await localCaption.textContent())?.trim(),'',
+            'no private cue may display before its segment-local start')
+          const setSeek=async(ms)=>{
+            await page.locator('.memorySeek').evaluate((input,value)=>{
+              const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set
+              setter.call(input,String(value))
+              input.dispatchEvent(new Event('input',{bubbles:true}))
+              input.dispatchEvent(new Event('change',{bubbles:true}))
+            },ms)
+          }
+          await setSeek(1000)
+          await page.waitForFunction(()=>document.querySelector('[data-private-life-movie-live-caption="verified"]')?.textContent?.trim()==='This is a synthetic UrAi narration.')
+          const cueClock=Number(await movie.getAttribute('data-current-time-ms'))
+          assert.ok(cueClock>=400&&cueClock<2300,
+            'first Jobs cue must synchronize to the decoded original Replay clock')
           assert.deepEqual(privateRequests.slice(0,3).map(x=>[x.action,x.kind,x.segmentIndex]),
             [['read-spatial-timeline',undefined,null],['deliver-spatial-segment','mp4',0],['deliver-spatial-segment','srt',0]])
           const first=await page.locator('video').evaluate(v=>({width:v.videoWidth,height:v.videoHeight}))
@@ -663,14 +683,6 @@ try {
           const paused=await page.locator('video').evaluate(v=>v.currentTime)
           await page.waitForTimeout(180)
           assert.ok(Math.abs((await page.locator('video').evaluate(v=>v.currentTime))-paused)<.06)
-          const setSeek=async(ms)=>{
-            await page.locator('.memorySeek').evaluate((input,value)=>{
-              const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set
-              setter.call(input,String(value))
-              input.dispatchEvent(new Event('input',{bubbles:true}))
-              input.dispatchEvent(new Event('change',{bubbles:true}))
-            },ms)
-          }
           await setSeek(7500)
           await page.waitForFunction(()=>document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.privateSegmentIndex==='1')
           await playable(page,'video[aria-label="Authorized private Life Movie"]')
@@ -683,7 +695,9 @@ try {
           await setSeek(500)
           await page.waitForFunction(()=>document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.privateSegmentIndex==='0')
           await playable(page,'video[aria-label="Authorized private Life Movie"]')
-          await page.waitForFunction(()=>document.querySelector('[data-private-life-movie-live-caption]')?.textContent?.includes('Fictional'))
+          await page.waitForFunction(()=>document.querySelector('[data-private-life-movie-live-caption="verified"]')?.textContent?.trim()==='This is a synthetic UrAi narration.')
+          assert.ok(Number(await movie.getAttribute('data-current-time-ms'))>=400,
+            'backward seek must restore the first protected Jobs cue at a valid global time')
           const delivered=realResponses.filter(r=>r.action==='deliver-spatial-segment')
           assert.ok(delivered.length>=8&&delivered.every(r=>r.status===200))
           await page.screenshot({path:path.join(output,'original-replay-real-multisegment-chromium.png')})
