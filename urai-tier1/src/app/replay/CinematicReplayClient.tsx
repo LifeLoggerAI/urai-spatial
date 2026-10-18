@@ -486,7 +486,14 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const onVideoSnapshot = useCallback((state: ReplayVideoSnapshot) => setVideoSnapshot(state), [])
   const onVideoSession = useCallback((session: ReplayVideoSession | null) => {
     videoSession.current = session
-    if (session) setVideoSnapshot(initialReplayVideoSnapshot())
+    if (session) {
+      // The new <video> is a new decoded session even when a previous
+      // segment already published ready=true. Re-arm its deferred local seek.
+      // Without this, a stale ready snapshot can consume mountedSegmentUrl
+      // before the replacement session is registered, leaving currentTime=0.
+      mountedSegmentUrl.current = null
+      setVideoSnapshot(initialReplayVideoSnapshot())
+    }
   }, [])
   const mediaStatus = video ? videoSnapshot.status : admission.kind === 'neutral' ? 'absent' : imageState.status
   const mediaReady = video ? videoSnapshot.ready : admission.kind !== 'neutral' && imageState.status === 'ready'
