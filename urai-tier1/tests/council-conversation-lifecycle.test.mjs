@@ -5,6 +5,7 @@ import test from 'node:test'
 import ts from 'typescript'
 import React, { act } from 'react'
 import * as jsxRuntime from 'react/jsx-runtime'
+import { createCouncilEncounterSession } from '../src/spatial/digital-human/councilEncounterSession.mjs'
 
 // Actual declared React/ReactDOM rendering with an explicit small DOM adapter.
 // Provider promises are synthetic boundaries: these tests make no provider requests.
@@ -111,6 +112,8 @@ function fixture(t) {
   const fallback = () => ({ ...answer('Local fallback'), provider: 'fallback' })
   const imports = {
     react: React, 'react/jsx-runtime': jsxRuntime,
+    // Inject the ACTUAL production ESM encounter controller, not a simulated authority.
+    '@/spatial/digital-human/councilEncounterSession.mjs': { createCouncilEncounterSession },
     // This suite exercises the real Council React tree. These adapters replace
     // the browser/Firebase subscriptions, not the Council's routing behavior.
     '@/hooks/useBrowserLocation': {
