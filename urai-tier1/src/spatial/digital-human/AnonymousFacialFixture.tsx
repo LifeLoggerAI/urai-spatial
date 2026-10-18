@@ -54,7 +54,7 @@ export default function AnonymousFacialFixture({media, muted, reducedMotion, fre
   useFrame(({clock, camera, size}) => {
     const playing = !!media && !media.paused && !media.ended && !media.muted && !muted
     const time = media?.currentTime ?? 0
-    const pose = calibrationPose(time, playing && !freezeMorphs, reducedMotion, muted)
+    const pose = calibrationPose(time, playing && !freezeMorphs, reducedMotion, muted, 'capture')
     const result = writeMorphs(instance, pose)
     if (!root.current || clock.elapsedTime - lastReport.current < .06) return
     root.current.updateWorldMatrix(true, true)

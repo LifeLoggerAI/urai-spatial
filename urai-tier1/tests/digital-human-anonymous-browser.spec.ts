@@ -69,7 +69,7 @@ async function compareRenderedFace(page:any,neutral:Buffer,animated:Buffer,regio
  },{a:neutral.toString('base64'),b:animated.toString('base64'),r:region})
 }
 test('original Council WebGL visually changes actual anonymous facial mesh during audible media playback',async({page},info)=>{
- test.setTimeout(120000) // first Next cold boot plus four real Chromium captures
+ test.setTimeout(180000) // exact Next cold boot plus four original CDP WebGL captures
  const errors:string[]=[]
  page.on('pageerror',error=>errors.push(error.message))
  await page.goto(new URL('/council?anonymousFaceLab=1',origin).href,{waitUntil:'domcontentloaded',timeout:45000})
@@ -90,12 +90,13 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
  }
  const bounds=await measureCanvasViewport(canvas)
  const captureFace:Region={...face,cx:face.cx-bounds.offsetX,cy:face.cy-bounds.offsetY}
- // Slowing this non-speech fixture's real HTMLAudioElement playback rate keeps
- // the 0.18-0.63 second morph interval observable through macOS GPU screenshots.
+ // The dedicated 9s audible lab profile sustains genuine nonzero morph weights
+ // across the measured >10s macOS compositor latency; playback rate remains real.
  // The value below is the real browser audio playback rate, not fabricated time.
  await page.getByTestId('calibration-slow').click()
  await expect(telemetry).toHaveAttribute('data-audio-playback-rate','0.1')
  const playbackRate=Number(await telemetry.getAttribute('data-audio-playback-rate'))
+ expect(playbackRate).toBe(.1)
  const neutralCapture=await captureOriginalWebGLFrame(page,bounds)
  const neutral=neutralCapture.bytes
  await page.getByTestId('calibration-play').click()
@@ -106,11 +107,12 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
  const animatedCapture=await captureOriginalWebGLFrame(page,bounds)
  const animated=animatedCapture.bytes
  const activeAfter={time:Number(await telemetry.getAttribute('data-time')),weight:Number(await telemetry.getAttribute('data-max-weight'))}
- // A 2.3s actual audible sample must still be inside its non-neutral mouth interval
+ // A 9s actual audible sample must still be inside its non-neutral mouth interval
  // when captured. A late neutral frame cannot be misreported as animation.
  expect(activeBefore.weight).toBeGreaterThan(.32)
  expect(activeBefore.time).toBeGreaterThan(.18)
- expect(activeAfter.time).toBeLessThan(.73)
+ expect(activeAfter.time).toBeLessThan(8)
+ expect(activeAfter.weight).toBeGreaterThan(.32)
  const diff=await compareRenderedFace(page,neutral,animated,captureFace)
  // Actual screenshot region MUST change, not merely a reported morph weight.
  expect(diff.checked).toBeGreaterThan(400)
@@ -118,7 +120,7 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
  expect(diff.meanRgbDelta).toBeGreaterThan(1)
  await info.attach('anonymous-face-neutral-render.png',{body:neutral,contentType:'image/png'})
  await info.attach('anonymous-face-animated-render.png',{body:animated,contentType:'image/png'})
- // Negative control uses the SAME 2.3-second audible fixture with facial targets forced neutral.
+ // Negative control uses the SAME real nine-second audible fixture with targets forced neutral.
  // This compares pixels from the ACTUAL Council WebGL canvas, not a synthetic DOM mock.
  await page.getByTestId('calibration-stop').click()
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight'))).toBe(0)
@@ -136,7 +138,7 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
  const frozenPlaying=frozenPlayingCapture.bytes
  const frozenAfter=Number(await telemetry.getAttribute('data-time'))
  expect(frozenBefore).toBeGreaterThan(.25)
- expect(frozenAfter).toBeLessThan(2.3)
+ expect(frozenAfter).toBeLessThan(8)
  const negative=await compareRenderedFace(page,frozenNeutral,frozenPlaying,captureFace)
  expect(negative.checked).toBeGreaterThan(400)
  expect(negative.changed).toBeLessThan(Math.max(20,diff.changed*.40))
@@ -157,7 +159,7 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight')),{timeout:10000}).toBeGreaterThan(.05)
  await page.getByTestId('calibration-stop').click()
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight'))).toBe(0)
- await info.attach('anonymous-face-render-proof.json',{body:JSON.stringify({classification:'ORIGINAL_COUNCIL_WEBGL_ANONYMOUS_TONE_ONLY_NOT_SPEECH',head:process.env.URAI_EXACT_HEAD??'unknown',assetSha256:'3a6a44f9a2d7a666c15cb345852977c663d17f688eec8816def2237a53fd16bc',face,canvasCrop:bounds,captureFace,mediaTime,playbackRate,activeBefore,activeAfter,frozenBefore,frozenAfter,positiveCaptureMs:animatedCapture.elapsedMs,negativeCaptureMs:frozenPlayingCapture.elapsedMs,diff,negative,errors}),contentType:'application/json'})
+ await info.attach('anonymous-face-render-proof.json',{body:JSON.stringify({classification:'ORIGINAL_COUNCIL_WEBGL_ANONYMOUS_TONE_ONLY_NOT_SPEECH',head:process.env.URAI_EXACT_HEAD??'unknown',assetSha256:'3a6a44f9a2d7a666c15cb345852977c663d17f688eec8816def2237a53fd16bc',face,canvasCrop:bounds,captureFace,mediaTime,playbackRate,audioProfile:'capture-9s-nonspeech',activeBefore,activeAfter,frozenBefore,frozenAfter,positiveCaptureMs:animatedCapture.elapsedMs,negativeCaptureMs:frozenPlayingCapture.elapsedMs,diff,negative,errors}),contentType:'application/json'})
  expect(errors).toEqual([])
 })
 test('production route omits fixture without explicit URL opt-in',async({page})=>{
