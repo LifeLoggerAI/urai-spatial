@@ -326,8 +326,20 @@ async function open(route = '/replay', settings = {}) {
       'Content-Type':body.kind==='mp4'?'video/mp4':'application/x-subrip',
       'Content-Length':String(payload.length),'X-URAI-PRIVATE-PLAYLIST-DIGEST':digest}})
   })
-  const query = route === '/spatial/captured-reality' ? `?assetId=synthetic-accepted-place${settings.standalone ? '' : `&memoryId=${memoryId}`}` : route === '/life-movie' ? `?movieId=synthetic-movie&memoryId=${memoryId}` : `?memoryId=${memoryId}`
+  const query = route === '/spatial/captured-reality' ? `?assetId=synthetic-accepted-place${settings.standalone ? '' : `&memoryId=${memoryId}`}` : route === '/life-movie' ? `?movieId=synthetic-movie&memoryId=${memoryId}` : `?memoryId=${memoryId}${settings.dualPrivate ? '&manifestId=synthetic-manifest' : ''}`
   const privateQuery = settings.dualPrivate ? '&dualPrivate=1&movieId=synthetic-movie&lifeMoviePlanId='+privatePlanId+(settings.realHandler?'&realHandler=1':'')+(settings.segmentMode?'&segmentMode=1':'') : ''
+  // Exact original production selector requires the selected memory manifest,
+  // not merely movie+plan. The browser must exercise the real owner-bound route
+  // through Replay; without this, no authorized Studio HTTP request is made.
+  if (settings.dualPrivate && route === '/replay') {
+    const selected = new URLSearchParams(query + privateQuery)
+    assert.equal(selected.get('memoryId'), memoryId)
+    assert.equal(selected.get('manifestId'), 'synthetic-manifest')
+    assert.equal(selected.get('movieId'), 'synthetic-movie')
+    assert.equal(selected.get('lifeMoviePlanId'), privatePlanId)
+    for (const key of ['memoryId', 'manifestId', 'movieId', 'lifeMoviePlanId'])
+      assert.equal(selected.getAll(key).length, 1, 'unique original private route selector: '+key)
+  }
   // Arm response observation BEFORE navigation; a fast synthetic 403/SRT can
   // finish before open() returns. Never replace a missed response with a sleep.
   const observedPrivateResponse = (settings.privateWrongStudio || settings.privatePlaylistMismatch || settings.realHandlerForeignSpatial)
