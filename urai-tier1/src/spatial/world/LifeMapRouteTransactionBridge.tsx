@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { withLifeMapSelectionIdentity } from '@/spatial/memory/lifeMapSelectionJourney'
 
 function routeHref(params: URLSearchParams) {
   const query = params.toString()
@@ -50,10 +51,20 @@ export function LifeMapRouteTransactionBridge() {
         ))
         if (!node) return
 
-        const next = new URLSearchParams(window.location.search)
+        const current = new URLSearchParams(window.location.search)
+        const demo = current.get('demo') === '1'
+        const next = withLifeMapSelectionIdentity(current, new URLSearchParams(), node.id)
         next.delete('overview')
-        next.set('memoryId', node.id)
+        // A Life Map node is a constellation event, not necessarily the canonical
+        // owner-verified memory document. Only that document may enter Focus/Replay.
         next.set('node', node.id)
+        if (demo) next.set('memoryId', node.id)
+        else if (node.authorizedMemory && node.memoryId) next.set('memoryId', node.memoryId)
+        else next.delete('memoryId')
+        if (!demo) {
+          next.delete('manifestId')
+          if (node.authorizedMemory && node.replayManifestId) next.set('manifestId', node.replayManifestId)
+        }
         if (node.eraId) next.set('era', node.eraId)
 
         // Commit identity before the scene exposes selected state. The scene's
@@ -66,10 +77,9 @@ export function LifeMapRouteTransactionBridge() {
       if (!selectedActions || button.textContent?.trim() !== 'Overview') return
 
       const next = new URLSearchParams(window.location.search)
-      const retainedId = next.get('memoryId') ?? next.get('node')
-      if (!retainedId) return
-      next.set('memoryId', retainedId)
-      next.set('node', retainedId)
+      // Preserve the constellation node and optional verified private memory as
+      // separate identities. Overview never mints a memoryId from an event id.
+      if (!next.get('node') && !next.get('memoryId')) return
       next.set('overview', '1')
       const href = routeHref(next)
 
