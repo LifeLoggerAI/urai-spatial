@@ -81,6 +81,12 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
  }
  const bounds=await measureCanvasViewport(canvas)
  const captureFace:Region={...face,cx:face.cx-bounds.offsetX,cy:face.cy-bounds.offsetY}
+ // Slowing this non-speech fixture's real HTMLAudioElement playback rate keeps
+ // the 0.18-0.63 second morph interval observable through macOS GPU screenshots.
+ // The value below is the real browser audio playback rate, not fabricated time.
+ await page.getByTestId('calibration-slow').click()
+ await expect(telemetry).toHaveAttribute('data-audio-playback-rate','0.1')
+ const playbackRate=Number(await telemetry.getAttribute('data-audio-playback-rate'))
  const neutralCapture=await captureOriginalWebGLFrame(page,bounds)
  const neutral=neutralCapture.bytes
  await page.getByTestId('calibration-play').click()
@@ -142,7 +148,7 @@ test('original Council WebGL visually changes actual anonymous facial mesh durin
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight')),{timeout:10000}).toBeGreaterThan(.05)
  await page.getByTestId('calibration-stop').click()
  await expect.poll(async()=>Number(await telemetry.getAttribute('data-max-weight'))).toBe(0)
- await info.attach('anonymous-face-render-proof.json',{body:JSON.stringify({classification:'ORIGINAL_COUNCIL_WEBGL_ANONYMOUS_TONE_ONLY_NOT_SPEECH',head:process.env.URAI_EXACT_HEAD??'unknown',assetSha256:'3a6a44f9a2d7a666c15cb345852977c663d17f688eec8816def2237a53fd16bc',face,canvasCrop:bounds,captureFace,mediaTime,activeBefore,activeAfter,frozenBefore,frozenAfter,positiveCaptureMs:animatedCapture.elapsedMs,negativeCaptureMs:frozenPlayingCapture.elapsedMs,diff,negative,errors}),contentType:'application/json'})
+ await info.attach('anonymous-face-render-proof.json',{body:JSON.stringify({classification:'ORIGINAL_COUNCIL_WEBGL_ANONYMOUS_TONE_ONLY_NOT_SPEECH',head:process.env.URAI_EXACT_HEAD??'unknown',assetSha256:'3a6a44f9a2d7a666c15cb345852977c663d17f688eec8816def2237a53fd16bc',face,canvasCrop:bounds,captureFace,mediaTime,playbackRate,activeBefore,activeAfter,frozenBefore,frozenAfter,positiveCaptureMs:animatedCapture.elapsedMs,negativeCaptureMs:frozenPlayingCapture.elapsedMs,diff,negative,errors}),contentType:'application/json'})
  expect(errors).toEqual([])
 })
 test('production route omits fixture without explicit URL opt-in',async({page})=>{

@@ -9,6 +9,7 @@ export default function AnonymousCalibrationControls({onMedia,onMute,onFreeze,on
  const urlRef=useRef<string|null>(null)
  const [ready,setReady]=useState(false)
  const [muted,setMuted]=useState(false)
+ const [playbackRate,setPlaybackRate]=useState(1)
  const [frozen,setFrozen]=useState(false)
  const [playing,setPlaying]=useState(false)
  useEffect(()=>{
@@ -30,9 +31,10 @@ export default function AnonymousCalibrationControls({onMedia,onMute,onFreeze,on
  className="pointer-events-auto absolute right-4 top-16 z-30 max-w-72 rounded-lg border border-amber-300/50 bg-black/85 p-3 text-white"
  aria-label="Anonymous technical facial calibration">
  <strong className="text-sm">Anonymous facial animation lab</strong>
- <p className="text-xs">Non-speech test tone and synthetic face. Not Adam, not a Council provider, not production.</p>
+ <p className="text-xs">Non-speech test tone and synthetic face. Not Adam, not a Council provider, not production. Slow inspection mode uses the actual audio media clock at 0.1x, never simulated time.</p>
  <div className="flex flex-wrap gap-2">
  <button type="button" data-testid="calibration-play" disabled={!ready} onClick={play}>Play test tone</button>
+ <button type="button" data-testid="calibration-slow" aria-pressed={playbackRate!==1} onClick={()=>{const next=playbackRate===1 ? 0.1 : 1; if(audioRef.current)audioRef.current.playbackRate=next;setPlaybackRate(next)}}>{playbackRate===1?'Slow audio-clock capture (0.1x)':'Restore normal audio speed'}</button>
  <button type="button" data-testid="calibration-pause" onClick={()=>{audioRef.current?.pause();setPlaying(false)}}>Pause</button>
  <button type="button" data-testid="calibration-stop" onClick={stop}>Stop</button>
  <button type="button" data-testid="calibration-mute" aria-pressed={muted} onClick={()=>{const next=!muted;setMuted(next);onMute(next);if(audioRef.current)audioRef.current.muted=next}}>{muted?'Unmute':'Mute'}</button>
@@ -42,6 +44,6 @@ export default function AnonymousCalibrationControls({onMedia,onMute,onFreeze,on
   <input aria-label="Calibration audio seek" className="w-full" type="range" min="0" max="2.3" step=".01" defaultValue="0" onChange={e=>{if(audioRef.current)audioRef.current.currentTime=Number(e.target.value)}}/>
  </label>
  <p aria-live="polite" className="text-xs" data-testid="calibration-status">Audio {playing?'playing':'stopped'}; sample clock {onFrame?.time.toFixed(3)??'0.000'} seconds; geometry weight {onFrame?.max.toFixed(3)??'0.000'}.</p>
- <span data-testid="calibration-telemetry" data-morphs-frozen={frozen?'true':'false'} data-playing={onFrame?.playing?'true':'false'} data-max-weight={onFrame?.max??0} data-time={onFrame?.time??0} data-morph-bindings={onFrame?.written??0} data-face-visible={onFrame?.face.visible?'true':'false'} data-face-cx={onFrame?.face.cx??0} data-face-cy={onFrame?.face.cy??0} data-face-rx={onFrame?.face.rx??0} data-face-ry={onFrame?.face.ry??0} hidden />
+ <span data-testid="calibration-telemetry" data-audio-playback-rate={playbackRate} data-morphs-frozen={frozen?'true':'false'} data-playing={onFrame?.playing?'true':'false'} data-max-weight={onFrame?.max??0} data-time={onFrame?.time??0} data-morph-bindings={onFrame?.written??0} data-face-visible={onFrame?.face.visible?'true':'false'} data-face-cx={onFrame?.face.cx??0} data-face-cy={onFrame?.face.cy??0} data-face-rx={onFrame?.face.rx??0} data-face-ry={onFrame?.face.ry??0} hidden />
  </aside>
 }
