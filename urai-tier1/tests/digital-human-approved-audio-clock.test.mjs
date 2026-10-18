@@ -30,6 +30,30 @@ test('character switch cannot reuse voice',async()=>{const r=await setup();await
 test('account epoch switch discards audio frames',async()=>{const r=await setup();await r.clock.start();r.authority.actorGeneration=2;assert.equal(r.clock.tick().mode,'neutral');assert.equal(r.media.paused,true)})
 test('mute silences facial frames',async()=>{const r=await setup();await r.clock.start();r.media.muted=true;r.clock.tick();assert.equal(r.frames.length,0);assert.ok(r.neutral.includes('muted'));r.clock.dispose()})
 test('audio errors and interruption are terminal',async()=>{const r=await setup();await r.clock.start();r.media.emit('error');assert.equal(r.clock.snapshot().stopped,true);assert.equal(r.clock.snapshot().status,'audio-error');r.clock.interrupt();r.clock.dispose()})
-test('late play promise cannot resurrect revoked voice',async()=>{const r=await setup();let complete;r.media.playDeferred=new Promise(resolve=>{complete=resolve});const pending=r.clock.start();r.clock.interrupt();complete();assert.equal(await pending,false);assert.equal(r.clock.snapshot().stopped,true)})
+test('late play promise cannot resurrect revoked voice',async()=>{const r=await setup();let complete;r.media.playDeferred=new Promise(resolve=>{complete=resolve});const pending=r.clock.start();r.clock.interrupt();complete();assert.equal(await pending,false);assert.equal(r.clock.snapshot().stopped,true);assert.equal(r.media.paused,true)})
 test('morph bridge enforces exact turn and SHA',async()=>{const r=await setup();let calls=0,stops=0;const driver={beginAudio:()=>true,frame:()=>{calls++;return{mode:'audio-clock-visemes'}},interrupt:()=>{stops++}};const x=bindCouncilAudioMorph({clock:r.clock,morphDriver:driver,turnId:2,audioSha256:r.proof.audioSha256});assert.equal(x.start(),true);assert.equal(x.onFrame({turnId:3,audioSha256:r.proof.audioSha256}).mode,'neutral');x.onFrame({turnId:2,audioSha256:r.proof.audioSha256,audioSeconds:.4,playing:true,rms:.1});assert.equal(calls,1);x.stop();assert.equal(stops,1)})
 test('playback failure never animates',async()=>{const r=await setup();r.media.play=async()=>{throw Error('no audio device')};assert.equal(await r.clock.start(),false);assert.equal(r.frames.length,0);assert.ok(r.neutral.includes('audio-playback-failed'))})
+test('late play completion after dispose remains silent and detaches listeners',async()=>{
+  const r=await setup();let release;r.media.playDeferred=new Promise(resolve=>{release=resolve});
+  const pending=r.clock.start();r.clock.dispose();release();
+  assert.equal(await pending,false);assert.equal(r.media.paused,true);
+  assert.equal(r.clock.snapshot().disposed,true);
+  assert.equal([...r.media.handlers.values()].flat().length,0);
+})
+test('duplicate pending media.play does not race or pause the admitted audio',async()=>{
+  const r=await setup();let release;r.media.playDeferred=new Promise(resolve=>{release=resolve});
+  const play=r.media.play.bind(r.media);let attempts=0;r.media.play=()=>{attempts++;return play()};
+  const original=r.clock.start();const duplicate=r.clock.start();
+  assert.equal(attempts,1);release();
+  assert.equal(await original,true);assert.equal(await duplicate,false);
+  assert.equal(r.media.paused,false);r.clock.dispose();
+})
+test('morph stop followed by dispose still unregisters terminal clock handlers',async()=>{
+  const r=await setup();let interruptions=0;
+  const bridge=bindCouncilAudioMorph({clock:r.clock,turnId:2,audioSha256:r.proof.audioSha256,
+    morphDriver:{beginAudio:()=>true,frame:()=>({mode:'neutral'}),interrupt:()=>interruptions++}});
+  bridge.stop();bridge.dispose();bridge.dispose();
+  assert.equal(r.clock.snapshot().disposed,true);
+  assert.equal([...r.media.handlers.values()].flat().length,0);
+  assert.equal(interruptions,1);
+})
