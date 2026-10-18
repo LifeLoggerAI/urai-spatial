@@ -92,6 +92,7 @@ const privateDefines = {...buildOptions.define,
   'process.env.NEXT_PUBLIC_URAI_STUDIO_FIREBASE_API_KEY':'"synthetic-public-key"',
   'process.env.NEXT_PUBLIC_URAI_STUDIO_FIREBASE_AUTH_DOMAIN':'"studio-replay.invalid"',
   'process.env.NEXT_PUBLIC_URAI_STUDIO_FIREBASE_PROJECT_ID':'"urai-studio"',
+  'process.env.NEXT_PUBLIC_URAI_SPATIAL_SEGMENTED_MOVIE_ENABLED':'"false"',
   'process.env.NEXT_PUBLIC_URAI_STUDIO_PRIVATE_MEDIA_ORIGIN':'"https://studio-replay.invalid"'
 }
 const privateCompiled = await build({...buildOptions,define:privateDefines})
