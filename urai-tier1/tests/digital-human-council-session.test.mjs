@@ -1,0 +1,54 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { createCouncilEncounterSession } from '../src/spatial/digital-human/councilEncounterSession.mjs'
+const input = (agentId='council-archivist', actorGeneration=1, inRange=true, processingConsent=true) => ({ agentId, actorGeneration, inRange, processingConsent })
+test('Council scope requires current nearby actor and consent before beginning an encounter', () => {
+ const s=createCouncilEncounterSession()
+ assert.equal(s.begin({actorGeneration:1,agentId:'council-archivist'}),null)
+ s.update(input())
+ const turn=s.begin({actorGeneration:1,agentId:'council-archivist'})
+ assert.ok(turn)
+ assert.equal(s.isCurrent(turn,1,'council-archivist'),true)
+})
+test('Council agent switching rejects late response for previous character', () => {
+ const s=createCouncilEncounterSession();s.update(input())
+ const first=s.begin({actorGeneration:1,agentId:'council-archivist'})
+ s.update(input('council-guide'))
+ assert.equal(s.isCurrent(first,1,'council-archivist'),false)
+ assert.equal(s.isCurrent(first,1,'council-guide'),false)
+})
+test('switching account generation immediately invalidates active turn', () => {
+ const s=createCouncilEncounterSession();s.update(input())
+ const first=s.begin({actorGeneration:1,agentId:'council-archivist'})
+ s.update(input('council-archivist',2))
+ assert.equal(s.isCurrent(first,1,'council-archivist'),false)
+})
+test('walking away invalidates in-world encounter', () => {
+ const s=createCouncilEncounterSession();s.update(input())
+ const first=s.begin({actorGeneration:1,agentId:'council-archivist'})
+ s.update(input('council-archivist',1,false))
+ assert.equal(s.isCurrent(first,1,'council-archivist'),false)
+})
+test('consent withdrawal cancels active turn', () => {
+ const s=createCouncilEncounterSession();s.update(input())
+ const first=s.begin({actorGeneration:1,agentId:'council-archivist'})
+ s.update(input('council-archivist',1,true,false))
+ assert.equal(s.isCurrent(first,1,'council-archivist'),false)
+})
+test('interruption stops previous turn and a new turn can begin cleanly', () => {
+ const s=createCouncilEncounterSession();s.update(input())
+ const first=s.begin({actorGeneration:1,agentId:'council-archivist'})
+ s.interrupt();assert.equal(s.isCurrent(first,1,'council-archivist'),false)
+ const second=s.begin({actorGeneration:1,agentId:'council-archivist'})
+ assert.ok(second>first);assert.equal(s.finish(second),true)
+})
+test('invalid actor identity fails closed', () => {
+ const s=createCouncilEncounterSession();assert.equal(s.update({agentId:'a',actorGeneration:-1,inRange:true,processingConsent:true}),false)
+ assert.equal(s.begin({actorGeneration:-1,agentId:'a'}),null)
+})
+test('dispose removes actor association and active turn', () => {
+ const s=createCouncilEncounterSession();s.update(input())
+ const first=s.begin({actorGeneration:1,agentId:'council-archivist'})
+ s.dispose();assert.equal(s.isCurrent(first,1,'council-archivist'),false)
+ assert.equal(s.snapshot().actor,null)
+})
