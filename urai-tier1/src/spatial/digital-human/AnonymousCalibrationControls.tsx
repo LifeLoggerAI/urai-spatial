@@ -1,5 +1,5 @@
 'use client'
-import { useCallback,useEffect,useRef,useState } from 'react'
+import { useEffect,useRef,useState } from 'react'
 import { makeToneWav } from './anonymousCalibration.mjs'
 
 type Frame={time:number;max:number;written:number;playing:boolean;geometryX:number}
@@ -9,14 +9,6 @@ export default function AnonymousCalibrationControls({onMedia,onMute,onFrame}:{o
  const [ready,setReady]=useState(false)
  const [muted,setMuted]=useState(false)
  const [playing,setPlaying]=useState(false)
- const dispose=useCallback(()=>{
-  const audio=audioRef.current
-  if(audio){audio.pause();audio.removeAttribute('src');audio.load()}
-  audioRef.current=null
-  onMedia(null);onMute(false)
-  if(urlRef.current)URL.revokeObjectURL(urlRef.current)
-  urlRef.current=null;setPlaying(false)
- },[onMedia,onMute])
  useEffect(()=>{
   const wav=makeToneWav()
   const url=URL.createObjectURL(new Blob([new Uint8Array(wav)],{type:'audio/wav'}))
