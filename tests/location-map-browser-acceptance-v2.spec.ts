@@ -51,11 +51,19 @@ async function recoveredNavigationStylesheetAborts(page: Page, evidence: Evidenc
   // final document. A missing stylesheet, non-200 response, or repeated abort
   // is an actionable browser failure, not an exception to the acceptance gate.
   const finalCssApplied = await page.evaluate(() => {
-    const stylesheet = [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')]
-      .find(link => new URL(link.href).pathname === '/_next/static/css/app/location-map/page.css')
+    // Dev serves a route-specific stylesheet; the Firebase Preview static export
+    // serves fingerprinted Next.js CSS. Require every linked Next stylesheet to
+    // load in the final document, as well as the real computed atlas layout.
+    const stylesheets = [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')]
+      .filter(link => {
+        const url = new URL(link.href)
+        return url.origin === window.location.origin
+          && (url.pathname === '/_next/static/css/app/location-map/page.css'
+            || /^\\/_next\\/static\\/css\\/[a-f0-9]{16}\\.css$/.test(url.pathname))
+      })
     const atlas = document.querySelector<HTMLElement>('.locationAtlas')
     const stage = document.querySelector<HTMLElement>('.locationAtlasStage')
-    return Boolean(stylesheet?.sheet && atlas && stage
+    return Boolean(stylesheets.length > 0 && stylesheets.every(link => link.sheet !== null) && atlas && stage
       && getComputedStyle(atlas).position === 'fixed'
       && getComputedStyle(stage).position === 'absolute'
       && getComputedStyle(stage).overflow === 'hidden')
