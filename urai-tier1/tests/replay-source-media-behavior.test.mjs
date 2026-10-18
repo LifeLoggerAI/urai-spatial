@@ -632,3 +632,51 @@ test('media session keeps video inline without adding video-only properties to a
   assert.equal(audio.muted, true)
   audioControls.dispose()
 })
+
+test('late play settlement cannot reactivate original Replay after pause, end-seek, or teardown', async () => {
+  for (const action of ['pause', 'end', 'dispose']) {
+    const { video, controls, latest, decode, snapshots } = session()
+    decode()
+    let resolveStart
+    video.playOutcome = () => new Promise(resolve => {
+      resolveStart = () => { video.paused = false; resolve() }
+    })
+    const pending = controls.play()
+    if (action === 'pause') controls.pause()
+    if (action === 'end') controls.seek(15_000)
+    if (action === 'dispose') controls.dispose()
+    const count = snapshots.length
+    assert.equal(video.paused, true, 'owner stop must pause before delayed completion')
+    resolveStart()
+    await pending
+    assert.equal(video.paused, true, 'obsolete playback must not resume after ' + action)
+    if (action === 'end') assert.equal(latest().status, 'ended')
+    if (action === 'dispose') {
+      assert.equal(video.src, '')
+      assert.equal(snapshots.length, count, 'teardown must not publish again')
+    } else controls.dispose()
+  }
+})
+
+test('an obsolete play resolution must not interrupt a newer user-initiated Replay play', async () => {
+  const { video, controls, latest, decode } = session()
+  decode()
+  const settle = []
+  video.playOutcome = () => new Promise(resolve => {
+    settle.push(() => { video.paused = false; resolve() })
+  })
+  const first = controls.play()
+  controls.pause()
+  const second = controls.play()
+  settle[1]()
+  await second
+  assert.equal(latest().playing, true)
+  let extraPause = false
+  const pause = video.pause.bind(video)
+  video.pause = () => { extraPause = true; pause() }
+  settle[0]()
+  await first
+  assert.equal(extraPause, false, 'prior play cannot stop a newer user gesture')
+  assert.equal(video.paused, false)
+  controls.dispose()
+})

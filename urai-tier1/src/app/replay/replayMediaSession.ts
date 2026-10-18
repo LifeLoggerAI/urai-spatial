@@ -156,7 +156,12 @@ export function createReplayMediaSession(
         if (video.ended || (snapshot.durationMs && snapshot.currentTimeMs >= snapshot.durationMs)) video.currentTime = 0
         // Call play in the originating user gesture; do not route it through a render effect.
         await video.play()
-        if (disposed || version !== requestVersion) return
+        if (disposed || version !== requestVersion) {
+          // A delayed play fulfillment must never restart an owner-stopped decoder.
+          // Do not interrupt a newer explicit play request that still wants playback.
+          if (disposed || !wantsPlayback) video.pause()
+          return
+        }
         publish({ status: 'ready', ready: decoded(), playing: !video.paused, error: null })
       } catch (error) {
         if (disposed || version !== requestVersion) return
