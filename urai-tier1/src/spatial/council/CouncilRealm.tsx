@@ -339,7 +339,9 @@ function CouncilChamber() {
   </group>
 }
 
-function CouncilFallback({ reason = 'WebGL is unavailable on this device.' }: { reason?: string }) {
+function CouncilFallback({ reason = 'WebGL is unavailable on this device.', checking = false }: { reason?: string; checking?: boolean }) {
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const selectedAgent = COUNCIL_AGENTS[selectedIndex] ?? COUNCIL_AGENTS[0]
   const travel = (destination: 'home' | 'mirror' | 'passport', href: string) => requestUraiWorldTravel({
     destination,
     href,
@@ -351,18 +353,40 @@ function CouncilFallback({ reason = 'WebGL is unavailable on this device.' }: { 
     <section
       data-testid="urai-council-semantic-fallback"
       data-council-renderer="unavailable"
-      className="grid min-h-screen place-content-center gap-4 bg-[#10151a] p-6 text-center text-white"
+      className="min-h-screen bg-[#10151a] p-6 text-white"
       aria-label="Council accessible fallback"
     >
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
       <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/60">URAI Council</p>
       <h1 className="text-4xl font-medium">Council remains reachable.</h1>
       <p role="status" className="mx-auto max-w-[52ch] text-sm leading-6 text-white/75">{reason} The spatial chamber is not being represented as active; semantic navigation remains available.</p>
+        {!checking ? <section
+          data-testid="urai-council-text-fallback"
+          className="rounded-3xl border border-white/15 bg-black/40 p-5"
+          aria-label="Council text conversation"
+        >
+          <label className="mb-2 block text-sm font-semibold" htmlFor="urai-council-fallback-presence">Council presence</label>
+          <select
+            id="urai-council-fallback-presence"
+            className="w-full min-h-12 rounded-xl border border-white/25 bg-[#10151a] p-3 text-white"
+            value={selectedAgent.id}
+            onChange={(event) => {
+              const nextIndex = COUNCIL_AGENTS.findIndex((candidate) => candidate.id === event.currentTarget.value)
+              if (nextIndex >= 0) setSelectedIndex(nextIndex)
+            }}
+          >
+            {COUNCIL_AGENTS.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
+          </select>
+          <p className="mt-3 text-sm leading-6 text-white/75">{selectedAgent.focus} Text-only Council interaction. No private likeness or character voice is approved here.</p>
+          <CouncilConversationPanel key={selectedAgent.id} agent={selectedAgent} />
+        </section> : null}
       <nav className="mx-auto flex flex-wrap justify-center gap-2" aria-label="Council fallback destinations">
         <button className="min-h-12 rounded-full bg-white px-5 text-sm font-semibold text-slate-950" type="button" onClick={() => travel('home', '/home?returnFrom=council')}>Return Home</button>
         <button className="min-h-12 rounded-full border border-white/25 px-5 text-sm" type="button" onClick={() => travel('mirror', '/mirror?from=council')}>Mirror</button>
         <button className="min-h-12 rounded-full border border-white/25 px-5 text-sm" type="button" onClick={() => travel('passport', '/passport?from=council')}>Passport</button>
         <AdamLauncherSlot name="council-fallback" />
       </nav>
+      </div>
     </section>
   )
 }
@@ -559,7 +583,7 @@ function CouncilStage() {
 
 export function CouncilRealm() {
   const webglAvailable = useCouncilWebGLCapability()
-  if (webglAvailable === null) return <CouncilFallback reason="Checking spatial renderer capability." />
+  if (webglAvailable === null) return <CouncilFallback reason="Checking spatial renderer capability." checking />
   if (!webglAvailable) return <CouncilFallback />
   return <CouncilRenderBoundary><CouncilStage /></CouncilRenderBoundary>
 }

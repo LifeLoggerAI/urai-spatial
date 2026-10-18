@@ -42,3 +42,38 @@ test('reduced-motion Council uses the original semantic encounter controls', asy
   await expect(page.getByRole('button',{name:'Ask Council'})).toBeDisabled()
   await testInfo.attach('reduced-motion-council.png',{body:await page.screenshot({animations:'disabled'}),contentType:'image/png'})
 })
+
+test('WebGL unavailable leaves original Council text conversation and all six presences reachable', async ({ page }, info) => {
+  // Remove only WebGL, not canvas 2D or the actual production route. No mock Council UI.
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext
+    Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+      configurable: true,
+      value: function (kind: string, ...args: unknown[]) {
+        if (kind === 'webgl' || kind === 'webgl2') return null
+        return Reflect.apply(original, this, [kind, ...args])
+      },
+    })
+  })
+  await page.goto(new URL('/council', origin).href, { waitUntil: 'domcontentloaded', timeout: 45000 })
+  const fallback = page.getByTestId('urai-council-semantic-fallback')
+  await expect(fallback).toBeVisible({ timeout: 45000 })
+  await expect(fallback).toHaveAttribute('data-council-renderer', 'unavailable')
+  await expect(fallback.locator('canvas')).toHaveCount(0)
+  const textPanel = page.getByTestId('urai-council-text-fallback')
+  await expect(textPanel).toBeVisible()
+  await expect(textPanel).toContainText('No private likeness or character voice is approved here.')
+  const presence = page.getByRole('combobox', { name: 'Council presence' })
+  await expect(presence.locator('option')).toHaveCount(6)
+  await presence.selectOption('council-archivist')
+  await expect(page.getByRole('textbox', { name: 'Ask The Archivist' })).toBeVisible()
+  await expect(page.getByLabel('Council provider')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ask Council' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Return Home' })).toBeVisible()
+  await info.attach('webgl-denied-original-council-text.json', {
+    body: JSON.stringify({ classification: 'ORIGINAL_ROUTE_WEBGL_DENIED_TEXT_ONLY_NOT_PROVIDER_PROOF',
+      head: process.env.URAI_EXACT_HEAD ?? 'unverified', selection: await presence.inputValue(),
+      renderer: await fallback.getAttribute('data-council-renderer') }),
+    contentType: 'application/json',
+  })
+})

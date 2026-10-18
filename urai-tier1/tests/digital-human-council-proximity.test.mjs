@@ -17,3 +17,20 @@ test('Council proximity announces accessible distance without suggesting approva
   assert.match(council,/data-digital-human-near=/)
   assert.doesNotMatch(component,/requestAdamPresence|requestAdamFounderVoice|fetch\(/)
 })
+
+const fallback = council.match(/function CouncilFallback\([\s\S]*?\n}\n\nfunction useCouncilWebGLCapability/)?.[0] ?? ''
+
+test('WebGL failure retains original Council text conversation without a fictional scene or voice',()=>{
+  assert.ok(fallback,'original Council fallback component missing')
+  assert.match(fallback,/data-council-renderer="unavailable"/)
+  assert.match(fallback,/data-testid="urai-council-text-fallback"/)
+  assert.match(fallback,/<CouncilConversationPanel\s+key=\{selectedAgent\.id\}\s+agent=\{selectedAgent\}/)
+  assert.match(fallback,/COUNCIL_AGENTS\.map\(/)
+  assert.match(fallback,/selectedAgent\.focus/)
+  assert.doesNotMatch(fallback,/<Canvas|<RiggedCouncilHuman|requestAdamFounderVoice/)
+})
+test('provisional WebGL capability probe must not start a provider session',()=>{
+  assert.match(council,/webglAvailable === null\) return <CouncilFallback reason="Checking spatial renderer capability\." checking \/>/)
+  assert.match(fallback,/\{!checking \? <section[\s\S]*?data-testid="urai-council-text-fallback"/)
+  assert.match(fallback,/No private likeness or character voice is approved here/)
+})
