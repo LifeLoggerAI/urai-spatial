@@ -64,6 +64,9 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(id==='next/link') return {__esModule:true,default:FixtureNextLink}
     // Match the production location snapshot contract without mounting a browser router.
     if(id.includes('useBrowserLocation')) return {useBrowserLocation:()=>`${browser.location.pathname}${browser.location.search}${browser.location.hash}`}
+    // This dependency is pure and security-sensitive: execute its real implementation,
+    // never replace owner/manifest/movie validation with a permissive mock.
+    if(id.includes('privateLifeMovieRouteSelection')) return load('../src/spatial/life-movie/privateLifeMovieRouteSelection.ts')
     if(id.includes('ownedMemoryMediaClient')) return {MEMORY_MEDIA_TYPES:'image/png,audio/mpeg,video/mp4',attachOwnedMemoryFile:async()=>{throw new Error('INERT_NO_UPLOAD')}}
     if(id.includes('localePreference')) return {localizedMessage}
     if(id.includes('journeyControlCopy')) return journeyControlCopy
@@ -288,6 +291,35 @@ test('actual Focus Replay name retains its private title in reviewed fallback an
     assert.equal(destination.searchParams.get('node'),memory.star.id)
     assert.equal(destination.searchParams.has('demo'),false)
   }
+})
+
+
+test('actual Replay private movie route selector rejects foreign, demo and ambiguous URLs',()=>{
+  const {selectedPrivateMovieFromBrowserLocation, forwardPrivateMovieRouteSelection} =
+    fixture({requested:'en',preview:false}).load('../src/spatial/life-movie/privateLifeMovieRouteSelection.ts')
+  const memory={memoryId:'private-fixture',manifestId:'manifest-fixture',authorizedOwner:true,demo:false}
+  const movieId='movie-fixture', planId='lmp_'+ 'a'.repeat(20)
+  const valid='/replay/?memoryId=private-fixture&manifestId=manifest-fixture&movieId='+movieId+'&lifeMoviePlanId='+planId
+  const selected=selectedPrivateMovieFromBrowserLocation(valid,memory)
+  assert.deepEqual(JSON.parse(JSON.stringify(selected)),{movieId,planId})
+  assert.deepEqual(JSON.parse(JSON.stringify(selectedPrivateMovieFromBrowserLocation(valid.replace('/replay/','/focus/'),memory))),{movieId,planId})
+  const denied=[
+    [valid,{...memory,authorizedOwner:false}],
+    [valid,{...memory,memoryId:'other-owner'}],
+    [valid,{...memory,manifestId:'other-manifest'}],
+    [valid,{...memory,demo:true}],
+    [valid+'&demo=1',memory],
+    [valid+'&movieId=another',memory],
+    [valid+'&lifeMoviePlanId='+planId,memory],
+    [valid+'&manifestId=manifest-fixture',memory],
+    [valid.replace('movie-fixture','not permitted/movie'),memory],
+    [valid.replace('/replay/','/life-map/'),memory],
+  ]
+  for(const [href,actor] of denied) assert.equal(selectedPrivateMovieFromBrowserLocation(href,actor),null,href)
+  const target=new URLSearchParams('memoryId=private-fixture&manifestId=manifest-fixture')
+  assert.equal(forwardPrivateMovieRouteSelection(target,new URLSearchParams(valid.split('?')[1]),memory),true)
+  assert.equal(target.get('movieId'),movieId);assert.equal(target.get('lifeMoviePlanId'),planId)
+  assert.equal(forwardPrivateMovieRouteSelection(new URLSearchParams(),new URLSearchParams(valid.split('?')[1]),{...memory,authorizedOwner:false}),false)
 })
 
 test('offline notice follows actual browser events, preserves SSR truth and removes subscriptions',()=>{
