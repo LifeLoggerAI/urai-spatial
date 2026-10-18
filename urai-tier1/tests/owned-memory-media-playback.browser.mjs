@@ -695,7 +695,38 @@ try {
           await setSeek(500)
           await page.waitForFunction(()=>document.querySelector('[data-testid="cinematic-replay-client"]')?.dataset.privateSegmentIndex==='0')
           await playable(page,'video[aria-label="Authorized private Life Movie"]')
-          await page.waitForFunction(()=>document.querySelector('[data-private-life-movie-live-caption="verified"]')?.textContent?.trim()==='This is a synthetic UrAi narration.')
+          try {
+            await page.waitForFunction(()=>document.querySelector('[data-private-life-movie-live-caption="verified"]')?.textContent?.trim()==='This is a synthetic UrAi narration.')
+          } catch (error) {
+            // Real mounted media and React state only. No identities, storage
+            // paths, auth headers, caption bytes, or private media are exported.
+            const playback=await page.evaluate(()=>{
+              const main=document.querySelector('[data-testid="cinematic-replay-client"]')
+              const video=document.querySelector('video[aria-label="Authorized private Life Movie"]')
+              const cue=document.querySelector('[data-private-life-movie-live-caption="verified"]')
+              return {index:main?.getAttribute('data-private-segment-index')??null,
+                globalTimeMs:main?.getAttribute('data-current-time-ms')??null,
+                mediaStatus:main?.getAttribute('data-replay-media-status')??null,
+                mediaReady:main?.getAttribute('data-replay-media-ready')??null,
+                videoPresent:!!video,videoLocalTimeMs:video?Math.round(video.currentTime*1000):null,
+                videoDurationMs:video?Math.round(video.duration*1000):null,
+                videoReadyState:video?.readyState??null,videoSeeking:video?.seeking??null,
+                videoPaused:video?.paused??null,
+                captionActive:!!cue?.textContent?.trim(),
+                expectedCueVisible:cue?.textContent?.trim()==='This is a synthetic UrAi narration.',
+                createdVideoBlobs:window.__fixture?.creates?.filter(x=>x.type==='video/mp4').length??null,
+                revokedUrls:window.__fixture?.revocations?.length??null}
+            })
+            const receipt={kind:'synthetic-multisegment-backward-seek-caption',
+              playback,
+              requests:privateRequests.map(x=>({action:x.action,kind:x.kind,segmentIndex:x.segmentIndex})),
+              responses:realResponses.filter(x=>x.method==='POST').map(x=>({
+                action:x.action,kind:x.kind,segmentIndex:x.segmentIndex,status:x.status}))}
+            writeFileSync(path.join(output,'original-replay-multisegment-backward-caption-failure.json'),
+              JSON.stringify(receipt,null,2))
+            console.error('URAI_MULTISEGMENT_BACKWARD_CAPTION_DIAGNOSTIC '+JSON.stringify(receipt))
+            throw error
+          }
           assert.ok(Number(await movie.getAttribute('data-current-time-ms'))>=400,
             'backward seek must restore the first protected Jobs cue at a valid global time')
           const delivered=realResponses.filter(r=>r.action==='deliver-spatial-segment')
