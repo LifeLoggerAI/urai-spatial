@@ -137,8 +137,11 @@ export function createHumanMorphDriver({ root, manifest, modelProof, getAuthorit
       rms, playing, muted, interrupted, reducedMotion, deltaSeconds = 1 / 60 } = {}) {
       const authority = valid()
       const state = encounter.snapshot()
-      if (authority && state.near && state.phase === 'speaking' && turn !== null && turnId !== turn) {
-        // Stale asynchronous animation callbacks may not cancel a newer turn.
+      if (authority && authority.sessionEpoch === sessionEpoch && state.near
+        && state.phase === 'speaking' && state.generation === turn
+        && turn !== null && turnId !== turn) {
+        // Ignore an old callback only while this bound turn and actor session remain current.
+        // Otherwise clear stale morphs rather than retaining the prior person's expression.
         return Object.freeze({ mode: 'stale-turn-ignored', permitted: true, updatedBindings: 0 })
       }
       if (!authority || !state.near || state.phase !== 'speaking'
