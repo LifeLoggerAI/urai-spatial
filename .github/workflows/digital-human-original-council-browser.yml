@@ -4,6 +4,8 @@ on:
     paths:
       - '.github/workflows/digital-human-original-council-browser.yml'
       - 'urai-tier1/tests/digital-human-council-browser.spec.ts'
+      - 'urai-tier1/tests/digital-human-anonymous-browser.spec.ts'
+      - 'urai-tier1/scripts/digital-human/generate-anonymous-face-glb.mjs'
       - 'urai-tier1/src/spatial/council/**'
       - 'urai-tier1/src/spatial/digital-human/**'
   workflow_dispatch:
