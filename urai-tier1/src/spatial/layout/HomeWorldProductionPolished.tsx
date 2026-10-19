@@ -22,6 +22,7 @@ import styles from './HomeWorldProduction.module.css'
 import HomeSanctuaryPerimeterGrove from './HomeSanctuaryPerimeterGrove'
 import { HomeCC0ReviewMaterial } from './HomeCC0ReviewMaterial'
 import { HomeCC0ReviewShrubs } from './HomeCC0ReviewShrubs'
+import { HomeCC0ReviewRetainedGround } from './HomeCC0ReviewRetainedGround'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 
 const HOME_PROVIDER_ENVIRONMENT = '/assets/urai/home/home-threshold-main.webp'
@@ -303,6 +304,7 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
   }
   return <group name="home-authored-terrain" userData={{ geometryOwner: 'retained-glb-ground-topology-plus-original-terrain-extension', materialOwner: 'original-procedural-detail-not-photographic-pbr', sharedElevation: true }}>
     <primitive object={authored} />
+    {HOME_CC0_DEV_REVIEW ? <HomeCC0ReviewRetainedGround scene={authored} /> : null}
     <mesh name="home-natural-terrain" geometry={extension} receiveShadow onClick={onWalk}>
       {HOME_CC0_DEV_REVIEW ? <HomeCC0ReviewMaterial surface="ground" /> : <HomeSurfaceMaterial kind="ground" color={HOME_GROUND_COLOR} roughness={.96} metalness={0} envMapIntensity={.32} />}
     </mesh>
