@@ -49,6 +49,7 @@ function mountVegetation(scene) {
   const layout = [], effects = [], cleanup = []
   const unexpectedOrbWork = () => assert.fail('vegetation must not construct or dispose Orb presentation')
   const unexpectedPerimeterWork = () => assert.fail('fern-only test fixture must not construct or render the independent perimeter grove')
+  const unexpectedCC0Work = () => assert.fail('retained fern tests must not opt into the independent CC0 development review')
   const react = {
     Component: class {}, useMemo: fn => fn(), useRef: initial => ({ current: initial }),
     useLayoutEffect: fn => layout.push(fn), useEffect: fn => effects.push(fn),
@@ -63,6 +64,9 @@ function mountVegetation(scene) {
     './HomeLivingOrbGeometry': { createLivingMemoryGeometry: unexpectedOrbWork, createMemoryFieldGeometry: unexpectedOrbWork, createMemoryFilamentGeometry: unexpectedOrbWork },
     './HomeAuthoredOrbLight': { createAuthoredOrbLightPresentation: unexpectedOrbWork, disposeAuthoredOrbLightPresentation: unexpectedOrbWork },
     './HomeSanctuaryPerimeterGrove': unexpectedPerimeterWork,
+    './HomeCC0ReviewMaterial': { HomeCC0ReviewMaterial: unexpectedCC0Work },
+    './HomeCC0ReviewShrubs': { HomeCC0ReviewShrubs: unexpectedCC0Work },
+    './HomeCC0ReviewRetainedGround': { HomeCC0ReviewRetainedGround: unexpectedCC0Work },
     './HomeWorldProduction.module.css': {},
     './HomeSanctuaryMaterials': {}, './HomeSanctuaryAssetPolicy': {},
     '@/app/home/orbStateController': {}, '@/spatial/navigation/EmbodiedNavigation': {},

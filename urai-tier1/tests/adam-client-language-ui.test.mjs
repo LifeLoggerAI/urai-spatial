@@ -6,6 +6,7 @@ import ts from 'typescript'
 import { jsx,jsxs } from 'react/jsx-runtime'
 import * as localePreference from '../src/lib/i18n/localePreference.ts'
 import { uraiTextDirection } from '../src/lib/i18n/locales.ts'
+import { createAdamFounderVoicePlaybackBridge } from '../src/spatial/adam/founderVoicePlaybackBridge.mjs'
 const contentLanguageSource=fs.readFileSync(new URL('../../packages/localization/src/contentLanguage.ts',import.meta.url),'utf8')
 const contentLanguageCompiled=ts.transpileModule(contentLanguageSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
 const contentLanguageModule={exports:{}}
@@ -46,6 +47,7 @@ function fixture(){
     if(name.endsWith('/localePreference'))return {currentSpeechTag:()=>locale}
     if(name.endsWith('/contentLanguage'))return {contentLanguage,contentLanguageProps}
     if(name==='./adamClient')return client
+    if(name==='./founderVoicePlaybackBridge.mjs')return {createAdamFounderVoicePlaybackBridge}
     if(name==='./adamSurfaceContext')return {resolveAdamSurface:()=>({id:'home',label:'Home'})}
     if(name.endsWith('.module.css'))return {__esModule:true,default:{}}
     throw Error('Unexpected Adam dependency '+name)
@@ -59,24 +61,24 @@ function fixture(){
   const send=async()=>{find(node=>node.type==='textarea').props.onChange({target:{value:'Synthetic question'}});void find(node=>node.type==='form').props.onSubmit({preventDefault(){}});await tick()}
   return {find,render,open,consent,send,requests,voices,audio,portalCalls,portalBody,setLocale:next=>{locale=next;localePreference.updateLocalePreference({requested:next.split('-')[0],preview:false})},complete:result=>resolve(result),fail:()=>reject(new AdamProviderError('Synthetic rejection'))}
 }
-test('actual Adam stream, caption and queued private voice retain captured Urdu after preference changes',async()=>{
+test('actual Adam stream and caption retain captured Urdu while unconfigured Founder voice stays closed',async()=>{
   const f=fixture();f.open();f.consent();f.setLocale('ur-PK');await f.send();f.setLocale('fr-FR')
   const message='Synthetic generated sentence long enough.'
   f.requests[0].onEvent({type:'delta',text:message,locale:'ur-PK'});await tick()
   const streamed=f.find(node=>node.type==='div'&&text(node)===message&&node.props.lang)
   assert.equal(streamed.props.lang,'ur-PK');assert.equal(streamed.props.dir,'rtl')
   f.complete({caption:message,locale:'ur-PK',requiresHumanFounder:false,handoffReason:''});await tick()
-  assert.equal(f.requests[0].locale,'ur-PK');assert.equal(f.voices[0].locale,'ur-PK');assert.equal(f.audio[0].lang,'ur-PK')
+  assert.equal(f.requests[0].locale,'ur-PK');assert.equal(f.voices.length,0);assert.equal(f.audio.length,0)
   assert.equal(f.find(node=>node.type==='div'&&text(node)===message&&node.props.lang).props.lang,'ur-PK')
 })
-test('actual Adam clears private audio and queued speech if streamed completion fails',async()=>{
+test('actual Adam clears a failed stream and never requests unconfigured private voice',async()=>{
   const f=fixture();f.open();f.consent();await f.send()
   f.requests[0].onEvent({type:'delta',text:'Synthetic valid prefix long enough.',locale:'en-US'});await tick()
-  f.fail();await tick();assert.equal(f.audio[0].paused,true);assert.equal(f.voices[0].signal.aborted,true)
+  f.fail();await tick();assert.equal(f.audio.length,0);assert.equal(f.voices.length,0)
   assert.equal(text(f.render()).includes('Synthetic valid prefix'),false)
   f.setLocale('ar-SA');await f.send()
   f.requests[1].onEvent({type:'delta',text:'Synthetic next sentence long enough.',locale:'ar-SA'});await tick()
-  assert.equal(f.voices.length,2);assert.equal(f.voices[1].locale,'ar-SA');assert.equal(f.audio[1].lang,'ar-SA')
+  assert.equal(f.requests[1].locale,'ar-SA');assert.equal(f.voices.length,0);assert.equal(f.audio.length,0)
 })
 test('actual Adam rejects unsupported content preference before conversation or private voice',async()=>{
   const f=fixture();f.open();f.consent();f.setLocale('xx-XX');await f.send()
