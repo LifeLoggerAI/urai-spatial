@@ -34,6 +34,15 @@ async function verifySource() {
     if (!s.isFile()||s.isSymbolicLink()) throw Error('CC0 source must be regular file')
     results.push(await verifyFile(file,entry))
   }
+  // Verify every relative glTF dependency points to one hash-pinned local
+  // file. This prevents a syntactically valid glTF from making external fetches.
+  const gltf = JSON.parse(await readFile(path.join(sourceDir, 'shrub/shrub_03_1k.gltf'), 'utf8'))
+  const dependencies = [...(gltf.buffers || []), ...(gltf.images || [])]
+  for (const dependency of dependencies) {
+    const uri = dependency.uri
+    if (typeof uri !== 'string' || /^(?:[a-z]+:|\/)/i.test(uri) || uri.split('/').some(part => part === '..' || part === '.')) throw Error('Unapproved glTF dependency: '+uri)
+    safeRelative('shrub/'+uri)
+  }
   return results
 }
 function rejectRelease() {
