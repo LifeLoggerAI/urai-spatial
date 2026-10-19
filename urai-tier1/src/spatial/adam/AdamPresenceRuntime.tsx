@@ -484,7 +484,7 @@ export default function AdamPresenceRuntime() {
           >
             {voiceMuted ? 'Voice off' : 'Mute voice'}
           </button>
-          <button type="button" onClick={stopAll} disabled={!busy && !listening && !currentAudio.current}>Stop</button>
+          <button type="button" onClick={stopAll} disabled={!busy && !listening && !founderVoiceBridge.current?.isPlaying()}>Stop</button>
         </div>
         <p className={styles.status} role="status" aria-live="polite">{status}</p>
       </form>

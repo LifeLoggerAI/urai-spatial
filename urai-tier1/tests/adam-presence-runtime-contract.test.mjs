@@ -134,3 +134,9 @@ test('body-portal launcher is exempt from generic page-layer relative positionin
   assert.ok(pageLayerCss.includes('body > *:not(.urai-final-asset-spine-scene-layer):not([data-urai-adam-launcher]) {'), 'Portaled Adam must not inherit body-page position:relative')
   assert.match(runtime, /launcherPortalReady\s*\?\s*createPortal\(launcher, document\.body\)/)
 })
+
+test('Adam Stop uses the governed Founder bridge instead of a removed currentAudio ref', () => {
+  assert.doesNotMatch(runtime, /\bcurrentAudio\b/)
+  assert.match(runtime, /onClick=\{stopAll\}\s+disabled=\{!busy\s*&&\s*!listening\s*&&\s*!founderVoiceBridge\.current\?\.isPlaying\(\)\}/)
+  assert.match(runtime, /founderVoiceBridge\.current\?\.interrupt\(\)/)
+})
