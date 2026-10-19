@@ -3,7 +3,7 @@
 import type { ThreeElements } from '@react-three/fiber'
 import * as THREE from 'three'
 
-type SurfaceKind = 'ground' | 'stone' | 'timber'
+type SurfaceKind = 'ground' | 'stone' | 'timber' | 'path'
 type MaterialProps = ThreeElements['meshStandardMaterial'] & { kind?: SurfaceKind }
 
 const DETAIL_FUNCTIONS = `
@@ -35,12 +35,29 @@ float homeGroundMicrotexture = mix(.80, 1.16, homeGrain) * mix(.94, 1.06, homeMo
 diffuseColor.rgb *= homeGroundPigment * homeGroundMicrotexture;
 `
 
+// Authored non-photographic fallback for path topology until separately admitted
+// CC0/scanned PBR materials replace it. World-meter coordinates align adjacent
+// paths, so varied stone/loam appearance does not become a tiling screenshot.
+const WALKABLE_PATH_STRATA = `
+float pathPackedLoam = smoothstep(.26, .78, homeMacro * .54 + homeMottle * .46);
+float pathPebbleField = homeDetailNoise(vHomeSurfacePosition.xz * 7.8 + vec2(-13.2, 8.7));
+float pathFineChips = homeDetailNoise(vHomeSurfacePosition.xz * 21.0 + vec2(5.4, -2.8));
+float pathPebbleCoverage = smoothstep(.60, .86, pathPebbleField * .72 + pathFineChips * .28);
+vec3 pathEarth = mix(vec3(.76, .68, .54), vec3(.93, .88, .76), pathPackedLoam);
+vec3 pathStone = mix(vec3(.75, .73, .67), vec3(1.10, 1.06, .98), pathFineChips);
+vec3 pathMineralGrain = mix(pathEarth, pathStone, pathPebbleCoverage * .76);
+float pathGrain = mix(.94, 1.07, homeGrain);
+diffuseColor.rgb *= pathMineralGrain * pathGrain;
+`
+
 function compileOriginalDetail(kind: SurfaceKind): THREE.Material['onBeforeCompile'] {
   return (shader) => {
-    const groundPigment = kind === 'ground' ? GROUNDED_SURFACE_STRATA : ''
+    const groundPigment = kind === 'ground' ? GROUNDED_SURFACE_STRATA : kind === 'path' ? WALKABLE_PATH_STRATA : ''
     const relief = kind === 'ground'
       ? 'homeGrain * .011 + homeMottle * .017 + homeBroad * .022'
-      : 'homeGrain * .0012 + homeMottle * .0008'
+      : kind === 'path'
+        ? 'homeGrain * .006 + homeMottle * .009 + homeBroad * .012'
+        : 'homeGrain * .0012 + homeMottle * .0008'
     shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vHomeSurfacePosition;').replace('#include <begin_vertex>', `#include <begin_vertex>
 vec4 homeSurfacePoint = vec4(transformed, 1.0);
 #ifdef USE_INSTANCING
@@ -66,11 +83,13 @@ ${groundPigment}`).replace('#include <roughnessmap_fragment>', '#include <roughn
 export const HOME_SURFACE_SHADERS = {
   ground: compileOriginalDetail('ground'),
   stone: compileOriginalDetail('stone'),
+  path: compileOriginalDetail('path'),
   timber: compileOriginalDetail('timber'),
 }
 const PROGRAM_KEYS = {
   ground: () => 'urai-original-home-ground-strata-v4',
   stone: () => 'urai-original-home-stone-detail-v3',
+  path: () => 'urai-original-home-path-earth-and-stone-v1',
   timber: () => 'urai-original-home-timber-detail-v3',
 }
 
