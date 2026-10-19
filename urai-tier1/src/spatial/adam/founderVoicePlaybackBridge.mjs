@@ -29,11 +29,14 @@ export function createAdamFounderVoicePlaybackBridge(options = {}) {
     const item = active
     active = null
     if (!item) return
-    item.signal?.removeEventListener('abort', item.abort)
-    if (item.frame !== null) cancelFrame(item.frame)
+    // External cleanup adapters must not prevent the remaining media teardown.
+    try { item.signal?.removeEventListener('abort', item.abort) } catch { /* detach failure */ }
+    if (item.frame !== null) {
+      try { cancelFrame(item.frame) } catch { /* frame cancellation failure */ }
+    }
     if (item.audio) {
-      item.audio.onended = null
-      item.audio.onerror = null
+      try { item.audio.onended = null } catch { /* teardown */ }
+      try { item.audio.onerror = null } catch { /* teardown */ }
       try { item.audio.pause() } catch { /* already denied */ }
       // Only release our own source URL, never a different turn's media.
       try { item.audio.src = '' } catch { /* source already cleared */ }
@@ -63,7 +66,7 @@ export function createAdamFounderVoicePlaybackBridge(options = {}) {
     ready: () => Boolean(gate && !disposed),
     isPlaying: () => Boolean(active?.playing && !disposed),
     interrupt,
-    dispose: () => { if (!disposed) { interrupt('disposed'); gate?.dispose(); disposed = true } },
+    dispose: () => { if (!disposed) { disposed = true; try { interrupt('disposed') } finally { gate?.dispose() } } },
     async start({ blob, evidence, signal, locale } = {}) {
       // No trusted account-authority AND verifier = no audio, no URL, no provider.
       if (!gate || disposed || pending || active || signal?.aborted

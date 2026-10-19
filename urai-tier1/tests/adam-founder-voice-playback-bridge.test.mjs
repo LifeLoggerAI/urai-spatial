@@ -171,3 +171,38 @@ test('disposed bridge cannot return to playable state',async()=>{
   assert.equal(await h.bridge.start({blob:SAMPLE,evidence:evidence()}),false)
   assert.equal(h.urls.length,0)
 })
+
+// R508 fault-injection cases: external frame and signal callbacks must never
+// prevent final media/URL cleanup or resurrect the Founder voice lifetime.
+test('interrupt completes URL cleanup even if animation-frame cancel throws',async()=>{
+  const h=harness({cancelFrame:()=>{throw Error('cancelFrame fault')}})
+  assert.equal(await h.bridge.start({blob:SAMPLE,evidence:evidence()}),true)
+  assert.doesNotThrow(()=>h.bridge.interrupt())
+  assert.equal(h.medias[0].paused,true)
+  assert.equal(h.medias[0].src,'')
+  assert.deepEqual(h.revoked,h.urls)
+  assert.equal(h.bridge.isPlaying(),false)
+})
+test('dispose stays terminal even if frame cancellation throws',async()=>{
+  const h=harness({cancelFrame:()=>{throw Error('cancelFrame fault')}})
+  assert.equal(await h.bridge.start({blob:SAMPLE,evidence:evidence()}),true)
+  assert.doesNotThrow(()=>h.bridge.dispose())
+  assert.equal(h.bridge.ready(),false)
+  assert.equal(await h.bridge.start({blob:SAMPLE,evidence:evidence()}),false)
+  assert.deepEqual(h.revoked,h.urls)
+})
+test('abort listener removal fault cannot skip pause and URL revocation',async()=>{
+  const h=harness()
+  const signal={aborted:false,addEventListener(){},removeEventListener(){throw Error('detach fault')}}
+  assert.equal(await h.bridge.start({blob:SAMPLE,evidence:evidence(),signal}),true)
+  assert.doesNotThrow(()=>h.bridge.interrupt())
+  assert.equal(h.medias[0].paused,true)
+  assert.deepEqual(h.revoked,h.urls)
+})
+test('audio-ended cleanup stays fail-closed if frame cancellation faults',async()=>{
+  const h=harness({cancelFrame:()=>{throw Error('cancelFrame fault')}})
+  assert.equal(await h.bridge.start({blob:SAMPLE,evidence:evidence()}),true)
+  assert.doesNotThrow(()=>h.medias[0].onended())
+  assert.equal(h.medias[0].paused,true)
+  assert.deepEqual(h.revoked,h.urls)
+})
