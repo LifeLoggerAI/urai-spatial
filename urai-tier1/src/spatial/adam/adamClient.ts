@@ -128,7 +128,8 @@ export async function requestAdamFounderVoice(input: {
   locale: UraiContentLanguageTag
   externalProcessingConsent: boolean
   signal: AbortSignal
-}): Promise<{ blob: Blob | null; errorCode: string | null }> {
+}): Promise<{ blob: Blob | null; errorCode: string | null; playbackEvidence?: null }> {
+  // Existing streamed bytes have no approved per-turn authority receipt.
   const locale = typeof input.locale === 'string' ? contentLanguage(input.locale)?.speechTag : null
   if (!locale) return { blob: null, errorCode: 'INVALID_LOCALE' }
   const token = await bearerToken()

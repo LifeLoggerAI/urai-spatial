@@ -14,6 +14,7 @@ import {
   type AdamProviderResult,
 } from './adamClient'
 import { resolveAdamSurface } from './adamSurfaceContext'
+import { createAdamFounderVoicePlaybackBridge } from './founderVoicePlaybackBridge.mjs'
 import styles from './AdamPresenceRuntime.module.css'
 
 type DisplayMessage = AdamConversationMessage & {
@@ -112,8 +113,11 @@ export default function AdamPresenceRuntime() {
   const [status, setStatus] = useState('Adam is ready when you are.')
   const conversationAborter = useRef<AbortController | null>(null)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
-  const currentAudio = useRef<HTMLAudioElement | null>(null)
-  const finishCurrentAudio = useRef<(() => void) | null>(null)
+  const founderVoiceBridge = useRef<ReturnType<typeof createAdamFounderVoicePlaybackBridge> | null>(null)
+  if (!founderVoiceBridge.current) {
+    // Until the server provides trusted per-turn authority, Founder voice stays unavailable.
+    founderVoiceBridge.current = createAdamFounderVoicePlaybackBridge()
+  }
   const voiceControllers = useRef(new Set<AbortController>())
   const voiceQueue = useRef(Promise.resolve())
   const voiceGeneration = useRef(0)
@@ -123,14 +127,7 @@ export default function AdamPresenceRuntime() {
     voiceGeneration.current += 1
     for (const controller of voiceControllers.current) controller.abort()
     voiceControllers.current.clear()
-    if (currentAudio.current) {
-      currentAudio.current.pause()
-      currentAudio.current.currentTime = 0
-      currentAudio.current.src = ''
-      currentAudio.current = null
-    }
-    finishCurrentAudio.current?.()
-    finishCurrentAudio.current = null
+    founderVoiceBridge.current?.interrupt()
     streamingSpeechBuffer.current = ''
   }, [])
 
@@ -189,30 +186,22 @@ export default function AdamPresenceRuntime() {
     if (pathname === '/adam') setOpen(true)
   }, [pathname, surfaceKey, stopAll, stopVoice])
 
-  const playAudio = useCallback((blob: Blob, generation: number, locale: UraiContentLanguageTag) => new Promise<void>((resolve) => {
-    if (generation !== voiceGeneration.current) return resolve()
-    const url = URL.createObjectURL(blob)
-    const audio = new Audio(url)
-    // Captured content metadata does not approve provider language or private identity.
-    audio.lang = locale
-    currentAudio.current = audio
-    let finished = false
-    const finish = () => {
-      if (finished) return
-      finished = true
-      URL.revokeObjectURL(url)
-      if (currentAudio.current === audio) currentAudio.current = null
-      if (finishCurrentAudio.current === finish) finishCurrentAudio.current = null
-      resolve()
-    }
-    finishCurrentAudio.current = finish
-    audio.onended = finish
-    audio.onerror = finish
-    void audio.play().catch(finish)
-  }), [])
+  const playAudio = useCallback(async (
+    blob: Blob, generation: number, locale: UraiContentLanguageTag,
+    signal: AbortSignal, evidence: null,
+  ): Promise<boolean> => {
+    if (generation !== voiceGeneration.current || signal.aborted) return false
+    // The existing Founder gate is the only route to media.play(); HTTP 200
+    // and the session consent checkbox are never independent authority.
+    return await founderVoiceBridge.current?.start({ blob, evidence, locale, signal }) ?? false
+  }, [])
 
   const enqueueSpeech = useCallback((text: string, locale: UraiContentLanguageTag) => {
     if (!voiceConsent || voiceMuted || !text.trim()) return
+    if (!founderVoiceBridge.current?.ready()) {
+      setStatus('Adam text is live. The accepted private Founder voice requires verified per-turn authority.')
+      return
+    }
     const generation = voiceGeneration.current
     voiceQueue.current = voiceQueue.current.then(async () => {
       if (generation !== voiceGeneration.current) return
@@ -234,8 +223,8 @@ export default function AdamPresenceRuntime() {
           }
           return
         }
-        setStatus('Adam is speaking.')
-        await playAudio(result.blob, generation, locale)
+        const accepted = await playAudio(result.blob, generation, locale, controller.signal, result.playbackEvidence ?? null)
+        if (generation === voiceGeneration.current && !accepted) setStatus('Adam text is live. Founder voice authorization is unavailable.')
       } catch {
         if (!controller.signal.aborted) setStatus('Adam text is live. Voice is temporarily unavailable.')
       } finally {
@@ -458,7 +447,7 @@ export default function AdamPresenceRuntime() {
           maxLength={2500}
           onChange={(event) => setMessage(event.target.value)}
           onFocus={() => {
-            if (currentAudio.current) stopVoice()
+            if (founderVoiceBridge.current?.isPlaying()) stopVoice()
           }}
           placeholder="Talk to Adam…"
           aria-label="Message Adam"
