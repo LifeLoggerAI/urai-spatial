@@ -3,6 +3,7 @@ import fs from 'node:fs'
 
 const tests = [
   'tests/council-conversation-lifecycle.test.mjs',
+  'tests/digital-human-founder-playback-gate.test.mjs',
   'tests/council-selected-memory-navigation.test.mjs',
   'tests/council-memory-evidence-scoping.test.mjs',
   'tests/glb-normal-repair-source-immutability.test.mjs',
