@@ -4,23 +4,34 @@ on:
   push:
     branches: [main]
     paths:
-      - "urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx"
+      - "urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx"
       - "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb"
       - "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb"
       - "operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json"
+      - "urai-tier1/src/spatial/layout/HomeSanctuaryMaterials.tsx"
+      - "urai-tier1/src/spatial/layout/HomeSanctuaryPerimeterGrove.tsx"
+      - "urai-tier1/src/spatial/layout/homePerimeterGrovePlacement.ts"
+      - "urai-tier1/tests/home-active-art-ci-contract.test.mjs"
       - ".github/workflows/home-scanned-composition-forge.yml"
   pull_request:
-    branches: [main]
+    branches: [main, 'repair/release-closure-integration-20261007']
     paths:
-      - "urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx"
+      - "urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx"
       - "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb"
       - "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb"
       - "operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json"
+      - "urai-tier1/src/spatial/layout/HomeSanctuaryMaterials.tsx"
+      - "urai-tier1/src/spatial/layout/HomeSanctuaryPerimeterGrove.tsx"
+      - "urai-tier1/src/spatial/layout/homePerimeterGrovePlacement.ts"
+      - "urai-tier1/tests/home-active-art-ci-contract.test.mjs"
       - ".github/workflows/home-scanned-composition-forge.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
 concurrency:
   group: home-scanned-composition-verification-${{ github.ref }}-${{ github.sha }}
@@ -34,7 +45,7 @@ jobs:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.URAI_EXACT_HEAD }}
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
@@ -43,9 +54,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           test -z "$(git status --porcelain --untracked-files=all)"
 
+      # SOURCE PROOF ONLY. A green job does not certify final Home pixels or asset promotion.
       - name: Verify materialized Home composition and governed inputs
         shell: bash
         run: |
@@ -53,11 +65,18 @@ jobs:
           test -f urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
           test -f urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb
           test -f operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json
-          grep -F 'HOME_SCANNED_COMPOSITION_V1' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'home-entry-chamber-v1.glb' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'polyhaven-fern-02-geometry-v1.glb' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F 'CINEMATIC_HOME_ART_MOBILE' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F '<cylinderGeometry' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F 'HomeWorldProductionPolished as HomeWorldProduction' urai-tier1/src/spatial/layout/HomeWorldProduction.tsx
+          grep -F 'HOME_SCANNED_COMPOSITION_V1' urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+          grep -F 'home-entry-chamber-v1.glb' urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+          grep -F 'polyhaven-fern-02-geometry-v1.glb' urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+          ! grep -F 'CINEMATIC_HOME_ART_MOBILE' urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+          grep -F 'HomeSanctuaryPerimeterGrove' urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+          grep -F 'HOME_INTERPRETIVE_SPLAT_ASSET' urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+          ! grep -F 'CinematicBackdrop' urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+
+      - name: Enforce active Home visual source identity (source-only)
+        shell: bash
+        run: node --test urai-tier1/tests/home-active-art-ci-contract.test.mjs
 
       - name: Verify scanned fern receipt identity
         shell: bash
