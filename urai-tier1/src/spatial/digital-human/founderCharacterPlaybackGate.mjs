@@ -41,7 +41,9 @@ export function createFounderCharacterPlaybackGate({
     sequence += 1;
     const active = turn; turn = null;
     if (active?.media) { try { active.media.pause(); } catch { /* fail closed */ } }
-    try { abortConversation(reason); } finally { onNeutral(reason); }
+    // External lifecycle callbacks cannot interrupt terminal cleanup or restore authority.
+    try { abortConversation(reason); } catch { /* fail closed */ }
+    try { onNeutral(reason); } catch { /* fail closed */ }
     return snapshot();
   };
   return Object.freeze({
@@ -113,6 +115,6 @@ export function createFounderCharacterPlaybackGate({
     },
     finish(id) { if (!current(id)) return false; end('completed'); return true; },
     interrupt() { return end('interrupted'); },
-    dispose() { if (!disposed) { end('disposed'); disposed = true; } return snapshot(); },
+    dispose() { if (!disposed) { disposed = true; end('disposed'); } return snapshot(); },
   });
 }

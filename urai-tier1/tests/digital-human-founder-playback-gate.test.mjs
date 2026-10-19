@@ -51,3 +51,46 @@ test('voice approval hash changed during provider verification is denied before 
   assert.equal(m.paused,true)
   x.gate.dispose()
 })
+
+// Fault-injection regressions for injected callbacks. Fixtures are synthetic only.
+function faultFixture({abort = () => {}, neutral = () => {}} = {}) {
+  const auth = AUTH(), media = new Media()
+  const gate = createFounderCharacterPlaybackGate({
+    ownerAccountId:'owner-a', getAuthority:()=>auth, verifyAuthorizedVoice:async()=>true,
+    onFaceFrame:()=>{}, onNeutral:neutral, abortConversation:abort,
+  })
+  return {auth, media, gate, async start() {
+    const id=gate.beginTurn();assert.ok(id)
+    assert.equal(await gate.startAuthorizedAudio(voiced(id,media)),true)
+    return id
+  }}
+}
+test('dispose is terminal even when abort callback throws',()=>{
+  const x=faultFixture({abort:()=>{throw Error('abort fault')}})
+  assert.doesNotThrow(()=>x.gate.dispose())
+  assert.equal(x.gate.snapshot().disposed,true)
+  assert.equal(x.gate.beginTurn(),null)
+})
+test('dispose is terminal even when neutral callback throws',()=>{
+  const x=faultFixture({neutral:()=>{throw Error('neutral fault')}})
+  assert.doesNotThrow(()=>x.gate.dispose())
+  assert.equal(x.gate.snapshot().disposed,true)
+  assert.equal(x.gate.beginTurn(),null)
+})
+test('interrupt pauses media and calls neutral despite abort fault',async()=>{
+  let neutralCount=0
+  const x=faultFixture({abort:()=>{throw Error('abort fault')},neutral:()=>{neutralCount++}})
+  await x.start()
+  assert.doesNotThrow(()=>x.gate.interrupt())
+  assert.equal(x.media.paused,true)
+  assert.equal(x.gate.snapshot().hasTurn,false)
+  assert.equal(neutralCount,1)
+})
+test('authority loss stays denied and pauses media despite both callback faults',async()=>{
+  const x=faultFixture({abort:()=>{throw Error('abort fault')},neutral:()=>{throw Error('neutral fault')}})
+  const id=await x.start()
+  x.auth.revoked=true
+  assert.equal(x.gate.frame(id),false)
+  assert.equal(x.media.paused,true)
+  assert.equal(x.gate.snapshot().speaking,false)
+})
