@@ -30,8 +30,9 @@ import {
   uncertainCouncilProviderFallback,
 } from './councilClient'
 import { requestCouncilSecondOpinion } from './councilSecondOpinion'
+import { createCouncilEncounterSession } from '@/spatial/digital-human/councilEncounterSession.mjs'
 
-export default function CouncilConversationPanel({ agent }: { agent: CouncilAgent }) {
+export default function CouncilConversationPanel({ agent, inRange, onEncounterPhase }: { agent: CouncilAgent; inRange?: boolean; onEncounterPhase?: (phase: 'idle' | 'thinking' | 'responded') => void }) {
   const actor = useSyncExternalStore(subscribeAIActor, getAIActorSnapshot, getServerAIActorSnapshot)
   const location = useBrowserLocation()
   const address = location.split('#')[0]
@@ -48,11 +49,12 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
     ? JSON.stringify(selectedMemory.memory)
     : selectedMemory.status, [selectedMemory, memoryRouteId])
   const sessionKey = JSON.stringify([actor.generation, agent.id, agent.name, agent.role, agent.focus, memoryRouteId, params.get('demo'), memoryRevision])
-  return <ActorBoundCouncilConversationPanel key={sessionKey} agent={agent} actor={actor} memoryRouteId={memoryRouteId} selectedMemory={selectedMemory} />
+  return <ActorBoundCouncilConversationPanel key={sessionKey} agent={agent} actor={actor} memoryRouteId={memoryRouteId} selectedMemory={selectedMemory} inRange={inRange} onEncounterPhase={onEncounterPhase} />
 }
 
-function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selectedMemory }: {
+function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selectedMemory, inRange, onEncounterPhase }: {
   agent: CouncilAgent; actor: AIActorSnapshot; memoryRouteId: string | null; selectedMemory: SelectedMemoryResult
+  inRange?: boolean; onEncounterPhase?: (phase: 'idle' | 'thinking' | 'responded') => void
 }) {
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
@@ -82,6 +84,38 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
   const [busy, setBusy] = useState(false)
   const [consent, setConsent] = useState(false)
   const aborter = useRef<AbortController | null>(null)
+  const sceneSession = useRef(createCouncilEncounterSession())
+  const encounterGeneration = useRef(0)
+  const encounterNearRef = useRef(inRange !== false)
+  const [nonSpatialMode, setNonSpatialMode] = useState(false)
+  const encounterEnabled = inRange !== false || nonSpatialMode
+  encounterNearRef.current = encounterEnabled
+  useEffect(() => {
+    sceneSession.current.update({actorGeneration: actor.generation, agentId: agent.id, inRange: encounterEnabled, processingConsent: consent})
+    return () => { sceneSession.current.interrupt() }
+  }, [actor.generation, agent.id, encounterEnabled, consent])
+  const cancelEncounter = () => {
+    sceneSession.current.interrupt()
+    encounterGeneration.current += 1
+    aborter.current?.abort()
+    aborter.current = null
+    setBusy(false)
+    setResult(null)
+    setReviewResult(null)
+    onEncounterPhase?.('idle')
+  }
+  useEffect(() => {
+    if (inRange !== false || nonSpatialMode) return
+    // A departure must invalidate both first and second provider replies.
+    encounterGeneration.current += 1
+    sceneSession.current.interrupt()
+    aborter.current?.abort()
+    aborter.current = null
+    setBusy(false)
+    setResult(null)
+    setReviewResult(null)
+    onEncounterPhase?.('idle')
+  }, [inRange, nonSpatialMode, onEncounterPhase])
 
   useEffect(() => {
     const unsubscribe = subscribeAIActor(() => {
@@ -107,7 +141,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!isCurrentAIActorSnapshot(actor)) return
+    if (!isCurrentAIActorSnapshot(actor) || !encounterEnabled) return
     const trimmed = message.trim()
     if (!trimmed || busy) return
     const graphIdTokens = graphEntityIds.split(',').map(id => id.trim()).filter(Boolean)
@@ -132,9 +166,14 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
     }
 
     aborter.current?.abort()
+    sceneSession.current.update({actorGeneration: actor.generation, agentId: agent.id, inRange: encounterEnabled, processingConsent: consent})
+    const sceneTurn = sceneSession.current.begin({actorGeneration:actor.generation,agentId:agent.id})
+    if (sceneTurn === null) return
+    const turnGeneration = ++encounterGeneration.current
     const controller = new AbortController()
     aborter.current = controller
     setBusy(true)
+    onEncounterPhase?.('thinking')
     setResult(null)
     setReviewResult(null)
     setStatus(`${agent.name} is considering your message through the selected provider…`)
@@ -158,7 +197,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
           : graphRequested && graphSelection ? { graphSelection, graphShareConsent: true } : {}),
         signal: controller.signal,
       })
-      if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
+      if (controller.signal.aborted || aborter.current !== controller || encounterGeneration.current !== turnGeneration || !encounterNearRef.current || !sceneSession.current.isCurrent(sceneTurn,actor.generation,agent.id) || !isCurrentAIActorSnapshot(actor)) return
       if (graphRequested && selectedMemoryRequest && (typeof window === 'undefined' || new URLSearchParams(window.location.search).get('memoryId') !== selectedMemoryRequest)) {
         setResult(null)
         setGraphShareConsent(false)
@@ -173,6 +212,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
       }
       const resolved = response ?? deterministicOrbFallback(trimmed)
       setResult(resolved)
+      onEncounterPhase?.(response && response.provider !== 'fallback' ? 'responded' : 'idle')
       if (response) {
         setHistory((current) => [
           ...current.slice(-6),
@@ -193,7 +233,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
             explicitSecondProviderConsent: true,
             signal: controller.signal,
           })
-          if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
+          if (controller.signal.aborted || aborter.current !== controller || encounterGeneration.current !== turnGeneration || !encounterNearRef.current || !sceneSession.current.isCurrent(sceneTurn,actor.generation,agent.id) || !isCurrentAIActorSnapshot(actor)) return
           if (review) {
             setReviewResult(review)
             setStatus(`First answer and ${COUNCIL_PROVIDER_REGISTRY[selectedReviewerId].label} second opinion received. No automatic correction or factual certification.`)
@@ -201,7 +241,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
             setStatus('First answer preserved. The second provider was unavailable before processing. No automatic correction.')
           }
         } catch {
-          if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
+          if (controller.signal.aborted || aborter.current !== controller || encounterGeneration.current !== turnGeneration || !encounterNearRef.current || !sceneSession.current.isCurrent(sceneTurn,actor.generation,agent.id) || !isCurrentAIActorSnapshot(actor)) return
           setStatus('First answer preserved. The second opinion failed or could not be confirmed. No automatic correction.')
         }
       } else {
@@ -210,7 +250,8 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
           : 'The selected provider was unavailable before external processing; a disclosed local fallback is shown.')
       }
     } catch (error) {
-      if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
+      if (controller.signal.aborted || aborter.current !== controller || encounterGeneration.current !== turnGeneration || !encounterNearRef.current || !sceneSession.current.isCurrent(sceneTurn,actor.generation,agent.id) || !isCurrentAIActorSnapshot(actor)) return
+      onEncounterPhase?.('idle')
       if (graphRequested) {
         setResult(null)
         setGraphShareConsent(false)
@@ -229,6 +270,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
       setResult(fallback)
       setStatus('The selected Council provider did not return a usable answer; a disclosed local fallback is shown.')
     } finally {
+      sceneSession.current.finish(sceneTurn)
       if (!controller.signal.aborted && aborter.current === controller && isCurrentAIActorSnapshot(actor)) setBusy(false)
       if (aborter.current === controller) aborter.current = null
     }
@@ -243,6 +285,8 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
       data-requestable-council-providers={REQUESTABLE_COUNCIL_PROVIDER_IDS.join(' ')}
       data-pending-council-providers={PENDING_COUNCIL_PROVIDER_IDS.join(' ')}
     >
+      {inRange === false ? <div role="status" aria-live="polite">The selected Council preview is outside conversational range. You may use an accessible nonspatial text interaction instead.</div> : null}
+      {inRange !== undefined ? <label className="councilConsent"><input type="checkbox" checked={nonSpatialMode} onChange={event => setNonSpatialMode(event.target.checked)} />Use nonspatial Council text interaction</label> : null}
       <form onSubmit={submit} aria-busy={busy}>
         <label htmlFor="urai-council-provider">Council provider</label>
         <select
@@ -319,8 +363,8 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
         </> : null}
         {reviewableProviderIds.length === 0 ? <small>A second opinion requires another separately enabled Council provider.</small> : null}
         <div className="councilConversationActions">
-          <button type="submit" disabled={busy || !consent || !message.trim() || (graphRequested && (providerId === 'openai' || !graphShareConsent || (useSelectedMemoryGraph && Boolean(memoryRouteId) ? !validMemoryId : !graphSnapshotId.trim() || !graphEntityIds.trim()))) || (reviewRequested && (!selectedReviewerId || !reviewConsent))}>{busy ? 'Considering…' : 'Ask Council'}</button>
-          <button type="button" disabled={!busy} onClick={() => { aborter.current?.abort(); aborter.current = null; setBusy(false); setStatus('Council response stopped.') }}>Stop</button>
+          <button type="submit" disabled={!encounterEnabled || busy || !consent || !message.trim() || (graphRequested && (providerId === 'openai' || !graphShareConsent || (useSelectedMemoryGraph && Boolean(memoryRouteId) ? !validMemoryId : !graphSnapshotId.trim() || !graphEntityIds.trim()))) || (reviewRequested && (!selectedReviewerId || !reviewConsent))}>{busy ? 'Considering…' : 'Ask Council'}</button>
+          <button type="button" disabled={!busy} onClick={() => { cancelEncounter(); setStatus('Council response stopped.') }}>Stop</button>
         </div>
       </form>
       <small>Provider availability is checked when you ask. A listed provider may be unavailable.</small>

@@ -1,0 +1,29 @@
+name: Digital Human Parallel Contract
+on:
+  pull_request:
+    paths:
+      - 'urai-tier1/src/spatial/digital-human/**'
+      - 'urai-tier1/tests/digital-human-*.test.mjs'
+      - 'urai-tier1/src/spatial/council/CouncilRealm.tsx'
+      - '.github/workflows/digital-human-parallel-contract.yml'
+  workflow_dispatch:
+jobs:
+  isolated-node22:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify encounter and facial driver
+        run: |
+          node --check urai-tier1/src/spatial/digital-human/founderCharacterPlaybackGate.mjs
+          node --check urai-tier1/src/spatial/digital-human/humanEncounter.mjs
+          node --check urai-tier1/src/spatial/digital-human/humanMorphDriver.mjs
+          node --check urai-tier1/src/spatial/digital-human/councilApprovedAudioClock.mjs
+          node --check urai-tier1/src/spatial/digital-human/anonymousCalibration.mjs
+          node --check urai-tier1/scripts/digital-human/derive-council-v4-unified-face.mjs
+          node --test urai-tier1/tests/digital-human-encounter-contract.test.mjs urai-tier1/tests/digital-human-morph-driver-contract.test.mjs urai-tier1/tests/digital-human-council-proximity.test.mjs urai-tier1/tests/digital-human-council-session.test.mjs urai-tier1/tests/digital-human-approved-audio-clock.test.mjs urai-tier1/tests/digital-human-anonymous-calibration.test.mjs urai-tier1/tests/digital-human-anonymous-glb-generator.test.mjs urai-tier1/tests/digital-human-founder-playback-gate.test.mjs urai-tier1/tests/digital-human-png-comparison.test.mjs urai-tier1/tests/digital-human-unified-face-generation.test.mjs
