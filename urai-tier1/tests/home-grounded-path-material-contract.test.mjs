@@ -22,6 +22,9 @@ test('three original Home paths consume one world-meter earth/stone material gra
     assert.match(paths, new RegExp(key))
   }
   assert.equal((paths.match(/kind="path"/g) ?? []).length, 3)
+  assert.equal((paths.match(/<HomeCC0ReviewMaterial surface="path" \/>/g) ?? []).length, 3)
+  // Photographic maps must remain higher priority in explicitly opted-in local dev.
+  assert.equal((paths.match(/HOME_CC0_DEV_REVIEW \? <HomeCC0ReviewMaterial surface="path" \/> : <HomeSurfaceMaterial kind="path"/g) ?? []).length, 3)
   assert.match(paths, /home-sanctuary-path/)
   assert.doesNotMatch(paths, /new THREE\.Geometry|<planeGeometry/)
 })
@@ -34,6 +37,7 @@ test('source-only color improvement cannot promote or mislabel final Home art', 
   assert.equal(promotion.humanReviewApproved, false)
   assert.equal(promotion.visualProofVerified, false)
   assert.match(materials, /Authored non-photographic fallback/)
+  assert.match(renderer, /HOME_CC0_DEV_REVIEW = process\.env\.NODE_ENV === 'development'/)
   assert.match(renderer, /<HomeSkyGradient \/>/)
   assert.match(renderer, /<HomeSanctuaryPerimeterGrove \/>/)
   assert.match(renderer, /<HomeInterpretiveSplatEnvironment/)

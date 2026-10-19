@@ -20,6 +20,9 @@ import { createLivingMemoryGeometry, createMemoryFieldGeometry, createMemoryFila
 import { createAuthoredOrbLightPresentation, disposeAuthoredOrbLightPresentation } from './HomeAuthoredOrbLight'
 import styles from './HomeWorldProduction.module.css'
 import HomeSanctuaryPerimeterGrove from './HomeSanctuaryPerimeterGrove'
+import { HomeCC0ReviewMaterial } from './HomeCC0ReviewMaterial'
+import { HomeCC0ReviewShrubs } from './HomeCC0ReviewShrubs'
+import { HomeCC0ReviewRetainedGround } from './HomeCC0ReviewRetainedGround'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 
 const HOME_PROVIDER_ENVIRONMENT = '/assets/urai/home/home-threshold-main.webp'
@@ -32,6 +35,8 @@ const HOME_SCANNED_COMPOSITION_V1 = 'canonical-sanctuary-plus-cc0-fern-plus-livi
 const HOME_INTERPRETIVE_SPLAT_ASSET = resolveHomeInterpretiveSplatAsset(process.env.NEXT_PUBLIC_URAI_HOME_INTERPRETIVE_SPLAT_ASSET)
 const HOME_BOUNDS = { minX: -14, maxX: 14, minZ: -18, maxZ: 12 }
 const HOME_GROUND_COLOR = '#52654c'
+// Review candidates cannot load in a production bundle or normal Home session.
+const HOME_CC0_DEV_REVIEW = process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_URAI_HOME_CC0_DEV_REVIEW === 'true'
 const SPAWN = new THREE.Vector3(-0.85, 0, 8.4)
 const ORB = new THREE.Vector3(1.8, 0.82, -9.5)
 // Frozen Wave13 registry anchors (authored scene units; not photographic calibration).
@@ -299,8 +304,9 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
   }
   return <group name="home-authored-terrain" userData={{ geometryOwner: 'retained-glb-ground-topology-plus-original-terrain-extension', materialOwner: 'original-procedural-detail-not-photographic-pbr', sharedElevation: true }}>
     <primitive object={authored} />
+    {HOME_CC0_DEV_REVIEW ? <HomeCC0ReviewRetainedGround scene={authored} /> : null}
     <mesh name="home-natural-terrain" geometry={extension} receiveShadow onClick={onWalk}>
-      <HomeSurfaceMaterial kind="ground" color={HOME_GROUND_COLOR} roughness={.96} metalness={0} envMapIntensity={.32} />
+      {HOME_CC0_DEV_REVIEW ? <HomeCC0ReviewMaterial surface="ground" /> : <HomeSurfaceMaterial kind="ground" color={HOME_GROUND_COLOR} roughness={.96} metalness={0} envMapIntensity={.32} />}
     </mesh>
     <mesh name="home-walkable-navigation-surface" rotation={[-Math.PI / 2, 0, 0]} position={[0, .7, -2]} onClick={onWalk}>
       <planeGeometry args={[28, 34]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
@@ -310,9 +316,9 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
 
 function SanctuaryPath() {
   return <group name="home-sanctuary-path" userData={{ role: 'walkable-natural-stone-thread' }}>
-    <mesh geometry={MAIN_PATH_GEOMETRY} receiveShadow><HomeSurfaceMaterial kind="path" color="#968d7c" roughness={.96} metalness={0} envMapIntensity={.32} /></mesh>
-    <mesh geometry={GROUND_PATH_GEOMETRY} receiveShadow><HomeSurfaceMaterial kind="path" color="#908a78" roughness={.98} metalness={0} envMapIntensity={.30} /></mesh>
-    <mesh geometry={LIFE_MAP_PATH_GEOMETRY} receiveShadow><HomeSurfaceMaterial kind="path" color="#8b8879" roughness={.98} metalness={0} envMapIntensity={.30} /></mesh>
+    <mesh geometry={MAIN_PATH_GEOMETRY} receiveShadow>{HOME_CC0_DEV_REVIEW ? <HomeCC0ReviewMaterial surface="path" /> : <HomeSurfaceMaterial kind="path" color="#968d7c" roughness={.96} metalness={0} envMapIntensity={.32} />}</mesh>
+    <mesh geometry={GROUND_PATH_GEOMETRY} receiveShadow>{HOME_CC0_DEV_REVIEW ? <HomeCC0ReviewMaterial surface="path" /> : <HomeSurfaceMaterial kind="path" color="#908a78" roughness={.98} metalness={0} envMapIntensity={.30} />}</mesh>
+    <mesh geometry={LIFE_MAP_PATH_GEOMETRY} receiveShadow>{HOME_CC0_DEV_REVIEW ? <HomeCC0ReviewMaterial surface="path" /> : <HomeSurfaceMaterial kind="path" color="#8b8879" roughness={.98} metalness={0} envMapIntensity={.30} />}</mesh>
   </group>
 }
 
@@ -982,6 +988,7 @@ function Scene(props: { previewW13V3: boolean; input: MovementInput; yaw: Mutabl
       <Horizon />
       <Vegetation />
       <HomeSanctuaryPerimeterGrove />
+      {HOME_CC0_DEV_REVIEW ? <HomeCC0ReviewShrubs /> : null}
       <GroundDetail />
       <SanctuaryPavilion />
       <Water />
