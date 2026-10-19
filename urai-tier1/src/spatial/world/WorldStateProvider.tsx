@@ -69,7 +69,8 @@ function truthModeFrom(value: string | null): UraiTruthMode | undefined {
 function contextFromLocation(): UraiWorldContextPatch {
   if (typeof window === 'undefined') return {}
   const params = new URLSearchParams(window.location.search)
-  const memoryId = params.get('memoryId') ?? params.get('node') ?? undefined
+  // A galaxy node can be an event or a projected star, never an implicit private memory.
+  const memoryId = params.get('memoryId') ?? undefined
   const threadId = params.get('thread') ?? undefined
   const personId = params.get('personId') ?? undefined
   const placeId = params.get('placeId') ?? undefined
@@ -137,6 +138,21 @@ function reducer(state: RuntimeState, action: RuntimeAction): RuntimeState {
       pendingTravel: undefined,
       world: {
         ...state.world,
+        // A route sync is the new identity boundary. Do not retain another
+        // memory/account's private context after logout, revocation or return.
+        memoryId: undefined,
+        threadId: undefined,
+        personId: undefined,
+        placeId: undefined,
+        eraId: undefined,
+        replayManifestId: undefined,
+        movieId: undefined,
+        chapterId: undefined,
+        privacyMode: 'private',
+        originRealm: undefined,
+        returnToken: undefined,
+        reconstructionFidelity: undefined,
+        demo: undefined,
         ...action.context,
         destination: action.destination,
         previousDestination: changed ? state.world.destination : state.world.previousDestination,
