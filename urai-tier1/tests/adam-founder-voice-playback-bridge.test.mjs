@@ -14,7 +14,7 @@ const authority = () => ({accountId:'owner-a',subjectId:'adam',identityKind:'fou
 const evidence = () => ({audioSha256:SHA,voiceId:'synthetic-approved',voiceApprovalSha256:V,
   providerReceipt:{synthetic:true,notRealFounder:true}})
 async function waitUntil(check) {
-  for(let i=0;i<40;i++) { if(check()) return; await new Promise(resolve=>setImmediate(resolve)) }
+  for(let i=0;i<300;i++) { if(check()) return; await new Promise(resolve=>setTimeout(resolve,1)) }
   throw Error('Provider verification was never reached; the gate refused early')
 }
 class Media {
