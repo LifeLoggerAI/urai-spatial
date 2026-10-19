@@ -135,31 +135,62 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const currentMemories = memoriesOwner === currentOwner ? canonicalMemories : new Map<string, SelectedMemory>();
   const visibleNodes = explicitDemo || (authorityKey !== null && nodesAuthority === authorityKey) ? currentNodes : [];
   const visibleMemories = authorityKey !== null && memoriesAuthority === authorityKey ? currentMemories : new Map<string, SelectedMemory>();
-  const resolvedNodes = useMemo(() => explicitDemo ? visibleNodes : visibleNodes.map(node => {
-    const memoryId = sanitizeMemoryId(node.memoryId);
-    const authoritative = memoryId && node.type === "memory" ? visibleMemories.get(memoryId) : undefined;
-    // Keep contextual events visible but non-navigable. Never infer memory
-    // identity or manifest authority from event IDs, labels or source links.
-    if (!authoritative) return { ...node, authorizedMemory: false,
-      // A revoked/deleted/unavailable canonical memory must not leak its old
-      // title, summary, identity, narrator or tags via a stale event snapshot.
-      ...(node.type === "memory" ? {
-        title: 'Private memory unavailable', summary: 'This memory is not currently available.',
-        subtitle: 'Access restricted', dateLabel: 'Unavailable', occurredAt: undefined,
-        clusterId: undefined, eraId: undefined, narratorHint: undefined, tags: undefined,
-        sourceId: undefined, sourceType: 'system_generated' as const, memoryId: undefined, connectedTo: [],
-      } : {}),
-      // Non-memory contextual objects stay in the constellation but do not
-      // inherit Focus/Replay authority from a missing private record.
-      locked: node.type === "memory" ? true : Boolean(node.locked),
-      replayAvailable: false, replayManifestId: undefined };
-    return { ...node, id: node.id, memoryId: authoritative.id,
-      // Event identity owns the constellation, graph links and camera anchor;
-      // the separately verified memory owns personal historical content.
-      title: authoritative.title, summary: authoritative.summary,
-      replayAvailable: Boolean(node.replayAvailable), locked: Boolean(node.locked),
-      authorizedMemory: true, replayManifestId: authoritative.replayManifest.id };
-  }), [visibleNodes, visibleMemories, explicitDemo]);
+  const resolvedNodes = useMemo(() => {
+    if (explicitDemo) return visibleNodes;
+    const fromEvents: LifeMapNode[] = visibleNodes.map(node => {
+      const memoryId = sanitizeMemoryId(node.memoryId);
+      const authoritative = memoryId && node.type === "memory" ? visibleMemories.get(memoryId) : undefined;
+      // Keep contextual events visible but non-navigable. Never infer memory
+      // identity or manifest authority from event IDs, labels or source links.
+      if (!authoritative) return { ...node, authorizedMemory: false,
+        // A revoked/deleted/unavailable canonical memory must not leak its old
+        // title, summary, identity, narrator or tags via a stale event snapshot.
+        ...(node.type === "memory" ? {
+          title: 'Private memory unavailable', summary: 'This memory is not currently available.',
+          subtitle: 'Access restricted', dateLabel: 'Unavailable', occurredAt: undefined,
+          clusterId: undefined, eraId: undefined, narratorHint: undefined, tags: undefined,
+          sourceId: undefined, sourceType: 'system_generated' as const, memoryId: undefined, connectedTo: [],
+        } : {}),
+        // Non-memory contextual objects stay in the constellation but do not
+        // inherit Focus/Replay authority from a missing private record.
+        locked: node.type === "memory" ? true : Boolean(node.locked),
+        replayAvailable: false, replayManifestId: undefined };
+      return { ...node, id: node.id, memoryId: authoritative.id,
+        // Event identity owns the constellation, graph links and camera anchor;
+        // the separately verified memory owns personal historical content.
+        title: authoritative.title, summary: authoritative.summary,
+        replayAvailable: Boolean(node.replayAvailable), locked: Boolean(node.locked),
+        authorizedMemory: true, replayManifestId: authoritative.replayManifest.id };
+    });
+    // Source/event pipelines do not always materialize a separate lifeMapEvents
+    // document. Admit an already owner-verified canonical memory as a real
+    // Memory Star once all three private streams are current for this consent revision.
+    // This projects stored evidence; it does not invent graph links or claims.
+    if (authorityKey === null || nodesAuthority !== authorityKey || erasAuthority !== authorityKey || memoriesAuthority !== authorityKey) return fromEvents;
+    const eventMemoryIds = new Set(visibleNodes.filter(node => node.type === 'memory')
+      .map(node => sanitizeMemoryId(node.memoryId)).filter((id): id is string => Boolean(id)));
+    const usedNodeIds = new Set(fromEvents.map(node => node.id));
+    for (const memory of visibleMemories.values()) {
+      if (fromEvents.length >= 240) break;
+      if (memory.privacy === 'hidden' || memory.demo || memory.ownerId !== resolvedUserId
+        || !memory.star || !Array.isArray(memory.star.position)
+        || eventMemoryIds.has(memory.id)) continue;
+      const id = `canonical-memory:${memory.id}`;
+      if (usedNodeIds.has(id)) continue;
+      fromEvents.push({
+        id, type: 'memory', memoryId: memory.id, authorizedMemory: true,
+        replayManifestId: memory.replayManifest.id,
+        title: memory.title, summary: memory.summary, subtitle: 'Your memory',
+        occurredAt: memory.occurredAt, dateLabel: memory.occurredAt.slice(0, 10),
+        position: memory.star.position,
+        intensity: Math.min(1, Math.max(0.2, memory.star.scale)),
+        aura: memory.star.aura, replayAvailable: memory.replayManifest.segments.length > 0,
+        locked: false, privacyLevel: memory.privacy, connectedTo: [],
+      });
+      usedNodeIds.add(id);
+    }
+    return fromEvents;
+  }, [visibleNodes, visibleMemories, explicitDemo, authorityKey, nodesAuthority, erasAuthority, memoriesAuthority, resolvedUserId]);
   const currentEras = erasOwner === currentOwner ? eras : [];
   const visibleEras = explicitDemo || (authorityKey !== null && erasAuthority === authorityKey) ? currentEras : [];
   const [eventsLoading, setEventsLoading] = useState(!explicitDemo);
@@ -332,7 +363,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         const accepted = new Map<string, SelectedMemory>();
         for (const doc of snapshot.docs) {
           const parsed = parseSelectedMemory(doc.data(), resolvedUserId, doc.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-          if (parsed.status === 'ready') accepted.set(doc.id, parsed.memory);
+          if (parsed.status === 'ready' && parsed.memory.privacy !== 'hidden') accepted.set(doc.id, parsed.memory);
         }
         setCanonicalMemories(accepted);
         setMemoriesOwner(resolvedUserId);
