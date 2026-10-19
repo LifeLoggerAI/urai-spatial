@@ -70,8 +70,12 @@ export function createFounderCharacterPlaybackGate({
         accepted = await verifyAuthorizedVoice({accountId:ownerAccountId,subjectId:'adam',
           actorEpoch:authEpoch,turnId:id,audioSha256,voiceId,voiceApprovalSha256,providerReceipt}) === true;
       } catch { accepted = false; }
+      // A provider approval is bound to the exact voice identity that remains
+      // approved *before* media.play(), not only to post-playback validation.
+      const liveVoice = currentActor(readAuthority(), true);
       if (!accepted || ticket !== sequence || !current(id, false)
-        || !currentActor(readAuthority(), true)) return false;
+        || !liveVoice || liveVoice.approvedVoiceId !== voiceId
+        || liveVoice.voiceApprovalSha256 !== voiceApprovalSha256) return false;
       turn.voiceId = voiceId;
       turn.approvalSha256 = voiceApprovalSha256;
       turn.audioSha256 = audioSha256;

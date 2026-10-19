@@ -25,3 +25,29 @@ test('old failed play cannot cancel new turn',async()=>{const x=setup(),first=x.
 test('facial callback fault neutralizes audio',async()=>{const a=AUTH(),neutral=[],m=new Media();const gate=createFounderCharacterPlaybackGate({ownerAccountId:'owner-a',getAuthority:()=>a,verifyAuthorizedVoice:async()=>true,onFaceFrame:()=>{throw Error('renderer reset')},onNeutral:x=>neutral.push(x),abortConversation:()=>{}});const id=gate.beginTurn();assert.equal(await gate.startAuthorizedAudio(voiced(id,m)),true);m.currentTime=.25;assert.equal(gate.frame(id),false);assert.equal(m.paused,true);assert.ok(neutral.includes('facial-render-failed'))});
 test('duplicate start cannot call provider verifier twice',async()=>{const x=setup(),id=x.gate.beginTurn(),a=new Media(),b=new Media();let resolve,attempts=0;x.setVerifier(()=>{attempts++;return new Promise(r=>resolve=r)});const p=x.gate.startAuthorizedAudio(voiced(id,a));assert.equal(await x.gate.startAuthorizedAudio(voiced(id,b)),false);assert.equal(attempts,1);resolve(true);assert.equal(await p,true);assert.equal(b.paused,true);x.gate.dispose()});
 test('denied turn cannot be reactivated with new media',async()=>{const x=setup(),id=x.gate.beginTurn(),a=new Media();x.setVerifier(async()=>false);assert.equal(await x.gate.startAuthorizedAudio(voiced(id,a)),false);x.setVerifier(async()=>true);assert.equal(await x.gate.startAuthorizedAudio(voiced(id,new Media())),false);x.gate.dispose()});
+test('voice identity changed during provider verification is denied before media.play',async()=>{
+  const x=setup(),id=x.gate.beginTurn(),m=new Media()
+  let release,playCalls=0
+  m.play=async()=>{playCalls++;m.paused=false}
+  x.setVerifier(()=>new Promise(resolve=>release=resolve))
+  const pending=x.gate.startAuthorizedAudio(voiced(id,m))
+  x.auth.approvedVoiceId='rotated-approved-voice'
+  release(true)
+  assert.equal(await pending,false)
+  assert.equal(playCalls,0)
+  assert.equal(m.paused,true)
+  x.gate.dispose()
+})
+test('voice approval hash changed during provider verification is denied before media.play',async()=>{
+  const x=setup(),id=x.gate.beginTurn(),m=new Media()
+  let release,playCalls=0
+  m.play=async()=>{playCalls++;m.paused=false}
+  x.setVerifier(()=>new Promise(resolve=>release=resolve))
+  const pending=x.gate.startAuthorizedAudio(voiced(id,m))
+  x.auth.voiceApprovalSha256='c'.repeat(64)
+  release(true)
+  assert.equal(await pending,false)
+  assert.equal(playCalls,0)
+  assert.equal(m.paused,true)
+  x.gate.dispose()
+})
