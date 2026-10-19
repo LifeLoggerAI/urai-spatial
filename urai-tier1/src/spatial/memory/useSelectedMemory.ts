@@ -38,9 +38,12 @@ export function useSelectedMemory(): SelectedMemoryResult {
     },
     [location],
   )
-  const memoryId = sanitizeMemoryId(params.get('memoryId') ?? params.get('node'))
+  // The Life Map node identifies a constellation event, never private memory authority.
+  // Only an explicitly disclosed demo may use the legacy node-only navigation.
+  const demoRequested = isExplicitDemoRequest(params)
+  const memoryId = sanitizeMemoryId(params.get('memoryId') ?? (demoRequested ? params.get('node') : null))
   const manifestId = sanitizeMemoryId(params.get('manifestId'))
-  const requestedDemoMemoryId = isExplicitDemoRequest(params)
+  const requestedDemoMemoryId = demoRequested
     ? asDemoMemoryId(memoryId)
     : null
   const viewingReplay = location.split('?')[0].split('#')[0].replace(/\/+$/, '') === '/replay'
