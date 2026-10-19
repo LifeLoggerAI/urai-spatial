@@ -58,7 +58,12 @@ function harness(initialUser = 'owner-a') {
     '@/spatial/memory/selectedMemoryContract': {
       sanitizeMemoryId:id=>id && /^[a-z0-9-]+$/.test(id)?id:null,
       parseSelectedMemory:(raw,owner,id)=>raw.deleted || raw.consentState==='revoked' || raw.ownerId !== owner
-        ? {status:'unauthorized',memory:null} : {status:'ready',memory:{id,ownerId:owner,title:raw.title,summary:raw.summary,replayManifest:{id:raw.manifest}}},
+        ? {status:'unauthorized',memory:null} : {status:'ready',memory:{id,ownerId:owner,
+          authorization:'owner',demo:false,deleted:false,
+          title:raw.title,summary:raw.summary,privacy:raw.privacy||'private',
+          occurredAt:raw.occurredAt||'2026-01-01T00:00:00.000Z',
+          star:raw.star||{id,position:[1.5,.5,-8],scale:1,aura:'#aaddff'},
+          replayManifest:{id:raw.manifest,segments:[{id:'memory',startsAtMs:0,durationMs:1000}]}}},
     },
     '@/app/privacy-controls/consentModel': { isConsentPolicy: (raw,owner) => Boolean(raw && raw.version===2 && raw.ownerId===owner
       && Number.isSafeInteger(raw.revision) && raw.revision>=0 && raw.domains?.memory
@@ -73,7 +78,7 @@ function harness(initialUser = 'owner-a') {
       intensity:.5,aura:'#aaddff',sourceType:e.sourceType,
       sourceId:e.sourceId,tags:e.tags,narratorHint:e.narratorHint,
       clusterId:e.clusterId,eraId:e.eraId,connectedTo:e.connectedTo||[],
-      memoryId:e.memoryId,replayAvailable:e.replayAvailable,locked:e.locked||false,
+      memoryId:e.memoryId,privacyLevel:e.privacyLevel,replayAvailable:e.replayAvailable,locked:e.locked||false,
     })},
   }
   const module = {exports:{}}
@@ -156,17 +161,11 @@ test('a newer grant must reobserve all three private source streams before rende
   assert.equal(newest.nodes.find(n=>n.id==='event-1').title,'Authorized Memory')
   assert.equal(newest.loading,false)
 })
-test('per-memory revocation does not leak event-side historical labels or metadata',()=>{
+test('revoked canonical memory removes its event-backed star rather than leaving a location-shaped shell',()=>{
   const h=harness();h.render();h.emit('current',h.policy());h.load()
   const revoked=h.emit('memories',[{id:'memory-1',value:{ownerId:'owner-a',deleted:true,title:'SECRET',manifest:'secret'}}])
-  const node=revoked.nodes.find(n=>n.id==='event-1')
-  assert.equal(node.authorizedMemory,false)
-  assert.equal(node.replayAvailable,false)
-  assert.equal(node.locked,true)
-  for(const text of [node.title,node.summary,node.subtitle,node.dateLabel,node.sourceId,...(node.tags||[]),...(node.connectedTo||[])]){
-    assert.doesNotMatch(String(text),/secret|historical|family|private-provenance|private-link|private-tag|sensitive-date/i)
-  }
-  assert.equal(node.memoryId,undefined)
+  assert.equal(revoked.nodes.some(n=>n.id==='event-1' || n.memoryId==='memory-1'),false)
+  assert.equal(revoked.nodes.some(n=>n.id==='context-1'),true,'unrelated contextual view remains')
 })
 test('actor change and malformed canonical policies fail closed',()=>{
   const h=harness();h.render();h.emit('current',h.policy());h.load()
@@ -181,4 +180,57 @@ test('disclosed demo remains functional without subscribing to private account d
   assert.equal(v.sourceMode,'explicit-demo')
   assert.ok(v.nodes.some(n=>n.id==='disclosed-demo-star'))
   assert.equal(h.subscriptions.length,0)
+})
+
+// Synthetic canonical fixtures: no personal records, source interpretations, or private media.
+const canonicalMemory = (id, overrides={}) => ({id,value:{
+  ownerId:'owner-a',title:'Synthetic '+id,summary:'Synthetic source',manifest:'manifest-'+id,
+  star:{id,position:[3,1,-7],scale:.7,aura:'#88ddff'},privacy:'private',
+  ...overrides,
+}})
+test('unadmitted event-only memory is not a visible galaxy coordinate',()=>{
+  const h=harness();h.render();h.emit('current',h.policy())
+  h.emit('lifeMapEvents',[{id:'unmatched',value:{type:'memory',memoryId:'memory-missing',title:'Unverified historic source',position:[14,2,18]}}])
+  h.emit('lifeMapEras',[])
+  const view=h.emit('memories',[])
+  assert.equal(view.nodes.some(n=>n.id==='unmatched'),false)
+})
+test('hidden canonical memory never leaves an event-backed star',()=>{
+  const h=harness();h.render();h.emit('current',h.policy())
+  h.emit('lifeMapEvents',[{id:'event-hidden',value:{type:'memory',memoryId:'memory-hidden',title:'Prior hidden event'}}])
+  h.emit('lifeMapEras',[])
+  const view=h.emit('memories',[canonicalMemory('memory-hidden',{privacy:'hidden'})])
+  assert.equal(view.nodes.some(n=>n.id==='event-hidden'),false)
+})
+test('hidden relationship signal is not visible even when general consent is granted',()=>{
+  const h=harness();h.render();h.emit('current',h.policy())
+  h.emit('lifeMapEvents',[
+    {id:'hidden-context',value:{type:'relationship',title:'Hidden relationship',privacyLevel:'hidden'}},
+    {id:'public-context',value:{type:'relationship',title:'Unrelated allowed context'}}
+  ])
+  h.emit('lifeMapEras',[])
+  const view=h.emit('memories',[])
+  assert.deepEqual([...view.nodes.map(n=>n.id)],['public-context'])
+})
+test('revoking one memory preserves an unrelated owner-authorized event star',()=>{
+  const h=harness();h.render();h.emit('current',h.policy())
+  h.emit('lifeMapEvents',[
+    {id:'event-one',value:{type:'memory',memoryId:'memory-one',title:'Withdrawn'}},
+    {id:'event-two',value:{type:'memory',memoryId:'memory-two',title:'Unrelated'}}
+  ])
+  h.emit('lifeMapEras',[])
+  const view=h.emit('memories',[
+    canonicalMemory('memory-one',{consentState:'revoked'}),canonicalMemory('memory-two')
+  ])
+  assert.equal(view.nodes.some(n=>n.id==='event-one'),false)
+  assert.equal(view.nodes.find(n=>n.id==='event-two')?.authorizedMemory,true)
+  assert.equal(view.nodes.find(n=>n.id==='event-two')?.replayManifestId,'manifest-memory-two')
+})
+test('a contextual signal cannot expose a withdrawn canonical memoryId',()=>{
+  const h=harness();h.render();h.emit('current',h.policy())
+  h.emit('lifeMapEvents',[{id:'context',value:{type:'relationship',title:'Context',memoryId:'memory-removed'}}])
+  h.emit('lifeMapEras',[])
+  const view=h.emit('memories',[])
+  assert.equal(view.nodes.find(n=>n.id==='context')?.memoryId,undefined)
+  assert.equal(view.nodes.find(n=>n.id==='context')?.replayManifestId,undefined)
 })

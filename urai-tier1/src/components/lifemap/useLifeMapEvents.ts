@@ -137,30 +137,27 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const visibleMemories = authorityKey !== null && memoriesAuthority === authorityKey ? currentMemories : new Map<string, SelectedMemory>();
   const resolvedNodes = useMemo(() => {
     if (explicitDemo) return visibleNodes;
-    const fromEvents: LifeMapNode[] = visibleNodes.map(node => {
+    const fromEvents: LifeMapNode[] = visibleNodes.flatMap((node): LifeMapNode[] => {
+      // A hidden event is not a visible landmark even if an older client
+      // retained its coordinates, metadata or connections in a snapshot.
+      if (node.privacyLevel === 'hidden') return [];
       const memoryId = sanitizeMemoryId(node.memoryId);
       const authoritative = memoryId && node.type === "memory" ? visibleMemories.get(memoryId) : undefined;
-      // Keep contextual events visible but non-navigable. Never infer memory
-      // identity or manifest authority from event IDs, labels or source links.
-      if (!authoritative) return { ...node, authorizedMemory: false,
-        // A revoked/deleted/unavailable canonical memory must not leak its old
-        // title, summary, identity, narrator or tags via a stale event snapshot.
-        ...(node.type === "memory" ? {
-          title: 'Private memory unavailable', summary: 'This memory is not currently available.',
-          subtitle: 'Access restricted', dateLabel: 'Unavailable', occurredAt: undefined,
-          clusterId: undefined, eraId: undefined, narratorHint: undefined, tags: undefined,
-          sourceId: undefined, sourceType: 'system_generated' as const, memoryId: undefined, connectedTo: [],
-        } : {}),
-        // Non-memory contextual objects stay in the constellation but do not
-        // inherit Focus/Replay authority from a missing private record.
-        locked: node.type === "memory" ? true : Boolean(node.locked),
-        replayAvailable: false, replayManifestId: undefined };
-      return { ...node, id: node.id, memoryId: authoritative.id,
+      // A revoked/deleted/absent canonical memory must leave NO event-backed
+      // Memory Star, not even a redacted marker at its old coordinates.
+      // Directly navigating to an unavailable memory still has its own truthful
+      // accessible Focus/Replay fallback; the private galaxy cannot reveal it.
+      if (node.type === 'memory' && !authoritative) return [];
+      if (!authoritative) return [{ ...node, authorizedMemory: false,
+        // A contextual signal is not authority for another private memory.
+        memoryId: undefined, replayAvailable: false, replayManifestId: undefined,
+        locked: Boolean(node.locked) }];
+      return [{ ...node, id: node.id, memoryId: authoritative.id,
         // Event identity owns the constellation, graph links and camera anchor;
         // the separately verified memory owns personal historical content.
         title: authoritative.title, summary: authoritative.summary,
         replayAvailable: Boolean(node.replayAvailable), locked: Boolean(node.locked),
-        authorizedMemory: true, replayManifestId: authoritative.replayManifest.id };
+        authorizedMemory: true, replayManifestId: authoritative.replayManifest.id }];
     });
     // Source/event pipelines do not always materialize a separate lifeMapEvents
     // document. Admit an already owner-verified canonical memory as a real
