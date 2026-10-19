@@ -97,7 +97,7 @@ test('a changed Firebase actor never renders previously cached private Life Map 
   assert.match(source, /const currentOwner = explicitDemo \? 'demo-user' : resolvedUserId;/)
   assert.match(source, /const currentNodes = nodesOwner === currentOwner \? nodes : \[\];/)
   assert.match(source, /const currentEras = erasOwner === currentOwner \? eras : \[\];/)
-  assert.match(source, /return \{ nodes: resolvedNodes, eras: currentEras, loading, error, usingSeedData: explicitDemo, sourceMode \};/)
+  assert.match(source, /return \{ nodes: resolvedNodes, eras: visibleEras, loading, error, usingSeedData: explicitDemo, sourceMode \};/)
   assert.match(source, /setNodesOwner\(resolvedUserId\)/)
   assert.match(source, /setErasOwner\(resolvedUserId\)/)
   // Demo mode must be its own explicit source, never inherited from an owner.
