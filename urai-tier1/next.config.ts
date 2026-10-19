@@ -5,6 +5,11 @@ import type { NextConfig } from "next";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const isFirebaseStaticExport = process.env.URAI_FIREBASE_STATIC_EXPORT === "true";
+const CC0_REVIEW_PUBLIC = path.join(projectRoot, "public/assets/urai/home-production/cc0-review");
+if ((process.env.NODE_ENV === "production" || isFirebaseStaticExport) && existsSync(CC0_REVIEW_PUBLIC)) {
+  throw new Error("Release blocked: unapproved CC0 review textures/models remain in Next public/");
+}
+
 
 // A query-string toggle does not protect an asset placed under public/.
 // Refuse any production build while the disposable modeled V3 file is staged.
