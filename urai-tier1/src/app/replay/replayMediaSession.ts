@@ -87,7 +87,9 @@ export function createReplayMediaSession(
       fail('The recorded video has no usable duration. Retry or choose another memory.')
       return
     }
-    if (snapshot.status === 'error' || snapshot.status === 'blocked') return
+    // Decoder readiness can arrive after the media reached its natural end.
+    // Keep the terminal state until an explicit play() or seek() requests a restart.
+    if (snapshot.status === 'error' || snapshot.status === 'blocked' || snapshot.status === 'ended') return
     if (pendingInitialSeekMs !== null) {
       const target = pendingInitialSeekMs
       if (!Number.isSafeInteger(target) || target < 0 || target >= durationMs) {
