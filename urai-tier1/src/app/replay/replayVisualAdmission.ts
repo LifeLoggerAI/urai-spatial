@@ -1,4 +1,5 @@
 import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selectedMemoryContract'
+import type { PrivateMovieRouteSelection } from '@/spatial/life-movie/privateLifeMovieRouteSelection'
 
 export type ReplayVisualAdmission =
   | { kind: 'recorded-source'; media: SelectedMemoryMedia }
@@ -12,7 +13,7 @@ export function replayVisualAdmission(memory: SelectedMemory): ReplayVisualAdmis
 }
 
 /** Reset and tear down playback across ownership, source, privacy, and manifest changes. */
-export function replaySessionIdentity(memory: SelectedMemory) {
+export function replaySessionIdentity(memory: SelectedMemory, selectedMovie?: PrivateMovieRouteSelection | null) {
   return JSON.stringify([
     memory.ownerId,
     memory.id,
@@ -23,5 +24,6 @@ export function replaySessionIdentity(memory: SelectedMemory) {
     memory.replayManifest.durationMs,
     memory.sourceMedia.map(({ kind, url, caption }) => [kind, url, caption ?? null]),
     ...(memory.sourceMediaReceipts?.length ? [memory.sourceMediaReceipts.map(({ kind, mediaReceiptId, caption }) => [kind, mediaReceiptId, caption ?? null])] : []),
+    ...(selectedMovie ? [['protected-movie', selectedMovie.planId, selectedMovie.movieId]] : []),
   ])
 }

@@ -714,9 +714,15 @@ export default function CinematicReplayClient() {
   const visibility = useReplayMemoryVisibility(result.memory)
   const memory = result.memory
   const quality = useAdaptiveSpatialQuality()
+  const location = useBrowserLocation()
   if (!memory) return <ReplayMemoryHorizon memoryStatus={result.status} message={result.message} quality={quality} />
   if (visibility !== 'visible') return <ReplayMemoryHorizon memoryStatus={visibility === 'loading' ? 'loading' : 'unauthorized'} message="This Replay memory is currently unavailable." quality={quality} />
-  return <ReplayMemoryExperience key={replaySessionIdentity(memory)} memory={memory} memoryStatus={result.status} quality={quality} />
+  const selectedMovie = selectedPrivateMovieFromBrowserLocation(location, {
+    memoryId: memory.id, manifestId: memory.replayManifest.id,
+    authorizedOwner: memory.authorization === 'owner' && memory.privacy === 'private',
+    demo: memory.demo,
+  })
+  return <ReplayMemoryExperience key={replaySessionIdentity(memory, selectedMovie)} memory={memory} memoryStatus={result.status} quality={quality} />
 }
 
 const stateCss = `.replayState{position:fixed;inset:0;overflow:hidden;display:grid;place-items:center;padding:24px;background:#02060d;color:#fff;isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayState:after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,transparent 0 22%,rgba(1,5,12,.28) 48%,rgba(1,5,12,.8) 100%);pointer-events:none}.replayState section{z-index:2;text-align:center;max-width:620px;padding:28px 30px;border:1px solid rgba(220,248,255,.12);border-radius:28px;background:linear-gradient(145deg,rgba(2,8,16,.7),rgba(2,8,16,.24));backdrop-filter:blur(18px);text-shadow:0 3px 24px #000}.replayState section p{margin:0 0 9px;color:#c9f7ff;font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.replayState section h1{margin:0;font:500 clamp(1.7rem,4.6vw,3.6rem)/1.02 var(--font-sans);letter-spacing:-.045em}.replayState section span{display:block;max-width:520px;margin:12px auto 0;color:rgba(235,247,255,.72);font-size:13px;line-height:1.55}.replayHorizonActions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;margin-top:20px}.replayState .replayChooseMemory{min-height:48px;margin-top:0;padding:0 22px;border-radius:999px;border:1px solid rgba(210,248,255,.32);background:linear-gradient(135deg,#dffbff,#8fe5ef);color:#041019;font-weight:900}.replayState .replayChooseMemory:focus-visible{outline:3px solid #fff;outline-offset:4px}@media(max-width:700px){.replayState section{max-width:calc(100vw - 32px);padding:24px 20px}}@media(prefers-reduced-motion:reduce){.replayState section{backdrop-filter:none}}@media(forced-colors:active){.replayState section,.replayState .replayChooseMemory{border:2px solid CanvasText}}`
