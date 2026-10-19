@@ -61,6 +61,8 @@ function checkOriginalRoute(fileName, functionName, oldSearch, request) {
      URL, URLSearchParams,
      window: { location: { origin: 'https://urai.test', search: oldSearch } },
      definitionForDestination: destination => ({ href: '/' + destination }),
+     CONTEXT_KEYS: ['memoryId', 'node', 'thread', 'personId', 'placeId', 'manifestId', 'movieId', 'chapterId', 'privacyMode', 'demo'],
+     WORLD_TRAVEL_CONTEXT_KEYS: ['memoryId', 'node', 'thread', 'personId', 'placeId', 'manifestId', 'movieId', 'chapterId', 'privacyMode', 'demo'],
    },
  )
  assert.equal(typeof route, 'string')
