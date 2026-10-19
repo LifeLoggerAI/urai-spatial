@@ -46,7 +46,16 @@ async function verifySource() {
   return results
 }
 function rejectRelease() {
-  if (process.env.NODE_ENV==='production'||process.env.URAI_FIREBASE_STATIC_EXPORT==='true'||process.env.CI==='true') throw Error('Nonproduction CC0 candidate is not allowed in release/CI context')
+  // Some isolated dev workspaces set CI=true by default. An explicit
+  // nonproduction acknowledgement permits local/remote dev review, never
+  // production export. All source bytes must still match the pinned hashes.
+  const ciDevReview = process.env.NODE_ENV === 'development'
+    && process.env.URAI_CC0_DEV_RUNNER === 'acknowledge-nonproduction-only'
+  if (process.env.NODE_ENV === 'production'
+    || process.env.URAI_FIREBASE_STATIC_EXPORT === 'true'
+    || (process.env.CI === 'true' && !ciDevReview)) {
+    throw Error('CC0 review blocked: production/CI context; dev-only runner requires NODE_ENV=development and URAI_CC0_DEV_RUNNER=acknowledge-nonproduction-only')
+  }
 }
 if (receipt.classification!=='NONPRODUCTION_CANDIDATE_UNAPPROVED'||receipt.releaseApproved!==false||receipt.reviewApproved!==false||receipt.license!=='CC0-1.0') throw Error('Nonproduction/rights classification changed')
 try {
@@ -66,7 +75,14 @@ try {
       }
       const remote=new URL(entry.url)
       if(remote.protocol!=='https:' || remote.hostname!=='dl.polyhaven.org' || entry.bytes>5000000) throw Error('Unapproved external file '+rel)
-      const response=await fetch(remote, {redirect:'error',signal:AbortSignal.timeout(60000)})
+      let response
+      try {
+        response=await fetch(remote, {redirect:'error',signal:AbortSignal.timeout(60000)})
+      } catch (error) {
+        const cause=error && typeof error === 'object' && 'cause' in error ? error.cause : undefined
+        const detail=cause && typeof cause === 'object' && 'code' in cause ? String(cause.code) : String(error)
+        throw new Error('Original CC0 binary network acquisition failed for '+rel+' at '+remote.hostname+': '+detail, {cause:error})
+      }
       if(!response.ok) throw Error('Poly Haven download failed '+rel+': '+response.status)
       const data=Buffer.from(await response.arrayBuffer())
       if(data.length!==entry.bytes || createHash('md5').update(data).digest('hex')!==entry.md5) throw Error('Downloaded identity mismatch '+rel)
