@@ -20,6 +20,7 @@ import { createLivingMemoryGeometry, createMemoryFieldGeometry, createMemoryFila
 import { createAuthoredOrbLightPresentation, disposeAuthoredOrbLightPresentation } from './HomeAuthoredOrbLight'
 import styles from './HomeWorldProduction.module.css'
 import HomeSanctuaryPerimeterGrove from './HomeSanctuaryPerimeterGrove'
+import { showHomeThresholdLabel } from './HomeThresholdVisibility'
 import { HomeCC0ReviewMaterial } from './HomeCC0ReviewMaterial'
 import { HomeCC0ReviewShrubs } from './HomeCC0ReviewShrubs'
 import { HomeCC0ReviewRetainedGround } from './HomeCC0ReviewRetainedGround'
@@ -744,19 +745,19 @@ function EmbodiedPresence({ root }: { root: MutableRefObject<THREE.Group | null>
   </group>
 }
 
-function Thresholds({ onGround, onLifeMap }: { onGround: () => void; onLifeMap: () => void }) {
+function Thresholds({ onGround, onLifeMap, nearby }: { onGround: () => void; onLifeMap: () => void; nearby: Nearby }) {
   const locale = useUraiLocale()
   const phase = useSceneStore((state) => state.phase)
   const thresholds = [
-    { position: GROUND_THRESHOLD, label: locale.text('nav.ground') },
-    { position: LIFE_MAP_LOOKOUT, label: locale.text('nav.lifeMap') },
+    { position: GROUND_THRESHOLD, label: locale.text('nav.ground'), destination: 'ground' as const },
+    { position: LIFE_MAP_LOOKOUT, label: locale.text('nav.lifeMap'), destination: 'life-map' as const },
   ]
   return <>
     <group name="home-ground-environmental-threshold" position={GROUND_THRESHOLD}><mesh position={[0,.8,0]} onClick={(e) => { e.stopPropagation(); onGround() }}><boxGeometry args={[4.2,2.8,4.2]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh></group>
     <group name="home-life-map-sky-lookout" position={LIFE_MAP_LOOKOUT}><mesh position={[0,.8,0]} onClick={(e) => { e.stopPropagation(); onLifeMap() }}><boxGeometry args={[4.2,2.8,4.2]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh></group>
-    {phase === 'HOME' ? thresholds.map(({ position, label }) => <Html key={label} position={position.clone().add(new THREE.Vector3(0, 1.25, 0))} center zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
+    {thresholds.filter(({ destination }) => showHomeThresholdLabel(phase, nearby, destination)).map(({ position, label }) => <Html key={label} position={position.clone().add(new THREE.Vector3(0, 1.25, 0))} center zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}>
       <span aria-hidden="true" style={{ display: 'block', whiteSpace: 'nowrap', padding: '7px 11px', borderBottom: '1px solid #a9c9d399', borderRadius: 3, background: '#09151dcc', color: '#e2edf3', font: '500 14px/1.35 system-ui', letterSpacing: '.05em' }}>{label}</span>
-    </Html>) : null}
+    </Html>)}
   </>
 }
 
@@ -958,7 +959,7 @@ function World001V3Preview() {
   return <primitive object={scene} name="home-w13-v3-interpretive-preview" dispose={null} />
 }
 
-function Scene(props: { previewW13V3: boolean; input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onGroundComplete: () => void; onLifeMap: () => void; onReady: () => void; onTransitionSequence: (value: TransitionSequence) => void; groundDescent: boolean; reducedMotion: boolean; reducedStimulation: boolean; orbState: OrbState }) {
+function Scene(props: { previewW13V3: boolean; nearby: Nearby; input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onGroundComplete: () => void; onLifeMap: () => void; onReady: () => void; onTransitionSequence: (value: TransitionSequence) => void; groundDescent: boolean; reducedMotion: boolean; reducedStimulation: boolean; orbState: OrbState }) {
   const phase = useSceneStore((state) => state.phase)
   const cosmic = phase === 'ASCENT'
   const orbAnchor = props.previewW13V3 ? W13_V3_ORB : ORB
@@ -998,7 +999,7 @@ function Scene(props: { previewW13V3: boolean; input: MovementInput; yaw: Mutabl
     <Orb onOpen={props.onOrbOpen} reducedMotion={props.reducedMotion} reducedStimulation={props.reducedStimulation} state={props.orbState} anchor={orbAnchor} />
     <EmbodiedPresence root={props.avatar} />
     <HomeSkyInteraction groundDescent={props.groundDescent} onAscent={props.onLifeMap} />
-    <Thresholds onGround={props.onGround} onLifeMap={props.onLifeMap} />
+    <Thresholds onGround={props.onGround} onLifeMap={props.onLifeMap} nearby={props.nearby} />
     <PlayerRig previewW13V3={props.previewW13V3} orbAnchor={orbAnchor} input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.onNearby} groundDescent={props.groundDescent} reducedMotion={props.reducedMotion} onGroundComplete={props.onGroundComplete} onTransitionSequence={props.onTransitionSequence} />
     <SceneReady key={props.previewW13V3 ? 'w13-v3' : 'canonical'} previewW13V3={props.previewW13V3} onReady={props.onReady} />
   </>
@@ -1086,7 +1087,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const contextId = phase === 'ASCENT' ? 'ascent.progress' : groundDescent ? 'home.groundProgress' : nearby === 'orb' ? 'home.orbNearby' : nearby === 'ground' ? 'home.groundNearby' : nearby === 'life-map' ? 'home.skyNearby' : null
 
   return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="legacy-placeholder-metadata-only" data-home-provider-regions="not-rendered" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-input-ready={ready && !transitioning && !inputLocked ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-orb-anchor-x={previewW13V3 ? W13_V3_ORB.x : ORB.x} data-home-orb-anchor-z={previewW13V3 ? W13_V3_ORB.z : ORB.z} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-world001-preview={previewW13V3 ? 'MODELED_INTERPRETIVE_NONPRODUCTION' : 'off'} data-home-v3-navigation={previewW13V3 ? 'bounded-central-terrace-research-not-certified-navmesh' : 'off'} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-orb-reduced-stimulation={reducedStimulation ? 'true' : 'false'} data-home-orb-playback={orbSensory.movement === 'settled' ? 'stopped' : 'playing'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
-    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? (reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene key={previewW13V3 ? 'w13-v3' : 'canonical'} previewW13V3={previewW13V3} input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
+    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? (reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene key={previewW13V3 ? 'w13-v3' : 'canonical'} previewW13V3={previewW13V3} nearby={nearby} input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
     {contextId ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" {...locale.props(contextId)} style={{ zIndex:19, ...(locale.locale !== 'en' ? { maxInlineSize:'calc(100vw - 32px)', whiteSpace:'normal', overflowWrap:'anywhere', textAlign:'start' as const } : {}) }}>{locale.text(contextId)}</div> : null}
     {!transitioning && mobileControls ? <MobileMovementPad input={input} label="Home movement controls" /> : null}
