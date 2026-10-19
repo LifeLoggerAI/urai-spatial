@@ -20,6 +20,7 @@ type Playback = {
   segment?: PrivateLifeMovieSegment
   seekOffsetMs?: number
   resumeAfterSwitch?: boolean
+  selectionKey?: string
 }
 
 function configuration() {
@@ -40,6 +41,11 @@ function configuration() {
   } catch { return null }
 }
 
+/** Scope any private Blob-backed media to the exact owner and movie selection. */
+function scopedPlaybackForSelection(state: Playback, key: string): Playback {
+  return state.selectionKey === key ? state : EMPTY
+}
+
 /** The original Replay remains the visual/control owner. This optional adapter
  * requests only the selected memory's final output, not arbitrary storage.
  * Server-side Studio+Spatial+Jobs checks remain authoritative. A Studio login
@@ -53,12 +59,14 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
     if (timeline && segment && segment.index + 1 < timeline.segments.length)
       segmentSelect.current?.(timeline.segments[segment.index + 1].startMs, true)
   }, [state.timeline, state.segment])
-  const key = JSON.stringify([memory?.ownerId, memory?.id, memory?.demo, memory?.privacy, planId, movieId])
+  const key = JSON.stringify([memory?.ownerId, memory?.id, memory?.replayManifest.id,
+    memory?.authorization, memory?.demo, memory?.privacy, planId, movieId])
   const config = useMemo(configuration, [])
   useEffect(() => {
+    const publish = (next: Playback) => setState({ ...next, selectionKey: key })
     if (!memory || memory.demo || memory.privacy !== 'private' || memory.authorization !== 'owner' ||
         !planId || !PLAN.test(planId) || !movieId || !ID.test(movieId) || !config) {
-      setState(EMPTY)
+      publish(EMPTY)
       return
     }
     // Preserve the validated configuration and selected identifiers across
@@ -74,7 +82,7 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
     let generation = 0, active = true, revoke: (() => void) | null = null
     segmentSelect.current = null
     let stopStudio: (() => void) | null = null
-    const clean = () => { generation++; revoke?.(); revoke = null; segmentSelect.current = null; setState({status:'unavailable',media:null,captions:null}) }
+    const clean = () => { generation++; revoke?.(); revoke = null; segmentSelect.current = null; publish({status:'unavailable',media:null,captions:null}) }
     const stopSpatial = onAuthStateChanged(spatialAuth, spatialUser => {
       revoke?.(); revoke = null; stopStudio?.(); stopStudio = null
       const current = ++generation
@@ -101,7 +109,7 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
           if (active && version === generation) clean()
         }, EXPIRY_MS)
         revoke = release
-        setState({status:'loading',media:null,captions:null})
+        publish({status:'loading',media:null,captions:null})
         const currentSession = () => active && version === generation &&
           spatialAuth.currentUser === spatialUser && studioAuth.currentUser === studioUser &&
           !controller.signal.aborted && navigator.onLine !== false
@@ -150,7 +158,7 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
                 const inSession = () => currentSession() && !requestController.signal.aborted &&
                   requestNumber === segmentVersion
                 clearUrls()
-                setState({status:'loading',media:null,captions:null,timeline:timeline ?? undefined})
+                publish({status:'loading',media:null,captions:null,timeline:timeline ?? undefined})
                 try {
                   if (!timeline || timeline.expiresAt <= Date.now() + 5000) {
                     const refreshed = await readTimeline(requestController.signal)
@@ -195,7 +203,7 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
                   const url = URL.createObjectURL(video.blob)
                   if (!inSession()) { URL.revokeObjectURL(url); return }
                   urls.push(url)
-                  setState({status:'ready',media:{kind:'video',url,caption:'Authorized private Life Movie'},
+                  publish({status:'ready',media:{kind:'video',url,caption:'Authorized private Life Movie'},
                     captions:transcript,timeline,segment,seekOffsetMs:localMs,resumeAfterSwitch:resume})
                   if (expiryTimer !== null) window.clearTimeout(expiryTimer)
                   expiryTimer = window.setTimeout(() => {
@@ -252,7 +260,7 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
             const url = URL.createObjectURL(video.blob); urls.push(url)
             const text = await captions.blob.text()
             if (!currentSession() || text.length > 2 * 1024 * 1024) throw new Error('private_movie_caption_unavailable')
-            setState({status:'ready',media:{kind:'video',url,caption:'Authorized private Life Movie'},captions:text})
+            publish({status:'ready',media:{kind:'video',url,caption:'Authorized private Life Movie'},captions:text})
           } catch { if (active && version === generation) clean() }
         })()
       })
@@ -261,5 +269,8 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
     window.addEventListener('offline',offline)
     return () => { active = false; generation++; revoke?.(); stopStudio?.(); stopSpatial(); window.removeEventListener('offline',offline) }
   }, [key, config, memory, planId, movieId])
-  return { ...state, seekTo, advance }
+  const scoped = scopedPlaybackForSelection(state, key)
+  // Never give a newly selected movie the prior selection's decoded media or controls.
+  return { ...scoped, seekTo: scoped.status === 'ready' ? seekTo : () => {},
+    advance: scoped.status === 'ready' ? advance : () => {} }
 }
