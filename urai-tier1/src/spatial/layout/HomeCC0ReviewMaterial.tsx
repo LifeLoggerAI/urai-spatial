@@ -6,7 +6,7 @@ import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 
 type Surface = 'ground' | 'path'
-export function HomeCC0ReviewMaterial({ surface }: { surface: Surface }) {
+export function useHomeCC0ReviewMaps(surface: Surface) {
   const folder = surface === 'ground' ? 'ground' : 'path'
   const base = '/assets/urai/home-production/cc0-review/' + folder + '/'
   const [diffuseSource, normalSource, roughnessSource] = useTexture([
@@ -28,6 +28,10 @@ export function HomeCC0ReviewMaterial({ surface }: { surface: Surface }) {
     return { diffuse, normal, roughness }
   }, [diffuseSource, normalSource, roughnessSource])
   useEffect(() => () => { maps.diffuse.dispose(); maps.normal.dispose(); maps.roughness.dispose() }, [maps])
+  return maps
+}
+export function HomeCC0ReviewMaterial({ surface }: { surface: Surface }) {
+  const maps = useHomeCC0ReviewMaps(surface)
   return <meshStandardMaterial color="#ffffff" map={maps.diffuse}
     normalMap={maps.normal} normalScale={new THREE.Vector2(.65, .65)}
     roughnessMap={maps.roughness} roughness={1} metalness={0}
