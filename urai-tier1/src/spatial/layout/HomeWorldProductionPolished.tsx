@@ -310,9 +310,9 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
 
 function SanctuaryPath() {
   return <group name="home-sanctuary-path" userData={{ role: 'walkable-natural-stone-thread' }}>
-    <mesh geometry={MAIN_PATH_GEOMETRY} receiveShadow><HomeSurfaceMaterial color="#8a897b" roughness={.94} metalness={0} envMapIntensity={.42} /></mesh>
-    <mesh geometry={GROUND_PATH_GEOMETRY} receiveShadow><HomeSurfaceMaterial color="#838576" roughness={.96} metalness={0} envMapIntensity={.4} /></mesh>
-    <mesh geometry={LIFE_MAP_PATH_GEOMETRY} receiveShadow><HomeSurfaceMaterial color="#818779" roughness={.96} metalness={0} envMapIntensity={.4} /></mesh>
+    <mesh geometry={MAIN_PATH_GEOMETRY} receiveShadow><HomeSurfaceMaterial kind="path" color="#968d7c" roughness={.96} metalness={0} envMapIntensity={.32} /></mesh>
+    <mesh geometry={GROUND_PATH_GEOMETRY} receiveShadow><HomeSurfaceMaterial kind="path" color="#908a78" roughness={.98} metalness={0} envMapIntensity={.30} /></mesh>
+    <mesh geometry={LIFE_MAP_PATH_GEOMETRY} receiveShadow><HomeSurfaceMaterial kind="path" color="#8b8879" roughness={.98} metalness={0} envMapIntensity={.30} /></mesh>
   </group>
 }
 
