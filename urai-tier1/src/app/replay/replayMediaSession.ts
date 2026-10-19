@@ -212,10 +212,18 @@ export function createReplayMediaSession(
       pendingInitialSeekMs = null
       wantsPlayback = false
       requestVersion += 1
-      for (const [event, listener] of listeners) video.removeEventListener(event, listener)
-      video.pause()
-      video.removeAttribute('src')
-      video.load()
+      // Stop and detach protected source media before invoking potentially
+      // throwing event-listener cleanup. Every teardown step is independent.
+      try { video.muted = true } catch { /* fail closed where supported */ }
+      try { video.pause() } catch { /* source detachment still required */ }
+      try { video.removeAttribute('src') } catch {
+        try { video.src = '' } catch { /* attempt decoder release below */ }
+      }
+      try { video.load() } catch { /* listener cleanup must still run */ }
+      for (const [event, listener] of listeners) {
+        try { video.removeEventListener(event, listener) } catch { /* terminal disposal */ }
+      }
+      listeners.clear()
     },
   }
 }
