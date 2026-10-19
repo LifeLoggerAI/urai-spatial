@@ -6,6 +6,15 @@ const WORLD001_V3_PUBLIC = join(
   dirname(fileURLToPath(import.meta.url)),
   'public/assets/urai/world001-preview/URAI_WORLD001_FOUNDER_HOME_ARCHITECTURE_v3.glb',
 )
+const CC0_REVIEW_PUBLIC = join(
+  dirname(fileURLToPath(import.meta.url)),
+  'public/assets/urai/home-production/cc0-review',
+)
+// Local real CC0 candidates are not approved launch art. Reject the entire
+// production build if ANY review binary remains under the public directory.
+if ((process.env.NODE_ENV === 'production' || process.env.URAI_FIREBASE_STATIC_EXPORT === 'true') && existsSync(CC0_REVIEW_PUBLIC)) {
+  throw new Error('Release blocked: unapproved CC0 review textures/models remain in Next public/')
+}
 // Retain this guard even when Next selects next.config.mjs instead of next.config.ts.
 if ((process.env.NODE_ENV === 'production' || process.env.URAI_FIREBASE_STATIC_EXPORT === 'true') && existsSync(WORLD001_V3_PUBLIC)) {
   throw new Error('Release blocked: nonproduction World001 V3 model is staged under Next public/')
