@@ -389,11 +389,22 @@ export default function FocusChamberClient() {
 
   const replayHref = useMemo(() => {
     if (!memory) return null
-    const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: memory.star.id, from: 'focus-artifact' })
+    const search = location.includes('?') ? location.slice(location.indexOf('?') + 1).split('#')[0] : ''
+    const incoming = new URLSearchParams(search)
+    const node = incoming.get('node')
+    const sameMemory = incoming.get('memoryId') === memory.id && incoming.get('manifestId') === memory.replayManifest.id
+    const validNode = Boolean(node && /^[A-Za-z0-9._:-]{1,120}$/.test(node))
+    const fromLifeMap = incoming.get('from') === 'life-map' || incoming.get('from') === 'life-map-semantic'
+    const originalSelection = fromLifeMap && node === incoming.get('returnNode')
+    const projectedSelection = node === `canonical-memory:${memory.id}`
+    // A projected Memory Star has a distinct scene ID from its canonical memory.
+    // Preserve it across Focus -> Replay -> Focus without ever treating it as authority.
+    const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id
+    const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: returnNode, from: 'focus-artifact' })
+    if (returnNode !== memory.star.id) next.set('returnNode', returnNode)
     if (memory.demo) next.set('demo', '1')
     if (!memory.demo && memory.privacy === 'private' && memory.authorization === 'owner') {
-      const search = location.includes('?') ? location.slice(location.indexOf('?') + 1).split('#')[0] : ''
-      forwardPrivateMovieRouteSelection(next, new URLSearchParams(search), {
+      forwardPrivateMovieRouteSelection(next, incoming, {
         memoryId: memory.id, manifestId: memory.replayManifest.id,
         authorizedOwner: true, demo: false,
       })
