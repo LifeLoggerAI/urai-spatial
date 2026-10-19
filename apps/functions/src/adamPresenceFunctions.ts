@@ -5,6 +5,7 @@ import { onRequest } from 'firebase-functions/v2/https'
 import { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS } from '../../../packages/localization/src/contentLanguage'
 import { paidSpatialFetch, assertSpatialPaidOutputCurrent, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
+import { founderVoiceIssuerReadiness } from './adamFounderVoiceReceiptContract.mjs'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -524,6 +525,10 @@ export const adamFounderVoiceProvider = onRequest({
     }
     if (request.method !== 'POST') throw new ProviderError(405, 'METHOD_NOT_ALLOWED', 'POST is required.')
     uid = await authenticatedUid(request)
+    // No trusted issuer, consented human-model admission or nonce service yet.
+    // Deny before any provider, rate-limit, output or paid dispatch.
+    const issuance = founderVoiceIssuerReadiness()
+    if (!issuance.ready) throw new ProviderError(409, issuance.code, issuance.message)
     const body = readBody(request, 16_384)
     const text = String(body.text ?? '').trim()
     const maximumCharacters = Math.max(1, Math.min(1_200, Number(process.env.FOUNDER_VOICE_MAX_CHARACTERS_PER_REQUEST ?? 900)))

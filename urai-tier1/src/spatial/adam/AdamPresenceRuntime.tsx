@@ -216,7 +216,7 @@ export default function AdamPresenceRuntime() {
         })
         if (generation !== voiceGeneration.current) return
         if (!result.blob) {
-          if (result.errorCode === 'FOUNDER_VOICE_NOT_READY' || result.errorCode === 'FOUNDER_VOICE_ID_MISSING') {
+          if (result.errorCode === 'FOUNDER_VOICE_NOT_READY' || result.errorCode === 'FOUNDER_VOICE_ID_MISSING' || result.errorCode === 'FOUNDER_PLAYBACK_AUTHORITY_NOT_READY') {
             setStatus('Adam text is live. The accepted private Founder voice is not enabled yet.')
           } else {
             setStatus('Adam text is live. Voice is temporarily unavailable.')
