@@ -56,7 +56,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     // Reuse node/manifest metadata only when an explicit selected memory
     // matches the current memory. Cross-realm travel must not leak it.
     if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
-    if ((key === 'node' || key === 'manifestId') && (!memoryDestination || !sameMemory)) continue
+    if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId') && (!memoryDestination || !sameMemory)) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
     }
@@ -66,6 +66,8 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('memoryId')
     target.searchParams.delete('node')
     target.searchParams.delete('manifestId')
+    target.searchParams.delete('movieId')
+    target.searchParams.delete('chapterId')
   }
 
   if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
@@ -73,8 +75,8 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
   if (memoryDestination && context?.replayManifestId && selectedMemoryId) target.searchParams.set('manifestId', context.replayManifestId)
-  if (context?.movieId) target.searchParams.set('movieId', context.movieId)
-  if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
+  if (memoryDestination && context?.movieId) target.searchParams.set('movieId', context.movieId)
+  if (memoryDestination && context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
   if (context?.originRealm) target.searchParams.set('originRealm', context.originRealm)
   if (context?.returnToken) target.searchParams.set('returnToken', context.returnToken)

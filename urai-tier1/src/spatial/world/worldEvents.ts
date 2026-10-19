@@ -43,7 +43,7 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   // memory identities are separate even when its delayed hard fallback runs.
   for (const key of WORLD_TRAVEL_CONTEXT_KEYS) {
     if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
-    if ((key === 'node' || key === 'manifestId') && (!memoryDestination || !sameMemory)) continue
+    if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId') && (!memoryDestination || !sameMemory)) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
     }
@@ -52,14 +52,16 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('memoryId')
     target.searchParams.delete('node')
     target.searchParams.delete('manifestId')
+    target.searchParams.delete('movieId')
+    target.searchParams.delete('chapterId')
   }
   if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
   if (memoryDestination && context?.replayManifestId && selectedMemoryId) target.searchParams.set('manifestId', context.replayManifestId)
-  if (context?.movieId) target.searchParams.set('movieId', context.movieId)
-  if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
+  if (memoryDestination && context?.movieId) target.searchParams.set('movieId', context.movieId)
+  if (memoryDestination && context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
   if (context?.originRealm) target.searchParams.set('originRealm', context.originRealm)
   if (context?.returnToken) target.searchParams.set('returnToken', context.returnToken)

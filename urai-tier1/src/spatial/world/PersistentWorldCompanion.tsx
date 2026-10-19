@@ -52,21 +52,23 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   // event node into an authorized memory on an unrelated destination.
   for (const key of CONTEXT_KEYS) {
     if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
-    if ((key === 'node' || key === 'manifestId') && (!memoryDestination || !sameMemory)) continue
+    if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId') && (!memoryDestination || !sameMemory)) continue
     if (!target.searchParams.has(key) && current.has(key)) target.searchParams.set(key, current.get(key) ?? '')
   }
   if (!memoryDestination) {
     target.searchParams.delete('memoryId')
     target.searchParams.delete('node')
     target.searchParams.delete('manifestId')
+    target.searchParams.delete('movieId')
+    target.searchParams.delete('chapterId')
   }
   if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
   if (memoryDestination && context?.replayManifestId && selectedMemoryId) target.searchParams.set('manifestId', context.replayManifestId)
-  if (context?.movieId) target.searchParams.set('movieId', context.movieId)
-  if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
+  if (memoryDestination && context?.movieId) target.searchParams.set('movieId', context.movieId)
+  if (memoryDestination && context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
