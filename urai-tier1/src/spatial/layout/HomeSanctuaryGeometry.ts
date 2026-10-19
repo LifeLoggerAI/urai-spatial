@@ -140,6 +140,7 @@ export function makeHomeTerrainGeometry(retainedGround?: { minX: number; maxX: n
 
 export function makeHomeRibbonGeometry(points: readonly HomePathPoint[], width: number) {
   const positions: number[] = []
+  const uvs: number[] = []
   const indices: number[] = []
   const columns = 5
   points.forEach(([x, z], index) => {
@@ -156,6 +157,7 @@ export function makeHomeRibbonGeometry(points: readonly HomePathPoint[], width: 
       const edgeX = x + nx * offset
       const edgeZ = z + nz * offset
       positions.push(edgeX, homeTerrainHeight(edgeX, edgeZ) + .022, edgeZ)
+      uvs.push(edgeX, edgeZ)
       if (index < points.length - 1 && column < columns - 1) {
         const a = index * columns + column
         indices.push(a, a + columns, a + 1, a + 1, a + columns, a + columns + 1)
@@ -164,6 +166,7 @@ export function makeHomeRibbonGeometry(points: readonly HomePathPoint[], width: 
   })
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
   geometry.setIndex(indices)
   geometry.computeVertexNormals()
   return geometry
@@ -171,6 +174,7 @@ export function makeHomeRibbonGeometry(points: readonly HomePathPoint[], width: 
 
 export function makeHomePatchGeometry(centerX: number, centerZ: number, radiusX: number, radiusZ: number, salt: number, level?: number, segments = 48, rings = 6) {
   const positions: number[] = [centerX, level ?? homeTerrainHeight(centerX, centerZ) + .025, centerZ]
+  const uvs: number[] = [centerX, centerZ]
   const indices: number[] = []
   for (let ring = 1; ring <= rings; ring += 1) {
     for (let segment = 0; segment < segments; segment += 1) {
@@ -179,6 +183,7 @@ export function makeHomePatchGeometry(centerX: number, centerZ: number, radiusX:
       const x = centerX + Math.cos(angle) * radiusX * radius
       const z = centerZ + Math.sin(angle) * radiusZ * radius
       positions.push(x, level ?? homeTerrainHeight(x, z) + .025, z)
+      uvs.push(x, z)
       const next = (segment + 1) % segments
       const a = 1 + (ring - 1) * segments + segment
       const b = 1 + (ring - 1) * segments + next
@@ -192,6 +197,7 @@ export function makeHomePatchGeometry(centerX: number, centerZ: number, radiusX:
   }
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
   geometry.setIndex(indices)
   geometry.computeVertexNormals()
   return geometry
