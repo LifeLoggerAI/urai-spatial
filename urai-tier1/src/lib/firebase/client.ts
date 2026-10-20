@@ -69,3 +69,12 @@ export const getFirebaseDb = () => {
   }
   return db
 }
+
+ // Direct private-route entry must reach the same isolated Auth and Firestore
+ // emulators as Login. Several original world consumers use raw Firebase SDK
+ // singletons, so waiting for Login to initialize emulators is insufficient.
+ // This is browser-only and never initiates emulators in a production build.
+if (uraiJourneyEmulatorEnabled && typeof window !== 'undefined') {
+  getUraiAuth()
+  getFirebaseDb()
+}

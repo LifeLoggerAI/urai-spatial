@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { lifeAuthorityDigest, readLifeSourceBindings } from './lifeGraphAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -7,6 +8,7 @@ const db = admin.firestore()
 const lifeMovieFunctions = functions.region('us-central1')
 const SAFE_TOKEN = /^[A-Za-z0-9._:-]{1,160}$/
 const MAX_CHAPTERS = 64
+const SHA256 = /^[a-f0-9]{64}$/
 const TRUTH_CLASSES = new Set([
   'RECORDED_SOURCE_TRUTH',
   'ATTRIBUTED_FAMILY_RECOLLECTION',
@@ -107,6 +109,11 @@ function trustedChapterFromMemory(requested: RequestedChapter, snapshot: Firebas
   if (consentState === 'pending') {
     throw new functions.https.HttpsError('failed-precondition', 'Life Movie memory consent is pending.')
   }
+  // Never turn a missing, legacy or unknown consent state into an
+  // authorized movie chapter. Only an explicit grant admits the memory.
+  if (consentState !== 'authorized') {
+    throw new functions.https.HttpsError('failed-precondition', 'Life Movie memory consent is not authorized.')
+  }
 
   const lifeMovie = snapshot.get('lifeMovie') as Record<string, unknown> | undefined
   const rawTruthClass = String(lifeMovie?.truthClass ?? snapshot.get('truthClass') ?? 'UNKNOWN_UNRESOLVED')
@@ -159,22 +166,42 @@ function trustedChapterFromMemory(requested: RequestedChapter, snapshot: Firebas
   }
 }
 
+// The SceneTruth producer binds a particular memory and its canonical source
+// receipts. Same-owner readiness is not sufficient: a scene for a different
+// memory must never authorize this chapter or its cinematic derivatives.
+function sameBoundMemorySourceSet(first: unknown, second: unknown) {
+  if (!Array.isArray(first) || !Array.isArray(second) ||
+      first.length < 1 || first.length > 256 || first.length !== second.length ||
+      first.some((id) => typeof id !== 'string' || !SAFE_TOKEN.test(id)) ||
+      second.some((id) => typeof id !== 'string' || !SAFE_TOKEN.test(id))) return false
+  const firstSet = new Set<string>(first)
+  const secondSet = new Set<string>(second)
+  return firstSet.size === first.length && secondSet.size === second.length &&
+    [...firstSet].every((id) => secondSet.has(id))
+}
+
 async function requireReadyLifeModelAuthority(
   uid: string,
   chapters: ReturnType<typeof trustedChapterFromMemory>[],
+  transaction: FirebaseFirestore.Transaction,
 ) {
   const sceneIds = [...new Set(chapters.map((chapter) => chapter.sceneTruthPacketId).filter((value): value is string => Boolean(value)))]
   if (sceneIds.length !== chapters.length) {
     throw new functions.https.HttpsError('failed-precondition', 'READY_LIFE_MOVIE_REQUIRES_SCENE_TRUTH')
   }
   const bundleIds = [...new Set(chapters.flatMap((chapter) => chapter.personModelBundleIds))]
+  // Read both authorizing source sets inside the manifest write transaction.
+  // Revocation, deletion or a SceneTruth change must conflict with the write,
+  // rather than being accepted from a pre-transaction point-in-time snapshot.
   const [sceneSnapshots, bundleSnapshots] = await Promise.all([
-    sceneIds.length ? db.getAll(...sceneIds.map((id) => db.doc(`users/${uid}/sceneTruthPackets/${id}`))) : [],
-    bundleIds.length ? db.getAll(...bundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`))) : [],
+    Promise.all(sceneIds.map((id) => transaction.get(db.doc(`users/${uid}/sceneTruthPackets/${id}`)))),
+    Promise.all(bundleIds.map((id) => transaction.get(db.doc(`users/${uid}/personModelBundles/${id}`)))),
   ])
   const dependencyIds = new Set<string>(chapters.map((chapter) => chapter.memoryId))
 
-  for (const scene of sceneSnapshots) {
+  for (let index = 0; index < sceneSnapshots.length; index++) {
+    const scene = sceneSnapshots[index]
+    const chapter = chapters[index]
     if (
       !scene.exists
       || scene.get('ownerId') !== uid
@@ -182,8 +209,19 @@ async function requireReadyLifeModelAuthority(
       || scene.get('state') !== 'current'
       || scene.get('syntheticOutputMayBecomeHistoricalSource') !== false
       || !['READY','READY_WITH_OCCLUSION','READY_INTERPRETIVE'].includes(String(scene.get('decision') ?? ''))
+      || scene.get('memoryId') !== chapter.memoryId
+      || !sameBoundMemorySourceSet(scene.get('memorySourceIds'), chapter.provenance.sourceIds)
+      || !SHA256.test(String(scene.get('memorySourceBindingDigest') ?? ''))
     ) {
       throw new functions.https.HttpsError('failed-precondition', 'Life Movie SceneTruth authority is unavailable.')
+    }
+    // SceneTruth is bound to the canonical protected-source receipts as they
+    // existed when it was authored. Re-read their current authority and
+    // digest inside this same transaction; a revoked C1 grant, deleted owner,
+    // withdrawn receipt or changed revision cannot admit a stale movie.
+    const currentBindings = await readLifeSourceBindings(db, transaction, uid, chapter.provenance.sourceIds)
+    if (lifeAuthorityDigest(currentBindings) !== scene.get('memorySourceBindingDigest')) {
+      throw new functions.https.HttpsError('failed-precondition', 'Life Movie canonical source authority changed.')
     }
     dependencyIds.add(scene.id)
     for (const dependency of Array.isArray(scene.get('dependencyIds')) ? scene.get('dependencyIds') : []) {
@@ -216,15 +254,18 @@ export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
   const status = data?.status === 'ready' ? 'ready' : 'draft'
   const requested = requestedChapters(data?.chapters)
   const refs = requested.map((chapter) => db.doc(`users/${uid}/memories/${chapter.memoryId}`))
-  const snapshots = await db.getAll(...refs)
-  const chapters = requested.map((chapter, index) => trustedChapterFromMemory(chapter, snapshots[index]))
-  const dependencyIds = status === 'ready'
-    ? await requireReadyLifeModelAuthority(uid, chapters)
-    : [...new Set(chapters.map((chapter) => chapter.memoryId))]
-
   const ref = db.doc(`users/${uid}/lifeMovies/${movieId}`)
-  await db.runTransaction(async (transaction) => {
-    const current = await transaction.get(ref)
+  const chapterCount = await db.runTransaction(async (transaction) => {
+    // Memory authorization, source-scene readiness and the resulting movie
+    // manifest must commit against one Firestore transaction snapshot.
+    const [current, ...snapshots] = await Promise.all([
+      transaction.get(ref),
+      ...refs.map((memoryRef) => transaction.get(memoryRef)),
+    ])
+    const chapters = requested.map((chapter, index) => trustedChapterFromMemory(chapter, snapshots[index]))
+    const dependencyIds = status === 'ready'
+      ? await requireReadyLifeModelAuthority(uid, chapters, transaction)
+      : [...new Set(chapters.map((chapter) => chapter.memoryId))]
     const version = Math.max(1, Number(current.get('version') ?? 0) + 1)
     transaction.set(ref, {
       id: movieId,
@@ -241,17 +282,18 @@ export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
         ? current.get('createdAt') ?? admin.firestore.FieldValue.serverTimestamp()
         : admin.firestore.FieldValue.serverTimestamp(),
     })
+    return chapters.length
   })
 
   await db.collection(`users/${uid}/privacyAudit`).add({
     ownerId: uid,
     kind: 'life_movie.manifest_upserted',
     movieId,
-    chapterCount: chapters.length,
+    chapterCount,
     recordedAt: admin.firestore.FieldValue.serverTimestamp(),
   })
 
-  return { movieId, status, chapterCount: chapters.length }
+  return { movieId, status, chapterCount }
 })
 
 export const revokeLifeMovieManifest = lifeMovieFunctions.https.onCall(async (data, context) => {

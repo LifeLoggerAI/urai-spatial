@@ -12,7 +12,11 @@ test('canonical auth entry uses Firebase provider authority and never collects p
   assert.match(auth, /onAuthStateChanged/)
   assert.match(auth, /firebasePublicEnvReady/)
   assert.match(auth, /Private routes remain fail-closed/)
-  assert.doesNotMatch(auth, /type="password"/)
+  // A fictional password entry is allowed only behind the isolated emulator
+  // feature boundary; it must never replace the real provider login.
+  assert.match(auth, /uraiJourneyEmulatorEnabled \? \(/)
+  assert.match(auth, /data-testid="urai-e2e-password"/)
+  assert.match(auth, /signInWithEmailAndPassword\(getUraiAuth\(\)/)
 })
 
 test('device settings exposes the governed persistent haptic hard-off control', () => {
@@ -28,4 +32,30 @@ test('XR launch authority is narrowed until physical hardware evidence exists', 
   assert.match(xr, /physicalHardwareCertified: false/)
   assert.match(xr, /productionFinal: false/)
   assert.match(xr, /frame-pacing evidence/)
+})
+
+test('private Life Movie is invalidated on account changes before stale reads publish', () => {
+  const movie = fs.readFileSync('src/app/life-movie/LifeMovieClient.tsx', 'utf8')
+  const manifest = fs.readFileSync('src/spatial/life-movie/useLifeMovieRuntimeManifest.ts', 'utf8')
+  assert.match(movie, /ownerEpoch\.current \+= 1/)
+  assert.match(movie, /mediaSession\.current\?\.dispose\(\)/)
+  assert.match(movie, /setLoadedEpoch\(-1\)/)
+  assert.match(movie, /getUraiAuth\(\)\.currentUser\?\.uid/)
+  assert.match(movie, /lifeMovieRequestCurrent\(expected, \{/)
+  assert.match(movie, /loadedScope === requestedScope/)
+  assert.match(movie, /loadedEpoch === ownerEpoch\.current/)
+  assert.match(manifest, /const auth = getUraiAuth\(\)/)
+})
+test('isolated emulator initializes on direct private route entry only in browser development', () => {
+  const client = fs.readFileSync('src/lib/firebase/client.ts', 'utf8')
+  assert.match(client, /uraiJourneyEmulatorEnabled && typeof window !== 'undefined'/)
+  assert.match(client, /getUraiAuth\(\)\s+getFirebaseDb\(\)/)
+  assert.match(client, /projectId === 'demo-urai-auth-journey'/)
+  assert.match(client, /process\.env\.NODE_ENV === 'development'/)
+})
+test('post-login private return target remains first-party and allowlisted', () => {
+  assert.match(auth, /function safePrivateReturnTo/)
+  assert.match(auth, /location\.origin !== 'https:\/\/urai\.invalid'/)
+  assert.match(auth, /routes\.has\(location\.pathname\)/)
+  assert.match(auth, /href=\{returnTo\}/)
 })

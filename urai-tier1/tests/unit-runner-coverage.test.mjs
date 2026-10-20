@@ -15,6 +15,7 @@ const requiredFocusedTests = [
   'tests/dependency-security-regressions.test.mjs',
   'tests/localization-flow.test.mjs',
   'tests/localization-journey-copy.test.mjs',
+  'tests/adam-auth-session-hydration.test.mjs',
   'tests/person-presence-provider-contract.test.mjs',
   'tests/person-presence-voice-contract.test.mjs',
   'tests/person-presence-session-contract.test.mjs',
