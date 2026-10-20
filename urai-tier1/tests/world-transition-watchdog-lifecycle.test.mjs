@@ -229,7 +229,9 @@ test('a new travel request invalidates an already queued delayed push', () => {
   assert.deepEqual(page.pushes, [])
   page.clock.tick(260)
   assert.equal(page.pushes.length, 1)
-  assert.match(page.pushes[0], /^\/passport\?/)
+  // Passport is a neutral destination: do not require or inherit stale
+  // Focus/demo query parameters simply to prove the queued push was replaced.
+  assert.equal(page.pushes[0], '/passport')
   page.clock.tick(2500)
   assert.deepEqual(page.assignments, [page.pushes[0]])
   page.unmount()
