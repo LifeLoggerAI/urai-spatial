@@ -1,14 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot, Timestamp } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { app, firebasePublicEnvReady, functions, getFirebaseDb } from '@/lib/firebase/client'
 import { parseSelectedMemory, type SelectedMemory, type SelectedMemoryMedia } from './selectedMemoryContract'
 import { fetchOwnedMemoryPlayback, validateOwnedMemoryPlaybackDescriptor, type OwnedMemoryPlaybackDescriptor } from './ownedMemoryMediaPlayback'
+import { currentOwnerMediaState } from './replayOwnerMediaFence'
 
-type Playback = { key: string; status: 'absent' | 'loading' | 'ready' | 'unavailable'; media: SelectedMemoryMedia[] }
+type Playback = { key: string; status: 'absent' | 'loading' | 'ready' | 'unavailable'; media: SelectedMemoryMedia[]; actor?: User | null }
 const EMPTY: Playback = { key: '', status: 'absent', media: [] }
 
 function consentExpiryMillis(value: unknown): number {
@@ -172,7 +173,7 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
           if (!current() || after.sourceAuthorityHash !== admitted.sourceAuthorityHash) { deny(); return }
           armExpiry(after)
           objectUrl = URL.createObjectURL(blob)
-          setPlayback({ key, status: 'ready', media: [{ kind: receipt.kind, url: objectUrl, caption: receipt.caption }] })
+          setPlayback({ key, status: 'ready', media: [{ kind: receipt.kind, url: objectUrl, caption: receipt.caption }], actor: user })
           poll = setTimeout(() => void revalidate(), 30_000)
         } catch { deny() }
       })()
@@ -181,6 +182,7 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
   // The selected immutable receipt, rather than unrelated caption renders, owns a mount.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
-  return playback.key === key ? playback : { key, status: receipt ? 'loading' as const : 'absent' as const, media: [] }
+  return currentOwnerMediaState(playback, key, memory?.ownerId,
+    firebasePublicEnvReady ? getAuth(app).currentUser : null, Boolean(receipt))
 }
 

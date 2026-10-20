@@ -67,6 +67,8 @@ const tests = [
   'tests/life-movie-runtime-authority-behavior.test.mjs',
   'tests/life-movie-manifest-owner-fence.test.mjs',
   'tests/replay-visibility-actor-fence.test.mjs',
+  'tests/life-movie-sequence-identity.test.mjs',
+  'tests/replay-owned-media-actor-fence.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
   'tests/focus-memory-appearance.test.mjs',
   'tests/stellar-memory-reveal.test.mjs',

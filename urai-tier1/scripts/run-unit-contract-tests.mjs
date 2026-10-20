@@ -56,6 +56,8 @@ const focusedContractTests = [
   'tests/life-movie-runtime-authority-behavior.test.mjs',
   'tests/life-movie-manifest-owner-fence.test.mjs',
   'tests/replay-visibility-actor-fence.test.mjs',
+  'tests/life-movie-sequence-identity.test.mjs',
+  'tests/replay-owned-media-actor-fence.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
   'tests/world-return-destination.test.mjs',
   'tests/world-return-identity-isolation.test.mjs',
