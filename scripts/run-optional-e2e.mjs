@@ -4,15 +4,15 @@ import process from 'node:process';
 function run(command, args, options = {}) {
   return spawnSync(command, args, {
     stdio: options.stdio ?? 'inherit',
-    shell: process.platform === 'win32',
+    shell: false,
     encoding: options.encoding ?? 'utf8',
   });
 }
 
-const probe = run('pnpm', ['playwright:check'], { stdio: 'pipe' });
+const probe = run(process.execPath, ['scripts/run-pnpm.mjs', 'playwright:check'], { stdio: 'pipe' });
 
 if (probe.status === 0) {
-  const e2e = run('node', ['tests/spatial-lock.mjs']);
+  const e2e = run(process.execPath, ['tests/spatial-lock.mjs']);
   process.exit(e2e.status ?? 1);
 }
 
