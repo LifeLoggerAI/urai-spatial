@@ -12,6 +12,7 @@ const focusedContractTests = [
   'tests/visual-proof-transport.test.mjs',
   'tests/home-semantic-action-proof.test.mjs',
   'tests/home-threshold-label-proximity.test.mjs',
+  'tests/home-r526-visual-presentation-contract.test.mjs',
   'tests/next-static-icon-route-contract.test.mjs',
   'tests/home-cc0-private-review-runner.test.mjs',
   'tests/home-sky-interaction.test.mjs',

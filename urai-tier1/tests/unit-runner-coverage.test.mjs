@@ -39,6 +39,7 @@ const requiredFocusedTests = [
   'tests/dispatcher-transient-retry-contract.test.mjs',
   'tests/home-runtime-cursor-cleanup-contract.test.mjs',
   'tests/home-threshold-label-proximity.test.mjs',
+  'tests/home-r526-visual-presentation-contract.test.mjs',
   'tests/next-static-icon-route-contract.test.mjs',
   'tests/home-cc0-private-review-runner.test.mjs',
   'tests/home-movement-lifecycle.test.mjs',

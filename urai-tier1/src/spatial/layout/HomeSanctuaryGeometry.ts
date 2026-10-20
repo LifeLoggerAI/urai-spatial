@@ -210,9 +210,19 @@ export function makeHomeHorizonGeometry(width: number, amplitude: number, salt: 
   for (let index = 0; index < position.count; index += 1) {
     const x = position.getX(index)
     const z = position.getZ(index)
-    const peak = Math.max(.2, 1.4 + Math.sin(x * .075 + salt) * amplitude + Math.sin(x * .17 + salt * 1.7) * amplitude * .34)
-    const slope = Math.exp(-(((z + .8) / 5.4) ** 2))
-    position.setY(index, -.85 + peak * slope + Math.sin(x * .31 + z * .19 + salt) * slope * .09)
+    // R526: deterministic, asymmetric wooded-foothill contours on the
+    // ORIGINAL three depth meshes. No terrain/navmesh or asset-authority change.
+    const broad = 1.45 + amplitude * (
+      Math.sin(x * .051 + salt * 1.73) * .66
+      + Math.cos(x * .103 - salt * .81) * .39
+      + Math.sin(x * .201 + salt * 2.3) * .19
+    )
+    const shoulder = amplitude * .26 * Math.sin(x * .37 + salt * 1.2) * Math.sin(x * .09 - salt)
+    const peak = Math.max(.28, broad + shoulder)
+    const slope = Math.exp(-Math.pow((z + .8) / 5.4, 2))
+    const erosion = Math.sin(x * .26 + z * .17 + salt) * .055
+      + Math.cos(x * .51 - z * .29 + salt * .8) * .027
+    position.setY(index, -.85 + (peak + erosion) * slope)
   }
   geometry.computeVertexNormals()
   return geometry

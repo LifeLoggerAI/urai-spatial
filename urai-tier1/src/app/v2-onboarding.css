@@ -45,3 +45,37 @@
 html[dir='rtl'] .uraiV2OnboardingCard { inset-inline-end: max(18px, env(safe-area-inset-left)); }
 @media (max-width: 400px) { .uraiV2OnboardingActions { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 760px) { html[dir='rtl'] .uraiV2OnboardingCard { inset-inline-end: max(10px, env(safe-area-inset-left)); } }
+
+// R526: Automatic Home welcome stays discoverable without hiding the first
+// person world on a small screen. Guided onboarding and accessibility controls
+// retain their original presentation and navigation behavior.
+@media (max-width: 760px) {
+  .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] {
+    width: min(300px, calc(100vw - 24px));
+    inset-inline-end: max(12px, env(safe-area-inset-right));
+    bottom: max(68px, calc(env(safe-area-inset-bottom) + 60px));
+    border-radius: 20px;
+  }
+  .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] .uraiV2OnboardingCopy {
+    gap: 5px;
+    padding: 12px 12px 5px;
+  }
+  .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] .uraiV2OnboardingCopy strong {
+    font-size: 16px;
+    line-height: 1.18;
+    letter-spacing: -.015em;
+  }
+  .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] .uraiV2OnboardingActions {
+    grid-template-columns: minmax(0, 1fr) minmax(80px, .62fr);
+    padding: 5px 12px 12px;
+    gap: 8px;
+  }
+  .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] .uraiV2OnboardingActions :is(a, button) {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 7px 9px;
+  }
+  html[dir='rtl'] .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] {
+    inset-inline-end: max(12px, env(safe-area-inset-left));
+  }
+}
