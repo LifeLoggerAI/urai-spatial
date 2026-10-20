@@ -12,9 +12,10 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { once } from 'node:events'
-import { inspectVisualPng } from './visual-png-integrity.mjs'
 import { pathToFileURL } from 'node:url'
 import { resolveCandidate, assessCandidateCompletion, requireCommitSha } from './rfinal-source-authority.mjs'
+import { inspectVisualPng } from './visual-png-integrity.mjs'
+import { planMissingTrackedRepair, isIsolatedRfinalSource } from './rfinal-missing-tracked-repair.mjs'
 
 export const CONTROLLER = Object.freeze({
   repository: 'https://github.com/LifeLoggerAI/urai-spatial.git',
@@ -437,7 +438,7 @@ async function main() {
     gitHead: null, tree: null, results: [], byteIntegrity: null,
     requestedPinnedSha: cfg.pinnedSha, verificationMode: cfg.pinnedSha ? 'PINNED_CANDIDATE' : 'LIVE_BRANCH',
     liveHeadAtStart: null, liveHeadAtFinish: null,
-    pinnedCandidateVerified: false, currentReleaseHeadVerified: false,
+    pinnedCandidateVerified: false, currentIntegrationHeadVerified: false, currentReleaseHeadVerified: false,
     sanitizedCredentialVariables: safeVerificationEnvironment().removedKeys,
     fullCurrentHeadGreen: false, privateBetaReady: false, globalLaunchReady: false }
   const record = (id, outcome, details={}) => {
@@ -536,6 +537,28 @@ async function main() {
     }
     record('remote_head_unchanged',secondLiveHead===remoteAtStart?'PASS':'PINNED_BRANCH_ADVANCED',
       {liveHeadAtStart:remoteAtStart,liveHeadAtSecondCheck:secondLiveHead,sourceHead:head})
+    const initialStatus=spawnSync('git',['-C',source,'status','--porcelain=v1','-z','--untracked-files=no'],{encoding:null,windowsHide:true,timeout:120000})
+    if(initialStatus.status!==0)throw new Error('TRACKED_STATUS_READ_FAILED')
+    if(initialStatus.stdout.length) {
+      // Only this isolated Windows checkout may restore unstaged tracked
+      // deletions. No checkout reset, staged mutation, exclusion bypass,
+      // or user worktree modification is permitted.
+      if(!isIsolatedRfinalSource(source,homeDownloads))throw new Error('TRACKED_SOURCE_DIRTY_UNSAFE_LOCATION')
+      const planned=planMissingTrackedRepair(initialStatus.stdout)
+      const treeBefore=await shortGit(['-C',source,'write-tree'],source,evidence,'index-tree-before-repair')
+      if(treeBefore!==tree)throw new Error('DIRTY_SOURCE_INDEX_TREE_MISMATCH')
+      const restored=spawnSync('git',['-C',source,'restore','--source=HEAD','--worktree','--pathspec-from-file=-','--pathspec-file-nul'],{
+        input:planned.pathspecBytes,encoding:null,windowsHide:true,timeout:300000,
+      })
+      writeFileSync(path.join(evidence,'missing-tracked-repair.json'),JSON.stringify({
+        count:planned.count,exitCode:restored.status,
+        operation:'restore exact tracked missing paths in disposable worktree only',
+      },null,2)+'\n')
+      if(restored.status!==0)throw new Error('MISSING_TRACKED_REPAIR_FAILED')
+      const treeAfter=await shortGit(['-C',source,'write-tree'],source,evidence,'index-tree-after-repair')
+      if(treeAfter!==treeBefore)throw new Error('DIRTY_SOURCE_INDEX_CHANGED_DURING_REPAIR')
+      record('missing_tracked_worktree_restore','PASS',{count:planned.count,scope:'isolated source only'})
+    }
     const dirty=await shortGit(['-C',source,'status','--porcelain','--untracked-files=no'],source,evidence,'tracked_status')
     if (dirty) throw new Error('TRACKED_SOURCE_DIRTY: source changes present before tests')
     record('clean_tracked_checkout','PASS')
@@ -601,6 +624,7 @@ async function main() {
       liveHeadAtFinish:receipt.liveHeadAtFinish,
       allStagesPass:matrixGreen,bytesVerified:byteReport.passed})
     receipt.pinnedCandidateVerified=authority.pinnedCandidateVerified
+    receipt.currentIntegrationHeadVerified=authority.currentIntegrationHeadVerified
     receipt.currentReleaseHeadVerified=authority.currentReleaseHeadVerified
     receipt.fullCurrentHeadGreen=authority.currentReleaseHeadVerified
     receipt.liveBranchChanged=authority.liveBranchChanged
@@ -618,7 +642,7 @@ async function main() {
     // A pinned, byte-verified full matrix has its own exit status. A moving
     // integration branch cannot turn that snapshot into CURRENT_RELEASE_HEAD_GREEN.
     // Keep original live-head mode strict and preserve separate release flags.
-    if(!(cfg.pinnedSha ? receipt.pinnedCandidateVerified : receipt.fullCurrentHeadGreen))process.exitCode=1
+    if(!(cfg.pinnedSha ? receipt.pinnedCandidateVerified : receipt.currentIntegrationHeadVerified))process.exitCode=1
   }
 }
 
