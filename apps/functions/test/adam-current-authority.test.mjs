@@ -32,7 +32,8 @@ function fixture(lane,controls={}){
   if(leaf==='adam-moderation')return Response.json(controls.moderation??{results:[{flagged:false}]})
   let index=0
   const result={locale:'en-US',caption:answer,message:answer,suggestedActions:[],requiresHumanFounder:false,handoffReason:''}
-  const chunks=lane==='voice'?[Buffer.from(audio)]:[Buffer.from('data: '+JSON.stringify({type:'response.output_text.delta',delta:JSON.stringify(result)})+'\n\n'),Buffer.from('data: {"type":"response.completed"}\n\n')]
+  // Only reasoning can reach the paid mock: Founder voice issuance is denied before dispatch.
+  const chunks=[Buffer.from('data: '+JSON.stringify({type:'response.output_text.delta',delta:JSON.stringify(result)})+'\n\n'),Buffer.from('data: {"type":"response.completed"}\n\n')]
   return{ok:true,status:200,headers:{get:()=>null},body:{getReader:()=>({async read(){await controls.onRead?.(state,index,init);return index<chunks.length?{done:false,value:chunks[index++]}:{done:true}},async cancel(){},releaseLock(){}})}}
  }
  const module=load('adamPresenceFunctions.ts',{
