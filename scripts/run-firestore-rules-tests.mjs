@@ -66,15 +66,17 @@ if (javaCheck.status === 0) {
   // A failed real emulator run must NEVER be replaced by a passing static fallback.
   // Static checks run only when Java was unavailable before emulator launch.
   process.exit(emulatorExitCode)
+} else {
+  // Only a missing Java runtime authorizes the static fallback. A failed
+  // real emulator must never be replaced with a weaker static result.
+  console.warn('[URAI] Java is not available, so the Firestore emulator cannot run in this environment.')
+  console.warn('[URAI] Running static Firestore rules boundary tests instead. Install Java for full emulator enforcement tests.')
+
+  const fallback = run(process.execPath, [
+    '--test',
+    'tests/firestore.assetManifests.rules.static.test.mjs',
+    'tests/firestore.privacyConsent.rules.static.test.mjs',
+    'tests/firestore.lifeModel.rules.static.test.mjs',
+  ])
+  process.exitCode = fallback.status ?? 1
 }
-
-console.warn('[URAI] Java is not available, so the Firestore emulator cannot run in this environment.')
-console.warn('[URAI] Running static Firestore rules boundary tests instead. Install Java for full emulator enforcement tests.')
-
-const fallback = run(process.execPath, [
-  '--test',
-  'tests/firestore.assetManifests.rules.static.test.mjs',
-  'tests/firestore.privacyConsent.rules.static.test.mjs',
-  'tests/firestore.lifeModel.rules.static.test.mjs',
-])
-process.exit(fallback.status ?? 1)
