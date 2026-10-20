@@ -15,3 +15,45 @@ test('passing pinned SHA does not imply latest branch acceptance', () => {
   assert.equal(r.currentReleaseHeadVerified, false)
   assert.equal(r.releaseAuthorized, false)
 })
+
+test('explicit source identity rejects invalid SHA input', async () => {
+  const { requireCommitSha } = await import('../scripts/rfinal-source-authority.mjs')
+  for (const bad of ['', 'main', null, 'F'.repeat(40), '0'.repeat(39), '0'.repeat(41)]) {
+    assert.throws(() => requireCommitSha(bad), /INVALID_COMMIT_SHA/)
+  }
+})
+test('source and live branch keep separate identities', () => {
+  const choice = resolveCandidate({remoteHead: shaB, pinnedSha: shaA})
+  assert.equal(choice.mode, 'PINNED_CANDIDATE')
+  assert.equal(choice.liveHeadAtStart, shaB)
+})
+test('moving branch cannot be declared current release green', () => {
+  const r = assessCandidateCompletion({sourceHead: shaA,liveHeadAtStart: shaA,liveHeadAtFinish: shaB,allStagesPass: true,bytesVerified: true})
+  assert.equal(r.pinnedCandidateVerified, true)
+  assert.equal(r.currentReleaseHeadVerified, false)
+  assert.equal(r.liveBranchChanged, true)
+})
+test('current head must remain the same through final verification', () => {
+  const r = assessCandidateCompletion({sourceHead: shaA,liveHeadAtStart: shaA,liveHeadAtFinish: shaA,allStagesPass: true,bytesVerified: true})
+  assert.equal(r.currentReleaseHeadVerified, true)
+  assert.equal(r.releaseAuthorized, false)
+})
+test('missing finish ref cannot certify a live release head', () => {
+  const r = assessCandidateCompletion({sourceHead: shaA,liveHeadAtStart: shaA,allStagesPass: true,bytesVerified: true})
+  assert.equal(r.pinnedCandidateVerified, true)
+  assert.equal(r.currentReleaseHeadVerified, false)
+})
+test('failed stages deny both verification modes', () => {
+  const r = assessCandidateCompletion({sourceHead: shaA,liveHeadAtStart: shaA,liveHeadAtFinish: shaA,allStagesPass: false,bytesVerified: true})
+  assert.equal(r.pinnedCandidateVerified, false)
+  assert.equal(r.currentReleaseHeadVerified, false)
+})
+test('source bytes must actually be checked', () => {
+  const r = assessCandidateCompletion({sourceHead: shaA,liveHeadAtStart: shaA,liveHeadAtFinish: shaA,allStagesPass: true,bytesVerified: false})
+  assert.equal(r.pinnedCandidateVerified, false)
+  assert.equal(r.currentReleaseHeadVerified, false)
+})
+test('strings are not accepted as stage PASS', () => {
+  const r = assessCandidateCompletion({sourceHead: shaA,liveHeadAtStart: shaA,liveHeadAtFinish: shaA,allStagesPass: 'PASS',bytesVerified: true})
+  assert.equal(r.pinnedCandidateVerified, false)
+})
