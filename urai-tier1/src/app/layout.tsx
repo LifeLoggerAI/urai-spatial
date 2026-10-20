@@ -70,14 +70,13 @@ const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
 const previewMode = process.env.NEXT_PUBLIC_URAI_PREVIEW_MODE === 'true'
 const previewChannel = process.env.NEXT_PUBLIC_URAI_PREVIEW_CHANNEL?.trim() || 'isolated-preview'
-const embeddedIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2307111c'/%3E%3Cpath d='M6 44c9-8 43-8 52 0v14H6z' fill='%23152f28'/%3E%3Ccircle cx='32' cy='27' r='14' fill='%238ce7ee'/%3E%3Ccircle cx='32' cy='27' r='19' fill='none' stroke='%238ce7ee' stroke-opacity='.22' stroke-width='2'/%3E%3C/svg%3E"
 
 export const metadata: Metadata = {
   robots: blockedRobotsMetadata(),
   title: previewMode ? 'PREVIEW — URAI Spatial' : 'URAI Spatial',
   description: 'A private spatial world for memory, reflection, relationships, and personal intelligence.',
   icons: {
-    icon: embeddedIcon,
+    icon: '/icon.svg',
   },
   other: {
     'urai-indexing-state': BLOCKED_INDEXING_STATE,
