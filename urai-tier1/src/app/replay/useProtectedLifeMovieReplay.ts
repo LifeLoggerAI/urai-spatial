@@ -7,10 +7,10 @@ import { app as spatialApp } from '@/lib/firebase/client'
 import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selectedMemoryContract'
 import { parsePrivateLifeMovieTimeline, selectPrivateLifeMovieSegment, type PrivateLifeMovieTimeline, type PrivateLifeMovieSegment } from './privateLifeMovieSegmentTimeline'
 import { createPrivateMovieReconnectPolicy } from './privateMovieReconnectPolicy'
+import { privateMovieContentLengthAllowed } from './privateMovieContentLengthPolicy'
 
 const PLAN = /^lmp_[A-Za-z0-9_-]{20,64}$/
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
-const MAX_BYTES = 64 * 1024 * 1024
 const EXPIRY_MS = 50_000
 const EMPTY = { status: 'absent' as const, media: null, captions: null }
 type Playback = {
@@ -192,8 +192,7 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
                     if (!inSession() || result.status !== 200 ||
                         result.headers.get('content-type') !== mime ||
                         !result.headers.get('cache-control')?.includes('no-store') ||
-                        !Number.isSafeInteger(length) || length < 1 ||
-                        length > (kind === 'mp4' ? MAX_BYTES : 2 * 1024 * 1024) ||
+                        !privateMovieContentLengthAllowed(kind,length) ||
                         result.headers.get('x-urai-private-playlist-digest') !== timeline?.playlistDigest ||
                         result.headers.get('x-urai-private-segment-index') !== String(segment.index) ||
                         result.headers.get('x-urai-private-segment-start-ms') !== String(segment.startMs) ||
@@ -259,7 +258,7 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
               const length = Number(result.headers.get('content-length'))
               if (!currentSession() || result.status !== 200 || result.headers.get('content-type') !== mime ||
                   !result.headers.get('cache-control')?.includes('no-store') ||
-                  !Number.isSafeInteger(length) || length < 1 || length > MAX_BYTES)
+                  !privateMovieContentLengthAllowed(kind,length))
                 throw new Error('private_movie_delivery_unavailable')
               const bytes = await result.arrayBuffer()
               if (!currentSession() || bytes.byteLength !== length) throw new Error('private_movie_delivery_changed')
