@@ -3,9 +3,9 @@
 import MemoryExperienceState from '@/spatial/memory/MemoryExperienceState'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
+import { onAuthStateChanged, type User } from 'firebase/auth'
 import { collection, doc, getDoc, getDocs, limit, query } from 'firebase/firestore'
-import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
+import { firebasePublicEnvReady, getFirebaseDb, getUraiAuth } from '@/lib/firebase/client'
 import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { useOwnedMemoryMediaPlayback } from '@/spatial/memory/useOwnedMemoryMediaPlayback'
 import { useReplayMemoryVisibility } from '@/spatial/memory/useReplayMemoryVisibility'
@@ -46,6 +46,9 @@ export default function LifeMovieClient() {
   const runtimeManifest = useLifeMovieRuntimeManifest(identityReady ? requestedMovieId : null)
   const reducedMotion = useReducedMotion()
   const [user, setUser] = useState<User | null | undefined>(undefined)
+  const ownerEpoch = useRef(0)
+  const previousOwner = useRef<string | null | undefined>(undefined)
+  const [loadedEpoch, setLoadedEpoch] = useState(-1)
   const [memories, setMemories] = useState<SelectedMemory[]>([])
   const [state, setState] = useState<MovieState>({ kind: 'auth-loading', message: 'Checking private identity…' })
   const [activeIndex, setActiveIndex] = useState(0)
@@ -55,6 +58,26 @@ export default function LifeMovieClient() {
   const mediaSession = useRef<ReplayVideoSession | null>(null)
   const [mediaSnapshot, setMediaSnapshot] = useState(initialReplayVideoSnapshot)
   const attachMedia = useCallback((element: HTMLVideoElement | HTMLAudioElement | null) => { mediaRef.current = element }, [])
+  const revokeOwnerPlayback = useCallback(() => {
+    // An account switch or sign-out withdraws the old owner's private media
+    // before new-owner reads or manifest callbacks are allowed to complete.
+    ownerEpoch.current += 1
+    mediaSession.current?.dispose()
+    mediaSession.current = null
+    if (mediaRef.current) {
+      mediaRef.current.pause()
+      mediaRef.current.removeAttribute('src')
+    }
+    if (imageRef.current) {
+      imageRef.current.style.visibility = 'hidden'
+      imageRef.current.removeAttribute('src')
+    }
+    setPlaying(false)
+    setMemories([])
+    setLoadedEpoch(-1)
+    setActiveIndex(0)
+    setMediaSnapshot(initialReplayVideoSnapshot())
+  }, [])
   const [manifestAction, setManifestAction] = useState<{ kind: 'idle' | 'working' | 'error'; message: string }>({ kind: 'idle', message: '' })
 
   useEffect(() => {
@@ -77,18 +100,30 @@ export default function LifeMovieClient() {
       setState({ kind: 'error', message: 'Private memory authority is unavailable.' })
       return
     }
-    return onAuthStateChanged(getAuth(app), (nextUser) => {
+    return onAuthStateChanged(getUraiAuth(), (nextUser) => {
+      const uid = nextUser?.uid ?? null
+      if (previousOwner.current !== uid) {
+        previousOwner.current = uid
+        revokeOwnerPlayback()
+      }
       setUser(nextUser)
       setState(nextUser
         ? { kind: 'loading', message: 'Assembling your Life Movie from permitted memories…' }
         : { kind: 'unauthenticated', message: 'Sign in to open your private Life Movie.' })
+    }, () => {
+      previousOwner.current = null
+      revokeOwnerPlayback()
+      setUser(null)
+      setState({ kind: 'error', message: 'Private identity could not be verified.' })
     })
-  }, [])
+  }, [revokeOwnerPlayback])
 
   useEffect(() => {
     if (!identityReady || !user) return
     if (requestedMovieId && runtimeManifest.status === 'loading') return
     let cancelled = false
+    const epoch = ownerEpoch.current
+    const isCurrentOwner = () => !cancelled && ownerEpoch.current === epoch && getUraiAuth().currentUser?.uid === user.uid
     setMemories([])
     setActiveIndex(0)
     setPlaying(false)
@@ -100,7 +135,7 @@ export default function LifeMovieClient() {
 
         if (requestedMovieId) {
           if (runtimeManifest.status !== 'ready' || !runtimeManifest.manifest) {
-            if (!cancelled) setState({ kind: 'error', message: runtimeManifest.message })
+            if (isCurrentOwner()) setState({ kind: 'error', message: runtimeManifest.message })
             return
           }
 
@@ -110,11 +145,11 @@ export default function LifeMovieClient() {
             const result = parseSelectedMemory(snapshot.data(), user.uid, chapter.memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
             return result.memory && result.status === 'ready' ? { memory: result.memory, chapter } : null
           }))
-          if (cancelled) return
+          if (!isCurrentOwner()) return
           parsed = ordered.flatMap((entry) => entry ? [entry.memory] : [])
         } else {
           const snapshot = await getDocs(query(collection(getFirebaseDb(), 'users', user.uid, 'memories'), limit(36)))
-          if (cancelled) return
+          if (!isCurrentOwner()) return
           parsed = snapshot.docs.flatMap((item) => {
             const result = parseSelectedMemory(item.data(), user.uid, item.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
             return result.memory && result.status === 'ready' ? [result.memory] : []
@@ -125,7 +160,9 @@ export default function LifeMovieClient() {
           }
         }
 
+        if (!isCurrentOwner()) return
         setMemories(parsed)
+        setLoadedEpoch(epoch)
         if (requestedMovieId && requestedMemoryId) {
           const resumeIndex = parsed.findIndex((memory) => memory.id === requestedMemoryId)
           if (resumeIndex >= 0) setActiveIndex(resumeIndex)
@@ -136,7 +173,7 @@ export default function LifeMovieClient() {
               ? 'No authorized chapters in this Life Movie are currently playable.'
               : 'No complete private memories are available for a Life Movie yet.' })
       } catch (error) {
-        if (cancelled) return
+        if (!isCurrentOwner()) return
         setState({ kind: 'error', message: error instanceof Error ? error.message : 'Your Life Movie could not be assembled.' })
       }
     })()
@@ -144,7 +181,7 @@ export default function LifeMovieClient() {
     return () => { cancelled = true }
   }, [identityReady, requestedMemoryId, requestedMovieId, runtimeManifest, user])
 
-  const active = memories[activeIndex] ?? null
+  const active = user && loadedEpoch === ownerEpoch.current ? memories[activeIndex] ?? null : null
   const visibility = useReplayMemoryVisibility(active)
   const activeChapter = requestedMovieId && active && runtimeManifest.status === 'ready' && runtimeManifest.manifest
     ? runtimeManifest.manifest.chapters.find((chapter) => chapter.memoryId === active.id) ?? null
