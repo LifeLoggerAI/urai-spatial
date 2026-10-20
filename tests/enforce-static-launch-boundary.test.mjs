@@ -53,7 +53,7 @@ test('unsafe symlink cannot escape export confinement',()=>{
   try{
     rmSync(path.join(root,'xr/index.html'))
     rmSync(path.join(root,'xr'),{recursive:true})
-    symlinkSync(tmpdir(),path.join(root,'xr'))
+    symlinkSync(tmpdir(),path.join(root,'xr'), process.platform === 'win32' ? 'junction' : 'dir')
     assert.throws(()=>enforceStaticLaunchBoundary(root),/symlink/)
   }finally{rmSync(root,{recursive:true,force:true})}
 })

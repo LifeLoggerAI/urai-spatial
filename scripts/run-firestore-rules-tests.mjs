@@ -31,6 +31,7 @@ if (javaCheck.status === 0) {
   const rulesFile = resolve('firebase/firestore.rules')
   if (!existsSync(rulesFile)) throw new Error('FIRESTORE_RULES_SOURCE_MISSING')
   const temporary = mkdtempSync(join(tmpdir(), 'urai-firestore-only-'))
+  let emulatorExitCode = 1
   try {
     const rulesOnlyConfig = join(temporary, 'firebase.json')
     writeFileSync(rulesOnlyConfig, JSON.stringify({
@@ -46,10 +47,13 @@ if (javaCheck.status === 0) {
       '--only', 'firestore',
       'node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs',
     ])
-    process.exitCode = result.status ?? 1
+    emulatorExitCode = result.status ?? 1
   } finally {
     rmSync(temporary, { recursive: true, force: true })
   }
+  // A failed real emulator run must NEVER be replaced by a passing static fallback.
+  // Static checks run only when Java was unavailable before emulator launch.
+  process.exit(emulatorExitCode)
 }
 
 console.warn('[URAI] Java is not available, so the Firestore emulator cannot run in this environment.')
