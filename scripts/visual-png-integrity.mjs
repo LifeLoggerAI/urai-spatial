@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
+import { inflateSync } from 'node:zlib'
 
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
 const MAX_PNG_BYTES = 128 * 1024 * 1024
+const MAX_DECODED_BYTES = 96 * 1024 * 1024
 
 /** PNG CRC-32: verify each encoded chunk rather than trusting a file extension. */
 export function pngCrc32(input) {
@@ -16,8 +18,8 @@ export function pngCrc32(input) {
   return (crc ^ 0xffffffff) >>> 0
 }
 
-/** Confirm a screenshot is a bounded, structurally valid PNG with intact chunks.
- * This is evidence-byte integrity, NOT proof of real rendering or art approval.
+/** Confirm a bounded Playwright RGB/RGBA PNG fully decodes to scanlines.
+ * Valid image bytes do not establish browser provenance or artistic approval.
  */
 export function inspectVisualPng(file) {
   const reject = (reason) => ({ ok: false, reason })
@@ -26,7 +28,9 @@ export function inspectVisualPng(file) {
   if (bytes.length < 64 || bytes.length > MAX_PNG_BYTES ||
       !bytes.subarray(0, 8).equals(PNG_SIGNATURE)) return reject('PNG_SIGNATURE_OR_SIZE_INVALID')
   let offset = 8
-  let width = 0, height = 0, chunks = 0, sawIdat = false, sawIend = false
+  let width = 0, height = 0, channels = 0
+  let chunks = 0, sawIdat = false, sawIend = false, afterIdat = false
+  const imageData = []
   while (offset < bytes.length) {
     if (offset + 12 > bytes.length) return reject('PNG_CHUNK_TRUNCATED')
     const length = bytes.readUInt32BE(offset)
@@ -40,14 +44,27 @@ export function inspectVisualPng(file) {
       if (type !== 'IHDR' || length !== 13) return reject('PNG_IHDR_MISSING')
       width = bytes.readUInt32BE(offset + 8)
       height = bytes.readUInt32BE(offset + 12)
+      const bitDepth = bytes[offset + 16]
+      const colorType = bytes[offset + 17]
+      channels = colorType === 2 ? 3 : colorType === 6 ? 4 : 0
       if (width < 320 || height < 200 || width > 20000 || height > 60000 ||
-          bytes[offset + 18] !== 0 || bytes[offset + 19] !== 0 || bytes[offset + 20] > 1)
+          bitDepth !== 8 || !channels ||
+          bytes[offset + 18] !== 0 || bytes[offset + 19] !== 0 || bytes[offset + 20] !== 0)
         return reject('PNG_DIMENSIONS_OR_FORMAT_INVALID')
+      if ((width * channels + 1) * height > MAX_DECODED_BYTES)
+        return reject('PNG_DECODE_BUDGET_EXCEEDED')
     } else if (type === 'IHDR') return reject('PNG_DUPLICATE_IHDR')
     if (type === 'IDAT') {
-      if (length === 0) return reject('PNG_EMPTY_IDAT')
+      if (length === 0 || afterIdat) return reject('PNG_INVALID_IDAT_ORDER')
       sawIdat = true
+      imageData.push(bytes.subarray(offset + 8, dataEnd))
+    } else if (sawIdat && type !== 'IEND') {
+      afterIdat = true
     }
+    // Unknown mandatory PNG critical chunks cannot be safely ignored.
+    if (type !== 'IHDR' && type !== 'IDAT' && type !== 'IEND' &&
+        type[0] === type[0].toUpperCase() && type !== 'PLTE')
+      return reject('PNG_UNKNOWN_CRITICAL_CHUNK')
     offset = dataEnd + 4
     chunks++
     if (type === 'IEND') {
@@ -57,6 +74,16 @@ export function inspectVisualPng(file) {
     }
   }
   if (!sawIdat || !sawIend) return reject('PNG_IMAGE_DATA_OR_END_MISSING')
+
+  let decoded
+  try {
+    decoded = inflateSync(Buffer.concat(imageData), { maxOutputLength: MAX_DECODED_BYTES })
+  } catch { return reject('PNG_IMAGE_DECOMPRESSION_FAILED') }
+  const stride = width * channels + 1
+  if (decoded.length !== stride * height) return reject('PNG_IMAGE_ROW_LENGTH_INVALID')
+  for (let row = 0; row < height; row++) {
+    if (decoded[row * stride] > 4) return reject('PNG_IMAGE_ROW_FILTER_INVALID')
+  }
   return { ok: true, width, height, bytes: bytes.length,
     sha256: createHash('sha256').update(bytes).digest('hex') }
 }
