@@ -4,7 +4,7 @@ import test from 'node:test'
 import vm from 'node:vm'
 // Execute the exact original ADAM token function with a controlled Firebase
 // Auth object; no actual credentials, accounts or paid providers are used.
-const s=readFileSync(new URL('../src/spatial/adam/adamClient.ts',import.meta.url),'utf8')
+const s=readFileSync(new URL('../src/spatial/adam/adamClient.ts',import.meta.url),'utf8').replace(/\r\n/g,'\n')
 const b=s.indexOf('async function bearerToken() {')
 const e=s.indexOf('\n}\n\nexport async function requestAdamPresence',b)
 assert.ok(b>=0&&e>b)

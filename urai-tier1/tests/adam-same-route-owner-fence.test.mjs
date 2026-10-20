@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import vm from 'node:vm'
 
-const source = readFileSync(new URL('../src/spatial/adam/AdamPresenceRuntime.tsx', import.meta.url), 'utf8')
+const source = readFileSync(new URL('../src/spatial/adam/AdamPresenceRuntime.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
 const beginning = source.indexOf('  useEffect(() => {\n    if (!firebasePublicEnvReady) return\n    let disposed = false')
 const ending = source.indexOf('\n  }, [stopAll])', beginning)
 assert.ok(beginning > 0 && ending > beginning, 'original Adam must own the Firebase session listener')

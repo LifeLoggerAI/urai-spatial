@@ -78,7 +78,7 @@ async function fixture() {
     claims: candidate.claims.map(c => ({ id: c.id, evidenceClass: 'SOURCE_CAPTURED', confidence: 'confirmed' })), relationships: [] }
   const firestore = () => d.db; firestore.FieldValue = fieldValue
   class HttpsError extends Error { constructor(code, message) { super(message); this.code = code } }
-  const callableCode = stripTypeScriptTypes(source.replace(/^import .*\n/gm, '').replace('export const reviewPrivateLifeModelCandidate', 'const reviewPrivateLifeModelCandidate'))
+  const callableCode = stripTypeScriptTypes(source.replace(/^import .*\r?\n/gm, '').replace('export const reviewPrivateLifeModelCandidate', 'const reviewPrivateLifeModelCandidate'))
   const callableContext = vm.createContext({ admin: { apps: [{}], firestore }, functions: { region: () => ({ https: { onCall: fn => fn } }), https: { HttpsError } }, createHash: crypto.createHash, Buffer })
   vm.runInContext(policyAuthority, callableContext)
   vm.runInContext(callableCode + '; globalThis.review = reviewPrivateLifeModelCandidate;', callableContext)

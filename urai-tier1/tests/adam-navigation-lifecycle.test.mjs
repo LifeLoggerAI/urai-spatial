@@ -82,6 +82,11 @@ function fixture() {
       requestAdamPresence: (input) => { const result = deferred(); requests.push({ input, ...result }); return result.promise },
       requestAdamFounderVoice: async () => ({ blob: null, errorCode: null }),
     },
+    // This navigation harness has no per-turn Founder voice authority. Keep the
+    // real bridge fail-closed here; its permission checks have dedicated tests.
+    './founderVoicePlaybackBridge.mjs': { createAdamFounderVoicePlaybackBridge: () => ({
+      ready: () => false, start: async () => false, isPlaying: () => false, interrupt: () => {},
+    }) },
     './AdamPresenceRuntime.module.css': { default: new Proxy({}, { get: (_target, name) => String(name) }), __esModule: true },
   }
   const module = { exports: {} }
