@@ -8,6 +8,11 @@ const beginning = source.indexOf('  useEffect(() => {\n    if (!firebasePublicEn
 const ending = source.indexOf('\n  }, [stopAll])', beginning)
 assert.ok(beginning > 0 && ending > beginning, 'original Adam must own the Firebase session listener')
 const body = source.slice(beginning + '  useEffect(() => {\n'.length, ending)
+// The checked-in component is TypeScript; node:vm evaluates JavaScript.
+// Erase only the verified local UID annotation. Never rewrite application code.
+const typedUid = 'let lastUid: string | null | undefined'
+assert.equal(body.split(typedUid).length, 2, 'expected original UID declaration')
+const executableBody = body.replace(typedUid, 'let lastUid')
 
 function fixture() {
   const events = []
@@ -34,7 +39,7 @@ function fixture() {
       return () => { unsubscribeCount++; removed = true }
     },
   }
-  const cleanup = vm.runInNewContext('(function(){' + body + '\n})', context)()
+  const cleanup = vm.runInNewContext('(function(){' + executableBody + '\n})', context)()
   return {
     state, events, callback: nextUid => owner(nextUid === null ? null : { uid: nextUid }),
     fail: () => error(new Error('auth rejected')), cleanup,
