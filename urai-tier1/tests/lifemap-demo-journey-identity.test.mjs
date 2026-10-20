@@ -267,7 +267,7 @@ function execute(source,globals) {
   return module.exports
 }
 function replayDestination(memory,current) {
-  const href=execute('exports.href = ('+replayHrefCallback+')();',{memory,window:{location:current}}).href
+  const href=execute('exports.href = ('+replayHrefCallback+')();',{memory,location:current.href,window:{location:current}}).href
   return new URL(href,current)
 }
 function returnDestination(memory,destination,previousDestination,current) {

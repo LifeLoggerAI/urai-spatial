@@ -80,6 +80,9 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     ['react/jsx-runtime', { jsx, jsxs: jsx }],
     ['next/navigation', { useRouter: () => router }],
     ['./WorldStateProvider', { useUraiWorldState: () => ({ world, phase, beginTravel }) }],
+    // Home checkpoint persistence is an independent optional side-effect; this
+    // test exercises the actual transition controller and watchdog, not storage.
+    ['./homeWorldCheckpointPersistence', { persistHomeWorldCheckpoint: () => {} }],
     ['../store/useSceneStore', { useSceneStore: { getState: () => ({}) } }],
   ])
   const context = vm.createContext({ window, document, MutationObserver, HTMLElement: class {}, URL, URLSearchParams, console })

@@ -52,9 +52,9 @@ function checkOriginalRoute(fileName, functionName, oldSearch, request) {
  assert.ok(functionNode, fileName + ':' + functionName + ' exists')
  const js = ts.transpileModule(functionNode.getText(sourceFile), {
    fileName, reportDiagnostics: true,
-   compilerOptions: { module: ts.ModuleKind.None, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
+   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
  })
- assert.equal(js.diagnostics?.length, 0, fileName + ' transpiles')
+ assert.deepEqual((js.diagnostics ?? []).map(d => `${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`), [], fileName + ' transpiles')
  const route = vm.runInNewContext(
    js.outputText + '\n' + functionName + '(' + JSON.stringify(request) + ')',
    {
