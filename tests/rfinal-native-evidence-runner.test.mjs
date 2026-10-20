@@ -285,3 +285,32 @@ test('Replay tier5 server boots through pinned Node 22 workspace pnpm, never amb
   assert.match(replay, /if \(SERVER_MODE === 'production'\)/)
   assert.match(replay, /if \(consoleErrors\.length\) throw new Error/)
 })
+
+test('portable Node authority reaches pnpm grandchildren even when ambient PATH has no Node', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'urai-pnpm-node-authority-'))
+  try {
+    mkdirSync(path.join(root, 'scripts'), { recursive: true })
+    mkdirSync(path.join(root, 'node_modules/pnpm/bin'), { recursive: true })
+    writeFileSync(path.join(root, 'scripts/run-pnpm.mjs'), readFileSync(new URL('../scripts/run-pnpm.mjs', import.meta.url)))
+    // Disclosed CLI boundary fixture; the grandchild is a real Node process,
+    // resolved by name exactly as pnpm's Next/tsc shims resolve their runtime.
+    writeFileSync(path.join(root, 'node_modules/pnpm/bin/pnpm.cjs'), `
+      const {spawnSync}=require('node:child_process');
+      const result=spawnSync('node',['-p','process.execPath'],{encoding:'utf8'});
+      if(result.error)console.error(result.error.code);
+      if(result.stdout)process.stdout.write(result.stdout);
+      process.exit(result.status??1);
+    `)
+    const env = { ...process.env }
+    delete env.npm_execpath
+    const pathKey = Object.keys(env).find(key => key.toLowerCase() === 'path') || 'PATH'
+    env[pathKey] = root
+    const result = spawnSync(process.execPath, ['scripts/run-pnpm.mjs', 'exec', 'node', '--version'], {
+      cwd: root, env, encoding: 'utf8', shell: false,
+    })
+    assert.equal(result.status, 0, result.stdout + result.stderr)
+    const actual = result.stdout.trim().split(/\r?\n/).at(-1)
+    assert.equal(path.resolve(actual), path.resolve(process.execPath))
+    assert.equal(env[pathKey], root, 'caller environment remains unchanged')
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})

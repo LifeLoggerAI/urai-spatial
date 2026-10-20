@@ -50,11 +50,18 @@ function resolvePnpm() {
 const pnpm = resolvePnpm()
 console.log(`[URAI Spatial workspace] $ ${pnpm.displayCommand} ${args.join(' ')}`)
 
+// pnpm's executable shims resolve `node` from PATH for Next/tsc and other
+// grandchildren. Calling this wrapper with portable Node 22 must not silently
+// hand those commands to an unrelated ambient Node installation.
+const childEnv = { ...process.env }
+const pathKey = Object.keys(childEnv).find(key => key.toLowerCase() === 'path') || 'PATH'
+childEnv[pathKey] = path.dirname(process.execPath) + path.delimiter + (childEnv[pathKey] || '')
+
 const child = spawn(pnpm.command, [...pnpm.argsPrefix, ...args], {
   stdio: 'inherit',
   shell: false,
   cwd: root,
-  env: process.env,
+  env: childEnv,
 })
 
 child.on('error', (error) => {
