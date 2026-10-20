@@ -55,6 +55,16 @@ test('command formatter logs fixed command names without evaluating code',()=>{
   assert.equal(formatCommand(['corepack','pnpm','--filter','urai-functions','test']), 'corepack pnpm --filter urai-functions test')
 })
 
+test('native R-FINAL stages use exact portable Node without cmd shell',()=>{
+  const source=readFileSync(new URL('../scripts/run-rfinal-native-evidence.mjs',import.meta.url),'utf8')
+  assert.match(source,/NATIVE_RUNNER_ONLY_PINNED_PNPM_ALLOWED/)
+  assert.match(source,/\['scripts\/run-pnpm\.mjs', \.\.\.args\.slice\(1\)\]/)
+  assert.match(source,/const actual = executable === 'node' \|\| executable === 'corepack'/)
+  assert.match(source,/const argv = \[process\.execPath, 'scripts\/run-pnpm\.mjs'/)
+  assert.doesNotMatch(source,/\['cmd\.exe'/)
+  assert.doesNotMatch(source,/const useShell = process\.platform === 'win32'/)
+})
+
 test('native execution environment strips paid-provider credentials but keeps PATH and CI',()=>{
   const result=safeVerificationEnvironment({PATH:'/bin',OPENAI_API_KEY:'sensitive',
     STRIPE_SECRET_KEY:'sensitive',NEXT_PUBLIC_FIREBASE_PROJECT_ID:'live-project',CUSTOM_SETTING:'safe'})
