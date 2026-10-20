@@ -203,6 +203,13 @@ async function runNavigationStack(page, stage, report) {
 // pointer input. The accessible semantic link is valuable, but it does not
 // demonstrate the physical ascent/camera route and cannot replace this proof.
 async function provePhysicalHomeSkyAscent(page, report) {
+  // A Playwright-side buffer survives the document navigation to Life Map.
+  const ascentSamples = [];
+  await page.exposeBinding('__uraiCaptureAscentSample', (_source, sample) => {
+    if (Number.isFinite(sample?.progress) && Number.isFinite(sample?.height)) {
+      ascentSamples.push({ progress: sample.progress, height: sample.height });
+    }
+  });
   await visitCanonicalRoute(page, '/home');
   const owner = page.getByTestId('home-visible-navigable-sanctuary-world');
   await expectVisible(owner, 'real Home spatial world', 45000);
@@ -219,14 +226,12 @@ async function provePhysicalHomeSkyAscent(page, report) {
   await page.evaluate(() => {
     const element = document.querySelector('[data-testid="home-visible-navigable-sanctuary-world"]');
     if (!element) throw new Error('Physical Home scene owner was not mounted');
-    const samples = [];
-    window.__uraiRfinalAscentSamples = samples;
     const sample = () => {
       if (!element.isConnected || element.getAttribute('data-home-scene-phase') !== 'ASCENT') return;
       if (!element.hasAttribute('data-home-ascent-progress') || !element.hasAttribute('data-home-camera-height')) return;
       const progress = Number(element.getAttribute('data-home-ascent-progress'));
       const height = Number(element.getAttribute('data-home-camera-height'));
-      if (Number.isFinite(progress) && Number.isFinite(height)) samples.push({ progress, height });
+      if (Number.isFinite(progress) && Number.isFinite(height)) window.__uraiCaptureAscentSample({ progress, height });
     };
     new MutationObserver(sample).observe(element, {
       attributes: true,
@@ -261,8 +266,7 @@ async function provePhysicalHomeSkyAscent(page, report) {
       route.get('cameraCheckpoint') !== 'home-sky-ascent-complete') {
     throw new Error('Physical sky ascent lost its canonical entry and camera checkpoint');
   }
-  const samples = await page.evaluate(() => window.__uraiRfinalAscentSamples ?? []);
-  const meaningful = samples.filter(sample => sample.progress >= 0 && sample.progress <= 1 && Number.isFinite(sample.height));
+  const meaningful = ascentSamples.filter(sample => sample.progress >= 0 && sample.progress <= 1 && Number.isFinite(sample.height));
   const progressed = meaningful.some(sample => sample.progress > 0.4);
   const cameraHeights = meaningful.map(sample => sample.height);
   const cameraMovement = cameraHeights.length > 1 ? Math.max(...cameraHeights) - Math.min(...cameraHeights) : 0;
