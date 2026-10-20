@@ -39,6 +39,8 @@ export const STAGES = Object.freeze([
   { id: 'functions_tests', command: ['corepack', 'pnpm', '--filter', 'urai-functions', 'test'], requiresInstall: true },
   { id: 'tier1_typecheck', command: ['corepack', 'pnpm', 'typecheck'], requiresInstall: true },
   { id: 'tier1_unit_tests', command: ['corepack', 'pnpm', '--filter', 'urai-tier1', 'test:unit'], requiresInstall: true },
+  // Full focused test runner is separate from the sequential compact suite.
+  { id: 'focused_contracts_full', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'exec', 'node', 'scripts/run-unit-contract-tests.mjs'], requiresInstall: true },
   { id: 'canonical_contracts', command: ['corepack', 'pnpm', 'test:canon'], requiresInstall: true },
   { id: 'privacy_firestore_rules', command: ['corepack', 'pnpm', 'test:firestore-rules'], requiresInstall: true },
   { id: 'runtime_boundary', command: ['corepack', 'pnpm', 'check:runtime-boundary'], requiresInstall: true },

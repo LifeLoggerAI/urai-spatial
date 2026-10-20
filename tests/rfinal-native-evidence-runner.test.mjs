@@ -43,7 +43,7 @@ test('pinned exact bytes include meshopt, receipt, ADAM and private Life Model',
 })
 test('maintained native stages retain Functions, contracts, assets and production build',()=>{
   const names=STAGES.map(x=>x.id)
-  for(const required of ['frozen_install','functions_build','functions_tests','tier1_typecheck','tier1_unit_tests','canonical_contracts','production_assets','production_build'])assert.ok(names.includes(required))
+  for(const required of ['frozen_install','functions_build','functions_tests','tier1_typecheck','tier1_unit_tests','focused_contracts_full','canonical_contracts','production_assets','production_build'])assert.ok(names.includes(required))
   const install=names.indexOf('frozen_install')
   assert.ok(names.indexOf('production_build')>install)
   assert.ok(STAGES.filter(x=>x.requiresInstall).every(x=>names.indexOf(x.id)>install))
@@ -89,4 +89,19 @@ test('HTTP runtime code uses complete route audit, never Home-only check',()=>{
   const source=readFileSync(new URL('../scripts/run-rfinal-native-evidence.mjs',import.meta.url),'utf8')
   assert.match(source,/const httpAudit = assessHttpRoutes\(checks\)/)
   assert.doesNotMatch(source,/checks\.some\(x => x\.path === '\/'/)
+})
+
+test('native full focused contracts are executed, not inferred from compact unit tests', () => {
+  const compact = STAGES.findIndex(stage => stage.id === 'tier1_unit_tests')
+  const full = STAGES.findIndex(stage => stage.id === 'focused_contracts_full')
+  const build = STAGES.findIndex(stage => stage.id === 'production_build')
+  assert.ok(compact >= 0 && full > compact && build > full)
+  assert.equal(STAGES[full].requiresInstall, true)
+  assert.deepEqual(STAGES[full].command, [
+    'corepack', 'pnpm', '--dir', 'urai-tier1', 'exec', 'node',
+    'scripts/run-unit-contract-tests.mjs',
+  ])
+  const original = readFileSync(new URL('../urai-tier1/scripts/run-unit-contract-tests.mjs', import.meta.url), 'utf8')
+  assert.match(original, /const focusedContractTests = \[/)
+  assert.match(original, /\['--import', 'tsx', '--test', \.\.\.focusedContractTests\]/)
 })
