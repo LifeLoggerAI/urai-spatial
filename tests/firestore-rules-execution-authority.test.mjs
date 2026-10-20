@@ -26,7 +26,10 @@ function runCase(javaPresent, emulatorCode, staticShouldFail, overrides = {}) {
     }
     const probe = "const javaCheck = spawnSync(javaExecutable, ['-version'], { stdio: 'ignore', shell: false })"
     assert.ok(source.includes(probe),'current Java probe anchor must exist')
-    writeFileSync(tempScript, source.replace(probe, `const javaCheck = { status: ${javaPresent ? 0 : 1} }`))
+    const javaProbe = overrides.javaProbe || (javaPresent
+      ? '{ status: 0 }'
+      : "{ status: null, error: { code: 'ENOENT' } }")
+    writeFileSync(tempScript, source.replace(probe, `const javaCheck = ${javaProbe}`))
     const env = {...process.env, URAI_FIXTURE_EMULATOR_EXIT:String(emulatorCode)}
     delete env.NODE_TEST_CONTEXT
     delete env.URAI_FIRESTORE_TEST_JAVA_EXE
@@ -65,5 +68,19 @@ test('invalid pinned Windows Java path fails closed instead of running a weaker 
   assert.notEqual(r.code,0,r.stdout+'\n'+r.stderr)
   assert.match(r.stderr,/FIRESTORE_TEST_JAVA_EXECUTABLE_INVALID/)
   assert.doesNotMatch(r.stdout,/EMULATOR_FIXTURE_RAN/)
+  assert.doesNotMatch(r.stderr,/Running static Firestore rules boundary tests instead/)
+})
+
+test('nonzero Java version check fails without silently running static tests',()=>{
+  const r=runCase(false,0,false,{ javaProbe: '{ status: 1 }' })
+  assert.notEqual(r.code,0,r.stdout+'\n'+r.stderr)
+  assert.match(r.stderr,/FIRESTORE_TEST_JAVA_SPAWN_FAILED:1/)
+  assert.doesNotMatch(r.stderr,/Running static Firestore rules boundary tests instead/)
+})
+
+test('Java spawn permission failure cannot fall back to static checks',()=>{
+  const r=runCase(false,0,false,{ javaProbe: "{ status: null, error: { code: 'EACCES' } }" })
+  assert.notEqual(r.code,0,r.stdout+'\n'+r.stderr)
+  assert.match(r.stderr,/FIRESTORE_TEST_JAVA_SPAWN_FAILED:EACCES/)
   assert.doesNotMatch(r.stderr,/Running static Firestore rules boundary tests instead/)
 })
