@@ -209,3 +209,36 @@ test('comparison refuses over-limit and invalid branch selectors before Firestor
     assert.deepEqual(h.writes, [])
   }
 })
+
+test('direct owner scenario read denies a mismatched stored owner', async () => {
+  const h = harness({scenario: {ownerId: 'foreign-owner', status: 'ready', question: 'Foreign',
+    branchIds: ['br_current_one'], activeBranchId: 'br_current_one'}})
+  await assert.rejects(h.invoke('getPossibleFuture'), err => err.code === 'not-found')
+  assert.deepEqual(h.reads, [])
+})
+test('Council denies a mismatched stored scenario owner', async () => {
+  const h = harness({scenario: {ownerId: 'foreign-owner', status: 'ready', question: 'Foreign',
+    branchIds: ['br_current_one'], activeBranchId: 'br_current_one'}})
+  await assert.rejects(h.invoke('getPossibleFutureCouncilBundle'), err => err.code === 'not-found')
+  assert.deepEqual(h.reads, [])
+})
+test('Council rejects a foreign-owned branch document even within owner namespace', async () => {
+  const h = harness({branches:new Map([
+    ['br_current_one', {ownerId:'owner-synthetic',summary:'Owned'}],
+    ['br_current_two', {ownerId:'foreign-owner',summary:'NOT ALLOWED'}],
+  ])})
+  await assert.rejects(h.invoke('getPossibleFutureCouncilBundle'),err=>err.code==='failed-precondition')
+})
+test('direct scenario read denies a discarded scenario before exposing retained branches', async () => {
+  const h = harness({ scenario: {ownerId:'owner-synthetic',status:'discarded',question:'Discarded',
+    branchIds:['br_current_one'],activeBranchId:'br_current_one'}})
+  await assert.rejects(h.invoke('getPossibleFuture'),err=>err.code==='not-found')
+  assert.deepEqual(h.reads, [])
+})
+test('direct scenario read denies a mismatched owner branch and never publishes media graph', async () => {
+  const h = harness({branches:new Map([
+    ['br_current_one',{ownerId:'foreign-owner',summary:'NOT ALLOWED'}],
+    ['br_current_two',{ownerId:'owner-synthetic',summary:'Owned'}],
+  ])})
+  await assert.rejects(h.invoke('getPossibleFuture'),err=>err.code==='failed-precondition')
+})

@@ -211,7 +211,8 @@ export const getPossibleFuture = functions.https.onCall(async (data, context) =>
   const scenarioId = ensureScenarioId(data?.scenarioId)
   const ref = scenarioRef(ownerId, scenarioId)
   const scenario = await ref.get()
-  if (!scenario.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+  if (!scenario.exists || scenario.data()?.ownerId !== ownerId || scenario.data()?.status === 'discarded')
+    throw new functions.https.HttpsError('not-found', 'Scenario not found.')
   // Only the current scenario-owned branch IDs are eligible. A collection
   // scan can surface abandoned branches from an interrupted or superseded run.
   const branchIds = asStringArray(scenario.data()?.branchIds, BRANCH_LIMIT)
@@ -221,7 +222,7 @@ export const getPossibleFuture = functions.https.onCall(async (data, context) =>
     ref.collection('basis').doc('current').get(),
     Promise.all(branchIds.map((id) => ref.collection('branches').doc(id).get())),
   ])
-  if (branches.some((doc) => !doc.exists))
+  if (branches.some((doc) => !doc.exists || doc.data()?.ownerId !== ownerId))
     throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_MISSING')
   return {
     scenario: scenario.data(),
@@ -239,7 +240,8 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
   }
   const ref = scenarioRef(ownerId, scenarioId)
   const scenarioSnap = await ref.get()
-  if (!scenarioSnap.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+  if (!scenarioSnap.exists || scenarioSnap.data()?.ownerId !== ownerId)
+    throw new functions.https.HttpsError('not-found', 'Scenario not found.')
   const scenario = scenarioSnap.data() ?? {}
   // A discarded future is not eligible to reappear as an active Council scene.
   if (scenario.status === 'discarded')
@@ -254,7 +256,7 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
     Promise.all(branchIds.map((id) => ref.collection('branches').doc(id).get())),
   ])
   if (!basisSnap.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
-  if (branchSnapshots.some((doc) => !doc.exists))
+  if (branchSnapshots.some((doc) => !doc.exists || doc.data()?.ownerId !== ownerId))
     throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_MISSING')
   const activeBranchId = requestedBranchId || String(scenario.activeBranchId ?? '')
   const activeIndex = branchIds.indexOf(activeBranchId)
