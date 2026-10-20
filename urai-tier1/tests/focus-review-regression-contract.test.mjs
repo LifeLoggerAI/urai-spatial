@@ -52,8 +52,9 @@ test('hard travel fallback preserves canonical replay identity and context', () 
     "'placeId'",
     "'movieId'",
     "'chapterId'",
-    "target.searchParams.set('memoryId', nodeId)",
-    "target.searchParams.set('node', memoryId)",
+    "if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)",
+    "const sameMemory = Boolean(selectedMemoryId && currentMemoryId && selectedMemoryId === currentMemoryId)",
+    "if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId') && (!memoryDestination || !sameMemory)) continue",
   ]) assert.ok(worldEvents.includes(token), `world fallback missing ${token}`)
   assert.match(worldEvents, /context\?\.demo\) target\.searchParams\.set\('demo', '1'\)/)
   const contextIndex = worldEvents.indexOf("if (context?.demo) target.searchParams.set('demo', '1')")
