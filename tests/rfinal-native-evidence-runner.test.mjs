@@ -2,10 +2,11 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import os from 'node:os'
 import path from 'node:path'
-import { mkdtempSync, mkdirSync, rmSync, readFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { CONTROLLER, STAGES, PINNED_FILES, inside, refuseProtectedOverlap,
   parseRemoteHead, verifyRefHead, formatCommand, safeVerificationEnvironment,
-  REQUIRED_HTTP_ROUTES, assessHttpRoutes } from '../scripts/run-rfinal-native-evidence.mjs'
+  REQUIRED_HTTP_ROUTES, assessHttpRoutes, WINDOWS_SAFE_SPARSE_PATTERNS } from '../scripts/run-rfinal-native-evidence.mjs'
 
 test('one original repository and existing PR branch; no duplicate Gold Master', () => {
   assert.equal(CONTROLLER.repository, 'https://github.com/LifeLoggerAI/urai-spatial.git')
@@ -104,4 +105,64 @@ test('native full focused contracts are executed, not inferred from compact unit
   const original = readFileSync(new URL('../urai-tier1/scripts/run-unit-contract-tests.mjs', import.meta.url), 'utf8')
   assert.match(original, /const focusedContractTests = \[/)
   assert.match(original, /\['--import', 'tsx', '--test', \.\.\.focusedContractTests\]/)
+})
+
+test('native checkout excludes Windows-illegal audit archives before materializing the app', () => {
+  assert.deepEqual([...WINDOWS_SAFE_SPARSE_PATTERNS], [
+    '/*','!/*audit/**','!/urai-tier1/*audit/**',
+    '!/.ai-backups/**','!/_quarantine/**',
+  ])
+  const script = readFileSync(new URL('../scripts/run-rfinal-native-evidence.mjs',import.meta.url),'utf8')
+  const sparse = script.indexOf("record('windows_safe_sparse_checkout'")
+  const checkout = script.indexOf("record('exact_checkout'")
+  assert.ok(sparse > 0 && checkout > sparse, 'sparse rules must apply before Windows checkout')
+  assert.match(script, /sparse-checkout','set','--no-cone'/)
+  assert.match(script, /WINDOWS_SAFE_SPARSE_CHECKOUT_FAILED/)
+})
+
+test('reviewed Windows sparse exclusions preserve real sources, codecs and Home proof', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'urai-native-sparse-'))
+  const git = (cwd, args) => {
+    const result = spawnSync('git', args, { cwd, encoding: 'utf8', windowsHide: true })
+    assert.equal(result.status, 0, args.join(' ') + ': ' + result.stderr)
+    return result.stdout
+  }
+  try {
+    const origin = path.join(root, 'origin')
+    const checked = path.join(root, 'checked')
+    mkdirSync(origin)
+    git(origin, ['init','-q'])
+    git(origin, ['config','user.email','fixture@example.invalid'])
+    git(origin, ['config','user.name','Fixture'])
+    const excluded = [
+      'archived-audit/old.txt',
+      'urai-tier1/legacy-audit/old.txt',
+      '.ai-backups/old.txt',
+      '_quarantine/old.txt',
+    ]
+    const required = [
+      'package.json','pnpm-lock.yaml',
+      'urai-tier1/src/app/home/page.tsx',
+      'scripts/vendor/meshopt_encoder.module.mjs',
+      'scripts/vendor/meshopt_decoder.module.mjs',
+      'operations/assets/normal-repair-receipts/home-entry-chamber-v1.json',
+    ]
+    for (const entry of [...excluded,...required]) {
+      const file = path.join(origin,...entry.split('/'))
+      mkdirSync(path.dirname(file), { recursive: true })
+      writeFileSync(file, entry + '\n')
+    }
+    git(origin, ['add','-A'])
+    git(origin, ['commit','-qm','fixture'])
+    git(root, ['clone','-q','--no-checkout',origin,checked])
+    git(checked, ['sparse-checkout','set','--no-cone',...WINDOWS_SAFE_SPARSE_PATTERNS])
+    git(checked, ['checkout','-q','--detach','HEAD'])
+    for (const entry of excluded)
+      assert.equal(existsSync(path.join(checked,...entry.split('/'))),false,entry)
+    for (const entry of required)
+      assert.equal(existsSync(path.join(checked,...entry.split('/'))),true,entry)
+    assert.equal(git(checked,['status','--porcelain','--untracked-files=no']),'')
+  } finally {
+    rmSync(root,{recursive:true,force:true})
+  }
 })

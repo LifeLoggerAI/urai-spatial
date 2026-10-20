@@ -30,6 +30,17 @@ export const PINNED_FILES = Object.freeze([
   'urai-tier1/src/spatial/adam/AdamPresenceRuntime.tsx',
 ])
 
+// Git for Windows cannot materialize 650 tracked historical audit paths containing
+// '*' or ':' at this source head. Preserve every runtime source/asset and skip only
+// nonproduction audit/backups before checkout; never rewrite tracked Git objects.
+export const WINDOWS_SAFE_SPARSE_PATTERNS = Object.freeze([
+  '/*',
+  '!/*audit/**',
+  '!/urai-tier1/*audit/**',
+  '!/.ai-backups/**',
+  '!/_quarantine/**',
+])
+
 export const STAGES = Object.freeze([
   { id: 'source_integrity', command: ['node', 'scripts/check-source-integrity.mjs'], requiresInstall: false },
   { id: 'lockfile_check', command: ['node', 'scripts/check-lockfile-present.mjs'], requiresInstall: false },
@@ -344,6 +355,14 @@ async function main() {
       if (clone.exitCode !== 0) throw new Error('EXACT_SOURCE_CLONE_FAILED')
       await shortGit(['-C',source,'config','core.autocrlf','false'],source,evidence,'config_autocrlf')
       await shortGit(['-C',source,'config','core.longpaths','true'],source,evidence,'config_longpaths')
+      // Configure the reviewed historical exclusions BEFORE Git tries to write
+      // Windows-illegal filenames. --no-cone keeps the rest of the original
+      // repository and all eight production GLBs included.
+      const sparse=await command([
+        'git','-C',source,'sparse-checkout','set','--no-cone',...WINDOWS_SAFE_SPARSE_PATTERNS,
+      ], {cwd:source,log:path.join(evidence,'sparse_checkout.log'),timeoutMinutes:5})
+      record('windows_safe_sparse_checkout',sparse.exitCode===0&&!sparse.timedOut?'PASS':'FAIL',sparse)
+      if(sparse.exitCode!==0||sparse.timedOut) throw new Error('WINDOWS_SAFE_SPARSE_CHECKOUT_FAILED')
       const checkout=await command(['git','-C',source,'-c','core.autocrlf=false',
         '-c','core.longpaths=true','checkout','--detach',head],{cwd:source,
           log:path.join(evidence,'checkout.log'),timeoutMinutes:60})
