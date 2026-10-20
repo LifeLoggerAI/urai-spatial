@@ -190,19 +190,32 @@ async function runRaceConditions(page, stage, report) {
   await screenshot(page, report, 'race-conditions-home');
 }
 
-async function runDataStates(page, stage, report) {
-  await gotoMode(page, stage, 'focus', '/focus?manifestId=missing-audit-manifest');
-  await expectVisible(page.getByTestId('urai-focus-empty-panel').or(page.getByTestId('urai-focus-action-panel')), 'focus fallback or action panel');
-  await expectText(page.locator('body'), 'memory star');
+async function runDataStates(page, _legacyStage, report) {
+  // Signed-out owner data must remain absent until an explicit demo is opened.
+  await page.goto(BASE_URL + '/life-map', { waitUntil: 'domcontentloaded' });
+  const gate = page.getByTestId('urai-r3f-canonical-lifemap');
+  await expectAttr(gate, 'data-life-map-access', 'signed-out', 30000);
+  await expectAttr(gate, 'data-private-memory-mounted', 'false');
+  await screenshot(page, report, 'signed-out-life-map');
 
-  await gotoMode(page, stage, 'replay', '/replay?manifestId=missing-audit-manifest');
-  await expectVisible(page.getByTestId('urai-focus-empty-panel').or(page.getByTestId('urai-focus-action-panel')), 'replay fallback or action panel');
+  // Unknown private identities must show neutral, non-personal surfaces.
+  await page.goto(BASE_URL + '/focus?memoryId=unrecognized-private&manifestId=not-authorized', { waitUntil: 'domcontentloaded' });
+  const focus = page.getByTestId('urai-final-focus-chamber');
+  await expectVisible(focus, 'real Focus neutral chamber', 30000);
+  await page.waitForFunction(() => {
+    const el = document.querySelector('[data-testid="urai-final-focus-chamber"]');
+    return el && el.getAttribute('data-memory-status') !== 'loading';
+  }, null, { timeout: 30000 });
+  if (await focus.getAttribute('data-memory-id')) throw new Error('Focus exposed an unauthorized memory');
 
-  await gotoMode(page, stage, 'mirror', '/mirror');
-  await expectText(page.locator('body'), 'Reflection begins with a stable field');
-  await page.keyboard.press('Escape');
-  await expectAttr(stage, 'data-scene-mode', 'home');
-  await screenshot(page, report, 'data-states-mirror-return');
+  await page.goto(BASE_URL + '/replay?memoryId=unrecognized-private&manifestId=not-authorized', { waitUntil: 'domcontentloaded' });
+  await expectVisible(page.locator('[data-testid="cinematic-replay-client"][data-replay-neutral="memory-horizon"]'), 'Replay neutral denied-memory surface', 30000);
+  if (await page.locator('.replayWorld').count()) throw new Error('Replay exposed an unauthorized memory');
+
+  await page.goto(BASE_URL + '/mirror', { waitUntil: 'domcontentloaded' });
+  await expectVisible(page.getByTestId('mirror-bare-entry'), 'actual Mirror entry disclosure', 30000);
+  await expectText(page.locator('body'), 'Mirror will not invent');
+  await screenshot(page, report, 'mirror-bare-entry');
 }
 
 async function runVisual(page, stage, report) {
