@@ -80,6 +80,15 @@ export const STAGES = Object.freeze([
   { id: 'tier1_typecheck', command: ['corepack', 'pnpm', 'typecheck'], requiresInstall: true },
   { id: 'tier1_unit_tests', command: ['corepack', 'pnpm', '--filter', 'urai-tier1', 'test:unit'], requiresInstall: true },
   // Full focused test runner is separate from the sequential compact suite.
+  // Full test glob is separate from the compact maintained unit runner; each
+  // native/platform boundary also receives an individually identifiable receipt.
+  { id: 'tier1_complete_all_tests', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'test:all'], requiresInstall: true },
+  { id: 'android_native_identity_tests', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'exec', 'node', '--import', 'tsx', '--test', 'tests/android-native-google-auth.test.mjs'], requiresInstall: true },
+  { id: 'ios_native_preparation_tests', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'exec', 'node', '--import', 'tsx', '--test', 'tests/ios-native-preparation.test.mjs'], requiresInstall: true },
+  { id: 'ios_source_archive_tests', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'exec', 'node', '--import', 'tsx', '--test', 'tests/ios-source-archive.test.mjs'], requiresInstall: true },
+  { id: 'native_static_provenance_tests', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'exec', 'node', '--import', 'tsx', '--test', 'tests/native-static-provenance.test.mjs'], requiresInstall: true },
+  { id: 'xr_release_matrix_source', command: ['node', 'scripts/check-tier-xr-release-matrix.mjs'], requiresInstall: true },
+  { id: 'xr_runtime_contracts', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'xr:contract'], requiresInstall: true },
   { id: 'focused_contracts_full', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'exec', 'node', 'scripts/run-unit-contract-tests.mjs'], requiresInstall: true },
   { id: 'canonical_contracts', command: ['corepack', 'pnpm', 'test:canon'], requiresInstall: true },
   { id: 'privacy_firestore_rules', command: ['corepack', 'pnpm', 'test:firestore-rules'], requiresInstall: true },
@@ -105,6 +114,62 @@ export function assessHttpRoutes(checks) {
     failures.push({path:route,status,reason:'UNEXPECTED_HTTP_STATUS'})
   }
   return {passed:failures.length===0,failures,authorizedDenials}
+}
+
+
+// A successful Playwright exit alone is insufficient for the final visual
+// lane: require actual per-suite report bytes and each existing desktop,
+// mobile, and reduced-motion capture from the mounted application. This is
+// capture integrity only; it never substitutes for independent artistic QA.
+export const REQUIRED_VISUAL_CAPTURES = Object.freeze([
+  'real-home-desktop',
+  'real-lifemap-desktop',
+  'real-focus-desktop',
+  'real-replay-desktop',
+  'real-life-map-mobile',
+  'real-mirror-mobile',
+  'real-home-touch-portrait-reduced-motion',
+  'real-home-touch-landscape-reduced-motion',
+])
+
+export function verifyVisualBrowserArtifacts(evidenceDir) {
+  const dir = path.join(evidenceDir, 'browser-artifacts')
+  const reportFile = path.join(dir, 'spatial-tier-lock-hardening-report-visual.json')
+  const failures = []
+  let report
+  try {
+    report = JSON.parse(readFileSync(reportFile, 'utf8'))
+  } catch {
+    return { passed: false, failures: ['VISUAL_REPORT_ABSENT_OR_INVALID'], capturesVerified: 0 }
+  }
+  if (report?.suite !== 'visual' || report.error ||
+      !Array.isArray(report.checks) ||
+      !report.checks.some(item => item.name === 'visual' && item.status === 'passed')) {
+    failures.push('VISUAL_SUITE_NOT_COMPLETED')
+  }
+  const named = Array.isArray(report?.screenshots)
+    ? new Set(report.screenshots.filter(item => typeof item === 'string').map(item => path.resolve(item)))
+    : new Set()
+  let capturesVerified = 0
+  for (const name of REQUIRED_VISUAL_CAPTURES) {
+    const file = path.resolve(dir, name + '.png')
+    if (!named.has(file)) {
+      failures.push('VISUAL_REPORT_MISSING_CAPTURE:' + name)
+      continue
+    }
+    try {
+      if (!inside(dir, file) || !existsSync(file) || !statSync(file).isFile() ||
+          statSync(file).size <= 2048) {
+        failures.push('VISUAL_CAPTURE_MISSING_OR_EMPTY:' + name)
+        continue
+      }
+      capturesVerified += 1
+    } catch {
+      failures.push('VISUAL_CAPTURE_UNREADABLE:' + name)
+    }
+  }
+  return { passed: failures.length === 0, failures, capturesVerified,
+    scope: 'Rendered capture integrity only; not physical-device or independent visual approval' }
 }
 
 function normalize(p) {
@@ -306,7 +371,7 @@ async function runtimeSmoke(source, outDir) {
     })
     browserChecks.playwright_preflight = browserReady
     if (browserReady.exitCode === 0 && !browserReady.timedOut) {
-      for (const suite of ['navigation', 'camera', 'race', 'data']) {
+      for (const suite of ['navigation', 'camera', 'race', 'data', 'visual']) {
         browserChecks['browser_' + suite] = await command(
           ['node', 'tests/spatial-tier-lock-hardening.mjs', '--suite=' + suite], {
             cwd: source, env: browserEnv, log: path.join(outDir, 'browser_' + suite + '.log'),
@@ -470,14 +535,18 @@ async function main() {
       const smoke=await runtimeSmoke(source,evidence)
       const { browserChecks, ...runtimeFacts } = smoke
       record('actual_production_http_runtime',smoke.passed?'PASS':'FAIL',runtimeFacts)
-      for(const suite of ['playwright_preflight','browser_navigation','browser_camera','browser_race','browser_data']) {
+      for(const suite of ['playwright_preflight','browser_navigation','browser_camera','browser_race','browser_data','browser_visual']) {
         const result = browserChecks?.[suite]
-        record(suite,!result?'NOT_RUN':result.exitCode===0&&!result.timedOut?'PASS':'FAIL',
-          result||{reason:'Browser not available or runtime did not start'})
+        const visualAudit = suite === 'browser_visual' ? verifyVisualBrowserArtifacts(evidence) : null
+        const passed = result && result.exitCode === 0 && !result.timedOut &&
+          (!visualAudit || visualAudit.passed)
+        record(suite, !result ? 'NOT_RUN' : passed ? 'PASS' : 'FAIL',
+          { ...(result || { reason: 'Browser not available or runtime did not start' }),
+            ...(visualAudit ? { visualAudit } : {}) })
       }
     } else {
       record('actual_production_http_runtime','NOT_RUN',{reason:'Current exact-head production build did not pass'})
-      for(const suite of ['playwright_preflight','browser_navigation','browser_camera','browser_race','browser_data'])
+      for(const suite of ['playwright_preflight','browser_navigation','browser_camera','browser_race','browser_data','browser_visual'])
         record(suite,'NOT_RUN',{reason:'Production runtime never started'})
     }
     receipt.fullCurrentHeadGreen = receipt.results.filter(r=>
