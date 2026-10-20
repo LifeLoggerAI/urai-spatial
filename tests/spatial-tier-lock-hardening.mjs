@@ -214,6 +214,27 @@ async function provePhysicalHomeSkyAscent(page, report) {
     throw new Error('Home sky has no rendered, interactive canvas bounds');
   }
 
+  // Observe actual camera height and ascent progress without inserting
+  // synthetic scene states. This probe is local to the browser test session.
+  await page.evaluate(() => {
+    const element = document.querySelector('[data-testid="home-visible-navigable-sanctuary-world"]');
+    if (!element) throw new Error('Physical Home scene owner was not mounted');
+    const samples = [];
+    window.__uraiRfinalAscentSamples = samples;
+    const sample = () => {
+      if (!element.isConnected || element.getAttribute('data-home-scene-phase') !== 'ASCENT') return;
+      if (!element.hasAttribute('data-home-ascent-progress') || !element.hasAttribute('data-home-camera-height')) return;
+      const progress = Number(element.getAttribute('data-home-ascent-progress'));
+      const height = Number(element.getAttribute('data-home-camera-height'));
+      if (Number.isFinite(progress) && Number.isFinite(height)) samples.push({ progress, height });
+    };
+    new MutationObserver(sample).observe(element, {
+      attributes: true,
+      attributeFilter: ['data-home-scene-phase', 'data-home-ascent-progress', 'data-home-camera-height'],
+    });
+    sample();
+  });
+
   // Candidate points are all genuine upward canvas taps. The production
   // painted-sky raycaster must reject occluded sky/foreground; no synthetic
   // transition event or direct route assignment is permitted here.
@@ -240,7 +261,19 @@ async function provePhysicalHomeSkyAscent(page, report) {
       route.get('cameraCheckpoint') !== 'home-sky-ascent-complete') {
     throw new Error('Physical sky ascent lost its canonical entry and camera checkpoint');
   }
-  report.checks.push({ name: 'Physical painted sky pointer -> Home ASCENT -> Life Map arrival', status: 'passed' });
+  const samples = await page.evaluate(() => window.__uraiRfinalAscentSamples ?? []);
+  const meaningful = samples.filter(sample => sample.progress >= 0 && sample.progress <= 1 && Number.isFinite(sample.height));
+  const progressed = meaningful.some(sample => sample.progress > 0.4);
+  const cameraHeights = meaningful.map(sample => sample.height);
+  const cameraMovement = cameraHeights.length > 1 ? Math.max(...cameraHeights) - Math.min(...cameraHeights) : 0;
+  if (!progressed || cameraMovement < 1) {
+    throw new Error('Home physical sky route arrived without verified camera/progress motion: ' +
+      JSON.stringify({ samples: meaningful.length, progressed, cameraMovement }));
+  }
+  report.checks.push({
+    name: 'Physical painted sky pointer -> moving camera and ascent progress -> Life Map arrival',
+    status: 'passed', samples: meaningful.length, cameraMovement,
+  });
 }
 
 async function runCameraTransitions(page, stage, report) {
