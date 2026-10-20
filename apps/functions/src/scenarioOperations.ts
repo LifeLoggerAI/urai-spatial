@@ -257,8 +257,10 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
   if (branchSnapshots.some((doc) => !doc.exists))
     throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_MISSING')
   const activeBranchId = requestedBranchId || String(scenario.activeBranchId ?? '')
-  const activeIndex = Math.max(0, branchIds.indexOf(activeBranchId))
-  const branch = branchSnapshots[activeIndex] ?? null
+  const activeIndex = branchIds.indexOf(activeBranchId)
+  if (branchIds.length && activeIndex < 0)
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_NOT_CURRENT')
+  const branch = activeIndex >= 0 ? branchSnapshots[activeIndex] : null
   const basis = basisSnap.data() ?? {}
   const evidenceRefs = Array.isArray(basis.evidenceRefs) ? basis.evidenceRefs : []
   const evidenceKinds = [...new Set(evidenceRefs.map((entry: unknown) =>
@@ -293,15 +295,40 @@ export const discardPossibleFuture = functions.https.onCall(async (data, context
 })
 
 export const comparePossibleFutureBranches = functions.https.onCall(async (data, context) => {
-  const ownerId = uid(context); const op = operationId(data?.operationId); const scenarioId = ensureScenarioId(data?.scenarioId)
-  const branchIds = asStringArray(data?.branchIds, 3)
-  if (branchIds.length < 2) throw new functions.https.HttpsError('invalid-argument', 'At least two branches are required.')
+  const ownerId = uid(context)
+  const op = operationId(data?.operationId)
+  const scenarioId = ensureScenarioId(data?.scenarioId)
+  const requested = data?.branchIds
+  if (!Array.isArray(requested) || requested.length < 2 || requested.length > BRANCH_LIMIT ||
+      requested.some((id: unknown) => typeof id !== 'string' || !safeContextId(id)) ||
+      new Set(requested).size !== requested.length)
+    throw new functions.https.HttpsError('invalid-argument', 'Two or three distinct valid branch IDs are required.')
+  const branchIds = asStringArray(requested, BRANCH_LIMIT)
   const ref = scenarioRef(ownerId, scenarioId)
-  const docs = await Promise.all(branchIds.map((branchId) => ref.collection('branches').doc(branchId).get()))
-  if (docs.some((doc) => !doc.exists)) throw new functions.https.HttpsError('not-found', 'Branch not found.')
   const comparisonId = opaque('cmp_')
-  const comparison = { id: comparisonId, scenarioId, ownerId, branchIds, branches: docs.map((doc) => doc.data()), winner: null, operationId: op, createdAt: fv.serverTimestamp() }
-  await ref.collection('comparisons').doc(comparisonId).create(comparison)
+  const comparisonRef = ref.collection('comparisons').doc(comparisonId)
+  // Check active membership and write the comparison in ONE Firestore
+  // transaction. A concurrent discard/regeneration must trigger revalidation,
+  // never commit a stale or foreign-owner branch comparison.
+  await db.runTransaction(async (tx) => {
+    const scenarioSnap = await tx.get(ref)
+    const scenario = scenarioSnap.exists ? scenarioSnap.data() : null
+    if (!scenario || scenario.ownerId !== ownerId || scenario.status === 'discarded')
+      throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+    const activeIds = asStringArray(scenario.branchIds, BRANCH_LIMIT)
+    if (activeIds.some((id) => !safeContextId(id)))
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_ID_INVALID')
+    if (branchIds.some((id) => !activeIds.includes(id)))
+      throw new functions.https.HttpsError('not-found', 'Branch not found.')
+    const docs = await Promise.all(branchIds.map((id) => tx.get(ref.collection('branches').doc(id))))
+    if (docs.some((doc) => !doc.exists || doc.data()?.ownerId !== ownerId))
+      throw new functions.https.HttpsError('not-found', 'Branch not found.')
+    tx.create(comparisonRef, {
+      id: comparisonId, scenarioId, ownerId, branchIds,
+      branches: docs.map((doc) => doc.data()), winner: null, operationId: op,
+      createdAt: fv.serverTimestamp(),
+    })
+  })
   return { comparisonId, branchIds, winner: null }
 })
 

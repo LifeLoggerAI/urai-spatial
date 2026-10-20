@@ -15,7 +15,7 @@ function callable(name) {
   return source.slice(start, next)
 }
 const compiled = ts.transpileModule(
-  callable('getPossibleFuture') + '\n' + callable('getPossibleFutureCouncilBundle'),
+  callable('getPossibleFuture') + '\n' + callable('getPossibleFutureCouncilBundle') + '\n' + callable('comparePossibleFutureBranches'),
   { fileName: 'scenarioOperations.ts', reportDiagnostics: true,
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
 )
@@ -30,17 +30,19 @@ function harness({
     ownerId: 'owner-synthetic', status: 'ready', question: 'What if?',
     branchIds: ['br_current_two', 'br_current_one'], activeBranchId: 'br_current_two',
   },
+  scenarioOnTransaction = null,
   branches = new Map([
-    ['br_stale', { label: 'Retired', summary: 'MUST NOT LEAK' }],
-    ['br_current_one', { label: 'First', summary: 'Authorized first' }],
-    ['br_current_two', { label: 'Second', summary: 'Authorized second' }],
+    ['br_stale', { ownerId: 'owner-synthetic', label: 'Retired', summary: 'MUST NOT LEAK' }],
+    ['br_current_one', { ownerId: 'owner-synthetic', label: 'First', summary: 'Authorized first' }],
+    ['br_current_two', { ownerId: 'owner-synthetic', label: 'Second', summary: 'Authorized second' }],
   ]),
 } = {}) {
-  const reads = []
+  const reads = [], writes = []
   const snapshot = (id, value) => ({ id, exists: value !== undefined && value !== null, data: () => value })
   const ref = {
     get: async () => snapshot('scn_synthetic', scenario),
     collection(name) {
+      if (name === 'comparisons') return { doc: (id) => ({create: async value => {writes.push({id,value})}}) }
       if (name === 'basis') return { doc(id) {
         assert.equal(id, 'current')
         return { get: async () => snapshot(id, { evidenceRefs: [], assumptionOnly: true }) }
@@ -67,10 +69,20 @@ function harness({
     asStringArray: (value, max = 64) => Array.isArray(value)
       ? value.filter(item => typeof item === 'string' && item.length > 0).slice(0, max) : [],
     BRANCH_LIMIT: 3,
+    operationId: (value) => value,
+    db: { runTransaction: async (fn) => {
+      if (scenarioOnTransaction) scenario = scenarioOnTransaction
+      return fn({
+        get: async (ref) => ref.get(),
+        create: (ref, value) => writes.push({id: ref.id, value}),
+      })
+    } },
+    opaque: () => 'cmp_synthetic',
+    fv: {serverTimestamp: () => 'timestamp-synthetic'},
   })
   const invoke = (name, data = {}) =>
     exports[name]({ scenarioId: 'scn_synthetic', ...data }, { auth: { uid: 'owner-synthetic' } })
-  return { invoke, reads }
+  return { invoke, reads, writes }
 }
 
 test('owner scenario returns current branch IDs in stored order, never stale query-order documents', async () => {
@@ -110,4 +122,90 @@ test('missing canonical branch is an integrity failure, not a fallback to an orp
   const h = harness({ branches: new Map([['br_stale', { label: 'Retired', summary: 'MUST NOT LEAK' }]]) })
   await assert.rejects(h.invoke('getPossibleFuture'),
     err => err.code === 'failed-precondition' && err.message === 'SCENARIO_ACTIVE_BRANCH_MISSING')
+})
+
+test('comparison only accepts canonical active branches, never retired ones', async () => {
+  const h = harness()
+  await assert.rejects(h.invoke('comparePossibleFutureBranches', {
+    operationId: 'synthetic-operation', branchIds: ['br_stale', 'br_current_one'],
+  }), err => err.code === 'not-found' || err.code === 'permission-denied')
+  assert.deepEqual(h.reads, [])
+  assert.deepEqual(h.writes, [])
+})
+
+test('Council fails closed if activeBranchId no longer exists in canonical list', async () => {
+  const h = harness({ scenario: {ownerId: 'owner-synthetic', status: 'ready',
+    question: 'What if?', branchIds: ['br_current_one'], activeBranchId: 'br_stale'} })
+  await assert.rejects(h.invoke('getPossibleFutureCouncilBundle'),
+    err => err.code === 'failed-precondition')
+})
+
+test('comparison of two distinct current branches still works', async () => {
+  const h = harness()
+  const result = await h.invoke('comparePossibleFutureBranches', {
+    operationId: 'synthetic-operation', branchIds: ['br_current_two', 'br_current_one'],
+  })
+  assert.equal(result.comparisonId, 'cmp_synthetic')
+  assert.equal(h.writes.length, 1)
+  assert.deepEqual(h.reads, ['br_current_two', 'br_current_one'])
+})
+
+test('discarded scenario cannot be compared into new active decision', async () => {
+  const h = harness({ scenario: {ownerId: 'owner-synthetic', status: 'discarded',
+    question: 'What if?', branchIds: ['br_current_two', 'br_current_one'],activeBranchId:'br_current_two'} })
+  await assert.rejects(h.invoke('comparePossibleFutureBranches', {
+    operationId: 'synthetic-operation',branchIds: ['br_current_two','br_current_one']
+  }), err => err.code === 'not-found')
+  assert.deepEqual(h.writes, [])
+})
+
+test('comparison cannot select one identical branch twice', async () => {
+  const h = harness()
+  await assert.rejects(h.invoke('comparePossibleFutureBranches', {
+    operationId: 'synthetic-operation',branchIds: ['br_current_one', 'br_current_one']
+  }), err => err.code === 'invalid-argument')
+  assert.deepEqual(h.writes, [])
+})
+
+test('comparison rejects a branch document belonging to another owner, even under the owner path', async () => {
+  const h = harness({ branches: new Map([
+    ['br_current_one', {ownerId:'owner-synthetic',summary:'Owned'}],
+    ['br_current_two', {ownerId:'foreign-owner',summary:'NOT ALLOWED'}],
+  ]) })
+  await assert.rejects(h.invoke('comparePossibleFutureBranches', {
+    operationId: 'synthetic-operation',branchIds:['br_current_one','br_current_two'],
+  }),err=>err.code==='not-found')
+  assert.deepEqual(h.writes, [])
+})
+
+test('comparison denies unknown scenario regardless of valid branch records', async () => {
+  const h = harness({scenario: null})
+  await assert.rejects(h.invoke('comparePossibleFutureBranches', {
+    operationId:'synthetic-operation',branchIds:['br_current_one','br_current_two'],
+  }),err=>err.code==='not-found')
+  assert.deepEqual(h.writes, [])
+})
+
+test('transaction rechecks discard that happened after request setup, before comparison commit', async () => {
+  const h = harness({scenarioOnTransaction: {ownerId:'owner-synthetic',status:'discarded',
+    branchIds:['br_current_two','br_current_one'],activeBranchId:'br_current_two'}})
+  await assert.rejects(h.invoke('comparePossibleFutureBranches', {
+    operationId:'synthetic-operation',branchIds:['br_current_two','br_current_one'],
+  }),err=>err.code==='not-found')
+  assert.deepEqual(h.writes, [])
+})
+
+test('comparison refuses over-limit and invalid branch selectors before Firestore read', async () => {
+  for (const branchIds of [
+    ['br_current_one','br_current_two','br_three','br_four'],
+    ['br_current_one','bad/path'],
+    ['br_current_one',null],
+  ]) {
+    const h = harness()
+    await assert.rejects(h.invoke('comparePossibleFutureBranches', {
+      operationId:'synthetic-operation',branchIds,
+    }),err=>err.code==='invalid-argument')
+    assert.deepEqual(h.reads, [])
+    assert.deepEqual(h.writes, [])
+  }
 })
