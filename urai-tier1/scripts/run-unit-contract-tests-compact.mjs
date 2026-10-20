@@ -38,6 +38,7 @@ const tests = [
   'tests/native-deep-links.test.mjs',
   'tests/native-static-provenance.test.mjs',
   'tests/ios-source-archive.test.mjs',
+  'tests/python3-runtime-discovery.test.mjs',
   'tests/ios-native-preparation.test.mjs',
   'tests/privacy-session-lifecycle.test.mjs',
   'tests/device-settings-account-lifecycle.test.mjs',
