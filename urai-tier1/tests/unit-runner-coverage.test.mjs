@@ -34,6 +34,8 @@ const requiredFocusedTests = [
   'tests/life-movie-life-model-binding.test.mjs',
   'tests/life-movie-runtime-contract.test.mjs',
   'tests/life-movie-runtime-binding-contract.test.mjs',
+  'tests/life-movie-route-scope.test.mjs',
+  'tests/final-convergence-authority-contract.test.mjs',
   'tests/life-movie-runtime-authority-behavior.test.mjs',
   'tests/life-movie-manifest-owner-fence.test.mjs',
   'tests/replay-visibility-actor-fence.test.mjs',

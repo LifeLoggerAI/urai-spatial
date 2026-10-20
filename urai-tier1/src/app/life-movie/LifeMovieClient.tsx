@@ -13,6 +13,7 @@ import { createReplayMediaSession, initialReplayVideoSnapshot, type ReplayVideoS
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { lifeMovieReplayHref, type LifeMovieRuntimeChapter } from '@/spatial/life-movie/lifeMovieRuntimeContract'
 import { currentLifeMovieMemories, type BoundLifeMovieMemories } from '@/spatial/life-movie/lifeMovieOwnerSequence'
+import { lifeMovieSignInHref } from '@/spatial/life-movie/lifeMovieRouteScope'
 import { useLifeMovieRuntimeManifest } from '@/spatial/life-movie/useLifeMovieRuntimeManifest'
 import { captionSegmentForMediaTime } from '@/spatial/life-movie/lifeMovieCaptionTimeline'
 import { revokeLifeMovieManifest, saveLifeMovieManifest } from '@/spatial/life-movie/lifeMovieManifestOperations'
@@ -254,7 +255,7 @@ export default function LifeMovieClient() {
   }
 
   if (!user || state.kind === 'unauthenticated') {
-    return <main data-testid="life-movie-runtime" data-state="unauthenticated"><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Sign in to open a sequence of your own memories. No personal memory content is displayed here."><a href="/login?returnTo=%2Flife-movie">Continue securely</a><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-unavailable" as="div" /></MemoryExperienceState></main>
+    return <main data-testid="life-movie-runtime" data-state="unauthenticated"><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Sign in to open a sequence of your own memories. No personal memory content is displayed here."><a href={lifeMovieSignInHref(requestedMovieId, requestedMemoryId)}>Continue securely</a><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-unavailable" as="div" /></MemoryExperienceState></main>
   }
   if (active && visibility !== 'visible') {
     return <main data-testid="life-movie-runtime" data-state={visibility === 'loading' ? 'loading' : 'unavailable'}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message="This Replay memory is currently unavailable." guidance="Return to Life Map to choose an available memory. This sequence cannot display the unavailable chapter."><a href="/life-map">Return to Life Map</a></MemoryExperienceState></main>
