@@ -1,8 +1,5 @@
-import { spawnSync } from 'node:child_process'
 import process from 'node:process'
-
-const defaultMinimumMb = 4096
-const minimumMb = Number.parseInt(process.env.URAI_MIN_INSTALL_FREE_MB ?? String(defaultMinimumMb), 10)
+import { availableDiskKiB, assessInstallDiskBudget } from './install-disk-budget.mjs'
 
 function fail(message) {
   console.error(`\n[URAI Spatial install] ${message}`)
@@ -12,33 +9,22 @@ function fail(message) {
   process.exit(1)
 }
 
-if (!Number.isFinite(minimumMb) || minimumMb <= 0) {
-  fail(`Invalid URAI_MIN_INSTALL_FREE_MB value: ${process.env.URAI_MIN_INSTALL_FREE_MB}`)
+let budget
+try {
+  budget = assessInstallDiskBudget(
+    availableDiskKiB({ location: process.cwd() }),
+    process.env.URAI_MIN_INSTALL_FREE_MB ?? '4096',
+  )
+} catch (error) {
+  const reason = error?.message || String(error)
+  if (reason === 'INVALID_DISK_BUDGET') {
+    fail(`Invalid URAI_MIN_INSTALL_FREE_MB value: ${process.env.URAI_MIN_INSTALL_FREE_MB}`)
+  }
+  fail(`Could not inspect free disk space reliably: ${reason}`)
 }
 
-const result = spawnSync('df', ['-Pk', '.'], {
-  encoding: 'utf8',
-  stdio: ['ignore', 'pipe', 'pipe'],
-})
-
-if (result.status !== 0) {
-  console.warn('[URAI Spatial install] Could not inspect free disk space with df; continuing install preflight.')
-  if (result.stderr) console.warn(result.stderr.trim())
-  process.exit(0)
+if (!budget.sufficient) {
+  fail(`Not enough free disk space for install. Required at least ${budget.minimumMb} MB; found ${budget.availableMb} MB.`)
 }
 
-const lines = result.stdout.trim().split(/\r?\n/)
-const data = lines.at(-1)?.trim().split(/\s+/)
-const availableKb = Number.parseInt(data?.[3] ?? '', 10)
-const availableMb = Math.floor(availableKb / 1024)
-
-if (!Number.isFinite(availableMb) || availableKb < 0) {
-  console.warn('[URAI Spatial install] Could not parse free disk space; continuing install preflight.')
-  process.exit(0)
-}
-
-if (availableMb < minimumMb) {
-  fail(`Not enough free disk space for install. Required at least ${minimumMb} MB; found ${availableMb} MB.`)
-}
-
-console.log(`[URAI Spatial install] Free disk preflight passed: ${availableMb} MB available.`)
+console.log(`[URAI Spatial install] Free disk preflight passed: ${budget.availableMb} MB available.`)
