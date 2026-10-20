@@ -362,6 +362,15 @@ async function runVisual(page, stage, report) {
   report.checks.push({name:'Rendered screenshots recorded; independent artistic acceptance remains separate',status:'captured-not-accepted'});
 }
 
+function persistBrowserReport(report) {
+  const bytes = JSON.stringify(report, null, 2);
+  // Preserve legacy artifact consumers, but never lose an earlier failing
+  // camera/navigation suite when the native runner continues to race/data.
+  writeFileSync(`${ARTIFACT_DIR}/spatial-tier-lock-hardening-report.json`, bytes);
+  const suiteName = /^(all|navigation|camera|race|data|visual)$/.test(SUITE) ? SUITE : 'invalid';
+  writeFileSync(`${ARTIFACT_DIR}/spatial-tier-lock-hardening-report-${suiteName}.json`, bytes);
+}
+
 async function run() {
   const server = startServer();
   const report = { suite: SUITE, screenshots: [], console: [], checks: [] };
@@ -392,11 +401,11 @@ async function run() {
     if (report.console.length) {
       throw new Error(`Console errors detected:\n${report.console.join('\n')}`);
     }
-    writeFileSync(`${ARTIFACT_DIR}/spatial-tier-lock-hardening-report.json`, JSON.stringify(report, null, 2));
+    persistBrowserReport(report);
     console.log(`URAI Spatial tier lock hardening suite passed: ${SUITE}`);
   } catch (error) {
     report.error = error instanceof Error ? error.message : String(error);
-    writeFileSync(`${ARTIFACT_DIR}/spatial-tier-lock-hardening-report.json`, JSON.stringify(report, null, 2));
+    persistBrowserReport(report);
     throw error;
   } finally {
     if (server) server.kill('SIGTERM');
