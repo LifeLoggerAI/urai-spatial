@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { adamLocalEmulatorRewrites } from './scripts/adam-local-functions-proxy.mjs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -35,6 +36,9 @@ const nextConfig = {
         trailingSlash: true,
       }
     : {}),
+  async rewrites() {
+    return adamLocalEmulatorRewrites()
+  },
   webpack(config) {
     // URAI Spatial builds frequently run in constrained preview/Nix containers where
     // webpack's filesystem cache can exhaust the writable volume before compilation
