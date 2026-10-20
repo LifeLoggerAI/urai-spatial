@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module';
 import { selectSignedOutLifeMapGate } from './spatial-signed-out-lifemap-gate.mjs';
+import { disclosedSampleStar, selectedMemoryFocusAction } from './canonical-browser-selection-controls.mjs';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
@@ -132,7 +133,7 @@ async function chooseDisclosedMemory(page) {
   const search = page.getByTestId('life-map-semantic-trigger');
   await expectVisible(search, 'semantic Life Map navigation', 30000);
   await search.click();
-  const star = page.locator('[data-life-map-node-id="' + DEMO_STAR + '"]');
+  const star = disclosedSampleStar(page);
   await expectVisible(star, 'disclosed canonical demo star', 30000);
   await star.click();
   const scene = page.getByTestId('urai-true-3d-life-map');
@@ -144,7 +145,7 @@ async function chooseDisclosedMemory(page) {
 
 async function enterDemoFocus(page) {
   await chooseDisclosedMemory(page);
-  const action = page.locator('.life-map-semantic-inspector .semantic-thresholds button').first();
+  const action = selectedMemoryFocusAction(page);
   await expectVisible(action, 'real selected Focus action', 30000);
   await action.click();
   await page.waitForURL(/\/focus(?:\?|$)/, { timeout: 40000 });
