@@ -2,9 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import os from 'node:os'
 import path from 'node:path'
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, readFileSync } from 'node:fs'
 import { CONTROLLER, STAGES, PINNED_FILES, inside, refuseProtectedOverlap,
-  parseRemoteHead, verifyRefHead, formatCommand, safeVerificationEnvironment } from '../scripts/run-rfinal-native-evidence.mjs'
+  parseRemoteHead, verifyRefHead, formatCommand, safeVerificationEnvironment,
+  REQUIRED_HTTP_ROUTES, assessHttpRoutes } from '../scripts/run-rfinal-native-evidence.mjs'
 
 test('one original repository and existing PR branch; no duplicate Gold Master', () => {
   assert.equal(CONTROLLER.repository, 'https://github.com/LifeLoggerAI/urai-spatial.git')
@@ -61,4 +62,31 @@ test('native execution environment strips paid-provider credentials but keeps PA
   assert.equal(result.env.STRIPE_SECRET_KEY,undefined)
   assert.equal(result.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,undefined)
   assert.equal(result.removedKeys.length,3)
+})
+
+function httpCases(overrides={}) {return REQUIRED_HTTP_ROUTES.map(path=>({path,status:overrides[path]??200}))}
+test('all canonical production HTTP routes must be covered',()=>{
+  assert.equal(assessHttpRoutes(httpCases()).passed,true)
+  assert.equal(assessHttpRoutes(httpCases().filter(x=>x.path!=='/replay')).passed,false)
+})
+test('Home 200 cannot hide broken Replay, privacy or login',()=>{
+  for(const path of ['/replay','/privacy','/login']){
+    const result=assessHttpRoutes(httpCases({[path]:500}))
+    assert.equal(result.passed,false)
+    assert.ok(result.failures.some(x=>x.path===path))
+  }
+})
+test('signed-out 401 and 403 protected denies are recognized without private acceptance',()=>{
+  const result=assessHttpRoutes(httpCases({'/life-map':401,'/focus':403}))
+  assert.equal(result.passed,true);assert.equal(result.authorizedDenials.length,2)
+  assert.equal(assessHttpRoutes(httpCases({'/login':403})).passed,false)
+})
+test('network errors fail HTTP runtime verification',()=>{
+  const checks=httpCases().map(x=>x.path==='/focus'?{path:'/focus',error:'ECONNRESET'}:x)
+  assert.equal(assessHttpRoutes(checks).passed,false)
+})
+test('HTTP runtime code uses complete route audit, never Home-only check',()=>{
+  const source=readFileSync(new URL('../scripts/run-rfinal-native-evidence.mjs',import.meta.url),'utf8')
+  assert.match(source,/const httpAudit = assessHttpRoutes\(checks\)/)
+  assert.doesNotMatch(source,/checks\.some\(x => x\.path === '\/'/)
 })

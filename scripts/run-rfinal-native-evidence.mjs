@@ -47,6 +47,24 @@ export const STAGES = Object.freeze([
   { id: 'production_build', command: ['corepack', 'pnpm', 'build'], requiresInstall: true },
 ])
 
+// HTTP readiness must cover every canonical route, not only Home.
+export const REQUIRED_HTTP_ROUTES = Object.freeze(['/', '/life-map', '/focus', '/replay', '/login', '/privacy'])
+const PROTECTED_HTTP_ROUTES = new Set(['/life-map', '/focus', '/replay'])
+export function assessHttpRoutes(checks) {
+  const failures = [], authorizedDenials = []
+  for (const route of REQUIRED_HTTP_ROUTES) {
+    const result = checks.find(check => check.path === route)
+    const status = result?.status
+    if (!Number.isInteger(status)) { failures.push({path:route,reason:result?.error||'ROUTE_NOT_TESTED'});continue }
+    if (status >= 200 && status < 400) continue
+    if (PROTECTED_HTTP_ROUTES.has(route) && (status === 401 || status === 403)) {
+      authorizedDenials.push({path:route,status});continue
+    }
+    failures.push({path:route,status,reason:'UNEXPECTED_HTTP_STATUS'})
+  }
+  return {passed:failures.length===0,failures,authorizedDenials}
+}
+
 function normalize(p) {
   const canonical = path.resolve(p)
   const normalized = existsSync(canonical) ? realpathSync(canonical) : canonical
@@ -253,9 +271,9 @@ async function runtimeSmoke(source, outDir) {
           })
       }
     }
-    return { passed: checks.some(x => x.path === '/' && x.status >= 200 && x.status < 400),
-      checks, browserChecks,
-      scope: 'HTTP and maintained automated demo-browser tests only; private auth and human art acceptance remain separate' }
+    const httpAudit = assessHttpRoutes(checks)
+    return { passed: httpAudit.passed, checks, httpAudit, browserChecks,
+      scope: 'HTTP route health with signed-out owner denials; private auth and human art acceptance remain separate' }
   } finally {
     if (process.platform === 'win32' && child.pid) {
       // Terminate exactly the process tree created by this runner.
