@@ -30,6 +30,8 @@ const focusedContractTests = [
   'tests/localization-flow.test.mjs',
   'tests/localization-journey-copy.test.mjs',
   'tests/adam-navigation-lifecycle.test.mjs',
+  'tests/world-return-identity-isolation.test.mjs',
+  'tests/adam-auth-session-hydration.test.mjs',
   'tests/adam-local-functions-proxy.test.mjs',
   'tests/adam-same-route-owner-fence.test.mjs',
   'tests/ground-semantic-return-lifecycle.test.mjs',
