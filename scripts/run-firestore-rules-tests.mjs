@@ -1,7 +1,8 @@
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { createRequire } from 'node:module'
-import { dirname, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 const require = createRequire(import.meta.url)
 const run = (executable, args, options = {}) => spawnSync(executable, args, {
@@ -23,14 +24,32 @@ if (javaCheck.status === 0) {
     throw new Error('FIREBASE_TOOLS_ENTRYPOINT_UNAVAILABLE')
   }
   const firebaseBin = resolve(dirname(firebaseManifestPath), firebaseEntry)
-  const result = run(process.execPath, [
-    firebaseBin,
-    'emulators:exec',
-    '--only',
-    'firestore',
-    'node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs',
-  ])
-  process.exit(result.status ?? 1)
+  // The real firebase.json has a Hosting framework source. The CLI may inspect
+  // that source before starting even a Firestore-only emulator, and fail on
+  // unrelated webframeworks experiments. Keep the committed rules unchanged,
+  // but provide a Firestore-only emulator config outside the source tree.
+  const rulesFile = resolve('firebase/firestore.rules')
+  if (!existsSync(rulesFile)) throw new Error('FIRESTORE_RULES_SOURCE_MISSING')
+  const temporary = mkdtempSync(join(tmpdir(), 'urai-firestore-only-'))
+  try {
+    const rulesOnlyConfig = join(temporary, 'firebase.json')
+    writeFileSync(rulesOnlyConfig, JSON.stringify({
+      firestore: { rules: rulesFile },
+      emulators: { ui: { enabled: false } },
+    }))
+    // A demo- project has no live Firebase resources, even on failed fallback.
+    const result = run(process.execPath, [
+      firebaseBin,
+      'emulators:exec',
+      '--config', rulesOnlyConfig,
+      '--project', 'demo-urai-rules',
+      '--only', 'firestore',
+      'node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs',
+    ])
+    process.exitCode = result.status ?? 1
+  } finally {
+    rmSync(temporary, { recursive: true, force: true })
+  }
 }
 
 console.warn('[URAI] Java is not available, so the Firestore emulator cannot run in this environment.')
