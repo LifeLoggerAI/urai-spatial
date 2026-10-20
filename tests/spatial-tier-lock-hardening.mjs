@@ -1,7 +1,13 @@
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
+
+// The browser harness lives at the repo root, but Playwright is owned by the
+// urai-tier1 workspace. Resolve its public entrypoint from that workspace so
+// pnpm's isolated node_modules layout works on both Windows and POSIX.
+const workspaceRequire = createRequire(new URL('../urai-tier1/package.json', import.meta.url));
+const { chromium } = workspaceRequire('playwright');
 
 
 const BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
