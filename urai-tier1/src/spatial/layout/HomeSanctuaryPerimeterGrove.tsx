@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { buildReplayLeafSprayGeometry } from '@/app/replay/replayBotanicalGeometry'
 import { makeReplaySurfaceTextures } from '@/app/replay/replaySurfaceTextures'
 import { homeTerrainHeight } from './HomeSanctuaryGeometry'
+import { makeHomePerimeterBranchGeometry } from './homePerimeterBranchGeometry'
 import {
   HOME_PERIMETER_TREE_COUNT as TREE_COUNT,
   HOME_PERIMETER_BRANCHES_PER_TREE as BRANCHES,
@@ -26,9 +27,11 @@ export default function HomeSanctuaryPerimeterGrove() {
   const trunks = useRef<THREE.InstancedMesh>(null)
   const boughs = useRef<THREE.InstancedMesh>(null)
   const foliage = useRef<THREE.InstancedMesh>(null)
+  const trunkGeometry = useMemo(() => makeHomePerimeterBranchGeometry('trunk'), [])
+  const boughGeometry = useMemo(() => makeHomePerimeterBranchGeometry('bough'), [])
   const leafGeometry = useMemo(() => buildReplayLeafSprayGeometry(), [])
   const bark = useMemo(() => makeReplaySurfaceTextures('bark'), [])
-  useEffect(() => () => { leafGeometry.dispose(); bark.dispose() }, [leafGeometry, bark])
+  useEffect(() => () => { leafGeometry.dispose(); bark.dispose(); trunkGeometry.dispose(); boughGeometry.dispose() }, [leafGeometry, bark, trunkGeometry, boughGeometry])
 
   useLayoutEffect(() => {
     if (!trunks.current || !boughs.current || !foliage.current) return
@@ -92,12 +95,10 @@ export default function HomeSanctuaryPerimeterGrove() {
     collisionAuthority: false,
     rootPlacement: 'outside-first-person-walking-bounds',
   }}>
-    <instancedMesh ref={trunks} args={[undefined, undefined, TREE_COUNT]} castShadow receiveShadow name="home-perimeter-tree-trunks">
-      <cylinderGeometry args={[.082, .19, 1, 10, 5]} />
+    <instancedMesh ref={trunks} args={[trunkGeometry, undefined, TREE_COUNT]} castShadow receiveShadow name="home-perimeter-tree-trunks">
       <meshStandardMaterial color="#fff" map={bark.color} normalMap={bark.normal} roughness={.96} metalness={0} />
     </instancedMesh>
-    <instancedMesh ref={boughs} args={[undefined, undefined, TREE_COUNT * BRANCHES]} castShadow receiveShadow name="home-perimeter-tree-boughs">
-      <cylinderGeometry args={[.045, .125, 1, 8, 3]} />
+    <instancedMesh ref={boughs} args={[boughGeometry, undefined, TREE_COUNT * BRANCHES]} castShadow receiveShadow name="home-perimeter-tree-boughs">
       <meshStandardMaterial color="#fff" map={bark.color} normalMap={bark.normal} roughness={.97} metalness={0} />
     </instancedMesh>
     <instancedMesh ref={foliage} args={[leafGeometry, undefined, TREE_COUNT * LEAF_CLUSTERS]} castShadow receiveShadow name="home-perimeter-tree-foliage">

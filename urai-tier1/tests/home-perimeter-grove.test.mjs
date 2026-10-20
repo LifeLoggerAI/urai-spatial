@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
+import { makeHomePerimeterBranchGeometry } from '../src/spatial/layout/homePerimeterBranchGeometry.ts'
 import {
   HOME_PERIMETER_TREE_COUNT,
   HOME_PERIMETER_BRANCHES_PER_TREE,
@@ -46,4 +47,40 @@ test('real Home rendering mounts instanced branches, foliage, licensed reuse and
   assert.match(grove, /finalArtAdmitted: false/)
   assert.match(grove, /collisionAuthority: false/)
   assert.match(home, /<Vegetation \/>\s*<HomeSanctuaryPerimeterGrove \/>/)
+})
+
+test('authored tapered grove wood uses bounded curved Three geometry and preserves instance submissions', () => {
+  const geometry = [makeHomePerimeterBranchGeometry('trunk'), makeHomePerimeterBranchGeometry('bough')]
+  try {
+    for (const [index, wood] of geometry.entries()) {
+      const p = wood.getAttribute('position')
+      const normals = wood.getAttribute('normal')
+      assert.ok(wood.getIndex().count < 1400, 'shared natural wood stays within bounded geometry budget')
+      assert.equal(p.count, normals.count)
+      const ring = (y) => {
+        let cx = 0; let cz = 0; let count = 0; let radius = 0
+        for (let vertex = 0; vertex < p.count; vertex++) if (Math.abs(p.getY(vertex) - y) < 1e-6) {
+          cx += p.getX(vertex); cz += p.getZ(vertex); count++
+        }
+        assert.ok(count > 0)
+        cx /= count; cz /= count
+        for (let vertex = 0; vertex < p.count; vertex++) if (Math.abs(p.getY(vertex) - y) < 1e-6) {
+          radius = Math.max(radius, Math.hypot(p.getX(vertex) - cx, p.getZ(vertex) - cz))
+        }
+        return { cx, cz, radius }
+      }
+      const base = ring(-.5); const crown = ring(.5)
+      assert.ok(crown.cx - base.cx > .10, 'tree part must have a visibly curved centerline')
+      assert.ok(base.radius > crown.radius * 1.3, 'tree part tapers toward its tip')
+      assert.ok(wood.boundingSphere?.radius > 0)
+      for (let vertex = 0; vertex < p.count; vertex++) {
+        for (const value of [p.getX(vertex), p.getY(vertex), p.getZ(vertex), normals.getX(vertex), normals.getY(vertex), normals.getZ(vertex)]) {
+          assert.ok(Number.isFinite(value), 'no nonfinite geometry data')
+        }
+      }
+    }
+    assert.match(grove, /args=\{\[trunkGeometry, undefined, TREE_COUNT\]\}/)
+    assert.match(grove, /args=\{\[boughGeometry, undefined, TREE_COUNT \* BRANCHES\]\}/)
+    assert.match(grove, /trunkGeometry\.dispose\(\); boughGeometry\.dispose\(\)/)
+  } finally { for (const wood of geometry) wood.dispose() }
 })
