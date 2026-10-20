@@ -56,6 +56,12 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
   const [reconnectEpoch, setReconnectEpoch] = useState(0)
   const segmentSelect = useRef<((globalMs: number, resume: boolean) => void) | null>(null)
   const seekTo = useCallback((globalMs: number, resume = false) => segmentSelect.current?.(globalMs, resume), [])
+  // Failed transport can occur without a browser 'offline' event. An explicit
+  // retry never restores cached private bytes: it reruns both identity checks.
+  const retry = useCallback(() => {
+    if (typeof navigator !== 'undefined' && navigator.onLine !== false)
+      setReconnectEpoch(epoch => epoch + 1)
+  }, [])
   const advance = useCallback(() => {
     const timeline = state.timeline, segment = state.segment
     if (timeline && segment && segment.index + 1 < timeline.segments.length)
@@ -282,5 +288,6 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
   const scoped = scopedPlaybackForSelection(state, key)
   // Never give a newly selected movie the prior selection's decoded media or controls.
   return { ...scoped, seekTo: scoped.status === 'ready' ? seekTo : () => {},
-    advance: scoped.status === 'ready' ? advance : () => {} }
+    advance: scoped.status === 'ready' ? advance : () => {},
+    retry: scoped.status === 'unavailable' ? retry : () => {} }
 }
