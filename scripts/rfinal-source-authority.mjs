@@ -22,10 +22,16 @@ export function assessCandidateCompletion({
   requireCommitSha(liveHeadAtStart, 'live_start')
   if (liveHeadAtFinish !== null) requireCommitSha(liveHeadAtFinish, 'live_finish')
   const pinnedCandidateVerified = allStagesPass === true && bytesVerified === true
-  const currentReleaseHeadVerified = pinnedCandidateVerified
+  // The supplied remote refs are from the draft INTEGRATION branch (#1867),
+  // not the adopted RELEASE controller (#1636). Equality against this branch
+  // can establish current integration-source identity, never a release-head
+  // acceptance that the runner has not independently inspected.
+  const currentIntegrationHeadVerified = pinnedCandidateVerified
     && liveHeadAtStart === sourceHead && liveHeadAtFinish === sourceHead
+  const currentReleaseHeadVerified = false
   return Object.freeze({
     pinnedCandidateVerified,
+    currentIntegrationHeadVerified,
     currentReleaseHeadVerified,
     liveBranchChanged: liveHeadAtFinish !== null && liveHeadAtFinish !== liveHeadAtStart,
     releaseAuthorized: false,
