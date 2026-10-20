@@ -13,6 +13,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { once } from 'node:events'
 import { pathToFileURL } from 'node:url'
+import { resolveCandidate, assessCandidateCompletion, requireCommitSha } from './rfinal-source-authority.mjs'
 
 export const CONTROLLER = Object.freeze({
   repository: 'https://github.com/LifeLoggerAI/urai-spatial.git',
@@ -156,12 +157,15 @@ export function formatCommand(argv) {
 }
 
 function options(argv) {
-  const parsed = { source: null, evidence: null, selftest: false, help: false }
+  const parsed = { source: null, evidence: null, pinnedSha: null, selftest: false, help: false }
   for (let i = 0; i < argv.length; ++i) {
     const arg = argv[i]
     if (arg === '--help') parsed.help = true
     else if (arg === '--selftest') parsed.selftest = true
-    else if (arg === '--source' || arg === '--evidence-dir') {
+    else if (arg === '--pinned-sha') {
+      if (!argv[i + 1]) throw new Error('Missing value for --pinned-sha')
+      parsed.pinnedSha = requireCommitSha(argv[++i], 'pinned')
+    } else if (arg === '--source' || arg === '--evidence-dir') {
       if (!argv[i + 1] || argv[i + 1].startsWith('--')) throw new Error('Missing value for ' + arg)
       parsed[arg === '--source' ? 'source' : 'evidence'] = path.resolve(argv[++i])
     } else throw new Error('Unknown option: ' + arg)
@@ -330,7 +334,7 @@ async function runtimeSmoke(source, outDir) {
 async function main() {
   const cfg = options(process.argv.slice(2))
   if (cfg.help || cfg.selftest) {
-    console.log('URAI R-FINAL native evidence runner. Options: --source <isolated checkout> --evidence-dir <new directory> --help --selftest')
+    console.log('URAI R-FINAL native evidence runner. Options: --source <isolated checkout> --evidence-dir <new directory> --pinned-sha <40-char git SHA> --help --selftest')
     console.log('Never runs against ' + CONTROLLER.protectedBaseline)
     if (cfg.selftest) {
       assert.equal(parseRemoteHead(CONTROLLER.lastVerifiedSha + '\trefs/heads/' + CONTROLLER.branch), CONTROLLER.lastVerifiedSha)
@@ -361,6 +365,9 @@ async function main() {
     platform: process.platform, node: process.version, knownPriorHead: CONTROLLER.lastVerifiedSha,
     origin: CONTROLLER.repository, branch: CONTROLLER.branch, source,
     gitHead: null, tree: null, results: [], byteIntegrity: null,
+    requestedPinnedSha: cfg.pinnedSha, verificationMode: cfg.pinnedSha ? 'PINNED_CANDIDATE' : 'LIVE_BRANCH',
+    liveHeadAtStart: null, liveHeadAtFinish: null,
+    pinnedCandidateVerified: false, currentReleaseHeadVerified: false,
     sanitizedCredentialVariables: safeVerificationEnvironment().removedKeys,
     fullCurrentHeadGreen: false, privateBetaReady: false, globalLaunchReady: false }
   const record = (id, outcome, details={}) => {
@@ -374,9 +381,12 @@ async function main() {
     const gitRemote = await command(['git','ls-remote','--heads',CONTROLLER.repository,
       'refs/heads/' + CONTROLLER.branch], {cwd:homeDownloads,log:path.join(evidence,'remote_head.log'),timeoutMinutes:5})
     if (gitRemote.exitCode !== 0) throw new Error('REMOTE_GIT_ACCESS_BLOCKED: see ' + gitRemote.logPath)
-    const head = parseRemoteHead(readFileSync(gitRemote.logPath, 'utf8'))
+    const remoteAtStart = parseRemoteHead(readFileSync(gitRemote.logPath, 'utf8'))
+    const chosen = resolveCandidate({remoteHead: remoteAtStart,pinnedSha:cfg.pinnedSha})
+    const head = chosen.sourceHead
     receipt.gitHead = head
-    record('remote_head','PASS',{head})
+    receipt.liveHeadAtStart = chosen.liveHeadAtStart
+    record('remote_head','PASS',{head:remoteAtStart,chosenSourceHead:head,mode:chosen.mode})
     if (!cfg.source) {
       const clone = await command(['git','-c','core.autocrlf=false','-c','core.longpaths=true',
         'clone','--filter=blob:none','--depth=200','--single-branch','--branch',CONTROLLER.branch,
@@ -412,6 +422,8 @@ async function main() {
       // Git for Windows checks NTFS path syntax before honoring sparse excludes.
       // Suppress that early check ONLY for this detached checkout command, after
       // auditing the exact Git tree. The repository config is never weakened.
+      // In pinned mode the original branch checkout is deliberately detached at
+      // the older exact SHA, provided the branch still contains that commit.
       const checkout=await command(['git','-C',source,'-c','core.protectNTFS=false',
         '-c','core.autocrlf=false','-c','core.longpaths=true','checkout','--detach',head],
         {cwd:source,log:path.join(evidence,'checkout.log'),timeoutMinutes:60})
@@ -420,6 +432,12 @@ async function main() {
     }
     const actual = await shortGit(['-C',source,'rev-parse','HEAD'],source,evidence,'rev_parse_head')
     verifyRefHead(actual,head)
+    if (cfg.pinnedSha) {
+      const ancestryPin = await command(['git','-C',source,'merge-base','--is-ancestor',head,remoteAtStart],
+        {cwd:source,log:path.join(evidence,'pinned_branch_ancestry.log'),timeoutMinutes:5})
+      record('pinned_branch_ancestry',ancestryPin.exitCode===0?'PASS':'FAIL',ancestryPin)
+      if(ancestryPin.exitCode!==0)throw new Error('PINNED_SOURCE_NOT_IN_CURRENT_BRANCH_HISTORY')
+    }
     const tree = await shortGit(['-C',source,'rev-parse','HEAD^{tree}'],source,evidence,'rev_parse_tree')
     receipt.tree = tree
     record('verified_source_identity','PASS',{head:actual,tree})
@@ -432,9 +450,18 @@ async function main() {
     }
     const remoteCheck=await command(['git','ls-remote','--heads',CONTROLLER.repository,
       'refs/heads/'+CONTROLLER.branch],{cwd:homeDownloads,log:path.join(evidence,'remote_head_second.log'),timeoutMinutes:5})
-    if (remoteCheck.exitCode!==0 || parseRemoteHead(readFileSync(remoteCheck.logPath,'utf8'))!==head)
+    if (remoteCheck.exitCode!==0) throw new Error('SECOND_REMOTE_GIT_ACCESS_BLOCKED: see '+remoteCheck.logPath)
+    const secondLiveHead = parseRemoteHead(readFileSync(remoteCheck.logPath,'utf8'))
+    if (!cfg.pinnedSha && secondLiveHead !== head)
       throw new Error('CONCURRENT_PR_HEAD_CHANGED: safe abort; previous workspace retained')
-    record('remote_head_unchanged','PASS')
+    if (cfg.pinnedSha) {
+      const pinContained = await command(['git','-C',source,'merge-base','--is-ancestor',head,secondLiveHead],
+        {cwd:source,log:path.join(evidence,'pinned_second_ancestry.log'),timeoutMinutes:5})
+      record('pinned_second_ancestry',pinContained.exitCode===0?'PASS':'FAIL',pinContained)
+      if(pinContained.exitCode!==0)throw new Error('PINNED_SOURCE_NO_LONGER_IN_BRANCH_HISTORY')
+    }
+    record('remote_head_unchanged',secondLiveHead===remoteAtStart?'PASS':'PINNED_BRANCH_ADVANCED',
+      {liveHeadAtStart:remoteAtStart,liveHeadAtSecondCheck:secondLiveHead,sourceHead:head})
     const dirty=await shortGit(['-C',source,'status','--porcelain','--untracked-files=no'],source,evidence,'tracked_status')
     if (dirty) throw new Error('TRACKED_SOURCE_DIRTY: source changes present before tests')
     record('clean_tracked_checkout','PASS')
@@ -480,9 +507,26 @@ async function main() {
       for(const suite of ['playwright_preflight','browser_navigation','browser_camera','browser_race','browser_data'])
         record(suite,'NOT_RUN',{reason:'Production runtime never started'})
     }
-    receipt.fullCurrentHeadGreen = receipt.results.filter(r=>
-      r.id!=='actual_production_http_runtime' && r.id!=='remote_head').every(r=>r.outcome==='PASS') &&
+    // The original matrix can pass for a pinned SHA without becoming a false
+    // claim about a concurrently advancing integration or deployed source.
+    const matrixGreen = receipt.results.filter(r=>
+      r.id!=='actual_production_http_runtime' && r.id!=='remote_head' && r.id!=='remote_head_unchanged').every(r=>r.outcome==='PASS') &&
       receipt.results.some(r=>r.id==='actual_production_http_runtime' && r.outcome==='PASS')
+    const lastRemote=await command(['git','ls-remote','--heads',CONTROLLER.repository,
+      'refs/heads/'+CONTROLLER.branch],{cwd:homeDownloads,
+        log:path.join(evidence,'remote_head_finish.log'),timeoutMinutes:5})
+    if(lastRemote.exitCode===0){
+      try{receipt.liveHeadAtFinish=parseRemoteHead(readFileSync(lastRemote.logPath,'utf8'))}
+      catch{receipt.liveHeadAtFinish=null}
+    }
+    const authority=assessCandidateCompletion({sourceHead:head,liveHeadAtStart:remoteAtStart,
+      liveHeadAtFinish:receipt.liveHeadAtFinish,
+      allStagesPass:matrixGreen,bytesVerified:byteReport.passed})
+    receipt.pinnedCandidateVerified=authority.pinnedCandidateVerified
+    receipt.currentReleaseHeadVerified=authority.currentReleaseHeadVerified
+    receipt.fullCurrentHeadGreen=authority.currentReleaseHeadVerified
+    receipt.liveBranchChanged=authority.liveBranchChanged
+    record('final_source_authority',authority.pinnedCandidateVerified?'PASS':'INCOMPLETE',authority)
     // Even this only proves native tests and basic HTTP; private data, cinematic
     // artistry, XR and human acceptance are independent gates.
     receipt.privateBetaReady=false
