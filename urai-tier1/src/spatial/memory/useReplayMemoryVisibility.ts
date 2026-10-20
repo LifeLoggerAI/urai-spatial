@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import type { SelectedMemory } from './selectedMemoryContract'
@@ -9,9 +9,9 @@ import type { SelectedMemory } from './selectedMemoryContract'
 /** Replay-only metadata admission. Focus and Life Map keep their existing semantics. */
 export function useReplayMemoryVisibility(memory: SelectedMemory | null) {
   const key = JSON.stringify([memory?.ownerId, memory?.id, memory?.privacy, memory?.demo])
-  const [authority, setAuthority] = useState<{ key: string; status: 'loading' | 'visible' | 'unavailable' }>({ key: '', status: 'loading' })
+  const [authority, setAuthority] = useState<{ key: string; status: 'loading' | 'visible' | 'unavailable'; actor: User | null }>({ key: '', status: 'loading', actor: null })
   useEffect(() => {
-    const publish = (status: 'loading' | 'visible' | 'unavailable') => setAuthority({ key, status })
+    const publish = (status: 'loading' | 'visible' | 'unavailable', actor: User | null = null) => setAuthority({ key, status, actor })
     if (!memory) { publish('unavailable'); return }
     if (memory.demo) { publish('visible'); return }
     if (!firebasePublicEnvReady || memory.privacy === 'hidden') { publish('unavailable'); return }
@@ -32,7 +32,7 @@ export function useReplayMemoryVisibility(memory: SelectedMemory | null) {
         const stop = onSnapshot(doc(getFirebaseDb(), ...parts as [string, ...string[]]), snapshot => {
           if (!current()) return
           if (!valid(snapshot.exists() ? snapshot.data() : null)) { deny(); return }
-          ready.add(index); if (ready.size === 4) publish('visible')
+          ready.add(index); if (ready.size === 4) publish('visible', user)
         }, deny)
         if (current()) stops.push(stop); else stop()
       }
@@ -55,5 +55,12 @@ export function useReplayMemoryVisibility(memory: SelectedMemory | null) {
   // The same selected owner memory owns these subscriptions across unrelated renders.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
-  return authority.key === key ? authority.status : memory?.demo ? 'visible' : 'loading'
+  if (authority.key !== key) return memory?.demo ? 'visible' : 'loading'
+  if (authority.status !== 'visible' || memory?.demo) return authority.status
+  // Auth can change before the observer/effect cleans up. An old successful
+  // snapshot must never make another user's private Replay content visible.
+  const currentActor = firebasePublicEnvReady ? getAuth(app).currentUser : null
+  return authority.actor && currentActor === authority.actor && authority.actor.uid === memory?.ownerId
+    ? 'visible'
+    : 'loading'
 }
