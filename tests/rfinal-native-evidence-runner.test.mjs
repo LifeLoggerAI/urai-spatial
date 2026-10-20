@@ -249,8 +249,10 @@ test('Firestore uses pinned CLI entry and retains one emulator script argv witho
   }finally{rmSync(dir,{recursive:true,force:true})}
 })
 
-test('browser uses installed Playwright public API instead of hardcoded node_modules/index.js',()=>{
+test('browser resolves Playwright public API from owning tier1 workspace',()=>{
   const browser=readFileSync(new URL('../tests/spatial-tier-lock-hardening.mjs',import.meta.url),'utf8')
-  assert.match(browser,/import \{ chromium \} from 'playwright'/)
+  assert.match(browser,/createRequire\(new URL\('\.\.\/urai-tier1\/package\.json', import\.meta\.url\)\)/)
+  assert.match(browser,/workspaceRequire\('playwright'\)/)
   assert.doesNotMatch(browser,/node_modules\/playwright\/index\.js/)
+  assert.doesNotMatch(browser,/import \{ chromium \} from 'playwright'/)
 })
