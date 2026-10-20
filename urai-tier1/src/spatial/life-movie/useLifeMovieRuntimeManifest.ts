@@ -6,7 +6,9 @@ import { doc, onSnapshot } from 'firebase/firestore'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import { parseLifeMovieRuntimeManifest, type LifeMovieManifestResult } from './lifeMovieRuntimeContract'
 
-const LOADING: LifeMovieManifestResult | { status: 'loading'; manifest: null; message: string } = {
+type ManifestLoadState = LifeMovieManifestResult | { status: 'loading'; manifest: null; message: string }
+
+const LOADING: ManifestLoadState = {
   status: 'loading',
   manifest: null,
   message: 'Opening Life Movie manifest…',
@@ -15,7 +17,7 @@ const LOADING: LifeMovieManifestResult | { status: 'loading'; manifest: null; me
 type BoundManifestResult = {
   movieId: string | null
   actor: User | null
-  result: typeof LOADING
+  result: ManifestLoadState
 }
 
 export function useLifeMovieRuntimeManifest(movieId: string | null) {
@@ -23,7 +25,7 @@ export function useLifeMovieRuntimeManifest(movieId: string | null) {
   // A route or account change must hide the old manifest on the very next
   // render, before the previous listener's effect cleanup can run.
   const [bound, setBound] = useState<BoundManifestResult>({ movieId, actor: null, result: LOADING })
-  const publish = (result: typeof LOADING, actor: User | null = null) => {
+  const publish = (result: ManifestLoadState, actor: User | null = null) => {
     setBound({ movieId, actor, result })
   }
 
