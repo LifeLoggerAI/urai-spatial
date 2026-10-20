@@ -4,6 +4,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { NativeGoogleSignInUnavailable, performUraiGoogleSignIn, performUraiGoogleSignOut } from '../src/lib/firebase/googleSignInPolicy.ts'
 import { configureAndroidGoogleAuth, validateAndroidGoogleServices } from '../../scripts/prepare-android-native-google-auth.mjs'
 
@@ -104,7 +105,7 @@ test('unsigned preparation without native config explicitly disables auth while 
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'urai-native-auth-test-'))
   try {
     const environment = { ...process.env, URAI_EXACT_HEAD: 'a'.repeat(40), ANDROID_FIREBASE_GOOGLE_SERVICES_JSON: '', URAI_ANDROID_FIREBASE_CONFIG_PATH: '', GITHUB_ENV: path.join(directory, 'env') }
-    const script = new URL('../../scripts/prepare-android-native-google-auth.mjs', import.meta.url).pathname
+    const script = fileURLToPath(new URL('../../scripts/prepare-android-native-google-auth.mjs', import.meta.url))
     const receiptPath = path.join(directory, 'receipt.json')
     const prepared = spawnSync(process.execPath, [script, '--optional', '--receipt-output', receiptPath], { env: environment, encoding: 'utf8' })
     assert.equal(prepared.status, 0, prepared.stderr)
