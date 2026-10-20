@@ -168,75 +168,67 @@ async function enterDemoReplay(page) {
 }
 
 async function runNavigationStack(page, stage, report) {
-  await gotoMode(page, stage, 'home', '/home');
-  await expectVisible(page.getByTestId('urai-sky-click-target'), 'home sky click target');
-  await page.getByTestId('urai-sky-click-target').click({ position: { x: 700, y: 500 } });
-  await expectAttr(stage, 'data-scene-mode', 'ascent');
-  await expectVisible(page.getByTestId('urai-ascent-scene'), 'ascent scene');
-  await expectAttr(stage, 'data-scene-mode', 'life-map', ASCENT_MAX_MS);
-  await expectVisible(page.getByTestId('lifemap-node-seed-memory-bloom'), 'memory node after ascent');
-
-  await page.getByTestId('lifemap-node-seed-memory-bloom').click();
-  await expectAttr(stage, 'data-scene-mode', 'focus');
-  await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Bloom');
-  await page.getByRole('button', { name: 'Start Replay' }).click();
-  await expectAttr(stage, 'data-scene-mode', 'replay');
-  await expectText(page.getByTestId('urai-focus-action-panel'), 'Replay Stream');
-
-  await page.keyboard.press('Escape');
-  await expectAttr(stage, 'data-scene-mode', 'focus');
-  await page.keyboard.press('Escape');
-  await expectAttr(stage, 'data-scene-mode', 'life-map');
-  await page.keyboard.press('Escape');
-  await expectAttr(stage, 'data-scene-mode', 'home');
-
-  await page.goBack();
-  await expectAttr(stage, 'data-scene-mode', 'life-map');
-  await page.goForward();
-  await expectAttr(stage, 'data-scene-mode', 'home');
-  await screenshot(page, report, 'navigation-stack-final-home');
+  await visitCanonicalRoute(page, '/home');
+  await expectVisible(page.getByTestId('urai-persistent-world-shell'), 'canonical Home owner', 30000);
+  const entry = page.getByTestId('home-semantic-life-map');
+  await expectVisible(entry, 'real accessible Home sky link', 30000);
+  await entry.focus();
+  await page.keyboard.press('Enter');
+  await page.waitForURL(/\/life-map(?:\/|\?|$)/, { timeout: 40000 });
+  const gate = selectSignedOutLifeMapGate(page);
+  await expectVisible(gate, 'signed-out after real ascent', 30000);
+  await expectAttr(gate, 'data-private-memory-mounted', 'false');
+  await page.getByRole('button', { name: 'Open disclosed sample' }).first().click();
+  await expectVisible(page.getByTestId('urai-true-3d-life-map'), 'disclosed sample world', 40000);
+  await enterDemoFocus(page);
+  await enterDemoReplay(page);
+  report.checks.push({ name: 'Real Home to disclosed Life Map, Focus and Replay', status: 'passed' });
+  await page.locator('.replayWorld button.unwind').first().click();
+  await page.waitForURL(/\/focus(?:\?|$)/, { timeout: 40000 });
+  await expectAttr(page.getByTestId('urai-final-focus-chamber'), 'data-manifest-id', DEMO_MANIFEST, 40000);
+  await page.locator('.focusControls button.unwind').first().click();
+  await page.waitForURL(/\/life-map(?:\/|\?|$)/, { timeout: 40000 });
+  const scene = page.getByTestId('urai-true-3d-life-map');
+  await expectVisible(scene, 'returned Life Map', 40000);
+  await expectAttr(scene, 'data-life-map-source', 'explicit-demo', 30000);
+  await page.locator('.life-map-thresholds .overview-return').click();
+  await expectAttr(scene, 'data-life-map-mode', 'overview', 30000);
+  await page.locator('.life-map-overview-controls .overview-home-return').click();
+  await page.waitForURL(/\/home(?:\/|\?|$)/, { timeout: 40000 });
+  await screenshot(page, report, 'real-navigation-return-home');
 }
 
 async function runCameraTransitions(page, stage, report) {
-  await gotoMode(page, stage, 'home', '/home');
-  const started = Date.now();
-  await page.getByRole('button', { name: 'Begin Ascent' }).click();
-  await expectAttr(stage, 'data-scene-mode', 'ascent');
-  await expectVisible(page.getByTestId('urai-ascent-scene'), 'ascent active scene');
-  await expectAttr(stage, 'data-scene-mode', 'life-map', ASCENT_MAX_MS);
-  const elapsed = Date.now() - started;
-  if (elapsed < EXPECTED_ASCENT_MS - 500 || elapsed > ASCENT_MAX_MS) {
-    throw new Error(`Ascent timing outside lock window: ${elapsed}ms`);
-  }
-
-  await chooseFirstMemory(page, stage);
-  await expectVisible(page.getByTestId('urai-focus-scene'), 'focus visual layer');
-  await page.getByTestId('urai-camera-reset').click();
-  await expectAttr(stage, 'data-scene-mode', 'focus');
-  await screenshot(page, report, 'camera-focus-after-reset');
+  const scene = await openDisclosedLifeMap(page);
+  await chooseDisclosedMemory(page);
+  await page.waitForFunction(() => {
+    const el = document.querySelector('[data-testid="urai-true-3d-life-map"]');
+    return el && ['lifeMapCameraX','lifeMapCameraY','lifeMapCameraZ','lifeMapFov'].every(key => Number.isFinite(Number(el.dataset[key])) && Boolean(el.dataset[key]));
+  }, null, { timeout: 40000 });
+  const focusAction = page.locator('.life-map-thresholds .focus-threshold');
+  await expectVisible(focusAction, 'real camera-arrival Focus threshold', 30000);
+  await focusAction.click();
+  await page.waitForURL(/\/focus(?:\?|$)/, { timeout: 40000 });
+  const focus = page.getByTestId('urai-final-focus-chamber');
+  await expectAttr(focus, 'data-manifest-id', DEMO_MANIFEST, 40000);
+  await expectVisible(page.locator('.focusControls button').filter({ hasText: /recenter/i }).first(), 'real Focus recenter control', 30000);
+  await page.locator('.focusControls button').filter({ hasText: /recenter/i }).first().click();
+  await screenshot(page, report, 'real-focus-recenter');
 }
 
 async function runRaceConditions(page, stage, report) {
-  await gotoMode(page, stage, 'home', '/home');
-  await Promise.allSettled([
-    page.getByRole('button', { name: 'Begin Ascent' }).click(),
-    page.getByRole('button', { name: 'Begin Ascent' }).click(),
-    page.keyboard.press('Escape'),
-  ]);
-  await expectAttr(stage, 'data-scene-mode', 'ascent');
-  await page.keyboard.press('Escape');
-  await expectAttr(stage, 'data-scene-mode', 'home');
-
-  await chooseFirstMemory(page, stage);
-  await page.getByRole('button', { name: 'Start Replay' }).click();
-  await expectAttr(stage, 'data-scene-mode', 'replay');
-  await Promise.allSettled([
-    page.keyboard.press('Escape'),
-    page.keyboard.press('Escape'),
-    page.keyboard.press('Escape'),
-  ]);
-  await expectAttr(stage, 'data-scene-mode', 'home');
-  await screenshot(page, report, 'race-conditions-home');
+  await visitCanonicalRoute(page, '/focus?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread');
+  const chamber = page.getByTestId('urai-final-focus-chamber');
+  await expectAttr(chamber, 'data-memory-status', 'demo', 40000);
+  const action = page.locator('.focusControls button.primary').first();
+  await expectVisible(action, 'real Focus enter Replay', 30000);
+  await Promise.allSettled([action.click({timeout:12000}),action.click({timeout:12000})]);
+  await page.waitForURL(/\/replay(?:\?|$)/, { timeout: 40000 });
+  await expectAttr(page.getByTestId('cinematic-replay-client'), 'data-manifest-id', DEMO_MANIFEST, 40000);
+  await page.locator('.replayWorld button.unwind').first().click();
+  await page.waitForURL(/\/focus(?:\?|$)/, { timeout: 40000 });
+  await expectAttr(page.getByTestId('urai-final-focus-chamber'), 'data-manifest-id', DEMO_MANIFEST, 40000);
+  await screenshot(page, report, 'real-rapid-travel-return');
 }
 
 async function runDataStates(page, _legacyStage, report) {
