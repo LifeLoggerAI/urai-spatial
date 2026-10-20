@@ -6,7 +6,8 @@ import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync, existsSync
 import { spawnSync } from 'node:child_process'
 import { CONTROLLER, STAGES, PINNED_FILES, inside, refuseProtectedOverlap,
   parseRemoteHead, verifyRefHead, formatCommand, safeVerificationEnvironment,
-  REQUIRED_HTTP_ROUTES, assessHttpRoutes, WINDOWS_SAFE_SPARSE_PATTERNS } from '../scripts/run-rfinal-native-evidence.mjs'
+  REQUIRED_HTTP_ROUTES, assessHttpRoutes, WINDOWS_SAFE_SPARSE_PATTERNS,
+  auditWindowsSparsePaths } from '../scripts/run-rfinal-native-evidence.mjs'
 
 test('one original repository and existing PR branch; no duplicate Gold Master', () => {
   assert.equal(CONTROLLER.repository, 'https://github.com/LifeLoggerAI/urai-spatial.git')
@@ -156,7 +157,8 @@ test('reviewed Windows sparse exclusions preserve real sources, codecs and Home 
     git(origin, ['commit','-qm','fixture'])
     git(root, ['clone','-q','--no-checkout',origin,checked])
     git(checked, ['sparse-checkout','set','--no-cone',...WINDOWS_SAFE_SPARSE_PATTERNS])
-    git(checked, ['checkout','-q','--detach','HEAD'])
+    git(checked, ['-c','core.protectNTFS=false','checkout','-q','--detach','HEAD'])
+    assert.equal(git(checked, ['config','--local','--get','core.protectNTFS']).trim(), '')
     for (const entry of excluded)
       assert.equal(existsSync(path.join(checked,...entry.split('/'))),false,entry)
     for (const entry of required)
@@ -165,4 +167,43 @@ test('reviewed Windows sparse exclusions preserve real sources, codecs and Home 
   } finally {
     rmSync(root,{recursive:true,force:true})
   }
+})
+
+test('only excluded historical Windows-invalid names are allowed in the exact Git tree', () => {
+  const allowed = [
+    '*audit/20260402*legacy/backup/page.tsx',
+    'urai-tier1/*audit/20260419*legacy/run.log',
+    '.ai-backups/20260320*legacy/payload.ts',
+    '_quarantine/_archive/VolumetricNebulaNoise.tsx:',
+  ]
+  const preserved = [
+    'package.json', 'pnpm-lock.yaml',
+    'urai-tier1/src/app/page.tsx',
+    'scripts/vendor/meshopt_decoder.module.mjs',
+    'operations/assets/normal-repair-receipts/home-entry-chamber-v1.json',
+  ]
+  const good = auditWindowsSparsePaths([...allowed, ...preserved])
+  assert.equal(good.tracked, allowed.length+preserved.length)
+  assert.equal(good.excludedUnsafe, 4)
+  assert.deepEqual(good.unexpected,[])
+  assert.deepEqual(good.collisions,[])
+  const rejected = auditWindowsSparsePaths([...preserved,
+    'urai-tier1/src/app/bad:stream.tsx',
+    'scripts/CON.txt',
+    'operations/private*.json',
+    'urai-tier1/src/app/PAGE.tsx',
+    'urai-tier1/src/app/page.tsx',
+  ])
+  assert.equal(rejected.unexpected.length, 3)
+  assert.equal(rejected.collisions.length, 1)
+})
+
+test('NTFS early-path bypass is command-local, preceded by a fail-closed Git tree audit', () => {
+  const source=readFileSync(new URL('../scripts/run-rfinal-native-evidence.mjs',import.meta.url),'utf8')
+  const audit=source.indexOf("record('windows_sparse_tree_audit'")
+  const checkout=source.indexOf("record('exact_checkout'")
+  assert.ok(audit>0 && checkout>audit)
+  assert.match(source,/WINDOWS_UNEXCLUDED_UNSAFE_TREE_PATH/)
+  assert.match(source,/'-c','core.protectNTFS=false'/)
+  assert.doesNotMatch(source,/config','core.protectNTFS','false'/)
 })

@@ -41,6 +41,35 @@ export const WINDOWS_SAFE_SPARSE_PATTERNS = Object.freeze([
   '!/_quarantine/**',
 ])
 
+
+export function auditWindowsSparsePaths(entries) {
+  // Git for Windows performs NTFS filename checks before applying sparse
+  // skip-worktree bits. Before the temporary per-command compatibility override,
+  // verify every unsafe path belongs ONLY to a reviewed historical exclusion.
+  const historical = (p) => /^(?:[^/]*audit|\.ai-backups|_quarantine)\//.test(p)
+    || /^urai-tier1\/[^/]*audit\//.test(p);
+  const invalid = (p) => p.split('/').some((part) =>
+    !part || /[<>:"\\|?*\x00-\x1f]/.test(part) || /[. ]$/.test(part)
+    || /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i.test(part)
+    || /^(?:\.git|git~1)$/i.test(part));
+  const unexpected = [], seen = new Map(), collisions = [];
+  let excludedUnsafe = 0;
+  for (const p of entries) {
+    if (typeof p !== 'string' || !p || p.startsWith('/')) { unexpected.push(String(p)); continue }
+    if (invalid(p)) {
+      if (historical(p)) excludedUnsafe++;
+      else unexpected.push(p);
+    }
+    if (!historical(p)) {
+      const key = p.toLowerCase();
+      const former = seen.get(key);
+      if (former && former !== p) collisions.push([former, p]);
+      else seen.set(key, p);
+    }
+  }
+  return { tracked: entries.length, excludedUnsafe, unexpected, collisions };
+}
+
 export const STAGES = Object.freeze([
   { id: 'source_integrity', command: ['node', 'scripts/check-source-integrity.mjs'], requiresInstall: false },
   { id: 'lockfile_check', command: ['node', 'scripts/check-lockfile-present.mjs'], requiresInstall: false },
@@ -363,9 +392,28 @@ async function main() {
       ], {cwd:source,log:path.join(evidence,'sparse_checkout.log'),timeoutMinutes:5})
       record('windows_safe_sparse_checkout',sparse.exitCode===0&&!sparse.timedOut?'PASS':'FAIL',sparse)
       if(sparse.exitCode!==0||sparse.timedOut) throw new Error('WINDOWS_SAFE_SPARSE_CHECKOUT_FAILED')
-      const checkout=await command(['git','-C',source,'-c','core.autocrlf=false',
-        '-c','core.longpaths=true','checkout','--detach',head],{cwd:source,
-          log:path.join(evidence,'checkout.log'),timeoutMinutes:60})
+      // Read tree objects without checking out historical Windows-invalid names.
+      // Fail closed unless the only unsafe entries are excluded audit archives.
+      const scan=await command(['git','-C',source,'ls-tree','-rz','--name-only',head],
+        {cwd:source,log:path.join(evidence,'windows_tree_paths.log'),timeoutMinutes:8})
+      if (scan.exitCode!==0 || scan.timedOut) throw new Error('WINDOWS_SPARSE_TREE_READ_FAILED')
+      const rawTree=readFileSync(scan.logPath,'utf8')
+      if (!rawTree.endsWith('\0')) throw new Error('WINDOWS_SPARSE_TREE_INCOMPLETE')
+      const trackedPaths=rawTree.slice(0,-1).split('\0')
+      const audit=auditWindowsSparsePaths(trackedPaths)
+      const missingPinned=PINNED_FILES.filter(p=>!trackedPaths.includes(p))
+      const treeSafe=audit.unexpected.length===0 && audit.collisions.length===0
+        && missingPinned.length===0
+      record('windows_sparse_tree_audit',treeSafe?'PASS':'FAIL',
+        {tracked:audit.tracked,excludedUnsafe:audit.excludedUnsafe,
+          unexpected:audit.unexpected.slice(0,12),collisions:audit.collisions.slice(0,12),missingPinned})
+      if(!treeSafe) throw new Error('WINDOWS_UNEXCLUDED_UNSAFE_TREE_PATH')
+      // Git for Windows checks NTFS path syntax before honoring sparse excludes.
+      // Suppress that early check ONLY for this detached checkout command, after
+      // auditing the exact Git tree. The repository config is never weakened.
+      const checkout=await command(['git','-C',source,'-c','core.protectNTFS=false',
+        '-c','core.autocrlf=false','-c','core.longpaths=true','checkout','--detach',head],
+        {cwd:source,log:path.join(evidence,'checkout.log'),timeoutMinutes:60})
       record('exact_checkout',checkout.exitCode===0?'PASS':'FAIL',checkout)
       if (checkout.exitCode !== 0) throw new Error('BYTE_SAFE_CHECKOUT_FAILED')
     }
