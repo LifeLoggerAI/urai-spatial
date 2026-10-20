@@ -87,6 +87,7 @@ const tests = [
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/adam-presence-runtime-contract.test.mjs',
   'tests/adam-local-functions-proxy.test.mjs',
+  'tests/adam-same-route-owner-fence.test.mjs',
   'tests/adam-client-language-ui.test.mjs',
   'tests/v1-aaa-asset-program-matrix-contract.test.mjs',
   'tests/geographic-location-vault.test.mjs',
