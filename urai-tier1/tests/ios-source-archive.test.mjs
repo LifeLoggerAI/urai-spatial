@@ -6,11 +6,12 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
+import { runPython3 } from '../../scripts/python3-runtime.mjs'
 
 const script = fileURLToPath(new URL('../../scripts/prepare-ios-source-archive.py', import.meta.url))
 const source = 'a'.repeat(40)
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
-function run(args) { return spawnSync('python3', [script, ...args], { encoding: 'utf8' }) }
+function run(args) { return runPython3( [script, ...args], { encoding: 'utf8' }) }
 function fixture() {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-ios-source-archive-'))
   const project = path.join(directory, 'ios')
@@ -53,7 +54,7 @@ test('full iOS archive retains Xcode resources, every static asset and exact has
     assert.equal(hash(fs.readFileSync(output)), data.archiveSha256)
     const verify = run(['verify', '--archive', output, '--source-sha', source])
     assert.equal(verify.status, 0, verify.stderr)
-    const inspect = spawnSync('python3', ['-c', 'import zipfile,json,sys; z=zipfile.ZipFile(sys.argv[1]); index=json.loads(z.read("ios-source-project-index.json")); print(json.dumps([f["path"] for f in index["files"]]))', output], { encoding: 'utf8' })
+    const inspect = runPython3( ['-c', 'import zipfile,json,sys; z=zipfile.ZipFile(sys.argv[1]); index=json.loads(z.read("ios-source-project-index.json")); print(json.dumps([f["path"] for f in index["files"]]))', output], { encoding: 'utf8' })
     assert.equal(inspect.status, 0, inspect.stderr)
     const files = JSON.parse(inspect.stdout)
     assert.ok(files.includes('distribution/ios-shell/ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json'))
@@ -104,7 +105,7 @@ test('iOS source archive rejects linked source files and unsafe ZIP entries', ()
     fs.rmSync(extra)
     assert.equal(run(f.args).status, 0)
     const archive = path.join(f.output, 'urai-ios-project-source.zip')
-    const inject = spawnSync('python3', ['-c', 'import zipfile,sys; z=zipfile.ZipFile(sys.argv[1],"a"); z.writestr("../escape","private"); z.close()', archive], { encoding: 'utf8' })
+    const inject = runPython3( ['-c', 'import zipfile,sys; z=zipfile.ZipFile(sys.argv[1],"a"); z.writestr("../escape","private"); z.close()', archive], { encoding: 'utf8' })
     assert.equal(inject.status, 0)
     assert.match(run(['verify', '--archive', archive, '--source-sha', source]).stderr, /ENTRY_UNSAFE/)
   } finally { cleanup(f) }
@@ -154,7 +155,7 @@ test('iOS workflow vendor command resolves the actual frozen root plugin before 
     const workflow = fs.readFileSync(new URL('../../.github/workflows/ios-source-preparation.yml', import.meta.url), 'utf8')
     const command = workflow.match(/run: python3 scripts\/prepare-ios-source-archive\.py (vendor [^\n]+)/)?.[1]
     assert.ok(command, 'workflow exposes explicit vendoring command')
-    const result = spawnSync('python3', [script, ...command.split(/\s+/)], { cwd: repo, encoding: 'utf8' })
+    const result = runPython3( [script, ...command.split(/\s+/)], { cwd: repo, encoding: 'utf8' })
     assert.equal(result.status, 0, result.stderr)
     assert.ok(fs.existsSync(path.join(vendored, 'ios/Sources/AppPlugin/AppPlugin.swift')))
   } finally { cleanup(f) }
