@@ -30,6 +30,12 @@ function candidatePnpmEntrypoints() {
   candidates.push(path.join(root, 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'))
   candidates.push(path.join(root, 'node_modules', '.pnpm', 'pnpm@10.0.0', 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'))
 
+  // Portable Node 22 Windows distributions bundle Corepack as JavaScript.
+  // Windows cannot spawn the corepack.cmd shim with shell:false; invoke its
+  // pnpm entrypoint through this exact Node executable instead. Corepack
+  // still honors the repository's pinned packageManager (pnpm@10.0.0).
+  candidates.push(path.join(path.dirname(process.execPath), 'node_modules', 'corepack', 'dist', 'pnpm.js'))
+
   return candidates.filter(isExecutableFile)
 }
 
