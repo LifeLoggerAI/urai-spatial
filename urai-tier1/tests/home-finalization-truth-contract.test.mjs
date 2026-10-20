@@ -154,7 +154,9 @@ test('the immutable author rejects missing or altered inputs without generating 
   try {
     fs.mkdirSync(path.dirname(fixtureReceiptPath), { recursive: true })
     fs.mkdirSync(fixtureModels, { recursive: true })
-    for (const asset of receipt.assets) fs.symlinkSync(path.resolve(`public/assets/urai/generated/models/${asset.fileName}`), path.join(fixtureModels, asset.fileName))
+    // Keep the exact authored bytes without requiring Windows symlink privileges.
+    // The verifier still checks every byte/hash and refuses substitute assets.
+    for (const asset of receipt.assets) fs.copyFileSync(path.resolve(`public/assets/urai/generated/models/${asset.fileName}`), path.join(fixtureModels, asset.fileName))
     const rejectReceipt = (candidate, expected) => {
       fs.writeFileSync(fixtureReceiptPath, JSON.stringify(candidate))
       const result = spawnSync(process.execPath, [authorPath], { cwd: fixtureRoot, encoding: 'utf8' })

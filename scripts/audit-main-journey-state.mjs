@@ -47,7 +47,8 @@ requireMatch('Replay authenticated memory authority', replayClient, /useSelected
 for (const token of ['memoryId', 'manifestId']) {
   requireMatch(`Selected-memory hook reads ${token}`, selectedMemoryHook, new RegExp(`params\\.get\\('${token}'\\)`))
 }
-requireMatch('Selected-memory hook accepts Life Map node identity', selectedMemoryHook, /params\.get\('memoryId'\) \?\? params\.get\('node'\)/)
+requireMatch('Selected-memory hook gates visual node fallback to explicit demo', selectedMemoryHook, /params\.get\('memoryId'\) \?\? \(demoRequested \? params\.get\('node'\) : null\)/)
+forbidMatch('Selected-memory hook forbids unguarded private node identity', selectedMemoryHook, /params\.get\('memoryId'\) \?\? params\.get\('node'\)/)
 requireMatch('Selected-memory manifest identity check', selectedMemoryHook, /parsed\.memory\.replayManifest\.id !== manifestId/)
 
 requireMatch(
