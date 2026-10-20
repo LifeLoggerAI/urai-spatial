@@ -266,3 +266,14 @@ test('browser resolves Playwright public API from owning tier1 workspace',()=>{
   assert.doesNotMatch(browser,/node_modules\/playwright\/index\.js/)
   assert.doesNotMatch(browser,/import \{ chromium \} from 'playwright'/)
 })
+
+test('Replay tier5 server boots through pinned Node 22 workspace pnpm, never ambient shell', () => {
+  const replay = readFileSync(new URL('./replay-tier5-lock.mjs', import.meta.url), 'utf8')
+  assert.match(replay, /spawn\(process\.execPath, \[/)
+  assert.match(replay, /'scripts\/run-pnpm\.mjs', '--filter', 'urai-tier1'/)
+  assert.match(replay, /shell: false/)
+  assert.doesNotMatch(replay, /spawn\('pnpm'/)
+  assert.doesNotMatch(replay, /shell: process\.platform === 'win32'/)
+  assert.match(replay, /if \(SERVER_MODE === 'production'\)/)
+  assert.match(replay, /if \(consoleErrors\.length\) throw new Error/)
+})
