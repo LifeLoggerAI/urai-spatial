@@ -14,11 +14,11 @@ const mockProbe = [
   "const childProcess = require('node:child_process')",
   'childProcess.spawnSync = (command, args, options) => {',
   "  if (command !== 'df' || args.length !== 2 || args[0] !== '-Pk' || args[1] !== '.' || options.encoding !== 'utf8') throw Error('UNEXPECTED_DISK_MEASUREMENT_COMMAND')",
-  "  return { status: 0, stdout: 'Filesystem 1024-blocks Used Available Capacity Mounted on\\nfixture 8388608 4194304 ' + process.env.URAI_TEST_AVAILABLE_KB + ' 50% /\\n', stderr: '' }",
+  "  return { status: 0, stdout: 'Filesystem 1024-blocks Used Available Capacity Mounted on\nfixture 8388608 4194304 ' + process.env.URAI_TEST_AVAILABLE_KB + ' 50% /\n', stderr: '' }",
   '}',
   'syncBuiltinESMExports()',
   `await import(${JSON.stringify(pathToFileURL(script).href)})`,
-].join('\\n')
+].join('\n')
 
 function preflight(availableKb, minimumMb = '4096') {
   return spawnSync(process.execPath, ['--input-type=module', '--eval', mockProbe], {
