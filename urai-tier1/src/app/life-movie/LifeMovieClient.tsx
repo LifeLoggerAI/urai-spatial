@@ -12,6 +12,7 @@ import { useReplayMemoryVisibility } from '@/spatial/memory/useReplayMemoryVisib
 import { createReplayMediaSession, initialReplayVideoSnapshot, type ReplayVideoSession } from '../replay/replayMediaSession'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { lifeMovieReplayHref, type LifeMovieRuntimeChapter } from '@/spatial/life-movie/lifeMovieRuntimeContract'
+import { lifeMovieRequestCurrent, lifeMovieRouteScope, lifeMovieSignInHref } from '@/spatial/life-movie/lifeMovieRouteScope'
 import { useLifeMovieRuntimeManifest } from '@/spatial/life-movie/useLifeMovieRuntimeManifest'
 import { captionSegmentForMediaTime } from '@/spatial/life-movie/lifeMovieCaptionTimeline'
 import { revokeLifeMovieManifest, saveLifeMovieManifest } from '@/spatial/life-movie/lifeMovieManifestOperations'
@@ -43,12 +44,15 @@ export default function LifeMovieClient() {
   const [identityReady, setIdentityReady] = useState(false)
   const requestedMemoryId = identity.memoryId
   const requestedMovieId = identity.movieId
+  const requestedScope = lifeMovieRouteScope(requestedMovieId, requestedMemoryId)
   const runtimeManifest = useLifeMovieRuntimeManifest(identityReady ? requestedMovieId : null)
   const reducedMotion = useReducedMotion()
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const ownerEpoch = useRef(0)
   const previousOwner = useRef<string | null | undefined>(undefined)
   const [loadedEpoch, setLoadedEpoch] = useState(-1)
+  const [loadedScope, setLoadedScope] = useState<string | null>(null)
+  const previousRouteScope = useRef<string | null>(null)
   const [memories, setMemories] = useState<SelectedMemory[]>([])
   const [state, setState] = useState<MovieState>({ kind: 'auth-loading', message: 'Checking private identity…' })
   const [activeIndex, setActiveIndex] = useState(0)
@@ -75,6 +79,7 @@ export default function LifeMovieClient() {
     setPlaying(false)
     setMemories([])
     setLoadedEpoch(-1)
+    setLoadedScope(null)
     setActiveIndex(0)
     setMediaSnapshot(initialReplayVideoSnapshot())
   }, [])
@@ -83,16 +88,22 @@ export default function LifeMovieClient() {
   useEffect(() => {
     const hydrateIdentity = () => {
       const params = new URLSearchParams(window.location.search)
-      setIdentity({
-        memoryId: sanitizeMemoryId(params.get('memoryId')),
-        movieId: sanitizeMemoryId(params.get('movieId')),
-      })
+      const nextMemoryId = sanitizeMemoryId(params.get('memoryId'))
+      const nextMovieId = sanitizeMemoryId(params.get('movieId'))
+      const nextScope = lifeMovieRouteScope(nextMovieId, nextMemoryId)
+      if (previousRouteScope.current !== null && previousRouteScope.current !== nextScope) {
+        // A history transition withdraws old media before React's effect
+        // cleanup or the new Firestore request is scheduled.
+        revokeOwnerPlayback()
+      }
+      previousRouteScope.current = nextScope
+      setIdentity({ memoryId: nextMemoryId, movieId: nextMovieId })
       setIdentityReady(true)
     }
     hydrateIdentity()
     window.addEventListener('popstate', hydrateIdentity)
     return () => window.removeEventListener('popstate', hydrateIdentity)
-  }, [])
+  }, [revokeOwnerPlayback])
 
   useEffect(() => {
     if (!firebasePublicEnvReady) {
@@ -123,7 +134,19 @@ export default function LifeMovieClient() {
     if (requestedMovieId && runtimeManifest.status === 'loading') return
     let cancelled = false
     const epoch = ownerEpoch.current
-    const isCurrentOwner = () => !cancelled && ownerEpoch.current === epoch && getUraiAuth().currentUser?.uid === user.uid
+    const expected = { ownerId: user.uid, ownerEpoch: epoch, routeScope: requestedScope }
+    const isCurrentOwner = () => {
+      if (cancelled) return false
+      const params = new URLSearchParams(window.location.search)
+      return lifeMovieRequestCurrent(expected, {
+        ownerId: getUraiAuth().currentUser?.uid ?? null,
+        ownerEpoch: ownerEpoch.current,
+        routeScope: lifeMovieRouteScope(
+          sanitizeMemoryId(params.get('movieId')),
+          sanitizeMemoryId(params.get('memoryId')),
+        ),
+      })
+    }
     setMemories([])
     setActiveIndex(0)
     setPlaying(false)
@@ -163,6 +186,7 @@ export default function LifeMovieClient() {
         if (!isCurrentOwner()) return
         setMemories(parsed)
         setLoadedEpoch(epoch)
+        setLoadedScope(requestedScope)
         if (requestedMovieId && requestedMemoryId) {
           const resumeIndex = parsed.findIndex((memory) => memory.id === requestedMemoryId)
           if (resumeIndex >= 0) setActiveIndex(resumeIndex)
@@ -179,9 +203,23 @@ export default function LifeMovieClient() {
     })()
 
     return () => { cancelled = true }
-  }, [identityReady, requestedMemoryId, requestedMovieId, runtimeManifest, user])
+  }, [identityReady, requestedMemoryId, requestedMovieId, requestedScope, runtimeManifest, user])
 
-  const active = user && loadedEpoch === ownerEpoch.current ? memories[activeIndex] ?? null : null
+  const currentRouteScope = () => {
+    if (typeof window === 'undefined') return null
+    const params = new URLSearchParams(window.location.search)
+    return lifeMovieRouteScope(sanitizeMemoryId(params.get('movieId')), sanitizeMemoryId(params.get('memoryId')))
+  }
+  const currentUserId = typeof window !== 'undefined' && firebasePublicEnvReady
+    ? getUraiAuth().currentUser?.uid ?? null
+    : null
+  const actorAndRouteCurrent = () => !!user && currentUserId === user.uid && currentRouteScope() === requestedScope
+  const manifestCurrent = !requestedMovieId
+    || (runtimeManifest.status === 'ready' && runtimeManifest.manifest?.ownerId === user?.uid)
+  const active = actorAndRouteCurrent() && manifestCurrent
+    && loadedEpoch === ownerEpoch.current && loadedScope === requestedScope
+    ? memories[activeIndex] ?? null
+    : null
   const visibility = useReplayMemoryVisibility(active)
   const activeChapter = requestedMovieId && active && runtimeManifest.status === 'ready' && runtimeManifest.manifest
     ? runtimeManifest.manifest.chapters.find((chapter) => chapter.memoryId === active.id) ?? null
@@ -216,12 +254,12 @@ export default function LifeMovieClient() {
     }
   }, [media?.url, timedSource])
   const togglePlayback = useCallback(() => {
-    if (expectsPrivateSource && ownedPlayback.status !== 'ready') return
+    if (!active || !actorAndRouteCurrent() || (expectsPrivateSource && ownedPlayback.status !== 'ready')) return
     if (timedSource) {
       if (playing) mediaSession.current?.pause()
       else void mediaSession.current?.play()
     } else setPlaying(value => !value)
-  }, [expectsPrivateSource, ownedPlayback.status, playing, timedSource])
+  }, [active, requestedScope, user, expectsPrivateSource, ownedPlayback.status, playing, timedSource])
   const chapterDurationMs = useMemo(() => {
     if (!active) return 8000
     const derived = Math.round(active.replayManifest.durationMs / Math.max(1, active.replayManifest.segments.length))
@@ -251,16 +289,16 @@ export default function LifeMovieClient() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.target instanceof Element && event.target.closest('button,a,input,textarea,select,video,audio')) return
-      if (event.key === ' ' && memories.length) {
+      if (event.key === ' ' && active && actorAndRouteCurrent()) {
         event.preventDefault()
         togglePlayback()
       }
-      if (event.key === 'ArrowRight' && memories.length) {
+      if (event.key === 'ArrowRight' && active && actorAndRouteCurrent()) {
         event.preventDefault()
         setPlaying(false)
         setActiveIndex((index) => Math.min(memories.length - 1, index + 1))
       }
-      if (event.key === 'ArrowLeft' && memories.length) {
+      if (event.key === 'ArrowLeft' && active && actorAndRouteCurrent()) {
         event.preventDefault()
         setPlaying(false)
         setActiveIndex((index) => Math.max(0, index - 1))
@@ -268,14 +306,15 @@ export default function LifeMovieClient() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [memories.length, togglePlayback])
+  }, [active, requestedScope, user, togglePlayback])
 
-  if (!identityReady || user === undefined || state.kind === 'auth-loading' || state.kind === 'loading') {
+  if (!identityReady || user === undefined || state.kind === 'auth-loading' || state.kind === 'loading'
+      || (user && state.kind === 'ready' && loadedScope !== requestedScope)) {
     return <main data-testid="life-movie-runtime" data-state={state.kind}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Your private sequence will open after identity and memory access are checked."><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-loading" as="div" /></MemoryExperienceState></main>
   }
 
   if (!user || state.kind === 'unauthenticated') {
-    return <main data-testid="life-movie-runtime" data-state="unauthenticated"><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Sign in to open a sequence of your own memories. No personal memory content is displayed here."><a href="/login?returnTo=%2Flife-movie">Continue securely</a><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-unavailable" as="div" /></MemoryExperienceState></main>
+    return <main data-testid="life-movie-runtime" data-state="unauthenticated"><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Sign in to open a sequence of your own memories. No personal memory content is displayed here."><a href={lifeMovieSignInHref(requestedMovieId, requestedMemoryId)}>Continue securely</a><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-unavailable" as="div" /></MemoryExperienceState></main>
   }
   if (active && visibility !== 'visible') {
     return <main data-testid="life-movie-runtime" data-state={visibility === 'loading' ? 'loading' : 'unavailable'}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message="This Replay memory is currently unavailable." guidance="Return to Life Map to choose an available memory. This sequence cannot display the unavailable chapter."><a href="/life-map">Return to Life Map</a></MemoryExperienceState></main>
@@ -286,7 +325,7 @@ export default function LifeMovieClient() {
   }
 
   const enterReplay = () => {
-    if (!active) return
+    if (!active || !actorAndRouteCurrent()) return
     const href = activeChapter
       ? lifeMovieReplayHref(activeChapter)
       : `/replay?memoryId=${encodeURIComponent(active.id)}&from=life-movie`
@@ -306,7 +345,13 @@ export default function LifeMovieClient() {
   }
 
   const saveSequence = async () => {
-    if (!memories.length || manifestAction.kind === 'working') return
+    if (!active || !actorAndRouteCurrent() || manifestAction.kind === 'working') return
+    const actionEpoch = ownerEpoch.current
+    const actionOwner = user?.uid ?? null
+    const actionCurrent = () => lifeMovieRequestCurrent(
+      { ownerId: actionOwner, ownerEpoch: actionEpoch, routeScope: requestedScope },
+      { ownerId: getUraiAuth().currentUser?.uid ?? null, ownerEpoch: ownerEpoch.current, routeScope: currentRouteScope() ?? '' },
+    )
     const movieId = requestedMovieId ?? `life-movie-${Date.now().toString(36)}`
     setPlaying(false)
     setManifestAction({ kind: 'working', message: requestedMovieId ? 'Updating private Life Movie…' : 'Saving private Life Movie…' })
@@ -322,6 +367,7 @@ export default function LifeMovieClient() {
           order: index,
         })),
       })
+      if (!actionCurrent()) return
       if (!requestedMovieId) {
         const next = new URL('/life-movie', window.location.origin)
         next.searchParams.set('movieId', movieId)
@@ -331,19 +377,26 @@ export default function LifeMovieClient() {
       }
       setManifestAction({ kind: 'idle', message: 'Private Life Movie updated.' })
     } catch (error) {
-      setManifestAction({ kind: 'error', message: error instanceof Error ? error.message : 'Life Movie could not be saved.' })
+      if (actionCurrent()) setManifestAction({ kind: 'error', message: error instanceof Error ? error.message : 'Life Movie could not be saved.' })
     }
   }
 
   const revokeSequence = async () => {
-    if (!requestedMovieId || manifestAction.kind === 'working') return
+    if (!requestedMovieId || !active || !actorAndRouteCurrent() || manifestAction.kind === 'working') return
+    const actionEpoch = ownerEpoch.current
+    const actionOwner = user?.uid ?? null
+    const actionCurrent = () => lifeMovieRequestCurrent(
+      { ownerId: actionOwner, ownerEpoch: actionEpoch, routeScope: requestedScope },
+      { ownerId: getUraiAuth().currentUser?.uid ?? null, ownerEpoch: ownerEpoch.current, routeScope: currentRouteScope() ?? '' },
+    )
     setPlaying(false)
     setManifestAction({ kind: 'working', message: 'Removing private Life Movie manifest…' })
     try {
       await revokeLifeMovieManifest(requestedMovieId)
+      if (!actionCurrent()) return
       window.location.assign('/life-movie')
     } catch (error) {
-      setManifestAction({ kind: 'error', message: error instanceof Error ? error.message : 'Life Movie could not be removed.' })
+      if (actionCurrent()) setManifestAction({ kind: 'error', message: error instanceof Error ? error.message : 'Life Movie could not be removed.' })
     }
   }
 

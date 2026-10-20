@@ -143,3 +143,13 @@ test('Life Movie manifest presentation is scoped to the requested movie and curr
   assert.match(hook, /setResult\(parseLifeMovieRuntimeManifest\(snapshot\.data\(\), user\.uid\), user\.uid\)/)
   assert.match(hook, /return scoped\.result/)
 })
+
+test('Life Movie bounds private memory playback to exact route, owner and history epoch', () => {
+  assert.match(client, /previousRouteScope\.current !== nextScope/)
+  assert.match(client, /revokeOwnerPlayback\(\)/)
+  assert.match(client, /loadedScope === requestedScope/)
+  assert.match(client, /getUraiAuth\(\)\.currentUser\?\.uid/)
+  assert.match(client, /lifeMovieRequestCurrent\(expected, \{/)
+  assert.match(client, /if \(!actionCurrent\(\)\) return/)
+  assert.match(client, /lifeMovieSignInHref\(requestedMovieId, requestedMemoryId\)/)
+})
