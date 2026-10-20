@@ -1,2 +1,14 @@
 # Unified diff context lines intentionally contain a single leading space.
 patches/*.patch whitespace=-blank-at-eol
+
+# Byte-pinned authored normal-repair evidence and meshopt codecs:
+# raw SHA-256 integrity checks must read the exact committed bytes on Windows.
+scripts/vendor/meshopt_decoder.module.mjs -text
+scripts/vendor/meshopt_encoder.module.mjs -text
+operations/assets/normal-repair-receipts/home-entry-chamber-v1.json -text
+
+# Source extractors in the original memory and Adam contract tests use
+# literal LF boundaries; prevent core.autocrlf from changing their input.
+apps/functions/src/privateLifeModelReview.ts text eol=lf
+urai-tier1/src/spatial/adam/adamClient.ts text eol=lf
+urai-tier1/src/spatial/adam/AdamPresenceRuntime.tsx text eol=lf
