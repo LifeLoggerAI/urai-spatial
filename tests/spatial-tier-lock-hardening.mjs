@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { selectSignedOutLifeMapGate } from './spatial-signed-out-lifemap-gate.mjs';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
@@ -39,11 +40,11 @@ async function waitForServer(url, timeoutMs = 90000) {
 
 function startServer() {
   if (USE_EXISTING) return null;
-  const child = spawn('pnpm', ['--filter', 'urai-tier1', 'dev', '--port', '3000'], {
+  const child = spawn(process.execPath, ['scripts/run-pnpm.mjs', '--filter', 'urai-tier1', 'dev', '--port', '3000'], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1' },
     stdio: 'inherit',
-    shell: process.platform === 'win32',
+    shell: false,
   });
   child.on('exit', (code) => {
     if (code && code !== 0) console.error(`URAI Spatial dev server exited with ${code}`);
@@ -193,8 +194,8 @@ async function runRaceConditions(page, stage, report) {
 async function runDataStates(page, _legacyStage, report) {
   // Signed-out owner data must remain absent until an explicit demo is opened.
   await page.goto(BASE_URL + '/life-map', { waitUntil: 'domcontentloaded' });
-  const gate = page.getByTestId('urai-r3f-canonical-lifemap');
-  await expectAttr(gate, 'data-life-map-access', 'signed-out', 30000);
+  const gate = selectSignedOutLifeMapGate(page);
+  await expectVisible(gate, 'signed-out Life Map WebGL or fallback', 30000);
   await expectAttr(gate, 'data-private-memory-mounted', 'false');
   await screenshot(page, report, 'signed-out-life-map');
 
