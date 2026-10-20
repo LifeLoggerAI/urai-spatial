@@ -2,6 +2,7 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
+import { adamLocalEmulatorRewrites } from './scripts/adam-local-functions-proxy.mjs';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const isFirebaseStaticExport = process.env.URAI_FIREBASE_STATIC_EXPORT === "true";
@@ -53,7 +54,7 @@ const nextConfig: NextConfig = {
       }
     : {
         async rewrites() {
-          return [{ source: "/home", destination: "/" }];
+          return [{ source: "/home", destination: "/" }, ...adamLocalEmulatorRewrites()];
         },
       }),
   turbopack: {
