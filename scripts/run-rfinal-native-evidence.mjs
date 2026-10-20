@@ -12,6 +12,7 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { once } from 'node:events'
+import { inspectVisualPng } from './visual-png-integrity.mjs'
 import { pathToFileURL } from 'node:url'
 
 export const CONTROLLER = Object.freeze({
@@ -158,9 +159,13 @@ export function verifyVisualBrowserArtifacts(evidenceDir) {
       continue
     }
     try {
-      if (!inside(dir, file) || !existsSync(file) || !statSync(file).isFile() ||
-          statSync(file).size <= 2048) {
+      if (!inside(dir, file) || !existsSync(file) || !statSync(file).isFile()) {
         failures.push('VISUAL_CAPTURE_MISSING_OR_EMPTY:' + name)
+        continue
+      }
+      const verifiedPng = inspectVisualPng(file)
+      if (!verifiedPng.ok) {
+        failures.push('VISUAL_CAPTURE_INVALID_PNG:' + name + ':' + verifiedPng.reason)
         continue
       }
       capturesVerified += 1
