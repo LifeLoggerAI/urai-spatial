@@ -541,7 +541,10 @@ async function main() {
     receipt.finishedAt=new Date().toISOString()
     saveReceipt(receiptPath,receipt)
     console.log('[URAI] evidence: '+receiptPath)
-    if(!receipt.fullCurrentHeadGreen)process.exitCode=1
+    // A pinned, byte-verified full matrix has its own exit status. A moving
+    // integration branch cannot turn that snapshot into CURRENT_RELEASE_HEAD_GREEN.
+    // Keep original live-head mode strict and preserve separate release flags.
+    if(!(cfg.pinnedSha ? receipt.pinnedCandidateVerified : receipt.fullCurrentHeadGreen))process.exitCode=1
   }
 }
 
