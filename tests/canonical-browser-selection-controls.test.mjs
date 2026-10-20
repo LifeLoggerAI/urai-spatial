@@ -47,3 +47,11 @@ test('browser still verifies exact demo manifest and private denial', () => {
   assert.match(browser, /expectAttr\(focus, 'data-manifest-id', DEMO_MANIFEST\)/)
   assert.match(browser, /expectAttr\(gate, 'data-private-memory-mounted', 'false'\)/)
 })
+
+test('browser suite receipts remain separate so later passes cannot overwrite camera failure evidence', () => {
+  assert.match(browser, /function persistBrowserReport\(report\)/)
+  assert.match(browser, /spatial-tier-lock-hardening-report-\$\{suiteName\}\.json/)
+  assert.match(browser, /persistBrowserReport\(report\)/)
+  const calls = browser.match(/persistBrowserReport\(report\);/g) || []
+  assert.equal(calls.length, 2, 'success and error paths must both write distinct suite evidence')
+})
