@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { runPython3 } from '../../scripts/python3-runtime.mjs'
 import { NativeGoogleSignInUnavailable, performUraiAppleSignIn, performUraiGoogleSignIn } from '../src/lib/firebase/googleSignInPolicy.ts'
 import { configureIosSource, validateIosFirebaseConfiguration } from '../../scripts/prepare-ios-shell.mjs'
 
@@ -63,7 +64,7 @@ test('iOS source generator configures entitlements and real plist membership wit
     assert.match(await fs.readFile(path.join(source, 'App.entitlements'), 'utf8'), /com.apple.developer.applesignin/)
     assert.equal(receipt.nativeAppleAuthConfigured, true); assert.equal(receipt.providerEnabledVerified, false)
     assert.equal(await fs.readFile(path.join(source, 'GoogleService-Info.plist'), 'utf8'), configText)
-    const checked = spawnSync('python3', ['-c', 'import plistlib,sys;d=plistlib.load(open(sys.argv[1],"rb"));assert d["NSAppTransportSecurity"]["NSAllowsArbitraryLoads"]==False;assert d["CFBundleURLTypes"][0]["CFBundleURLSchemes"]==[sys.argv[2]]', path.join(source, 'Info.plist'), firebaseConfig().REVERSED_CLIENT_ID])
+    const checked = runPython3( ['-c', 'import plistlib,sys;d=plistlib.load(open(sys.argv[1],"rb"));assert d["NSAppTransportSecurity"]["NSAllowsArbitraryLoads"]==False;assert d["CFBundleURLTypes"][0]["CFBundleURLSchemes"]==[sys.argv[2]]', path.join(source, 'Info.plist'), firebaseConfig().REVERSED_CLIENT_ID])
     assert.equal(checked.status, 0)
   } finally { await fs.rm(dir, { recursive: true, force: true }) }
 })
