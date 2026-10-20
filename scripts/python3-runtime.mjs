@@ -1,8 +1,23 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import os from 'node:os'
 import { spawnSync } from 'node:child_process'
 
 const probeProgram = 'import sys, zipfile, plistlib, json; assert sys.version_info >= (3, 10); print("URAI_PYTHON3_OK")'
+
+function windowsPortableCandidates(env) {
+  const home = env.USERPROFILE || os.homedir()
+  const parent = path.join(home, 'Downloads', 'UrAi-Python3')
+  try {
+    return fs.readdirSync(parent, { withFileTypes: true })
+      .filter(entry => entry.isDirectory() && /^python-3\\.[0-9]+\\.[0-9]+-embeddable-amd64$/i.test(entry.name))
+      .sort((a, b) => b.name.localeCompare(a.name))
+      .slice(0, 8)
+      .map(entry => path.join(parent, entry.name, 'python.exe'))
+      .filter(candidate => { try { return fs.statSync(candidate).isFile() } catch { return false } })
+      .map(command => ({ command, prefix: [] }))
+  } catch { return [] }
+}
 
 // A Windows Store execution alias may exist and still fail with code 9009.
 // Require a real Python 3 interpreter with ZIP and plist support, never a
@@ -17,7 +32,7 @@ export function resolvePython3({ env = process.env, platform = process.platform,
   const candidates = explicit
     ? [{ command: explicit, prefix: [] }]
     : platform === 'win32'
-      ? [{ command: 'py', prefix: ['-3'] }, { command: 'python3', prefix: [] }, { command: 'python', prefix: [] }]
+      ? [{ command: 'py', prefix: ['-3'] }, { command: 'python3', prefix: [] }, { command: 'python', prefix: [] }, ...windowsPortableCandidates(env)]
       : [{ command: 'python3', prefix: [] }, { command: 'python', prefix: [] }]
   for (const candidate of candidates) {
     try {
