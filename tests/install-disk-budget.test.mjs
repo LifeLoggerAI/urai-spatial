@@ -1,25 +1,31 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import path from 'node:path'
 import test from 'node:test'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const script = fileURLToPath(new URL('../scripts/check-install-disk-space.mjs', import.meta.url))
 
+// Patch Node's built-in child_process only in the disposable test subprocess.
+// Production retains its real df probe and unchanged 4096-MB install threshold.
+// On Windows a temporary Unix '#!/bin/sh' df shim is not executable by spawnSync.
+const mockProbe = [
+  "import { createRequire, syncBuiltinESMExports } from 'node:module'",
+  'const require = createRequire(import.meta.url)',
+  "const childProcess = require('node:child_process')",
+  'childProcess.spawnSync = (command, args, options) => {',
+  "  if (command !== 'df' || args.length !== 2 || args[0] !== '-Pk' || args[1] !== '.' || options.encoding !== 'utf8') throw Error('UNEXPECTED_DISK_MEASUREMENT_COMMAND')",
+  "  return { status: 0, stdout: 'Filesystem 1024-blocks Used Available Capacity Mounted on\\nfixture 8388608 4194304 ' + process.env.URAI_TEST_AVAILABLE_KB + ' 50% /\\n', stderr: '' }",
+  '}',
+  'syncBuiltinESMExports()',
+  `await import(${JSON.stringify(pathToFileURL(script).href)})`,
+].join('\\n')
+
 function preflight(availableKb, minimumMb = '4096') {
-  const directory = mkdtempSync(path.join(tmpdir(), 'urai-install-disk-'))
-  try {
-    const df = path.join(directory, 'df')
-    writeFileSync(df, '#!/bin/sh\nprintf "Filesystem 1024-blocks Used Available Capacity Mounted on\\nfixture 8388608 4194304 %s 50%% /\\n" "$URAI_TEST_AVAILABLE_KB"\n', { mode: 0o755 })
-    return spawnSync(process.execPath, [script], {
-      encoding: 'utf8',
-      env: { ...process.env, PATH: `${directory}:${process.env.PATH}`, URAI_TEST_AVAILABLE_KB: String(availableKb), URAI_MIN_INSTALL_FREE_MB: minimumMb },
-    })
-  } finally {
-    rmSync(directory, { recursive: true, force: true })
-  }
+  return spawnSync(process.execPath, ['--input-type=module', '--eval', mockProbe], {
+    encoding: 'utf8',
+    shell: false,
+    env: { ...process.env, URAI_TEST_AVAILABLE_KB: String(availableKb), URAI_MIN_INSTALL_FREE_MB: minimumMb },
+  })
 }
 
 test('zero available bytes fail the unchanged default install budget', () => {
