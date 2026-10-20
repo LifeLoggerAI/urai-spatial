@@ -54,7 +54,7 @@ async function startServer() {
   // other native stages. This remains the real development/production server.
   const child = spawn(process.execPath, [
     'scripts/run-pnpm.mjs', '--filter', 'urai-tier1',
-    serverScript, '--port', String(FALLBACK_PORT),
+    serverScript, '--hostname', '127.0.0.1', '--port', String(FALLBACK_PORT),
   ], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1' },

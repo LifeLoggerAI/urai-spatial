@@ -206,3 +206,18 @@ test('audio-ended cleanup stays fail-closed if frame cancellation faults',async(
   assert.equal(h.medias[0].paused,true)
   assert.deepEqual(h.revoked,h.urls)
 })
+
+test('verified synthetic Founder playback preserves the captured Urdu locale', async () => {
+  const locales = []
+  const h = harness({ createAudio: (_url, locale) => {
+    locales.push(locale)
+    const media = new Media()
+    media.lang = locale
+    return media
+  } })
+  try {
+    assert.equal(await h.bridge.start({ blob: SAMPLE, evidence: evidence(), locale: 'ur-PK' }), true)
+    assert.deepEqual(locales, ['ur-PK'])
+    assert.equal(h.bridge.isPlaying(), true)
+  } finally { h.bridge.dispose() }
+})

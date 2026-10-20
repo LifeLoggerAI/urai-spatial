@@ -18,7 +18,7 @@ function runCase(javaPresent, emulatorCode, staticShouldFail, overrides = {}) {
     const packageDir = path.join(dir,'node_modules','firebase-tools')
     mkdirSync(path.join(packageDir,'bin'),{recursive:true})
     writeFileSync(path.join(packageDir,'package.json'), JSON.stringify({ name:'firebase-tools', version:'0.0.0-fixture', bin:{firebase:'bin/firebase.js'}}))
-    writeFileSync(path.join(packageDir,'bin','firebase.js'), "process.stdout.write('EMULATOR_FIXTURE_RAN\\n'); process.exit(Number(process.env.URAI_FIXTURE_EMULATOR_EXIT||0));")
+    writeFileSync(path.join(packageDir,'bin','firebase.js'), "process.stdout.write('EMULATOR_FIXTURE_RAN\\n'); process.stdout.write('JAVA_PATH_FIRST='+process.env.PATH.split(require('node:path').delimiter)[0]+'\\n'); process.exit(Number(process.env.URAI_FIXTURE_EMULATOR_EXIT||0));")
     for(const name of ['assetManifests','privacyConsent','lifeModel']) {
       const t = path.join(dir,'tests',`firestore.${name}.rules.static.test.mjs`)
       mkdirSync(path.dirname(t),{recursive:true})
@@ -82,5 +82,14 @@ test('Java spawn permission failure cannot fall back to static checks',()=>{
   const r=runCase(false,0,false,{ javaProbe: "{ status: null, error: { code: 'EACCES' } }" })
   assert.notEqual(r.code,0,r.stdout+'\n'+r.stderr)
   assert.match(r.stderr,/FIRESTORE_TEST_JAVA_SPAWN_FAILED:EACCES/)
+  assert.doesNotMatch(r.stderr,/Running static Firestore rules boundary tests instead/)
+})
+
+test('explicit Java controls the Firebase CLI child PATH, not only the preflight probe',()=>{
+  const before = process.env.PATH
+  const r=runCase(true,0,true,{pinnedJava:process.execPath})
+  assert.equal(r.code,0,r.stdout+'\n'+r.stderr)
+  assert.ok(r.stdout.includes('JAVA_PATH_FIRST='+path.dirname(process.execPath)))
+  assert.equal(process.env.PATH,before,'parent environment must stay unchanged')
   assert.doesNotMatch(r.stderr,/Running static Firestore rules boundary tests instead/)
 })

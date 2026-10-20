@@ -9,7 +9,7 @@ const source = readFileSync(new URL('../scripts/run-optional-e2e.mjs', import.me
 
 test('optional E2E uses pinned workspace runner and no ambient pnpm shell', () => {
   assert.match(source, /run\(process\.execPath, \['scripts\/run-pnpm\.mjs', 'playwright:check'\]/)
-  assert.match(source, /run\(process\.execPath, \['tests\/spatial-lock\.mjs'\]/)
+  assert.match(source, /run\(process\.execPath, \['tests\/spatial-tier-lock-hardening\.mjs', '--suite=all'\]/)
   assert.match(source, /shell: false/)
   assert.match(source, /'--suite=all'/)
   assert.doesNotMatch(source, /\['tests\/spatial-lock\.mjs'\]/)
@@ -42,7 +42,7 @@ test('passing Playwright probe executes existing browser E2E', () => {
 test('failed Playwright probe remains a CI failure', () => {
   const r=fixture(8,0)
   assert.notEqual(r.status,0)
-  assert.match(r.stderr,/Playwright is required in CI/)
+  assert.match(r.stderr,/Real Playwright browser acceptance is required/)
   assert.doesNotMatch(r.stdout,/REAL_BROWSER_E2E_EXECUTED/)
 })
 test('genuine browser E2E failure remains failing', () => {

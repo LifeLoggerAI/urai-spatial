@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 import { selectSignedOutLifeMapGate } from './spatial-signed-out-lifemap-gate.mjs';
 import { disclosedSampleStar, selectedMemoryFocusAction } from './canonical-browser-selection-controls.mjs';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 
@@ -41,16 +41,31 @@ async function waitForServer(url, timeoutMs = 90000) {
 
 function startServer() {
   if (USE_EXISTING) return null;
-  const child = spawn(process.execPath, ['scripts/run-pnpm.mjs', '--filter', 'urai-tier1', 'dev', '--port', '3000'], {
+  const child = spawn(process.execPath, ['scripts/run-pnpm.mjs', '--filter', 'urai-tier1', 'dev', '--hostname', '127.0.0.1', '--port', '3000'], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1' },
     stdio: 'inherit',
     shell: false,
+    detached: process.platform !== 'win32',
   });
   child.on('exit', (code) => {
     if (code && code !== 0) console.error(`URAI Spatial dev server exited with ${code}`);
   });
   return child;
+}
+
+async function stopOwnedServer(child) {
+  if (!child || child.exitCode !== null) return;
+  if (process.platform === 'win32') {
+    // Only the process tree started by this harness, never an existing server.
+    spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, timeout: 15000 });
+  } else {
+    try { process.kill(-child.pid, 'SIGTERM'); } catch { child.kill('SIGTERM'); }
+  }
+  await Promise.race([new Promise(resolve => child.once('exit', resolve)), sleep(5000)]);
+  if (child.exitCode === null) {
+    try { process.kill(-child.pid, 'SIGKILL'); } catch { child.kill('SIGKILL'); }
+  }
 }
 
 function collectConsole(page, report) {
@@ -356,12 +371,17 @@ async function runDataStates(page, _legacyStage, report) {
 async function runVisual(page, stage, report) {
   await visitCanonicalRoute(page, '/home');
   await expectVisible(page.getByTestId('urai-persistent-world-shell'), 'current Home', 30000);
+  await expectAttr(page.getByTestId('home-visible-navigable-sanctuary-world'), 'data-home-assets-ready', 'true', 60000);
   await screenshot(page, report, 'real-home-desktop');
   await openDisclosedLifeMap(page);
   await screenshot(page, report, 'real-lifemap-desktop');
   await enterDemoFocus(page);
+  await expectAttr(page.getByTestId('urai-final-focus-chamber'), 'data-focus-input-ready', 'true', 60000);
   await screenshot(page, report, 'real-focus-desktop');
   await enterDemoReplay(page);
+  const replay = page.getByTestId('cinematic-replay-client');
+  await expectAttr(replay, 'data-replay-media-ready', 'true', 60000);
+  await expectAttr(replay, 'data-replay-cc0-understory-ready', 'true', 60000);
   await screenshot(page, report, 'real-replay-desktop');
   await page.setViewportSize({ width: 390, height: 844 });
   await visitCanonicalRoute(page, '/life-map?demo=1&overview=1');
@@ -370,6 +390,29 @@ async function runVisual(page, stage, report) {
   await visitCanonicalRoute(page, '/mirror');
   await expectVisible(page.getByTestId('mirror-bare-entry'), 'real Mirror disclosure', 30000);
   await screenshot(page, report, 'real-mirror-mobile');
+  // Real touch events in a touch-enabled browser context, not desktop clicks
+  // relabeled as mobile/device acceptance. Hardware review remains separate.
+  const mobileContext = await page.context().browser().newContext({
+    viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true,
+    reducedMotion: 'reduce',
+  });
+  try {
+    const mobile = await mobileContext.newPage();
+    collectConsole(mobile, report);
+    await visitCanonicalRoute(mobile, '/home');
+    await expectAttr(mobile.getByTestId('home-visible-navigable-sanctuary-world'), 'data-home-assets-ready', 'true', 60000);
+    await screenshot(mobile, report, 'real-home-touch-portrait-reduced-motion');
+    await mobile.getByTestId('home-semantic-life-map').tap({ timeout: 15000 });
+    await mobile.waitForURL(/\/life-map(?:\/|\?|$)/, { timeout: 40000 });
+    const mobileGate = selectSignedOutLifeMapGate(mobile);
+    await expectVisible(mobileGate, 'touch navigation retains signed-out boundary', 30000);
+    await expectAttr(mobileGate, 'data-private-memory-mounted', 'false');
+    await mobile.setViewportSize({ width: 844, height: 390 });
+    await visitCanonicalRoute(mobile, '/home');
+    await expectAttr(mobile.getByTestId('home-visible-navigable-sanctuary-world'), 'data-home-assets-ready', 'true', 60000);
+    await screenshot(mobile, report, 'real-home-touch-landscape-reduced-motion');
+    report.checks.push({ name: 'Touch portrait/landscape and reduced-motion browser interaction; not physical-device acceptance', status: 'passed' });
+  } finally { await mobileContext.close(); }
   report.checks.push({name:'Rendered screenshots recorded; independent artistic acceptance remains separate',status:'captured-not-accepted'});
 }
 
@@ -419,7 +462,7 @@ async function run() {
     persistBrowserReport(report);
     throw error;
   } finally {
-    if (server) server.kill('SIGTERM');
+    await stopOwnedServer(server);
   }
 }
 

@@ -6,6 +6,8 @@ import ts from 'typescript'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import * as homeSkyInteraction from '../src/spatial/navigation/homeSkyInteraction.ts'
+import * as homeThresholdVisibility from '../src/spatial/layout/HomeThresholdVisibility.ts'
 
 // Execute production vegetation with explicit hook/GLTF adapters and real Three
 // geometry. This tests scene construction, never browser/GPU timing or pixels.
@@ -63,10 +65,15 @@ function mountVegetation(scene) {
     './HomeLivingOrbGeometry': { createLivingMemoryGeometry: unexpectedOrbWork, createMemoryFieldGeometry: unexpectedOrbWork, createMemoryFilamentGeometry: unexpectedOrbWork },
     './HomeAuthoredOrbLight': { createAuthoredOrbLightPresentation: unexpectedOrbWork, disposeAuthoredOrbLightPresentation: unexpectedOrbWork },
     './HomeSanctuaryPerimeterGrove': unexpectedPerimeterWork,
+    './HomeThresholdVisibility': homeThresholdVisibility,
+    './HomeCC0ReviewMaterial': { HomeCC0ReviewMaterial: unexpectedPerimeterWork },
+    './HomeCC0ReviewShrubs': { HomeCC0ReviewShrubs: unexpectedPerimeterWork },
+    './HomeCC0ReviewRetainedGround': { HomeCC0ReviewRetainedGround: unexpectedPerimeterWork },
     './HomeWorldProduction.module.css': {},
     './HomeSanctuaryMaterials': {}, './HomeSanctuaryAssetPolicy': {},
     '@/app/home/orbStateController': {}, '@/spatial/navigation/EmbodiedNavigation': {},
     '@/spatial/navigation/HomeSkyAscentInteraction': {}, '@/spatial/store/useSceneStore': {},
+    '@/spatial/navigation/homeSkyInteraction': homeSkyInteraction,
     '@/spatial/world/worldEvents': {}, '@/spatial/accessibility/SensorySafeRuntime': {},
     '@/spatial/performance/useAdaptiveSpatialQuality': {}, '@/lib/i18n/useUraiLocale': {},
     '@/spatial/home/HomeInterpretiveSplat': { resolveHomeInterpretiveSplatAsset: () => null },

@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { createRequire } from 'node:module'
-import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path'
 
 const require = createRequire(import.meta.url)
 const run = (executable, args, options = {}) => spawnSync(executable, args, {
@@ -55,6 +55,13 @@ if (javaCheck.status === 0) {
       emulators: { ui: { enabled: false } },
     }))
     // A demo- project has no live Firebase resources, even on failed fallback.
+    // Firebase probes and starts `java` by name in its own subprocesses. The
+    // explicit executable must control that process tree, not just our probe.
+    const emulatorEnv = { ...process.env }
+    if (explicitJava) {
+      const pathKey = Object.keys(emulatorEnv).find(key => key.toLowerCase() === 'path') || 'PATH'
+      emulatorEnv[pathKey] = dirname(explicitJava) + delimiter + (emulatorEnv[pathKey] || '')
+    }
     const result = run(process.execPath, [
       firebaseBin,
       'emulators:exec',
@@ -62,7 +69,7 @@ if (javaCheck.status === 0) {
       '--project', 'demo-urai-rules',
       '--only', 'firestore',
       'node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs',
-    ])
+    ], { env: emulatorEnv })
     emulatorExitCode = result.status ?? 1
   } finally {
     rmSync(temporary, { recursive: true, force: true })

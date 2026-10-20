@@ -169,7 +169,14 @@ test('reviewed Windows sparse exclusions preserve real sources, codecs and Home 
     git(root, ['clone','-q','--no-checkout',origin,checked])
     git(checked, ['sparse-checkout','set','--no-cone',...WINDOWS_SAFE_SPARSE_PATTERNS])
     git(checked, ['-c','core.protectNTFS=false','checkout','-q','--detach','HEAD'])
-    assert.equal(git(checked, ['config','--local','--get','core.protectNTFS']).trim(), '')
+    // An absent Git config key returns 1, not 0. Inspect that expected
+    // absence directly; the success-only helper would reject a safe checkout.
+    const ntfs = spawnSync('git', ['config','--local','--get','core.protectNTFS'], {
+      cwd: checked, encoding: 'utf8', windowsHide: true,
+    })
+    assert.equal(ntfs.status, 1, 'NTFS override must not persist in local config')
+    assert.equal(ntfs.stdout, '')
+    assert.equal(ntfs.stderr, '')
     for (const entry of excluded)
       assert.equal(existsSync(path.join(checked,...entry.split('/'))),false,entry)
     for (const entry of required)
@@ -272,6 +279,7 @@ test('Replay tier5 server boots through pinned Node 22 workspace pnpm, never amb
   assert.match(replay, /spawn\(process\.execPath, \[/)
   assert.match(replay, /'scripts\/run-pnpm\.mjs', '--filter', 'urai-tier1'/)
   assert.match(replay, /shell: false/)
+  assert.match(replay, /serverScript, '--hostname', '127\.0\.0\.1', '--port'/)
   assert.doesNotMatch(replay, /spawn\('pnpm'/)
   assert.doesNotMatch(replay, /shell: process\.platform === 'win32'/)
   assert.match(replay, /if \(SERVER_MODE === 'production'\)/)
