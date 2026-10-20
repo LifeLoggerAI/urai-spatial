@@ -21,7 +21,11 @@ if (explicitJava && (!isAbsolute(explicitJava) || !existsSync(explicitJava))) {
 }
 const javaExecutable = explicitJava || (process.platform === 'win32' ? 'java.exe' : 'java')
 const javaCheck = spawnSync(javaExecutable, ['-version'], { stdio: 'ignore', shell: false })
-if (explicitJava && (javaCheck.error || javaCheck.status !== 0)) {
+// Only a missing Java executable (ENOENT) permits the static fallback.
+// An installed but broken Java runtime, or a permission/spawn error, must
+// remain a hard failure regardless of whether the Java path was explicit.
+const javaMissing = !explicitJava && javaCheck.error?.code === 'ENOENT'
+if (!javaMissing && (javaCheck.error || javaCheck.status !== 0)) {
   throw new Error('FIRESTORE_TEST_JAVA_SPAWN_FAILED:' + (javaCheck.error?.code || String(javaCheck.status)))
 }
 
