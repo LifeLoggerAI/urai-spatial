@@ -135,3 +135,11 @@ test('Life Movie is exposed by canonical launch and live certification surfaces'
   assert.match(strictLive, /\['life-movie', '\/life-movie'/)
   assert.match(strictLive, /Sign in to open your private Life Movie/)
 })
+
+test('Life Movie manifest presentation is scoped to the requested movie and current owner', () => {
+  assert.match(hook, /scoped\.movieId !== movieId/)
+  assert.match(hook, /scoped\.ownerId && typeof window !== 'undefined'/)
+  assert.match(hook, /getUraiAuth\(\)\.currentUser\?\.uid !== scoped\.ownerId/)
+  assert.match(hook, /setResult\(parseLifeMovieRuntimeManifest\(snapshot\.data\(\), user\.uid\), user\.uid\)/)
+  assert.match(hook, /return scoped\.result/)
+})
