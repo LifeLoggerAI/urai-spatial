@@ -55,3 +55,12 @@ test('browser suite receipts remain separate so later passes cannot overwrite ca
   const calls = browser.match(/persistBrowserReport\(report\);/g) || []
   assert.equal(calls.length, 2, 'success and error paths must both write distinct suite evidence')
 })
+
+test('painted sky pointer uses real browser mouse and retains physical camera proof', () => {
+  assert.match(browser, /await page\.mouse\.click\(/)
+  assert.doesNotMatch(browser, /await canvas\.click\(/)
+  assert.match(browser, /const cameraMovement = cameraHeights\.length > 1/)
+  assert.match(browser, /cameraMovement < 1/)
+  assert.match(browser, /cameraCheckpoint/)
+  assert.match(browser, /'home-sky-ascent-complete'/)
+})
