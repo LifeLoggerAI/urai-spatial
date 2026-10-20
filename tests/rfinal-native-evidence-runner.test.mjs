@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { CONTROLLER, STAGES, PINNED_FILES, inside, refuseProtectedOverlap,
   parseRemoteHead, verifyRefHead, formatCommand, safeVerificationEnvironment,
   REQUIRED_HTTP_ROUTES, assessHttpRoutes, WINDOWS_SAFE_SPARSE_PATTERNS,
@@ -206,4 +207,50 @@ test('NTFS early-path bypass is command-local, preceded by a fail-closed Git tre
   assert.match(source,/WINDOWS_UNEXCLUDED_UNSAFE_TREE_PATH/)
   assert.match(source,/'-c','core.protectNTFS=false'/)
   assert.doesNotMatch(source,/config','core.protectNTFS','false'/)
+})
+
+test('Windows pnpm importer keys normalize and fixture importer authority remains intact', () => {
+  const source=readFileSync(new URL('../scripts/check-lockfile-present.mjs',import.meta.url),'utf8')
+  assert.match(source,/dir\.replaceAll\('\\\\', '\/'\)/)
+  const root=mkdtempSync(path.join(os.tmpdir(),'urai-native-importer-'))
+  try {
+    const dirs=['apps/functions','packages/tier-locks','packages/release-tools','distribution/android-shell','distribution/ios-shell']
+    writeFileSync(path.join(root,'package.json'),JSON.stringify({name:'fixture',private:true}))
+    const entries=['  .: {}']
+    for(const dir of dirs){
+      const nested=path.join(root,...dir.split('/'))
+      mkdirSync(nested,{recursive:true})
+      writeFileSync(path.join(nested,'package.json'),JSON.stringify({name:'fixture-'+dir.replaceAll('/','-')}))
+      entries.push('  '+dir+': {}')
+    }
+    writeFileSync(path.join(root,'pnpm-workspace.yaml'),dirs.map(dir=>'  - '+dir).join('\n')+'\n')
+    writeFileSync(path.join(root,'pnpm-lock.yaml'),"lockfileVersion: '9.0'\nimporters:\n"+entries.join('\n')+'\n')
+    const checker=fileURLToPath(new URL('../scripts/check-lockfile-present.mjs',import.meta.url))
+    const run=spawnSync(process.execPath,[checker],{cwd:root,encoding:'utf8',windowsHide:true})
+    assert.equal(run.status,0,run.stdout+' '+run.stderr)
+  }finally{rmSync(root,{recursive:true,force:true})}
+})
+
+test('Firestore uses pinned CLI entry and retains one emulator script argv without shell',()=>{
+  const source=readFileSync(new URL('../scripts/run-firestore-rules-tests.mjs',import.meta.url),'utf8')
+  assert.match(source,/require\.resolve\('firebase-tools\/package\.json'\)/)
+  assert.match(source,/resolve\(dirname\(firebaseManifestPath\), firebaseEntry\)/)
+  assert.match(source,/run\(process\.execPath, \[/)
+  assert.match(source,/shell: false/)
+  assert.doesNotMatch(source,/shell: process\.platform === 'win32'/)
+  const command='node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs'
+  const dir=mkdtempSync(path.join(os.tmpdir(),'urai-firestore-argv-'))
+  try{
+    const capture=path.join(dir,'argv.cjs')
+    writeFileSync(capture,'process.stdout.write(JSON.stringify(process.argv.slice(2)))')
+    const run=spawnSync(process.execPath,[capture,'emulators:exec','--only','firestore',command],{encoding:'utf8',shell:false})
+    assert.equal(run.status,0,run.stderr)
+    assert.deepEqual(JSON.parse(run.stdout),['emulators:exec','--only','firestore',command])
+  }finally{rmSync(dir,{recursive:true,force:true})}
+})
+
+test('browser uses installed Playwright public API instead of hardcoded node_modules/index.js',()=>{
+  const browser=readFileSync(new URL('../tests/spatial-tier-lock-hardening.mjs',import.meta.url),'utf8')
+  assert.match(browser,/import \{ chromium \} from 'playwright'/)
+  assert.doesNotMatch(browser,/node_modules\/playwright\/index\.js/)
 })
