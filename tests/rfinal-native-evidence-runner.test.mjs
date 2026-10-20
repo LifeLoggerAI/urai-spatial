@@ -357,8 +357,9 @@ test('R-FINAL visual evidence requires each screenshot and never confers physica
     writeFileSync(path.join(dir, 'spatial-tier-lock-hardening-report-visual.json'),
       JSON.stringify({suite:'visual',checks:[{name:'visual',status:'passed'}],screenshots:captures}))
     const accepted = verifyVisualBrowserArtifacts(evidence)
-    assert.equal(accepted.passed, true)
-    assert.equal(accepted.capturesVerified, REQUIRED_VISUAL_CAPTURES.length)
+    assert.equal(accepted.passed, false, 'arbitrary 4096-byte fixtures must never qualify as real screenshots')
+    assert.equal(accepted.capturesVerified, 0)
+    assert.ok(accepted.failures.every(failure => failure.includes('VISUAL_CAPTURE_INVALID_PNG')))
     assert.match(accepted.scope, /not physical-device/)
     writeFileSync(captures[0], Buffer.alloc(10))
     assert.equal(verifyVisualBrowserArtifacts(evidence).passed, false)
