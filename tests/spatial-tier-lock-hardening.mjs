@@ -260,23 +260,23 @@ async function runDataStates(page, _legacyStage, report) {
 }
 
 async function runVisual(page, stage, report) {
-  const routes = [
-    ['home', '/home', 'visual-home-desktop'],
-    ['ascent', '/ascent', 'visual-ascent-desktop'],
-    ['life-map', '/life-map', 'visual-lifemap-desktop'],
-    ['focus', '/focus?manifestId=seed-memory-bloom', 'visual-focus-desktop'],
-    ['replay', '/replay?manifestId=seed-memory-bloom', 'visual-replay-desktop'],
-    ['mirror', '/mirror', 'visual-mirror-desktop'],
-  ];
-
-  for (const [mode, path, name] of routes) {
-    await gotoMode(page, stage, mode, path);
-    await screenshot(page, report, name);
-  }
-
+  await visitCanonicalRoute(page, '/home');
+  await expectVisible(page.getByTestId('urai-persistent-world-shell'), 'current Home', 30000);
+  await screenshot(page, report, 'real-home-desktop');
+  await openDisclosedLifeMap(page);
+  await screenshot(page, report, 'real-lifemap-desktop');
+  await enterDemoFocus(page);
+  await screenshot(page, report, 'real-focus-desktop');
+  await enterDemoReplay(page);
+  await screenshot(page, report, 'real-replay-desktop');
   await page.setViewportSize({ width: 390, height: 844 });
-  await gotoMode(page, stage, 'life-map', '/life-map');
-  await screenshot(page, report, 'visual-lifemap-mobile');
+  await visitCanonicalRoute(page, '/life-map?demo=1&overview=1');
+  await expectAttr(page.getByTestId('urai-true-3d-life-map'), 'data-life-map-source', 'explicit-demo', 40000);
+  await screenshot(page, report, 'real-life-map-mobile');
+  await visitCanonicalRoute(page, '/mirror');
+  await expectVisible(page.getByTestId('mirror-bare-entry'), 'real Mirror disclosure', 30000);
+  await screenshot(page, report, 'real-mirror-mobile');
+  report.checks.push({name:'Rendered screenshots recorded; independent artistic acceptance remains separate',status:'captured-not-accepted'});
 }
 
 async function run() {
@@ -287,7 +287,7 @@ async function run() {
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     collectConsole(page, report);
-    const stage = page.getByTestId('urai-scene-stage');
+    const stage = null; // Retained callback signature; real suites assert actual realm owners.
 
     const suites = {
       navigation: runNavigationStack,
