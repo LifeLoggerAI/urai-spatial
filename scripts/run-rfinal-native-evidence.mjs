@@ -458,8 +458,12 @@ async function main() {
     // source may lack its objects. The pinned commit was already proven inside
     // the original branch head before byte-safe checkout. A moved branch
     // stays explicitly non-current, without invalidating exact pinned tests.
-    if (cfg.pinnedSha && secondLiveHead !== remoteAtStart)
-      record('pinned_branch_drift_observed','INFO',{first:remoteAtStart,second:secondLiveHead})
+    if (cfg.pinnedSha && secondLiveHead !== remoteAtStart) {
+      receipt.pinnedBranchDriftObserved=true
+      receipt.liveHeadAtSecondCheck=secondLiveHead
+      saveReceipt(receiptPath,receipt)
+      console.log('[URAI] pinned_branch_drift_observed: INFO (pinned SHA remains the checkout)')
+    }
     record('remote_head_unchanged',secondLiveHead===remoteAtStart?'PASS':'PINNED_BRANCH_ADVANCED',
       {liveHeadAtStart:remoteAtStart,liveHeadAtSecondCheck:secondLiveHead,sourceHead:head})
     const dirty=await shortGit(['-C',source,'status','--porcelain','--untracked-files=no'],source,evidence,'tracked_status')
