@@ -7,6 +7,11 @@ import ts from 'typescript'
 // Execute the original hook, with only React scheduling and Firebase I/O mocked.
 const source = readFileSync(new URL('../src/spatial/life-movie/useLifeMovieRuntimeManifest.ts', import.meta.url), 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
+// Keep the asynchronous manifest state typed to every parser outcome, not typeof a loading fixture.
+assert.match(source, /type ManifestLoadState = LifeMovieManifestResult/)
+assert.match(source, /result: ManifestLoadState/)
+assert.match(source, /const publish = \(result: ManifestLoadState/)
+assert.doesNotMatch(source, /result: typeof LOADING/)
 function harness() {
   const auth = { currentUser: null }
   let saved, effect, authCallback, snapshotCallback
