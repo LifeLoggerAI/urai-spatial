@@ -284,7 +284,15 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
 
 export const savePossibleFuture = functions.https.onCall(async (data, context) => {
   const ownerId = uid(context); operationId(data?.operationId); const scenarioId = ensureScenarioId(data?.scenarioId)
-  await scenarioRef(ownerId, scenarioId).set({ status: 'saved', updatedAt: fv.serverTimestamp() }, { merge: true })
+  const ref = scenarioRef(ownerId, scenarioId)
+  await db.runTransaction(async (tx) => {
+    const snapshot = await tx.get(ref)
+    const current = snapshot.exists ? snapshot.data() : null
+    if (!current || current.ownerId !== ownerId || current.status === 'discarded') {
+      throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+    }
+    tx.update(ref, { status: 'saved', updatedAt: fv.serverTimestamp() })
+  })
   return { scenarioId, status: 'saved' }
 })
 
