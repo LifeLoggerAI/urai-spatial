@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { onAuthStateChanged } from 'firebase/auth'
 import { doc, onSnapshot } from 'firebase/firestore'
-import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
+import { firebasePublicEnvReady, getFirebaseDb, getUraiAuth } from '@/lib/firebase/client'
 import { parseLifeMovieRuntimeManifest, type LifeMovieManifestResult } from './lifeMovieRuntimeContract'
 
 const LOADING: LifeMovieManifestResult | { status: 'loading'; manifest: null; message: string } = {
@@ -31,7 +31,7 @@ export function useLifeMovieRuntimeManifest(movieId: string | null) {
       return () => { cancelled = true }
     }
 
-    const auth = getAuth(app)
+    const auth = getUraiAuth()
     const stop = onAuthStateChanged(auth, user => {
       if (cancelled) return
       detach()
