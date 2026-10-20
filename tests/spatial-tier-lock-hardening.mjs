@@ -256,17 +256,17 @@ async function provePhysicalHomeSkyAscent(page, report) {
     // Accept observation of either the physical ASCENT owner or the actual
     // Life Map route, but still require its exact home-sky camera checkpoint
     // and measured camera movement below before accepting the suite.
-    triggered = await Promise.race([
+    triggered = await Promise.any([
       page.waitForFunction(() => {
         const element = document.querySelector('[data-testid="home-visible-navigable-sanctuary-world"]');
         return element && (
           element.getAttribute('data-home-scene-phase') === 'ASCENT' ||
           element.getAttribute('data-home-portal-sequence')?.startsWith('life-map:')
         );
-      }, null, { timeout: 1600 }).then(() => true).catch(() => false),
-      page.waitForURL(/\/life-map(?:\/|\?|$)/, { timeout: 1600 }).then(() => true).catch(() => false),
-    ]);
-    if (!triggered && /\/life-map(?:\/|\?|$)/.test(new URL(page.url()).pathname)) triggered = true;
+      }, null, { timeout: 1600 }).then(() => true),
+      page.waitForURL(/\/life-map(?:\/|\?|$)/, { timeout: 1600 }).then(() => true),
+    ]).catch(() => false);
+    if (!triggered && new URL(page.url()).pathname === '/life-map') triggered = true;
     if (triggered) break;
   }
   if (!triggered) throw new Error('Real painted Home sky tap did not trigger physical ascent');
