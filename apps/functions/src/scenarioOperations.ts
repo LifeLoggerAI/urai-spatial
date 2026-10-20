@@ -73,7 +73,10 @@ async function resolveAuthorizedScenarioEvidence(ownerId: string, value: unknown
 
   if (memoryId && memoryPolicy.modelContext === true && ['granted', 'limited'].includes(String(memoryPolicy.mode ?? ''))) {
     const memory = await transaction.get(db.doc(`users/${ownerId}/memories/${memoryId}`))
-    if (memory.exists) {
+    const memoryRow = memory.exists ? memory.data() : null
+    if (memoryRow && (memoryRow.ownerId ?? memoryRow.userId) === ownerId
+      && memoryRow.deleted !== true && memoryRow.demo !== true && memoryRow.synthetic !== true
+      && !['pending','revoked'].includes(String(memoryRow.consentState ?? ''))) {
       evidenceRefs.push({
         id: `evr_memory_${createHash('sha256').update(memoryId).digest('hex').slice(0, 24)}`,
         truthRecordId: `memory:${memoryId}`,
@@ -90,7 +93,10 @@ async function resolveAuthorizedScenarioEvidence(ownerId: string, value: unknown
     for (const [kind, entityId] of [['person', personId], ['place', placeId]] as const) {
       if (!entityId) continue
       const entity = await transaction.get(db.doc(`users/${ownerId}/lifeEntities/${entityId}`))
-      if (!entity.exists) continue
+      const entityRow = entity.exists ? entity.data() : null
+      if (!entityRow || entityRow.ownerId !== ownerId || entityRow.kind !== kind
+        || entityRow.revoked === true || entityRow.synthetic === true
+        || ['superseded','revoked'].includes(String(entityRow.status ?? ''))) continue
       evidenceRefs.push({
         id: `evr_${kind}_${createHash('sha256').update(entityId).digest('hex').slice(0, 24)}`,
         truthRecordId: `life-entity:${entityId}`,
