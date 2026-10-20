@@ -50,6 +50,8 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   const memoryDestination = request.destination === 'life-map' || request.destination === 'focus'
     || request.destination === 'replay' || request.destination === 'council'
     || request.destination === 'life-movie'
+  // Neutral realms must not carry a previously selected private relationship.
+  const neutralDestination = request.destination === 'home' || request.destination === 'infrastructure-hub'
 
   for (const key of CONTEXT_KEYS) {
     // An old visual node is never an implicit private memory identity.
@@ -58,7 +60,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
     if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
     // Relationship hints from an old memory never scope a different selection.
-    if ((key === 'thread' || key === 'personId' || key === 'placeId') && selectedMemoryId && currentMemoryId && !sameMemory) continue
+    if ((key === 'thread' || key === 'personId' || key === 'placeId') && (neutralDestination || (selectedMemoryId && !sameMemory))) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
     }
@@ -72,11 +74,16 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('chapterId')
     target.searchParams.delete('demo')
   }
+  if (neutralDestination) {
+    target.searchParams.delete('thread')
+    target.searchParams.delete('personId')
+    target.searchParams.delete('placeId')
+  }
 
   if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
-  if (context?.threadId) target.searchParams.set('thread', context.threadId)
-  if (context?.personId) target.searchParams.set('personId', context.personId)
-  if (context?.placeId) target.searchParams.set('placeId', context.placeId)
+  if (!neutralDestination && context?.threadId) target.searchParams.set('thread', context.threadId)
+  if (!neutralDestination && context?.personId) target.searchParams.set('personId', context.personId)
+  if (!neutralDestination && context?.placeId) target.searchParams.set('placeId', context.placeId)
   if (memoryDestination && context?.replayManifestId && selectedMemoryId) target.searchParams.set('manifestId', context.replayManifestId)
   if (memoryDestination && context?.movieId) target.searchParams.set('movieId', context.movieId)
   if (memoryDestination && context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
