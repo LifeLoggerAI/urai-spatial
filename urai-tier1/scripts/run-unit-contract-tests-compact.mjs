@@ -192,6 +192,7 @@ const tests = [
   'tests/release-control-smoke-boundary-contract.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
   'tests/replay-source-media-behavior.test.mjs',
+  'tests/private-movie-reconnect-policy.test.mjs',
   'tests/replay-media-teardown-faults.test.mjs',
   'tests/replay-environment-details.test.mjs',
   'tests/replay-development-candidate-world.test.mjs',
