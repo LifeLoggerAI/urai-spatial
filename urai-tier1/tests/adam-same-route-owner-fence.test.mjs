@@ -15,7 +15,7 @@ function fixture() {
   let removed = false
   const state = { messages: ['PRIVATE_OWNER_A'], draft: 'PRIVATE_DRAFT_A', stream: 'PRIVATE_DELTA_A', aiConsent: true, voiceConsent: true }
   const setters = {
-    setMessages: value => { state.messages = value; events.push('messages') },
+    setMessages: value => { state.messages = Array.from(value); events.push('messages') },
     setMessage: value => { state.draft = value; events.push('draft') },
     setStreamedText: value => { state.stream = value; events.push('stream') },
     setStreamedLocale: value => { state.locale = value },
