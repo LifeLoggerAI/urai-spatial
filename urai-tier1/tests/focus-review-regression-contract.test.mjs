@@ -44,19 +44,27 @@ test('selected Memory Star arrival framing is carried into Focus without a hard 
   assert.match(focusClient, /reducedMotion.*DEFAULT_CAMERA|useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion/)
 })
 
-test('hard travel fallback preserves canonical replay identity and context', () => {
+test('hard travel fallback preserves same-memory replay identity but excludes stale cross-memory and neutral context', () => {
   for (const token of [
     'WORLD_TRAVEL_CONTEXT_KEYS',
+    "'memoryId'",
+    "'node'",
     "'thread'",
     "'personId'",
     "'placeId'",
     "'movieId'",
     "'chapterId'",
-    "target.searchParams.set('memoryId', nodeId)",
-    "target.searchParams.set('node', memoryId)",
+    "const selectedMemoryId = context?.memoryId ?? target.searchParams.get('memoryId')",
+    "const sameMemory = Boolean(selectedMemoryId && currentMemoryId && selectedMemoryId === currentMemoryId)",
+    "if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)",
+    "if (memoryDestination && context?.replayManifestId && selectedMemoryId) target.searchParams.set('manifestId', context.replayManifestId)",
   ]) assert.ok(worldEvents.includes(token), `world fallback missing ${token}`)
-  assert.match(worldEvents, /context\?\.demo\) target\.searchParams\.set\('demo', '1'\)/)
-  const contextIndex = worldEvents.indexOf("if (context?.demo) target.searchParams.set('demo', '1')")
+
+  assert.match(worldEvents, /if \(\(key === 'node' \|\| key === 'manifestId'[\s\S]*?\(!memoryDestination \|\| !sameMemory\)\) continue/)
+  assert.match(worldEvents, /if \(\(key === 'thread'[\s\S]*?\(neutralDestination \|\| \(selectedMemoryId && !sameMemory\)\)\) continue/)
+  assert.match(worldEvents, /if \(!memoryDestination\) \{[\s\S]*?target\.searchParams\.delete\('memoryId'\)[\s\S]*?target\.searchParams\.delete\('node'\)/)
+  assert.match(worldEvents, /if \(neutralDestination\) \{[\s\S]*?target\.searchParams\.delete\('thread'\)/)
+  const contextIndex = worldEvents.indexOf("if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')")
   const entryPortalIndex = worldEvents.indexOf("if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)")
   const cameraCheckpointIndex = worldEvents.indexOf("if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)")
   assert.ok(contextIndex > -1 && entryPortalIndex > contextIndex && cameraCheckpointIndex > entryPortalIndex)
