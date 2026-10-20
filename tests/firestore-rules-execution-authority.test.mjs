@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 const original = fileURLToPath(new URL('../scripts/run-firestore-rules-tests.mjs',import.meta.url))
 const source = readFileSync(original, 'utf8')
 
-function runCase(javaPresent, emulatorCode, staticShouldFail) {
+function runCase(javaPresent, emulatorCode, staticShouldFail, overrides = {}) {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'urai-firestore-mode-'))
   try {
     const tempScript = path.join(dir,'run-firestore-rules-tests.mjs')
@@ -24,11 +24,13 @@ function runCase(javaPresent, emulatorCode, staticShouldFail) {
       mkdirSync(path.dirname(t),{recursive:true})
       writeFileSync(t, `import test from 'node:test'; test('static fixture ${name}',()=>{${staticShouldFail ? "throw new Error('STATIC_FIXTURE_FAILED');" : ''}})`)
     }
-    const probe = "const javaCheck = spawnSync('java', ['-version'], { stdio: 'ignore', shell: false })"
-    assert.ok(source.includes(probe),'original Java probe anchor must exist')
+    const probe = "const javaCheck = spawnSync(javaExecutable, ['-version'], { stdio: 'ignore', shell: false })"
+    assert.ok(source.includes(probe),'current Java probe anchor must exist')
     writeFileSync(tempScript, source.replace(probe, `const javaCheck = { status: ${javaPresent ? 0 : 1} }`))
     const env = {...process.env, URAI_FIXTURE_EMULATOR_EXIT:String(emulatorCode)}
     delete env.NODE_TEST_CONTEXT
+    delete env.URAI_FIRESTORE_TEST_JAVA_EXE
+    if (overrides.pinnedJava) env.URAI_FIRESTORE_TEST_JAVA_EXE = overrides.pinnedJava
     const run=spawnSync(process.execPath,[tempScript],{cwd:dir,encoding:'utf8',env})
     return {code:run.status,stdout:run.stdout,stderr:run.stderr}
   }finally{rmSync(dir,{recursive:true,force:true})}
@@ -56,4 +58,12 @@ test('Java unavailable does not suppress static rules failure',()=>{
   const r=runCase(false,0,true)
   assert.notEqual(r.code,0,r.stdout+'\n'+r.stderr)
   assert.match(r.stderr,/Running static Firestore rules boundary tests instead/)
+})
+
+test('invalid pinned Windows Java path fails closed instead of running a weaker static check',()=>{
+  const r=runCase(false,0,false,{ pinnedJava: 'not-an-absolute-java-exe' })
+  assert.notEqual(r.code,0,r.stdout+'\n'+r.stderr)
+  assert.match(r.stderr,/FIRESTORE_TEST_JAVA_EXECUTABLE_INVALID/)
+  assert.doesNotMatch(r.stdout,/EMULATOR_FIXTURE_RAN/)
+  assert.doesNotMatch(r.stderr,/Running static Firestore rules boundary tests instead/)
 })
