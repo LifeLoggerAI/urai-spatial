@@ -16,7 +16,7 @@ import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 
 const PRIMARY_DESTINATIONS: readonly UraiDestination[] = ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay', 'life-movie']
 const SECONDARY_DESTINATIONS: readonly UraiDestination[] = ['mirror', 'passport', 'privacy-controls', 'location-map']
-const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'manifestId', 'movieId', 'chapterId', 'privacyMode'] as const
+const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'manifestId', 'movieId', 'chapterId', 'privacyMode', 'demo'] as const
 const AUDIO_CONSENT_KEY = 'urai:spatial-audio-consent-v1'
 const AUDIO_MUTE_KEY = 'urai:spatial-audio-muted-v1'
 
@@ -52,7 +52,9 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   // event node into an authorized memory on an unrelated destination.
   for (const key of CONTEXT_KEYS) {
     if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
-    if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId') && (!memoryDestination || !sameMemory)) continue
+    if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
+    // Relationship hints from an old memory never scope a different selection.
+    if ((key === 'thread' || key === 'personId' || key === 'placeId') && selectedMemoryId && currentMemoryId && !sameMemory) continue
     if (!target.searchParams.has(key) && current.has(key)) target.searchParams.set(key, current.get(key) ?? '')
   }
   if (!memoryDestination) {
@@ -61,6 +63,7 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('manifestId')
     target.searchParams.delete('movieId')
     target.searchParams.delete('chapterId')
+    target.searchParams.delete('demo')
   }
   if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
@@ -70,6 +73,7 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   if (memoryDestination && context?.movieId) target.searchParams.set('movieId', context.movieId)
   if (memoryDestination && context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
+  if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
   return `${target.pathname}${target.search}${target.hash}`
@@ -202,6 +206,7 @@ export function PersistentWorldCompanion() {
         movieId: world.movieId,
         chapterId: world.chapterId,
         privacyMode: world.privacyMode,
+        demo: world.demo,
       },
     }
     const href = buildCompanionTravelHref(request)

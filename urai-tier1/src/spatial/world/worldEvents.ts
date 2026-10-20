@@ -43,7 +43,9 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   // memory identities are separate even when its delayed hard fallback runs.
   for (const key of WORLD_TRAVEL_CONTEXT_KEYS) {
     if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
-    if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId') && (!memoryDestination || !sameMemory)) continue
+    if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
+    // Relationship hints from an old memory never scope a different selection.
+    if ((key === 'thread' || key === 'personId' || key === 'placeId') && selectedMemoryId && currentMemoryId && !sameMemory) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
     }
@@ -54,6 +56,7 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('manifestId')
     target.searchParams.delete('movieId')
     target.searchParams.delete('chapterId')
+    target.searchParams.delete('demo')
   }
   if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
@@ -71,7 +74,7 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.scenarioBasisRevision !== undefined) target.searchParams.set('basisRevision', String(context.scenarioBasisRevision))
   if (context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
   if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
-  if (context?.demo) target.searchParams.set('demo', '1')
+  if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 

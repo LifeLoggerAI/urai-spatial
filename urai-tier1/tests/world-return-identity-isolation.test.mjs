@@ -111,3 +111,51 @@ for (const [name, fileName, functionName] of [
    assert.equal(u.searchParams.has('chapterId'), false)
  })
 }
+
+for (const [name, fileName, functionName] of [
+ ['transition controller', 'WorldTransitionController.tsx', 'buildTravelHref'],
+ ['hard fallback', 'worldEvents.ts', 'buildFallbackHref'],
+ ['persistent companion', 'PersistentWorldCompanion.tsx', 'buildCompanionTravelHref'],
+]) {
+ test(name + ': old disclosed demo cannot convert a different private memory to a sample', () => {
+   const u = checkOriginalRoute(fileName, functionName,
+     '?memoryId=sample-A&demo=1&thread=old-thread&personId=old-person&placeId=old-place&manifestId=old-manifest',
+     { destination: 'focus', href: '/focus?memoryId=private-B&manifestId=private-manifest' })
+   assert.equal(u.searchParams.get('memoryId'), 'private-B')
+   assert.equal(u.searchParams.get('manifestId'), 'private-manifest')
+   for (const key of ['demo', 'thread', 'personId', 'placeId'])
+     assert.equal(u.searchParams.has(key), false, name + ' leaked old ' + key)
+ })
+ test(name + ': an explicit new disclosed sample remains disclosed', () => {
+   const u = checkOriginalRoute(fileName, functionName,
+     '?memoryId=sample-A&demo=1',
+     { destination: 'focus', href: '/focus?memoryId=sample-B&demo=1' })
+   assert.equal(u.searchParams.get('memoryId'), 'sample-B')
+   assert.equal(u.searchParams.get('demo'), '1')
+ })
+ test(name + ': the same disclosed memory retains its demo identity through Focus', () => {
+   const u = checkOriginalRoute(fileName, functionName,
+     '?memoryId=sample-A&demo=1',
+     { destination: 'focus', href: '/focus?memoryId=sample-A' })
+   assert.equal(u.searchParams.get('demo'), '1')
+ })
+ test(name + ': neutral Home cannot retain demo mode even from explicit context', () => {
+   const u = checkOriginalRoute(fileName, functionName,
+     '?memoryId=sample-A&demo=1',
+     { destination: 'home', href: '/', context: {memoryId:'sample-A', demo:true} })
+   assert.equal(u.searchParams.has('demo'), false)
+   assert.equal(u.searchParams.has('memoryId'), false)
+ })
+ test(name + ': changing memory refuses stale demo from context but preserves explicit target authority', () => {
+   const u = checkOriginalRoute(fileName, functionName,
+     '?memoryId=sample-A&demo=1',
+     { destination: 'replay', href: '/replay?memoryId=private-B', context: {demo:true} })
+   assert.equal(u.searchParams.has('demo'), false)
+ })
+ test(name + ': explicitly entering a sample universe without a prior selection is supported', () => {
+   const u = checkOriginalRoute(fileName, functionName,
+     '',
+     { destination: 'life-map', href: '/life-map', context: {demo:true} })
+   assert.equal(u.searchParams.get('demo'), '1')
+ })
+}
