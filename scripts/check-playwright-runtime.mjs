@@ -45,7 +45,9 @@ function installChromium() {
   for (let attempt = 1; attempt <= installAttempts; attempt += 1) {
     console.log(`playwright-runtime: Playwright chromium install attempt ${attempt}/${installAttempts}`);
 
-    const install = spawnSync('pnpm', ['exec', 'playwright', 'install', 'chromium'], {
+    // Use the exact Node binary and UrAi's pinned workspace launcher.
+    // Ambient pnpm/cmd shims are unavailable with portable Node on Windows.
+    const install = spawnSync(process.execPath, ['scripts/run-pnpm.mjs', 'exec', 'playwright', 'install', 'chromium'], {
       cwd: process.cwd(),
       env: {
         ...process.env,
@@ -53,7 +55,7 @@ function installChromium() {
           process.env.PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT || '120000',
       },
       stdio: 'inherit',
-      shell: process.platform === 'win32',
+      shell: false,
     });
 
     lastError = install.error;
