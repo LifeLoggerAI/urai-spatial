@@ -23,7 +23,9 @@ function fixture({ consentState = 'authorized', beforeTransaction = null, status
     [memoryPath, { ownerId: uid, consentState, deleted: false,
       lifeMovie: { sceneTruthPacketId: 'fictional-scene', provenance: { sourceIds: ['fictional'] } } }],
     [scenePath, { ownerId: uid, state: 'current', schemaVersion: 'urai-life-model-v1',
-      syntheticOutputMayBecomeHistoricalSource: false, decision: 'READY', dependencyIds: [] }],
+      syntheticOutputMayBecomeHistoricalSource: false, decision: 'READY', dependencyIds: [],
+      memoryId: 'fictional-memory', memorySourceIds: ['fictional'],
+      memorySourceBindingDigest: 'a'.repeat(64) }],
   ])
   const stats = { transactionReads: [], writes: [], audits: [], outsideReads: 0 }
   const snapshot = path => ({
@@ -103,4 +105,42 @@ test('drafts remain private and need transactional owner and consent', async () 
   assert.equal(result.status, 'draft')
   assert.ok(f.stats.transactionReads.includes(memoryPath))
   assert.equal(f.stats.transactionReads.includes(scenePath), false)
+})
+
+test('foreign-memory SceneTruth cannot authorize this chapter', async () => {
+  const f = fixture()
+  f.records.get(scenePath).memoryId = 'fictional-other-memory'
+  await denied(f)
+})
+test('a ready SceneTruth without canonical memory binding cannot authorize a movie', async () => {
+  const f = fixture()
+  delete f.records.get(scenePath).memoryId
+  await denied(f)
+})
+test('SceneTruth with a substituted provenance source must be rejected', async () => {
+  const f = fixture()
+  f.records.get(scenePath).memorySourceIds = ['foreign-source']
+  await denied(f)
+})
+test('SceneTruth missing current source-binding digest must be rejected', async () => {
+  const f = fixture()
+  delete f.records.get(scenePath).memorySourceBindingDigest
+  await denied(f)
+})
+test('duplicate-source provenance cannot become a ready Life Movie', async () => {
+  const f = fixture()
+  f.records.get(scenePath).memorySourceIds = ['fictional', 'fictional']
+  await denied(f)
+})
+test('canonical source-set comparison is order-independent', async () => {
+  const f = fixture()
+  f.records.get(memoryPath).lifeMovie.provenance.sourceIds = ['a', 'b']
+  f.records.get(scenePath).memorySourceIds = ['b', 'a']
+  const result = await f.save()
+  assert.equal(result.chapterCount, 1)
+})
+test('SceneTruth memory-binding substitution before transactional admission is denied', async () => {
+  await denied(fixture({ beforeTransaction: records => {
+    records.get(scenePath).memorySourceIds = ['substituted-before-commit']
+  } }))
 })

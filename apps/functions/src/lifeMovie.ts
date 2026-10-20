@@ -7,6 +7,7 @@ const db = admin.firestore()
 const lifeMovieFunctions = functions.region('us-central1')
 const SAFE_TOKEN = /^[A-Za-z0-9._:-]{1,160}$/
 const MAX_CHAPTERS = 64
+const SHA256 = /^[a-f0-9]{64}$/
 const TRUTH_CLASSES = new Set([
   'RECORDED_SOURCE_TRUTH',
   'ATTRIBUTED_FAMILY_RECOLLECTION',
@@ -164,6 +165,20 @@ function trustedChapterFromMemory(requested: RequestedChapter, snapshot: Firebas
   }
 }
 
+// The SceneTruth producer binds a particular memory and its canonical source
+// receipts. Same-owner readiness is not sufficient: a scene for a different
+// memory must never authorize this chapter or its cinematic derivatives.
+function sameBoundMemorySourceSet(first: unknown, second: unknown) {
+  if (!Array.isArray(first) || !Array.isArray(second) ||
+      first.length < 1 || first.length > 256 || first.length !== second.length ||
+      first.some((id) => typeof id !== 'string' || !SAFE_TOKEN.test(id)) ||
+      second.some((id) => typeof id !== 'string' || !SAFE_TOKEN.test(id))) return false
+  const firstSet = new Set<string>(first)
+  const secondSet = new Set<string>(second)
+  return firstSet.size === first.length && secondSet.size === second.length &&
+    [...firstSet].every((id) => secondSet.has(id))
+}
+
 async function requireReadyLifeModelAuthority(
   uid: string,
   chapters: ReturnType<typeof trustedChapterFromMemory>[],
@@ -183,7 +198,9 @@ async function requireReadyLifeModelAuthority(
   ])
   const dependencyIds = new Set<string>(chapters.map((chapter) => chapter.memoryId))
 
-  for (const scene of sceneSnapshots) {
+  for (let index = 0; index < sceneSnapshots.length; index++) {
+    const scene = sceneSnapshots[index]
+    const chapter = chapters[index]
     if (
       !scene.exists
       || scene.get('ownerId') !== uid
@@ -191,6 +208,9 @@ async function requireReadyLifeModelAuthority(
       || scene.get('state') !== 'current'
       || scene.get('syntheticOutputMayBecomeHistoricalSource') !== false
       || !['READY','READY_WITH_OCCLUSION','READY_INTERPRETIVE'].includes(String(scene.get('decision') ?? ''))
+      || scene.get('memoryId') !== chapter.memoryId
+      || !sameBoundMemorySourceSet(scene.get('memorySourceIds'), chapter.provenance.sourceIds)
+      || !SHA256.test(String(scene.get('memorySourceBindingDigest') ?? ''))
     ) {
       throw new functions.https.HttpsError('failed-precondition', 'Life Movie SceneTruth authority is unavailable.')
     }
