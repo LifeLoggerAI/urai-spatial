@@ -3,6 +3,7 @@ const assert = require('node:assert/strict')
 const { test } = require('node:test')
 const fs = require('node:fs')
 const path = require('node:path')
+const { pathToFileURL } = require('node:url')
 const vm = require('node:vm')
 const crypto = require('node:crypto')
 
@@ -1321,7 +1322,7 @@ test('actual Node pipeline obeys byte integrity/backpressure and stops canonical
 
 test('deployment source guard rejects canonical namespace, wrong project, wrong route and Storage credentials',async()=>{
   const root=path.resolve(__dirname,'../../..')
-  const {verifySpatialExportDeploymentBoundary:verify}=await import(path.join(root,'scripts/check-spatial-export-deployment-boundary.mjs'))
+  const {verifySpatialExportDeploymentBoundary:verify}=await import(pathToFileURL(path.join(root,'scripts/check-spatial-export-deployment-boundary.mjs')).href)
   const baseline={index:fs.readFileSync(path.join(root,'apps/functions/src/index.ts'),'utf8'),operations:fs.readFileSync(path.join(root,'apps/functions/src/privacyOperations.ts'),'utf8'),firebase:JSON.parse(fs.readFileSync(path.join(root,'firebase.json'),'utf8')),projects:JSON.parse(fs.readFileSync(path.join(root,'.firebaserc'),'utf8'))}
   assert.deepEqual(verify(baseline),[])
   const samples=[
