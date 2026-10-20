@@ -245,10 +245,13 @@ async function provePhysicalHomeSkyAscent(page, report) {
   // transition event or direct route assignment is permitted here.
   let triggered = false;
   for (const fraction of [0.08, 0.14, 0.22]) {
-    await canvas.click({ position: {
-      x: Math.floor(rect.width * 0.50),
-      y: Math.floor(rect.height * fraction),
-    }, timeout: 10000 });
+    // A physical mouse click is the genuine browser pointer path. Unlike a
+    // locator click it does not await Next.js navigation before our ascent
+    // observer and exact route/camera assertions can finish independently.
+    await page.mouse.click(
+      rect.x + Math.floor(rect.width * 0.50),
+      rect.y + Math.floor(rect.height * fraction),
+    );
     triggered = await page.waitForFunction(() => {
       const element = document.querySelector('[data-testid="home-visible-navigable-sanctuary-world"]');
       return element && (
