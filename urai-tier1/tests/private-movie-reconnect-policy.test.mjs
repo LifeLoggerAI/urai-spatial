@@ -60,3 +60,14 @@ test('original protected Replay clears prior Blob and session before reconnect',
   assert.match(hook, /spatialUser\.getIdToken\(true\)/)
   assert.match(hook, /studioUser\.getIdToken\(true\)/)
 })
+
+test('failed protected transport has an explicit identity-refetch path and accessible control', () => {
+  const hook = fs.readFileSync(new URL('../src/app/replay/useProtectedLifeMovieReplay.ts', import.meta.url), 'utf8')
+  const replay = fs.readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+  assert.match(hook, /const retry = useCallback\(/)
+  assert.match(hook, /setReconnectEpoch\(epoch => epoch \+ 1\)/)
+  assert.match(hook, /retry: scoped\.status === 'unavailable' \? retry : \(\) => \{\}/)
+  assert.match(replay, /protectedMovie\.status === 'unavailable'/)
+  assert.match(replay, /onClick=\{protectedMovie\.retry\}/)
+  assert.match(replay, /Retry private Life Movie authorization/)
+})
