@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { readFileSync } from 'node:fs'
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { resolvePython3 } from '../../scripts/python3-runtime.mjs'
 
 const success = () => ({ status: 0, stdout: 'URAI_PYTHON3_OK\n', stderr: '' })
@@ -70,4 +72,21 @@ test('Real source archive and native plist checks invoke the verified Python res
   assert.match(actualArchive, /def reconstruct\(/)
   assert.match(actualArchive, /PART_HASH_MISMATCH/)
   assert.match(actualArchive, /ENTRY_UNSAFE/)
+})
+
+test('verified founder portable Windows Python is discovered after unusable Store aliases', () => {
+  const home = mkdtempSync(path.join(os.tmpdir(), 'urai-python-fallback-'))
+  try {
+    const directory = path.join(home, 'Downloads', 'UrAi-Python3', 'python-3.13.16-embeddable-amd64')
+    mkdirSync(directory, { recursive: true })
+    const executable = path.join(directory, 'python.exe')
+    writeFileSync(executable, 'synthetic fixture, never executed')
+    const seen = []
+    const selected = resolvePython3({ platform: 'win32', env: { USERPROFILE: home }, probe: command => {
+      seen.push(command)
+      return command === executable ? success() : { status: 9009 }
+    } })
+    assert.deepEqual(seen, ['py', 'python3', 'python', executable])
+    assert.deepEqual(selected, { command: executable, prefix: [] })
+  } finally { rmSync(home, { recursive: true, force: true }) }
 })

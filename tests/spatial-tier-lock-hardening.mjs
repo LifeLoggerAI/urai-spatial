@@ -4,6 +4,7 @@ import { disclosedSampleStar, selectedMemoryFocusAction } from './canonical-brow
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
+import { allocateEphemeralPort, waitForOwnedHome } from './spatial-owned-server.mjs';
 
 // The browser harness lives at the repo root, but Playwright is owned by the
 // urai-tier1 workspace. Resolve its public entrypoint from that workspace so
@@ -12,7 +13,7 @@ const workspaceRequire = createRequire(new URL('../urai-tier1/package.json', imp
 const { chromium } = workspaceRequire('playwright');
 
 
-const BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
+let BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
 const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/spatial-tier-lock-hardening';
 const SUITE = (process.argv.find((arg) => arg.startsWith('--suite=')) || '--suite=all').split('=')[1];
@@ -25,31 +26,23 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function waitForServer(url, timeoutMs = 90000) {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    try {
-      const response = await fetch(url);
-      if (response.ok || response.status < 500) return;
-    } catch {
-      // keep waiting
-    }
-    await sleep(1000);
-  }
-  throw new Error(`Timed out waiting for ${url}`);
-}
-
-function startServer() {
+async function startServer() {
   if (USE_EXISTING) return null;
-  const child = spawn(process.execPath, ['scripts/run-pnpm.mjs', '--filter', 'urai-tier1', 'dev', '--hostname', '127.0.0.1', '--port', '3000'], {
+  const port = await allocateEphemeralPort();
+  BASE_URL = 'http://127.0.0.1:' + port;
+  const child = spawn(process.execPath, [
+    'scripts/run-pnpm.mjs', '--filter', 'urai-tier1', 'dev',
+    '--hostname', '127.0.0.1', '--port', String(port),
+  ], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1' },
     stdio: 'inherit',
     shell: false,
     detached: process.platform !== 'win32',
   });
-  child.on('exit', (code) => {
-    if (code && code !== 0) console.error(`URAI Spatial dev server exited with ${code}`);
+  child.on('error', error => console.error('URAI owned dev server launch failed: ' + error.message));
+  child.on('exit', code => {
+    if (code && code !== 0) console.error('URAI Spatial dev server exited with ' + code);
   });
   return child;
 }
@@ -426,10 +419,11 @@ function persistBrowserReport(report) {
 }
 
 async function run() {
-  const server = startServer();
+  let server = null;
   const report = { suite: SUITE, screenshots: [], console: [], checks: [] };
   try {
-    await waitForServer(BASE_URL);
+    server = await startServer();
+    await waitForOwnedHome(BASE_URL, server);
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     collectConsole(page, report);
