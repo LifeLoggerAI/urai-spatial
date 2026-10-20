@@ -99,10 +99,23 @@ test('iOS transport rejects wrong SHA, path traversal, corrupt parts and leaves 
 test('iOS source archive rejects linked source files and unsafe ZIP entries', () => {
   const f = fixture()
   try {
+    // A sibling external directory is a legal Windows junction target, unlike
+    // a file symlink that may require Developer Mode or administrator privilege.
+    // The boundary still needs to reject it without touching outside bytes.
+    const outside = path.join(f.directory, 'private-outside')
+    fs.mkdirSync(outside)
+    const sentinel = path.join(outside, 'sentinel.txt')
+    fs.writeFileSync(sentinel, 'URAI_EXTERNAL_IOS_BYTES_MUST_NOT_BE_PACKAGED')
     const extra = path.join(f.project, 'App/private-link')
-    fs.symlinkSync(f.receipt, extra)
-    assert.match(run(f.args).stderr, /SYMLINK_REJECTED/)
-    fs.rmSync(extra)
+    fs.symlinkSync(outside, extra, process.platform === 'win32' ? 'junction' : 'dir')
+    assert.equal(fs.lstatSync(extra).isSymbolicLink(), true)
+    const denied = run(f.args)
+    assert.notEqual(denied.status, 0)
+    assert.match(denied.stderr, /SYMLINK_REJECTED/)
+    assert.equal(fs.readFileSync(sentinel, 'utf8'), 'URAI_EXTERNAL_IOS_BYTES_MUST_NOT_BE_PACKAGED')
+    assert.equal(fs.existsSync(path.join(f.output, 'ios-source-archive-transport.json')), false)
+    fs.rmSync(extra, { recursive: true, force: true })
+    assert.equal(fs.readFileSync(sentinel, 'utf8'), 'URAI_EXTERNAL_IOS_BYTES_MUST_NOT_BE_PACKAGED')
     assert.equal(run(f.args).status, 0)
     const archive = path.join(f.output, 'urai-ios-project-source.zip')
     const inject = runPython3( ['-c', 'import zipfile,sys; z=zipfile.ZipFile(sys.argv[1],"a"); z.writestr("../escape","private"); z.close()', archive], { encoding: 'utf8' })
