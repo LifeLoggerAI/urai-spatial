@@ -23,3 +23,22 @@ for(const name of ['js.mjs','ts.mjs']){
 }
 test('after removing preview files both configs can evaluate clean production',()=>{fs.rmSync(cc0,{recursive:true,force:true});for(const n of ['js.mjs','ts.mjs'])assert.equal(load(n,{NODE_ENV:'production'}).status,0)})
 process.on('exit',()=>fs.rmSync(tmp,{recursive:true,force:true}))
+
+test('private CC0 review uses a separate development-only Next cache in both configs',()=>{
+  for (const name of ['js.mjs','ts.mjs']) {
+    const uri = pathToFileURL(path.join(tmp,name)).href
+    const inspect = (env) => spawnSync(process.execPath,['--input-type=module','-e',
+      `import(${JSON.stringify(uri)}).then(m=>console.log(m.default.distDir||'default')).catch(e=>{console.error(e.message);process.exitCode=7})`],{
+        encoding:'utf8',env:{...process.env,NODE_ENV:'development',CI:'false',URAI_FIREBASE_STATIC_EXPORT:'false',...env},
+      })
+    const isolated = inspect({NEXT_PUBLIC_URAI_HOME_CC0_DEV_REVIEW:'true'})
+    assert.equal(isolated.status,0, isolated.stderr)
+    assert.match(isolated.stdout,/\.next-home-cc0-review/)
+    const ordinary = inspect({NEXT_PUBLIC_URAI_HOME_CC0_DEV_REVIEW:'false'})
+    assert.equal(ordinary.status,0, ordinary.stderr)
+    assert.match(ordinary.stdout,/default/)
+    const production = inspect({NODE_ENV:'production',NEXT_PUBLIC_URAI_HOME_CC0_DEV_REVIEW:'true'})
+    assert.equal(production.status,0, production.stderr)
+    assert.match(production.stdout,/default/)
+  }
+})

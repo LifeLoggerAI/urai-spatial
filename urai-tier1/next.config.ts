@@ -37,6 +37,11 @@ const uraiAllowedDevOrigins = [
 ]);
 
 const nextConfig: NextConfig = {
+  // An isolated, explicit nonproduction asset-review process must never share
+  // its Next output with the founder's working production build.
+  ...(process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_URAI_HOME_CC0_DEV_REVIEW === 'true'
+    ? { distDir: '.next-home-cc0-review' }
+    : {}),
   // Keep the full build within bounded worker memory without skipping analysis.
   experimental: { cpus: 1, webpackBuildWorker: true, webpackMemoryOptimizations: true },
   outputFileTracingRoot: projectRoot,

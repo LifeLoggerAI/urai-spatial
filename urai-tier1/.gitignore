@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-home-cc0-review/
 /out/
 
 # production

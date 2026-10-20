@@ -133,6 +133,7 @@ const tests = [
   'tests/home-living-orb-geometry.test.mjs',
   'tests/home-vegetation-instancing-behavior.test.mjs',
   'tests/home-perimeter-grove.test.mjs',
+  'tests/home-cc0-private-review-runner.test.mjs',
   'tests/home-finalization-truth-contract.test.mjs',
   'tests/home-interpretive-splat-contract.test.mjs',
   'tests/lifemap-cinematic-contract.test.mjs',
