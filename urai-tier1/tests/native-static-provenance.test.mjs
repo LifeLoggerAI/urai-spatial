@@ -59,8 +59,36 @@ test('packaged stale fingerprints and symbolic links fail closed', () => {
     const receipt = prepareNativeStaticProvenance(options)
     fs.writeFileSync(path.join(directory, 'native-build-fingerprint.json'), JSON.stringify({ ...receipt, sourceSha: predecessor }))
     assert.throws(() => prepareNativeStaticProvenance({ ...options, verifyOnly: true }), /PACKAGED_FINGERPRINT_MISMATCH/)
-    fs.renameSync(path.join(directory, 'index.html'), path.join(directory, 'source.html'))
-    fs.symlinkSync('source.html', path.join(directory, 'index.html'))
+    // Windows can create directory junctions without Developer Mode/admin,
+    // unlike file symlinks. Both must be rejected by the packaged verifier.
+    const proofSource = path.join(directory, 'proof-source')
+    fs.renameSync(path.join(directory, 'api/system'), proofSource)
+    fs.symlinkSync(proofSource, path.join(directory, 'api/system'), process.platform === 'win32' ? 'junction' : 'dir')
     assert.throws(() => prepareNativeStaticProvenance(options), /FILE_INVALID/)
+    if (process.platform !== 'win32') {
+      fs.renameSync(path.join(directory, 'index.html'), path.join(directory, 'source.html'))
+      fs.symlinkSync('source.html', path.join(directory, 'index.html'))
+      assert.throws(() => prepareNativeStaticProvenance(options), /FILE_INVALID/)
+    }
+  } finally { fs.rmSync(directory, { recursive: true, force: true }) }
+})
+
+test('a linked fingerprint output cannot be followed or overwritten', () => {
+  const { directory, options } = fixture()
+  try {
+    const output = path.join(directory, 'native-build-fingerprint.json')
+    if (process.platform === 'win32') {
+      // Directory junctions work without Developer Mode. They also prove that
+      // an unexpected reparse-point output cannot masquerade as a JSON file.
+      const alternate = path.join(directory, 'alternate-output')
+      fs.mkdirSync(alternate)
+      fs.symlinkSync(alternate, output, 'junction')
+      assert.throws(() => prepareNativeStaticProvenance(options), /FILE_INVALID/)
+      assert.deepEqual(fs.readdirSync(alternate), [])
+    } else {
+      fs.symlinkSync('outside-fingerprint.json', output)
+      assert.throws(() => prepareNativeStaticProvenance(options), /FILE_INVALID/)
+      assert.equal(fs.existsSync(path.join(directory, 'outside-fingerprint.json')), false)
+    }
   } finally { fs.rmSync(directory, { recursive: true, force: true }) }
 })
