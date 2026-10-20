@@ -210,9 +210,24 @@ export const getPossibleFuture = functions.https.onCall(async (data, context) =>
   const ownerId = uid(context)
   const scenarioId = ensureScenarioId(data?.scenarioId)
   const ref = scenarioRef(ownerId, scenarioId)
-  const [scenario, basis, branches] = await Promise.all([ref.get(), ref.collection('basis').doc('current').get(), ref.collection('branches').limit(BRANCH_LIMIT).get()])
+  const scenario = await ref.get()
   if (!scenario.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
-  return { scenario: scenario.data(), basis: basis.exists ? basis.data() : null, branches: branches.docs.map((doc) => doc.data()) }
+  // Only the current scenario-owned branch IDs are eligible. A collection
+  // scan can surface abandoned branches from an interrupted or superseded run.
+  const branchIds = asStringArray(scenario.data()?.branchIds, BRANCH_LIMIT)
+  if (branchIds.some((id) => !safeContextId(id)))
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_ID_INVALID')
+  const [basis, branches] = await Promise.all([
+    ref.collection('basis').doc('current').get(),
+    Promise.all(branchIds.map((id) => ref.collection('branches').doc(id).get())),
+  ])
+  if (branches.some((doc) => !doc.exists))
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_MISSING')
+  return {
+    scenario: scenario.data(),
+    basis: basis.exists ? basis.data() : null,
+    branches: branches.map((doc) => doc.data()),
+  }
 })
 
 export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data, context) => {
@@ -223,18 +238,27 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
     throw new functions.https.HttpsError('invalid-argument', 'Invalid Scenario branch ID.')
   }
   const ref = scenarioRef(ownerId, scenarioId)
-  const [scenarioSnap, basisSnap, branchesSnap] = await Promise.all([
-    ref.get(),
-    ref.collection('basis').doc('current').get(),
-    ref.collection('branches').limit(BRANCH_LIMIT).get(),
-  ])
-  if (!scenarioSnap.exists || !basisSnap.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+  const scenarioSnap = await ref.get()
+  if (!scenarioSnap.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
   const scenario = scenarioSnap.data() ?? {}
+  // A discarded future is not eligible to reappear as an active Council scene.
+  if (scenario.status === 'discarded')
+    throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+  const branchIds = asStringArray(scenario.branchIds, BRANCH_LIMIT)
+  if (branchIds.some((id) => !safeContextId(id)))
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_ID_INVALID')
+  if (requestedBranchId && !branchIds.includes(requestedBranchId))
+    throw new functions.https.HttpsError('not-found', 'Scenario branch not found.')
+  const [basisSnap, branchSnapshots] = await Promise.all([
+    ref.collection('basis').doc('current').get(),
+    Promise.all(branchIds.map((id) => ref.collection('branches').doc(id).get())),
+  ])
+  if (!basisSnap.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+  if (branchSnapshots.some((doc) => !doc.exists))
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_MISSING')
   const activeBranchId = requestedBranchId || String(scenario.activeBranchId ?? '')
-  const branch = requestedBranchId
-    ? branchesSnap.docs.find((doc) => doc.id === requestedBranchId) ?? null
-    : branchesSnap.docs.find((doc) => doc.id === activeBranchId) ?? branchesSnap.docs[0] ?? null
-  if (requestedBranchId && !branch) throw new functions.https.HttpsError('not-found', 'Scenario branch not found.')
+  const activeIndex = Math.max(0, branchIds.indexOf(activeBranchId))
+  const branch = branchSnapshots[activeIndex] ?? null
   const basis = basisSnap.data() ?? {}
   const evidenceRefs = Array.isArray(basis.evidenceRefs) ? basis.evidenceRefs : []
   const evidenceKinds = [...new Set(evidenceRefs.map((entry: unknown) =>
