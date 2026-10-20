@@ -83,6 +83,7 @@ export const STAGES = Object.freeze([
   // Full focused test runner is separate from the sequential compact suite.
   // Full test glob is separate from the compact maintained unit runner; each
   // native/platform boundary also receives an individually identifiable receipt.
+  { id: 'visual_png_integrity_tests', command: ['node', '--test', 'tests/visual-png-integrity.test.mjs'], requiresInstall: false },
   { id: 'tier1_complete_all_tests', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'test:all'], requiresInstall: true },
   { id: 'android_native_identity_tests', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'exec', 'node', '--import', 'tsx', '--test', 'tests/android-native-google-auth.test.mjs'], requiresInstall: true },
   { id: 'ios_native_preparation_tests', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'exec', 'node', '--import', 'tsx', '--test', 'tests/ios-native-preparation.test.mjs'], requiresInstall: true },
