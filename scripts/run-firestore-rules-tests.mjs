@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { createRequire } from 'node:module'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 
 const require = createRequire(import.meta.url)
 const run = (executable, args, options = {}) => spawnSync(executable, args, {
@@ -11,7 +11,19 @@ const run = (executable, args, options = {}) => spawnSync(executable, args, {
   ...options,
 })
 
-const javaCheck = spawnSync('java', ['-version'], { stdio: 'ignore', shell: false })
+// A portable Node 22 process on Windows may not resolve the same 'java'
+// command as interactive PowerShell. Permit an exact executable path for
+// native emulator verification; explicit Java failures may not downgrade to
+// static rules tests.
+const explicitJava = process.env.URAI_FIRESTORE_TEST_JAVA_EXE
+if (explicitJava && (!isAbsolute(explicitJava) || !existsSync(explicitJava))) {
+  throw new Error('FIRESTORE_TEST_JAVA_EXECUTABLE_INVALID')
+}
+const javaExecutable = explicitJava || (process.platform === 'win32' ? 'java.exe' : 'java')
+const javaCheck = spawnSync(javaExecutable, ['-version'], { stdio: 'ignore', shell: false })
+if (explicitJava && (javaCheck.error || javaCheck.status !== 0)) {
+  throw new Error('FIRESTORE_TEST_JAVA_SPAWN_FAILED:' + (javaCheck.error?.code || String(javaCheck.status)))
+}
 
 if (javaCheck.status === 0) {
   // Windows command shells split the single emulators:exec script argument,
