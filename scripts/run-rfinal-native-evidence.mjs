@@ -454,12 +454,12 @@ async function main() {
     const secondLiveHead = parseRemoteHead(readFileSync(remoteCheck.logPath,'utf8'))
     if (!cfg.pinnedSha && secondLiveHead !== head)
       throw new Error('CONCURRENT_PR_HEAD_CHANGED: safe abort; previous workspace retained')
-    if (cfg.pinnedSha) {
-      const pinContained = await command(['git','-C',source,'merge-base','--is-ancestor',head,secondLiveHead],
-        {cwd:source,log:path.join(evidence,'pinned_second_ancestry.log'),timeoutMinutes:5})
-      record('pinned_second_ancestry',pinContained.exitCode===0?'PASS':'FAIL',pinContained)
-      if(pinContained.exitCode!==0)throw new Error('PINNED_SOURCE_NO_LONGER_IN_BRANCH_HISTORY')
-    }
+    // Do not test ancestry against an un-fetched newer ref: the isolated
+    // source may lack its objects. The pinned commit was already proven inside
+    // the original branch head before byte-safe checkout. A moved branch
+    // stays explicitly non-current, without invalidating exact pinned tests.
+    if (cfg.pinnedSha && secondLiveHead !== remoteAtStart)
+      record('pinned_branch_drift_observed','INFO',{first:remoteAtStart,second:secondLiveHead})
     record('remote_head_unchanged',secondLiveHead===remoteAtStart?'PASS':'PINNED_BRANCH_ADVANCED',
       {liveHeadAtStart:remoteAtStart,liveHeadAtSecondCheck:secondLiveHead,sourceHead:head})
     const dirty=await shortGit(['-C',source,'status','--porcelain','--untracked-files=no'],source,evidence,'tracked_status')
