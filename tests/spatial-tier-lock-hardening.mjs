@@ -121,7 +121,7 @@ async function openDisclosedLifeMap(page) {
   const disclosure = page.getByRole('button', { name: 'Open disclosed sample' }).first();
   await expectVisible(disclosure, 'real explicit sample disclosure', 30000);
   await disclosure.click();
-  await page.waitForURL(/(?:\\?|&)demo=1(?:&|$)/, { timeout: 30000 });
+  await page.waitForURL(/[?&]demo=1(?:&|$)/, { timeout: 30000 });
   const scene = page.getByTestId('urai-true-3d-life-map');
   await expectVisible(scene, 'canonical 3D Life Map', 40000);
   await expectAttr(scene, 'data-life-map-source', 'explicit-demo', 30000);
@@ -147,7 +147,7 @@ async function enterDemoFocus(page) {
   const action = page.locator('.life-map-semantic-inspector .semantic-thresholds button').first();
   await expectVisible(action, 'real selected Focus action', 30000);
   await action.click();
-  await page.waitForURL(/\\/focus(?:\\?|$)/, { timeout: 40000 });
+  await page.waitForURL(/\/focus(?:\?|$)/, { timeout: 40000 });
   const focus = page.getByTestId('urai-final-focus-chamber');
   await expectVisible(focus, 'canonical stellar Focus', 40000);
   await expectAttr(focus, 'data-memory-status', 'demo', 40000);
@@ -159,7 +159,7 @@ async function enterDemoReplay(page) {
   const action = page.locator('.focusControls button.primary').first();
   await expectVisible(action, 'real Focus to Replay control', 30000);
   await action.click();
-  await page.waitForURL(/\\/replay(?:\\?|$)/, { timeout: 40000 });
+  await page.waitForURL(/\/replay(?:\?|$)/, { timeout: 40000 });
   const replay = page.getByTestId('cinematic-replay-client');
   await expectVisible(replay, 'canonical cinematic Replay', 40000);
   await expectAttr(replay, 'data-memory-status', 'demo', 40000);
