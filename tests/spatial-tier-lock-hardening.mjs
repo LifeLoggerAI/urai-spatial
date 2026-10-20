@@ -198,7 +198,52 @@ async function runNavigationStack(page, stage, report) {
   await screenshot(page, report, 'real-navigation-return-home');
 }
 
+// Real Home sky acceptance must exercise the existing painted WebGL sky via
+// pointer input. The accessible semantic link is valuable, but it does not
+// demonstrate the physical ascent/camera route and cannot replace this proof.
+async function provePhysicalHomeSkyAscent(page, report) {
+  await visitCanonicalRoute(page, '/home');
+  const owner = page.getByTestId('home-visible-navigable-sanctuary-world');
+  await expectVisible(owner, 'real Home spatial world', 45000);
+  await expectAttr(owner, 'data-home-assets-ready', 'true', 60000);
+  const canvas = owner.locator('canvas').first();
+  await expectVisible(canvas, 'rendered Home sky canvas', 30000);
+  const rect = await canvas.boundingBox();
+  if (!rect || rect.width <= 0 || rect.height <= 0) {
+    throw new Error('Home sky has no rendered, interactive canvas bounds');
+  }
+
+  // Candidate points are all genuine upward canvas taps. The production
+  // painted-sky raycaster must reject occluded sky/foreground; no synthetic
+  // transition event or direct route assignment is permitted here.
+  let triggered = false;
+  for (const fraction of [0.08, 0.14, 0.22]) {
+    await canvas.click({ position: {
+      x: Math.floor(rect.width * 0.50),
+      y: Math.floor(rect.height * fraction),
+    }, timeout: 10000 });
+    triggered = await page.waitForFunction(() => {
+      const element = document.querySelector('[data-testid="home-visible-navigable-sanctuary-world"]');
+      return element && (
+        element.getAttribute('data-home-scene-phase') === 'ASCENT' ||
+        element.getAttribute('data-home-portal-sequence')?.startsWith('life-map:')
+      );
+    }, null, { timeout: 1500 }).then(() => true).catch(() => false);
+    if (triggered) break;
+  }
+  if (!triggered) throw new Error('Real painted Home sky tap did not trigger physical ascent');
+
+  await page.waitForURL(/\/life-map(?:\/|\?|$)/, { timeout: 16000 });
+  const route = new URL(page.url()).searchParams;
+  if (route.get('entryPortal') !== 'home-sky' ||
+      route.get('cameraCheckpoint') !== 'home-sky-ascent-complete') {
+    throw new Error('Physical sky ascent lost its canonical entry and camera checkpoint');
+  }
+  report.checks.push({ name: 'Physical painted sky pointer -> Home ASCENT -> Life Map arrival', status: 'passed' });
+}
+
 async function runCameraTransitions(page, stage, report) {
+  await provePhysicalHomeSkyAscent(page, report);
   const scene = await openDisclosedLifeMap(page);
   await chooseDisclosedMemory(page);
   await page.waitForFunction(() => {
