@@ -30,8 +30,12 @@ test('locator selects the exact two guarded cases rather than broad page element
   assert.equal(seen[0].split(',').length, 2)
 })
 
-test('standalone browser runner uses original pinned workspace tooling', () => {
-  assert.match(browser, /spawn\(process\.execPath, \['scripts\/run-pnpm\.mjs', '--filter', 'urai-tier1', 'dev', '--port', '3000'\]/)
+test('standalone browser runner keeps pinned workspace tooling and owns its server', () => {
+  assert.match(browser, /allocateEphemeralPort\(\)/)
+  assert.match(browser, /waitForOwnedHome\(BASE_URL, server\)/)
+  assert.match(browser, /'--hostname', '127\.0\.0\.1', '--port', String\(port\)/)
   assert.match(browser, /shell: false/)
   assert.doesNotMatch(browser, /spawn\('pnpm'/)
+  assert.doesNotMatch(browser, /'--port', '3000'/)
+  assert.match(browser, /expectVisible\(gate, 'signed-out after real ascent', 30000\)/)
 })
