@@ -174,14 +174,15 @@ function saveReceipt(file, data) { writeFileSync(file, JSON.stringify(data, null
 
 async function command(argv, { cwd, log, timeoutMinutes = 50, env = {} } = {}) {
   const [executable, ...args] = argv
-  // On Windows corepack is a .cmd shim. Only repository-owned LITERAL commands
-  // enter cmd.exe; paths and untrusted arguments are never interpolated in it.
-  const useShell = process.platform === 'win32' && executable === 'corepack'
-  if (useShell && args.some(a => !/^[a-z0-9:._/@=-]+$/i.test(a))) {
-    throw new Error('Unsafe corepack shell argument')
+  // Execute the repository's pinned pnpm wrapper under the exact Node 22
+  // binary instead of relying on the Windows corepack.cmd shell shim.
+  if (executable === 'corepack' && args[0] !== 'pnpm') {
+    throw new Error('NATIVE_RUNNER_ONLY_PINNED_PNPM_ALLOWED')
   }
-  const actual = useShell ? 'cmd.exe' : executable
-  const actualArgs = useShell ? ['/d', '/s', '/c', ['corepack', ...args].join(' ')] : args
+  const actual = executable === 'node' || executable === 'corepack'
+    ? process.execPath : executable
+  const actualArgs = executable === 'corepack'
+    ? ['scripts/run-pnpm.mjs', ...args.slice(1)] : args
   mkdirSync(path.dirname(log), { recursive: true })
   const stream = createWriteStream(log, { flags: 'w' })
   const safeBase = (executable === 'node' || executable === 'corepack')
@@ -264,9 +265,9 @@ async function availablePort() {
 
 async function runtimeSmoke(source, outDir) {
   const port = await availablePort()
-  const argv = process.platform === 'win32'
-    ? ['cmd.exe', '/d', '/s', '/c', `corepack pnpm --dir urai-tier1 exec next start --hostname 127.0.0.1 --port ${port}`]
-    : ['corepack', 'pnpm', '--dir', 'urai-tier1', 'exec', 'next', 'start', '--hostname', '127.0.0.1', '--port', String(port)]
+  const argv = [process.execPath, 'scripts/run-pnpm.mjs',
+    '--dir', 'urai-tier1', 'exec', 'next', 'start',
+    '--hostname', '127.0.0.1', '--port', String(port)]
   const log = path.join(outDir, 'runtime_server.log')
   const output = createWriteStream(log)
   const child = spawn(argv[0], argv.slice(1), { cwd: source, windowsHide: true,
