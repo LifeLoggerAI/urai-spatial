@@ -50,6 +50,7 @@ const focusedContractTests = [
   'tests/life-movie-runtime-binding-contract.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
   'tests/world-return-destination.test.mjs',
+  'tests/world-return-identity-isolation.test.mjs',
   'tests/replay-trail-geometry.test.mjs',
   'tests/software-webgl-renderer-quality.test.mjs',
   'tests/replay-transition-evidence-contract.test.mjs',
