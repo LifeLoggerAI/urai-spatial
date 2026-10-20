@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { lifeAuthorityDigest, readLifeSourceBindings } from './lifeGraphAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -213,6 +214,14 @@ async function requireReadyLifeModelAuthority(
       || !SHA256.test(String(scene.get('memorySourceBindingDigest') ?? ''))
     ) {
       throw new functions.https.HttpsError('failed-precondition', 'Life Movie SceneTruth authority is unavailable.')
+    }
+    // SceneTruth is bound to the canonical protected-source receipts as they
+    // existed when it was authored. Re-read their current authority and
+    // digest inside this same transaction; a revoked C1 grant, deleted owner,
+    // withdrawn receipt or changed revision cannot admit a stale movie.
+    const currentBindings = await readLifeSourceBindings(db, transaction, uid, chapter.provenance.sourceIds)
+    if (lifeAuthorityDigest(currentBindings) !== scene.get('memorySourceBindingDigest')) {
+      throw new functions.https.HttpsError('failed-precondition', 'Life Movie canonical source authority changed.')
     }
     dependencyIds.add(scene.id)
     for (const dependency of Array.isArray(scene.get('dependencyIds')) ? scene.get('dependencyIds') : []) {

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import test from 'node:test'
 import vm from 'node:vm'
@@ -17,17 +18,32 @@ const uid = 'fictional-owner-a'
 const memoryPath = 'users/' + uid + '/memories/fictional-memory'
 const scenePath = 'users/' + uid + '/sceneTruthPackets/fictional-scene'
 const moviePath = 'users/' + uid + '/lifeMovies/fictional-movie'
+const sourceId = 'psr_' + 'a'.repeat(16)
+const otherSourceId = 'psr_' + 'b'.repeat(16)
+const receiptPath = id => 'uraiPrivateSourceReceipts/' + createHash('sha256').update(id).digest('hex')
+const lifeAuthorityDigest = value => {
+  const canonical = v => Array.isArray(v) ? '[' + v.map(canonical).join(',') + ']'
+    : v && typeof v === 'object' ? '{' + Object.entries(v).sort(([a],[b]) => a.localeCompare(b))
+      .map(([k,x]) => JSON.stringify(k) + ':' + canonical(x)).join(',') + '}' : JSON.stringify(v)
+  return createHash('sha256').update(canonical(value)).digest('hex')
+}
+const receipt = (id, revision = 1) => ({ ownerUid: uid, id, active: true,
+  sourceRevision: revision, sourceSha256: 'd'.repeat(64) })
+const binding = row => ({ id: row.id, sourceRevision: row.sourceRevision,
+  sourceSha256: row.sourceSha256 })
+
 
 function fixture({ consentState = 'authorized', beforeTransaction = null, status = 'ready' } = {}) {
   const records = new Map([
     [memoryPath, { ownerId: uid, consentState, deleted: false,
-      lifeMovie: { sceneTruthPacketId: 'fictional-scene', provenance: { sourceIds: ['fictional'] } } }],
+      lifeMovie: { sceneTruthPacketId: 'fictional-scene', provenance: { sourceIds: [sourceId] } } }],
     [scenePath, { ownerId: uid, state: 'current', schemaVersion: 'urai-life-model-v1',
       syntheticOutputMayBecomeHistoricalSource: false, decision: 'READY', dependencyIds: [],
-      memoryId: 'fictional-memory', memorySourceIds: ['fictional'],
-      memorySourceBindingDigest: 'a'.repeat(64) }],
+      memoryId: 'fictional-memory', memorySourceIds: [sourceId],
+      memorySourceBindingDigest: lifeAuthorityDigest([binding(receipt(sourceId))]) }],
+    [receiptPath(sourceId), receipt(sourceId)],
   ])
-  const stats = { transactionReads: [], writes: [], audits: [], outsideReads: 0 }
+  const stats = { transactionReads: [], writes: [], audits: [], outsideReads: 0, authorityReads: 0 }
   const snapshot = path => ({
     exists: records.has(path), id: path.split('/').at(-1),
     ref: { parent: { parent: { id: path.split('/')[1] } } },
@@ -53,11 +69,31 @@ function fixture({ consentState = 'authorized', beforeTransaction = null, status
   const functions = { region: () => ({ https: { onCall: value => value } }), https: { HttpsError } }
   const firestore = Object.assign(() => db, { FieldValue: { serverTimestamp: () => 'fictional-clock' } })
   const admin = { apps: [{}], firestore, initializeApp() { throw Error('FORBIDDEN_INIT') } }
+  const originalSourceAuthorityBoundary = {
+    // A controlled adapter for the existing Graph authority contract. The
+    // production implementation comes from the real lifeGraphAuthority module.
+    async readLifeSourceBindings(_db, tx, owner, ids) {
+      stats.authorityReads++
+      if (owner !== uid || !Array.isArray(ids) || !ids.length ||
+        ids.some(id => !/^psr_[A-Za-z0-9_-]{16,128}$/.test(id)))
+        throw new HttpsError('failed-precondition', 'GRAPH_PROTECTED_SOURCE_REQUIRED')
+      const selected = [...new Set(ids)].sort(), out = []
+      for (const id of selected) {
+        const doc = await tx.get(db.doc(receiptPath(id)))
+        if (!doc.exists || doc.get('ownerUid') !== owner || doc.get('active') !== true)
+          throw new HttpsError('failed-precondition', 'GRAPH_SOURCE_AUTHORITY_UNAVAILABLE')
+        out.push(binding(records.get(receiptPath(id))))
+      }
+      return out
+    },
+    lifeAuthorityDigest,
+  }
   const module = { exports: {} }
   vm.runInNewContext(compiled.outputText, { module, exports: module.exports, URL, URLSearchParams,
     require(name) {
       if (name === 'firebase-admin') return admin
       if (name === 'firebase-functions/v1') return functions
+      if (name === './lifeGraphAuthority') return originalSourceAuthorityBoundary
       throw Error('UNEXPECTED_MODULE ' + name)
     },
   }, { filename: 'original-lifeMovie-compiled.js' })
@@ -79,6 +115,8 @@ test('approved owner and current SceneTruth succeed within one transaction', asy
   assert.equal(f.records.get(moviePath)?.consentState, 'authorized')
   assert.ok(f.stats.transactionReads.includes(memoryPath))
   assert.ok(f.stats.transactionReads.includes(scenePath))
+  assert.ok(f.stats.transactionReads.includes(receiptPath(sourceId)))
+  assert.equal(f.stats.authorityReads, 1)
   assert.equal(f.stats.outsideReads, 0)
   assert.equal(f.stats.audits.length, 1)
 })
@@ -129,13 +167,17 @@ test('SceneTruth missing current source-binding digest must be rejected', async 
 })
 test('duplicate-source provenance cannot become a ready Life Movie', async () => {
   const f = fixture()
-  f.records.get(scenePath).memorySourceIds = ['fictional', 'fictional']
+  f.records.get(scenePath).memorySourceIds = [sourceId, sourceId]
   await denied(f)
 })
 test('canonical source-set comparison is order-independent', async () => {
   const f = fixture()
-  f.records.get(memoryPath).lifeMovie.provenance.sourceIds = ['a', 'b']
-  f.records.get(scenePath).memorySourceIds = ['b', 'a']
+  f.records.set(receiptPath(otherSourceId), receipt(otherSourceId))
+  f.records.get(memoryPath).lifeMovie.provenance.sourceIds = [sourceId, otherSourceId]
+  f.records.get(scenePath).memorySourceIds = [otherSourceId, sourceId]
+  f.records.get(scenePath).memorySourceBindingDigest = lifeAuthorityDigest([
+    binding(receipt(sourceId)), binding(receipt(otherSourceId)),
+  ])
   const result = await f.save()
   assert.equal(result.chapterCount, 1)
 })
@@ -143,4 +185,30 @@ test('SceneTruth memory-binding substitution before transactional admission is d
   await denied(fixture({ beforeTransaction: records => {
     records.get(scenePath).memorySourceIds = ['substituted-before-commit']
   } }))
+})
+
+test('revoked protected source receipt cannot authorize a ready movie', async () => {
+  await denied(fixture({ beforeTransaction: records => {
+    records.get(receiptPath(sourceId)).active = false
+  } }))
+})
+test('missing protected source receipt cannot authorize a ready movie', async () => {
+  await denied(fixture({ beforeTransaction: records => {
+    records.delete(receiptPath(sourceId))
+  } }))
+})
+test('changed canonical source revision invalidates previous SceneTruth digest', async () => {
+  await denied(fixture({ beforeTransaction: records => {
+    records.get(receiptPath(sourceId)).sourceRevision = 2
+  } }))
+})
+test('changed protected source SHA invalidates previous SceneTruth digest', async () => {
+  await denied(fixture({ beforeTransaction: records => {
+    records.get(receiptPath(sourceId)).sourceSha256 = 'e'.repeat(64)
+  } }))
+})
+test('forged but well-formed SceneTruth digest cannot authorize a ready movie', async () => {
+  const f = fixture()
+  f.records.get(scenePath).memorySourceBindingDigest = 'b'.repeat(64)
+  await denied(f)
 })
