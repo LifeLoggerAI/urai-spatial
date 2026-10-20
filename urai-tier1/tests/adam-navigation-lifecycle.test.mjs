@@ -75,6 +75,8 @@ function fixture() {
     '@/lib/i18n/contentLanguage': { contentLanguage: () => ({ speechTag: 'en-US' }), contentLanguageProps: () => ({ lang: 'en', dir: 'ltr' }) },
     '@/lib/i18n/useUraiLocale': { useUraiLocale: () => ({ text: () => 'Founder digital presence', props: () => ({ lang: 'en', dir: 'ltr' }) }) },
     './adamSurfaceContext': surfaces.exports,
+    'firebase/auth': { onAuthStateChanged: () => () => {} },
+    '@/lib/firebase/client': { firebasePublicEnvReady: false, getUraiAuth: () => ({}) },
     './adamClient': {
       AdamProviderError,
       requestAdamPresence: (input) => { const result = deferred(); requests.push({ input, ...result }); return result.promise },
