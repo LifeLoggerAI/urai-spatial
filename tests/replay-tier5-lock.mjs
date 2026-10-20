@@ -49,11 +49,17 @@ async function startServer() {
   }
   const baseUrl = baseUrlForPort(FALLBACK_PORT);
   const serverScript = SERVER_MODE === 'production' ? 'start' : 'dev';
-  const child = spawn('pnpm', ['--filter', 'urai-tier1', serverScript, '--port', String(FALLBACK_PORT)], {
+  // The original portable Node 22 toolchain has no ambient pnpm executable.
+  // Resolve the repository-pinned pnpm@10 through the same Node binary as all
+  // other native stages. This remains the real development/production server.
+  const child = spawn(process.execPath, [
+    'scripts/run-pnpm.mjs', '--filter', 'urai-tier1',
+    serverScript, '--port', String(FALLBACK_PORT),
+  ], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1' },
     stdio: 'inherit',
-    shell: process.platform === 'win32',
+    shell: false,
     detached: process.platform !== 'win32',
   });
   return { child, baseUrl };
