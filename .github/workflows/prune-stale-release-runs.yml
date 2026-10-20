@@ -31,82 +31,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Checkout exact pruning source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Test cancellation authority
+        run: node --test scripts/ci/prune-stale-release-runs.test.cjs
       - name: Cancel stale runs from the same branch
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           script: |
-            const statuses = ['queued', 'in_progress', 'waiting', 'pending', 'requested'];
-            const pullRequest = context.payload.pull_request;
-            const keepSha = pullRequest?.head?.sha || context.sha;
-            const keepRun = context.runId;
-            const keepBranch = pullRequest?.head?.ref || context.ref.replace('refs/heads/', '');
-            let inspected = 0;
-            let cancelled = 0;
-            const failures = [];
-            const transientStatuses = new Set([429, 500, 502, 503, 504]);
-
-            const withRetry = async (label, operation, attempts = 4) => {
-              let lastError;
-              for (let attempt = 1; attempt <= attempts; attempt += 1) {
-                try {
-                  return await operation();
-                } catch (error) {
-                  lastError = error;
-                  if (!transientStatuses.has(error?.status) || attempt === attempts) throw error;
-                  const delayMs = Math.min(8_000, 750 * (2 ** (attempt - 1)));
-                  core.warning(`${label} transient HTTP ${error.status}; retry ${attempt}/${attempts} after ${delayMs}ms`);
-                  await new Promise((resolve) => setTimeout(resolve, delayMs));
-                }
-              }
-              throw lastError;
-            };
-
-            for (const status of statuses) {
-              const runs = await withRetry(
-                `list workflow runs status=${status}`,
-                () => github.paginate(
-                  github.rest.actions.listWorkflowRunsForRepo,
-                  {
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    status,
-                    per_page: 100,
-                  },
-                ),
-              );
-
-              for (const run of runs) {
-                if (run.id === keepRun) continue;
-                if (run.head_branch !== keepBranch) continue;
-                if (run.head_sha === keepSha) continue;
-                inspected += 1;
-                try {
-                  await withRetry(
-                    `cancel workflow run ${run.id}`,
-                    () => github.rest.actions.cancelWorkflowRun({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      run_id: run.id,
-                    }),
-                  );
-                  cancelled += 1;
-                } catch (error) {
-                  if (error?.status !== 409) {
-                    failures.push(`${run.id}:${error?.status || 'unknown'}`);
-                  }
-                }
-              }
-            }
-
+            const prune = require('./scripts/ci/prune-stale-release-runs.cjs');
+            const result = await prune({ github, context, core });
             await core.summary
               .addHeading('URAI Spatial branch queue pruning')
-              .addRaw(`Branch preserved: ${keepBranch}\n`)
-              .addRaw(`Exact SHA preserved: ${keepSha}\n`)
-              .addRaw(`Superseded runs inspected: ${inspected}\n`)
-              .addRaw(`Superseded runs cancelled: ${cancelled}\n`)
-              .addRaw(`Unexpected failures: ${failures.length}\n`)
+              .addRaw('Live branch: ' + result.branch + '\n')
+              .addRaw('Invocation SHA: ' + result.sha + '\n')
+              .addRaw('Superseded invocation: ' + result.superseded + '\n')
+              .addRaw('Cancellation requests: ' + result.cancelRequested + '\n')
+              .addRaw('Terminal readbacks: ' + result.alreadyTerminal + '\n')
+              .addRaw('Preserved runs: ' + result.preserved + '\n')
+              .addRaw('Unexpected failures: ' + result.failures.length + '\n')
               .write();
-
-            if (failures.length) {
-              core.setFailed(`Unexpected cancellation failures: ${failures.join(', ')}`);
-            }
+            if (result.failures.length) core.setFailed('Unexpected cancellation failures: ' + result.failures.join(', '));

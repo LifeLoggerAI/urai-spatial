@@ -1,4 +1,5 @@
 import { receiptSystems } from '@/data/receipts'
+import InstitutionalPublicSurface from '../InstitutionalPublicSurface'
 
 export const metadata = {
   title: 'URAI Receipts | Public Evidence',
@@ -7,9 +8,12 @@ export const metadata = {
 
 export default function ReceiptsPage() {
   return (
-    <main className="container">
-      <h1>Built with receipts.</h1>
-      <p>URAI tracks systems through evidence, documentation, and verification gates.</p>
+    <InstitutionalPublicSurface
+      eyebrow="UrAi · Verification"
+      title="Built with receipts."
+      lede="Review the evidence behind each part of UrAi and the next check it needs. Current availability is shown on Status."
+      links={[{ href: '/status', label: 'Current release status', primary: true }, { href: '/proof', label: 'Explore the evidence' }]}
+    >
       <section>
         {receiptSystems.map((system) => (
           <article key={system.name}>
@@ -19,6 +23,6 @@ export default function ReceiptsPage() {
           </article>
         ))}
       </section>
-    </main>
+    </InstitutionalPublicSurface>
   )
 }

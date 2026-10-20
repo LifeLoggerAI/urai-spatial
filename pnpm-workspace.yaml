@@ -4,5 +4,6 @@ packages:
   - "packages/tier-locks"
   - "packages/release-tools"
   - "distribution/android-shell"
+  - "distribution/ios-shell"
   - "!**/_audit/**"
   - "!**/.next/**"

@@ -2,43 +2,90 @@
   "schemaVersion": 1,
   "id": "home-entry-chamber-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
-  "bytes": 1786808,
-  "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
+  "bytes": 186040,
+  "sha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
   "measured": {
+    "format": "glb",
+    "version": 2,
+    "generator": "glTF-Transform v4.4.2",
+    "nodes": 160,
+    "meshes": 143,
+    "materials": 13,
     "triangleCount": 12934,
-    "boundsMeters": {
-      "min": [
-        -9.345,
-        -1.83,
-        -9.238
-      ],
-      "max": [
-        9.345,
-        5.0844,
-        7.452
-      ],
-      "size": [
-        18.69,
-        6.9144,
-        16.69
-      ]
-    },
-    "repairedEulerRotations": 2,
-    "nodeCount": 160,
-    "materialCount": 13,
-    "animationClips": [
-      "Home_Breathing",
-      "Presence_Idle",
-      "Presence_Privacy",
-      "Presence_Forming"
-    ]
+    "boundsMin": [
+      -9.344999599456788,
+      -1.1389961528778076,
+      -9.383786176831084
+    ],
+    "boundsMax": [
+      9.344999599456788,
+      5.1018419702297555,
+      7.451975496666518
+    ],
+    "boundsMeters": [
+      18.689999198913576,
+      6.240838123107563,
+      16.8357616734976
+    ],
+    "extensionsUsed": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization"
+    ],
+    "extensionsRequired": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization"
+    ],
+    "animationPoseEnvelopeVerified": false,
+    "measurementMethod": "three-stdlib 2.36.1 GLTFLoader and bundled MeshoptDecoder with Three 0.183.2; transformed decoded logical attributes",
+    "measurementReportSha256": "0759b8dd6b7eafbd07a81df3c97344b7af53ff899997145d1ff8bc9c66dfd834"
   },
   "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-home-threshold",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-08T23:04:50.713Z",
-  "releaseState": "candidate-not-production-ready"
+  "generatedBy": "URAI Labs deterministic NORMAL-only derivative of restored51db7b3ba77a657659da34ca5e146e049dd03d31 geometry; pinned meshoptimizer1.0;14zero normals repaired using exact same-position donors; no asset forge, shape edit or visual approval",
+  "generatedAt": "2026-10-08T01:05:50.484508+00:00",
+  "releaseState": "candidate-not-production-ready",
+  "targetRoutes": [
+    "/",
+    "/home"
+  ],
+  "measurementReconciliation": {
+    "sourceSha": "51db7b3ba77a657659da34ca5e146e049dd03d31",
+    "method": "All177bufferViews and204accessors decoded and compared against immutable predecessor: only14NORMAL vectors changed; POSITION/indices/materials/nodes/animations/skin/bounds untouched. Candidate normal proof is separate from historical transformed geometry measurement.",
+    "historicalGeometryReportSha256": "0759b8dd6b7eafbd07a81df3c97344b7af53ff899997145d1ff8bc9c66dfd834",
+    "normalRepairReceiptSha256": "5f57bbee1123e418456d13e240fdf5dc9812b2fd017d10292c46fae975d221e4",
+    "restoredAcceptedBytes": false,
+    "geometryUnchangedFromPredecessor": true,
+    "finalReviewGranted": false
+  },
+  "historicalPredecessorGeneratedReceipt": {
+    "bytes": 184160,
+    "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "generatedBy": "Unchanged reviewed source recovered from 51db7b3ba77a657659da34ca5e146e049dd03d31; no asset forge or substitution",
+    "generatedAt": "2026-08-08T23:04:50.713Z",
+    "measurementReconciliation": {
+      "sourceSha": "51db7b3ba77a657659da34ca5e146e049dd03d31",
+      "method": "Actual resolved Three 0.183.2 / three-stdlib 2.36.1 GLTFLoader and bundled MeshoptDecoder; normalized logical attributes",
+      "reportSha256": "0759b8dd6b7eafbd07a81df3c97344b7af53ff899997145d1ff8bc9c66dfd834",
+      "restoredAcceptedBytes": true,
+      "finalReviewGranted": false
+    },
+    "status": "historical unchanged-source receipt; no approval transfers to derived normal-repair successor"
+  },
+  "normalRepair": {
+    "receiptPath": "operations/assets/normal-repair-receipts/home-entry-chamber-v1.json",
+    "receiptSha256": "5f57bbee1123e418456d13e240fdf5dc9812b2fd017d10292c46fae975d221e4",
+    "predecessorPath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+    "predecessorBytes": 184160,
+    "predecessorSha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "candidateBytes": 186040,
+    "candidateSha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+    "visualAcceptance": false,
+    "humanReviewApproved": false,
+    "deviceAcceptance": false,
+    "productionPromotion": false,
+    "exactHeadChecksPassed": false
+  }
 }

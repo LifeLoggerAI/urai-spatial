@@ -4,7 +4,7 @@ on:
   push:
     branches: [agent/location-map-canonical-world-872-v2]
   pull_request:
-    branches: [main]
+    branches: [main, repair/release-closure-integration-20261007]
   workflow_dispatch:
 
 permissions:
@@ -72,7 +72,9 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Run exact-head browser acceptance
-        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts --timeout=120000
+        env:
+          URAI_EXACT_HEAD: ${{ env.EXACT_HEAD_SHA }}
+        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --fail-on-flaky-tests --config=playwright.config.ts --timeout=120000
       - name: Retain browser evidence
         if: always()
         uses: actions/upload-artifact@v4

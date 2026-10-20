@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
+import vm from 'node:vm'
+import ts from 'typescript'
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 const page = read('src/app/status/page.tsx')
@@ -38,7 +40,18 @@ test('Embedded build identity is limited to allowlisted non-production preview h
 })
 
 test('Canonical Status page is not covered by the legacy autonomous realm layer', () => {
-  assert.match(legacyLayer, /Status are owned exclusively by their canonical route clients/)
+  const compiled = ts.transpileModule(legacyLayer, { compilerOptions: {
+    module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX,
+  } }).outputText
+  for (const pathname of ['/status', '/status/', '/status/details']) {
+    const exports = {}
+    vm.runInNewContext(compiled, { exports, require(id) {
+      if (id === 'next/navigation') return { usePathname: () => pathname }
+      if (id === 'react/jsx-runtime') return { jsx: () => ({ legacyOverlay: true }) }
+      return { default: () => null }
+    } })
+    assert.equal(exports.default(), null, `${pathname} must not mount a legacy overlay`)
+  }
   assert.doesNotMatch(legacyLayer, /pathname\.startsWith\("\/status"\)/)
   assert.doesNotMatch(legacyLayer, /return <UraiAutonomousV1Realms[^>]*status/)
 })
@@ -55,7 +68,7 @@ test('Only canonical production requests and validates the complete protected fi
   assert.match(authority, /item\.releaseSha === item\.rollbackSha/)
   assert.match(authority, /item\.firebaseProject !== 'urai-4dc1d'/)
   assert.match(authority, /item\.liveUrl !== 'https:\/\/urai\.app'/)
-  assert.match(authority, /item\.deploymentScope !== 'hosting-only'/)
+  assert.match(authority, /item\.deploymentScope !== 'functions-and-hosting'/)
   assert.match(authority, /item\.certification === 'pending-post-deploy-smoke'/)
   assert.match(authority, /item\.certification !== 'verified-post-deploy-smoke'/)
   assert.match(authority, /Release fingerprint certification is pending post-deploy smoke/)

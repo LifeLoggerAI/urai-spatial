@@ -10,6 +10,7 @@ const expectedRollbackSha = (process.env.URAI_EXPECTED_ROLLBACK_SHA || process.e
 const expectedAuthoritySha = (process.env.URAI_EXPECTED_AUTHORITY_SHA || process.env.CURRENT_MAIN_SHA || '').trim()
 const expectedFunctionsTreeSha = (process.env.URAI_EXPECTED_FUNCTIONS_TREE_SHA || '').trim()
 const expectedStaticConfigSha256 = (process.env.URAI_EXPECTED_STATIC_CONFIG_SHA256 || '').trim()
+const expectedFingerprintCertification = (process.env.URAI_EXPECTED_FINGERPRINT_CERTIFICATION || 'pending-post-deploy-smoke').trim()
 const receiptPath = process.env.URAI_LIVE_RECEIPT_PATH || 'deployment-receipt/live-content-parity.json'
 const maxAttempts = Number.parseInt(process.env.URAI_SMOKE_FETCH_ATTEMPTS || '4', 10)
 const retryBaseMs = Number.parseInt(process.env.URAI_SMOKE_RETRY_BASE_MS || '750', 10)
@@ -22,6 +23,7 @@ if (!/^[0-9a-f]{40}$/.test(expectedRollbackSha)) throw new Error('URAI_EXPECTED_
 if (!/^[0-9a-f]{40}$/.test(expectedAuthoritySha)) throw new Error('URAI_EXPECTED_AUTHORITY_SHA or CURRENT_MAIN_SHA must be a full lowercase SHA')
 if (!/^[0-9a-f]{40}$/.test(expectedFunctionsTreeSha)) throw new Error('URAI_EXPECTED_FUNCTIONS_TREE_SHA must be a full lowercase Git tree SHA')
 if (!/^[0-9a-f]{64}$/.test(expectedStaticConfigSha256)) throw new Error('URAI_EXPECTED_STATIC_CONFIG_SHA256 must be a lowercase SHA-256 digest')
+if (!['pending-post-deploy-smoke', 'verified-post-deploy-smoke'].includes(expectedFingerprintCertification)) throw new Error('URAI_EXPECTED_FINGERPRINT_CERTIFICATION is invalid')
 if (expectedRollbackSha === expectedSha) throw new Error('Rollback SHA must be distinct from deployed SHA')
 if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 8) throw new Error('URAI_SMOKE_FETCH_ATTEMPTS must be an integer from 1 to 8')
 if (!Number.isInteger(retryBaseMs) || retryBaseMs < 100 || retryBaseMs > 10_000) throw new Error('URAI_SMOKE_RETRY_BASE_MS must be an integer from 100 to 10000')
@@ -41,6 +43,8 @@ const contracts = [
   ['/spatial/ar-vr', ['urai-quest-explorable-world', 'URAI AR / VR / XR entry chamber'], []],
   ['/xr', ['urai-quest-explorable-world', 'URAI XR World'], []],
   ['/settings', ['device-settings', 'How URAI meets you.'], []],
+  ['/settings/communications', ['communication-settings', 'SMS preferences', 'Message and data rates may apply', 'Reply STOP to opt out or HELP for help'], []],
+  ['/sms-opt-in', ['sms-opt-in-proof', 'SMS web-form opt-in', 'unchecked by default', 'Privacy Policy', 'Terms &amp; Conditions'], []],
   ['/launch', ['Your private world is the interface.', 'Launch destinations', 'Launch truth'], []],
   ['/mirror', ['urai-final-mirror-realm', 'See the pattern clearly.'], []],
   ['/passport', ['passport-ownership-vault', 'UrAi Passport', 'Ownership key'], ['urai-final-passport-vault', 'Your life stays yours.']],
@@ -54,7 +58,8 @@ const contracts = [
   ['/glass', ['Move from screen to space.', 'Open XR preview', 'Open spatial web'], []],
   ['/offline', ['Your way back stays visible.', 'Return Home', 'Check status'], []],
   ['/report-bug', ['Tell us what broke.', 'Email support', 'Check status first'], []],
-  ['/terms', ['URAI Spatial Terms', 'No medical, diagnostic, or emergency use'], []],
+  ['/privacy', ['privacy-policy-heading', 'Privacy Policy', 'We do not sell or share your SMS opt-in data or personal information with third parties for marketing purposes.'], ['quiet momentum']],
+  ['/terms', ['terms-heading', 'Terms &amp; Conditions', 'SMS Terms', 'Message frequency varies', 'Message and data rates may apply', 'Reply STOP', 'Reply HELP'], ['URAI Spatial Terms']],
   ['/login', ['canonical-auth-entry', 'Enter your world.'], []],
   ['/account-deletion', ['account-deletion-heading', 'Delete your account on your terms.'], []],
   ['/privacy-policy', ['privacy-policy-heading', 'Privacy policy candidate'], []],
@@ -152,6 +157,7 @@ async function fetchFingerprint() {
     && payload?.deploymentScope === 'functions-and-hosting'
     && payload?.functionsTreeSha === expectedFunctionsTreeSha
     && payload?.firebaseStaticConfigSha256 === expectedStaticConfigSha256
+    && payload?.certification === expectedFingerprintCertification
   return {
     requestedUrl: url.toString(),
     finalUrl: response.url,
@@ -269,6 +275,41 @@ for (const [method, route] of serverContracts) {
   }
 }
 
+const systemProofResults = []
+for (const route of ['/api/system/deploy-proof', '/api/system/health', '/api/system/launch-boundary']) {
+  const requested = new URL(route, `${baseUrl}/`)
+  try {
+    const { response, text, attemptsUsed } = await fetchTextWithRetries(requested, {
+      redirect: 'manual',
+      cache: 'no-store',
+      headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-system-proof-verifier/1.0' },
+    })
+    const contentType = response.headers.get('content-type')?.toLowerCase() || ''
+    const cacheControl = response.headers.get('cache-control')?.toLowerCase() || ''
+    const finalUrl = new URL(response.url)
+    let payload = null
+    try { payload = JSON.parse(text) } catch {}
+    const identityMatches = route !== '/api/system/deploy-proof'
+      || (payload?.environment?.commitSha === expectedSha && payload?.environment?.firebaseProject === 'urai-4dc1d')
+    systemProofResults.push({
+      route,
+      finalUrl: response.url,
+      status: response.status,
+      contentType,
+      cacheControl,
+      attemptsUsed,
+      contentSha256: createHash('sha256').update(text).digest('hex'),
+      passed: response.ok && finalUrl.origin === canonicalOrigin
+        && normalizePath(finalUrl.pathname) === normalizePath(requested.pathname)
+        && contentType.includes('application/json')
+        && cacheControl.split(',').some((directive) => directive.trim() === 'no-store')
+        && payload !== null && identityMatches,
+    })
+  } catch (error) {
+    systemProofResults.push({ route, error: error instanceof Error ? error.message : String(error), passed: false })
+  }
+}
+
 let fingerprint
 try {
   fingerprint = await fetchFingerprint()
@@ -280,7 +321,8 @@ try {
   }
 }
 
-const passed = results.every((result) => result.passed) && serverResults.every((result) => result.passed) && fingerprint.passed
+const passed = results.every((result) => result.passed) && serverResults.every((result) => result.passed)
+  && systemProofResults.every((result) => result.passed) && fingerprint.passed
 const receipt = {
   schemaVersion: 'urai-live-content-parity-6',
   generatedAt: new Date().toISOString(),
@@ -294,10 +336,12 @@ const receipt = {
   checkedServerBoundaries: serverResults.length,
   expectedFunctionsTreeSha,
   expectedStaticConfigSha256,
+  expectedFingerprintCertification,
   fetchPolicy: { maxAttempts, retryBaseMs },
   hydratedIdentityProof: 'scripts/urai-release-control-smoke.mjs',
-  browserCompatibilityRoutes: ['/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind'],
+  browserCompatibilityRoutes: ['/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind'],
   fingerprint,
+  systemProofResults,
   serverResults,
   passed,
   results,

@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from 'react';
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot';
+import styles from './MemoryPlaceScene.module.css';
 import Link from 'next/link';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
@@ -64,21 +66,21 @@ export function MemoryPlaceScene({ place, objects }: { place: MemoryPlace; objec
   const placeReplayHref = `/place/${encodeURIComponent(place.id)}/replay`;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
-      <section className="relative h-screen overflow-hidden">
+    <main className={styles.scene}>
+      <section className={styles.viewport}>
         <Canvas className="absolute inset-0">
           <PlaceWorld place={place} objects={objects} selectedObjectId={selectedObject?.id} onSelectObject={(object) => setSelectedObjectId(object.id)} />
         </Canvas>
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-slate-950/85 to-transparent p-6">
-          <p className="text-xs uppercase tracking-[0.45em] text-cyan-100/70">Memory Place</p>
+        <header className={styles.heading}>
+          <p className="text-xs uppercase tracking-[0.2em] text-cyan-100/70">{place.privacyLevel === 'demo' ? 'Sample memory place' : 'Memory place'}</p>
           <h1 className="mt-2 text-3xl font-semibold text-white md:text-5xl">{place.title}</h1>
           <p className="mt-3 max-w-2xl text-sm text-slate-200 md:text-base">
             A symbolic place linked to {place.memoryIds.length} memory marker{place.memoryIds.length === 1 ? '' : 's'}.
-            Location precision: {place.locationPrivacy}.
+            {place.locationPrivacy === 'symbolic-only' ? ' This scene does not reveal an exact location.' : ' Location visibility follows your privacy choices.'}
           </p>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col gap-3 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent p-6 md:flex-row md:items-end md:justify-between">
-          <div className="grid gap-3 rounded-3xl border border-white/10 bg-white/10 p-4 backdrop-blur md:grid-cols-[1fr_1.1fr]">
+        </header>
+        <div className={styles.dock} tabIndex={0} aria-label="Place objects and actions">
+          <div className={styles.panel}>
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-slate-300">Objects</p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -86,6 +88,7 @@ export function MemoryPlaceScene({ place, objects }: { place: MemoryPlace; objec
                   <button
                     key={object.id}
                     type="button"
+                    aria-pressed={object.id === selectedObject?.id}
                     onClick={() => setSelectedObjectId(object.id)}
                     className={`rounded-full border px-3 py-1 text-xs text-slate-100 ${object.id === selectedObject?.id ? 'border-cyan-200 bg-cyan-200/15' : 'border-white/15 bg-transparent'}`}
                   >
@@ -98,10 +101,10 @@ export function MemoryPlaceScene({ place, objects }: { place: MemoryPlace; objec
               <p className="text-xs uppercase tracking-[0.3em] text-cyan-100/70">Selected</p>
               <h2 className="mt-2 text-lg font-semibold">{selectedObject?.label ?? 'No object selected'}</h2>
               <p className="mt-2 text-sm text-slate-300">
-                {selectedObject ? `${selectedObject.objectType} · ${selectedObject.interactionType} · ${selectedObject.privacyLevel}` : 'Choose an object to inspect this place.'}
+                {selectedObject ? 'Explore what this object represents in the place.' : 'Choose an object to inspect this place.'}
               </p>
               {selectedObject?.emotionalMeaning ? <p className="mt-2 text-sm text-slate-400">{selectedObject.emotionalMeaning}</p> : null}
-              <MemoryPlaceInsightPanel place={place} selectedObject={selectedObject} />
+              <details><summary>About this object &amp; privacy</summary><MemoryPlaceInsightPanel place={place} selectedObject={selectedObject} /></details>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-cyan-100" href={placeReplayHref}>
                   Replay Place
@@ -109,7 +112,7 @@ export function MemoryPlaceScene({ place, objects }: { place: MemoryPlace; objec
               </div>
             </div>
           </div>
-          <div className="flex gap-3">
+          <nav className={styles.navigation} aria-label="Place navigation">
             <Link className="rounded-full border border-white/20 px-4 py-2 text-sm text-white backdrop-blur hover:bg-white/10" href="/location-map">
               Location Map
             </Link>
@@ -119,7 +122,8 @@ export function MemoryPlaceScene({ place, objects }: { place: MemoryPlace; objec
             <Link className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-100" href="/">
               Return Home
             </Link>
-          </div>
+            <AdamLauncherSlot name="memory-place-actions" />
+          </nav>
         </div>
       </section>
     </main>

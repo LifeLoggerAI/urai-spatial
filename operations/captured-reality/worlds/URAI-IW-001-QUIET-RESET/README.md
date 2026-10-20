@@ -16,7 +16,7 @@ No generated image, video, camera solve, Gaussian reconstruction, mesh, depth pr
 
 The canonical hero and three anchor images exist. Eight survey passes have been submitted/generated. **None are visually accepted yet.**
 
-That is intentional. The Runway-hosted media can be generated and tracked through the connected provider, but this execution runtime cannot ingest the provider's signed media bytes for literal visual inspection. Therefore all visual acceptance fields remain `pending`.
+The retained MP4s are now reachable: all eight were retrieved, hashed, and decoded in the current execution runtime. Sampled intermediate frames were inspected literally, with a dense four-frame-per-second review of S06. S06 is rejected because late frames duplicate the sun and its water reflection. The other passes remain pending complete motion/geometry acceptance. `survey-inspection.current.json` binds the byte hashes and inspection scope. No new generation, independent acceptance, or reconstruction occurred.
 
 Do not feed any survey pass into COLMAP until a human or supported visual-review runtime explicitly accepts it.
 

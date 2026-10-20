@@ -1,5 +1,8 @@
 'use client'
 
+import DocumentScrollArea from '@/components/public/DocumentScrollArea'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+
 import { useState } from 'react'
 import { useSpatialTierLock } from '@/lib/tier-locks/client'
 
@@ -24,7 +27,7 @@ export default function LockInspectorPage() {
 
   if (!internalRoutesAllowed()) {
     return (
-      <main
+      <DocumentScrollArea
         style={{
           minHeight: '100vh',
           padding: 'clamp(24px, 5vw, 72px)',
@@ -42,15 +45,16 @@ export default function LockInspectorPage() {
             Internal route locked.
           </h1>
           <p style={{ margin: '0 0 28px', maxWidth: 720, color: 'rgba(226, 232, 240, .74)', fontSize: 18, lineHeight: 1.6 }}>
-            This route is disabled in production unless NEXT_PUBLIC_ALLOW_INTERNAL_ROUTES is explicitly enabled.
+            This inspection page is available only in an authorized development or review environment.
           </p>
+          <AdamLauncherSlot name="internal-locks-actions" />
         </section>
-      </main>
+      </DocumentScrollArea>
     )
   }
 
   return (
-    <main
+    <DocumentScrollArea
       style={{
         minHeight: '100vh',
         padding: 'clamp(24px, 5vw, 72px)',
@@ -118,7 +122,10 @@ export default function LockInspectorPage() {
             <pre style={{ overflow: 'auto', background: 'rgba(0,0,0,.35)', padding: 16, borderRadius: 16 }}>{JSON.stringify(decision, null, 2)}</pre>
           </section>
         ) : null}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24, maxWidth: '100%' }}>
+          <AdamLauncherSlot name="internal-locks-actions" />
+        </div>
       </section>
-    </main>
+    </DocumentScrollArea>
   )
 }

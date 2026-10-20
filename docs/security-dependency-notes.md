@@ -1,8 +1,10 @@
 # URAI Security and Dependency Notes
 
-## Current known launch warning
+## Controlled security patch — 2026-10-06
 
-Recent Firebase/Next build logs reported a warning that `next@15.5.7` has a security advisory and should be upgraded to a patched version.
+The previous source pin, `next@15.5.7`, predates published security fixes. This branch pins Next.js and `eslint-config-next` to `15.5.27`, the Maintenance LTS patch identified in the [September 30 security release](https://nextjs.org/blog/september-2026-security-release). React and React DOM remain pinned to `19.2.4`.
+
+This is a source dependency repair, not evidence that production has received the patch. Require successful exact-head install, typecheck, tests, build, rendered route verification, governed deployment, and production identity readback before closing the production exposure. Applicability of individual advisories depends on enabled router and image/cache features; do not claim every listed vulnerability was exploitable here.
 
 ## Safe closeout position
 

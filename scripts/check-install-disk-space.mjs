@@ -29,10 +29,10 @@ if (result.status !== 0) {
 
 const lines = result.stdout.trim().split(/\r?\n/)
 const data = lines.at(-1)?.trim().split(/\s+/)
-const availableKb = Number.parseInt(data?.[3] ?? '0', 10)
+const availableKb = Number.parseInt(data?.[3] ?? '', 10)
 const availableMb = Math.floor(availableKb / 1024)
 
-if (!Number.isFinite(availableMb) || availableMb <= 0) {
+if (!Number.isFinite(availableMb) || availableKb < 0) {
   console.warn('[URAI Spatial install] Could not parse free disk space; continuing install preflight.')
   process.exit(0)
 }

@@ -2,12 +2,19 @@ name: Home State Proof
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, 'repair/release-closure-integration-20261007']
     paths:
       - 'scripts/capture-home-state-proof.mjs'
+      - 'scripts/dismiss-home-first-run-guide.mjs'
+      - 'tests/dismiss-home-first-run-guide.test.mjs'
+      - 'scripts/capture-visible-canvas-png.mjs'
+      - 'tests/home-state-proof-sampling.test.mjs'
+      - 'tests/home-state-proof-companion-capture.test.mjs'
+      - 'urai-tier1/tests/visible-canvas-capture.test.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - '.github/workflows/home-state-proof.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
+      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/home/**'
   workflow_dispatch:
 
@@ -21,7 +28,7 @@ concurrency:
 jobs:
   proof:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 75
     env:
       URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
       PLAYWRIGHT_BROWSERS_PATH: '0'
@@ -49,7 +56,10 @@ jobs:
           pnpm install --frozen-lockfile 2>&1 | tee artifacts/home-state-proof/install.log
       - name: Verify state-proof contract and build
         run: |
-          (cd urai-tier1 && node tests/continuous-spatial-restoration-contract.test.mjs)
+          node --test tests/dismiss-home-first-run-guide.test.mjs tests/home-state-proof-sampling.test.mjs tests/home-state-proof-companion-capture.test.mjs
+          node --test urai-tier1/tests/native-proof-post-capture-contract.test.mjs
+          (cd urai-tier1 && node --test tests/visible-canvas-capture.test.mjs)
+          (cd urai-tier1 && node --import tsx tests/continuous-spatial-restoration-contract.test.mjs)
           pnpm build:static
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
       - name: Capture exact Home state proof
@@ -66,3 +76,5 @@ jobs:
           path: artifacts/home-state-proof
           if-no-files-found: error
           retention-days: 365
+
+

@@ -45,7 +45,7 @@ test('Home interpretive Gaussian layer preserves truth, collision, interaction a
   assert.ok(home.includes('HOME_INTERPRETIVE_SPLAT_ASSET ? <HomeInterpretiveSplatEnvironment'))
   assert.ok(home.includes('<Terrain target={props.target} />'))
   assert.match(home, /<Thresholds onGround=/)
-  assert.match(home, /<PlayerRig input=/)
+  assert.match(home, /<PlayerRig\b[^>]*\binput=/)
 })
 
 test('Home interpretive environment is not mounted through private Captured Reality decision semantics', () => {

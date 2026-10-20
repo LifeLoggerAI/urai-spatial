@@ -43,7 +43,8 @@ const runtimeEnvironmentalRadius = 'radius: 2.8'
 const staleOrbRadius = "orb: { x: 0, z: -0.65, radius: 1.8"
 const transitionalOrbRadius = "orb: { x: 0, z: -2.65, radius: 1.8"
 const previousOrbRadius = "orb: { x: 0, z: -2.65, radius: 2.5"
-const runtimeOrbRadius = "orb: { x: 0, z: -4.25, radius: 2.4"
+const previousOnPathOrbTarget = "orb: { x: 0, z: -4.25, radius: 2.4"
+const runtimeOrbRadius = "orb: { x: 1.8, z: -9.5, radius: 2.4"
 const staleGroundTarget = "ground: { x: -4.55, z: -6.55"
 const previousGroundTarget = "ground: { x: -5.2, z: -8.4"
 const runtimeGroundTarget = "ground: { x: -5.4, z: -10.8"
@@ -70,7 +71,7 @@ patched = convergeSingle(patched, oldOwner, newOwner, 'Continuous proof animatio
 patched = convergeRepeated(patched, staleEnvironmentalRadius, runtimeEnvironmentalRadius, 2, 'Continuous proof environmental-threshold proximity')
 patched = convergeOneOf(
   patched,
-  [staleOrbRadius, transitionalOrbRadius, previousOrbRadius],
+  [staleOrbRadius, transitionalOrbRadius, previousOrbRadius, previousOnPathOrbTarget],
   runtimeOrbRadius,
   'Continuous proof Orb interaction-zone',
 )

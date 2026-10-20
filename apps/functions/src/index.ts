@@ -15,11 +15,12 @@ export {
 } from './googleWorkspaceOAuth'
 export {
   applyConsentPolicy,
-  cancelDeletionRequest,
-  cancelExportRequest,
-  createDeletionRequest,
-  createExportRequest,
-  getExportDownloadUrl,
+  cancelDeletionRequest as cancelSpatialDeletionRequest,
+  cancelExportRequest as cancelSpatialExportRequest,
+  createDeletionRequest as createSpatialDeletionRequest,
+  createExportRequest as createSpatialExportRequest,
+  getOperationalExportDownloadUrl,
+  downloadOperationalExportPackage,
   getPassportSnapshot,
   processDeletionGraceQueue,
   processDeletionQueueItem,
@@ -27,7 +28,7 @@ export {
   processPrivacyEnforcementJob,
 } from './privacyOperations'
 
-export { getCapturedRealityAsset, getCapturedRealityRuntimeUrl, getCapturedRealityReplayEntry } from './capturedReality'
+export { getCapturedRealityAsset, getCapturedRealityRuntimeUrl, streamCapturedRealityRuntime, getCapturedRealityReplayEntry, getCapturedRealityMeshUrl, streamCapturedRealityMesh } from './capturedReality'
 export { getInterpretiveWorldAsset, getInterpretiveWorldRuntimeUrl, getInterpretiveWorldReplayEntry } from './interpretiveWorld'
 
 export { recordPassiveSignal } from './passiveSignals'
@@ -47,6 +48,7 @@ export {
   compileLifeCausalGraphSnapshot,
   compilePersonModelBundle,
   compileSceneTruthPacket,
+  getCouncilLifeGraphEvidence,
   getReplayLifeModelAuthority,
   revokeLifeEntity,
   upsertLifeCausalEdge,
@@ -80,3 +82,9 @@ export {
 export { calibratePossibleFutureOutcome } from './scenarioCalibration'
 export { getAILedgerEntries, ledgerScenarioCreated, ledgerScenarioOutcomeObserved } from './aiLedgerOperations'
 export { getGlobalEmotionalFieldSnapshot } from './globalEmotionalField'
+
+export { mapsElevationProvider } from './mapsElevation'
+export { resolveLifeModelPrivateInputs } from './lifeModelPrivateInputs'
+export { getMemoryMediaUploadAuthority, registerMemoryMedia, reconcileMemoryMediaUploads, getMemoryMediaPlaybackAuthority, streamMemoryMediaPlayback } from './memoryMedia'
+export { reviewPrivateLifeModelCandidate } from './privateLifeModelReview'
+

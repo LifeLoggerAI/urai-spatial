@@ -3,7 +3,149 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
   pointer-events: none !important;
 }
 
+/* Inspection can leave bright pattern facets behind the identity. Keep the
+   real title and disclosure readable throughout camera movement and return. */
+.mirrorWorld .mirrorIdentity { background: #03101bed; border-radius: 8px; }
+
+.mirrorWorld .mirrorOrb {
+  width: auto;
+  min-height: 48px;
+  height: auto;
+  padding: 10px 16px;
+  gap: 10px;
+  display: flex;
+  border-radius: 16px;
+  color: #e7fcff;
+  box-shadow: 0 6px 24px #0008;
+}
+.mirrorWorld .mirrorOrb strong { font-size: 12px; white-space: nowrap; }
+.mirrorWorld .mirrorOrb span { width: 20px; height: 20px; flex: 0 0 20px; }
+.mirrorWorld .mirrorPatternRail { scrollbar-width: thin; scrollbar-color: #84c9cf #132f3a; padding-bottom: 10px; scroll-snap-type: x proximity; }
+.mirrorWorld .mirrorPatternRail button { flex: 0 0 auto; scroll-snap-align: start; }
+.mirrorWorld .mirrorPatternHint { position: absolute; z-index: 18; left: 20px; bottom: max(96px, calc(env(safe-area-inset-bottom) + 90px)); margin: 0; color: #c9e8eb; font-size: 10px; line-height: 1.4; text-shadow: 0 1px 4px #000; pointer-events: none; }
+
+@media (min-width: 761px) {
+  /* Reserve the center-bottom travel control's actual footprint. */
+  .mirrorWorld .mirrorPatternRail { max-width: min(640px, calc(50vw - 88px)); }
+  .mirrorWorld .mirrorOrb { bottom: max(116px, calc(env(safe-area-inset-bottom) + 108px)); }
+}
+
+/* The desktop inspector occupies the right edge. Keep global help outside it. */
+body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
+  left: max(18px, env(safe-area-inset-left));
+  right: auto;
+}
+
 @media (max-width: 760px) {
+  .mirrorWorld .mirrorPatternHint { left: 18px; bottom: max(176px, calc(env(safe-area-inset-bottom) + 170px)); }
+  /* The closed travel Orb owns a fixed bottom dock. Clip the entry/error scroll
+     surface above its halo so initial content cannot paint beneath navigation. */
+  main.mirrorBareEntry,
+  main.mirrorState {
+    --mirror-travel-dock-height: max(104px, calc(env(safe-area-inset-bottom) + 96px));
+    bottom: var(--mirror-travel-dock-height);
+    /* globals.css gives every main height/min-height:100%; cancel that rule
+       so the bottom inset actually clips the scroll viewport above the dock. */
+    height: calc(100svh - var(--mirror-travel-dock-height));
+    min-height: 0;
+    max-height: calc(100svh - var(--mirror-travel-dock-height));
+    box-sizing: border-box;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    padding-bottom: 24px;
+  }
+
+  main.mirrorBareEntry::after,
+  main.mirrorState::after {
+    content: '';
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--mirror-travel-dock-height);
+    background: #010306;
+    pointer-events: none;
+  }
+
+  main.mirrorState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  main.mirrorState > section {
+    flex: 0 0 auto;
+    width: min(620px, 100%);
+    margin-block: auto;
+  }
+
+  main.mirrorState section > div {
+    flex-wrap: wrap;
+  }
+
+  /* The inline Adam portal belongs to this header. Reserve its 48px row above
+     the inspector instead of trying to reposition the static launcher itself. */
+  .mirrorWorld:has(.mirrorInspection) .mirrorIdentity {
+    top: max(8px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    max-width: none;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mirrorWorld:has(.mirrorInspection) .mirrorIdentity > [data-urai-adam-launcher-slot] {
+    order: 2;
+    width: 80px;
+    margin-left: auto;
+  }
+
+  .mirrorWorld:has(.mirrorInspection) .mirrorIdentity > p {
+    flex: 1;
+    min-width: 0;
+    max-width: calc(100% - 92px);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  /* The inspector owns the visible title, evidence and selected-fragment text.
+     Keep the duplicate heading, summary and live status available to readers
+     without a floating status pill crossing the inspector's last line. */
+  .mirrorWorld:has(.mirrorInspection) .mirrorAnnouncement,
+  .mirrorWorld:has(.mirrorInspection) .mirrorIdentity > h1,
+  .mirrorWorld:has(.mirrorInspection) .mirrorIdentity > span:not([data-urai-adam-launcher-slot]) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Keep Orb travel available apart from the local Mirror Orb, above both the
+     reflection rail and world thresholds. The default global bottom-center
+     dock covers the Passport label while the overview is visible. */
+  body:has(.mirrorWorld):not(:has(.mirrorInspection)) .urai-world-companion[data-open='false'] {
+    left: auto;
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(172px, calc(50svh + 48px));
+    transform: none;
+    justify-items: end;
+  }
+
+  /* The floating fallback uses the same reserved row until its slot is ready. */
+  body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
+    left: auto;
+    right: max(8px, env(safe-area-inset-right));
+    top: max(8px, env(safe-area-inset-top));
+    transform: none;
+  }
+
   body:has(.mirrorWorld .mirrorInspection) .urai-world-companion {
     display: none !important;
     pointer-events: none !important;

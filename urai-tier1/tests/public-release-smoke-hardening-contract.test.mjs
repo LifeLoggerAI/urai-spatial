@@ -1,14 +1,17 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
+import vm from 'node:vm'
+import ts from 'typescript'
 
 const postDeploy = fs.readFileSync(new URL('../../scripts/urai-post-deploy-smoke.mjs', import.meta.url), 'utf8')
 const releaseControl = fs.readFileSync(new URL('../../scripts/urai-release-control-smoke.mjs', import.meta.url), 'utf8')
 const publicProof = fs.readFileSync(new URL('../../.github/workflows/public-institutional-surface-proof.yml', import.meta.url), 'utf8')
+const liveSmoke = fs.readFileSync(new URL('../../scripts/urai-live-smoke.mjs', import.meta.url), 'utf8')
 
 const publicRoutes = ['/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug']
 const fullVisionRoutes = ['/life-movie', '/council', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr']
-const directCriticalRoutes = ['/terms', '/login', '/account-deletion', '/privacy-policy', '/xr', '/settings', '/launch']
+const directCriticalRoutes = ['/privacy', '/terms', '/login', '/account-deletion', '/privacy-policy', '/xr', '/settings', '/settings/communications', '/sms-opt-in', '/launch']
 
 test('post-deploy parity includes current Focus, Replay and institutional public owners', () => {
   assert.ok(postDeploy.includes("'URAI Focus stellar memory field'"))
@@ -23,9 +26,14 @@ test('post-deploy parity includes current Focus, Replay and institutional public
 
   assert.ok(postDeploy.includes("schemaVersion: 'urai-live-content-parity-6'"))
   const compatibilityRoutes = postDeploy.match(/browserCompatibilityRoutes:\s*\[([^\]]*)\]/)?.[1] || ''
-  for (const route of ['/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind']) {
+  for (const route of ['/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind']) {
     assert.ok(compatibilityRoutes.includes("'" + route + "'"), 'missing static post-deploy compatibility route ' + route)
   }
+})
+
+test('post-deploy communications smoke matches the rendered SMS disclosure', () => {
+  assert.match(postDeploy, /\['\/settings\/communications', \['communication-settings', 'SMS preferences', 'Message and data rates may apply', 'Reply STOP to opt out or HELP for help'\], \[\]\]/)
+  assert.doesNotMatch(postDeploy, /\['\/settings\/communications', \[[^\]]*'Reply STOP', 'Reply HELP'[^\]]*\], \[\]\]/)
 })
 
 test('release-control browser smoke covers public routes and compatibility redirects', () => {
@@ -33,7 +41,6 @@ test('release-control browser smoke covers public routes and compatibility redir
     assert.ok(releaseControl.includes(`'${route}'`), `missing browser release route ${route}`)
   }
 
-  assert.ok(releaseControl.includes("['/privacy', { pathname: '/privacy-controls', searchEntries: [['from', 'privacy']] }]"))
   assert.ok(releaseControl.includes("['/ascent/life-map', { pathname: '/life-map', searchEntries: [['from', 'ascent-life-map']] }]"))
   assert.ok(releaseControl.includes("['/waitlist', { pathname: '/status', searchEntries: [['from', 'waitlist']] }]"))
   assert.ok(releaseControl.includes("['/system', { pathname: '/status', searchEntries: [['from', 'system']] }]"))
@@ -49,4 +56,31 @@ test('release-control browser smoke covers public routes and compatibility redir
 
 test('public institutional proof is eligible on integration branches', () => {
   assert.ok(publicProof.includes("'integration/**'"))
+})
+
+
+test('custom-domain live smoke verifies the public login, privacy policy, and support routes', () => {
+  const source = ts.createSourceFile('urai-live-smoke.mjs', liveSmoke, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+  const declarations = []
+  function visit(node) {
+    if (ts.isVariableDeclaration(node) && node.name.getText(source) === 'routes') declarations.push(node)
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  assert.equal(declarations.length, 1, 'one actual live route registry is required')
+  const routes = vm.runInNewContext('(' + declarations[0].initializer.getText(source) + ')')
+  for (const [route, marker] of [
+    ['/login', 'data-route-owner="canonical-auth-entry"'],
+    ['/privacy-policy', 'Privacy policy candidate'],
+    ['/support', 'Help when you need it.'],
+  ]) {
+    const matches = routes.filter(entry => entry.paths.includes(route))
+    assert.equal(matches.length, 1, `missing or duplicate live route smoke for ${route}`)
+    assert.deepEqual(Array.from(matches[0].paths), [route, `${route}/`])
+    assert.ok(matches[0].markers.some(pattern => pattern.test(marker)), `missing route-specific live marker for ${route}`)
+    assert.ok(matches[0].markers.every(pattern => !pattern.test('Unrelated application')), `permissive live marker for ${route}`)
+  }
+  const support = routes.find(entry => entry.paths.includes('/support'))
+  assert.ok(support.markers.some(pattern => pattern.test('Help when you need it.')))
+  assert.ok(support.markers.every(pattern => !pattern.test('Help when you need itX')), 'support punctuation must remain literal')
 })

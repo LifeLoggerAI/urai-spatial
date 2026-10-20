@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "preserve"
+  },
+  "files": [
+    "src/lib/i18n/coreMessages.ts",
+    "src/lib/i18n/journeyMessages.ts",
+    "src/lib/i18n/locales.ts",
+    "src/lib/i18n/localePreference.ts",
+    "src/lib/i18n/useUraiLocale.ts",
+    "src/lib/i18n/JourneyOfflineNotice.tsx"
+  ]
+}

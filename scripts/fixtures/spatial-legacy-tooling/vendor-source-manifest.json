@@ -1,0 +1,126 @@
+{
+  "sourceOwner": "3db161ce51eba32f894bc2d9cd651016fb076bd4",
+  "tree": "dd6850a3afb70d02a5c99ebedeff236f6df72f44",
+  "files": [
+    {
+      "path": "vendor/braces/LICENSE",
+      "gitBlob": "9af4a67d206f24ecdbb5fdff2839041ca0bbd346",
+      "sha256": "35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2"
+    },
+    {
+      "path": "vendor/braces/README.md",
+      "gitBlob": "e684b7dc9102a4bd8a9d3e760f0ea78ce65b5f7c",
+      "sha256": "bda2b357619525b08035f2d2e846ca57657ee220a00f2a6be08a9e5f113f7532"
+    },
+    {
+      "path": "vendor/braces/SECURITY-FORK.md",
+      "gitBlob": "9cae3a045d2a4dbc58648152f6d0e9549544163e",
+      "sha256": "7b7c89a97c4de4b049b767478eb14f1a3f39754403fed28cb5c606e1b909b49e"
+    },
+    {
+      "path": "vendor/braces/UPSTREAM-PROVENANCE.json",
+      "gitBlob": "2fe51e44858dcac89591c1387916a0fa5ee07474",
+      "sha256": "5fb4ddee9a6fc87bd78a973f9b732fdf7963e27becd7f0fbdfd9c97d5744172e"
+    },
+    {
+      "path": "vendor/braces/index.js",
+      "gitBlob": "d222c13b579d2d476dc26d692219dbaee1665b88",
+      "sha256": "332ea07c7b006361aad12aa994ca75dc1db8e8382b884909e2f38f10b85c88a4"
+    },
+    {
+      "path": "vendor/braces/lib/compile.js",
+      "gitBlob": "f11a5acba4f1164ee8c700b4538a6a5117da37ef",
+      "sha256": "f19df819a86cb4e0fb34c343fe11057fab70b08c766b4bba20d68592d3166c65"
+    },
+    {
+      "path": "vendor/braces/lib/constants.js",
+      "gitBlob": "d99f12946c1641d5d8bd2a1eaa45984224f5527a",
+      "sha256": "db7a2d4cdf5d1e1f9429f237b2516d8513ff73a2b3f0929230b2a13f6a14aca8"
+    },
+    {
+      "path": "vendor/braces/lib/expand.js",
+      "gitBlob": "b42ea1d195cca808c4047914ab871ab361904e43",
+      "sha256": "5e38f04bbb90fec93f48d20e40f7a8f4983f31b41b9895ac02f163de6ada42b3"
+    },
+    {
+      "path": "vendor/braces/lib/parse.js",
+      "gitBlob": "bd9a0b36be4193c4e08b0ebec0400271724240a7",
+      "sha256": "f7c831a8ebeab3adf97033db02ddaff6be161de99a41679cf5c8ce2a27a3f2c8"
+    },
+    {
+      "path": "vendor/braces/lib/stringify.js",
+      "gitBlob": "89b358c259de4996c44d6698b3d12db6fe800ded",
+      "sha256": "9d37c12cf14519a6660df4711b95fea3bb2ef6c96cc0e95ce6e2e38ba0c458a1"
+    },
+    {
+      "path": "vendor/braces/lib/utils.js",
+      "gitBlob": "d19311fe044ad5157624077670dc297e8b53da49",
+      "sha256": "b5a7596aa67730412b3c029ef09e84e6b67b8e445cffd35d1d295549c89066c7"
+    },
+    {
+      "path": "vendor/braces/package.json",
+      "gitBlob": "0cb65a32197a7546496864e80d7466104714c0d0",
+      "sha256": "05877118ca8ea3dd9d153396d78efda4e63bf3959444c503b525a015cd197f7f"
+    },
+    {
+      "path": "vendor/chokidar/LICENSE",
+      "gitBlob": "fa9162b51acb582ac3b63c75552db2ca9b9d9bb2",
+      "sha256": "db9ba183d4cbfbaf6c27db2effddbb84b46340c33ed32a066bc0b144a3ea1298"
+    },
+    {
+      "path": "vendor/chokidar/README.md",
+      "gitBlob": "8e25decb4701df4f49407f1ed1a1f94a9da727de",
+      "sha256": "e71f8aad356aba33718eb96086856d55a488d345c3b090142c4d32333c3893c4"
+    },
+    {
+      "path": "vendor/chokidar/SECURITY-FORK.md",
+      "gitBlob": "9313480373e8432435f45f25963104da105ffd4a",
+      "sha256": "ee5b0364c07a5ceec74b4e4f7ad111c4111d08d99c230ec164cf296ef90d8056"
+    },
+    {
+      "path": "vendor/chokidar/UPSTREAM-PROVENANCE.json",
+      "gitBlob": "ea1aed265d2d4887f75390f3f27d0c90eb6cc818",
+      "sha256": "a03c6534ee22d6207db1416f795498e4e1f7b157121be8135227859924358524"
+    },
+    {
+      "path": "vendor/chokidar/index.js",
+      "gitBlob": "cc737950c662cb8892192159902871b4d0d6800d",
+      "sha256": "3c38727e7c3d754c9e499181941a6bf745b1090c0eaa5136e5c9ee7820bb8bfb"
+    },
+    {
+      "path": "vendor/chokidar/lib/constants.js",
+      "gitBlob": "4743865d6bd4095e73770a1bf005b0f8e453c2ee",
+      "sha256": "bedb4f916d3da3804e20eef822ce0ad7f7879b890655d77db019e37eb5f388fb"
+    },
+    {
+      "path": "vendor/chokidar/lib/fsevents-handler.js",
+      "gitBlob": "fe29393c179d3d6673f996ca6f95bbc83f9a0699",
+      "sha256": "c2e15baebf066bf8531cbf82a324631a40b218d073274429edb50b4bdbbb0265"
+    },
+    {
+      "path": "vendor/chokidar/lib/nodefs-handler.js",
+      "gitBlob": "199cfe9f9fff5a2f5267c67a004b1fa92ec56649",
+      "sha256": "60be035e7ea64858a0144230d5073b18a69f3b0eefba62a9b032c6d2f179d807"
+    },
+    {
+      "path": "vendor/chokidar/package.json",
+      "gitBlob": "54cd4a5ce6b2b4da2d06a1e877b186f4df73afbe",
+      "sha256": "608f035b37e315adaa9b588bb6723eccb384a0e03a80e8be8d08896e0a81ab6b"
+    },
+    {
+      "path": "vendor/chokidar/types/index.d.ts",
+      "gitBlob": "455806638f66a19245cb7eb5dc9e416ec681a6bc",
+      "sha256": "0744807211f8cd16343fb1a796f53a8f7b7f95d4bd278c48febf657679bf28e6"
+    }
+  ],
+  "rawAdvisory": "GHSA-vfj7-8cjw-p6xm",
+  "upstreamFixedVersion": null,
+  "waiver": false,
+  "sourceRepair": {
+    "baseOwner": "e39caebf85814c7677658c3d3785c7aff75eddf4",
+    "scope": "Catch retained FSEvents rejected promises on the existing watcher error channel; fixed64depth and frozen standalone quarantine retained",
+    "productionAcceptance": false,
+    "nativeMacOSAcceptance": false,
+    "rawAdvisoryWaiver": false
+  }
+}

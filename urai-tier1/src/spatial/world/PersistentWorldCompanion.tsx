@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { publishOrbState } from '@/app/home/orbStateController'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
@@ -15,7 +16,7 @@ import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 
 const PRIMARY_DESTINATIONS: readonly UraiDestination[] = ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay', 'life-movie']
 const SECONDARY_DESTINATIONS: readonly UraiDestination[] = ['mirror', 'passport', 'privacy-controls', 'location-map']
-const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'manifestId', 'movieId', 'chapterId', 'privacyMode'] as const
+const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'manifestId', 'movieId', 'chapterId', 'privacyMode', 'demo'] as const
 const AUDIO_CONSENT_KEY = 'urai:spatial-audio-consent-v1'
 const AUDIO_MUTE_KEY = 'urai:spatial-audio-muted-v1'
 
@@ -40,25 +41,41 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   const definition = definitionForDestination(request.destination)
   const target = new URL(request.href ?? definition.href, window.location.origin)
   const current = new URLSearchParams(window.location.search)
+  const context = request.context
+  const selectedMemoryId = context?.memoryId ?? target.searchParams.get('memoryId')
+  const currentMemoryId = current.get('memoryId')
+  const sameMemory = Boolean(selectedMemoryId && currentMemoryId && selectedMemoryId === currentMemoryId)
+  const memoryDestination = request.destination === 'life-map' || request.destination === 'focus'
+    || request.destination === 'replay' || request.destination === 'council'
+    || request.destination === 'life-movie'
+  // Companion routing must not reintroduce a stale owner or turn a visual
+  // event node into an authorized memory on an unrelated destination.
   for (const key of CONTEXT_KEYS) {
+    if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
+    if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
+    // Relationship hints from an old memory never scope a different selection.
+    if ((key === 'thread' || key === 'personId' || key === 'placeId') && selectedMemoryId && currentMemoryId && !sameMemory) continue
     if (!target.searchParams.has(key) && current.has(key)) target.searchParams.set(key, current.get(key) ?? '')
   }
-  const context = request.context
-  if (context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
+  if (!memoryDestination) {
+    target.searchParams.delete('memoryId')
+    target.searchParams.delete('node')
+    target.searchParams.delete('manifestId')
+    target.searchParams.delete('movieId')
+    target.searchParams.delete('chapterId')
+    target.searchParams.delete('demo')
+  }
+  if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
-  if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
-  if (context?.movieId) target.searchParams.set('movieId', context.movieId)
-  if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
+  if (memoryDestination && context?.replayManifestId && selectedMemoryId) target.searchParams.set('manifestId', context.replayManifestId)
+  if (memoryDestination && context?.movieId) target.searchParams.set('movieId', context.movieId)
+  if (memoryDestination && context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
+  if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
-  const memoryId = target.searchParams.get('memoryId')
-  const nodeId = target.searchParams.get('node')
-  if (request.destination === 'life-map') {
-    if (!nodeId && memoryId) target.searchParams.set('node', memoryId)
-  } else if (!memoryId && nodeId) target.searchParams.set('memoryId', nodeId)
   return `${target.pathname}${target.search}${target.hash}`
 }
 
@@ -76,12 +93,23 @@ export function PersistentWorldCompanion() {
   const primaryDestinations = useMemo(() => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
   const secondaryDestinations = useMemo(() => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
 
-  const closeCompanion = useCallback((restoreFocus = true) => {
+  const closeMenuState = useCallback((restoreFocus: boolean) => {
     restoreFocusRef.current = restoreFocus
     if (!restoreFocus) externalTriggerRef.current = null
     setOpen(false)
-    publishOrbState('idle', 'companion')
   }, [])
+
+  const closeCompanion = useCallback((restoreFocus = true) => {
+    closeMenuState(restoreFocus)
+    publishOrbState('idle', 'companion')
+  }, [closeMenuState])
+
+  // Event listeners can schedule expensive Home rendering. Commit the menu and
+  // its focus effect before broadcasting the external Orb visual update.
+  const closeCompanionFromEvent = useCallback((restoreFocus = true) => {
+    flushSync(() => closeMenuState(restoreFocus))
+    publishOrbState('idle', 'companion')
+  }, [closeMenuState])
 
   useEffect(() => {
     setHydrated(true)
@@ -93,13 +121,13 @@ export function PersistentWorldCompanion() {
   }, [])
 
   const toggleCompanion = useCallback(() => {
-    if (open) closeCompanion(true)
+    if (open) closeCompanionFromEvent(true)
     else {
-      setOpen(true)
+      flushSync(() => setOpen(true))
       publishOrbState('attention', 'companion')
       window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue: 'orb-confirm' } }))
     }
-  }, [closeCompanion, open])
+  }, [closeCompanionFromEvent, open])
 
   const toggleAudio = useCallback(() => {
     const enabled = !audioEnabled
@@ -114,7 +142,7 @@ export function PersistentWorldCompanion() {
       externalTriggerRef.current = active instanceof HTMLElement && active !== document.body && active !== orbRef.current
         ? active
         : null
-      setOpen(true)
+      flushSync(() => setOpen(true))
       publishOrbState('attention', 'companion')
     }
     window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
@@ -149,15 +177,18 @@ export function PersistentWorldCompanion() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       event.preventDefault()
-      closeCompanion(true)
+      // The open overlay owns dismissal before the realm's history/return
+      // shortcut can act on the same key. Ownership ends when it closes.
+      event.stopPropagation()
+      closeCompanionFromEvent(true)
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [closeCompanion, open])
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [closeCompanionFromEvent, open])
 
   const travel = useCallback((destination: UraiDestination) => {
     if (phase !== 'idle' || destination === world.destination) {
-      closeCompanion(true)
+      closeCompanionFromEvent(true)
       return
     }
     const target = definitionForDestination(destination)
@@ -175,24 +206,33 @@ export function PersistentWorldCompanion() {
         movieId: world.movieId,
         chapterId: world.chapterId,
         privacyMode: world.privacyMode,
+        demo: world.demo,
       },
     }
     const href = buildCompanionTravelHref(request)
-    closeCompanion(false)
+    closeCompanionFromEvent(false)
     publishOrbState('transition', 'companion')
+    // The Home Orb's Life Map choice must execute the real 3D Ascent, not
+    // skip the camera traversal via a premature router.push.
+    if (world.destination === 'home' && destination === 'life-map') {
+      const home = document.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+      if (!home || home.dataset.homeReady !== 'true' || home.dataset.homeInputLocked !== 'false') return
+      requestUraiWorldTravel({ ...request, href, entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' })
+      return
+    }
     router.push(href)
     requestUraiWorldTravel({ ...request, href })
-  }, [closeCompanion, phase, router, world])
+  }, [closeCompanionFromEvent, phase, router, world])
 
   const returnThroughWorld = useCallback(() => {
     if (phase !== 'idle' || world.destination === 'home') {
-      closeCompanion(true)
+      closeCompanionFromEvent(true)
       return
     }
-    closeCompanion(false)
+    closeCompanionFromEvent(false)
     publishOrbState('transition', 'companion')
     requestUraiWorldReturn()
-  }, [closeCompanion, phase, world.destination])
+  }, [closeCompanionFromEvent, phase, world.destination])
 
   const destinationButtons = (destinations: typeof primaryDestinations) => destinations.map((destination) => (
     <button
@@ -209,7 +249,7 @@ export function PersistentWorldCompanion() {
   ))
 
   return (
-    <aside className="urai-world-companion" data-open={open ? 'true' : 'false'} data-phase={phase} data-destination={world.destination} data-spatial-audio={audioEnabled ? 'on' : 'off'}>
+    <aside className="urai-world-companion" data-hydrated={hydrated ? 'true' : 'false'} data-open={open ? 'true' : 'false'} data-phase={phase} data-destination={world.destination} data-spatial-audio={audioEnabled ? 'on' : 'off'}>
       <div ref={menuRef} id="urai-world-companion-menu" className="urai-world-companion__menu" aria-hidden={!open} inert={!open ? true : undefined}>
         <p>{current.label}</p>
         <nav aria-label="Travel through the URAI world">{destinationButtons(primaryDestinations)}</nav>
@@ -262,12 +302,6 @@ export function PersistentWorldCompanion() {
         data-urai-audit-action="orb-controls"
         disabled={!hydrated || phase !== 'idle'}
         onClick={toggleCompanion}
-        onKeyDown={(event) => {
-          if (event.key !== 'Enter' && event.key !== ' ') return
-          event.preventDefault()
-          event.stopPropagation()
-          toggleCompanion()
-        }}
       >
         <span aria-hidden="true" />
       </button>
@@ -276,3 +310,4 @@ export function PersistentWorldCompanion() {
 }
 
 export default PersistentWorldCompanion
+

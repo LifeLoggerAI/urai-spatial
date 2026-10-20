@@ -14,6 +14,28 @@ const css = readFileSync(join(app, 'src/spatial/places/location-map-scene.css'),
 const depthCss = readFileSync(join(app, 'src/spatial/places/location-map-release-depth.css'), 'utf8')
 const finalCss = readFileSync(join(app, 'src/spatial/places/location-map-r3f-final.css'), 'utf8')
 const geographicBridgeCss = readFileSync(join(app, 'src/app/location-map/geographic-route-bridge.css'), 'utf8')
+const verificationWorkflow = readFileSync(join(root, '.github/workflows/location-map-canonical-world-verify.yml'), 'utf8')
+const browserAcceptance = readFileSync(join(root, 'tests/location-map-browser-acceptance-v2.spec.ts'), 'utf8')
+
+assert.match(verificationWorkflow, /pull_request:\s*\n\s*branches:\s*\[main, repair\/release-closure-integration-20261007\]/, 'Canonical browser proof must run for donors to the sole controller as well as main.')
+assert.doesNotMatch(verificationWorkflow.split('\njobs:')[0], /\bpaths(?:-ignore)?:/, 'Browser proof must not omit controller donors because of changed-path filters.')
+assert.match(verificationWorkflow, /permissions:\s*\n\s*contents: read/, 'Browser verification must retain read-only repository authority.')
+assert.doesNotMatch(verificationWorkflow, /contents: write|actions: write|id-token: write|\bsecrets\.|environment: production|firebase(?:-tools)?[^\n]*\bdeploy\b|gcloud[^\n]*\bdeploy\b/, 'Browser verification must not acquire credentials or deployment authority.')
+assert.ok(verificationWorkflow.includes('EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}'), 'Browser proof must bind the actual PR head rather than the merge ref.')
+assert.equal(verificationWorkflow.match(/ref: \$\{\{ env\.EXACT_HEAD_SHA \}\}/g)?.length, 2, 'Both build and browser jobs must checkout the exact source head.')
+assert.equal(verificationWorkflow.match(/test "\$\(git rev-parse HEAD\)" = "\$EXACT_HEAD_SHA"/g)?.length, 2, 'Both jobs must assert the checked-out source identity.')
+assert.equal(verificationWorkflow.match(/persist-credentials: false/g)?.length, 2, 'Both jobs must discard checkout credentials.')
+assert.equal(verificationWorkflow.match(/pnpm install --frozen-lockfile/g)?.length, 2, 'Both jobs must install frozen dependencies.')
+assert.ok(verificationWorkflow.includes('pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --fail-on-flaky-tests --config=playwright.config.ts --timeout=120000'), 'Browser proof must retain the strict actual acceptance command.')
+assert.match(verificationWorkflow, /- name: Run exact-head browser acceptance\s*\n\s*env:\s*\n\s*URAI_EXACT_HEAD: \$\{\{ env\.EXACT_HEAD_SHA \}\}\s*\n\s*run:/, 'Browser interaction receipts must receive the checked-out source head instead of the synthetic PR merge SHA.')
+assert.equal(browserAcceptance.match(/exactSha: process\.env\.URAI_EXACT_HEAD \|\| process\.env\.GITHUB_SHA \|\| 'local'/g)?.length, 2, 'Both browser interaction receipts must prefer the supplied source head.')
+assert.ok(verificationWorkflow.includes('name: location-map-browser-acceptance-${{ env.EXACT_HEAD_SHA }}'), 'Retained browser evidence must name the exact source head.')
+for (const strictAssertion of [
+  'expect(unexpectedConsoleErrors).toEqual([])',
+  'expect(unexpectedPageErrors).toEqual([])',
+  'expect(errors.consoleErrors).toEqual([])',
+  'expect(errors.pageErrors).toEqual([])',
+]) assert.ok(browserAcceptance.includes(strictAssertion), `Desktop and mobile browser proof must reject runtime errors: ${strictAssertion}`)
 
 assert.doesNotMatch(layer, /pathname\.startsWith\(["']\/location-map["']\)/, 'Legacy autonomous layer must not own Location Map.')
 assert.match(shell, /world\.destination !== 'location-map'/, 'The shared persistent Orb must not compete with the route-owned Location Map world.')

@@ -14,16 +14,19 @@ test('Life Model release receipt is fail-closed until real acceptance exists', (
   assert.equal(receipt.gates.productionReverification, 'NOT_RUN')
 })
 
-test('strict certification binds the exact candidate SHA and all launch gates', () => {
-  assert.match(validator, /receipt\.candidateSha !== expectedSha/)
+test('strict receipt validation preserves exact candidate SHA and all terminal gate semantics', () => {
+  assert.match(validator, /receipt\.candidateSha !== context\.expectedSha/)
   assert.match(validator, /certified=true/)
   assert.match(validator, /independentApproval: 'APPROVED'/)
   assert.match(validator, /deployment: 'DEPLOYED_EXACT_SHA'/)
   assert.match(validator, /productionReverification: 'ACCEPTED'/)
+  assert.doesNotMatch(validator, /LIFE_MODEL_RELEASE_CERTIFIED/)
 })
 
 test('workflow never turns ordinary PR validation into a launch certification claim', () => {
   assert.match(workflow, /workflow_dispatch:/)
   assert.match(workflow, /inputs\.certify == true/)
   assert.match(workflow, /validate-life-model-release-receipt\.mjs --strict/)
+  assert.match(workflow, /life-model-release-evidence\.test\.mjs/)
+  assert.match(workflow, /COMPONENT_ENVELOPE_SHA256:/)
 })

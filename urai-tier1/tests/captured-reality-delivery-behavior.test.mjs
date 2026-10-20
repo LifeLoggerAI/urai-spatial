@@ -68,7 +68,7 @@ test('private request authority rejects late responses after logout, account cha
 })
 
 const receipt = {
-  tier: 'desktop', runtimeBytes: 1024, sustainedFps: 90, sampleSeconds: 60,
+  tier: 'desktop', runtimeBytes: 1024, sustainedFps: 90, sampleSeconds: 60, firstInteractiveMs: 1000, minimumFps: 60,
   deviceLabel: 'physical-desktop', measuredAt: '2026-09-25T23:00:00Z',
 }
 

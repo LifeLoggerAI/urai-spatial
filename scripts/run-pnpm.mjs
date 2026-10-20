@@ -38,7 +38,7 @@ function resolvePnpm() {
     return { command: process.execPath, argsPrefix: [entrypoint], displayCommand: 'pnpm' }
   }
 
-  return { command: 'pnpm', argsPrefix: [], displayCommand: 'pnpm' }
+  return { command: 'corepack', argsPrefix: ['pnpm'], displayCommand: 'corepack pnpm' }
 }
 
 const pnpm = resolvePnpm()
