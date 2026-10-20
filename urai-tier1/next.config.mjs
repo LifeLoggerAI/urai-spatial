@@ -36,9 +36,9 @@ const nextConfig = {
         trailingSlash: true,
       }
     : {}),
-  async rewrites() {
-    return adamLocalEmulatorRewrites()
-  },
+  ...(process.env.URAI_ADAM_LOCAL_EMULATOR_PROXY === 'true'
+    ? { async rewrites() { return adamLocalEmulatorRewrites() } }
+    : {}),
   webpack(config) {
     // URAI Spatial builds frequently run in constrained preview/Nix containers where
     // webpack's filesystem cache can exhaust the writable volume before compilation
