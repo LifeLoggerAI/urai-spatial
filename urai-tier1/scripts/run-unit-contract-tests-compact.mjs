@@ -15,6 +15,7 @@ const tests = [
   'tests/private-life-model-owner-review-contract.test.mjs',
   'tests/visual-proof-transport.test.mjs',
   'tests/home-semantic-action-proof.test.mjs',
+  'tests/home-threshold-label-proximity.test.mjs',
   'tests/next-static-icon-route-contract.test.mjs',
   'tests/home-sky-interaction.test.mjs',
   'tests/home-ascent-camera-clock.test.mjs',

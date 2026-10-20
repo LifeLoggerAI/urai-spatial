@@ -11,6 +11,7 @@ const focusedContractTests = [
   'tests/private-life-model-owner-review-contract.test.mjs',
   'tests/visual-proof-transport.test.mjs',
   'tests/home-semantic-action-proof.test.mjs',
+  'tests/home-threshold-label-proximity.test.mjs',
   'tests/next-static-icon-route-contract.test.mjs',
   'tests/home-cc0-private-review-runner.test.mjs',
   'tests/home-sky-interaction.test.mjs',
