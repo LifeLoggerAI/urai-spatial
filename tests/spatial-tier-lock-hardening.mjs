@@ -97,26 +97,74 @@ async function screenshot(page, report, name) {
   report.screenshots.push(path);
 }
 
-async function assertNoBlankLoadingFlash(page) {
-  const body = await page.locator('body').textContent();
-  if (!body || body.includes('Loading URAI Spatial...')) {
-    throw new Error('Loading state still visible after route settled');
+const DEMO_STAR = 'quiet-reset';
+const DEMO_MANIFEST = 'replay-recovery-thread';
+
+async function visitCanonicalRoute(page, path) {
+  const response = await page.goto(new URL(path, BASE_URL).toString(), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  if (!response || response.status() >= 400) throw new Error('Canonical route unavailable: ' + path + ' (' + (response?.status() ?? 'no response') + ')');
+}
+
+function selectedDemoIdentity(page) {
+  const query = new URL(page.url()).searchParams;
+  if (query.get('demo') !== '1' || query.get('manifestId') !== DEMO_MANIFEST) {
+    throw new Error('Demo identity must remain explicitly disclosed and manifest-bound: ' + page.url());
   }
+  if (query.has('privateNote') || query.has('movieId')) throw new Error('Unapproved private query state leaked into demo');
 }
 
-async function gotoMode(page, stage, mode, path = `/${mode}`) {
-  await page.goto(`${BASE_URL}${path}`);
-  await expectAttr(stage, 'data-scene-mode', mode);
-  await assertNoBlankLoadingFlash(page);
+async function openDisclosedLifeMap(page) {
+  await visitCanonicalRoute(page, '/life-map');
+  const gate = selectSignedOutLifeMapGate(page);
+  await expectVisible(gate, 'real signed-out Life Map boundary', 30000);
+  await expectAttr(gate, 'data-private-memory-mounted', 'false');
+  const disclosure = page.getByRole('button', { name: 'Open disclosed sample' }).first();
+  await expectVisible(disclosure, 'real explicit sample disclosure', 30000);
+  await disclosure.click();
+  await page.waitForURL(/(?:\\?|&)demo=1(?:&|$)/, { timeout: 30000 });
+  const scene = page.getByTestId('urai-true-3d-life-map');
+  await expectVisible(scene, 'canonical 3D Life Map', 40000);
+  await expectAttr(scene, 'data-life-map-source', 'explicit-demo', 30000);
+  return scene;
 }
 
-async function chooseFirstMemory(page, stage) {
-  await gotoMode(page, stage, 'life-map', '/life-map');
-  const star = page.getByTestId('lifemap-node-seed-memory-bloom');
-  await expectVisible(star, 'demo memory star');
+async function chooseDisclosedMemory(page) {
+  const search = page.getByTestId('life-map-semantic-trigger');
+  await expectVisible(search, 'semantic Life Map navigation', 30000);
+  await search.click();
+  const star = page.locator('[data-life-map-node-id="' + DEMO_STAR + '"]');
+  await expectVisible(star, 'disclosed canonical demo star', 30000);
   await star.click();
-  await expectAttr(stage, 'data-scene-mode', 'focus');
-  await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Bloom');
+  const scene = page.getByTestId('urai-true-3d-life-map');
+  await expectAttr(scene, 'data-life-map-mode', 'selected', 40000);
+  await expectAttr(scene, 'data-life-map-phase', 'arrival', 40000);
+  selectedDemoIdentity(page);
+  return scene;
+}
+
+async function enterDemoFocus(page) {
+  await chooseDisclosedMemory(page);
+  const action = page.locator('.life-map-semantic-inspector .semantic-thresholds button').first();
+  await expectVisible(action, 'real selected Focus action', 30000);
+  await action.click();
+  await page.waitForURL(/\\/focus(?:\\?|$)/, { timeout: 40000 });
+  const focus = page.getByTestId('urai-final-focus-chamber');
+  await expectVisible(focus, 'canonical stellar Focus', 40000);
+  await expectAttr(focus, 'data-memory-status', 'demo', 40000);
+  await expectAttr(focus, 'data-manifest-id', DEMO_MANIFEST);
+  return focus;
+}
+
+async function enterDemoReplay(page) {
+  const action = page.locator('.focusControls button.primary').first();
+  await expectVisible(action, 'real Focus to Replay control', 30000);
+  await action.click();
+  await page.waitForURL(/\\/replay(?:\\?|$)/, { timeout: 40000 });
+  const replay = page.getByTestId('cinematic-replay-client');
+  await expectVisible(replay, 'canonical cinematic Replay', 40000);
+  await expectAttr(replay, 'data-memory-status', 'demo', 40000);
+  await expectAttr(replay, 'data-manifest-id', DEMO_MANIFEST);
+  return replay;
 }
 
 async function runNavigationStack(page, stage, report) {
