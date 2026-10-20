@@ -367,7 +367,7 @@ async function main() {
     gitHead: null, tree: null, results: [], byteIntegrity: null,
     requestedPinnedSha: cfg.pinnedSha, verificationMode: cfg.pinnedSha ? 'PINNED_CANDIDATE' : 'LIVE_BRANCH',
     liveHeadAtStart: null, liveHeadAtFinish: null,
-    pinnedCandidateVerified: false, currentReleaseHeadVerified: false,
+    pinnedCandidateVerified: false, currentIntegrationHeadVerified: false, currentReleaseHeadVerified: false,
     sanitizedCredentialVariables: safeVerificationEnvironment().removedKeys,
     fullCurrentHeadGreen: false, privateBetaReady: false, globalLaunchReady: false }
   const record = (id, outcome, details={}) => {
@@ -527,6 +527,7 @@ async function main() {
       liveHeadAtFinish:receipt.liveHeadAtFinish,
       allStagesPass:matrixGreen,bytesVerified:byteReport.passed})
     receipt.pinnedCandidateVerified=authority.pinnedCandidateVerified
+    receipt.currentIntegrationHeadVerified=authority.currentIntegrationHeadVerified
     receipt.currentReleaseHeadVerified=authority.currentReleaseHeadVerified
     receipt.fullCurrentHeadGreen=authority.currentReleaseHeadVerified
     receipt.liveBranchChanged=authority.liveBranchChanged
@@ -544,7 +545,7 @@ async function main() {
     // A pinned, byte-verified full matrix has its own exit status. A moving
     // integration branch cannot turn that snapshot into CURRENT_RELEASE_HEAD_GREEN.
     // Keep original live-head mode strict and preserve separate release flags.
-    if(!(cfg.pinnedSha ? receipt.pinnedCandidateVerified : receipt.fullCurrentHeadGreen))process.exitCode=1
+    if(!(cfg.pinnedSha ? receipt.pinnedCandidateVerified : receipt.currentIntegrationHeadVerified))process.exitCode=1
   }
 }
 
