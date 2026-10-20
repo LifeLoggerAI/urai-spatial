@@ -35,7 +35,8 @@ test('moving branch cannot be declared current release green', () => {
 })
 test('current head must remain the same through final verification', () => {
   const r = assessCandidateCompletion({sourceHead: shaA,liveHeadAtStart: shaA,liveHeadAtFinish: shaA,allStagesPass: true,bytesVerified: true})
-  assert.equal(r.currentReleaseHeadVerified, true)
+  assert.equal(r.currentIntegrationHeadVerified, true)
+  assert.equal(r.currentReleaseHeadVerified, false)
   assert.equal(r.releaseAuthorized, false)
 })
 test('missing finish ref cannot certify a live release head', () => {
@@ -56,4 +57,23 @@ test('source bytes must actually be checked', () => {
 test('strings are not accepted as stage PASS', () => {
   const r = assessCandidateCompletion({sourceHead: shaA,liveHeadAtStart: shaA,liveHeadAtFinish: shaA,allStagesPass: 'PASS',bytesVerified: true})
   assert.equal(r.pinnedCandidateVerified, false)
+})
+
+test('integration-current does not confer unexamined release-controller identity', () => {
+  const r = assessCandidateCompletion({sourceHead: shaA,liveHeadAtStart: shaA,liveHeadAtFinish: shaA,allStagesPass: true,bytesVerified: true})
+  assert.equal(r.currentIntegrationHeadVerified, true)
+  assert.equal(r.currentReleaseHeadVerified, false)
+  assert.equal(r.releaseAuthorized, false)
+})
+test('final remote failure blocks integration-current while pinned proof remains valid', () => {
+  const r = assessCandidateCompletion({sourceHead: shaA,liveHeadAtStart: shaA,liveHeadAtFinish: null,allStagesPass: true,bytesVerified: true})
+  assert.equal(r.pinnedCandidateVerified, true)
+  assert.equal(r.currentIntegrationHeadVerified, false)
+  assert.equal(r.currentReleaseHeadVerified, false)
+})
+test('new integration commit cannot inherit old pinned validation', () => {
+  const r = assessCandidateCompletion({sourceHead: shaA,liveHeadAtStart: shaB,liveHeadAtFinish: shaB,allStagesPass: true,bytesVerified: true})
+  assert.equal(r.pinnedCandidateVerified, true)
+  assert.equal(r.currentIntegrationHeadVerified, false)
+  assert.equal(r.currentReleaseHeadVerified, false)
 })
