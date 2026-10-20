@@ -58,3 +58,34 @@ test('truncated or appended screenshot bytes fail closed', () => fixture(file =>
 test('missing screenshot fails closed', () => fixture(file => {
   assert.equal(inspectVisualPng(file).reason, 'PNG_UNREADABLE')
 }))
+
+test('CRC-correct corrupt compressed image must fail', () => fixture(file => {
+  const png = validPng()
+  const idat = png.indexOf(Buffer.from('IDAT'))
+  const length = png.readUInt32BE(idat - 4)
+  const before = png.subarray(0, idat - 4)
+  const damaged = chunk('IDAT', Buffer.alloc(length, 37))
+  writeFileSync(file, Buffer.concat([before, damaged, chunk('IEND', Buffer.alloc(0))]))
+  assert.equal(inspectVisualPng(file).reason, 'PNG_IMAGE_DECOMPRESSION_FAILED')
+}))
+test('CRC-correct invalid filter scanline must fail', () => fixture(file => {
+  const width = 390, height = 844
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4)
+  ihdr[8] = 8; ihdr[9] = 6
+  const rows = Buffer.alloc((width * 4 + 1) * height)
+  rows[8 * (width * 4 + 1)] = 5
+  writeFileSync(file, Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),
+    chunk('IHDR', ihdr), chunk('IDAT', deflateSync(rows)), chunk('IEND', Buffer.alloc(0))]))
+  assert.equal(inspectVisualPng(file).reason, 'PNG_IMAGE_ROW_FILTER_INVALID')
+}))
+test('CRC-correct valid zlib payload with missing pixel rows fails', () => fixture(file => {
+  const width = 390, height = 844
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4)
+  ihdr[8] = 8; ihdr[9] = 6
+  writeFileSync(file, Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),
+    chunk('IHDR', ihdr), chunk('IDAT', deflateSync(Buffer.alloc(12))),
+    chunk('IEND', Buffer.alloc(0))]))
+  assert.equal(inspectVisualPng(file).reason, 'PNG_IMAGE_ROW_LENGTH_INVALID')
+}))
