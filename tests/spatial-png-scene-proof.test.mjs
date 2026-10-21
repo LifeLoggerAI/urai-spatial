@@ -69,3 +69,40 @@ test('appended bytes after IEND must not qualify as visual evidence', () => {
   const png = fixturePng(160, 120, (x, y) => x >= 60 && x < 80 && y >= 40 && y < 60)
   assert.throws(() => inspectSpatialScenePixels(Buffer.concat([png, Buffer.from('unexpected tail')])), /URAI_VISUAL_PROOF_INVALID_IEND/)
 })
+
+function injectedChunk(type, data = Buffer.alloc(0)) {
+  const out = Buffer.alloc(12 + data.length)
+  out.writeUInt32BE(data.length, 0)
+  out.write(type, 4, 4, 'ascii')
+  data.copy(out, 8)
+  out.writeUInt32BE(pngCrc32(out.subarray(4, out.length - 4)), out.length - 4)
+  return out
+}
+
+test('PNG with a valid ancillary chunk before IHDR cannot qualify as visual evidence', () => {
+  const png = fixturePng(160, 120, (x,y) => x >= 60 && x < 80 && y >= 40 && y < 60)
+  const invalid = Buffer.concat([png.subarray(0,8), injectedChunk('tEXt',Buffer.from('note\0preheader')), png.subarray(8)])
+  assert.throws(() => inspectSpatialScenePixels(invalid), /URAI_VISUAL_PROOF_INVALID_CHUNK_ORDER/)
+})
+
+test('PNG with separated IDAT chunks cannot qualify as visual evidence', () => {
+  const png = fixturePng(160, 120, (x,y) => x >= 60 && x < 80 && y >= 40 && y < 60)
+  const idatPos = png.indexOf(Buffer.from('IDAT')) - 4
+  const size = png.readUInt32BE(idatPos)
+  const compressed = png.subarray(idatPos + 8, idatPos + 8 + size)
+  const split = Math.floor(compressed.length / 2)
+  const invalid = Buffer.concat([
+    png.subarray(0,idatPos),
+    injectedChunk('IDAT', compressed.subarray(0,split)),
+    injectedChunk('tEXt', Buffer.from('note\0split')),
+    injectedChunk('IDAT', compressed.subarray(split)),
+    png.subarray(idatPos + size + 12),
+  ])
+  assert.throws(() => inspectSpatialScenePixels(invalid), /URAI_VISUAL_PROOF_INVALID_IDAT_ORDER/)
+})
+
+test('PNG with an unknown mandatory chunk cannot qualify as visual evidence', () => {
+  const png = fixturePng(160, 120, (x,y) => x >= 60 && x < 80 && y >= 40 && y < 60)
+  const invalid = Buffer.concat([png.subarray(0,33),injectedChunk('FAKE'),png.subarray(33)])
+  assert.throws(() => inspectSpatialScenePixels(invalid), /URAI_VISUAL_PROOF_UNKNOWN_CRITICAL_CHUNK/)
+})
