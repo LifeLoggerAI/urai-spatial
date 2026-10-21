@@ -48,14 +48,16 @@ test('signed-out Life Map never auto-opens disclosed demo content', () => {
   assert.doesNotMatch(accessGate, /setTimeout\(onOpenDemo/)
   assert.doesNotMatch(accessGate, /USER_ID_KEY|urai:userId/)
   assert.doesNotMatch(accessGate, /localStorage\.getItem/)
-  assert.match(accessGate, /onAuthStateChanged\(auth/)
-  assert.match(accessGate, /user \? "private" : "signed-out"/)
+  assert.match(accessGate, /listen: \(onIdentity, onFailure\) => onAuthStateChanged\(getAuth\(app\), user => onIdentity\(user\?\.uid \?\? null\), onFailure\)/)
+  assert.match(accessGate, /setMode\(userId \? "private" : "signed-out"\)/)
   assert.match(accessGate, /current\.get\("demo"\) === "1"/)
   assert.match(accessGate, /onClick=\{onOpenDemo\}/)
 })
 
 test('private Life Map data is loaded only from the Firebase-authenticated UID threaded by the access gate', () => {
-  assert.match(accessGate, /setAuthenticatedUserId\(user\?\.uid \?\? null\)/)
+  assert.match(accessGate, /setAuthenticatedUserId\(userId\)/)
+  assert.match(accessGate, /return subscribeLifeMapAuth\(\{/)
+  assert.match(accessGate, /authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\}/)
   assert.match(accessGate, /authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\}/)
   assert.doesNotMatch(source, /urai:userId/)
 })
@@ -86,7 +88,9 @@ test('semantic Life Map fallback preserves the Focus and Replay journey without 
 
 test('persistent Life Map route transactions use Firebase auth rather than implicit browser identity', () => {
   assert.match(routeTransactionBridge, /onAuthStateChanged\(getAuth\(app\)/)
-  assert.match(routeTransactionBridge, /setAuthenticatedUserId\(user\?\.uid \?\? null\)/)
+  assert.match(routeTransactionBridge, /setIdentity\(\{ location, userId: user\?\.uid \?\? null \}\)/)
+  assert.match(routeTransactionBridge, /identity\.location === location \? identity\.userId : null/)
+  assert.match(routeTransactionBridge, /setIdentity\(\{ location, userId: null \}\)/)
   assert.match(routeTransactionBridge, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)/)
   assert.doesNotMatch(routeTransactionBridge, /localStorage\.getItem/)
 })
