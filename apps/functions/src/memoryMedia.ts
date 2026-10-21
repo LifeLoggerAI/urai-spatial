@@ -5,7 +5,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 import { resolveMemoryMediaProject } from './memoryMediaProjectBoundary'
-import { assertPreparedPrivateMediaFirstUpload } from './privatePreparedMediaAuthority'
+import { assertPreparedPrivateMediaFirstUpload, assertFirstPrivateMemoryPlaybackBinding } from './privatePreparedMediaAuthority'
 import { chargeExportValue, requireExportReadBudget, type ExportReadBudget } from './exportPagination'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -420,6 +420,8 @@ async function playbackReceipt(transaction: FirebaseFirestore.Transaction, uid: 
   if (block.exists && (block.get('ownerUid') !== uid || block.get('purpose') !== 'memory.storage'
     || block.get('active') !== false)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
   assertBoundMemoryMedia(authority.memory.data() ?? {})
+  assertFirstPrivateMemoryPlaybackBinding(authority.memory.data(), uid, memoryId, receiptId,
+    authority.consentRevision, authority.consentReceiptHash)
   const r = receipt(snapshot.data(), uid)
   sameAuthority(r, authority)
   const attachments = authority.memory.get('sourceMedia') as Row[]
