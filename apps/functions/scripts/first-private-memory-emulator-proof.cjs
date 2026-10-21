@@ -2,6 +2,7 @@
 // Synthetic-only real Firebase emulator proof; no production or private family data.
 const assert = require('node:assert/strict')
 const crypto = require('node:crypto')
+const { spawnSync } = require('node:child_process')
 const admin = require('firebase-admin')
 // Share the existing isolated browser-journey emulator project and its Auth/Firestore ports.
 const PROJECT = 'demo-urai-auth-journey'
@@ -10,8 +11,9 @@ const FUNCTIONS = 'http://127.0.0.1:5001/' + PROJECT + '/us-central1'
 assert.equal(process.env.GCLOUD_PROJECT, PROJECT, 'Only the fictional test project is permitted')
 assert.equal(process.env.FIRESTORE_EMULATOR_HOST, '127.0.0.1:8080', 'Actual local Firestore required')
 assert.equal(process.env.FIREBASE_AUTH_EMULATOR_HOST, AUTH, 'Actual local Auth required')
+assert.equal(process.env.FIREBASE_STORAGE_EMULATOR_HOST, '127.0.0.1:9199', 'Actual local Storage required')
 assert.equal(process.env.GOOGLE_APPLICATION_CREDENTIALS, undefined, 'No cloud credentials')
-const app = admin.initializeApp({ projectId: PROJECT })
+const app = admin.initializeApp({ projectId: PROJECT, storageBucket: PROJECT + '.firebasestorage.app' })
 const db = admin.firestore(app)
 const sha = value => crypto.createHash('sha256').update(value).digest('hex')
 const cases = []
@@ -41,10 +43,11 @@ async function seed(uid) {
     consentTier: 'C1', policyVersion: '1.0.0', status: 'granted',
     receiptHash: 'a'.repeat(64), expiresAt: new Date(Date.now() + 3600000).toISOString() })
 }
-function packet(uid, id) {
-  const originalSha256 = 'c'.repeat(64), derivativeSha256 = 'b'.repeat(64)
+function packet(uid, id, media) {
+  const originalSha256 = 'c'.repeat(64), derivativeSha256 = media ? sha(media) : 'b'.repeat(64)
+  const derivativeLength = media ? media.length : 112
   const provenance = { originalSourceRef: 'offline:fictional-' + id, originalSha256, derivativeSha256,
-    originalByteLength: 8000, derivativeByteLength: 112, derivedContentType: 'audio/ogg',
+    originalByteLength: 8000, derivativeByteLength: derivativeLength, derivedContentType: 'audio/ogg',
     occurredAtBasis: 'archive-time-proxy-not-capture-date', speakerDiarization: 'not-verified',
     transcriptSync: 'not-verified', authenticity: 'source-derivative-not-generated-autobiography' }
   const memory = { ownerId: uid, title: 'Synthetic emulator recording',
@@ -65,12 +68,12 @@ function packet(uid, id) {
     existingAuthorityCallable: 'getMemoryMediaUploadAuthority',
     request: { memoryId: id, operationId: 'firstlife_' + sha(uid + '\n' + id + '\n' + derivativeSha256).slice(0, 40),
       kind: 'audio', contentType: 'audio/ogg' },
-    fileByteLength: 112, sha256: derivativeSha256, filePathNotEmbedded: true, base64NotEmbedded: true,
+    fileByteLength: derivativeLength, sha256: derivativeSha256, filePathNotEmbedded: true, base64NotEmbedded: true,
     activateAfter: 'ready owner-scoped receipt, actual playback and current consent checks' }
   return { schemaVersion: 'urai-first-private-memory-preflight-v1',
     status: 'PREPARED_NOT_IMPORTED_NOT_PLAYBACK_PROVEN', firestorePath: pathFor(uid, id),
     memory, upload, recordedTruth: { originalSha256, derivativeSha256, contentType: 'audio/ogg',
-      byteLength: 112, originalByteLength: 8000, occurredAtBasis: provenance.occurredAtBasis,
+      byteLength: derivativeLength, originalByteLength: 8000, occurredAtBasis: provenance.occurredAtBasis,
       claimedReconstruction: false, claimedLifeMovieAcceptance: false } }
 }
 function confirmed(p) {
