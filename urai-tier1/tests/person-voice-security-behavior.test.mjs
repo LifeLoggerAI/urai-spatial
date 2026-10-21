@@ -46,3 +46,37 @@ test('Person voice cancels stalled private audio on owner loss without abort',as
 test('Person voice allows correctly bounded current-owner audio',async()=>{
  const f=fixture(),v=await f.request(f.input);assert.equal(v.errorCode,null);assert.deepEqual([...new Uint8Array(await v.blob.arrayBuffer())],[1,2])
 })
+
+
+test('bounded server voice denial retains its safe machine-readable code', async () => {
+  const x = fixture({fetch: async () => new Response(JSON.stringify({error:'PROVIDER_PROCESSING_REVOKED'}),{status:403,headers:{'content-type':'application/json'}})})
+  const v = await x.requestPersonPresenceVoice(x.input)
+  assert.equal(v.blob,null)
+  assert.equal(v.errorCode,'PROVIDER_PROCESSING_REVOKED')
+})
+
+test('oversized error response is bounded and returns generic failure', async () => {
+  let cancelled = false
+  const x = fixture({fetch: async () => new Response(new ReadableStream({
+    start(c) { c.enqueue(new Uint8Array(20000)); }, async pull(c) { await sleep(160); c.close() }, cancel() { cancelled=true },
+  }),{status:502,headers:{'content-type':'application/json'}})})
+  const v=await x.requestPersonPresenceVoice(x.input)
+  assert.equal(v.blob,null)
+  assert.equal(v.errorCode,'PERSON_VOICE_UNAVAILABLE')
+  assert.equal(cancelled,true)
+})
+
+test('stalled error response settles when exact owner changes without network abort', async () => {
+  let cancelled=false,streamControl
+  const response=new Response(new ReadableStream({
+    start(c) { streamControl=c;c.enqueue(Uint8Array.of(123)) },
+    pull() {},cancel(){cancelled=true},
+  },{highWaterMark:0}),{status:403,headers:{'content-type':'application/json'}})
+  const x=fixture({fetch:async()=>response})
+  const work=x.requestPersonPresenceVoice(x.input)
+  await sleep(20);x.auth.currentUser=null
+  const outcome=await Promise.race([work,sleep(250).then(()=>({errorCode:'STALLED'}))])
+  if(outcome.errorCode==='STALLED'){try{streamControl.close()}catch{};await work.catch(()=>{})}
+  assert.equal(outcome.errorCode,'AUTH_SESSION_CHANGED')
+  assert.equal(cancelled,true)
+})
