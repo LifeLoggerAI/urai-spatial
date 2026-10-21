@@ -11,7 +11,7 @@ const compiled = ts.transpileModule(source, { fileName: 'useLifeMapEvents.ts', r
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } })
 assert.equal(compiled.diagnostics.length, 0, 'original Life Map TypeScript must transpile without syntax errors')
 
-function harness(initialUser = 'owner-a') {
+function harness(initialUser = 'owner-a', faults = {}) {
   const subscriptions = []
   const state = []
   let index = 0, dirty = false, pending = [], currentUser = initialUser
@@ -44,6 +44,7 @@ function harness(initialUser = 'owner-a') {
   const doc = (_db, ...paths) => ({kind:'document', paths})
   const collection = (_db, ...paths) => ({kind:'collection', paths})
   const onSnapshot = (ref, success, error) => {
+    if (faults.memorySubscribeThrows && ref.paths.at(-1) === 'memories') throw new Error('synthetic_firestore_subscription_setup_failed')
     const s = {ref,success,error,stopped:false,emit(data) {
       if (ref.kind === 'document') success({exists:()=>data !== null, data:()=>data})
       else success({docs:data.map(({id,value})=>({id,data:()=>value}))})
@@ -233,4 +234,38 @@ test('a contextual signal cannot expose a withdrawn canonical memoryId',()=>{
   const view=h.emit('memories',[])
   assert.equal(view.nodes.find(n=>n.id==='context')?.memoryId,undefined)
   assert.equal(view.nodes.find(n=>n.id==='context')?.replayManifestId,undefined)
+})
+
+// Real source hook harness. These tests assert private memory failure behavior
+// without any personal records or a live Firestore/provider account.
+test('a canonical memory subscription setup exception fails closed without throwing from the Life Map hook',()=>{
+  const h = harness('owner-a', {memorySubscribeThrows: true})
+  h.render()
+  const view = h.emit('current', h.policy())
+  assert.equal(view.sourceMode, 'error')
+  assert.match(view.error, /Private memories could not be verified/)
+  assert.equal(view.nodes.length, 0)
+  assert.equal(view.loading, true, 'other private source streams still require their snapshots')
+})
+test('malformed memory snapshot clears a previously authorized star and surfaces a safe error',()=>{
+  const h = harness()
+  h.render(); h.emit('current', h.policy()); h.load()
+  const malformed = new Proxy({}, { get() { throw new Error('synthetic-malformed-persisted-memory') } })
+  const failed = h.emit('memories', [{id:'memory-1',value:malformed}])
+  assert.equal(failed.sourceMode, 'error')
+  assert.match(failed.error, /Private memories could not be verified/)
+  assert.equal(failed.nodes.some(node=>node.memoryId==='memory-1'), false)
+  const recovered = h.emit('memories', [canonicalMemory('memory-1')])
+  assert.equal(recovered.sourceMode, 'private')
+  assert.equal(recovered.nodes.some(node=>node.memoryId==='memory-1'), true)
+})
+test('FireStore canonical snapshot error clears all previously joined Memory Stars',()=>{
+  const h = harness()
+  h.render(); h.emit('current', h.policy()); h.load()
+  const subscription = h.find('memories').at(-1)
+  subscription.fail()
+  const failed = h.render()
+  assert.equal(failed.sourceMode, 'error')
+  assert.equal(failed.nodes.some(node=>node.memoryId==='memory-1'), false)
+  assert.match(failed.error, /Private memories could not be verified/)
 })
