@@ -1,4 +1,5 @@
 import { inflateSync } from 'node:zlib'
+import { pngCrc32 } from '../scripts/visual-png-integrity.mjs'
 
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
 
@@ -18,6 +19,10 @@ function reconstructedScanlines(bytes) {
     const start = offset + 8
     const next = start + length + 4
     if (next > bytes.length) throw new Error('URAI_VISUAL_PROOF_TRUNCATED_PNG')
+    if (!/^[A-Za-z]{4}$/.test(type)) throw new Error('URAI_VISUAL_PROOF_INVALID_PNG_CHUNK_TYPE')
+    if (pngCrc32(bytes.subarray(offset + 4, start + length)) !== bytes.readUInt32BE(start + length)) {
+      throw new Error('URAI_VISUAL_PROOF_PNG_CRC_INVALID')
+    }
     if (type === 'IHDR') {
       if (length !== 13 || width || height) throw new Error('URAI_VISUAL_PROOF_INVALID_IHDR')
       width = bytes.readUInt32BE(start)
@@ -30,7 +35,10 @@ function reconstructedScanlines(bytes) {
       }
       channels = color === 6 ? 4 : 3
     } else if (type === 'IDAT') compressed.push(bytes.subarray(start, start + length))
-    else if (type === 'IEND') { ended = true; break }
+    else if (type === 'IEND') {
+      if (length !== 0 || next !== bytes.length) throw new Error('URAI_VISUAL_PROOF_INVALID_IEND')
+      ended = true; break
+    }
     offset = next
   }
   if (!ended || !compressed.length || !width || !height) throw new Error('URAI_VISUAL_PROOF_MISSING_IMAGE_DATA')
