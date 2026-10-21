@@ -3,7 +3,8 @@
 const assert = require('node:assert/strict')
 const crypto = require('node:crypto')
 const admin = require('firebase-admin')
-const PROJECT = 'demo-urai-first-memory'
+// Share the existing isolated browser-journey emulator project and its Auth/Firestore ports.
+const PROJECT = 'demo-urai-auth-journey'
 const AUTH = '127.0.0.1:9099'
 const FUNCTIONS = 'http://127.0.0.1:5001/' + PROJECT + '/us-central1'
 assert.equal(process.env.GCLOUD_PROJECT, PROJECT, 'Only the fictional test project is permitted')
