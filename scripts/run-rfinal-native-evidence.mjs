@@ -78,6 +78,7 @@ export function auditWindowsSparsePaths(entries) {
 export const STAGES = Object.freeze([
   { id: 'source_integrity', command: ['node', 'scripts/check-source-integrity.mjs'], requiresInstall: false },
   { id: 'lockfile_check', command: ['node', 'scripts/check-lockfile-present.mjs'], requiresInstall: false },
+  { id: 'pnpm_bootstrap_tests', command: ['node', '--test', 'tests/pnpm-bootstrap-resolver.test.mjs'], requiresInstall: false },
   { id: 'frozen_install', command: ['corepack', 'pnpm', 'install', '--frozen-lockfile'], requiresInstall: false },
   { id: 'bootstrap_check', command: ['corepack', 'pnpm', 'bootstrap:check'], requiresInstall: true },
   { id: 'functions_build', command: ['corepack', 'pnpm', '--filter', 'urai-functions', 'build'], requiresInstall: true },

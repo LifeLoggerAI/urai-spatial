@@ -428,3 +428,12 @@ test('R-FINAL visual evidence requires original owned files, not symlinks or ext
   assert.match(source, /visual_artifact_ownership_tests/)
   assert.doesNotMatch(source, /!statSync\(file\)\.isFile\(\)/)
 })
+
+test('portable pnpm bootstrap regression is native-tested before frozen dependency install', () => {
+  const ids = STAGES.map(stage => stage.id)
+  assert.ok(ids.includes('pnpm_bootstrap_tests'))
+  assert.ok(ids.indexOf('pnpm_bootstrap_tests') < ids.indexOf('frozen_install'))
+  const bootstrap = STAGES.find(stage => stage.id === 'pnpm_bootstrap_tests')
+  assert.equal(bootstrap.requiresInstall, false)
+  assert.deepEqual(bootstrap.command, ['node', '--test', 'tests/pnpm-bootstrap-resolver.test.mjs'])
+})
