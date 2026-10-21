@@ -3,7 +3,8 @@ import test from 'node:test'
 import { createServer } from 'node:net'
 import { allocateEphemeralPort, ownedChildExited, waitForOwnedHome } from './spatial-owned-server.mjs'
 
-const html = (status) => ({ status, headers: { get: () => 'text/html; charset=utf-8' } })
+const ownedMarkup = '<html data-urai-domain="app" data-urai-surface="spatial"><body data-urai-home-spatial-shell="true"><main>Home</main></body></html>'
+const html = (status, body = ownedMarkup) => ({ status, headers: { get: () => 'text/html; charset=utf-8' }, text: async () => body })
 
 test('port selection avoids an occupied server port', async () => {
   const existing = createServer()
@@ -58,4 +59,24 @@ test('null child is valid only for caller-authorized existing server', async () 
   await waitForOwnedHome('http://127.0.0.1:32143', null, {
     fetchImpl: async () => html(200),
   })
+})
+
+test('a foreign HTML 200 must never certify the original UrAi server', async () => {
+  await assert.rejects(waitForOwnedHome('http://127.0.0.1:32143', null, {
+    fetchImpl: async () => html(200, '<html><body>Other website</body></html>'),
+    timeoutMs: 5, intervalMs: 1,
+  }), /URAI_OWNED_HOME_NOT_READY/)
+})
+
+test('partial or spoofed UrAi marker text outside the document root does not grant readiness', async () => {
+  for (const payload of [
+    '<html><body>data-urai-domain="app" data-urai-surface="spatial" data-urai-home-spatial-shell="true"</body></html>',
+    '<html data-urai-domain="app"><body data-urai-home-spatial-shell="true"></body></html>',
+    '<html data-urai-domain="app" data-urai-surface="spatial"><body>Other website</body></html>',
+  ]) {
+    await assert.rejects(waitForOwnedHome('http://127.0.0.1:32143', null, {
+      fetchImpl: async () => html(200, payload),
+      timeoutMs: 4, intervalMs: 1,
+    }), /URAI_OWNED_HOME_NOT_READY/)
+  }
 })
