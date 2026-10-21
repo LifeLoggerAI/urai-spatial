@@ -202,6 +202,7 @@ const tests = [
   'tests/presence-stalled-owner-rotation.test.mjs',
   'tests/presence-stream-budget.test.mjs',
   'tests/adam-voice-response-boundary.test.mjs',
+  'tests/adam-http-error-boundary.test.mjs',
   'tests/adam-stalled-owner-change.test.mjs',
   'tests/adam-voice-poll-lifecycle.test.mjs',
   'tests/private-movie-response-boundary.test.mjs',

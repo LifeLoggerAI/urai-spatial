@@ -91,3 +91,57 @@ export async function readAuthorizedAdamVoice(response, { signal, isAuthorized }
     reader.releaseLock()
   }
 }
+
+/**
+ * A failed ADAM HTTP request can still contain private content. Only a small,
+ * machine-readable server code can escape the client boundary. Never expose
+ * the provider's raw body or message to a new owner or unlimited buffer.
+ */
+const MAX_ERROR_BYTES = 4096
+const VALID_CODE = /^[A-Z][A-Z0-9_]{0,119}$/
+
+export async function readBoundedAdamErrorCode(response, { signal, isAuthorized, fallbackCode }) {
+  const fallback = VALID_CODE.test(fallbackCode) ? fallbackCode : 'ADAM_PROVIDER_BOUNDARY_FAILURE'
+  const owned = () => {
+    try { return Boolean(signal) && !signal.aborted && isAuthorized() === true }
+    catch { return false }
+  }
+  if (!response?.body) return owned() ? fallback : 'AUTH_SESSION_CHANGED'
+  if (!owned()) {
+    try { void response.body.cancel('adam-error-owner-changed').catch(() => {}) } catch {}
+    return 'AUTH_SESSION_CHANGED'
+  }
+  let reader
+  try { reader = response.body.getReader() }
+  catch { return fallback }
+  const cancel = () => { void reader.cancel('adam-error-owner-changed').catch(() => {}) }
+  const poll = setInterval(() => { if (!owned()) cancel() }, 50)
+  poll.unref?.()
+  signal.addEventListener('abort', cancel, { once: true })
+  try {
+    const chunks = []
+    let size = 0
+    for (;;) {
+      if (!owned()) return 'AUTH_SESSION_CHANGED'
+      const { done, value } = await reader.read()
+      if (!owned()) return 'AUTH_SESSION_CHANGED'
+      if (done) break
+      if (!(value instanceof Uint8Array) || value.byteLength > MAX_ERROR_BYTES - size) return fallback
+      size += value.byteLength
+      chunks.push(value)
+    }
+    if (!size) return fallback
+    const data = new Uint8Array(size)
+    let offset = 0
+    for (const chunk of chunks) { data.set(chunk, offset); offset += chunk.byteLength }
+    const payload = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(data))
+    const code = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload.error : null
+    return typeof code === 'string' && VALID_CODE.test(code) ? code : fallback
+  } catch { return owned() ? fallback : 'AUTH_SESSION_CHANGED' }
+  finally {
+    clearInterval(poll)
+    signal.removeEventListener('abort', cancel)
+    cancel()
+    reader.releaseLock()
+  }
+}

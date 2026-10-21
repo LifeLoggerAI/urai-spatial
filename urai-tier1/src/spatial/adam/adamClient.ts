@@ -4,7 +4,7 @@ import { clientApiUrl } from '@/lib/clientApiUrl'
 import type { AdamSurfaceId } from './adamSurfaceContext'
 import { contentLanguage, type UraiContentLanguageTag } from '@/lib/i18n/contentLanguage'
 import { readPresenceContentStream } from '@/lib/i18n/presenceContentStream'
-import { AdamVoiceResponseError, readAuthorizedAdamVoice } from './adamVoiceResponseBoundary.mjs'
+import { AdamVoiceResponseError, readAuthorizedAdamVoice, readBoundedAdamErrorCode } from './adamVoiceResponseBoundary.mjs'
 
 export type AdamConversationMessage = {
   role: 'user' | 'assistant'
@@ -116,16 +116,11 @@ export async function requestAdamPresence(input: {
   }
 
   if (!response.ok || !response.body) {
-    let code = 'ADAM_PROVIDER_BOUNDARY_FAILURE'
-    let message = 'Adam is unavailable.'
-    try {
-      const payload = await response.json() as { error?: unknown; message?: unknown }
-      if (payload.error) code = String(payload.error)
-      if (payload.message) message = String(payload.message)
-    } catch {
-      // Preserve the generic boundary error.
-    }
-    throw new AdamProviderError(code, message)
+    const code = await readBoundedAdamErrorCode(response, {
+      signal: input.signal, isAuthorized: () => auth.currentUser === actor,
+      fallbackCode: 'ADAM_PROVIDER_BOUNDARY_FAILURE',
+    })
+    throw new AdamProviderError(code)
   }
 
   if (auth.currentUser !== actor || input.signal.aborted)
@@ -188,13 +183,10 @@ export async function requestAdamFounderVoice(input: {
     return { blob: null, errorCode: 'VOICE_NETWORK_UNAVAILABLE' }
   }
   if (!response.ok) {
-    let errorCode = 'FOUNDER_VOICE_UNAVAILABLE'
-    try {
-      const payload = await response.json() as { error?: unknown }
-      if (payload.error) errorCode = String(payload.error)
-    } catch {
-      // Keep generic voice failure.
-    }
+    const errorCode = await readBoundedAdamErrorCode(response, {
+      signal: input.signal, isAuthorized: () => auth.currentUser === actor,
+      fallbackCode: 'FOUNDER_VOICE_UNAVAILABLE',
+    })
     return { blob: null, errorCode }
   }
   try {
