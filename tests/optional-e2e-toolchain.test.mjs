@@ -56,3 +56,22 @@ test('root runner cannot silently fall back to a static route lock', () => {
   assert.match(source, /Real Playwright browser acceptance is required/)
   assert.match(source, /EXPLICIT LOCAL E2E SKIP: browser acceptance NOT VERIFIED/)
 })
+
+const replaySource = readFileSync(new URL('./replay-tier5-lock.mjs', import.meta.url), 'utf8')
+
+test('root Replay E2E refuses HTTP 404 and foreign HTML as UrAi readiness', () => {
+  assert.match(replaySource, /import \{ allocateEphemeralPort, isUraiHomeDocument, waitForOwnedHome \} from '\.\/spatial-owned-server\.mjs'/)
+  assert.match(replaySource, /response\.status === 200/)
+  assert.match(replaySource, /isUraiHomeDocument\(await response\.text\(\)\)/)
+  assert.match(replaySource, /URAI_REPLAY_EXISTING_SERVER_NOT_ORIGINAL_HOME/)
+  assert.doesNotMatch(replaySource, /response\.ok \|\| response\.status < 500/)
+  assert.doesNotMatch(replaySource, /serverResponds|waitForServer/)
+})
+
+test('Replay E2E owns a fresh ephemeral server and verifies the mounted original Home', () => {
+  assert.match(replaySource, /await allocateEphemeralPort\(\)/)
+  assert.match(replaySource, /await waitForOwnedHome\(server\.baseUrl, server\.child\)/)
+  assert.match(replaySource, /Production Replay proof must own the exact built server/)
+  assert.doesNotMatch(replaySource, /REQUESTED_PORT \+ 1/)
+  assert.match(replaySource, /await stopServer\(server\.child\)/)
+})

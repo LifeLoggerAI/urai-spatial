@@ -16,13 +16,15 @@ const success=(lane,locale='en-US')=>({type:'done',locale,message:'Synthetic res
 // The actual SDK and decoder run with synthetic authentication/transport only.
 function fixture(lane,options={}){
   const calls=[],callbacks=[],cache=new Map();let authCalls=0,cancellations=0
-  const user={getIdToken:async()=>{authCalls++;await options.beforeToken?.();return 'synthetic-owner-token'}}
+  let authReadyCalls=0
+  const user={uid:'synthetic-owner',getIdToken:async()=>{authCalls++;await options.beforeToken?.(auth);return 'synthetic-owner-token'}}
+  const auth={currentUser:user,authStateReady:async()=>{authReadyCalls++;await options.beforeAuthReady?.()}}
   const load=path=>{
     if(cache.has(path))return cache.get(path)
     const module={exports:{}};cache.set(path,module.exports)
     const compiled=ts.transpileModule(source(path),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}})
     vm.runInNewContext(compiled.outputText,{module,exports:module.exports,require:id=>{
-      if(id==='firebase/auth')return {getAuth:()=>({currentUser:user})}
+      if(id==='firebase/auth')return {getAuth:()=>auth}
       if(id.endsWith('/firebase/client'))return {app:{},firebasePublicEnvReady:true}
       if(id.endsWith('/clientApiUrl'))return {clientApiUrl:path=>path}
       if(id.endsWith('/contentLanguage'))return {contentLanguage,contentLanguageProps}
@@ -46,7 +48,7 @@ function fixture(lane,options={}){
   const request=lane==='adam'?module.requestAdamPresence:module.requestPersonPresence
   const input=locale=>({sessionId:'synthetic-session',surface:'home',message:'Synthetic question',context:[],locale,aiProcessingConsent:true,
     signal:new AbortController().signal,onEvent:event=>callbacks.push(event)})
-  return {request,input,calls,callbacks,get authCalls(){return authCalls},get cancellations(){return cancellations},
+  return {request,input,calls,callbacks,get authCalls(){return authCalls},get authReadyCalls(){return authReadyCalls},get cancellations(){return cancellations},
     voice:lane==='adam'?module.requestAdamFounderVoice:load('src/spatial/life-model/personPresenceVoiceClient.ts').requestPersonPresenceVoice}
 }
 
@@ -107,4 +109,20 @@ for(const lane of ['adam','person']){
 test('Person truth flags fail before completion callbacks even with correct language',async()=>{
   const f=fixture('person',{chunks:locale=>[frame({...success('person',locale),historicalSourceAuthority:true})]})
   await assert.rejects(f.request(f.input('en')),error=>error.code==='PERSON_PRESENCE_TRUTH_BOUNDARY_FAILED');assert.equal(f.callbacks.length,0)
+})
+
+test('ADAM awaits persisted authentication and refuses a switched actor token before provider dispatch',async()=>{
+  let resume
+  const persisted=new Promise(resolve=>{resume=resolve})
+  const waiting=fixture('adam',{beforeAuthReady:()=>persisted})
+  const pending=waiting.request(waiting.input('en'))
+  await Promise.resolve()
+  assert.equal(waiting.calls.length,0)
+  resume()
+  const answer=await pending
+  assert.equal(answer.locale,'en-US')
+  assert.equal(waiting.authReadyCalls,1)
+  const switched=fixture('adam',{beforeToken:auth=>{auth.currentUser={uid:'other-owner'}}})
+  await assert.rejects(switched.request(switched.input('en')),error=>error.code==='AUTH_REQUIRED')
+  assert.equal(switched.calls.length,0)
 })

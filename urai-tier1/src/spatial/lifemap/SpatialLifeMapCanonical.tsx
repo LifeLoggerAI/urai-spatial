@@ -77,8 +77,26 @@ function LifeMapAccessGate() {
   const router = useRouter();
   const params = useSearchParams();
   const query = useMemo(() => params.toString(), [params]);
-  const [mode, setMode] = useState<LifeMapAccessMode>("checking");
-  const [authenticatedUserId, setAuthenticatedUserId] = useState<string | null>(null);
+  // Authentication callbacks are asynchronous. A Next.js query transition
+  // renders once before the old effect unsubscribes; do not render any private
+  // memory for that new route from the previous route's auth state.
+  const [settledAccess, setSettledAccess] = useState<{
+    query: string;
+    mode: LifeMapAccessMode;
+    userId: string | null;
+  }>({ query: "", mode: "checking", userId: null });
+  const mode: LifeMapAccessMode = settledAccess.query === query ? settledAccess.mode : "checking";
+  const authenticatedUserId = mode === "private" ? settledAccess.userId : null;
+  const setMode = useCallback((nextMode: LifeMapAccessMode) => setSettledAccess(previous => ({
+    query,
+    mode: nextMode,
+    userId: nextMode === "private" && previous.query === query ? previous.userId : null,
+  })), [query]);
+  const setAuthenticatedUserId = useCallback((userId: string | null) => setSettledAccess(previous => ({
+    query,
+    mode: previous.query === query ? previous.mode : "checking",
+    userId,
+  })), [query]);
   const webglAvailable = useWebGLCapability();
 
   useEffect(() => {
@@ -99,7 +117,7 @@ function LifeMapAccessGate() {
         setMode(userId ? "private" : "signed-out");
       },
     });
-  }, [query]);
+  }, [query, setMode, setAuthenticatedUserId]);
 
   const openDemo = useCallback(() => {
     const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -110,7 +128,7 @@ function LifeMapAccessGate() {
     next.set("overview", "1");
     setMode("explicit-demo");
     router.replace(`/life-map?${next.toString()}`, { scroll:false });
-  }, [query, router]);
+  }, [query, router, setMode]);
 
   if (mode === "checking" || webglAvailable === null) return <LifeMapLoading label="Checking the private threshold" />;
   if (!webglAvailable) {
