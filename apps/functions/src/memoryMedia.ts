@@ -5,6 +5,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 import { resolveMemoryMediaProject } from './memoryMediaProjectBoundary'
+import { assertPreparedPrivateMediaFirstUpload } from './privatePreparedMediaAuthority'
 import { chargeExportValue, requireExportReadBudget, type ExportReadBudget } from './exportPagination'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -282,6 +283,8 @@ export const registerMemoryMedia = functions.runWith({ timeoutSeconds: 180, memo
   try {
     bound = await db.runTransaction(async transaction => {
       const [authority, old] = await Promise.all([readOwner(transaction, uid, memoryId), transaction.get(ref)])
+      try { assertPreparedPrivateMediaFirstUpload(authority.memory.data(), uid, memoryId, operationId, value.kind, contentType, digest, bytes.length) }
+      catch { fail('FIRST_PRIVATE_MEDIA_BINDING_INVALID') }
       if (old.exists) {
         const r = receipt(old.data(), uid); sameAuthority(r, authority)
         if (r.sha256 !== digest || r.contentType !== contentType || r.byteLength !== bytes.length || r.state !== 'ready') fail('MEMORY_MEDIA_OPERATION_ALREADY_BOUND')
@@ -319,6 +322,8 @@ export const registerMemoryMedia = functions.runWith({ timeoutSeconds: 180, memo
     const storageGeneration = String(metadata.generation)
     await db.runTransaction(async transaction => {
       const [authority, current] = await Promise.all([readOwner(transaction, uid, memoryId), transaction.get(ref)])
+      try { assertPreparedPrivateMediaFirstUpload(authority.memory.data(), uid, memoryId, operationId, value.kind, contentType, digest, bytes.length) }
+      catch { fail('FIRST_PRIVATE_MEDIA_BINDING_INVALID') }
       const r = receipt(current.data(), uid); sameAuthority(r, authority)
       if (r.state !== 'uploading' || r.attemptNonce !== bound!.attemptNonce || millis(r.leaseExpiresAt) <= Date.now()) fail('MEMORY_MEDIA_UPLOAD_LEASE_UNAVAILABLE')
       const existing = authority.memory.get('sourceMedia')
