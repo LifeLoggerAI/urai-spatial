@@ -7,7 +7,7 @@
  */
 import { createHash } from 'node:crypto'
 import { createReadStream, existsSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, writeFileSync, closeSync } from 'node:fs'
-import { resolve, sep, dirname, basename } from 'node:path'
+import { resolve, sep, dirname, basename, relative, isAbsolute } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 export const MAX_OWNED_MEMORY_MEDIA_BYTES = 4 * 1024 * 1024
@@ -67,7 +67,9 @@ export async function prepareFirstPrivateMemory(options) {
   const content = sourceFormat(sample)
   const originalStat = safePrivateSource(originalPath)
   assert(originalStat.size > 0, 'ORIGINAL_EMPTY')
-  assert(realpathSync(sourcePath) !== realpathSync(originalPath), 'DERIVATIVE_MUST_NOT_OVERWRITE_ORIGINAL')
+  const distinctPaths = realpathSync(sourcePath) !== realpathSync(originalPath)
+  const distinctFiles = !(stat.dev === originalStat.dev && stat.ino > 0 && stat.ino === originalStat.ino)
+  assert(distinctPaths && distinctFiles, 'DERIVATIVE_MUST_NOT_OVERWRITE_ORIGINAL')
   const [originalSha256, derivativeSha256] = await Promise.all([fileHash(originalPath), fileHash(sourcePath)])
   assert(SHA256.test(originalSha256) && SHA256.test(derivativeSha256), 'SOURCE_HASH_UNAVAILABLE')
   const memory = {
@@ -126,17 +128,23 @@ function isInsideGitCheckout(startPath) {
 
 export function privatePacketWrite(packet, outputDir) {
   const out = resolve(outputDir)
-  // A lexical CWD check is insufficient: the CLI can run in a checkout
-  // subdirectory or receive an apparently external path with a symlinked parent.
-  // Never create private owner packets under ANY Git checkout ancestor.
-  const gitroot = realpathSync(resolve(process.cwd()))
+  // The working directory is NOT the source checkout authority. Resolve the
+  // real location of this module to protect unpacked sources with no .git, and
+  // also refuse any other Git checkout (including worktrees with a .git file).
+  const sourceRoot = realpathSync(new URL('../..', import.meta.url))
+  const contained = (root, candidate) => {
+    const offset = relative(root, candidate)
+    return offset === '' || (offset !== '..' && !offset.startsWith('..' + sep)
+      && !isAbsolute(offset))
+  }
   const canonicalParent = realpathSync(dirname(out))
   const canonicalTarget = resolve(canonicalParent, basename(out))
-  assert(out !== gitroot && !out.startsWith(gitroot + sep)
-    && canonicalTarget !== gitroot && !canonicalTarget.startsWith(gitroot + sep)
+  assert(!contained(sourceRoot, out) && !contained(sourceRoot, canonicalTarget)
     && !isInsideGitCheckout(canonicalParent), 'PRIVATE_PACKET_MUST_STAY_OUTSIDE_REPOSITORY')
   assert(!existsSync(out), 'PRIVATE_OUTPUT_DIRECTORY_MUST_BE_NEW')
   mkdirSync(out, { recursive: false, mode: 0o700 })
+  // Recheck the created directory before any owner information is written.
+  assert(!contained(sourceRoot, realpathSync(out)), 'PRIVATE_PACKET_MUST_STAY_OUTSIDE_REPOSITORY')
   const privateFiles = [
     ['memory.private.json', packet.memory], ['handoff.private.json', packet],
   ]
