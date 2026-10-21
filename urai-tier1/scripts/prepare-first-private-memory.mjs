@@ -6,9 +6,10 @@
  * No private bytes, UID, filenames, or generated packet may enter Git.
  */
 import { createHash } from 'node:crypto'
-import { createReadStream, existsSync, lstatSync, mkdirSync, openSync, fstatSync, realpathSync, writeFileSync, readSync, closeSync, unlinkSync, rmdirSync } from 'node:fs'
+import { existsSync, lstatSync, mkdirSync, openSync, fstatSync, realpathSync, writeFileSync, readSync, closeSync, unlinkSync, rmdirSync } from 'node:fs'
 import { resolve, sep, dirname, basename, relative, isAbsolute } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { verifiedPrivateFileHash } from './private-file-integrity.mjs'
 
 export const MAX_OWNED_MEMORY_MEDIA_BYTES = 4 * 1024 * 1024
 const IDENTIFIER = /^[A-Za-z0-9_-]{1,128}$/
@@ -22,11 +23,6 @@ function safePrivateSource(path) {
   const info = lstatSync(path)
   assert(info.isFile() && !info.isSymbolicLink(), 'PRIVATE_SOURCE_MUST_BE_REGULAR_FILE')
   return info
-}
-async function fileHash(path) {
-  const hash = createHash('sha256')
-  for await (const chunk of createReadStream(path)) hash.update(chunk)
-  return hash.digest('hex')
 }
 function canonicalTime(value) {
   return typeof value === 'string' && ISO_UTC.test(value) && Number.isFinite(Date.parse(value))
@@ -86,7 +82,7 @@ export async function prepareFirstPrivateMemory(options) {
   const distinctPaths = realpathSync(sourcePath) !== realpathSync(originalPath)
   const distinctFiles = !(stat.dev === originalStat.dev && stat.ino > 0 && stat.ino === originalStat.ino)
   assert(distinctPaths && distinctFiles, 'DERIVATIVE_MUST_NOT_OVERWRITE_ORIGINAL')
-  const [originalSha256, derivativeSha256] = await Promise.all([fileHash(originalPath), fileHash(sourcePath)])
+  const [originalSha256, derivativeSha256] = await Promise.all([verifiedPrivateFileHash(originalPath, originalStat), verifiedPrivateFileHash(sourcePath, stat)])
   assert(SHA256.test(originalSha256) && SHA256.test(derivativeSha256), 'SOURCE_HASH_UNAVAILABLE')
   const memory = {
     ownerId, title: title.trim(), occurredAt, summary: summary.trim(), emotionalState: 'unknown',
