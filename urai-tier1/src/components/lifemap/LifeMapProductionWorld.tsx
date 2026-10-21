@@ -83,7 +83,10 @@ function RenderProofRepublisher() {
     });
     const calls = gl.info.render.calls;
     const triangles = gl.info.render.triangles;
-    const ready = calls > 0 && objects > 20 && anchors >= 8;
+    // Ignore stale draw counters until the recovered WebGL context has rendered
+    // four fresh frames; geometry counters alone never establish visible pixels.
+    const ready = frames.current >= 4 && !gl.getContext().isContextLost()
+      && calls > 0 && triangles > 0 && objects > 20 && anchors >= 8;
     const signature = `${objects}:${anchors}:${calls}:${triangles}`;
     const element = resolveOwner();
     if (!element) return false;
@@ -165,7 +168,7 @@ function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Poin
   return (
     <mesh>
       <tubeGeometry args={[path, 72, width, 10, false]} />
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} transparent opacity={Math.min(opacity, 0.015)} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} transparent opacity={THREE.MathUtils.clamp(opacity, 0, 1)} depthWrite={false} blending={THREE.AdditiveBlending} />
     </mesh>
   );
 }
