@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import { getUraiAuth, uraiJourneyEmulatorEnabled } from '@/lib/firebase/client'
 import { FirstPrivateMemoryUploadIncomplete, importFirstPreparedMemory } from '@/lib/privacy/importFirstPreparedMemory'
+import FirstPrivateMemoryActivationPanel from './FirstPrivateMemoryActivationPanel'
 
 const MAX_PACKET_BYTES = 16 * 1024
 const MAX_MEDIA_BYTES = 4 * 1024 * 1024
