@@ -184,3 +184,23 @@ for (const flag of ['owner', 'memory', 'source', 'original', 'source-ref', 'occu
 test('private memory CLI rejects invalid positional argument', async () => {
   await assert.rejects(main(['owner=none']), /UNKNOWN_FIRST_LIFE_ARGUMENT/)
 })
+
+
+test('first-life handoff requires server-created authorized memory without granting consent offline', async () => {
+  const f = fixture()
+  const packet = await prepareFirstPrivateMemory(f.options)
+  assert.equal(packet.memory.privacy, 'hidden')
+  assert.equal(Object.hasOwn(packet.memory, 'consentState'), false)
+  assert.equal(packet.upload.requiresExistingServerAuthoredMemory, true)
+  assert.equal(packet.upload.requiredSelectedMemoryConsentState, 'authorized')
+  assert.equal(packet.upload.offlinePreparationGrantsConsent, false)
+  assert.equal(packet.upload.ownerIdentityVerifiedOffline, false)
+  assert.equal(packet.upload.requiredOwnerAuthFreshnessSeconds, 300)
+  assert.equal(packet.upload.initialVisibility, 'hidden')
+})
+
+test('offline preparation rejects an attempt to mint individual memory consent', async () => {
+  const f = fixture()
+  await assert.rejects(prepareFirstPrivateMemory({ ...f.options, consentState: 'authorized' }),
+    /OFFLINE_MEMORY_CONSENT_STATE_FORBIDDEN/)
+})
