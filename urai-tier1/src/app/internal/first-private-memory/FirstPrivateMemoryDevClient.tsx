@@ -50,6 +50,8 @@ export default function FirstPrivateMemoryDevClient() {
       const result = await importFirstPreparedMemory(packet, mediaFile, true, { signal: controller.signal, isCurrent: current })
       if (!current()) return
       setReceipt(result)
+      const prepared = packet as { upload?: { sha256?: unknown } }
+      setDerivativeSha256(typeof prepared.upload?.sha256 === 'string' ? prepared.upload.sha256 : null)
       setMessage('Protected synthetic upload receipt received. Memory remains hidden pending explicit visibility authorization.')
     } catch (error) {
       if (!current()) return
