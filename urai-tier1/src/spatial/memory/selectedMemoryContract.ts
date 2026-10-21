@@ -213,6 +213,9 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
   if (raw.deleted === true) return { status: 'deleted', memory: null, message: 'This memory was deleted.' }
   if (raw.consentState === 'revoked') return { status: 'unauthorized', memory: null, message: 'Consent for this memory was revoked.' }
   if (raw.consentState === 'pending') return { status: 'unauthorized', memory: null, message: 'Consent for this memory is pending.' }
+  // Offline preflight cannot authorize source memory. Require the explicit
+  // server-owned grant before returning private details to Focus or Replay.
+  if (raw.consentState !== 'authorized') return { status: 'unauthorized', memory: null, message: 'This memory has not been authorized.' }
   const ownerId = stringValue(raw.ownerId ?? raw.userId)
   if (!ownerId || ownerId !== expectedOwnerId) return { status: 'unauthorized', memory: null, message: 'This memory is not available to this account.' }
 
