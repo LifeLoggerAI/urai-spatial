@@ -82,7 +82,8 @@ function enabled(condition, steps, state) {
     .replace(/failure\(\)/g, String(state.failed))
     .replace(/cancelled\(\)/g, String(state.cancelled))
   assert.match(expression, /^[\s()!&|='"a-z-]*$/, 'unexpected governed condition syntax')
-  return Boolean(runInNewContext(expression, {}, { timeout: 100 }))
+  // Allow Windows CI process scheduling without relaxing the strict expression allowlist.
+  return Boolean(runInNewContext(expression, {}, { timeout: 1000 }))
 }
 function recoveryRun({ failPhase, rollbackFails = false, preflightFails = false, cancelPhase, cancelBeforeDeployment = false } = {}) {
   const state = { failed: preflightFails, cancelled: cancelBeforeDeployment }
