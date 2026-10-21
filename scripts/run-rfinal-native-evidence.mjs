@@ -15,6 +15,7 @@ import { once } from 'node:events'
 import { pathToFileURL } from 'node:url'
 import { resolveCandidate, assessCandidateCompletion, requireCommitSha } from './rfinal-source-authority.mjs'
 import { inspectVisualPng } from './visual-png-integrity.mjs'
+import { isUraiHomeDocument } from '../tests/spatial-owned-server.mjs'
 import { planMissingTrackedRepair, isIsolatedRfinalSource } from './rfinal-missing-tracked-repair.mjs'
 
 export const CONTROLLER = Object.freeze({
@@ -355,16 +356,26 @@ async function runtimeSmoke(source, outDir) {
   try {
     const target = 'http://127.0.0.1:' + port
     let ready = false
+    let lastResponse = 'no verified UrAi Home document'
     const until = Date.now() + 75_000
-    while (Date.now() < until && child.exitCode === null && !launchError) {
+    while (Date.now() < until && child.exitCode === null && child.signalCode === null && !launchError) {
       try {
-        const reply = await fetch(target + '/', { signal: AbortSignal.timeout(4000), redirect: 'manual' })
-        ready = reply.status > 0
-        if (ready) break
-      } catch {}
+        const reply = await fetch(target + '/home', { signal: AbortSignal.timeout(4000), redirect: 'manual' })
+        lastResponse = 'HTTP ' + reply.status
+        if (reply.status === 200 && /text\/html/i.test(reply.headers.get('content-type') || '') &&
+            isUraiHomeDocument(await reply.text())) {
+          ready = true
+          break
+        }
+        lastResponse += ': original UrAi Home document identity not verified'
+      } catch (error) {
+        lastResponse = error instanceof Error ? error.message : String(error)
+      }
       await new Promise(resolve => setTimeout(resolve, 850))
     }
-    if (!ready) return { passed: false, blocker: launchError || 'Next production server did not start within 75 s', checks, browserChecks }
+    if (!ready) return { passed: false,
+      blocker: launchError || 'ORIGINAL_URAI_HOME_NOT_READY: ' + lastResponse,
+      checks, browserChecks }
     for (const route of ['/', '/life-map', '/focus', '/replay', '/login', '/privacy']) {
       try {
         const reply = await fetch(target + route, { signal: AbortSignal.timeout(12000), redirect: 'manual' })
