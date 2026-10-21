@@ -116,6 +116,14 @@ function ResolveOriginalRepo([string] $Candidate, [string] $Label) {
     if (-not (SamePath $root $verified)) { throw 'SOURCE_NOT_THE_EXPECTED_GIT_ROOT' }
     $origin = GitRead @('-C', $root, 'remote', 'get-url', 'origin') $root ($Label + '-origin')
     if (-not (IsOriginalRemote $origin)) { throw 'SOURCE_REMOTE_NOT_ORIGINAL_URAI' }
+    # A repository can still expose the canonical remote and contain known commit
+    # objects while having no usable HEAD (for example an interrupted recovery).
+    # Reject it during discovery/explicit validation instead of selecting it and
+    # failing later at original-head-before.
+    $headCheck = InvokeCaptured $script:Git @('-C',$root,'rev-parse','--verify','HEAD^{commit}') $root (Join-Path $script:Evidence ($Label + '-head-check')) 60
+    if ($headCheck.exitCode -ne 0) { throw 'SOURCE_HEAD_INVALID' }
+    $statusCheck = InvokeCaptured $script:Git @('-C',$root,'status','--porcelain=v1','--untracked-files=no') $root (Join-Path $script:Evidence ($Label + '-status-check')) 60
+    if ($statusCheck.exitCode -ne 0) { throw 'SOURCE_STATUS_UNREADABLE' }
     return $root
 }
 function DiscoverOriginalRepo {
