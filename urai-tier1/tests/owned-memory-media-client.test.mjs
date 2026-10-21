@@ -124,7 +124,23 @@ test('Focus mounts the real file control only for an owned selected private memo
   const ast = ts.createSourceFile('Focus.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const mounts = []; const visit = node => { if (ts.isConditionalExpression(node) && node.whenTrue.getText(ast).includes('<MemoryMediaAttachment ')) mounts.push(node); ts.forEachChild(node, visit) }; visit(ast)
   assert.equal(mounts.length, 1)
-  assert.match(mounts[0].condition.getText(ast), /memory && !memory.demo && memory.privacy === 'private' && memory.authorization === 'owner'/)
+  assert.match(mounts[0].condition.getText(ast), /memory && !memory.demo && \(memory.privacy === 'private' \|\| memory.privacy === 'hidden'\) && memory.authorization === 'owner'/)
   assert.match(fs.readFileSync('src/spatial/memory/MemoryMediaAttachment.tsx', 'utf8'), /setMessage\('memoryMedia.attached'\)/)
   assert.match(URAI_SOURCE_MESSAGES['memoryMedia.attached'].source,/Preview is not available here/)
+})
+
+
+test('hidden first-life attachment remains private and requires current C1 server authority', async () => {
+  const f = fixture()
+  const hidden = { ...memory, privacy: 'hidden' }
+  const receipt = await f.run(hidden)
+  assert.equal(receipt.memoryId, memory.id)
+  assert.equal(f.state.fileReads, 1)
+  assert.deepEqual(f.state.calls.map(call => call.name), ['getMemoryMediaUploadAuthority', 'getMemoryMediaUploadAuthority', 'registerMemoryMedia'])
+  assert.equal(hidden.privacy, 'hidden')
+  const denied = fixture()
+  denied.control.getMemoryMediaUploadAuthority = () => { throw new Error('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED') }
+  await assert.rejects(denied.run(hidden), /MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED/)
+  assert.equal(denied.state.fileReads, 0)
+  assert.equal(denied.state.calls.some(call => call.name === 'registerMemoryMedia'), false)
 })
