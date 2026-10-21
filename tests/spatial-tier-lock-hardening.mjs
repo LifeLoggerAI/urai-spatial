@@ -4,7 +4,7 @@ import { disclosedSampleStar, selectedMemoryFocusAction } from './canonical-brow
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
-import { allocateEphemeralPort, waitForOwnedHome } from './spatial-owned-server.mjs';
+import { allocateEphemeralPort, waitForOwnedHome, warmOwnedLifeMap } from './spatial-owned-server.mjs';
 
 // The browser harness lives at the repo root, but Playwright is owned by the
 // urai-tier1 workspace. Resolve its public entrypoint from that workspace so
@@ -424,6 +424,13 @@ async function run() {
   try {
     server = await startServer();
     await waitForOwnedHome(BASE_URL, server);
+    // Root-maintained --suite=all runs a cold development compiler. First
+    // compile original /life-map independently without counting it as browser
+    // journey success; retain the original per-interaction browser timeouts.
+    if (SUITE === 'all' && !USE_EXISTING) {
+      await warmOwnedLifeMap(BASE_URL, server);
+      report.checks.push({ name: 'Owned dev Life Map compile complete before real journey; not release acceptance', status: 'passed' });
+    }
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     collectConsole(page, report);

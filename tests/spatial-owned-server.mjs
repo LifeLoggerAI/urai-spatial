@@ -58,3 +58,26 @@ export async function waitForOwnedHome(baseUrl, child, {
   }
   throw new Error(`URAI_OWNED_HOME_NOT_READY: ${endpoint}; last status: ${lastStatus}`)
 }
+
+/** Cold Next.js development compilation must finish before timed browser
+ * navigation, without treating a returned route as browser acceptance. */
+export async function warmOwnedLifeMap(baseUrl, child, {
+  fetchImpl = fetch, timeoutMs = 180000,
+} = {}) {
+  const endpoint = new URL('/life-map', baseUrl).toString()
+  if (ownedChildExited(child)) throw new Error('URAI_OWNED_LIFEMAP_CHILD_EXITED_BEFORE_WARMUP')
+  let response
+  try {
+    response = await fetchImpl(endpoint, {
+      redirect: 'manual', signal: AbortSignal.timeout(timeoutMs),
+    })
+  } catch (error) {
+    throw new Error('URAI_OWNED_LIFEMAP_WARMUP_NETWORK_FAILED: ' + (error?.message || String(error)))
+  }
+  if (ownedChildExited(child)) throw new Error('URAI_OWNED_LIFEMAP_CHILD_EXITED_DURING_WARMUP')
+  if (response.status !== 200 || !/text\/html/i.test(response.headers?.get?.('content-type') || '')) {
+    throw new Error('URAI_OWNED_LIFEMAP_WARMUP_HTTP_' + String(response.status))
+  }
+  if (!isUraiHomeDocument(await response.text())) throw new Error('URAI_OWNED_LIFEMAP_NOT_ORIGINAL_DOCUMENT')
+  return { endpoint, status: 200 }
+}

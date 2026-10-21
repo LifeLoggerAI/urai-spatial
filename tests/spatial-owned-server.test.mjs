@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createServer } from 'node:net'
-import { allocateEphemeralPort, ownedChildExited, waitForOwnedHome } from './spatial-owned-server.mjs'
+import { allocateEphemeralPort, ownedChildExited, waitForOwnedHome, warmOwnedLifeMap } from './spatial-owned-server.mjs'
 
 const ownedMarkup = '<html data-urai-domain="app" data-urai-surface="spatial"><body data-urai-home-spatial-shell="true"><main>Home</main></body></html>'
 const html = (status, body = ownedMarkup) => ({ status, headers: { get: () => 'text/html; charset=utf-8' }, text: async () => body })
@@ -79,4 +79,30 @@ test('partial or spoofed UrAi marker text outside the document root does not gra
       timeoutMs: 4, intervalMs: 1,
     }), /URAI_OWNED_HOME_NOT_READY/)
   }
+})
+
+test('cold Life Map preflight verifies original owned 200 before timed journey',async()=>{
+  const seen=[]
+  const response=await warmOwnedLifeMap('http://127.0.0.1:32143',{exitCode:null,signalCode:null},{
+    fetchImpl:async(url,options)=>{seen.push({url,options});return html(200)}
+  })
+  assert.equal(response.status,200)
+  assert.equal(new URL(seen[0].url).pathname,'/life-map')
+  assert.equal(seen[0].options.redirect,'manual')
+  assert.equal(seen[0].options.signal instanceof AbortSignal,true)
+})
+test('cold Life Map preflight denies foreign HTML, JSON and HTTP 404',async()=>{
+  for(const response of [html(404),{status:200,headers:{get:()=> 'application/json'},text:async()=> '{}'},html(200,'<html><body>foreign</body></html>')]){
+    await assert.rejects(warmOwnedLifeMap('http://127.0.0.1:32143',null,{fetchImpl:async()=>response}),/URAI_OWNED_LIFEMAP_WARMUP_HTTP_|URAI_OWNED_LIFEMAP_NOT_ORIGINAL_DOCUMENT/)
+  }
+})
+test('cold Life Map preflight denies dead server and mid-request exit',async()=>{
+  let called=false
+  await assert.rejects(warmOwnedLifeMap('http://127.0.0.1:32143',{exitCode:1,signalCode:null},{fetchImpl:async()=>{called=true;return html(200)}}),/URAI_OWNED_LIFEMAP_CHILD_EXITED_BEFORE_WARMUP/)
+  assert.equal(called,false)
+  const child={exitCode:null,signalCode:null}
+  await assert.rejects(warmOwnedLifeMap('http://127.0.0.1:32143',child,{fetchImpl:async()=>{child.exitCode=1;return html(200)}}),/URAI_OWNED_LIFEMAP_CHILD_EXITED_DURING_WARMUP/)
+})
+test('cold Life Map preflight surfaces compilation errors without false green',async()=>{
+  await assert.rejects(warmOwnedLifeMap('http://127.0.0.1:32143',null,{fetchImpl:async()=>{throw Error('compiler exit')}}),/URAI_OWNED_LIFEMAP_WARMUP_NETWORK_FAILED: compiler exit/)
 })
