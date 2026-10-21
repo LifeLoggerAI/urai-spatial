@@ -180,3 +180,40 @@ test('private timeline abort cancels a network read which is waiting forever', a
     assert.equal(canceled, true)
   } finally { clearTimeout(timer) }
 })
+
+
+for (const kind of ['mp4', 'timeline']) {
+  test('private ' + kind + ' stalled network read is canceled when owner rotates without abort', async () => {
+    let ownerCurrent = true
+    let canceled = false
+    let enteredRead
+    const waiting = new Promise(resolve => { enteredRead = resolve })
+    const response = new Response(new ReadableStream({
+      pull() { enteredRead() },
+      cancel() { canceled = true },
+    }, { highWaterMark: 0 }))
+    const controller = new AbortController()
+    const pending = kind === 'mp4'
+      ? readBoundedPrivateMovieBlob(response, {
+        kind: 'mp4', expectedBytes: 1, signal: controller.signal, isCurrent: () => ownerCurrent,
+      })
+      : timelineReader(response, {
+        signal: controller.signal, isCurrent: () => ownerCurrent,
+      })
+    await waiting
+    ownerCurrent = false
+    let timer
+    try {
+      const outcome = await Promise.race([
+        pending.then(() => 'resolved', () => 'rejected'),
+        new Promise(resolve => { timer = setTimeout(() => resolve('timed-out'), 1000) }),
+      ])
+      assert.equal(outcome, 'rejected', 'stale private stream must settle without network progress')
+      assert.equal(canceled, true, 'stale private network response must be canceled')
+    } finally {
+      clearTimeout(timer)
+      controller.abort()
+      await pending.catch(() => {})
+    }
+  })
+}
