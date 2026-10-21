@@ -217,3 +217,25 @@ for (const kind of ['mp4', 'timeline']) {
     }
   })
 }
+
+
+for (const kind of ['mp4', 'timeline']) {
+  for (const [label, authority] of [
+    ['asynchronous authorization', () => Promise.resolve(true)],
+    ['thrown authorization lookup', () => { throw new Error('owner unavailable') }],
+    ['truthy non-boolean authorization', () => 'true'],
+  ]) {
+    test('private ' + kind + ' fails closed on ' + label, async () => {
+      let canceled = false
+      const payload = stream([Uint8Array.of(123)], { onCancel: () => { canceled = true } })
+      const options = { signal: new AbortController().signal, isCurrent: authority }
+      const request = kind === 'mp4'
+        ? readBoundedPrivateMovieBlob(payload, { kind: 'mp4', expectedBytes: 1, ...options })
+        : timelineReader(payload, options)
+      await assert.rejects(request, kind === 'mp4'
+        ? /private_movie_delivery_unavailable/
+        : /private_timeline_size_invalid/)
+      assert.equal(canceled, true, 'denied private payload must be disposed')
+    })
+  }
+}
