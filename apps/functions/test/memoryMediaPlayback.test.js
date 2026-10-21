@@ -44,7 +44,7 @@ function fixture({ modularFirestoreOnly = false, projectEnv = {} } = {}) {
     byteLength: bytes.length, attemptNonce: 'd'.repeat(64), state: 'ready', storageGeneration: '123', leaseExpiresAt: new Timestamp(clock.value + 120_000),
     consentRevision: 4, consentReceiptHash: 'b'.repeat(64), consentExpiresAt: clock.value + 3_600_000, deletionGeneration: 0 }
   const docs = new Map([
-    [userPath, { accountStatus: 'active' }], [memoryPath, { ownerId: uid, sourceMedia: [{ kind: 'video', mediaReceiptId: receiptId }] }],
+    [userPath, { accountStatus: 'active' }], [memoryPath, { ownerId: uid, consentState: 'authorized', sourceMedia: [{ kind: 'video', mediaReceiptId: receiptId }] }],
     [policyPath, policy], [consentPath, { uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0',
       status: 'granted', receiptHash: receipt.consentReceiptHash, expiresAt: new Timestamp(receipt.consentExpiresAt) }], [receiptPath, receipt],
   ])
@@ -234,6 +234,10 @@ for (const [label, mutate] of [
   ['revoked token', f => f.revoke()], ['disabled current Auth account', f => f.disable()], ['foreign current token', f => f.foreign()],
   ['missing current owner', f => f.docs.delete(userPath)], ['deleted owner', f => { f.docs.get(userPath).deleted = true }],
   ['foreign memory owner', f => { f.docs.get(memoryPath).ownerId = 'fictional-foreign-owner' }],
+  ['missing selected-memory consent', f => { delete f.docs.get(memoryPath).consentState }],
+  ['pending selected-memory consent', f => { f.docs.get(memoryPath).consentState = 'pending' }],
+  ['revoked selected-memory consent', f => { f.docs.get(memoryPath).consentState = 'revoked' }],
+  ['unknown selected-memory consent', f => { f.docs.get(memoryPath).consentState = 'legacy' }],
   ['memory withdrawal', f => { f.policy.domains.memory.mode = 'denied' }], ['pending enforcement', f => { f.policy.enforcement.state = 'pending' }],
   ['memory Replay visibility disabled', f => { f.policy.domains.memory.replayVisible = false }],
   ['canonical C1 withdrawal', f => { f.docs.get(consentPath).status = 'revoked' }], ['canonical C1 expiry', f => { f.docs.get(consentPath).expiresAt = new f.Timestamp(f.clock.value) }],
