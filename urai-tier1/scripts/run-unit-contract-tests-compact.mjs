@@ -24,6 +24,7 @@ const tests = [
   'tests/council-stage-composition.test.mjs',
   'tests/lifemap-demo-journey-identity.test.mjs',
   'tests/lifemap-route-transaction-query-lifecycle.test.mjs',
+  'tests/lifemap-context-readiness-fence.test.mjs',
   'tests/lifemap-data-boundary.test.mjs',
   'tests/lifemap-semantic-owner-contract.test.mjs',
   'tests/lifemap-founder-harness-contract.test.mjs',
