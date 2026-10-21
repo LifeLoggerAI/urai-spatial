@@ -28,6 +28,11 @@ export async function readBoundedPrivateMovieBlob(response, { kind, expectedByte
     if (!response?.body || response.ok !== true || !Number.isSafeInteger(expectedBytes) || expectedBytes < 1 ||
         expectedBytes > limit || !signal || typeof isCurrent !== 'function' ||
         !current()) throw unavailable()
+    // The renderer already validates its producer contract. Recheck any
+    // advertised MIME here before accepting opaque private bytes as a movie.
+    const declaredMime = response.headers.get('content-type')
+    if (declaredMime !== null && declaredMime.split(';', 1)[0].trim().toLowerCase() !== MIME[kind])
+      throw unavailable()
     reader = response.body.getReader()
     signal.addEventListener('abort', abortPendingRead, { once: true })
     if (!current()) throw unavailable()
@@ -93,6 +98,9 @@ export async function readBoundedPrivateMovieTimelineText(response, { signal, is
   try {
     if (!response?.body || response.ok !== true || !signal || typeof isCurrent !== 'function' ||
         !current()) throw unavailable()
+    const declaredMime = response.headers.get('content-type')
+    if (declaredMime !== null && declaredMime.split(';', 1)[0].trim().toLowerCase() !== 'application/json')
+      throw unavailable()
     const advertised = response.headers.get('content-length')
     if (advertised !== null) {
       if (!/^[0-9]+$/.test(advertised)) throw unavailable()

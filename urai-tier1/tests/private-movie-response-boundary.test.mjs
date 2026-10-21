@@ -270,3 +270,46 @@ for (const kind of ['mp4', 'timeline']) {
     assert.equal(canceled, true, 'denied private bytes must be canceled at the source')
   })
 }
+
+test('a 200 HTML response with matching MP4 bytes fails the inner Replay MIME boundary', async () => {
+  const response = new Response(Uint8Array.of(65, 66, 67), {
+    status: 200, headers: { 'content-type': 'text/html' },
+  })
+  await assert.rejects(readBoundedPrivateMovieBlob(response, {
+    kind: 'mp4', expectedBytes: 3, ...token(),
+  }), /private_movie_delivery_unavailable/)
+})
+
+test('a 200 HTML response cannot be admitted as SRT subtitle media', async () => {
+  const response = new Response(Uint8Array.of(65, 66, 67), {
+    status: 200, headers: { 'content-type': 'text/html' },
+  })
+  await assert.rejects(readBoundedPrivateMovieBlob(response, {
+    kind: 'srt', expectedBytes: 3, ...token(),
+  }), /private_movie_delivery_unavailable/)
+})
+
+test('a 200 HTML response cannot be admitted as protected timeline metadata', async () => {
+  const response = new Response('{"private":"denied"}', {
+    status: 200, headers: { 'content-type': 'text/html' },
+  })
+  await assert.rejects(timelineReader(response, token()), /private_timeline_size_invalid/)
+})
+
+for (const kind of ['mp4', 'timeline']) {
+  test('incompatible advertised private ' + kind + ' MIME cancels unread response bytes', async () => {
+    let canceled = false
+    const body = new ReadableStream({
+      pull(controller) { controller.enqueue(Uint8Array.of(65)); controller.close() },
+      cancel() { canceled = true },
+    }, { highWaterMark: 0 })
+    const response = new Response(body, { status: 200, headers: { 'content-type': 'text/html' } })
+    const request = kind === 'mp4'
+      ? readBoundedPrivateMovieBlob(response, { kind: 'mp4', expectedBytes: 1, ...token() })
+      : timelineReader(response, token())
+    await assert.rejects(request, kind === 'mp4'
+      ? /private_movie_delivery_unavailable/
+      : /private_timeline_size_invalid/)
+    assert.equal(canceled, true, 'mismatched private response must be disposed')
+  })
+}
