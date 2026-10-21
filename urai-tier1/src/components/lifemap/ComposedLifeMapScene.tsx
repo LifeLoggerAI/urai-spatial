@@ -163,15 +163,15 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
         onStateChange("recovering");
       }, 250);
     };
-    const restored = () => {
+    const watchForWorldFrame = (invalidatePreviousProof: boolean) => {
       clearRecoveryTimer();
       clearFrameProofObserver();
-      // Context restoration is not evidence that the authored galaxy has drawn.
-      // Keep semantic recovery actions available until a new world-frame proof.
+      // Even a newly mounted canvas has not necessarily drawn the galaxy.
+      // Context restoration also needs a new frame, not old counters.
       onStateChange("recovering");
       const owner = canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
       if (!owner) return;
-      owner.dataset.lifeMapRenderReady = "false";
+      if (invalidatePreviousProof) owner.dataset.lifeMapRenderReady = "false";
       const acceptFreshFrame = () => {
         if (gl.getContext().isContextLost() || owner.dataset.lifeMapRenderReady !== "true") return;
         clearFrameProofObserver();
@@ -179,10 +179,14 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
       };
       frameProofObserver = new MutationObserver(acceptFreshFrame);
       frameProofObserver.observe(owner, { attributes: true, attributeFilter: ["data-life-map-render-ready"] });
+      // On first mount, the source-owned proof may already have published.
+      // Recheck after subscribing to avoid missing that publication.
+      acceptFreshFrame();
     };
+    const restored = () => watchForWorldFrame(true);
     canvas.addEventListener("webglcontextlost", lost, false);
     canvas.addEventListener("webglcontextrestored", restored, false);
-    onStateChange("ready");
+    watchForWorldFrame(false);
     return () => {
       clearRecoveryTimer();
       clearFrameProofObserver();
