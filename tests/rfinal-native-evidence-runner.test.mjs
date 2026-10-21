@@ -92,6 +92,17 @@ test('Home 200 cannot hide broken Replay, privacy or login',()=>{
     assert.ok(result.failures.some(x=>x.path===path))
   }
 })
+test('required support and privacy policy routes cannot be missing or return 404',()=>{
+  for(const path of ['/support','/privacy-policy']){
+    const missing=assessHttpRoutes(httpCases().filter(item=>item.path!==path))
+    assert.equal(missing.passed,false, path+' missing')
+    assert.ok(missing.failures.some(item=>item.path===path))
+    const absent=assessHttpRoutes(httpCases({[path]:404}))
+    assert.equal(absent.passed,false, path+' 404')
+    assert.ok(absent.failures.some(item=>item.path===path && item.status===404))
+  }
+})
+
 test('signed-out 401 and 403 protected denies are recognized without private acceptance',()=>{
   const result=assessHttpRoutes(httpCases({'/life-map':401,'/focus':403}))
   assert.equal(result.passed,true);assert.equal(result.authorizedDenials.length,2)

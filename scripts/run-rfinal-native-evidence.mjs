@@ -107,7 +107,7 @@ export const STAGES = Object.freeze([
 ])
 
 // HTTP readiness must cover every canonical route, not only Home.
-export const REQUIRED_HTTP_ROUTES = Object.freeze(['/', '/life-map', '/focus', '/replay', '/login', '/privacy'])
+export const REQUIRED_HTTP_ROUTES = Object.freeze(['/', '/life-map', '/focus', '/replay', '/login', '/privacy', '/privacy-policy', '/support'])
 const PROTECTED_HTTP_ROUTES = new Set(['/life-map', '/focus', '/replay'])
 export function assessHttpRoutes(checks) {
   const failures = [], authorizedDenials = []
