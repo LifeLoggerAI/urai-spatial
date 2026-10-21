@@ -107,11 +107,20 @@ async function main() {
     assert.ok(media.length > 0 && media.length <= 4 * 1024 * 1024 && media.toString('ascii', 0, 4) === 'OggS')
     // Replay has four 1500-ms phases. The source must span those actual 6000 ms;
     // a one-second source would falsely prove six seconds of recorded life.
-    const probe = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration',
-      '-of', 'default=noprint_wrappers=1:nokey=1', '-i', 'pipe:0'], {
-      input: media, encoding: 'utf8', maxBuffer: 1024 * 1024 })
-    assert.equal(probe.status, 0, String(probe.stderr))
-    const playbackDurationMs = Number.parseFloat(String(probe.stdout).trim()) * 1000
+    // FFprobe reports N/A duration on non-seekable Ogg pipe input: probe only
+    // a short-lived fictional temp file, then remove it before contacting Firebase.
+    const fs = require('node:fs'), os = require('node:os'), path = require('node:path')
+    const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-fictional-opus-'))
+    let playbackDurationMs
+    try {
+      const audioFile = path.join(temporary, 'synthetic-source.ogg')
+      fs.writeFileSync(audioFile, media, { flag: 'wx', mode: 0o600 })
+      const probe = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration',
+        '-of', 'default=noprint_wrappers=1:nokey=1', audioFile], {
+        encoding: 'utf8', maxBuffer: 1024 * 1024 })
+      assert.equal(probe.status, 0, String(probe.stderr))
+      playbackDurationMs = Number.parseFloat(String(probe.stdout).trim()) * 1000
+    } finally { fs.rmSync(temporary, { recursive: true, force: true }) }
     assert.ok(playbackDurationMs >= 6000 && playbackDurationMs < 6200,
       'Source duration does not match the 6000 ms four-phase Replay manifest')
     const first = packet(uid, 'syntheticFirstPrivateMemory', media)
