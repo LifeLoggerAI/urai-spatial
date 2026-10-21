@@ -1,5 +1,15 @@
 name: RFINAL First Private Memory Firebase Emulator (Non-release)
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/first-private-memory-emulator.yml'
+      - 'apps/functions/src/**'
+      - 'apps/functions/scripts/first-private-memory-emulator-proof.cjs'
+      - 'scripts/run-first-private-memory-emulator.mjs'
+      - 'urai-tier1/src/lib/privacy/importFirstPreparedMemory.ts'
+      - 'urai-tier1/tests/import-first-prepared-memory.test.mjs'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
   push:
     branches: [repair/rfinal-convergence-candidate-20261020]
     paths:
@@ -20,7 +30,7 @@ concurrency:
   cancel-in-progress: false
 env:
   CI: 'true'
-  URAI_EXACT_HEAD: ${{ github.sha }}
+  URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
   FIREBASE_CLI_DISABLE_USAGE_REPORTING: '1'
   NEXT_TELEMETRY_DISABLED: '1'
 jobs:
