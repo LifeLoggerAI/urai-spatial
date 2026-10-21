@@ -51,8 +51,8 @@ export function auditWindowsSparsePaths(entries) {
   // Git for Windows performs NTFS filename checks before applying sparse
   // skip-worktree bits. Before the temporary per-command compatibility override,
   // verify every unsafe path belongs ONLY to a reviewed historical exclusion.
-  const historical = (p) => /^(?:[^/]*audit|\.ai-backups|_quarantine)\//.test(p)
-    || /^urai-tier1\/[^/]*audit\//.test(p);
+  const historical = (p) => /^(?:[^/]*audit|\.ai-backups|_quarantine)(?:\/|$)/.test(p)
+    || /^urai-tier1\/[^/]*audit(?:\/|$)/.test(p);
   const invalid = (p) => p.split('/').some((part) =>
     !part || /[<>:"\\|?*\x00-\x1f]/.test(part) || /[. ]$/.test(part)
     || /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i.test(part)
