@@ -95,7 +95,11 @@ export function inspectSpatialScenePixels(png, { threshold = 48, minimumBrightFr
     const row = rows[y]
     for (let x = left; x < right; x++) {
       const i = x * channels
-      if (Math.max(row[i], row[i + 1], row[i + 2]) >= threshold) bright++
+      // RGB in a transparent PNG pixel is not rendered light. Compare only
+      // alpha-composited brightness over a black canvas (the conservative
+      // visibility baseline for screenshots of the spatial environment).
+      const alpha = channels === 4 ? row[i + 3] / 255 : 1
+      if (Math.max(row[i], row[i + 1], row[i + 2]) * alpha >= threshold) bright++
       sampled++
     }
   }
