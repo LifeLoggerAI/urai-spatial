@@ -6,7 +6,7 @@ import { pngCrc32 } from '../scripts/visual-png-integrity.mjs'
 
 // Synthetic RGB fixtures contain no private media. Historic founder screenshots
 // are inspected separately and are NOT copied into the original repository.
-function fixturePng(width, height, predicate = () => false, channels = 3) {
+function fixturePng(width, height, predicate = () => false, channels = 3, alphaForPixel = () => 255) {
   const header = Buffer.alloc(13)
   header.writeUInt32BE(width, 0)
   header.writeUInt32BE(height, 4)
@@ -18,7 +18,7 @@ function fixturePng(width, height, predicate = () => false, channels = 3) {
     for (let x = 0; x < width; x++) {
       const value = predicate(x, y) ? 245 : 7
       for (let c = 0; c < 3; c++) scanlines[rowOffset + x * channels + c] = value
-      if (channels === 4) scanlines[rowOffset + x * channels + 3] = 255
+      if (channels === 4) scanlines[rowOffset + x * channels + 3] = alphaForPixel(x, y)
     }
   }
   const chunk = (type, data) => {
@@ -105,4 +105,15 @@ test('PNG with an unknown mandatory chunk cannot qualify as visual evidence', ()
   const png = fixturePng(160, 120, (x,y) => x >= 60 && x < 80 && y >= 40 && y < 60)
   const invalid = Buffer.concat([png.subarray(0,33),injectedChunk('FAKE'),png.subarray(33)])
   assert.throws(() => inspectSpatialScenePixels(invalid), /URAI_VISUAL_PROOF_UNKNOWN_CRITICAL_CHUNK/)
+})
+
+
+test('fully transparent bright RGB cannot masquerade as a visible Life Map', () => {
+  const invisible = fixturePng(160, 120, () => true, 4, () => 0)
+  assert.throws(() => assertVisibleSpatialScene(invisible), /URAI_VISUAL_SCENE_BLANK/)
+})
+
+test('mostly transparent bright RGB below threshold cannot certify a scene', () => {
+  const barelyVisible = fixturePng(160, 120, () => true, 4, () => 8)
+  assert.throws(() => assertVisibleSpatialScene(barelyVisible), /URAI_VISUAL_SCENE_BLANK/)
 })
