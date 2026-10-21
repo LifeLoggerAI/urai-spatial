@@ -41,16 +41,17 @@ export async function importFirstPreparedMemory(packet: unknown, file: FirstFile
     || (file.type !== 'audio/ogg' && file.type !== 'audio/mpeg') || file.type !== request.contentType
     || !Number.isSafeInteger(file.size) || file.size < 1 || file.size > MEMORY_MEDIA_MAX_BYTES
     || file.size !== upload.fileByteLength) invalid()
+  // Identity freshness precedes local media reads. A token refresh does not
+  // reauthenticate an old session and must not authorize private file access.
+  const token = await owner.getIdTokenResult(true); check()
+  const authTime = token.claims.auth_time, now = Math.floor(Date.now() / 1000)
+  if (!Number.isSafeInteger(authTime) || Number(authTime) <= 0 || Number(authTime) > now
+    || now - Number(authTime) > 300) throw new Error('FIRST_MEMORY_RECENT_REAUTH_REQUIRED')
   const bytes = new Uint8Array(await file.arrayBuffer()); check()
   if (bytes.byteLength !== file.size) throw new Error('FIRST_MEMORY_SELECTED_FILE_CHANGED')
   const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)),
     value => value.toString(16).padStart(2, '0')).join(''); check()
   if (digest !== sha) throw new Error('FIRST_MEMORY_SELECTED_FILE_FIXITY_MISMATCH')
-  // Refresh ID token, but NEVER treat token refresh as recent reauthentication.
-  const token = await owner.getIdTokenResult(true); check()
-  const authTime = token.claims.auth_time, now = Math.floor(Date.now() / 1000)
-  if (!Number.isSafeInteger(authTime) || Number(authTime) <= 0 || Number(authTime) > now
-    || now - Number(authTime) > 300) throw new Error('FIRST_MEMORY_RECENT_REAUTH_REQUIRED')
   const create = httpsCallable<Record<string, unknown>, Record<string, unknown>>(functions, 'createFirstPrivateMemory')
   const created = await create({ packet, ownerConfirmation: {
     authorize: true, memoryId: id, derivativeSha256: sha, visibility: 'hidden',
