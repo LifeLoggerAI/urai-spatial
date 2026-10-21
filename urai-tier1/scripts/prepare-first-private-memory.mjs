@@ -190,11 +190,13 @@ export function privatePacketWrite(packet, outputDir) {
 }
 
 export async function main(args = process.argv.slice(2)) {
-  const flags = Object.fromEntries(args.map(arg => {
+  const flags = Object.create(null)
+  for (const arg of args) {
     const match = /^--([a-z-]+)=(.*)$/.exec(arg)
     assert(match, 'UNKNOWN_FIRST_LIFE_ARGUMENT')
-    return [match[1], match[2]]
-  }))
+    assert(!Object.hasOwn(flags, match[1]), 'DUPLICATE_FIRST_LIFE_ARGUMENT')
+    flags[match[1]] = match[2]
+  }
   assert(Object.keys(flags).every(key => ['owner', 'memory', 'source', 'original', 'source-ref',
     'occurred-at', 'time-basis', 'duration-ms', 'title', 'summary', 'out'].includes(key)), 'UNKNOWN_FIRST_LIFE_ARGUMENT')
   const packet = await prepareFirstPrivateMemory({

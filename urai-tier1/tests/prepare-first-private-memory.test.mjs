@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import {
   prepareFirstPrivateMemory,
+  main,
   privatePacketWrite,
   MAX_OWNED_MEMORY_MEDIA_BYTES,
 } from '../scripts/prepare-first-private-memory.mjs'
@@ -173,4 +174,13 @@ test('preflight avoids reading the whole private derivative when checking a 128-
     fs.readFileSync = original
     syncBuiltinESMExports()
   }
+})
+
+for (const flag of ['owner', 'memory', 'source', 'original', 'source-ref', 'occurred-at', 'time-basis', 'duration-ms', 'title', 'summary', 'out']) {
+  test(`private memory CLI rejects repeated --${flag} before source access`, async () => {
+    await assert.rejects(main([`--${flag}=first`, `--${flag}=second`]), /DUPLICATE_FIRST_LIFE_ARGUMENT/)
+  })
+}
+test('private memory CLI rejects invalid positional argument', async () => {
+  await assert.rejects(main(['owner=none']), /UNKNOWN_FIRST_LIFE_ARGUMENT/)
 })
