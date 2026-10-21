@@ -186,7 +186,8 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
     const restored = () => watchForWorldFrame(true);
     canvas.addEventListener("webglcontextlost", lost, false);
     canvas.addEventListener("webglcontextrestored", restored, false);
-    watchForWorldFrame(false);
+    // A newly mounted canvas must not inherit a prior canvas's ready flag.
+    watchForWorldFrame(true);
     return () => {
       clearRecoveryTimer();
       clearFrameProofObserver();
