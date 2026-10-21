@@ -172,33 +172,21 @@ async function main() {
     const bound = await db.doc(pathFor(uid, 'syntheticFirstPrivateMemory')).get()
     assert.equal(bound.get('privacy'), 'private')
     assert.equal(bound.get('firstPrivateMemoryActivation.mediaReceiptId'), uploadReceipt.receiptId)
+    // Bucket IAM is not emulated. Authenticated activation is proven separately
+    // from byte delivery; the emulator must deny unverifiable bucket security.
     const descriptor = await send('getMemoryMediaPlaybackAuthority',
       { memoryId: 'syntheticFirstPrivateMemory', receiptId: uploadReceipt.receiptId }, owner.idToken)
-    assert.equal(descriptor.status, 200, JSON.stringify(descriptor.body))
-    assert.equal(descriptor.body.result.sha256, sha(media))
-    const d = descriptor.body.result
-    const streamUrl = new URL(FUNCTIONS + '/streamMemoryMediaPlayback')
-    for (const key of ['memoryId', 'receiptId', 'authorityHash', 'expiresAt', 'storageGeneration']) {
-      assert.ok(d[key] !== undefined, 'descriptor missing ' + key)
-      streamUrl.searchParams.set(key, String(d[key]))
-    }
-    const actualAudio = await fetch(streamUrl, {
-      headers: { Authorization: 'Bearer ' + owner.idToken, Range: 'bytes=0-63' },
-      signal: AbortSignal.timeout(30000),
-    })
-    assert.equal(actualAudio.status, 206, 'Protected range stream must return verified 206')
-    assert.equal(actualAudio.headers.get('x-urai-checksum-sha256'), sha(media))
-    const sample = Buffer.from(await actualAudio.arrayBuffer())
-    assert.deepEqual(sample, media.subarray(0, 64), 'Real byte-stream differs from recorded source')
-    cases.push('actual synthetic Storage upload, explicit private activation and 206 byte-stream')
+    assert.ok(descriptor.status >= 400, 'Storage emulator unexpectedly certified cloud bucket IAM')
+    assert.equal(descriptor.body.error?.status, 'FAILED_PRECONDITION', JSON.stringify(descriptor.body))
+    assert.ok(['MEMORY_MEDIA_BUCKET_IAM_UNVERIFIABLE', 'MEMORY_MEDIA_PRIVATE_BUCKET_REQUIRED'].includes(
+      descriptor.body.error?.message), 'Unexpected playback denial: ' + JSON.stringify(descriptor.body))
+    cases.push('real local Auth Firestore Storage upload and private activation; IAM-unverifiable playback denied')
     await db.doc('consentRecords/' + uid + '_memory_storage').update({ status: 'revoked' })
-    const afterRevocation = await fetch(streamUrl, {
-      headers: { Authorization: 'Bearer ' + owner.idToken, Range: 'bytes=0-63' },
-      signal: AbortSignal.timeout(30000),
-    })
-    assert.ok(afterRevocation.status >= 400, 'Revoked C1 unexpectedly streamed private bytes')
-    assert.notEqual(afterRevocation.status, 206)
-    cases.push('revocation blocks previously authorized exact-source replay')
+    const afterRevocation = await send('getMemoryMediaPlaybackAuthority', {
+      memoryId: 'syntheticFirstPrivateMemory', receiptId: uploadReceipt.receiptId }, owner.idToken)
+    assert.ok(afterRevocation.status >= 400)
+    assert.equal(afterRevocation.body.error?.status, 'FAILED_PRECONDITION')
+    cases.push('revocation denies post-activation playback authority')
     await db.doc('consentRecords/' + uid + '_memory_storage').update({ status: 'granted' })
     denied(await call(confirmed(first), owner.idToken), 'FAILED_PRECONDITION', 'duplicate create refused')
     assert.equal((await db.doc(pathFor(uid, 'syntheticFirstPrivateMemory')).get()).get('sourceProvenance.originalSha256'), 'c'.repeat(64))
@@ -211,8 +199,8 @@ async function main() {
     assert.equal((await db.doc(pathFor(uid, 'syntheticWithDeletionFence')).get()).exists, false)
     console.log(JSON.stringify({ schemaVersion: 'urai-rfinal48-first-memory-emulator-v1', outcome: 'PASS',
       realAuthEmulatorIdTokens: true, realFirestoreTransactions: true, actualCallableEndpoint: true,
-      privateMediaImported: true, protectedPlaybackBytesVerified: true,
-      consentRevocationPlaybackDenied: true, recordedSourceDurationMs: playbackDurationMs,
+      privateMediaImported: true, protectedPlaybackBytesVerified: false,
+      consentRevocationPlaybackDenied: true, cloudBucketIAMVerified: false, recordedSourceDurationMs: playbackDurationMs,
       productionTested: false, browserPlaybackTested: false, cases }, null, 2))
   } finally {
     await db.recursiveDelete(db.doc('users/' + uid)).catch(() => {})
