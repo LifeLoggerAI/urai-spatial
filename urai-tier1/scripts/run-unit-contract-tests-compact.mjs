@@ -198,6 +198,7 @@ const tests = [
   'tests/release-control-smoke-boundary-contract.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
   'tests/replay-source-media-behavior.test.mjs',
+  'tests/adam-error-response-boundary.test.mjs',
   'tests/adam-request-session-fence.test.mjs',
   'tests/presence-stalled-owner-rotation.test.mjs',
   'tests/adam-voice-response-boundary.test.mjs',

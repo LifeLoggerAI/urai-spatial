@@ -6,6 +6,7 @@ import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
 const ts = require('typescript')
 import * as voice from '../src/spatial/adam/adamVoiceResponseBoundary.mjs'
+import * as adamErrors from '../src/spatial/adam/adamErrorResponseBoundary.mjs'
 
 const source = readFileSync(new URL('../src/spatial/adam/adamClient.ts', import.meta.url),'utf8')
 const compiled = ts.transpileModule(source, {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
@@ -26,6 +27,7 @@ function harness(){
     if(name==='@/lib/i18n/contentLanguage')return {contentLanguage:()=>({speechTag:'en-US'})}
     if(name==='@/lib/i18n/presenceContentStream')return {readPresenceContentStream:(...args)=>streamer(...args)}
     if(name==='./adamVoiceResponseBoundary.mjs')return voice
+    if(name==='./adamErrorResponseBoundary.mjs')return adamErrors
     throw Error('Unexpected import: '+name)
   },fetch:async(url,opts)=>{stats.fetches.push({url,opts});return new Response('hello',{status:200,headers:{'content-type':'audio/mpeg'}})},
   globalThis:{crypto:{subtle:{digest:async(...args)=>{stats.digestCalls++;return digest(...args)}}}},
@@ -92,4 +94,55 @@ test('Founder voice keeps existing per-turn playback evidence unavailable',async
   const x=harness();x.setFetch(async()=>new Response(new Uint8Array(20),{headers:{'content-type':'audio/mpeg','content-length':'20'}}))
   const r=await x.exports.requestAdamFounderVoice({text:'hello',locale:'en-US',externalProcessingConsent:true,signal:x.input.signal})
   assert.equal(r.blob?.size,20);assert.equal(r.errorCode,null);assert.equal(r.playbackEvidence,undefined)
+})
+
+
+test('ADAM conversation rejects raw provider messages while retaining valid denial code',async()=>{
+  const x=harness()
+  x.setFetch(async()=>new Response(JSON.stringify({error:'CONSENT_REQUIRED',message:'PRIVATE_HISTORY_DO_NOT_REVEAL'}),{status:403}))
+  await assert.rejects(x.exports.requestAdamPresence(x.input),error=>{
+    assert.equal(error.code,'CONSENT_REQUIRED')
+    assert.doesNotMatch(error.message,/PRIVATE_HISTORY_DO_NOT_REVEAL/)
+    return true
+  })
+})
+
+test('ADAM voice rejects oversized error responses and disposes unread bytes',async()=>{
+  const x=harness();let cancelled=false
+  x.setFetch(async()=>new Response(new ReadableStream({
+    start(c){c.enqueue(new Uint8Array(10_000))},cancel(){cancelled=true}
+  },{highWaterMark:0}),{status:502}))
+  const result=await x.exports.requestAdamFounderVoice({text:'hi',locale:'en-US',externalProcessingConsent:true,signal:x.input.signal})
+  assert.equal(result.blob,null)
+  assert.equal(result.errorCode,'FOUNDER_VOICE_UNAVAILABLE')
+  assert.equal(cancelled,true)
+})
+
+test('ADAM conversation cancels stalled error read on same-UID session change',async()=>{
+  const x=harness();let cancelled=false
+  x.setFetch(async()=>new Response(new ReadableStream({
+    pull(){},cancel(){cancelled=true}
+  },{highWaterMark:0}),{status:403}))
+  const task=x.exports.requestAdamPresence(x.input)
+  await new Promise(r=>setTimeout(r,30))
+  x.auth.currentUser={uid:'owner-a',getIdToken:async()=> 'another-token'}
+  const result=await Promise.race([
+    task.then(()=>null,error=>error.code),
+    new Promise(r=>setTimeout(()=>r('STALLED'),500))
+  ])
+  assert.equal(result,'AUTH_SESSION_CHANGED')
+  assert.equal(cancelled,true)
+})
+
+test('ADAM voice cancels stalled error read on owner sign-out',async()=>{
+  const x=harness();let cancelled=false
+  x.setFetch(async()=>new Response(new ReadableStream({
+    pull(){},cancel(){cancelled=true}
+  },{highWaterMark:0}),{status:403}))
+  const task=x.exports.requestAdamFounderVoice({text:'hello',locale:'en-US',externalProcessingConsent:true,signal:x.input.signal})
+  await new Promise(r=>setTimeout(r,30))
+  x.auth.currentUser=null
+  const result=await Promise.race([task,new Promise(r=>setTimeout(()=>r('STALLED'),500))])
+  assert.equal(result.errorCode,'AUTH_SESSION_CHANGED')
+  assert.equal(cancelled,true)
 })
