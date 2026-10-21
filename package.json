@@ -71,6 +71,8 @@
     "live:record": "node scripts/record-live-status.mjs",
     "publish:live": "node scripts/run-pnpm.mjs live:deploy",
     "test:unit": "node scripts/run-spatial-quarantined-security-tests.mjs --unit",
+    "test:first-memory:emulator:preflight": "node scripts/run-first-private-memory-emulator.mjs --preflight",
+    "test:first-memory:emulator": "node scripts/run-first-private-memory-emulator.mjs --execute",
     "test:integration": "node scripts/run-pnpm.mjs test:canon",
     "test:source-authority": "node --test tests/rfinal-source-authority.test.mjs",
     "test:rules": "node scripts/run-pnpm.mjs firebase:rules:check",
