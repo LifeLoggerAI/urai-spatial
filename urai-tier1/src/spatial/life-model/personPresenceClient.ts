@@ -33,6 +33,58 @@ export class PersonPresenceError extends Error {
   }
 }
 
+// Error responses may contain private data and can stall after a Firebase
+// account switch. Bound the actual network bytes, validate the machine code,
+// and never surface raw provider text to another session.
+async function boundedPersonPresenceFailure(response: Response, signal: AbortSignal, isCurrent: () => boolean): Promise<PersonPresenceError> {
+  const failure = () => new PersonPresenceError('PERSON_PRESENCE_FAILURE')
+  const stale = () => new PersonPresenceError('AUTH_SESSION_CHANGED', 'Sign in again to use Person Presence.')
+  if (!response.body) return failure()
+  const reader = response.body.getReader()
+  let authorityLost = false
+  const current = () => {
+    try { return !authorityLost && !signal.aborted && isCurrent() === true }
+    catch { return false }
+  }
+  const cancel = () => { void reader.cancel('person-presence-error-denied').catch(() => {}) }
+  const poll = setInterval(() => {
+    if (!current()) { authorityLost = true; cancel() }
+  }, 50)
+  poll.unref?.()
+  signal.addEventListener('abort', cancel, { once: true })
+  try {
+    const chunks: Uint8Array[] = []
+    let size = 0
+    while (true) {
+      if (!current()) return stale()
+      const { done, value } = await reader.read()
+      if (!current()) return stale()
+      if (done) break
+      if (!(value instanceof Uint8Array) || value.byteLength > 4096 - size) return failure()
+      size += value.byteLength
+      chunks.push(value)
+    }
+    if (!size) return failure()
+    const bytes = new Uint8Array(size)
+    let offset = 0
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength }
+    const payload: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
+    const error = payload && typeof payload === 'object' && !Array.isArray(payload)
+      ? (payload as { error?: unknown }).error : null
+    // Server error messages are intentionally not forwarded: they can include
+    // user-supplied or personal context, even for a previously valid actor.
+    return new PersonPresenceError(typeof error === 'string' && /^[A-Z][A-Z0-9_]{0,119}$/.test(error)
+      ? error : 'PERSON_PRESENCE_FAILURE')
+  } catch {
+    return current() ? failure() : stale()
+  } finally {
+    clearInterval(poll)
+    signal.removeEventListener('abort', cancel)
+    cancel()
+    reader.releaseLock()
+  }
+}
+
 async function stablePersonPresenceRequestId(input:{
   sessionId:string
   message:string
@@ -102,13 +154,7 @@ export async function requestPersonPresence(input:{
     throw new PersonPresenceError('AUTH_SESSION_CHANGED','Sign in again to use Person Presence.')
   }
   if(!response.ok || !response.body){
-    let code='PERSON_PRESENCE_FAILURE', message='Person presence is unavailable.'
-    try{
-      const payload=await response.json() as {error?:unknown;message?:unknown}
-      if(payload.error) code=String(payload.error)
-      if(payload.message) message=String(payload.message)
-    }catch{}
-    throw new PersonPresenceError(code,message)
+    throw await boundedPersonPresenceFailure(response,input.signal,current)
   }
 
   return readPresenceContentStream<PersonPresenceResult,PersonPresenceEvent>(response,{
