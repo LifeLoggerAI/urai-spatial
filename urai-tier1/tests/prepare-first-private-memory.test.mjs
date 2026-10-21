@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, writeFileSync, symlinkSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, symlinkSync, existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import {
@@ -82,4 +82,32 @@ test('upload operation identity is stable for identical source and distinct for 
   const revised = await prepareFirstPrivateMemory(f.options)
   assert.notEqual(first.recordedTruth.derivativeSha256, revised.recordedTruth.derivativeSha256)
   assert.notEqual(first.upload.request.operationId, revised.upload.request.operationId)
+})
+
+
+test('private packet serialization failures cannot leave partial owner receipts', () => {
+  const root = mkdtempSync(join(tmpdir(), 'urai-atomic-private-'))
+  try {
+    const target = join(root, 'hidden-private-packet')
+    assert.throws(() => privatePacketWrite({
+      memory: { ownerId: 'synthetic-only', privacy: 'hidden' },
+      upload: { toJSON() { throw new Error('synthetic-serialization-failure') } },
+    }, target), /synthetic-serialization-failure/)
+    assert.equal(existsSync(target), false)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('private packet rejects missing memory or upload before creating output directory', () => {
+  const root = mkdtempSync(join(tmpdir(), 'urai-missing-payload-'))
+  try {
+    for (const [index, packet] of [
+      { upload: { synthetic: true } },
+      { memory: { synthetic: true } },
+      { memory: undefined, upload: { synthetic: true } },
+    ].entries()) {
+      const target = join(root, 'invalid-' + index)
+      assert.throws(() => privatePacketWrite(packet, target), /PRIVATE_PACKET_PAYLOAD_INVALID/)
+      assert.equal(existsSync(target), false)
+    }
+  } finally { rmSync(root, { recursive: true, force: true }) }
 })
