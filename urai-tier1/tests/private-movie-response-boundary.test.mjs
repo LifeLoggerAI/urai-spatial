@@ -100,3 +100,83 @@ test('zero and unsafe lengths cannot initiate private downloads', async () => {
       { kind: 'mp4', expectedBytes: n, ...token() }), /private_movie_delivery_unavailable/)
   }
 })
+
+// The authenticated segmented timeline must have the same streaming byte and
+// session enforcement as its protected MP4/SRT media, before JSON.parse().
+const TIMELINE_MAX = 96 * 1024
+const timelineReader = async (...args) => {
+  const { readBoundedPrivateMovieTimelineText } = await import('../src/app/replay/privateMovieResponseBoundary.mjs')
+  assert.equal(typeof readBoundedPrivateMovieTimelineText, 'function', 'production timeline reader must exist')
+  return readBoundedPrivateMovieTimelineText(...args)
+}
+
+test('private timeline accepts bounded chunked Unicode JSON using byte count', async () => {
+  const bytes = new TextEncoder().encode(JSON.stringify({ movie: '🌟', segments: [1, 2] }))
+  const payload = stream([bytes.subarray(0, 5), bytes.subarray(5)], {})
+  const decoded = await timelineReader(payload, token())
+  assert.deepEqual(JSON.parse(decoded), { movie: '🌟', segments: [1, 2] })
+})
+
+test('private timeline does not trust advertised small Content-Length for actual body size', async () => {
+  let cancelled = false
+  const payload = new Response(new ReadableStream({
+    start(controller) { controller.enqueue(new Uint8Array(TIMELINE_MAX + 1)) },
+    cancel() { cancelled = true },
+  }), { headers: { 'content-length': '1' } })
+  await assert.rejects(timelineReader(payload, token()), /private_timeline_size_invalid/)
+  assert.equal(cancelled, true)
+})
+
+test('private timeline oversized advertised response is canceled before consumption', async () => {
+  let cancelled = false
+  const payload = stream([Uint8Array.of(123)], { onCancel: () => { cancelled = true } })
+  payload.headers.set('content-length', String(TIMELINE_MAX + 1))
+  await assert.rejects(timelineReader(payload, token()), /private_timeline_size_invalid/)
+  assert.equal(cancelled, true)
+})
+
+test('private timeline invalid UTF-8 fails closed', async () => {
+  const payload = stream([Uint8Array.of(0xc3, 0x28)])
+  await assert.rejects(timelineReader(payload, token()), /private_timeline_size_invalid/)
+})
+
+test('private timeline stale owner is denied and unread bytes are canceled', async () => {
+  let cancelled = false
+  const payload = stream([Uint8Array.of(123)], { onCancel: () => { cancelled = true } })
+  await assert.rejects(timelineReader(payload, { signal: new AbortController().signal, isCurrent: () => false }), /private_timeline_size_invalid/)
+  assert.equal(cancelled, true)
+})
+
+test('private timeline owner change during streaming cancels remaining response', async () => {
+  let current = true, cancelled = false
+  const payload = stream([Uint8Array.of(123), Uint8Array.of(125)], {
+    beforeSecond: () => { current = false }, onCancel: () => { cancelled = true },
+  })
+  await assert.rejects(timelineReader(payload, { signal: new AbortController().signal, isCurrent: () => current }), /private_timeline_size_invalid/)
+  assert.equal(cancelled, true)
+})
+
+test('private timeline abort cancels a network read which is waiting forever', async () => {
+  const controller = new AbortController()
+  let canceled = false
+  let sawWaitingRead
+  const waiting = new Promise(resolve => { sawWaitingRead = resolve })
+  const payload = new Response(new ReadableStream({
+    pull() { sawWaitingRead() },
+    cancel() { canceled = true },
+  }, { highWaterMark: 0 }), { headers: { 'content-type': 'application/json' } })
+  const pending = timelineReader(payload, { signal: controller.signal, isCurrent: () => !controller.signal.aborted })
+  await waiting
+  controller.abort()
+  const timeout = Symbol('stalled')
+  let timer
+  try {
+    const result = await Promise.race([
+      pending.then(() => 'resolved', () => 'rejected'),
+      new Promise(resolve => { timer = setTimeout(() => resolve(timeout), 100) }),
+    ])
+    assert.notEqual(result, timeout, 'aborting a stalled private timeline read must settle promptly')
+    assert.equal(result, 'rejected')
+    assert.equal(canceled, true)
+  } finally { clearTimeout(timer) }
+})

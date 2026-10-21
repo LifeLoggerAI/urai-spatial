@@ -55,3 +55,61 @@ export async function readBoundedPrivateMovieBlob(response, { kind, expectedByte
     }
   }
 }
+
+/**
+ * Segmented Life Movie timeline JSON carries private owner-bound metadata.
+ * Bound the actual decoded network bytes before reading JSON, not the string
+ * length after Response.text() has already buffered the entire body.
+ */
+export async function readBoundedPrivateMovieTimelineText(response, { signal, isCurrent }) {
+  const unavailable = () => new Error('private_timeline_size_invalid')
+  const MAX_TIMELINE_BYTES = 96 * 1024
+  let reader = null
+  let scratch = null
+  let complete = false
+  const abortPendingRead = () => {
+    if (reader) void reader.cancel('private-timeline-session-aborted').catch(() => {})
+  }
+  try {
+    if (!response?.body || !signal || typeof isCurrent !== 'function' ||
+        signal.aborted || !isCurrent()) throw unavailable()
+    const advertised = response.headers.get('content-length')
+    if (advertised !== null) {
+      if (!/^[0-9]+$/.test(advertised)) throw unavailable()
+      const claimedBytes = Number(advertised)
+      if (!Number.isSafeInteger(claimedBytes) || claimedBytes < 1 ||
+          claimedBytes > MAX_TIMELINE_BYTES) throw unavailable()
+    }
+    reader = response.body.getReader()
+    signal.addEventListener('abort', abortPendingRead, { once: true })
+    if (signal.aborted) throw unavailable()
+    scratch = new Uint8Array(MAX_TIMELINE_BYTES)
+    let written = 0
+    for (;;) {
+      if (signal.aborted || !isCurrent()) throw unavailable()
+      const { done, value } = await reader.read()
+      if (signal.aborted || !isCurrent()) throw unavailable()
+      if (done) break
+      if (!(value instanceof Uint8Array) || value.byteLength > MAX_TIMELINE_BYTES - written)
+        throw unavailable()
+      scratch.set(value, written)
+      written += value.byteLength
+    }
+    if (!written || signal.aborted || !isCurrent()) throw unavailable()
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(scratch.subarray(0, written))
+    if (signal.aborted || !isCurrent()) throw unavailable()
+    complete = true
+    return text
+  } catch {
+    throw unavailable()
+  } finally {
+    signal?.removeEventListener('abort', abortPendingRead)
+    scratch?.fill(0)
+    if (reader) {
+      if (!complete) void reader.cancel('private-timeline-delivery-denied').catch(() => {})
+      reader.releaseLock()
+    } else if (response?.body && !response.body.locked) {
+      void response.body.cancel('private-timeline-delivery-denied').catch(() => {})
+    }
+  }
+}

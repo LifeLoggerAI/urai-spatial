@@ -8,7 +8,7 @@ import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selec
 import { parsePrivateLifeMovieTimeline, selectPrivateLifeMovieSegment, type PrivateLifeMovieTimeline, type PrivateLifeMovieSegment } from './privateLifeMovieSegmentTimeline'
 import { createPrivateMovieReconnectPolicy } from './privateMovieReconnectPolicy'
 import { privateMovieContentLengthAllowed } from './privateMovieContentLengthPolicy'
-import { readBoundedPrivateMovieBlob } from './privateMovieResponseBoundary.mjs'
+import { readBoundedPrivateMovieBlob, readBoundedPrivateMovieTimelineText } from './privateMovieResponseBoundary.mjs'
 
 const PLAN = /^lmp_[A-Za-z0-9_-]{20,64}$/
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
@@ -156,8 +156,10 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
                     !response.headers.get('content-type')?.startsWith('application/json') ||
                     !response.headers.get('cache-control')?.includes('no-store'))
                   throw new Error('private_timeline_delivery_denied')
-                const body = await response.text()
-                if (!currentSession() || signal.aborted || body.length > 96 * 1024)
+                const body = await readBoundedPrivateMovieTimelineText(response, {
+                  signal, isCurrent:currentSession,
+                })
+                if (!currentSession() || signal.aborted)
                   throw new Error('private_timeline_size_invalid')
                 return parsePrivateLifeMovieTimeline(JSON.parse(body),selectedMovieId,selectedPlanId)
               }

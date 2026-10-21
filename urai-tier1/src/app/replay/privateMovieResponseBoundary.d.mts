@@ -7,3 +7,11 @@ export function readBoundedPrivateMovieBlob(
     isCurrent: () => boolean
   },
 ): Promise<Blob>
+
+export function readBoundedPrivateMovieTimelineText(
+  response: Response,
+  options: {
+    signal: AbortSignal
+    isCurrent: () => boolean
+  },
+): Promise<string>
