@@ -24,6 +24,7 @@ const requiredFocusedTests = [
   'tests/person-render-binding-promotion.test.mjs',
   'tests/replay-person-presence-ui.test.mjs',
   'tests/replay-person-presence-lifecycle.test.mjs',
+  'tests/adam-error-response-boundary.test.mjs',
   'tests/adam-request-session-fence.test.mjs',
   'tests/presence-stalled-owner-rotation.test.mjs',
   'tests/presence-stream-budget.test.mjs',

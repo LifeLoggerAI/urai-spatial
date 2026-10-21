@@ -5,6 +5,7 @@ import type { AdamSurfaceId } from './adamSurfaceContext'
 import { contentLanguage, type UraiContentLanguageTag } from '@/lib/i18n/contentLanguage'
 import { readPresenceContentStream } from '@/lib/i18n/presenceContentStream'
 import { AdamVoiceResponseError, readAuthorizedAdamVoice } from './adamVoiceResponseBoundary.mjs'
+import { readBoundedAdamError } from './adamErrorResponseBoundary.mjs'
 
 export type AdamConversationMessage = {
   role: 'user' | 'assistant'
@@ -116,16 +117,12 @@ export async function requestAdamPresence(input: {
   }
 
   if (!response.ok || !response.body) {
-    let code = 'ADAM_PROVIDER_BOUNDARY_FAILURE'
-    let message = 'Adam is unavailable.'
-    try {
-      const payload = await response.json() as { error?: unknown; message?: unknown }
-      if (payload.error) code = String(payload.error)
-      if (payload.message) message = String(payload.message)
-    } catch {
-      // Preserve the generic boundary error.
-    }
-    throw new AdamProviderError(code, message)
+    const result = await readBoundedAdamError(response, {
+      signal: input.signal,
+      isCurrent: () => auth.currentUser === actor && !input.signal.aborted,
+      fallbackCode: 'ADAM_PROVIDER_BOUNDARY_FAILURE',
+    })
+    throw new AdamProviderError(result.code)
   }
 
   if (auth.currentUser !== actor || input.signal.aborted)
@@ -188,14 +185,12 @@ export async function requestAdamFounderVoice(input: {
     return { blob: null, errorCode: 'VOICE_NETWORK_UNAVAILABLE' }
   }
   if (!response.ok) {
-    let errorCode = 'FOUNDER_VOICE_UNAVAILABLE'
-    try {
-      const payload = await response.json() as { error?: unknown }
-      if (payload.error) errorCode = String(payload.error)
-    } catch {
-      // Keep generic voice failure.
-    }
-    return { blob: null, errorCode }
+    const result = await readBoundedAdamError(response, {
+      signal: input.signal,
+      isCurrent: () => auth.currentUser === actor && !input.signal.aborted,
+      fallbackCode: 'FOUNDER_VOICE_UNAVAILABLE',
+    })
+    return { blob: null, errorCode: result.code }
   }
   try {
     const blob = await readAuthorizedAdamVoice(response, {
