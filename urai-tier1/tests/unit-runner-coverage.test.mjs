@@ -61,6 +61,7 @@ const requiredFocusedTests = [
   'tests/replay-visibility-actor-fence.test.mjs',
   'tests/life-movie-sequence-identity.test.mjs',
   'tests/replay-owned-media-actor-fence.test.mjs',
+  'tests/owned-memory-media-release-teardown.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
   'tests/world-return-destination.test.mjs',
   'tests/world-return-identity-isolation.test.mjs',

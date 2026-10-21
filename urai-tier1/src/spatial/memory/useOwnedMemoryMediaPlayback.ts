@@ -54,12 +54,17 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
       const release = () => {
         if (released) return
         released = true
-        controller.abort(); stops.splice(0).forEach(stop => stop())
+        controller.abort()
+        // A failed subscriber cleanup must never prevent private media revocation.
+        for (const stop of stops.splice(0)) {
+          try { stop() } catch { /* continue releasing the remaining authority */ }
+        }
         clearTimeout(expiry); clearTimeout(poll)
         finishSnapshots()
-        releaseConsumer.current?.()
-        if (objectUrl) URL.revokeObjectURL(objectUrl)
+        const previousUrl = objectUrl
         objectUrl = null
+        try { releaseConsumer.current?.() } catch { /* fail closed on consumer teardown errors */ }
+        if (previousUrl) URL.revokeObjectURL(previousUrl)
       }
       detach = release
       const deny = () => { const publish = !closed && version === generation; release(); if (publish) setPlayback({ key, status: 'unavailable', media: [] }) }
