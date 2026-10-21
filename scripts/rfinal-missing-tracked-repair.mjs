@@ -3,6 +3,7 @@
 // The caller must separately verify HEAD, the index tree, checkout isolation,
 // and that the post-restore status is completely clean.
 import path from 'node:path'
+import { lstatSync, realpathSync } from 'node:fs'
 
 const HISTORICAL_EXCLUSION = /^(?:[^/]*audit|\.ai-backups|_quarantine)\//
 const TIER_HISTORICAL_EXCLUSION = /^urai-tier1\/[^/]*audit\//
@@ -45,12 +46,30 @@ export function planMissingTrackedRepair(porcelain, maxFiles = 5000) {
   return Object.freeze({ count: paths.length, paths: Object.freeze(paths), pathspecBytes })
 }
 
-// Only the runner's newly created worktree, or the established V2/V4
-// disposable worktree under Downloads, is eligible for this repair.
+// Admit only a real, isolated clone. Matching a folder name alone can be
+// spoofed by a directory junction or a symlink into the founder's worktree.
+// Downloads itself may be redirected; compare canonical paths under its root.
 export function isIsolatedRfinalSource(source, downloads) {
   const root = path.resolve(source)
   const home = path.resolve(downloads)
   const relative = path.relative(home, root).replace(/\\/g, '/')
-  return /^URAI_RFINAL_(?:NATIVE_|V2_|V4_)[^/]*\/source$/.test(relative) &&
-    relative !== '..' && !relative.startsWith('../')
+  if (!/^URAI_RFINAL_(?:NATIVE_|V2_|V4_)[^/]*\/source$/.test(relative) ||
+      relative === '..' || relative.startsWith('../')) return false
+  try {
+    const runDir = path.dirname(root)
+    const gitDir = path.join(root, '.git')
+    for (const dir of [runDir, root, gitDir]) {
+      const stat = lstatSync(dir)
+      if (!stat.isDirectory() || stat.isSymbolicLink()) return false
+    }
+    const canonicalHome = realpathSync(home)
+    const canonicalRun = realpathSync(runDir)
+    const canonicalRoot = realpathSync(root)
+    const same = (a, b) => process.platform === 'win32'
+      ? a.toLowerCase() === b.toLowerCase() : a === b
+    // Reject junction/symlink hops inside the disposable run directory,
+    // even if they happen to point at another similarly named checkout.
+    return same(canonicalRun, path.join(canonicalHome, path.basename(runDir))) &&
+      same(canonicalRoot, path.join(canonicalRun, 'source'))
+  } catch { return false }
 }
