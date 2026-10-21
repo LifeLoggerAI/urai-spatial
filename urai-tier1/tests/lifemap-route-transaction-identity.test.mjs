@@ -37,12 +37,13 @@ function fixture(search){
  const imports={
   react:{useState(initial){return [initial,()=>{}]},useEffect(effect){effect()}},
   'firebase/auth':{getAuth:()=>({}),onAuthStateChanged:()=>()=>{}},
+  '@/hooks/useBrowserLocation':{useBrowserLocation:()=>location.pathname+location.search},
   '@/components/lifemap/useLifeMapEvents':{useLifeMapEvents:()=>({nodes})},
   '@/lib/firebase/client':{app:{},firebasePublicEnvReady:true},
   '@/spatial/memory/lifeMapSelectionJourney':{withLifeMapSelectionIdentity:identity},
  }
  const module={exports:{}}
- vm.runInNewContext(js.outputText,{module,exports:module.exports,URLSearchParams,Element:FakeElement,window,require(name){assert.ok(name in imports,'unrecognized import '+name);return imports[name]}}, {filename:'LifeMapRouteTransactionBridge.tsx'})
+ vm.runInNewContext(js.outputText,{module,exports:module.exports,URL,URLSearchParams,Element:FakeElement,window,require(name){assert.ok(name in imports,'unrecognized import '+name);return imports[name]}}, {filename:'LifeMapRouteTransactionBridge.tsx'})
  module.exports.LifeMapRouteTransactionBridge()
  assert.equal(typeof callbacks.click,'function')
  return{calls,location,activate(role,text){callbacks.click({target:new FakeElement(role,text)})}}
