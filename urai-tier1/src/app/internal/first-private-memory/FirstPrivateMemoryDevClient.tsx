@@ -24,14 +24,14 @@ export default function FirstPrivateMemoryDevClient() {
     epoch.current++
     inFlight.current?.abort()
     inFlight.current = null
-    setApproved(false); setReceipt(null); setBusy(false)
+    setApproved(false); setReceipt(null); setDerivativeSha256(null); setBusy(false)
   }
   useEffect(() => {
     if (!uraiJourneyEmulatorEnabled) return
     const unsub = onAuthStateChanged(getUraiAuth(), user => {
       epoch.current++; inFlight.current?.abort(); inFlight.current = null
       setSignedIn(Boolean(user)); setPacketFile(null); setMediaFile(null)
-      setApproved(false); setBusy(false); setReceipt(null)
+      setApproved(false); setBusy(false); setReceipt(null); setDerivativeSha256(null)
       setMessage(user ? 'Fictional local owner session ready.' : 'Sign in to the fictional local Firebase emulator.')
     })
     return () => { epoch.current++; inFlight.current?.abort(); inFlight.current = null; unsub() }
