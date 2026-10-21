@@ -497,3 +497,38 @@ for (const status of ['granted', 'revoked']) test('canonical C7 ' + status + ' p
   const result = await f.handler.getMemoryMediaUploadAuthority({ memoryId }, f.context)
   assert.equal(result.ownerId, uid); const playback = await f.descriptor(); assert.equal(playback.memoryId, memoryId)
 })
+
+
+for (const [label, state] of [
+  ['missing', undefined], ['pending', 'pending'],
+  ['revoked', 'revoked'], ['unknown', 'legacy'],
+]) test('selected-memory state also fences upload and registration before private object access: ' + label, async () => {
+  const f = fixture()
+  const memory = f.docs.get(memoryPath)
+  if (state === undefined) delete memory.consentState
+  else memory.consentState = state
+  const rejected = error => {
+    assert.equal(error.code, 'failed-precondition')
+    assert.equal(error.message, 'MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
+    return true
+  }
+  await assert.rejects(
+    f.handler.getMemoryMediaUploadAuthority({ memoryId }, f.context), rejected)
+  await assert.rejects(
+    f.handler.registerMemoryMedia({
+      memoryId, operationId: 'fictional-state-' + label,
+      contentType: 'video/mp4', kind: 'video', base64: f.bytes.toString('base64'),
+    }, f.context), rejected)
+  assert.equal(f.stats.bucketMetadata, 0)
+  assert.equal(f.stats.objectMetadata, 0)
+  assert.equal(f.stats.streams, 0)
+})
+
+test('private hidden selected memory retains authenticated upload authority only with affirmative consent', async () => {
+  const f = fixture()
+  f.docs.get(memoryPath).privacy = 'hidden'
+  const allowed = await f.handler.getMemoryMediaUploadAuthority({ memoryId }, f.context)
+  assert.equal(allowed.ownerId, uid)
+  assert.equal(allowed.memoryId, memoryId)
+  assert.equal(f.stats.streams, 0)
+})
