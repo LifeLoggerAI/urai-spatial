@@ -10,7 +10,7 @@ function windowsPortableCandidates(env) {
   const parent = path.join(home, 'Downloads', 'UrAi-Python3')
   try {
     return fs.readdirSync(parent, { withFileTypes: true })
-      .filter(entry => entry.isDirectory() && /^python-3\\.[0-9]+\\.[0-9]+-embeddable-amd64$/i.test(entry.name))
+      .filter(entry => entry.isDirectory() && /^python-3\.[0-9]+\.[0-9]+-embeddable-amd64$/i.test(entry.name))
       .sort((a, b) => b.name.localeCompare(a.name))
       .slice(0, 8)
       .map(entry => path.join(parent, entry.name, 'python.exe'))

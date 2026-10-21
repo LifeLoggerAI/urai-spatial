@@ -4,10 +4,13 @@ import os from 'node:os'
 import path from 'node:path'
 import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
+import { deflateSync } from 'node:zlib'
+import { pngCrc32 } from '../scripts/visual-png-integrity.mjs'
 import { fileURLToPath } from 'node:url'
 import { CONTROLLER, STAGES, PINNED_FILES, inside, refuseProtectedOverlap,
   parseRemoteHead, verifyRefHead, formatCommand, safeVerificationEnvironment,
-  REQUIRED_HTTP_ROUTES, assessHttpRoutes, WINDOWS_SAFE_SPARSE_PATTERNS,
+  REQUIRED_HTTP_ROUTES, assessHttpRoutes, REQUIRED_VISUAL_CAPTURES,
+  verifyVisualBrowserArtifacts, WINDOWS_SAFE_SPARSE_PATTERNS,
   auditWindowsSparsePaths } from '../scripts/run-rfinal-native-evidence.mjs'
 
 test('one original repository and existing PR branch; no duplicate Gold Master', () => {
@@ -313,4 +316,93 @@ test('portable Node authority reaches pnpm grandchildren even when ambient PATH 
     assert.equal(path.resolve(actual), path.resolve(process.execPath))
     assert.equal(env[pathKey], root, 'caller environment remains unchanged')
   } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('R-FINAL executes full maintained, native platform and XR lanes without substituting static browser assertions', () => {
+  const byId = new Map(STAGES.map(stage => [stage.id, stage.command.join(' ')]))
+  for (const id of ['tier1_complete_all_tests', 'android_native_identity_tests',
+    'ios_native_preparation_tests', 'ios_source_archive_tests',
+    'native_static_provenance_tests', 'xr_release_matrix_source', 'xr_runtime_contracts'])
+    assert.ok(byId.has(id), id + ' must execute on the native candidate')
+  assert.match(byId.get('tier1_complete_all_tests'), /test:all/)
+  assert.match(byId.get('xr_runtime_contracts'), /xr:contract/)
+  const source = readFileSync(new URL('../scripts/run-rfinal-native-evidence.mjs', import.meta.url), 'utf8')
+  assert.match(source, /'navigation', 'camera', 'race', 'data', 'visual'/)
+  assert.match(source, /'browser_visual'/)
+  assert.match(source, /verifyVisualBrowserArtifacts\(evidence\)/)
+})
+test('R-FINAL visual evidence rejects an absent suite report and incomplete capture', () => {
+  const evidence = mkdtempSync(path.join(os.tmpdir(), 'urai-visual-evidence-'))
+  try {
+    assert.equal(verifyVisualBrowserArtifacts(evidence).passed, false)
+    const dir = path.join(evidence, 'browser-artifacts')
+    mkdirSync(dir)
+    writeFileSync(path.join(dir, 'spatial-tier-lock-hardening-report-visual.json'),
+      JSON.stringify({suite:'visual',checks:[{name:'visual',status:'passed'}],screenshots:[]}))
+    const incomplete = verifyVisualBrowserArtifacts(evidence)
+    assert.equal(incomplete.passed, false)
+    assert.equal(incomplete.capturesVerified, 0)
+    assert.ok(incomplete.failures.some(reason => reason.includes('MISSING_CAPTURE')))
+  } finally {rmSync(evidence,{recursive:true,force:true})}
+})
+test('R-FINAL visual evidence requires each screenshot and never confers physical approval', () => {
+  const evidence = mkdtempSync(path.join(os.tmpdir(), 'urai-visual-captures-'))
+  try {
+    const dir = path.join(evidence, 'browser-artifacts')
+    mkdirSync(dir)
+    const captures = []
+    for (const name of REQUIRED_VISUAL_CAPTURES) {
+      const screenshot = path.join(dir, name + '.png')
+      writeFileSync(screenshot, Buffer.alloc(4096, 137))
+      captures.push(screenshot)
+    }
+    writeFileSync(path.join(dir, 'spatial-tier-lock-hardening-report-visual.json'),
+      JSON.stringify({suite:'visual',checks:[{name:'visual',status:'passed'}],screenshots:captures}))
+    const accepted = verifyVisualBrowserArtifacts(evidence)
+    assert.equal(accepted.passed, false, 'arbitrary 4096-byte fixtures must never qualify as real screenshots')
+    assert.equal(accepted.capturesVerified, 0)
+    assert.ok(accepted.failures.every(failure => failure.includes('VISUAL_CAPTURE_INVALID_PNG')))
+    assert.match(accepted.scope, /not physical-device/)
+    writeFileSync(captures[0], Buffer.alloc(10))
+    assert.equal(verifyVisualBrowserArtifacts(evidence).passed, false)
+  } finally {rmSync(evidence,{recursive:true,force:true})}
+})
+
+test('R-FINAL validates all real encoded PNG captures and preserves evidence-only scope', () => {
+  const evidence = mkdtempSync(path.join(os.tmpdir(), 'urai-visual-valid-png-'))
+  const pngChunk = (type, payload) => {
+    const result = Buffer.alloc(12 + payload.length)
+    result.writeUInt32BE(payload.length, 0)
+    result.write(type, 4, 4, 'ascii')
+    payload.copy(result, 8)
+    result.writeUInt32BE(pngCrc32(result.subarray(4, result.length - 4)), result.length - 4)
+    return result
+  }
+  try {
+    const dir = path.join(evidence, 'browser-artifacts')
+    mkdirSync(dir)
+    const width = 390, height = 844, ihdr = Buffer.alloc(13)
+    ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4)
+    ihdr[8] = 8; ihdr[9] = 6
+    const rows = Buffer.alloc((width * 4 + 1) * height)
+    const png = Buffer.concat([
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+      pngChunk('IHDR', ihdr),
+      pngChunk('IDAT', deflateSync(rows)),
+      pngChunk('IEND', Buffer.alloc(0)),
+    ])
+    const images = []
+    for (const name of REQUIRED_VISUAL_CAPTURES) {
+      const file = path.join(dir, name + '.png')
+      writeFileSync(file, png)
+      images.push(file)
+    }
+    writeFileSync(path.join(dir, 'spatial-tier-lock-hardening-report-visual.json'),
+      JSON.stringify({suite: 'visual', checks: [{name: 'visual', status: 'passed'}], screenshots: images}))
+    const result = verifyVisualBrowserArtifacts(evidence)
+    assert.equal(result.passed, true, JSON.stringify(result))
+    assert.equal(result.capturesVerified, REQUIRED_VISUAL_CAPTURES.length)
+    assert.match(result.scope, /not physical-device/)
+    assert.match(result.scope, /independent visual approval/)
+  } finally { rmSync(evidence, { recursive: true, force: true }) }
 })
