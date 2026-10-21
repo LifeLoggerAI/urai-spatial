@@ -4,6 +4,8 @@ import fs from 'node:fs'
 const focusedContractTests = [
   'tests/stripe-session-authority.test.mjs',
   'tests/owned-memory-media-client.test.mjs',
+  'tests/prepare-first-private-memory.test.mjs',
+  'tests/prepare-first-private-memory-repo-boundary.test.mjs',
   'tests/authorized-export-download.test.mjs',
   'tests/operational-export-client.test.mjs',
   'tests/private-life-model-review-behavior.test.mjs',
