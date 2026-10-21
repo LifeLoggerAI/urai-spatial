@@ -100,11 +100,20 @@ async function main() {
     // Generate playable fictional Ogg/Opus bytes inside the isolated runner.
     // No real family recording, fixture download or paid media provider is involved.
     const generated = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi',
-      '-i', 'sine=frequency=330:duration=1', '-ar', '48000', '-ac', '1', '-c:a', 'libopus',
+      '-i', 'sine=frequency=330:duration=6', '-ar', '48000', '-ac', '1', '-c:a', 'libopus',
       '-b:a', '12k', '-f', 'ogg', 'pipe:1'], { encoding: null, maxBuffer: 1024 * 1024 })
     assert.equal(generated.status, 0, String(generated.stderr))
     const media = generated.stdout
     assert.ok(media.length > 0 && media.length <= 4 * 1024 * 1024 && media.toString('ascii', 0, 4) === 'OggS')
+    // Replay has four 1500-ms phases. The source must span those actual 6000 ms;
+    // a one-second source would falsely prove six seconds of recorded life.
+    const probe = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration',
+      '-of', 'default=noprint_wrappers=1:nokey=1', '-i', 'pipe:0'], {
+      input: media, encoding: 'utf8', maxBuffer: 1024 * 1024 })
+    assert.equal(probe.status, 0, String(probe.stderr))
+    const playbackDurationMs = Number.parseFloat(String(probe.stdout).trim()) * 1000
+    assert.ok(playbackDurationMs >= 6000 && playbackDurationMs < 6200,
+      'Source duration does not match the 6000 ms four-phase Replay manifest')
     const first = packet(uid, 'syntheticFirstPrivateMemory', media)
     denied(await call(confirmed(first), null), 'UNAUTHENTICATED', 'anonymous rejected by real callable')
     denied(await call(confirmed(first), foreign.idToken), 'FAILED_PRECONDITION', 'foreign owner token rejected')
@@ -193,7 +202,9 @@ async function main() {
     assert.equal((await db.doc(pathFor(uid, 'syntheticWithDeletionFence')).get()).exists, false)
     console.log(JSON.stringify({ schemaVersion: 'urai-rfinal48-first-memory-emulator-v1', outcome: 'PASS',
       realAuthEmulatorIdTokens: true, realFirestoreTransactions: true, actualCallableEndpoint: true,
-      privateMediaImported: false, productionTested: false, browserPlaybackTested: false, cases }, null, 2))
+      privateMediaImported: true, protectedPlaybackBytesVerified: true,
+      consentRevocationPlaybackDenied: true, recordedSourceDurationMs: playbackDurationMs,
+      productionTested: false, browserPlaybackTested: false, cases }, null, 2))
   } finally {
     await db.recursiveDelete(db.doc('users/' + uid)).catch(() => {})
     await db.doc('consentRecords/' + uid + '_memory_storage').delete().catch(() => {})
