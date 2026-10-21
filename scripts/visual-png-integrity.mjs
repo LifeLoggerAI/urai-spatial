@@ -19,8 +19,9 @@ export function pngCrc32(input) {
 }
 
 /** The PNG filter bytes are deltas, not pixels. Restore only as many rows
- * as needed to prove that screenshot pixels are not all identical. An all-black
- * (or any uniform-color) screenshot cannot qualify as rendered world evidence.
+ * as needed to prove screenshot pixels are not identical after RGBA is
+ * composited against black. Alpha-only variation of black pixels is invisible
+ * and cannot qualify as a genuine rendered scene.
  * This guards a basic no-render case, not artistic quality or browser origin.
  */
 function hasPixelVariation(decoded, width, height, channels) {
@@ -28,7 +29,7 @@ function hasPixelVariation(decoded, width, height, channels) {
   const stride = rowBytes + 1
   let previous = Buffer.alloc(rowBytes)
   let current = Buffer.alloc(rowBytes)
-  let baseline = null
+  let baselineRed = -1, baselineGreen = 0, baselineBlue = 0
   for (let y = 0; y < height; y++) {
     const filter = decoded[y * stride]
     const start = y * stride + 1
@@ -46,9 +47,20 @@ function hasPixelVariation(decoded, width, height, channels) {
         predictor = a <= b && a <= c ? left : b <= c ? above : upperLeft
       }
       current[x] = (decoded[start + x] + predictor) & 255
-      if (baseline === null && x === channels - 1) {
-        baseline = Buffer.from(current.subarray(0, channels))
-      } else if (baseline !== null && current[x] !== baseline[x % channels]) return true
+      if (x % channels === channels - 1) {
+        const pixelStart = x - channels + 1
+        // Compare visible RGB samples rather than raw alpha. Transparent
+        // black pixels with changing opacity still produce a black screenshot.
+        const alpha = channels === 4 ? current[x] / 255 : 1
+        const red = Math.round(current[pixelStart] * alpha)
+        const green = Math.round(current[pixelStart + 1] * alpha)
+        const blue = Math.round(current[pixelStart + 2] * alpha)
+        if (baselineRed === -1) {
+          baselineRed = red; baselineGreen = green; baselineBlue = blue
+        } else if (red !== baselineRed || green !== baselineGreen || blue !== baselineBlue) {
+          return true
+        }
+      }
     }
     ;[previous, current] = [current, previous]
   }
