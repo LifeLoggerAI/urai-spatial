@@ -6,6 +6,7 @@ const focusedContractTests = [
   'tests/owned-memory-media-client.test.mjs',
   'tests/owned-memory-prepared-fixity.test.mjs',
   'tests/prepare-first-private-memory.test.mjs',
+  'tests/first-private-memory-selected-consumer.test.mjs',
   'tests/private-file-integrity.test.mjs',
   'tests/prepare-first-private-memory-repo-boundary.test.mjs',
   'tests/authorized-export-download.test.mjs',
