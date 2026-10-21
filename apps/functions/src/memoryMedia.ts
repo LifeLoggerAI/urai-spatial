@@ -495,7 +495,8 @@ function playbackProject() {
 function playbackOrigin(origin: string, project: string) {
   if (['https://urai.app', 'https://www.urai.app', 'https://urai.life', 'https://uraispatial.com', 'https://localhost',
     'capacitor://localhost', 'http://localhost', `https://${project}.web.app`, `https://${project}.firebaseapp.com`].includes(origin)) return true
-  if (process.env.FUNCTIONS_EMULATOR === 'true' && ['http://localhost:4173', 'http://127.0.0.1:4173'].includes(origin)) return true
+  if (process.env.FUNCTIONS_EMULATOR === 'true' && project === 'demo-urai-auth-journey'
+    && ['4173', '3000', '3002'].some(port => ['http://localhost:' + port, 'http://127.0.0.1:' + port].includes(origin))) return true
   return new RegExp(`^https://${project}--[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.web\\.app$`).test(origin)
     && new URL(origin).hostname.split('.')[0].length <= 63
 }
