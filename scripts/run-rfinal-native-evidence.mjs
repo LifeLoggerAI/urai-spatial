@@ -15,6 +15,7 @@ import { once } from 'node:events'
 import { pathToFileURL } from 'node:url'
 import { resolveCandidate, assessCandidateCompletion, requireCommitSha } from './rfinal-source-authority.mjs'
 import { inspectVisualPng } from './visual-png-integrity.mjs'
+import { isOwnedVisualEvidencePath } from './rfinal-visual-evidence-paths.mjs'
 import { isUraiHomeDocument } from '../tests/spatial-owned-server.mjs'
 import { planMissingTrackedRepair, isIsolatedRfinalSource } from './rfinal-missing-tracked-repair.mjs'
 
@@ -87,6 +88,7 @@ export const STAGES = Object.freeze([
   // Full test glob is separate from the compact maintained unit runner; each
   // native/platform boundary also receives an individually identifiable receipt.
   { id: 'visual_png_integrity_tests', command: ['node', '--test', 'tests/visual-png-integrity.test.mjs'], requiresInstall: false },
+  { id: 'visual_artifact_ownership_tests', command: ['node', '--test', 'tests/rfinal-visual-evidence-paths.test.mjs'], requiresInstall: false },
   { id: 'tier1_complete_all_tests', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'test:all'], requiresInstall: true },
   { id: 'android_native_identity_tests', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'exec', 'node', '--import', 'tsx', '--test', 'tests/android-native-google-auth.test.mjs'], requiresInstall: true },
   { id: 'ios_native_preparation_tests', command: ['corepack', 'pnpm', '--dir', 'urai-tier1', 'exec', 'node', '--import', 'tsx', '--test', 'tests/ios-native-preparation.test.mjs'], requiresInstall: true },
@@ -142,6 +144,10 @@ export function verifyVisualBrowserArtifacts(evidenceDir) {
   const failures = []
   let report
   try {
+    if (!isOwnedVisualEvidencePath(evidenceDir, dir, 'directory') ||
+        !isOwnedVisualEvidencePath(evidenceDir, reportFile)) {
+      return { passed: false, failures: ['VISUAL_REPORT_NOT_OWNED'], capturesVerified: 0 }
+    }
     report = JSON.parse(readFileSync(reportFile, 'utf8'))
   } catch {
     return { passed: false, failures: ['VISUAL_REPORT_ABSENT_OR_INVALID'], capturesVerified: 0 }
@@ -162,7 +168,7 @@ export function verifyVisualBrowserArtifacts(evidenceDir) {
       continue
     }
     try {
-      if (!inside(dir, file) || !existsSync(file) || !statSync(file).isFile()) {
+      if (!isOwnedVisualEvidencePath(evidenceDir, file)) {
         failures.push('VISUAL_CAPTURE_MISSING_OR_EMPTY:' + name)
         continue
       }

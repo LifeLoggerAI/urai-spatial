@@ -415,3 +415,12 @@ test('R-FINAL validates all real encoded PNG captures and preserves evidence-onl
     assert.match(result.scope, /independent visual approval/)
   } finally { rmSync(evidence, { recursive: true, force: true }) }
 })
+
+test('R-FINAL visual evidence requires original owned files, not symlinks or external path aliases', () => {
+  const source = readFileSync(new URL('../scripts/run-rfinal-native-evidence.mjs', import.meta.url), 'utf8')
+  assert.match(source, /isOwnedVisualEvidencePath\(evidenceDir, dir, 'directory'\)/)
+  assert.match(source, /isOwnedVisualEvidencePath\(evidenceDir, reportFile\)/)
+  assert.match(source, /isOwnedVisualEvidencePath\(evidenceDir, file\)/)
+  assert.match(source, /visual_artifact_ownership_tests/)
+  assert.doesNotMatch(source, /!statSync\(file\)\.isFile\(\)/)
+})
