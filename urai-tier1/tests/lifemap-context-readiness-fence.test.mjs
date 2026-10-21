@@ -39,8 +39,8 @@ test('context invalidation resets fresh-frame count and sets readiness false', (
 
 test('authored 3D curves preserve visible opacity rather than collapsing to a nearly invisible cap', () => {
   const section = source.slice(source.indexOf('function Current('), source.indexOf('function FieldParticles('))
-  assert.match(section, /opacity=\\{THREE\\.MathUtils\\.clamp\\(opacity, 0, 1\\)\\}/)
-  assert.doesNotMatch(section, /Math\\.min\\(opacity, 0\\.015\\)/)
+  assert.match(section, /opacity=\{THREE\.MathUtils\.clamp\(opacity, 0, 1\)\}/)
+  assert.doesNotMatch(section, /Math\.min\(opacity, 0\.015\)/)
   const expected = (opacity) => Math.max(0, Math.min(1, opacity))
   assert.equal(expected(0.75), 0.75)
   assert.equal(expected(0.008), 0.008)
