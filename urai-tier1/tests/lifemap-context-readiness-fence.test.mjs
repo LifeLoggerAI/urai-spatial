@@ -45,3 +45,7 @@ test('authored 3D curves preserve visible opacity rather than collapsing to a ne
   assert.equal(expected(0.75), 0.75)
   assert.equal(expected(0.008), 0.008)
 })
+
+test('world republishes proof after canvas ownership invalidates the parent flag', () => {
+  assert.match(source, /element\\.dataset\\.lifeMapRenderReady !== \\(ready \\? "true" : "false"\\)/)
+})
