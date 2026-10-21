@@ -54,6 +54,8 @@ const tests = [
   'tests/person-presence-provider-contract.test.mjs',
   'tests/person-presence-voice-contract.test.mjs',
   'tests/person-presence-session-contract.test.mjs',
+  'tests/person-presence-current-owner-behavior.test.mjs',
+  'tests/person-voice-security-behavior.test.mjs',
   'tests/person-render-binding-promotion.test.mjs',
   'tests/replay-person-presence-ui.test.mjs',
   'tests/replay-person-presence-lifecycle.test.mjs',
