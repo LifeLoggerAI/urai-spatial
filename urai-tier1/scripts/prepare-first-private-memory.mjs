@@ -48,6 +48,8 @@ function replaySegments(durationMs) {
 export async function prepareFirstPrivateMemory(options) {
   const { ownerId, memoryId, sourcePath, originalPath, sourceRef, occurredAt, occurredAtBasis,
     durationMs, title, summary, people = [] } = options ?? {}
+  // Offline preparation cannot grant memory-level consent or prove Firebase identity.
+  assert(!Object.hasOwn(options ?? {}, 'consentState'), 'OFFLINE_MEMORY_CONSENT_STATE_FORBIDDEN')
   assert(IDENTIFIER.test(ownerId ?? ''), 'EXACT_AUTH_OWNER_UID_REQUIRED')
   assert(IDENTIFIER.test(memoryId ?? ''), 'CANONICAL_MEMORY_ID_REQUIRED')
   assert(typeof sourceRef === 'string' && sourceRef.trim().length > 4, 'PRIVATE_ORIGINAL_SOURCE_REFERENCE_REQUIRED')
@@ -113,6 +115,11 @@ export async function prepareFirstPrivateMemory(options) {
     memory,
     upload: {
       requiresExistingServerAuthoredMemory: true,
+      // Only a trusted server-owned memory with explicit individual authorization can upload.
+      requiredSelectedMemoryConsentState: 'authorized',
+      offlinePreparationGrantsConsent: false,
+      ownerIdentityVerifiedOffline: false,
+      requiredOwnerAuthFreshnessSeconds: 300,
       requiredCanonicalConsent: 'memory.granted + C1 memory.storage + fully-enforced + no deletion fences',
       initialVisibility: 'hidden',
       existingCallable: 'registerMemoryMedia', existingAuthorityCallable: 'getMemoryMediaUploadAuthority',
