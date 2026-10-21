@@ -6,7 +6,7 @@
  * No private bytes, UID, filenames, or generated packet may enter Git.
  */
 import { createHash } from 'node:crypto'
-import { createReadStream, existsSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, writeFileSync, closeSync } from 'node:fs'
+import { createReadStream, existsSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, writeFileSync, closeSync, unlinkSync, rmdirSync } from 'node:fs'
 import { resolve, sep, dirname, basename, relative, isAbsolute } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -142,16 +142,37 @@ export function privatePacketWrite(packet, outputDir) {
   assert(!contained(sourceRoot, out) && !contained(sourceRoot, canonicalTarget)
     && !isInsideGitCheckout(canonicalParent), 'PRIVATE_PACKET_MUST_STAY_OUTSIDE_REPOSITORY')
   assert(!existsSync(out), 'PRIVATE_OUTPUT_DIRECTORY_MUST_BE_NEW')
-  mkdirSync(out, { recursive: false, mode: 0o700 })
-  // Recheck the created directory before any owner information is written.
-  assert(!contained(sourceRoot, realpathSync(out)), 'PRIVATE_PACKET_MUST_STAY_OUTSIDE_REPOSITORY')
+  // Serialize and validate BOTH documents before creating a sensitive output
+  // directory. Otherwise a throwing toJSON or malformed owner packet leaves
+  // a half-published memory without its authoritative handoff receipt.
+  assert(packet && typeof packet === 'object' && !Array.isArray(packet)
+    && packet.memory && typeof packet.memory === 'object' && !Array.isArray(packet.memory)
+    && packet.upload && typeof packet.upload === 'object' && !Array.isArray(packet.upload),
+    'PRIVATE_PACKET_PAYLOAD_INVALID')
   const privateFiles = [
     ['memory.private.json', packet.memory], ['handoff.private.json', packet],
-  ]
-  for (const [name, value] of privateFiles) {
-    const target = resolve(out, name)
-    const fd = openSync(target, 'wx', 0o600)
-    try { writeFileSync(fd, JSON.stringify(value, null, 2) + '\n') } finally { closeSync(fd) }
+  ].map(([name, value]) => {
+    const json = JSON.stringify(value, null, 2)
+    assert(typeof json === 'string' && json.startsWith('{'), 'PRIVATE_PACKET_PAYLOAD_INVALID')
+    return [name, json + '\n']
+  })
+  mkdirSync(out, { recursive: false, mode: 0o700 })
+  try {
+    // Recheck the created directory before any owner information is written.
+    assert(!contained(sourceRoot, realpathSync(out)), 'PRIVATE_PACKET_MUST_STAY_OUTSIDE_REPOSITORY')
+    for (const [name, json] of privateFiles) {
+      const target = resolve(out, name)
+      const fd = openSync(target, 'wx', 0o600)
+      try { writeFileSync(fd, json) } finally { closeSync(fd) }
+    }
+  } catch (error) {
+    // A short write or a failing second file must never leave an apparently
+    // completed private handoff. Only remove the two known files we own.
+    for (const [name] of privateFiles) {
+      try { unlinkSync(resolve(out, name)) } catch { /* absent or inaccessible */ }
+    }
+    try { rmdirSync(out) } catch { /* report the original failure */ }
+    throw error
   }
   return out
 }
