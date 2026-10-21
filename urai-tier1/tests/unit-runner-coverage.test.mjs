@@ -45,6 +45,7 @@ const requiredFocusedTests = [
   'tests/scene-truth-life-model-compiler.test.mjs',
   'tests/replay-life-model-authority.test.mjs',
   'tests/life-movie-life-model-binding.test.mjs',
+  'tests/launch-ungating-runtime-contract.test.mjs',
   'tests/life-movie-runtime-contract.test.mjs',
   'tests/life-movie-runtime-binding-contract.test.mjs',
   'tests/life-movie-route-scope.test.mjs',

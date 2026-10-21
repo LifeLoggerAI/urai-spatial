@@ -232,6 +232,7 @@ const tests = [
   'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
   'tests/ground-workforce-canonical-world-contract.test.mjs',
   'tests/ground-workforce-portrait-failure-behavior.test.mjs',
+  'tests/launch-ungating-runtime-contract.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
   'tests/v2-asset-gating.test.mjs',
   'tests/main-journey-state-audit.test.mjs',
