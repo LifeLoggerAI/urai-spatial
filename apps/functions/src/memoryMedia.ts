@@ -745,3 +745,66 @@ export const reconcileMemoryMediaUploads = functions.runWith({ timeoutSeconds: 1
       && current.get('attemptNonce') === r.attemptNonce && millis(current.get('leaseExpiresAt')) <= Date.now()) transaction.update(snap.ref, { state: 'aborted', tombstoneGeneration: generation, cleanupStatus: 'completed', permanentErasureProven: false }) })
   }
 })
+
+
+/**
+ * RFINAL58: publication requires a second deliberate owner action.
+ * An initial memory stays hidden even after successful media registration.
+ * This binds a ready source receipt and current C1 to a private-only transition.
+ */
+export const activateFirstPrivateMemory = functions.https.onCall(async (data, context) => {
+  playbackProject()
+  const { uid, requireAuthentication } = authenticatedOwner(context)
+  await requireAuthentication()
+  const value = row(data)
+  const allowed = ['memoryId', 'receiptId', 'derivativeSha256', 'confirmPrivateReplay']
+  if (Object.keys(value).length !== allowed.length || Object.keys(value).some(key => !allowed.includes(key))
+    || value.confirmPrivateReplay !== true) fail('FIRST_PRIVATE_MEMORY_ACTIVATION_CONFIRMATION_REQUIRED')
+  const memoryId = id(value.memoryId), receiptId = String(value.receiptId), expectedSha256 = String(value.derivativeSha256)
+  if (!SHA.test(receiptId) || !SHA.test(expectedSha256)) fail('FIRST_PRIVATE_MEMORY_ACTIVATION_INPUT_INVALID')
+  await requireAuthentication()
+  return db.runTransaction(async transaction => {
+    const [authority, ready, policy] = await Promise.all([
+      readOwner(transaction, uid, memoryId),
+      transaction.get(db.doc('users/' + uid + '/memoryMediaReceipts/' + receiptId)),
+      transaction.get(db.doc('users/' + uid + '/privacyPolicy/current')),
+    ])
+    const m = authority.memory.data() ?? {}, recorded = row(m.firstPrivateMemoryConsent)
+    const source = row(m.sourceProvenance), attachments = m.sourceMedia
+    if (m.privacy !== 'hidden' || m.deleted !== false || m.consentState !== 'authorized'
+      || recorded.status !== 'explicit-owner-confirmation' || recorded.ownerId !== uid
+      || recorded.memoryId !== memoryId || recorded.derivativeSha256 !== expectedSha256
+      || recorded.canonicalConsentReceiptHash !== authority.consentReceiptHash
+      || source.derivativeSha256 !== expectedSha256 || source.derivedContentType === undefined
+      || policy.get('domains.memory.mode') !== 'granted'
+      || policy.get('domains.memory.lifeMapVisible') !== true
+      || policy.get('domains.memory.replayVisible') !== true
+      || policy.get('enforcement.state') !== 'fully-enforced'
+      || !Array.isArray(attachments) || attachments.length !== 1
+      || row(attachments[0]).kind !== 'audio' || row(attachments[0]).mediaReceiptId !== receiptId) {
+      fail('FIRST_PRIVATE_MEMORY_ACTIVATION_NOT_AUTHORIZED')
+    }
+    const r = receipt(ready.data(), uid)
+    sameAuthority(r, authority)
+    if (r.memoryId !== memoryId || r.receiptId !== receiptId || r.state !== 'ready'
+      || r.sha256 !== expectedSha256 || r.kind !== 'audio' || r.contentType !== source.derivedContentType
+      || r.byteLength !== source.derivativeByteLength
+      || !/^[1-9][0-9]{0,39}$/.test(String(r.storageGeneration))) {
+      fail('FIRST_PRIVATE_MEMORY_ACTIVATION_MEDIA_NOT_READY')
+    }
+    await requireAuthentication()
+    if (authority.consentExpiresAt <= Date.now()) fail('FIRST_PRIVATE_MEMORY_ACTIVATION_NOT_AUTHORIZED')
+    transaction.update(authority.memory.ref, {
+      privacy: 'private',
+      firstPrivateMemoryActivation: {
+        status: 'explicit-owner-private-replay', ownerId: uid, memoryId,
+        mediaReceiptId: receiptId, derivativeSha256: expectedSha256,
+        consentRevision: authority.consentRevision,
+        consentReceiptHash: authority.consentReceiptHash,
+        confirmedAt: FieldValue.serverTimestamp(),
+      },
+    })
+    return { ownerId: uid, memoryId, receiptId, visibility: 'private',
+      state: 'owner-confirmed-ready-receipt' }
+  })
+})
