@@ -13,6 +13,12 @@ export async function readBoundedPrivateMovieBlob(response, { kind, expectedByte
   let reader = null
   let buffer = null
   let complete = false
+  let authorityPoll = null
+  let authorityLost = false
+  const current = () => {
+    try { return !authorityLost && !signal.aborted && isCurrent() === true }
+    catch { return false }
+  }
   // An account switch or revoked request must interrupt an in-flight read(),
   // not merely be observed after a stalled network delivers another chunk.
   const abortPendingRead = () => {
@@ -21,29 +27,37 @@ export async function readBoundedPrivateMovieBlob(response, { kind, expectedByte
   try {
     if (!response?.body || !Number.isSafeInteger(expectedBytes) || expectedBytes < 1 ||
         expectedBytes > limit || !signal || typeof isCurrent !== 'function' ||
-        signal.aborted || !isCurrent()) throw unavailable()
+        !current()) throw unavailable()
     reader = response.body.getReader()
     signal.addEventListener('abort', abortPendingRead, { once: true })
-    if (signal.aborted) throw unavailable()
+    if (!current()) throw unavailable()
+    authorityPoll = setInterval(() => {
+      if (!current()) {
+        authorityLost = true
+        abortPendingRead()
+      }
+    }, 50)
+    authorityPoll.unref?.()
     buffer = new Uint8Array(expectedBytes)
     let written = 0
     for (;;) {
-      if (signal.aborted || !isCurrent()) throw unavailable()
+      if (!current()) throw unavailable()
       const { done, value } = await reader.read()
-      if (signal.aborted || !isCurrent()) throw unavailable()
+      if (!current()) throw unavailable()
       if (done) break
       if (!(value instanceof Uint8Array) || value.byteLength > expectedBytes - written)
         throw unavailable()
       buffer.set(value, written)
       written += value.byteLength
     }
-    if (written !== expectedBytes || signal.aborted || !isCurrent()) throw unavailable()
+    if (written !== expectedBytes || !current()) throw unavailable()
     // Blob construction snapshots the verified byte span. Scrub the scratch
     // buffer before returning and never retain the original Response body.
     const blob = new Blob([buffer], { type: MIME[kind] })
     complete = true
     return blob
   } finally {
+    if (authorityPoll !== null) clearInterval(authorityPoll)
     signal?.removeEventListener('abort', abortPendingRead)
     if (buffer) buffer.fill(0)
     if (reader) {
@@ -67,12 +81,18 @@ export async function readBoundedPrivateMovieTimelineText(response, { signal, is
   let reader = null
   let scratch = null
   let complete = false
+  let authorityPoll = null
+  let authorityLost = false
+  const current = () => {
+    try { return !authorityLost && !signal.aborted && isCurrent() === true }
+    catch { return false }
+  }
   const abortPendingRead = () => {
     if (reader) void reader.cancel('private-timeline-session-aborted').catch(() => {})
   }
   try {
     if (!response?.body || !signal || typeof isCurrent !== 'function' ||
-        signal.aborted || !isCurrent()) throw unavailable()
+        !current()) throw unavailable()
     const advertised = response.headers.get('content-length')
     if (advertised !== null) {
       if (!/^[0-9]+$/.test(advertised)) throw unavailable()
@@ -82,27 +102,35 @@ export async function readBoundedPrivateMovieTimelineText(response, { signal, is
     }
     reader = response.body.getReader()
     signal.addEventListener('abort', abortPendingRead, { once: true })
-    if (signal.aborted) throw unavailable()
+    if (!current()) throw unavailable()
+    authorityPoll = setInterval(() => {
+      if (!current()) {
+        authorityLost = true
+        abortPendingRead()
+      }
+    }, 50)
+    authorityPoll.unref?.()
     scratch = new Uint8Array(MAX_TIMELINE_BYTES)
     let written = 0
     for (;;) {
-      if (signal.aborted || !isCurrent()) throw unavailable()
+      if (!current()) throw unavailable()
       const { done, value } = await reader.read()
-      if (signal.aborted || !isCurrent()) throw unavailable()
+      if (!current()) throw unavailable()
       if (done) break
       if (!(value instanceof Uint8Array) || value.byteLength > MAX_TIMELINE_BYTES - written)
         throw unavailable()
       scratch.set(value, written)
       written += value.byteLength
     }
-    if (!written || signal.aborted || !isCurrent()) throw unavailable()
+    if (!written || !current()) throw unavailable()
     const text = new TextDecoder('utf-8', { fatal: true }).decode(scratch.subarray(0, written))
-    if (signal.aborted || !isCurrent()) throw unavailable()
+    if (!current()) throw unavailable()
     complete = true
     return text
   } catch {
     throw unavailable()
   } finally {
+    if (authorityPoll !== null) clearInterval(authorityPoll)
     signal?.removeEventListener('abort', abortPendingRead)
     scratch?.fill(0)
     if (reader) {
