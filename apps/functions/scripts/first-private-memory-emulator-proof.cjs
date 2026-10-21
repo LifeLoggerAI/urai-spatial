@@ -97,7 +97,15 @@ async function main() {
   const uid = owner.localId
   try {
     await seed(uid)
-    const first = packet(uid, 'syntheticFirstPrivateMemory')
+    // Generate playable fictional Ogg/Opus bytes inside the isolated runner.
+    // No real family recording, fixture download or paid media provider is involved.
+    const generated = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi',
+      '-i', 'sine=frequency=330:duration=1', '-ar', '48000', '-ac', '1', '-c:a', 'libopus',
+      '-b:a', '12k', '-f', 'ogg', 'pipe:1'], { encoding: null, maxBuffer: 1024 * 1024 })
+    assert.equal(generated.status, 0, String(generated.stderr))
+    const media = generated.stdout
+    assert.ok(media.length > 0 && media.length <= 4 * 1024 * 1024 && media.toString('ascii', 0, 4) === 'OggS')
+    const first = packet(uid, 'syntheticFirstPrivateMemory', media)
     denied(await call(confirmed(first), null), 'UNAUTHENTICATED', 'anonymous rejected by real callable')
     denied(await call(confirmed(first), foreign.idToken), 'FAILED_PRECONDITION', 'foreign owner token rejected')
     const missing = confirmed(first); missing.ownerConfirmation.authorize = false
@@ -116,6 +124,41 @@ async function main() {
     assert.equal(data.firstPrivateMemoryConsent.canonicalConsentReceiptHash, 'a'.repeat(64))
     assert.ok(data.createdAt instanceof admin.firestore.Timestamp, 'Actual committed server timestamp required')
     cases.push('real Firestore transaction committed hidden owner-scoped memory')
+    // Ready media MUST remain inaccessible before the owner's second decision.
+    const send = (name, data, token) => fetch(FUNCTIONS + '/' + name, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ data }), signal: AbortSignal.timeout(30000),
+    }).then(async r => ({ status: r.status, body: await r.json() }))
+    const early = await send('getMemoryMediaUploadAuthority', { memoryId: 'syntheticFirstPrivateMemory' }, owner.idToken)
+    assert.equal(early.status, 200, JSON.stringify(early.body))
+    const attach = await send('registerMemoryMedia', { memoryId: 'syntheticFirstPrivateMemory',
+      operationId: first.upload.request.operationId, kind: 'audio', contentType: 'audio/ogg',
+      base64: media.toString('base64') }, owner.idToken)
+    assert.equal(attach.status, 200, JSON.stringify(attach.body))
+    const uploadReceipt = attach.body.result
+    assert.equal(uploadReceipt.state, 'ready')
+    assert.equal(uploadReceipt.sha256, sha(media))
+    const hiddenPlayback = await send('getMemoryMediaPlaybackAuthority',
+      { memoryId: 'syntheticFirstPrivateMemory', receiptId: uploadReceipt.receiptId }, owner.idToken)
+    denied(hiddenPlayback, 'FAILED_PRECONDITION', 'hidden uploaded source cannot be played without second owner authorization')
+    const activateDenied = await send('activateFirstPrivateMemory', { memoryId: 'syntheticFirstPrivateMemory',
+      receiptId: uploadReceipt.receiptId, derivativeSha256: sha(media), confirmPrivateReplay: true }, owner.idToken)
+    denied(activateDenied, 'FAILED_PRECONDITION', 'private replay requires separate Life Map and Replay policy grants')
+    await db.doc('users/' + uid + '/privacyPolicy/current').update({
+      'domains.memory.lifeMapVisible': true, 'domains.memory.replayVisible': true,
+    })
+    const activated = await send('activateFirstPrivateMemory', { memoryId: 'syntheticFirstPrivateMemory',
+      receiptId: uploadReceipt.receiptId, derivativeSha256: sha(media), confirmPrivateReplay: true }, owner.idToken)
+    assert.equal(activated.status, 200, JSON.stringify(activated.body))
+    assert.equal(activated.body.result.visibility, 'private')
+    const bound = await db.doc(pathFor(uid, 'syntheticFirstPrivateMemory')).get()
+    assert.equal(bound.get('privacy'), 'private')
+    assert.equal(bound.get('firstPrivateMemoryActivation.mediaReceiptId'), uploadReceipt.receiptId)
+    const descriptor = await send('getMemoryMediaPlaybackAuthority',
+      { memoryId: 'syntheticFirstPrivateMemory', receiptId: uploadReceipt.receiptId }, owner.idToken)
+    assert.equal(descriptor.status, 200, JSON.stringify(descriptor.body))
+    assert.equal(descriptor.body.result.sha256, sha(media))
+    cases.push('actual synthetic Storage upload, explicit private activation and playback descriptor')
     denied(await call(confirmed(first), owner.idToken), 'FAILED_PRECONDITION', 'duplicate create refused')
     assert.equal((await db.doc(pathFor(uid, 'syntheticFirstPrivateMemory')).get()).get('sourceProvenance.originalSha256'), 'c'.repeat(64))
     await db.doc('consentRecords/' + uid + '_memory_storage').update({ status: 'revoked' })
