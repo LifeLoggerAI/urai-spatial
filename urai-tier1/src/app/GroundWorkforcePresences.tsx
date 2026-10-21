@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect } from 'react'
+import { Component, Suspense, useEffect, type ReactNode } from 'react'
 import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { avatarAssets, type ImageAsset } from '@/spatial/assets/uraiAssets'
@@ -30,6 +30,16 @@ export const GROUND_WORKFORCE: readonly WorkforceMember[] = [
   { id: 'mirror', label: 'Mirror', destinationId: 'council', asset: avatarAssets.mirror, offset: [1.62, 0, 1.5], category: 'specialist' },
   { id: 'guide', label: 'Guide', destinationId: 'council', asset: avatarAssets.guide, offset: [2.7, 0, 1.5], category: 'specialist' },
 ]
+
+/** An unavailable reference texture must never take the Ground world down.
+ * Suspense handles pending textures only; rejected loads require a distinct
+ * error boundary per portrait. Keep art admission and navigation unchanged. */
+export class GroundPortraitLoadBoundary extends Component<{ children: ReactNode; roleId: string }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError(_error: unknown) { return { failed: true } }
+  componentDidCatch(_error: unknown) { console.error('URAI_GROUND_REFERENCE_PORTRAIT_UNAVAILABLE', this.props.roleId) }
+  render() { return this.state.failed ? null : this.props.children }
+}
 
 function WorldPortrait({ member, position }: { member: WorkforceMember; position: [number, number, number] }) {
   // Only this specific reference portrait may suspend. Never hide the Ground
@@ -75,9 +85,11 @@ export function GroundWorkforcePresences({ world }: { world: THREE.Object3D }) {
           anchor.position.z + member.offset[2],
         ]
         return (
-          <Suspense key={member.id} fallback={null}>
-            <WorldPortrait member={member} position={position} />
-          </Suspense>
+          <GroundPortraitLoadBoundary key={member.id} roleId={member.id}>
+            <Suspense fallback={null}>
+              <WorldPortrait member={member} position={position} />
+            </Suspense>
+          </GroundPortraitLoadBoundary>
         )
       })}
     </group>
