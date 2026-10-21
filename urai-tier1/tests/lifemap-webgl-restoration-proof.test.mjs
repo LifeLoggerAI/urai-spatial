@@ -40,6 +40,6 @@ test('semantic recovery actions remain available without changing owner boundari
 })
 
 test('initial mount invalidates stale inherited world-frame proof', () => {
-  assert.doesNotMatch(recovery, /watchForWorldFrame\\(false\\)/)
-  assert.match(recovery, /watchForWorldFrame\\(true\\)/)
+  assert.doesNotMatch(recovery, /watchForWorldFrame\(false\)/)
+  assert.match(recovery, /watchForWorldFrame\(true\)/)
 })
