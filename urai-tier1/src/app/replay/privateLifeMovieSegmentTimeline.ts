@@ -74,6 +74,12 @@ export function parsePrivateLifeMovieTimeline(
   })
 }
 
+/** A selected timeline cannot authorize new private bytes after expiry. */
+export function privateLifeMovieTimelineCurrent(timeline: PrivateLifeMovieTimeline | null | undefined, now = Date.now()): boolean {
+  return Boolean(timeline && Number.isSafeInteger(now) && Number.isSafeInteger(timeline.expiresAt)
+    && timeline.expiresAt > now)
+}
+
 /** Explicit timeline gaps choose the next authorized frame, not a fabricated clip. */
 export function selectPrivateLifeMovieSegment(timeline: PrivateLifeMovieTimeline, positionMs: number) {
   if (!Number.isFinite(positionMs) || positionMs < 0 || positionMs > timeline.durationMs)

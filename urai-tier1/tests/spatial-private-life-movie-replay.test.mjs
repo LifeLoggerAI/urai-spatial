@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import { parsePrivateLifeMovieTimeline, selectPrivateLifeMovieSegment, currentPrivateLifeMovieCaption } from '../src/app/replay/privateLifeMovieSegmentTimeline.ts'
+import { parsePrivateLifeMovieTimeline, selectPrivateLifeMovieSegment, currentPrivateLifeMovieCaption, privateLifeMovieTimelineCurrent } from '../src/app/replay/privateLifeMovieSegmentTimeline.ts'
 
 const root = new URL('../src/app/replay/', import.meta.url)
 const hook = fs.readFileSync(new URL('useProtectedLifeMovieReplay.ts',root),'utf8')
@@ -129,4 +129,17 @@ test('segmented original Replay uses actual Studio action and retains final fall
     'protectedMovie.timeline?.durationMs']) {
     assert.ok(replay.includes(marker),'missing original controls/segment caption binding: '+marker)
   }
+})
+
+test('segmented private movie denies delivery on timeline expiration, not merely account rotation', () => {
+  const timeline = { expiresAt: 5000 }
+  assert.equal(privateLifeMovieTimelineCurrent(timeline,4999),true)
+  assert.equal(privateLifeMovieTimelineCurrent(timeline,5000),false)
+  assert.equal(privateLifeMovieTimelineCurrent(timeline,5001),false)
+  for(const invalid of [null,{expiresAt:Infinity},{expiresAt:NaN},{expiresAt:5000.5}])
+    assert.equal(privateLifeMovieTimelineCurrent(invalid,4999),false)
+  assert.match(hook,/requestNumber === segmentVersion && privateLifeMovieTimelineCurrent\\(timeline\\)/)
+  assert.match(hook,/if \\(!privateLifeMovieTimelineCurrent\\(timeline\\)\\) \\{ clean\\(\\); return \\}/)
+  assert.match(hook,/window\\.setTimeout\\(enforceTimelineExpiry/)
+  assert.match(hook,/if \\(currentSession\\(\\) && requestNumber === segmentVersion\\) clean\\(\\)/)
 })

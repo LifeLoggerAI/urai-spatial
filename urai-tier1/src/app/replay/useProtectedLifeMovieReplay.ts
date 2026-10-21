@@ -5,7 +5,7 @@ import { getApp, getApps, initializeApp } from 'firebase/app'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app as spatialApp } from '@/lib/firebase/client'
 import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selectedMemoryContract'
-import { parsePrivateLifeMovieTimeline, selectPrivateLifeMovieSegment, type PrivateLifeMovieTimeline, type PrivateLifeMovieSegment } from './privateLifeMovieSegmentTimeline'
+import { parsePrivateLifeMovieTimeline, selectPrivateLifeMovieSegment, privateLifeMovieTimelineCurrent, type PrivateLifeMovieTimeline, type PrivateLifeMovieSegment } from './privateLifeMovieSegmentTimeline'
 import { createPrivateMovieReconnectPolicy } from './privateMovieReconnectPolicy'
 import { privateMovieContentLengthAllowed } from './privateMovieContentLengthPolicy'
 import { readBoundedPrivateMovieBlob, readBoundedPrivateMovieTimelineText } from './privateMovieResponseBoundary.mjs'
@@ -171,7 +171,7 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
                 const cancelWithSession = () => requestController.abort()
                 controller.signal.addEventListener('abort',cancelWithSession,{once:true})
                 const inSession = () => currentSession() && !requestController.signal.aborted &&
-                  requestNumber === segmentVersion
+                  requestNumber === segmentVersion && privateLifeMovieTimelineCurrent(timeline)
                 clearUrls()
                 publish({status:'loading',media:null,captions:null,timeline:timeline ?? undefined})
                 try {
@@ -219,9 +219,13 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
                   publish({status:'ready',media:{kind:'video',url,caption:'Authorized private Life Movie'},
                     captions:transcript,timeline,segment,seekOffsetMs:localMs,resumeAfterSwitch:resume})
                   if (expiryTimer !== null) window.clearTimeout(expiryTimer)
-                  expiryTimer = window.setTimeout(() => {
-                    if (inSession() && timeline && timeline.expiresAt <= Date.now()) clean()
-                  }, Math.max(1,timeline.expiresAt - Date.now()))
+                  const enforceTimelineExpiry = () => {
+                    if (!currentSession() || !timeline) return
+                    if (!privateLifeMovieTimelineCurrent(timeline)) { clean(); return }
+                    // A browser timeout may fire early; rearm until the true expiry.
+                    expiryTimer = window.setTimeout(enforceTimelineExpiry, Math.max(1, timeline.expiresAt - Date.now()))
+                  }
+                  expiryTimer = window.setTimeout(enforceTimelineExpiry, Math.max(1, timeline.expiresAt - Date.now()))
                 } catch (error) {
                   // Development-only opaque cause; no tokens, identities or bytes.
                   if (process.env.NODE_ENV === 'development' && approvedConfig.segmented) {
@@ -229,7 +233,7 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
                     const code = /^[a-z][a-z0-9_]{2,79}$/.test(message) ? message : 'segment_delivery_error'
                     console.warn('URAI_SEGMENT_DEV_DIAGNOSTIC '+code)
                   }
-                  if (inSession()) clean()
+                  if (currentSession() && requestNumber === segmentVersion) clean()
                 } finally {
                   controller.signal.removeEventListener('abort',cancelWithSession)
                 }
