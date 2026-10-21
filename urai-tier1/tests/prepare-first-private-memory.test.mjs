@@ -70,3 +70,16 @@ test('preflight keeps originals immutable and rejects symlinks', async () => {
   symlinkSync(f.sourcePath, link)
   await assert.rejects(prepareFirstPrivateMemory({ ...f.options, sourcePath: link }), /MUST_BE_REGULAR_FILE/)
 })
+
+test('upload operation identity is stable for identical source and distinct for changed derivative or owner', async () => {
+  const f = fixture()
+  const first = await prepareFirstPrivateMemory(f.options)
+  const repeat = await prepareFirstPrivateMemory(f.options)
+  assert.equal(first.upload.request.operationId, repeat.upload.request.operationId)
+  const alternateOwner = await prepareFirstPrivateMemory({ ...f.options, ownerId: 'other_emulator_owner' })
+  assert.notEqual(first.upload.request.operationId, alternateOwner.upload.request.operationId)
+  writeFileSync(f.sourcePath, Buffer.concat([Buffer.from('OggS'), Buffer.from('OpusHead'), Buffer.alloc(100, 0x2a)]))
+  const revised = await prepareFirstPrivateMemory(f.options)
+  assert.notEqual(first.recordedTruth.derivativeSha256, revised.recordedTruth.derivativeSha256)
+  assert.notEqual(first.upload.request.operationId, revised.upload.request.operationId)
+})

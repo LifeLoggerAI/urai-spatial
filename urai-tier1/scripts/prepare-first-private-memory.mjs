@@ -104,7 +104,7 @@ export async function prepareFirstPrivateMemory(options) {
       requiredCanonicalConsent: 'memory.granted + C1 memory.storage + fully-enforced + no deletion fences',
       initialVisibility: 'hidden',
       existingCallable: 'registerMemoryMedia', existingAuthorityCallable: 'getMemoryMediaUploadAuthority',
-      request: { memoryId, operationId: 'firstlife_' + createHash('sha256').update(memoryId).digest('hex').slice(0, 40), kind: 'audio', contentType: content.mimeType },
+      request: { memoryId, operationId: 'firstlife_' + createHash('sha256').update(ownerId + '\n' + memoryId + '\n' + derivativeSha256).digest('hex').slice(0, 40), kind: 'audio', contentType: content.mimeType },
       fileByteLength: stat.size, sha256: derivativeSha256,
       filePathNotEmbedded: true, base64NotEmbedded: true,
       activateAfter: 'ready owner-scoped receipt, actual playback and current consent checks',
