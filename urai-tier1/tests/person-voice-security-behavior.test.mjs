@@ -80,3 +80,33 @@ test('stalled error response settles when exact owner changes without network ab
   assert.equal(outcome.errorCode,'AUTH_SESSION_CHANGED')
   assert.equal(cancelled,true)
 })
+
+test('stalled voice error cancels immediately on explicit request abort', async () => {
+  let canceled = false
+  const response = new Response(new ReadableStream({
+    pull() {}, cancel() { canceled = true },
+  }, { highWaterMark: 0 }), { status: 403 })
+  const x = fixture({ fetch: async () => response })
+  const pending = x.request(x.input)
+  await sleep(20)
+  x.ac.abort()
+  const outcome = await Promise.race([pending, sleep(400).then(() => ({ errorCode: 'STALLED' }))])
+  assert.equal(outcome.errorCode, 'AUTH_SESSION_CHANGED')
+  assert.equal(outcome.blob, null)
+  assert.equal(canceled, true)
+})
+
+test('stalled voice error cancels on same-UID Firebase actor replacement', async () => {
+  let canceled = false
+  const response = new Response(new ReadableStream({
+    pull() {}, cancel() { canceled = true },
+  }, { highWaterMark: 0 }), { status: 403 })
+  const x = fixture({ fetch: async () => response })
+  const pending = x.request(x.input)
+  await sleep(20)
+  x.auth.currentUser = { uid: 'owner', getIdToken: async () => 'new-token' }
+  const outcome = await Promise.race([pending, sleep(400).then(() => ({ errorCode: 'STALLED' }))])
+  assert.equal(outcome.errorCode, 'AUTH_SESSION_CHANGED')
+  assert.equal(outcome.blob, null)
+  assert.equal(canceled, true)
+})
