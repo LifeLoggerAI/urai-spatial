@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import os from 'node:os'
 import path from 'node:path'
-import { mkdtempSync,mkdirSync,rmSync,writeFileSync,readFileSync,unlinkSync } from 'node:fs'
+import { mkdtempSync,mkdirSync,rmSync,writeFileSync,readFileSync,unlinkSync,symlinkSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { planMissingTrackedRepair,isIsolatedRfinalSource } from '../scripts/rfinal-missing-tracked-repair.mjs'
 
@@ -35,10 +35,46 @@ test('refuse modified/staged, unsafe, excluded, malformed, excessive or duplicat
   assert.throws(()=>planMissingTrackedRepair(Buffer.from(' D a\0 D b\0'),1))
   assert.equal(planMissingTrackedRepair(Buffer.alloc(0)).count,0)
 })
-test('repair path must be an isolated RFINAL checkout',()=>{
-  const d=path.join(os.tmpdir(),'Downloads')
-  assert.equal(isIsolatedRfinalSource(path.join(d,'URAI_RFINAL_V4_fixture','source'),d),true)
-  assert.equal(isIsolatedRfinalSource(path.join(d,'URAI_RFINAL_V2_fixture','source'),d),true)
-  assert.equal(isIsolatedRfinalSource(path.join(d,'UrAi-Sparse-Recovered-f904e48'),d),false)
-  assert.equal(isIsolatedRfinalSource(path.join(d,'URAI_RFINAL_V4_fixture','other'),d),false)
+test('repair path must be a materialized isolated clone with its own .git directory',()=>{
+  const tmp=mkdtempSync(path.join(os.tmpdir(),'urai-isolation-guard-'))
+  try {
+    const d=path.join(tmp,'Downloads');mkdirSync(d)
+    for(const prefix of ['URAI_RFINAL_NATIVE_','URAI_RFINAL_V2_','URAI_RFINAL_V4_']){
+      const source=path.join(d,prefix+'fixture','source')
+      mkdirSync(source,{recursive:true})
+      assert.equal(isIsolatedRfinalSource(source,d),false,'no .git directory')
+      mkdirSync(path.join(source,'.git'))
+      assert.equal(isIsolatedRfinalSource(source,d),true,'real isolated checkout')
+    }
+    assert.equal(isIsolatedRfinalSource(path.join(d,'UrAi-Sparse-Recovered-f904e48'),d),false)
+    assert.equal(isIsolatedRfinalSource(path.join(d,'URAI_RFINAL_V4_fixture','other'),d),false)
+  }finally{rmSync(tmp,{recursive:true,force:true})}
+})
+test('a symlink to the original founder checkout is never admitted for worktree restore',t=>{
+  const tmp=mkdtempSync(path.join(os.tmpdir(),'urai-restore-alias-'))
+  try {
+    const d=path.join(tmp,'Downloads');mkdirSync(d)
+    const original=path.join(tmp,'original-founder-worktree');mkdirSync(original);mkdirSync(path.join(original,'.git'))
+    const run=path.join(d,'URAI_RFINAL_V4_pointer');mkdirSync(run)
+    const source=path.join(run,'source')
+    try {symlinkSync(original,source,process.platform==='win32'?'junction':'dir')}
+    catch(error){if(error.code==='EPERM'||error.code==='EACCES'){t.skip('OS forbids fixture junction creation');return}throw error}
+    assert.equal(isIsolatedRfinalSource(source,d),false)
+    assert.equal(isIsolatedRfinalSource(original,d),false)
+  }finally{rmSync(tmp,{recursive:true,force:true})}
+})
+test('a redirected run directory or linked Git metadata cannot acquire restore authority',t=>{
+  const tmp=mkdtempSync(path.join(os.tmpdir(),'urai-restore-runroot-'))
+  try {
+    const d=path.join(tmp,'Downloads');mkdirSync(d)
+    const externalRun=path.join(tmp,'external-run');mkdirSync(externalRun)
+    const target=path.join(externalRun,'source');mkdirSync(target);mkdirSync(path.join(target,'.git'))
+    const run=path.join(d,'URAI_RFINAL_V2_redirected')
+    try {symlinkSync(externalRun,run,process.platform==='win32'?'junction':'dir')}
+    catch(error){if(error.code==='EPERM'||error.code==='EACCES'){t.skip('OS forbids fixture junction creation');return}throw error}
+    assert.equal(isIsolatedRfinalSource(path.join(run,'source'),d),false)
+    const honest=path.join(d,'URAI_RFINAL_V4_real','source');mkdirSync(honest,{recursive:true})
+    writeFileSync(path.join(honest,'.git'),'gitdir: /another/worktree/.git/worktrees/fixture\n')
+    assert.equal(isIsolatedRfinalSource(honest,d),false,'reject linked Git worktree metadata')
+  }finally{rmSync(tmp,{recursive:true,force:true})}
 })

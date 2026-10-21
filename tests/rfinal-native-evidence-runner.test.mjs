@@ -107,6 +107,15 @@ test('HTTP runtime code uses complete route audit, never Home-only check',()=>{
   assert.doesNotMatch(source,/checks\.some\(x => x\.path === '\/'/)
 })
 
+test('native production runtime refuses unrelated HTTP 200 and 404 startup surfaces',()=>{
+  const source=readFileSync(new URL('../scripts/run-rfinal-native-evidence.mjs',import.meta.url),'utf8')
+  assert.match(source,/import \{ isUraiHomeDocument \} from '\.\.\/tests\/spatial-owned-server\.mjs'/)
+  assert.match(source,/reply\.status === 200/)
+  assert.match(source,/isUraiHomeDocument\(await reply\.text\(\)\)/)
+  assert.match(source,/ORIGINAL_URAI_HOME_NOT_READY/)
+  assert.doesNotMatch(source,/ready\s*=\s*reply\.status\s*>\s*0/)
+})
+
 test('native full focused contracts are executed, not inferred from compact unit tests', () => {
   const compact = STAGES.findIndex(stage => stage.id === 'tier1_unit_tests')
   const full = STAGES.findIndex(stage => stage.id === 'focused_contracts_full')

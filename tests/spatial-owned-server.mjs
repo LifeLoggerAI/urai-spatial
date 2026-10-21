@@ -19,6 +19,17 @@ export async function allocateEphemeralPort() {
   return address.port
 }
 
+// A different service can own the port after reservation and respond HTTP 200.
+// Only the actual UrAi RootLayout is a valid readiness response.
+export function isUraiHomeDocument(html) {
+  if (typeof html !== 'string') return false
+  const root = html.match(/<html\b[^>]*>/i)?.[0] || ''
+  const body = html.match(/<body\b[^>]*>/i)?.[0] || ''
+  return /\bdata-urai-domain=(['"])app\1/i.test(root)
+    && /\bdata-urai-surface=(['"])spatial\1/i.test(root)
+    && /\bdata-urai-home-spatial-shell=(['"])true\1/i.test(body)
+}
+
 export async function waitForOwnedHome(baseUrl, child, {
   fetchImpl = fetch,
   timeoutMs = 90000,
@@ -37,7 +48,8 @@ export async function waitForOwnedHome(baseUrl, child, {
       const response = await fetchImpl(endpoint, { redirect: 'manual', signal: AbortSignal.timeout(5000) })
       lastStatus = response.status
       if (response.status === 200 && /text\/html/i.test(response.headers?.get?.('content-type') || '')) {
-        return
+        if (isUraiHomeDocument(await response.text())) return
+        lastStatus = '200 HTML without original UrAi root identity'
       }
     } catch (error) {
       lastStatus = error?.message || String(error)
