@@ -7,7 +7,7 @@ import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { createServer } from 'node:net'
-import { createWriteStream, existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs'
+import { createWriteStream, copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -592,6 +592,16 @@ async function main() {
       }
       const r=await command(item.command,{cwd:source,log:path.join(evidence,item.id+'.log'),
         timeoutMinutes: item.id==='production_build'?85:item.id==='frozen_install'?65:55})
+      // Preserve the actual Firebase emulator diagnosis in the evidence bundle.
+      // The synthetic demo-project tests can fail after Firestore starts; without
+      // the emulator's own debug log the root cause is otherwise lost at packaging.
+      // Do not reinterpret emulator failures as passing static-rule checks.
+      if (item.id === 'privacy_firestore_rules' && r.exitCode !== 0) {
+        const emulatorDebugLog = path.join(source, 'firestore-debug.log')
+        if (existsSync(emulatorDebugLog)) {
+          copyFileSync(emulatorDebugLog, path.join(evidence, 'firestore-debug.log'))
+        }
+      }
       let outcome=r.exitCode===0&&!r.timedOut?'PASS':'FAIL'
       let qualification=null
       if(outcome==='PASS' && item.id==='privacy_firestore_rules' &&
