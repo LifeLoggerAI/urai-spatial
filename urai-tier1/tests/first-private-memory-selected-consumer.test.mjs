@@ -42,10 +42,14 @@ async function syntheticPacket() {
   } finally { rmSync(root, { recursive: true, force: true }) }
 }
 
-test('offline first memory can be parsed by the real Focus/Replay consumer without claiming cloud admission', async () => {
+test('offline first memory is schema-compatible but not admitted as authorized by Focus/Replay', async () => {
   const packet = await syntheticPacket()
-  const result = selectedMemoryParser()(packet.memory, 'synthetic-owner', 'synthetic-memory', 'nonproduction-bucket')
-  assert.equal(result.status, 'ready')
+  const parse = selectedMemoryParser()
+  const prepared = parse(packet.memory, 'synthetic-owner', 'synthetic-memory', 'nonproduction-bucket')
+  assert.equal(prepared.status, 'unauthorized', 'offline packet does not grant individual consent')
+  assert.equal(prepared.memory, null)
+  const result = parse({ ...packet.memory, consentState: 'authorized' }, 'synthetic-owner', 'synthetic-memory', 'nonproduction-bucket')
+  assert.equal(result.status, 'ready', 'explicit server-owned consent can admit structurally compatible memory')
   assert.equal(result.memory.ownerId, 'synthetic-owner')
   assert.equal(result.memory.authorization, 'owner')
   assert.equal(result.memory.privacy, 'hidden')
@@ -85,7 +89,7 @@ test('deleted or revoked synthetic first memory is denied to its original owner'
 test('a future synthetic receipt shape stays owner-bound and does not become a direct media URL', async () => {
   const packet = await syntheticPacket()
   const receiptId = 'a'.repeat(64)
-  const raw = { ...packet.memory, sourceMedia: [{ kind: 'audio', mediaReceiptId: receiptId }] }
+  const raw = { ...packet.memory, consentState: 'authorized', sourceMedia: [{ kind: 'audio', mediaReceiptId: receiptId }] }
   const parse = selectedMemoryParser()
   const result = parse(raw, 'synthetic-owner', 'synthetic-memory', 'nonproduction-bucket')
   assert.equal(result.status, 'ready')
