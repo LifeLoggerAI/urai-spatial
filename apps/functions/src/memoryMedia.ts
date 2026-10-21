@@ -420,8 +420,10 @@ async function playbackReceipt(transaction: FirebaseFirestore.Transaction, uid: 
   if (block.exists && (block.get('ownerUid') !== uid || block.get('purpose') !== 'memory.storage'
     || block.get('active') !== false)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
   assertBoundMemoryMedia(authority.memory.data() ?? {})
-  assertFirstPrivateMemoryPlaybackBinding(authority.memory.data(), uid, memoryId, receiptId,
-    authority.consentRevision, authority.consentReceiptHash)
+  try {
+    assertFirstPrivateMemoryPlaybackBinding(authority.memory.data(), uid, memoryId, receiptId,
+      authority.consentRevision, authority.consentReceiptHash)
+  } catch { fail('FIRST_PRIVATE_MEMORY_REPLAY_NOT_ACTIVATED') }
   const r = receipt(snapshot.data(), uid)
   sameAuthority(r, authority)
   const attachments = authority.memory.get('sourceMedia') as Row[]
