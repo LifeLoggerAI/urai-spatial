@@ -25,7 +25,7 @@ export async function readBoundedPrivateMovieBlob(response, { kind, expectedByte
     if (reader) void reader.cancel('private-movie-session-aborted').catch(() => {})
   }
   try {
-    if (!response?.body || !Number.isSafeInteger(expectedBytes) || expectedBytes < 1 ||
+    if (!response?.body || response.ok !== true || !Number.isSafeInteger(expectedBytes) || expectedBytes < 1 ||
         expectedBytes > limit || !signal || typeof isCurrent !== 'function' ||
         !current()) throw unavailable()
     reader = response.body.getReader()
@@ -91,7 +91,7 @@ export async function readBoundedPrivateMovieTimelineText(response, { signal, is
     if (reader) void reader.cancel('private-timeline-session-aborted').catch(() => {})
   }
   try {
-    if (!response?.body || !signal || typeof isCurrent !== 'function' ||
+    if (!response?.body || response.ok !== true || !signal || typeof isCurrent !== 'function' ||
         !current()) throw unavailable()
     const advertised = response.headers.get('content-length')
     if (advertised !== null) {
