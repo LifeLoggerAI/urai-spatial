@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
+import { onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot, Timestamp } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
-import { app, firebasePublicEnvReady, functions, getFirebaseDb } from '@/lib/firebase/client'
+import { firebasePublicEnvReady, functions, getFirebaseDb, getUraiAuth } from '@/lib/firebase/client'
 import { parseSelectedMemory, type SelectedMemory, type SelectedMemoryMedia } from './selectedMemoryContract'
 import { fetchOwnedMemoryPlayback, validateOwnedMemoryPlaybackDescriptor, type OwnedMemoryPlaybackDescriptor } from './ownedMemoryMediaPlayback'
 import { currentOwnerMediaState } from './replayOwnerMediaFence'
@@ -36,7 +36,7 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
     if (!firebasePublicEnvReady || memory.demo || memory.authorization !== 'owner' || memory.privacy !== 'private') {
       setPlayback({ key, status: 'unavailable', media: [] }); return
     }
-    const auth = getAuth(app), db = getFirebaseDb(), projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? ''
+    const auth = getUraiAuth(), db = getFirebaseDb(), projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? ''
     let closed = false, generation = 0, detach: (() => void) | undefined
     const stopIdentity = onAuthStateChanged(auth, user => {
       generation += 1; detach?.(); detach = undefined
@@ -188,6 +188,6 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
   return currentOwnerMediaState(playback, key, memory?.ownerId,
-    firebasePublicEnvReady ? getAuth(app).currentUser : null, Boolean(receipt))
+    firebasePublicEnvReady ? getUraiAuth().currentUser : null, Boolean(receipt))
 }
 
