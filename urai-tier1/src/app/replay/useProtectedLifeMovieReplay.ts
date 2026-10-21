@@ -45,7 +45,12 @@ function configuration() {
 
 /** Scope any private Blob-backed media to the exact owner and movie selection. */
 function scopedPlaybackForSelection(state: Playback, key: string): Playback {
-  return state.selectionKey === key ? state : EMPTY
+  if (state.selectionKey !== key) return EMPTY
+  // A backgrounded browser may delay its expiry callback. On every render,
+  // fail closed before exposing the previous private Blob URL or captions.
+  if (state.timeline && !privateLifeMovieTimelineCurrent(state.timeline))
+    return { ...EMPTY, status: 'unavailable', selectionKey: key }
+  return state
 }
 
 /** The original Replay remains the visual/control owner. This optional adapter
