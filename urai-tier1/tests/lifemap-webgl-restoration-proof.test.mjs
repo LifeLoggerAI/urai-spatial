@@ -43,3 +43,7 @@ test('initial mount invalidates stale inherited world-frame proof', () => {
   assert.doesNotMatch(recovery, /watchForWorldFrame\(false\)/)
   assert.match(recovery, /watchForWorldFrame\(true\)/)
 })
+
+test('newly mounted Life Map starts safely in recovery rather than displaying an unproven canvas', () => {
+  assert.match(scene, /const \\[webglState, setWebglState\\] = useState<WebGLState>\\("recovering"\\)/)
+})
