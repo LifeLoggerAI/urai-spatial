@@ -7,7 +7,19 @@
 const LIMITS = Object.freeze({ mp4: 64 * 1024 * 1024, srt: 2 * 1024 * 1024 })
 const MIME = Object.freeze({ mp4: 'video/mp4', srt: 'application/x-subrip' })
 
-export async function readBoundedPrivateMovieBlob(response, { kind, expectedBytes, signal, isCurrent }) {
+// Private media is never allowed to remain in a silent network read forever.
+// The timeout is per chunk, so legitimate slow connections can keep making
+// progress. Never unref this timer: an otherwise-idle Node stream must settle.
+const PRIVATE_READ_STALL_MS = 30_000
+async function readPrivateStreamChunk(reader, stallMs, onTimeout) {
+  const delay = Number.isSafeInteger(stallMs) && stallMs >= 10 && stallMs <= PRIVATE_READ_STALL_MS
+    ? stallMs : PRIVATE_READ_STALL_MS
+  const timer = setTimeout(onTimeout, delay)
+  try { return await reader.read() }
+  finally { clearTimeout(timer) }
+}
+
+export async function readBoundedPrivateMovieBlob(response, { kind, expectedBytes, signal, isCurrent, readStallMs = PRIVATE_READ_STALL_MS }) {
   const unavailable = () => new Error('private_movie_delivery_unavailable')
   const limit = Object.hasOwn(LIMITS, kind) ? LIMITS[kind] : 0
   let reader = null
@@ -47,7 +59,10 @@ export async function readBoundedPrivateMovieBlob(response, { kind, expectedByte
     let written = 0
     for (;;) {
       if (!current()) throw unavailable()
-      const { done, value } = await reader.read()
+      const { done, value } = await readPrivateStreamChunk(reader, readStallMs, () => {
+        authorityLost = true
+        abortPendingRead()
+      })
       if (!current()) throw unavailable()
       if (done) break
       if (!(value instanceof Uint8Array) || value.byteLength > expectedBytes - written)
@@ -80,7 +95,7 @@ export async function readBoundedPrivateMovieBlob(response, { kind, expectedByte
  * Bound the actual decoded network bytes before reading JSON, not the string
  * length after Response.text() has already buffered the entire body.
  */
-export async function readBoundedPrivateMovieTimelineText(response, { signal, isCurrent }) {
+export async function readBoundedPrivateMovieTimelineText(response, { signal, isCurrent, readStallMs = PRIVATE_READ_STALL_MS }) {
   const unavailable = () => new Error('private_timeline_size_invalid')
   const MAX_TIMELINE_BYTES = 96 * 1024
   let reader = null
@@ -122,7 +137,10 @@ export async function readBoundedPrivateMovieTimelineText(response, { signal, is
     let written = 0
     for (;;) {
       if (!current()) throw unavailable()
-      const { done, value } = await reader.read()
+      const { done, value } = await readPrivateStreamChunk(reader, readStallMs, () => {
+        authorityLost = true
+        abortPendingRead()
+      })
       if (!current()) throw unavailable()
       if (done) break
       if (!(value instanceof Uint8Array) || value.byteLength > MAX_TIMELINE_BYTES - written)

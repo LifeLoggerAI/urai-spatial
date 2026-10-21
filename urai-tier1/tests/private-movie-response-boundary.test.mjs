@@ -313,3 +313,26 @@ for (const kind of ['mp4', 'timeline']) {
     assert.equal(canceled, true, 'mismatched private response must be disposed')
   })
 }
+
+for (const kind of ['mp4', 'timeline']) {
+  test('silent private stream is canceled and denied without waiting for owner revocation: ' + kind, async () => {
+    let canceled = false
+    const stream = new ReadableStream({
+      pull() {},
+      cancel() { canceled = true },
+    }, { highWaterMark: 0 })
+    const response = new Response(stream, {
+      status: 200,
+      headers: { 'content-type': kind === 'mp4' ? 'video/mp4' : 'application/json' },
+    })
+    const request = kind === 'mp4'
+      ? readBoundedPrivateMovieBlob(response, {
+        kind: 'mp4', expectedBytes: 1, ...token(), readStallMs: 25,
+      })
+      : timelineReader(response, { ...token(), readStallMs: 25 })
+    await assert.rejects(request, kind === 'mp4'
+      ? /private_movie_delivery_unavailable/
+      : /private_timeline_size_invalid/)
+    assert.equal(canceled, true, 'silent private response must release its stream')
+  })
+}
