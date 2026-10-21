@@ -18,6 +18,55 @@ export function pngCrc32(input) {
   return (crc ^ 0xffffffff) >>> 0
 }
 
+/** The PNG filter bytes are deltas, not pixels. Restore only as many rows
+ * as needed to prove screenshot pixels are not identical after RGBA is
+ * composited against black. Alpha-only variation of black pixels is invisible
+ * and cannot qualify as a genuine rendered scene.
+ * This guards a basic no-render case, not artistic quality or browser origin.
+ */
+function hasPixelVariation(decoded, width, height, channels) {
+  const rowBytes = width * channels
+  const stride = rowBytes + 1
+  let previous = Buffer.alloc(rowBytes)
+  let current = Buffer.alloc(rowBytes)
+  let baselineRed = -1, baselineGreen = 0, baselineBlue = 0
+  for (let y = 0; y < height; y++) {
+    const filter = decoded[y * stride]
+    const start = y * stride + 1
+    for (let x = 0; x < rowBytes; x++) {
+      const left = x >= channels ? current[x - channels] : 0
+      const above = previous[x]
+      const upperLeft = x >= channels ? previous[x - channels] : 0
+      let predictor = 0
+      if (filter === 1) predictor = left
+      else if (filter === 2) predictor = above
+      else if (filter === 3) predictor = Math.floor((left + above) / 2)
+      else if (filter === 4) {
+        const p = left + above - upperLeft
+        const a = Math.abs(p - left), b = Math.abs(p - above), c = Math.abs(p - upperLeft)
+        predictor = a <= b && a <= c ? left : b <= c ? above : upperLeft
+      }
+      current[x] = (decoded[start + x] + predictor) & 255
+      if (x % channels === channels - 1) {
+        const pixelStart = x - channels + 1
+        // Compare visible RGB samples rather than raw alpha. Transparent
+        // black pixels with changing opacity still produce a black screenshot.
+        const alpha = channels === 4 ? current[x] / 255 : 1
+        const red = Math.round(current[pixelStart] * alpha)
+        const green = Math.round(current[pixelStart + 1] * alpha)
+        const blue = Math.round(current[pixelStart + 2] * alpha)
+        if (baselineRed === -1) {
+          baselineRed = red; baselineGreen = green; baselineBlue = blue
+        } else if (red !== baselineRed || green !== baselineGreen || blue !== baselineBlue) {
+          return true
+        }
+      }
+    }
+    ;[previous, current] = [current, previous]
+  }
+  return false
+}
+
 /** Confirm a bounded Playwright RGB/RGBA PNG fully decodes to scanlines.
  * Valid image bytes do not establish browser provenance or artistic approval.
  */
@@ -84,6 +133,8 @@ export function inspectVisualPng(file) {
   for (let row = 0; row < height; row++) {
     if (decoded[row * stride] > 4) return reject('PNG_IMAGE_ROW_FILTER_INVALID')
   }
+  if (!hasPixelVariation(decoded, width, height, channels))
+    return reject('PNG_UNIFORM_PIXEL_CONTENT')
   return { ok: true, width, height, bytes: bytes.length,
     sha256: createHash('sha256').update(bytes).digest('hex') }
 }

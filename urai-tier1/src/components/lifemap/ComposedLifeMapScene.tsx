@@ -143,6 +143,11 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   useEffect(() => {
     const canvas = gl.domElement;
     let timer: number | null = null;
+    let frameProofObserver: MutationObserver | null = null;
+    const clearFrameProofObserver = () => {
+      frameProofObserver?.disconnect();
+      frameProofObserver = null;
+    };
     const clearRecoveryTimer = () => {
       if (timer === null) return;
       window.clearTimeout(timer);
@@ -151,21 +156,41 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
     const lost = (event: Event) => {
       event.preventDefault();
       clearRecoveryTimer();
+      clearFrameProofObserver();
       onStateChange("lost");
       timer = window.setTimeout(() => {
         timer = null;
         onStateChange("recovering");
       }, 250);
     };
-    const restored = () => {
+    const watchForWorldFrame = (invalidatePreviousProof: boolean) => {
       clearRecoveryTimer();
-      onStateChange("ready");
+      clearFrameProofObserver();
+      // Even a newly mounted canvas has not necessarily drawn the galaxy.
+      // Context restoration also needs a new frame, not old counters.
+      onStateChange("recovering");
+      const owner = canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+      if (!owner) return;
+      if (invalidatePreviousProof) owner.dataset.lifeMapRenderReady = "false";
+      const acceptFreshFrame = () => {
+        if (gl.getContext().isContextLost() || owner.dataset.lifeMapRenderReady !== "true") return;
+        clearFrameProofObserver();
+        onStateChange("ready");
+      };
+      frameProofObserver = new MutationObserver(acceptFreshFrame);
+      frameProofObserver.observe(owner, { attributes: true, attributeFilter: ["data-life-map-render-ready"] });
+      // On first mount, the source-owned proof may already have published.
+      // Recheck after subscribing to avoid missing that publication.
+      acceptFreshFrame();
     };
+    const restored = () => watchForWorldFrame(true);
     canvas.addEventListener("webglcontextlost", lost, false);
     canvas.addEventListener("webglcontextrestored", restored, false);
-    onStateChange("ready");
+    // A newly mounted canvas must not inherit a prior canvas's ready flag.
+    watchForWorldFrame(true);
     return () => {
       clearRecoveryTimer();
+      clearFrameProofObserver();
       canvas.removeEventListener("webglcontextlost", lost, false);
       canvas.removeEventListener("webglcontextrestored", restored, false);
     };
@@ -249,7 +274,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
   const [phase, setPhase] = useState<JourneyPhase>("overview");
-  const [webglState, setWebglState] = useState<WebGLState>("ready");
+  const [webglState, setWebglState] = useState<WebGLState>("recovering");
   const journeyToken = useRef(0);
   const shellRef = useRef<HTMLElement | null>(null);
   const localSelectionId = useRef<string | null>(null);
