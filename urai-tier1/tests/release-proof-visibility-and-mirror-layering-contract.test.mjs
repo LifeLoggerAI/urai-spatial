@@ -134,6 +134,6 @@ test('world travel preserves explicit demo identity through reverse navigation',
   assert.match(worldState, /const demo = params\.get\('demo'\) === '1'/)
   assert.match(worldState, /demo: true/)
   assert.match(worldTransition, /'demo',/)
-  assert.match(worldTransition, /if \(context\?\.demo\) target\.searchParams\.set\('demo', '1'\)/)
+  assert.match(worldTransition, /if \(memoryDestination && context\?\.demo && \(!selectedMemoryId \|\| !currentMemoryId \|\| sameMemory\)\) target\.searchParams\.set\('demo', '1'\)/)
   assert.match(worldTransition, /demo: currentWorld\.demo/)
 })

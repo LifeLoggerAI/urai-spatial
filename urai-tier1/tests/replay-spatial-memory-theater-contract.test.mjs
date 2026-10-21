@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
+import ts from 'typescript'
 import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
 const source = fs.readFileSync('src/app/replay/CinematicReplayClient.tsx', 'utf8')
@@ -20,11 +21,29 @@ test('Replay owns a real immersive R3F memory field instead of a theater or CSS-
   // The disclosed landscape legitimately has horizontal water. A world surface
   // is not a projection screen: every flat JSX plane must be named terrain/water
   // and rotated into the horizontal world, rather than accepting arbitrary planes.
-  const worldPlanes = [...source.matchAll(/<mesh\b([^>]*?)>\s*<planeGeometry\b/g)]
-  assert.equal(worldPlanes.length, (source.match(/<planeGeometry\b/g) || []).length)
-  for (const [, attributes] of worldPlanes) {
-    assert.match(attributes, /name="replay-memory-(?:water|ground)"/)
-    assert.match(attributes, /rotation=\{\[-Math\.PI\s*\/\s*2,/)
+  const parsed = ts.createSourceFile('Replay.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const worldPlanes = []
+  const visit = node => {
+    if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(parsed) === 'planeGeometry') worldPlanes.push(node)
+    ts.forEachChild(node, visit)
+  }
+  visit(parsed)
+  assert.equal(worldPlanes.length, 2)
+  for (const plane of worldPlanes) {
+    const mesh = plane.parent
+    assert.ok(ts.isJsxElement(mesh))
+    assert.equal(mesh.openingElement.tagName.getText(parsed), 'mesh')
+    const attributes = mesh.openingElement.attributes.getText(parsed)
+    if (attributes.includes('name="replay-memory-horizon-glow"')) {
+      const halo = mesh.getText(parsed)
+      assert.match(halo, /<shaderMaterial/)
+      assert.match(halo, /float alpha = 0\.065 \* pow/)
+      assert.match(halo, /transparent\s+depthWrite=\{false\}\s+blending=\{THREE\.AdditiveBlending\}/)
+      assert.doesNotMatch(halo, /map=|VideoTexture|<video/)
+    } else {
+      assert.match(attributes, /name="replay-memory-(?:water|ground)"/)
+      assert.match(attributes, /rotation=\{\[-Math\.PI\s*\/\s*2,/)
+    }
   }
 })
 
@@ -55,8 +74,9 @@ test('Replay retains diegetic temporal reconstruction controls without turning t
   assert.equal(URAI_SOURCE_MESSAGES['replay.continue'].source, 'Continue memory')
   assert.match(source, /className="memoryTrace"/)
   assert.match(source, /className="memorySeek" type="range"/)
-  assert.match(source, /\.memorySeek\{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset\(50%\);opacity:\.001;pointer-events:none\}/)
-  assert.match(source, /\.memorySeek:focus-visible\{position:absolute;left:0;top:0;width:100%;height:48px;margin:0;opacity:1;pointer-events:auto;clip-path:none;overflow:visible/)
+  assert.match(source, /\.memorySeek\{position:absolute;inset:0;z-index:2;width:100%;height:48px/)
+  assert.match(source, /\.memorySeek:focus-visible\{outline:3px solid #fff;outline-offset:3px/)
+  assert.doesNotMatch(source, /\.memorySeek\{[^}]*pointer-events:none/)
   assert.match(source, /className="memorySeekTrack"[\s\S]*className="memorySeek" type="range"/)
   assert.match(source, /\.memorySeekTrack\{[^}]*position:relative[^}]*height:48px/)
   assert.doesNotMatch(source, /className="controls"|aria-label="Replay controls"|aria-label=\{playing \? 'Pause replay' : 'Play replay'\}/)

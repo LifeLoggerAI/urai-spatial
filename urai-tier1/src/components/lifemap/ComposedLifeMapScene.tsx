@@ -421,6 +421,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const thresholdsVisible = Boolean(selected);
   return <main
     ref={shellRef}
+    aria-label="URAI Life Map"
     className="life-map-root"
     style={{ position: "fixed", inset: 0, width: "100vw", height: "100svh", minWidth: "100vw", minHeight: "100svh", overflow: "hidden", opacity: 1, visibility: "visible", background: "#02050b" }}
     data-testid="urai-true-3d-life-map"

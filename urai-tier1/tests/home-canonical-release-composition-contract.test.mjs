@@ -30,7 +30,7 @@ test('canonical camera preserves terrain-relative bodyless first-person framing'
   const source = productionHomeSource()
   assert.match(source, /SPAWN = new THREE\.Vector3\(-0\.85, 0, 8\.4\)/)
   assert.match(source, /position:\[SPAWN\.x,1\.68,SPAWN\.z\], fov:50/)
-  assert.match(source, /position\.current\.y = homeWalkSurfaceHeight\(position\.current\.x, position\.current\.z\)/)
+  assert.match(source, /position\.current\.y = previewW13V3 \? W13_V3_FLOOR_Y : homeWalkSurfaceHeight\(position\.current\.x, position\.current\.z\)/)
   assert.match(source, /copy\(position\.current\)\.add\(new THREE\.Vector3\(0, portrait \? 1\.58 : 1\.68, \.14\)\)/)
   assert.match(source, /data-home-embodied-self="privacy-preserving-shadow"/)
 })
