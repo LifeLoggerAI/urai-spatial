@@ -6,7 +6,7 @@
  * No private bytes, UID, filenames, or generated packet may enter Git.
  */
 import { createHash } from 'node:crypto'
-import { createReadStream, existsSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, writeFileSync, closeSync, unlinkSync, rmdirSync } from 'node:fs'
+import { createReadStream, existsSync, lstatSync, mkdirSync, openSync, fstatSync, realpathSync, writeFileSync, readSync, closeSync, unlinkSync, rmdirSync } from 'node:fs'
 import { resolve, sep, dirname, basename, relative, isAbsolute } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -63,8 +63,24 @@ export async function prepareFirstPrivateMemory(options) {
   assert(Array.isArray(people) && people.length === 0, 'PERSON_IDENTITY_NOT_VERIFIED_LEAVE_PEOPLE_EMPTY')
   const stat = safePrivateSource(sourcePath)
   assert(stat.size > 0 && stat.size <= MAX_OWNED_MEMORY_MEDIA_BYTES, 'OWNED_MEDIA_4MIB_LIMIT_EXCEEDED')
-  const sample = readFileSync(sourcePath).subarray(0, 128)
-  const content = sourceFormat(sample)
+  // Read only the signature bytes of the sensitive derivative, never its full
+  // contents into a second in-memory buffer. Keep the descriptor pinned to the
+  // same regular file identity checked above.
+  const header = Buffer.alloc(128)
+  const handle = openSync(sourcePath, 'r')
+  let sampleLength = 0
+  try {
+    const opened = fstatSync(handle)
+    assert(opened.isFile() && opened.dev === stat.dev && opened.ino === stat.ino
+      && opened.size > 0 && opened.size <= MAX_OWNED_MEMORY_MEDIA_BYTES,
+      'PRIVATE_SOURCE_CHANGED_DURING_PREFLIGHT')
+    while (sampleLength < header.length) {
+      const count = readSync(handle, header, sampleLength, header.length - sampleLength, sampleLength)
+      if (count === 0) break
+      sampleLength += count
+    }
+  } finally { closeSync(handle) }
+  const content = sourceFormat(header.subarray(0, sampleLength))
   const originalStat = safePrivateSource(originalPath)
   assert(originalStat.size > 0, 'ORIGINAL_EMPTY')
   const distinctPaths = realpathSync(sourcePath) !== realpathSync(originalPath)

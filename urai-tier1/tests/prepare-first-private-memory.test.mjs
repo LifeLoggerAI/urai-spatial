@@ -1,5 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import { syncBuiltinESMExports } from 'node:module'
 import { mkdtempSync, writeFileSync, symlinkSync, existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -145,4 +147,30 @@ test('first private packet preserves immutable source hashes and protected disk 
     assert.ok(!JSON.stringify(persisted).includes(sourcePath))
     assert.ok(!JSON.stringify(persisted).includes(originalPath))
   } finally { rmSync(dir, {recursive:true,force:true}) }
+})
+
+test('preflight avoids reading the whole private derivative when checking a 128-byte signature', async () => {
+  const f = fixture()
+  const large = Buffer.concat([Buffer.from('OggS'), Buffer.from('OpusHead'), Buffer.alloc(2 * 1024 * 1024)])
+  writeFileSync(f.sourcePath, large)
+  const original = fs.readFileSync
+  let bulkReadAttempted = false
+  fs.readFileSync = function (path, ...args) {
+    if (String(path) === f.sourcePath) {
+      bulkReadAttempted = true
+      throw new Error('PRIVATE_BULK_READ_NOT_ALLOWED')
+    }
+    return original.call(this, path, ...args)
+  }
+  syncBuiltinESMExports()
+  try {
+    const packet = await prepareFirstPrivateMemory(f.options)
+    assert.equal(packet.recordedTruth.byteLength, large.length)
+    assert.equal(packet.recordedTruth.contentType, 'audio/ogg')
+    assert.equal(packet.memory.privacy, 'hidden')
+    assert.equal(bulkReadAttempted, false)
+  } finally {
+    fs.readFileSync = original
+    syncBuiltinESMExports()
+  }
 })
