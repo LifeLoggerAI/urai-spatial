@@ -80,31 +80,34 @@ function currentHomeGateScript() {
 function runCurrentHomeGate(releaseState, contractExit = 0) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-current-home-source-gate-'))
   try {
-    const marker = path.join(directory, 'contract-invoked')
-    fs.writeFileSync(path.join(directory, 'node'), `#!/bin/bash
-set -euo pipefail
-if [[ "$1" == "-e" ]]; then
-  printf '%s' "$URAI_GATE_TEST_STATE"
-elif [[ "$*" == "--test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs" ]]; then
-  printf '%s' "$*" > "$URAI_GATE_TEST_MARKER"
-  exit "$URAI_GATE_TEST_CONTRACT_EXIT"
-else
-  echo "Unexpected source-gate node invocation: $*" >&2
-  exit 97
-fi
-`, { mode: 0o755 })
-    const result = spawnSync('bash', ['-c', currentHomeGateScript()], {
+    // The real governed release step runs in Bash. Shadow only its Node command
+    // within that Bash process: a temp script on PATH fails under Windows'
+    // native path delimiter/drive-letter rules before the real step is tested.
+    // Preserve the original, extracted GitHub Actions shell and its -e gate.
+    const marker = 'contract-invoked'
+    const nodeShim = `node() {
+  if [[ "$1" == "-e" ]]; then
+    printf '%s' "$URAI_GATE_TEST_STATE"
+  elif [[ "$*" == "--test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs" ]]; then
+    printf '%s' "$*" > "$URAI_GATE_TEST_MARKER"
+    return "$URAI_GATE_TEST_CONTRACT_EXIT"
+  else
+    echo "Unexpected source-gate node invocation: $*" >&2
+    return 97
+  fi
+}`
+    const result = spawnSync('bash', ['-c', nodeShim + '\n' + currentHomeGateScript()], {
+      cwd: directory,
       encoding: 'utf8',
       env: {
         ...process.env,
-        PATH: `${directory}:${process.env.PATH}`,
         URAI_GATE_TEST_STATE: releaseState,
         URAI_GATE_TEST_MARKER: marker,
         URAI_GATE_TEST_CONTRACT_EXIT: String(contractExit),
       },
     })
     assert.equal(result.error, undefined)
-    return { ...result, invoked: fs.existsSync(marker) }
+    return { ...result, invoked: fs.existsSync(path.join(directory, marker)) }
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
