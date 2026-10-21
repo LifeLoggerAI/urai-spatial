@@ -67,7 +67,10 @@ async function readOwner(transaction: FirebaseFirestore.Transaction, uid: string
   const pending = local.get('pendingDeletions'), expiresAt = millis(c?.expiresAt)
   if (!user.exists || user.get('deleted') === true || ['deleting', 'deleted', 'disabled'].includes(String(user.get('accountStatus')))
     || !memory.exists || (memory.get('ownerId') ?? memory.get('userId')) !== uid || memory.get('deleted') === true
-    || ['pending', 'revoked'].includes(String(memory.get('consentState')))
+    // A missing/legacy/unknown memory-level state is never affirmative consent.
+    // The current owner C1 grant below is necessary, but not a substitute for
+    // this selected memory's explicit authorization (private visibility remains allowed).
+    || memory.get('consentState') !== 'authorized'
     || !policy.exists || !isCanonicalStoredPolicy(p, uid) || p.revision < 1
     || p.domains.memory.mode !== 'granted' || p.enforcement.state !== 'fully-enforced'
     || !consent.exists || c?.uid !== uid || c.purpose !== 'memory.storage' || c.consentTier !== 'C1' || c.policyVersion !== '1.0.0'
