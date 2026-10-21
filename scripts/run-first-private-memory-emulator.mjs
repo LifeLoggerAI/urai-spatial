@@ -44,6 +44,8 @@ if (mode === '--preflight') {
 }
 if (missing.length) throw Error('FULL_REPOSITORY_CHECKOUT_REQUIRED:' + missing.join(','))
 if (!java21) throw Error('JAVA21_REQUIRED')
+const ffmpeg = spawnSync('ffmpeg', ['-version'], { encoding: 'utf8' })
+if (ffmpeg.status !== 0) throw Error('SYNTHETIC_OPUS_GENERATOR_FFMPEG_REQUIRED')
 const env = { ...process.env, GCLOUD_PROJECT: project, GCP_PROJECT: project, GOOGLE_CLOUD_PROJECT: project }
 function run(label, args) {
   console.log(`[RFINAL] ${label}`)
@@ -55,7 +57,7 @@ function run(label, args) {
 }
 run('MAINTAINED_FUNCTIONS_BUILD', ['--filter', 'urai-functions', 'build'])
 run('ACTUAL_AUTH_FIRESTORE_FUNCTIONS_EMULATORS', ['exec', 'firebase', 'emulators:exec',
-  '--project', project, '--config', 'firebase.captured-reality-emulator.json', '--only', 'auth,firestore,functions',
+  '--project', project, '--config', 'firebase.captured-reality-emulator.json', '--only', 'auth,firestore,functions,storage',
   'node apps/functions/scripts/first-private-memory-emulator-proof.cjs'])
 console.log(JSON.stringify({ ...report, firebaseBackendProofExecuted: true,
   result: 'PASS (synthetic local emulator only)', browserPlaybackVerified: false,
