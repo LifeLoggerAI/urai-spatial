@@ -46,6 +46,8 @@ if (missing.length) throw Error('FULL_REPOSITORY_CHECKOUT_REQUIRED:' + missing.j
 if (!java21) throw Error('JAVA21_REQUIRED')
 const ffmpeg = spawnSync('ffmpeg', ['-version'], { encoding: 'utf8' })
 if (ffmpeg.status !== 0) throw Error('SYNTHETIC_OPUS_GENERATOR_FFMPEG_REQUIRED')
+const ffprobe = spawnSync('ffprobe', ['-version'], { encoding: 'utf8' })
+if (ffprobe.status !== 0) throw Error('SYNTHETIC_OPUS_DURATION_FFPROBE_REQUIRED')
 const env = { ...process.env, GCLOUD_PROJECT: project, GCP_PROJECT: project, GOOGLE_CLOUD_PROJECT: project }
 function run(label, args) {
   console.log(`[RFINAL] ${label}`)
