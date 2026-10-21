@@ -206,18 +206,36 @@ try {
     AssertUnchanged $head $clonedHead 'canonical branch during isolated clone'
     $null = GitRead @('-C',$source,'merge-base','--is-ancestor',$ExpectedAncestor,$head) $source 'expected-ancestry'
     $summary.tree = GitRead @('-C',$source,'rev-parse',($head + '^{tree}')) $source 'tree'
-    $summary.runnerBlob = GitRead @('-C',$source,'rev-parse',($head + ':scripts/run-rfinal-native-evidence.mjs')) $source 'runner-blob'
-    $runnerText = GitRead @('-C',$source,'show',($head + ':scripts/run-rfinal-native-evidence.mjs')) $source 'original-runner'
-    $runner = Join-Path $script:Evidence 'original-runner.mjs'
-    # Text decoding is verified against the authoritative Git blob before import.
-    Copy-Item -LiteralPath (Join-Path $script:Evidence 'original-runner.stdout.log') -Destination $runner
-    $diskBlob = GitRead @('-C',$source,'hash-object','--no-filters',$runner) $source 'runner-raw-blob'
-    if ($diskBlob -ne $summary.runnerBlob) { throw 'RUNNER_BLOB_MISMATCH' }
-    # Import only the exact maintained runner's reviewed sparse rules and tree audit.
+    # Mirror the exact runner and every local module it imports before checkout.
+    # The audit helper must not import a detached copy with missing siblings.
+    $auditMirror = Join-Path $script:Evidence 'audit-mirror'
+    New-Item -ItemType Directory -Path (Join-Path $auditMirror 'scripts') -Force | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $auditMirror 'tests') -Force | Out-Null
+    $auditFiles = @(
+        'scripts/run-rfinal-native-evidence.mjs',
+        'scripts/rfinal-source-authority.mjs',
+        'scripts/visual-png-integrity.mjs',
+        'scripts/rfinal-visual-evidence-paths.mjs',
+        'scripts/rfinal-missing-tracked-repair.mjs',
+        'tests/spatial-owned-server.mjs'
+    )
+    $ordinal = 0
+    foreach ($auditFile in $auditFiles) {
+        $ordinal++
+        $expectedBlob = GitRead @('-C',$source,'rev-parse',($head + ':' + $auditFile)) $source ('audit-import-blob-' + $ordinal)
+        if ($auditFile -eq 'scripts/run-rfinal-native-evidence.mjs') { $summary.runnerBlob = $expectedBlob }
+        $null = GitRead @('-C',$source,'show',($head + ':' + $auditFile)) $source ('audit-import-show-' + $ordinal)
+        $destination = Join-Path $auditMirror ($auditFile.Replace('/', [IO.Path]::DirectorySeparatorChar))
+        Copy-Item -LiteralPath (Join-Path $script:Evidence ('audit-import-show-' + $ordinal + '.stdout.log')) -Destination $destination
+        $diskBlob = GitRead @('-C',$source,'hash-object','--no-filters',$destination) $source ('audit-import-hash-' + $ordinal)
+        if ($diskBlob -ne $expectedBlob) { throw ('AUDIT_IMPORT_BLOB_MISMATCH: ' + $auditFile) }
+    }
+    # Import only the exact maintained runner's reviewed sparse rules and tree audit,
+    # with its exact local dependency graph mirrored beside it.
     $auditHelper = Join-Path $script:Evidence 'audit-tree.mjs'
     [IO.File]::WriteAllText($auditHelper, @'
 import {readFileSync,writeFileSync} from 'node:fs';
-import {auditWindowsSparsePaths,WINDOWS_SAFE_SPARSE_PATTERNS,PINNED_FILES} from './original-runner.mjs';
+import {auditWindowsSparsePaths,WINDOWS_SAFE_SPARSE_PATTERNS,PINNED_FILES} from './audit-mirror/scripts/run-rfinal-native-evidence.mjs';
 const raw=readFileSync(process.argv[2],'utf8');
 if(!raw.endsWith('\0')) throw Error('INCOMPLETE_GIT_TREE');
 const entries=raw.slice(0,-1).split('\0');
