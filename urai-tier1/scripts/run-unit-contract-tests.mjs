@@ -17,6 +17,7 @@ const focusedContractTests = [
   'tests/home-cc0-private-review-runner.test.mjs',
   'tests/home-sky-interaction.test.mjs',
   'tests/lifemap-demo-journey-identity.test.mjs',
+  'tests/lifemap-route-transaction-query-lifecycle.test.mjs',
   'tests/lifemap-data-boundary.test.mjs',
   'tests/lifemap-semantic-owner-contract.test.mjs',
   'tests/lifemap-founder-harness-contract.test.mjs',
