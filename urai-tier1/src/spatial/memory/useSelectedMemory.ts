@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { doc, onSnapshot } from 'firebase/firestore'
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
-import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
+import { onAuthStateChanged } from 'firebase/auth'
+import { firebasePublicEnvReady, getFirebaseDb, getUraiAuth } from '@/lib/firebase/client'
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import { isConsentPolicy } from '@/app/privacy-controls/consentModel'
 import { buildNamedExplicitDemoMemory } from './explicitDemoMemory'
@@ -95,7 +95,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
       return () => { cancelled = true }
     }
 
-    const auth = getAuth(app)
+    const auth = getUraiAuth()
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (cancelled) return
       detachActor()
