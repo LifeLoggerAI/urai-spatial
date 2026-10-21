@@ -1,0 +1,102 @@
+# URAI: manually submitted, source-pinned, no-deployment verification.
+# No GitHub Actions, Cloud Build GitHub connection, production credentials,
+# real family media, or Firebase deployment is needed.
+# Submit with: gcloud builds submit --no-source --config=cloudbuild.urai-verify.yaml \
+#   --project=urai-4dc1d --region=us-central1 \
+#   --substitutions=_SOURCE_BRANCH=repair/rfinal-convergence-candidate-20261020,_SOURCE_SHA=<40-char-git-sha>
+substitutions:
+  _SOURCE_BRANCH: 'repair/rfinal-convergence-candidate-20261020'
+  _SOURCE_SHA: '1c0757c4f305644c656e72b8f536c7c57f316068'
+steps:
+  - id: 'fetch-exact-source'
+    name: 'gcr.io/cloud-builders/git'
+    entrypoint: 'bash'
+    env:
+      - 'URAI_SOURCE_BRANCH=${_SOURCE_BRANCH}'
+      - 'URAI_SOURCE_SHA=${_SOURCE_SHA}'
+    args:
+      - '-ceu'
+      - |
+        # Never evaluate substitutions as shell commands.
+        [[ "$$URAI_SOURCE_BRANCH" =~ ^(repair|ci)/[a-zA-Z0-9._/-]+$$ ]] || { echo 'INVALID_SOURCE_BRANCH'; exit 2; }
+        [[ "$$URAI_SOURCE_SHA" =~ ^[0-9a-f]{40}$$ ]] || { echo 'INVALID_SOURCE_SHA'; exit 2; }
+        export GIT_TERMINAL_PROMPT=0
+        git clone --depth=1 --single-branch --branch "$$URAI_SOURCE_BRANCH" https://github.com/LifeLoggerAI/urai-spatial.git /workspace/urai-spatial
+        head="$$(git -C /workspace/urai-spatial rev-parse HEAD)"
+        echo "URAI_EXACT_SOURCE_BRANCH=$$URAI_SOURCE_BRANCH"
+        echo "URAI_EXACT_SOURCE_SHA=$$head"
+        if [[ "$$head" != "$$URAI_SOURCE_SHA" ]]; then
+          echo "SOURCE_HEAD_MOVED: expected $$URAI_SOURCE_SHA; got $$head; refusing stale-source validation"
+          exit 3
+        fi
+        test -f /workspace/urai-spatial/scripts/run-first-private-memory-emulator.mjs
+        test -f /workspace/urai-spatial/apps/functions/src/createFirstPrivateMemory.ts
+        echo 'URAI_FULL_SOURCE_PATHS_PRESENT'
+
+  - id: 'node22-java21-firebase-emulator-verification'
+    name: 'node:22-trixie'
+    entrypoint: 'bash'
+    dir: 'urai-spatial'
+    env:
+      - 'URAI_SOURCE_SHA=${_SOURCE_SHA}'
+      - 'CI=true'
+      - 'NEXT_TELEMETRY_DISABLED=1'
+      - 'NEXT_PUBLIC_FIREBASE_API_KEY=fictional-emulator-only'
+      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=demo-urai-auth-journey.firebaseapp.com'
+      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-urai-auth-journey'
+      - 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=demo-urai-auth-journey.firebasestorage.app'
+      - 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=000000000000'
+      - 'NEXT_PUBLIC_FIREBASE_APP_ID=1:000000000000:web:fictional-emulator'
+    args:
+      - '-ceu'
+      - |
+        # These are code quality / emulator-only checks. Never deploy or use production authority.
+        export GCLOUD_PROJECT=demo-urai-auth-journey
+        export GCP_PROJECT=demo-urai-auth-journey
+        export GOOGLE_CLOUD_PROJECT=demo-urai-auth-journey
+        unset GOOGLE_APPLICATION_CREDENTIALS FIREBASE_TOKEN GOOGLE_OAUTH_ACCESS_TOKEN
+        unset URAI_MEDIA_STAGING_ENABLE URAI_MEDIA_STAGING_PROJECT URAI_MEDIA_STAGING_BUCKET FIREBASE_CONFIG
+        apt-get update -qq
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends openjdk-21-jre-headless ffmpeg python3
+        node -v
+        java -version
+        ffprobe -version | head -n 1
+        corepack enable
+        corepack prepare pnpm@10.0.0 --activate
+        pnpm --version
+        pnpm install --frozen-lockfile
+        node scripts/run-pnpm.mjs bootstrap:check
+        echo "URAI_VERIFIED_SOURCE_SHA=$$URAI_SOURCE_SHA"
+        failed=0
+        run_gate() {
+          label="$$1"
+          shift
+          echo "=== BEGIN $$label ==="
+          if "$$@"; then
+            echo "=== PASS $$label ==="
+          else
+            result="$$?"
+            echo "=== FAIL $$label exit=$$result ==="
+            failed=$$((failed + 1))
+          fi
+        }
+        run_gate source-authority node --test tests/rfinal-source-authority.test.mjs
+        run_gate first-memory-preflight pnpm test:first-memory:emulator:preflight
+        run_gate first-memory-emulator pnpm test:first-memory:emulator
+        run_gate firestore-rules-emulator pnpm test:firestore-rules
+        run_gate functions-tests pnpm --filter urai-functions test
+        run_gate spatial-contract-tests pnpm --filter urai-tier1 test:unit
+        run_gate spatial-types pnpm --filter urai-tier1 typecheck
+        run_gate spatial-build pnpm --filter urai-tier1 build
+        echo "URAI_VERIFICATION_FAILED_GATES=$$failed"
+        echo 'No live Firebase operations, secrets, family media, merge, or deployment were requested.'
+        if [[ "$$failed" -ne 0 ]]; then exit 1; fi
+        echo 'URAI_PINNED_SOURCE_CI_PASS (not a production launch certificate)'
+timeout: '7200s'
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: 'CLOUD_LOGGING_ONLY'
+tags:
+  - 'urai'
+  - 'no-deploy'
+  - 'synthetic-firebase-emulators'
