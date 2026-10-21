@@ -90,7 +90,7 @@ function RenderProofRepublisher() {
     const signature = `${objects}:${anchors}:${calls}:${triangles}`;
     const element = resolveOwner();
     if (!element) return false;
-    if (lastSignature.current !== signature || invalidated.current) {
+    if (lastSignature.current !== signature || invalidated.current || element.dataset.lifeMapRenderReady !== (ready ? "true" : "false")) {
       lastSignature.current = signature;
       element.dataset.lifeMapRenderReady = ready ? "true" : "false";
       element.dataset.lifeMapVisibleObjects = String(objects);
