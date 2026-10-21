@@ -274,7 +274,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
   const [phase, setPhase] = useState<JourneyPhase>("overview");
-  const [webglState, setWebglState] = useState<WebGLState>("ready");
+  const [webglState, setWebglState] = useState<WebGLState>("recovering");
   const journeyToken = useRef(0);
   const shellRef = useRef<HTMLElement | null>(null);
   const localSelectionId = useRef<string | null>(null);
