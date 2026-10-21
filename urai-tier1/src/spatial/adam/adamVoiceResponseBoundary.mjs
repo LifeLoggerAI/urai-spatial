@@ -119,6 +119,13 @@ export async function readBoundedAdamErrorCode(response, { signal, isAuthorized,
   poll.unref?.()
   signal.addEventListener('abort', cancel, { once: true })
   try {
+    // Fail closed on a declared error-body size before waiting on a stalled
+    // provider. Actual streamed bytes remain independently capped below.
+    const advertised = response.headers?.get('content-length')
+    if (advertised !== null && advertised !== undefined) {
+      if (!/^[0-9]+$/.test(advertised) || !Number.isSafeInteger(Number(advertised))
+        || Number(advertised) < 1 || Number(advertised) > MAX_ERROR_BYTES) return fallback
+    }
     const chunks = []
     let size = 0
     for (;;) {
