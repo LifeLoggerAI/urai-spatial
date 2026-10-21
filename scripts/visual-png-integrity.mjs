@@ -18,6 +18,43 @@ export function pngCrc32(input) {
   return (crc ^ 0xffffffff) >>> 0
 }
 
+/** The PNG filter bytes are deltas, not pixels. Restore only as many rows
+ * as needed to prove that screenshot pixels are not all identical. An all-black
+ * (or any uniform-color) screenshot cannot qualify as rendered world evidence.
+ * This guards a basic no-render case, not artistic quality or browser origin.
+ */
+function hasPixelVariation(decoded, width, height, channels) {
+  const rowBytes = width * channels
+  const stride = rowBytes + 1
+  let previous = Buffer.alloc(rowBytes)
+  let current = Buffer.alloc(rowBytes)
+  let baseline = null
+  for (let y = 0; y < height; y++) {
+    const filter = decoded[y * stride]
+    const start = y * stride + 1
+    for (let x = 0; x < rowBytes; x++) {
+      const left = x >= channels ? current[x - channels] : 0
+      const above = previous[x]
+      const upperLeft = x >= channels ? previous[x - channels] : 0
+      let predictor = 0
+      if (filter === 1) predictor = left
+      else if (filter === 2) predictor = above
+      else if (filter === 3) predictor = Math.floor((left + above) / 2)
+      else if (filter === 4) {
+        const p = left + above - upperLeft
+        const a = Math.abs(p - left), b = Math.abs(p - above), c = Math.abs(p - upperLeft)
+        predictor = a <= b && a <= c ? left : b <= c ? above : upperLeft
+      }
+      current[x] = (decoded[start + x] + predictor) & 255
+      if (baseline === null && x === channels - 1) {
+        baseline = Buffer.from(current.subarray(0, channels))
+      } else if (baseline !== null && current[x] !== baseline[x % channels]) return true
+    }
+    ;[previous, current] = [current, previous]
+  }
+  return false
+}
+
 /** Confirm a bounded Playwright RGB/RGBA PNG fully decodes to scanlines.
  * Valid image bytes do not establish browser provenance or artistic approval.
  */
@@ -84,6 +121,8 @@ export function inspectVisualPng(file) {
   for (let row = 0; row < height; row++) {
     if (decoded[row * stride] > 4) return reject('PNG_IMAGE_ROW_FILTER_INVALID')
   }
+  if (!hasPixelVariation(decoded, width, height, channels))
+    return reject('PNG_UNIFORM_PIXEL_CONTENT')
   return { ok: true, width, height, bytes: bytes.length,
     sha256: createHash('sha256').update(bytes).digest('hex') }
 }
