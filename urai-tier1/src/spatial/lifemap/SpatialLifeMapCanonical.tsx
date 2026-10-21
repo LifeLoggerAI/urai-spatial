@@ -9,6 +9,7 @@ import { requestUraiWorldReturn } from "@/spatial/world/worldEvents";
 import LifeMapRouteBoundary from "@/components/lifemap/LifeMapRouteBoundary";
 import LifeMapSemanticNavigator from "@/components/lifemap/LifeMapSemanticNavigator";
 import { app, firebasePublicEnvReady } from "@/lib/firebase/client";
+import { subscribeLifeMapAuth } from './lifeMapAuthGate';
 
 const DEMO_MANIFEST_ID = "replay-recovery-thread";
 type LifeMapAccessMode = "checking" | "signed-out" | "private" | "explicit-demo";
@@ -91,10 +92,12 @@ function LifeMapAccessGate() {
     }
 
     setMode("checking");
-    const auth = getAuth(app);
-    return onAuthStateChanged(auth, (user) => {
-      setAuthenticatedUserId(user?.uid ?? null);
-      setMode(user ? "private" : "signed-out");
+    return subscribeLifeMapAuth({
+      listen: (onIdentity, onFailure) => onAuthStateChanged(getAuth(app), user => onIdentity(user?.uid ?? null), onFailure),
+      onResolved: userId => {
+        setAuthenticatedUserId(userId);
+        setMode(userId ? "private" : "signed-out");
+      },
     });
   }, [query]);
 
