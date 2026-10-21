@@ -88,7 +88,10 @@ test('pre-attached media is rejected before network', async () => {
 })
 test('recent login cannot be replaced by token refresh alone', async () => {
   const f = fixture(); f.setAuthTime(Math.floor(Date.now()/1000) - 600)
-  await assert.rejects(f.importer(f.packet, f.file, true, f.lifecycle), /FIRST_MEMORY_RECENT_REAUTH_REQUIRED/)
+  let reads = 0
+  const selected = { ...f.file, arrayBuffer: async () => { reads++; return fixtureBytes.slice().buffer } }
+  await assert.rejects(f.importer(f.packet, selected, true, f.lifecycle), /FIRST_MEMORY_RECENT_REAUTH_REQUIRED/)
+  assert.equal(reads, 0, 'stale authentication may not read private local media')
   assert.equal(f.stats().createCalls, 0)
 })
 test('actor switch during callable prevents protected upload', async () => {
