@@ -132,6 +132,7 @@ export async function requestAdamPresence(input: {
     throw new AdamProviderError('AUTH_SESSION_CHANGED', 'Sign in again to talk with Adam.')
   return readPresenceContentStream<AdamProviderResult, AdamProviderEvent>(response, {
     locale, signal: input.signal,
+    isCurrent: () => auth.currentUser === actor && !input.signal.aborted,
     onEvent: (event) => {
       if (auth.currentUser !== actor || input.signal.aborted)
         throw new AdamProviderError('AUTH_SESSION_CHANGED', 'Sign in again to talk with Adam.')

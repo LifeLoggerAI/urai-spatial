@@ -23,6 +23,7 @@ const requiredFocusedTests = [
   'tests/replay-person-presence-ui.test.mjs',
   'tests/replay-person-presence-lifecycle.test.mjs',
   'tests/adam-request-session-fence.test.mjs',
+  'tests/presence-stalled-owner-rotation.test.mjs',
   'tests/adam-voice-response-boundary.test.mjs',
   'tests/adam-stalled-owner-change.test.mjs',
   'tests/adam-voice-poll-lifecycle.test.mjs',
