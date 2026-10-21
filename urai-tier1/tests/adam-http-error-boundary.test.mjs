@@ -41,3 +41,18 @@ test('ADAM malformed provider errors default safely',async()=>{
   assert.equal(await read(new Response(body,{status:502}),args()),'ADAM_PROVIDER_BOUNDARY_FAILURE')
  }
 })
+
+for (const header of ['4097', '999999999', '-1', 'Infinity']) {
+  test(`ADAM refuses excessive/malformed Content-Length ${header} without waiting for private bytes`, async () => {
+    let canceled=false
+    const ac=new AbortController()
+    const body=new ReadableStream({pull(){}, cancel(){canceled=true}},{highWaterMark:0})
+    const resp=new Response(body,{status:403,headers:{'content-length':header}})
+    const pending=read(resp,{signal:ac.signal,isAuthorized:()=>true,fallbackCode:'ADAM_PROVIDER_BOUNDARY_FAILURE'})
+    try {
+      const outcome=await Promise.race([pending,sleep(160).then(()=> 'STALLED')])
+      assert.equal(outcome,'ADAM_PROVIDER_BOUNDARY_FAILURE')
+      assert.equal(canceled,true)
+    } finally {ac.abort();await pending.catch(()=>{})}
+  })
+}
