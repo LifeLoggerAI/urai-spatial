@@ -19,6 +19,11 @@ export async function readPresenceContentStream<Result extends ContentResult, Ev
   if (!response.body) throw invalid()
   const reader = response.body.getReader()
   const decoder = new TextDecoder('utf-8', { fatal: true })
+  // Bound cumulative streamed network work, not only individual SSE frames.
+  // Otherwise endless small status events can keep an actor-owned stream alive.
+  const MAX_STREAM_BYTES = 64 * 1024
+  const MAX_STREAM_EVENTS = 256
+  let receivedBytes = 0, eventCount = 0
   let buffer = '', streamed = '', finalResult: Result | null = null
   const cancel = () => { void reader.cancel().catch(() => undefined) }
   let authorityLost = false
@@ -40,6 +45,7 @@ export async function readPresenceContentStream<Result extends ContentResult, Ev
   const accept = (line: string) => {
     ensureCurrent()
     if (!line.trim()) return
+    if (++eventCount > MAX_STREAM_EVENTS) throw invalid()
     let value: unknown
     try { value = JSON.parse(line) } catch { throw invalid() }
     if (!value || typeof value !== 'object' || Array.isArray(value) || finalResult) throw invalid()
@@ -68,6 +74,9 @@ export async function readPresenceContentStream<Result extends ContentResult, Ev
       const { value, done } = await reader.read()
       ensureCurrent()
       if (done) break
+      // Inspect actual bytes before decoding any potentially giant chunk.
+      if (!(value instanceof Uint8Array) || value.byteLength > MAX_STREAM_BYTES - receivedBytes) throw invalid()
+      receivedBytes += value.byteLength
       try { buffer += decoder.decode(value, { stream: true }) } catch { throw invalid() }
       if (buffer.length > 32_000) throw invalid()
       const lines = buffer.split('\n')

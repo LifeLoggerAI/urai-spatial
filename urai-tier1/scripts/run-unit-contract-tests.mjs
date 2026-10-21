@@ -106,6 +106,7 @@ const focusedContractTests = [
   'tests/replay-memory-theater-contract.test.mjs',
   'tests/adam-request-session-fence.test.mjs',
   'tests/presence-stalled-owner-rotation.test.mjs',
+  'tests/presence-stream-budget.test.mjs',
   'tests/adam-voice-response-boundary.test.mjs',
   'tests/adam-stalled-owner-change.test.mjs',
   'tests/adam-voice-poll-lifecycle.test.mjs',
