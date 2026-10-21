@@ -89,6 +89,7 @@ export default function FirstPrivateMemoryDevClient() {
         </button>
       </form>
       <p role="status" aria-live="polite">{message}</p>
+      {receipt && derivativeSha256 ? <FirstPrivateMemoryActivationPanel receipt={receipt} derivativeSha256={derivativeSha256} /> : null}
       {receipt ? <section aria-label="Synthetic memory receipt">
         <h2>Hidden import registered</h2>
         <p>Not yet proof of browser playback. Focus remains subject to explicit owner visibility consent.</p>
