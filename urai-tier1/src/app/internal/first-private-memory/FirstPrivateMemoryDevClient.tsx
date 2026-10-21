@@ -93,7 +93,7 @@ export default function FirstPrivateMemoryDevClient() {
       {receipt ? <section aria-label="Synthetic memory receipt">
         <h2>Hidden import registered</h2>
         <p>Not yet proof of browser playback. Focus remains subject to explicit owner visibility consent.</p>
-        <a style={{ color: '#9eeefa' }} href={'/focus?memoryId=' + encodeURIComponent(receipt.memoryId) + '&manifestId=' + encodeURIComponent('source-' + receipt.memoryId)}>Focus requires the separate owner confirmation above</a>
+        <a style={{ color: '#9eeefa' }} href="/privacy-controls">Focus requires the separate owner confirmation above</a>
       </section> : null}
       <p><a style={{ color: '#9eeefa' }} href="/privacy-controls">Privacy controls</a></p>
     </div>
