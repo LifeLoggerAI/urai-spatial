@@ -133,13 +133,16 @@ test('segmented original Replay uses actual Studio action and retains final fall
 
 test('segmented private movie denies delivery on timeline expiration, not merely account rotation', () => {
   const timeline = { expiresAt: 5000 }
-  assert.equal(privateLifeMovieTimelineCurrent(timeline,4999),true)
-  assert.equal(privateLifeMovieTimelineCurrent(timeline,5000),false)
-  assert.equal(privateLifeMovieTimelineCurrent(timeline,5001),false)
-  for(const invalid of [null,{expiresAt:Infinity},{expiresAt:NaN},{expiresAt:5000.5}])
-    assert.equal(privateLifeMovieTimelineCurrent(invalid,4999),false)
-  assert.match(hook,/requestNumber === segmentVersion && privateLifeMovieTimelineCurrent\\(timeline\\)/)
-  assert.match(hook,/if \\(!privateLifeMovieTimelineCurrent\\(timeline\\)\\) \\{ clean\\(\\); return \\}/)
-  assert.match(hook,/window\\.setTimeout\\(enforceTimelineExpiry/)
-  assert.match(hook,/if \\(currentSession\\(\\) && requestNumber === segmentVersion\\) clean\\(\\)/)
+  assert.equal(privateLifeMovieTimelineCurrent(timeline, 4999), true)
+  assert.equal(privateLifeMovieTimelineCurrent(timeline, 5000), false)
+  assert.equal(privateLifeMovieTimelineCurrent(timeline, 5001), false)
+  for (const invalid of [null, { expiresAt: Infinity }, { expiresAt: NaN }, { expiresAt: 5000.5 }])
+    assert.equal(privateLifeMovieTimelineCurrent(invalid, 4999), false)
+  // Keep the source assertion syntax valid and check the actual hook code.
+  for (const marker of [
+    'requestNumber === segmentVersion && privateLifeMovieTimelineCurrent(timeline)',
+    'if (!privateLifeMovieTimelineCurrent(timeline)) { clean(); return }',
+    'window.setTimeout(enforceTimelineExpiry',
+    'if (currentSession() && requestNumber === segmentVersion) clean()',
+  ]) assert.ok(hook.includes(marker), 'missing active timeline guard: ' + marker)
 })
