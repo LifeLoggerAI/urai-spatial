@@ -13,6 +13,7 @@ const requiredFocusedTests = [
   'tests/operational-export-client.test.mjs',
   'tests/owned-memory-media-client.test.mjs',
   'tests/prepare-first-private-memory.test.mjs',
+  'tests/import-first-prepared-memory.test.mjs',
   'tests/first-private-memory-selected-consumer.test.mjs',
   'tests/selected-memory-exact-actor-rotation.test.mjs',
   'tests/prepare-first-private-memory-repo-boundary.test.mjs',
