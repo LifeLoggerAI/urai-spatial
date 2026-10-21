@@ -129,7 +129,7 @@ test('one real distinct pixel prevents false uniform-image rejection', () => fix
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) raw[y * (width * 4 + 1) + 1 + x * 4 + 3] = 255
   }
-  raw[500] = 1 // one distinct RGB sample, not a whole decorative overlay
+  raw[499] = 1 // a genuine blue-channel pixel; byte 500 was alpha-only variation
   writeFileSync(file, Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),
     chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]))
   assert.equal(inspectVisualPng(file).ok, true)
@@ -182,3 +182,32 @@ for (const channels of [3, 4]) for (const filter of [0, 1, 2, 3, 4]) {
     assert.equal(inspectVisualPng(file).ok, true)
   }))
 }
+
+function rgbaAlphaVariationPng(visibleColorVariation) {
+  const width = 320, height = 200
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4)
+  ihdr[8] = 8; ihdr[9] = 6
+  const stride = width * 4 + 1
+  const raw = Buffer.alloc(stride * height)
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const pixel = y * stride + 1 + x * 4
+      raw[pixel + 3] = x % 2 === 0 ? 255 : 0
+      if (visibleColorVariation && x === 15 && y === 15) {
+        raw[pixel] = 255
+        raw[pixel + 3] = 255
+      }
+    }
+  }
+  return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),
+    chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))])
+}
+test('alpha-only changes in black RGBA PNG cannot masquerade as visible pixels', () => fixture(file => {
+  writeFileSync(file, rgbaAlphaVariationPng(false))
+  assert.equal(inspectVisualPng(file).reason, 'PNG_UNIFORM_PIXEL_CONTENT')
+}))
+test('alpha-composited RGB variation is retained as visible content', () => fixture(file => {
+  writeFileSync(file, rgbaAlphaVariationPng(true))
+  assert.equal(inspectVisualPng(file).ok, true)
+}))
