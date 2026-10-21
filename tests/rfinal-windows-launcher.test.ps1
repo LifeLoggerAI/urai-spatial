@@ -27,6 +27,13 @@ try {
         foreach($remote in @('https://github.com/LifeLoggerAI/urai-spatial.git','git@github.com:LifeLoggerAI/urai-spatial.git','ssh://git@github.com/LifeLoggerAI/urai-spatial.git')) { Equal (IsOriginalRemote $remote) $true }
         foreach($remote in @('https://github.com/other/urai-spatial.git','https://evil.invalid/LifeLoggerAI/urai-spatial.git','https://github.com/LifeLoggerAI/urai-spatial-extra.git')) { Equal (IsOriginalRemote $remote) $false }
     }
+    Check 'canonical remote without usable HEAD is rejected during source validation' {
+        $headless = Join-Path $root 'headless source'
+        New-Item -ItemType Directory -Path $headless | Out-Null
+        $null = GitRead @('init','-q',$headless) $root 'headless-init'
+        $null = GitRead @('-C',$headless,'remote','add','origin','https://github.com/LifeLoggerAI/urai-spatial.git') $root 'headless-remote'
+        Throws { ResolveOriginalRepo $headless 'headless' } 'SOURCE_HEAD_INVALID'
+    }
     $repo = Join-Path $root 'source with spaces'
     New-Item -ItemType Directory -Path $repo | Out-Null
     $null = GitRead @('init','-q',$repo) $root 'init'
