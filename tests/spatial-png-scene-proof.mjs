@@ -13,6 +13,7 @@ function reconstructedScanlines(bytes) {
   let channels = 0
   const compressed = []
   let ended = false
+  let idatSectionEnded = false
   while (offset + 12 <= bytes.length) {
     const length = bytes.readUInt32BE(offset)
     const type = bytes.toString('ascii', offset + 4, offset + 8)
@@ -23,8 +24,17 @@ function reconstructedScanlines(bytes) {
     if (pngCrc32(bytes.subarray(offset + 4, start + length)) !== bytes.readUInt32BE(start + length)) {
       throw new Error('URAI_VISUAL_PROOF_PNG_CRC_INVALID')
     }
+    // A valid chunk checksum alone does not make a valid PNG structure.
+    // IHDR is mandatory first; IDAT chunks form one contiguous data section.
+    if (offset === 8 && type !== 'IHDR') throw new Error('URAI_VISUAL_PROOF_INVALID_CHUNK_ORDER')
+    if (type !== 'IDAT' && compressed.length) idatSectionEnded = true
+    if (type === 'IDAT' && idatSectionEnded) throw new Error('URAI_VISUAL_PROOF_INVALID_IDAT_ORDER')
+    if (type === 'PLTE' && (compressed.length || !width)) throw new Error('URAI_VISUAL_PROOF_INVALID_CHUNK_ORDER')
+    if (!['IHDR', 'IDAT', 'IEND', 'PLTE'].includes(type) && type[0] === type[0].toUpperCase()) {
+      throw new Error('URAI_VISUAL_PROOF_UNKNOWN_CRITICAL_CHUNK')
+    }
     if (type === 'IHDR') {
-      if (length !== 13 || width || height) throw new Error('URAI_VISUAL_PROOF_INVALID_IHDR')
+      if (length !== 13 || width || height || offset !== 8) throw new Error('URAI_VISUAL_PROOF_INVALID_IHDR')
       width = bytes.readUInt32BE(start)
       height = bytes.readUInt32BE(start + 4)
       const depth = bytes[start + 8]
