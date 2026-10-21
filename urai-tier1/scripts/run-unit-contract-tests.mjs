@@ -123,6 +123,7 @@ const focusedContractTests = [
   'tests/elevenlabs-output-authority.test.mjs',
   'tests/spatial-audio-behavior.test.mjs',
   'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
+  'tests/ground-workforce-canonical-world-contract.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
   'tests/main-journey-state-audit.test.mjs',
   'tests/python3-runtime-discovery.test.mjs',
