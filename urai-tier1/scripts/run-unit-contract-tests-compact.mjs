@@ -49,6 +49,7 @@ const tests = [
   'tests/operational-export-client.test.mjs',
   'tests/owned-memory-media-client.test.mjs',
   'tests/prepare-first-private-memory.test.mjs',
+  'tests/private-file-integrity.test.mjs',
   'tests/prepare-first-private-memory-repo-boundary.test.mjs',
   'tests/sms-session-lifecycle.test.mjs',
   'tests/asset-receipt-runner-contract.test.mjs',
