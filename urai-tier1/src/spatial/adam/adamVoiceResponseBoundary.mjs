@@ -16,6 +16,8 @@ export class AdamVoiceResponseError extends Error {
 /** Never hand a stale owner's Blob or an unbounded payload to playback. */
 export async function readAuthorizedAdamVoice(response, { signal, isAuthorized }) {
   let reader = null
+  let authorityPoll = null
+  let authorityLost = false
   const abortPendingRead = () => {
     if (reader) void reader.cancel('adam-voice-session-aborted').catch(() => {})
   }
@@ -27,7 +29,7 @@ export async function readAuthorizedAdamVoice(response, { signal, isAuthorized }
     }
     throw new AdamVoiceResponseError(code)
   }
-  const current = () => !signal.aborted && isAuthorized()
+  const current = () => !signal.aborted && !authorityLost && isAuthorized()
   if (!current()) deny('ADAM_VOICE_SESSION_CHANGED')
   if (!response.ok || !response.body) deny('ADAM_VOICE_RESPONSE_INVALID')
   const contentType = (response.headers.get('content-type') ?? '').split(';', 1)[0].trim().toLowerCase()
@@ -42,6 +44,20 @@ export async function readAuthorizedAdamVoice(response, { signal, isAuthorized }
   }
   reader = response.body.getReader()
   signal.addEventListener('abort', abortPendingRead, { once: true })
+  // The input signal normally tracks session changes, but a Firebase owner
+  // rotation can occur while a stream is indefinitely stalled in read().
+  // Recheck the current actor while the stream is outstanding, canceling the
+  // pending read immediately on detection rather than waiting for more bytes.
+  authorityPoll = setInterval(() => {
+    if (authorityLost) return
+    let stillCurrent = false
+    try { stillCurrent = current() } catch { /* fail closed */ }
+    if (!stillCurrent) {
+      authorityLost = true
+      abortPendingRead()
+    }
+  }, 50)
+  authorityPoll.unref?.()
   const chunks = []
   let received = 0
   try {
@@ -65,6 +81,7 @@ export async function readAuthorizedAdamVoice(response, { signal, isAuthorized }
     void reader.cancel('adam-voice-denied').catch(() => {})
     throw error
   } finally {
+    if (authorityPoll !== null) clearInterval(authorityPoll)
     signal.removeEventListener('abort', abortPendingRead)
     reader.releaseLock()
   }
