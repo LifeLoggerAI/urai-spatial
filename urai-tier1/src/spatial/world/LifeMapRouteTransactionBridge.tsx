@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
@@ -18,24 +19,31 @@ function buttonFromEvent(event: MouseEvent) {
 }
 
 export function LifeMapRouteTransactionBridge() {
-  // Read the disclosed-demo boundary only after hydration. Using Next's
-  // useSearchParams here forces a CSR bailout during static export even though
-  // this bridge renders no UI and owns only post-hydration click transactions.
-  const [explicitDemo, setExplicitDemo] = useState(false)
-  const [authenticatedUserId, setAuthenticatedUserId] = useState<string | null>(null)
+  // Track committed route identity: the persistent bridge does not remount
+  // for Next same-route demo/query transitions or browser Back and Forward.
+  const location = useBrowserLocation()
+  const explicitDemo = new URL(location || '/life-map', 'https://urai.invalid').searchParams.get('demo') === '1'
+  // Fence cached private nodes synchronously before effect cleanup/auth refresh.
+  const [identity, setIdentity] = useState<{ location: string; userId: string | null }>({ location: '', userId: null })
+  const authenticatedUserId = !explicitDemo && identity.location === location ? identity.userId : null
   const { nodes } = useLifeMapEvents(explicitDemo ? 'demo-user' : authenticatedUserId ?? undefined)
 
   useEffect(() => {
-    const demo = new URLSearchParams(window.location.search).get('demo') === '1'
-    setExplicitDemo(demo)
-    if (demo || !firebasePublicEnvReady) {
-      setAuthenticatedUserId(null)
-      return
+    let active = true
+    setIdentity({ location, userId: null })
+    if (explicitDemo || !firebasePublicEnvReady) return () => { active = false }
+    try {
+      const unsubscribe = onAuthStateChanged(getAuth(app), user => {
+        if (active) setIdentity({ location, userId: user?.uid ?? null })
+      }, () => {
+        if (active) setIdentity({ location, userId: null })
+      })
+      return () => { active = false; unsubscribe() }
+    } catch {
+      if (active) setIdentity({ location, userId: null })
+      return () => { active = false }
     }
-    return onAuthStateChanged(getAuth(app), (user) => {
-      setAuthenticatedUserId(user?.uid ?? null)
-    })
-  }, [])
+  }, [location, explicitDemo])
 
   useEffect(() => {
     const captureRouteIdentity = (event: MouseEvent) => {
