@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { deflateSync } from 'node:zlib'
 import test from 'node:test'
 import { inspectSpatialScenePixels, assertVisibleSpatialScene } from './spatial-png-scene-proof.mjs'
+import { pngCrc32 } from '../scripts/visual-png-integrity.mjs'
 
 // Synthetic RGB fixtures contain no private media. Historic founder screenshots
 // are inspected separately and are NOT copied into the original repository.
@@ -25,6 +26,7 @@ function fixturePng(width, height, predicate = () => false, channels = 3) {
     out.writeUInt32BE(data.length, 0)
     out.write(type, 4, 4, 'ascii')
     data.copy(out, 8)
+    out.writeUInt32BE(pngCrc32(out.subarray(4, out.length - 4)), out.length - 4)
     return out
   }
   return Buffer.concat([
@@ -51,5 +53,19 @@ test('malformed images cannot be visually accepted', () => {
   assert.throws(() => inspectSpatialScenePixels(Buffer.alloc(100)), /URAI_VISUAL_PROOF_INVALID_PNG_SIGNATURE/)
   const png = fixturePng(160, 120)
   png[24] = 16
+  png.writeUInt32BE(pngCrc32(png.subarray(12, 29)), 29)
   assert.throws(() => inspectSpatialScenePixels(png), /URAI_VISUAL_PROOF_UNSUPPORTED_PNG_FORMAT/)
+})
+
+
+test('bad screenshot chunk CRC must not qualify as visual evidence', () => {
+  const png = fixturePng(160, 120, (x, y) => x >= 60 && x < 80 && y >= 40 && y < 60)
+  const damaged = Buffer.from(png)
+  damaged[damaged.length - 1] ^= 1 // corrupt the IEND chunk CRC only
+  assert.throws(() => inspectSpatialScenePixels(damaged), /URAI_VISUAL_PROOF_PNG_CRC_INVALID/)
+})
+
+test('appended bytes after IEND must not qualify as visual evidence', () => {
+  const png = fixturePng(160, 120, (x, y) => x >= 60 && x < 80 && y >= 40 && y < 60)
+  assert.throws(() => inspectSpatialScenePixels(Buffer.concat([png, Buffer.from('unexpected tail')])), /URAI_VISUAL_PROOF_INVALID_IEND/)
 })
