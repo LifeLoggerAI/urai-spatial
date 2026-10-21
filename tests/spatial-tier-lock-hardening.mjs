@@ -5,6 +5,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 import { allocateEphemeralPort, waitForOwnedHome, warmOwnedLifeMap } from './spatial-owned-server.mjs';
+import { assertVisibleSpatialScene } from './spatial-png-scene-proof.mjs';
 
 // The browser harness lives at the repo root, but Playwright is owned by the
 // urai-tier1 workspace. Resolve its public entrypoint from that workspace so
@@ -100,9 +101,14 @@ async function expectText(locator, text, timeout = 6000) {
   throw new Error(`Expected text ${text}, received ${body}`);
 }
 
-async function screenshot(page, report, name) {
+async function screenshot(page, report, name, { requireVisibleSpatialField = false } = {}) {
   const path = `${ARTIFACT_DIR}/${name}.png`;
-  await page.screenshot({ path, fullPage: true });
+  const screenshotBytes = await page.screenshot({ path, fullPage: true });
+  if (requireVisibleSpatialField) {
+    const pixels = assertVisibleSpatialScene(screenshotBytes);
+    report.checks.push({ name: 'Captured Life Map has actual visible scene pixels, not UI-only black', status: 'passed',
+      brightPixelFraction: pixels.brightFraction });
+  }
   report.screenshots.push(path);
 }
 
@@ -366,8 +372,9 @@ async function runVisual(page, stage, report) {
   await expectVisible(page.getByTestId('urai-persistent-world-shell'), 'current Home', 30000);
   await expectAttr(page.getByTestId('home-visible-navigable-sanctuary-world'), 'data-home-assets-ready', 'true', 60000);
   await screenshot(page, report, 'real-home-desktop');
-  await openDisclosedLifeMap(page);
-  await screenshot(page, report, 'real-lifemap-desktop');
+  const lifeMapWorld = await openDisclosedLifeMap(page);
+  await expectAttr(lifeMapWorld, 'data-life-map-render-ready', 'true', 90000);
+  await screenshot(page, report, 'real-lifemap-desktop', { requireVisibleSpatialField: true });
   await enterDemoFocus(page);
   await expectAttr(page.getByTestId('urai-final-focus-chamber'), 'data-focus-input-ready', 'true', 60000);
   await screenshot(page, report, 'real-focus-desktop');
@@ -378,8 +385,10 @@ async function runVisual(page, stage, report) {
   await screenshot(page, report, 'real-replay-desktop');
   await page.setViewportSize({ width: 390, height: 844 });
   await visitCanonicalRoute(page, '/life-map?demo=1&overview=1');
-  await expectAttr(page.getByTestId('urai-true-3d-life-map'), 'data-life-map-source', 'explicit-demo', 40000);
-  await screenshot(page, report, 'real-life-map-mobile');
+  const mobileLifeMap = page.getByTestId('urai-true-3d-life-map');
+  await expectAttr(mobileLifeMap, 'data-life-map-source', 'explicit-demo', 40000);
+  await expectAttr(mobileLifeMap, 'data-life-map-render-ready', 'true', 90000);
+  await screenshot(page, report, 'real-life-map-mobile', { requireVisibleSpatialField: true });
   await visitCanonicalRoute(page, '/mirror');
   await expectVisible(page.getByTestId('mirror-bare-entry'), 'real Mirror disclosure', 30000);
   await screenshot(page, report, 'real-mirror-mobile');
