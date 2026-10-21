@@ -43,3 +43,39 @@ export function assertPreparedPrivateMediaFirstUpload(
     .update(uid + '\n' + memoryId + '\n' + digest).digest('hex').slice(0, 40)
   if (operationId !== expected) throw new Error('FIRST_PRIVATE_MEDIA_BINDING_INVALID')
 }
+
+
+/**
+ * A ready private audio receipt is NOT permission to play an initially hidden
+ * first-life recording. Reads must prove the subsequent owner-confirmed
+ * activation, bound to the exact source, media receipt and current C1 epoch.
+ * This guard is used by both playback descriptor and byte-stream authorities.
+ */
+export function assertFirstPrivateMemoryPlaybackBinding(
+  memory: unknown, uid: string, memoryId: string, receiptId: string,
+  currentConsentRevision: number, currentConsentReceiptHash: string,
+): void {
+  const selected = asRow(memory)
+  if (selected.privacy === 'hidden') throw new Error('FIRST_PRIVATE_MEMORY_REPLAY_NOT_ACTIVATED')
+  const source = asRow(selected.sourceProvenance)
+  const prepared = Object.hasOwn(source, 'derivativeSha256')
+    || source.authenticity === 'source-derivative-not-generated-autobiography'
+  if (!prepared) return
+  const activation = asRow(selected.firstPrivateMemoryActivation)
+  if (selected.privacy !== 'private'
+    || source.authenticity !== 'source-derivative-not-generated-autobiography'
+    || !SHA256.test(String(source.derivativeSha256))
+    || typeof uid !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(uid)
+    || typeof memoryId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(memoryId)
+    || !SHA256.test(receiptId)
+    || !Number.isSafeInteger(currentConsentRevision) || currentConsentRevision < 1
+    || !SHA256.test(currentConsentReceiptHash)
+    || activation.status !== 'explicit-owner-private-replay'
+    || activation.ownerId !== uid || activation.memoryId !== memoryId
+    || activation.mediaReceiptId !== receiptId
+    || activation.derivativeSha256 !== source.derivativeSha256
+    || activation.consentRevision !== currentConsentRevision
+    || activation.consentReceiptHash !== currentConsentReceiptHash) {
+    throw new Error('FIRST_PRIVATE_MEMORY_REPLAY_NOT_ACTIVATED')
+  }
+}
