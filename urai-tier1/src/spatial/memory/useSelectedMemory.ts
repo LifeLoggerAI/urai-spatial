@@ -100,7 +100,9 @@ export function useSelectedMemory(): SelectedMemoryResult {
       if (cancelled) return
       detachActor()
       const ownerEpoch = actorEpoch
-      const isCurrentOwner = () => !cancelled && actorEpoch === ownerEpoch
+      // An auth callback or Firestore listener may lag a Firebase User-object
+      // replacement, including a fresh session under the same UID.
+      const isCurrentOwner = () => !cancelled && actorEpoch === ownerEpoch && auth.currentUser === user
       if (!user) {
         setResult({ status: 'unauthorized', memory: null, message: 'Sign in to open this private memory.' })
         return
