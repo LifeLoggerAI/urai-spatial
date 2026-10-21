@@ -111,3 +111,38 @@ test('private packet rejects missing memory or upload before creating output dir
     }
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
+test('first private packet preserves immutable source hashes and protected disk permissions', async () => {
+  const { dir, originalPath, sourcePath, options } = fixture()
+  const { readFileSync, statSync, rmSync } = await import('node:fs')
+  const { createHash } = await import('node:crypto')
+  try {
+    const originalBefore = readFileSync(originalPath)
+    const derivativeBefore = readFileSync(sourcePath)
+    const hash = bytes => createHash('sha256').update(bytes).digest('hex')
+    const packet = await prepareFirstPrivateMemory(options)
+    assert.equal(packet.recordedTruth.originalSha256, hash(originalBefore))
+    assert.equal(packet.recordedTruth.derivativeSha256, hash(derivativeBefore))
+    assert.equal(packet.memory.sourceProvenance.originalSha256, hash(originalBefore))
+    assert.equal(packet.memory.sourceProvenance.derivativeSha256, hash(derivativeBefore))
+    assert.equal(packet.upload.sha256, hash(derivativeBefore))
+    assert.equal(packet.upload.filePathNotEmbedded, true)
+    assert.equal(packet.upload.base64NotEmbedded, true)
+    assert.deepEqual(readFileSync(originalPath), originalBefore)
+    assert.deepEqual(readFileSync(sourcePath), derivativeBefore)
+    const output = join(dir, 'private-export')
+    privatePacketWrite(packet, output)
+    const memoryFile = join(output, 'memory.private.json')
+    const handoffFile = join(output, 'handoff.private.json')
+    if (process.platform !== 'win32') {
+      assert.equal(statSync(output).mode & 0o777, 0o700)
+      assert.equal(statSync(memoryFile).mode & 0o777, 0o600)
+      assert.equal(statSync(handoffFile).mode & 0o777, 0o600)
+    }
+    const persisted = JSON.parse(readFileSync(handoffFile, 'utf8'))
+    assert.equal(persisted.status, 'PREPARED_NOT_IMPORTED_NOT_PLAYBACK_PROVEN')
+    assert.equal(persisted.upload.sha256, hash(derivativeBefore))
+    assert.equal(persisted.memory.privacy, 'hidden')
+    assert.ok(!JSON.stringify(persisted).includes(sourcePath))
+    assert.ok(!JSON.stringify(persisted).includes(originalPath))
+  } finally { rmSync(dir, {recursive:true,force:true}) }
+})
