@@ -239,3 +239,34 @@ for (const kind of ['mp4', 'timeline']) {
     })
   }
 }
+
+test('HTTP 403 cannot masquerade as an authorized playable private movie', async () => {
+  const response = new Response(Uint8Array.of(65, 66, 67), {
+    status: 403, headers: { 'content-type': 'video/mp4' },
+  })
+  await assert.rejects(readBoundedPrivateMovieBlob(response, {
+    kind: 'mp4', expectedBytes: 3, ...token(),
+  }), /private_movie_delivery_unavailable/)
+})
+
+test('HTTP 403 cannot masquerade as an authorized private timeline', async () => {
+  const response = new Response('{"private":"denied"}', {
+    status: 403, headers: { 'content-type': 'application/json' },
+  })
+  await assert.rejects(timelineReader(response, token()), /private_timeline_size_invalid/)
+})
+
+for (const kind of ['mp4', 'timeline']) {
+  test('non-success ' + kind + ' response cancels unread private bytes', async () => {
+    let canceled = false
+    const body = new ReadableStream({ cancel() { canceled = true } }, { highWaterMark: 0 })
+    const response = new Response(body, { status: 401 })
+    const request = kind === 'mp4'
+      ? readBoundedPrivateMovieBlob(response, { kind: 'mp4', expectedBytes: 1, ...token() })
+      : timelineReader(response, token())
+    await assert.rejects(request, kind === 'mp4'
+      ? /private_movie_delivery_unavailable/
+      : /private_timeline_size_invalid/)
+    assert.equal(canceled, true, 'denied private bytes must be canceled at the source')
+  })
+}
