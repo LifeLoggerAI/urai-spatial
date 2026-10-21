@@ -1,0 +1,136 @@
+'use strict'
+// Synthetic-only real Firebase emulator proof; no production or private family data.
+const assert = require('node:assert/strict')
+const crypto = require('node:crypto')
+const admin = require('firebase-admin')
+const PROJECT = 'demo-urai-first-memory'
+const AUTH = '127.0.0.1:9099'
+const FUNCTIONS = 'http://127.0.0.1:5001/' + PROJECT + '/us-central1'
+assert.equal(process.env.GCLOUD_PROJECT, PROJECT, 'Only the fictional test project is permitted')
+assert.equal(process.env.FIRESTORE_EMULATOR_HOST, '127.0.0.1:8080', 'Actual local Firestore required')
+assert.equal(process.env.FIREBASE_AUTH_EMULATOR_HOST, AUTH, 'Actual local Auth required')
+assert.equal(process.env.GOOGLE_APPLICATION_CREDENTIALS, undefined, 'No cloud credentials')
+const app = admin.initializeApp({ projectId: PROJECT })
+const db = admin.firestore(app)
+const sha = value => crypto.createHash('sha256').update(value).digest('hex')
+const cases = []
+const pathFor = (uid, id) => 'users/' + uid + '/memories/' + id
+async function signup(label) {
+  const response = await fetch('http://' + AUTH + '/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fictional-emulator-key', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: label + '-' + crypto.randomBytes(8).toString('hex') + '@example.invalid',
+      password: 'Fictional_Emulator_Only_2026!', returnSecureToken: true }), signal: AbortSignal.timeout(15000),
+  })
+  const data = await response.json()
+  assert.equal(response.status, 200, JSON.stringify(data))
+  assert.ok(data.localId && data.idToken)
+  return data
+}
+function policy(uid) {
+  const domain = { mode: 'granted', retentionDays: 365, precise: false, replayVisible: false,
+    lifeMapVisible: false, modelContext: false, sharingEnabled: false, automationEnabled: false, likenessEnabled: false }
+  return { version: 2, revision: 4, ownerId: uid,
+    domains: Object.fromEntries(['memory', 'location', 'models', 'exports', 'workforce', 'identity'].map(k => [k, { ...domain }])),
+    enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } }
+}
+async function seed(uid) {
+  await db.doc('users/' + uid).set({ deleted: false, accountStatus: 'active' })
+  await db.doc('users/' + uid + '/privacyPolicy/current').set(policy(uid))
+  await db.doc('consentRecords/' + uid + '_memory_storage').set({ uid, purpose: 'memory.storage',
+    consentTier: 'C1', policyVersion: '1.0.0', status: 'granted',
+    receiptHash: 'a'.repeat(64), expiresAt: new Date(Date.now() + 3600000).toISOString() })
+}
+function packet(uid, id) {
+  const originalSha256 = 'c'.repeat(64), derivativeSha256 = 'b'.repeat(64)
+  const provenance = { originalSourceRef: 'offline:fictional-' + id, originalSha256, derivativeSha256,
+    originalByteLength: 8000, derivativeByteLength: 112, derivedContentType: 'audio/ogg',
+    occurredAtBasis: 'archive-time-proxy-not-capture-date', speakerDiarization: 'not-verified',
+    transcriptSync: 'not-verified', authenticity: 'source-derivative-not-generated-autobiography' }
+  const memory = { ownerId: uid, title: 'Synthetic emulator recording',
+    occurredAt: '2026-10-21T00:00:00.000Z', summary: 'Fictional source metadata for isolated emulator proof.',
+    emotionalState: 'unknown', emotionalArc: [], people: [], privacy: 'hidden', deleted: false,
+    sourceMedia: [], sourceProvenance: provenance,
+    replayManifest: { id: 'source-' + id, version: 1, durationMs: 6000,
+      segments: ['memory', 'emotion', 'pattern', 'return'].map((phase, i) => ({ id: phase, label: 'Synthetic',
+        caption: 'Fictional', narratorLine: 'Fictional', startsAtMs: i * 1500, durationMs: 1500 })) },
+    narrator: { focus: 'source', replay: 'source' },
+    star: { id, position: [0, 0, -6], scale: 0.9, aura: '#8adfff', material: 'glass' },
+    visuals: { sky: '#061526', ground: '#132b2b', fog: 0.35, particles: 0.5,
+      reflection: 0.45, light: '#dffbff', accent: '#8adfff' } }
+  const upload = { requiresExistingServerAuthoredMemory: true, requiredSelectedMemoryConsentState: 'authorized',
+    offlinePreparationGrantsConsent: false, ownerIdentityVerifiedOffline: false, requiredOwnerAuthFreshnessSeconds: 300,
+    requiredCanonicalConsent: 'memory.granted + C1 memory.storage + fully-enforced + no deletion fences',
+    initialVisibility: 'hidden', existingCallable: 'registerMemoryMedia',
+    existingAuthorityCallable: 'getMemoryMediaUploadAuthority',
+    request: { memoryId: id, operationId: 'firstlife_' + sha(uid + '\n' + id + '\n' + derivativeSha256).slice(0, 40),
+      kind: 'audio', contentType: 'audio/ogg' },
+    fileByteLength: 112, sha256: derivativeSha256, filePathNotEmbedded: true, base64NotEmbedded: true,
+    activateAfter: 'ready owner-scoped receipt, actual playback and current consent checks' }
+  return { schemaVersion: 'urai-first-private-memory-preflight-v1',
+    status: 'PREPARED_NOT_IMPORTED_NOT_PLAYBACK_PROVEN', firestorePath: pathFor(uid, id),
+    memory, upload, recordedTruth: { originalSha256, derivativeSha256, contentType: 'audio/ogg',
+      byteLength: 112, originalByteLength: 8000, occurredAtBasis: provenance.occurredAtBasis,
+      claimedReconstruction: false, claimedLifeMovieAcceptance: false } }
+}
+function confirmed(p) {
+  return { packet: p, ownerConfirmation: { authorize: true, memoryId: p.upload.request.memoryId,
+    derivativeSha256: p.upload.sha256, visibility: 'hidden' } }
+}
+async function call(data, token) {
+  const response = await fetch(FUNCTIONS + '/createFirstPrivateMemory', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    body: JSON.stringify({ data }), signal: AbortSignal.timeout(30000),
+  })
+  return { status: response.status, body: await response.json() }
+}
+function denied(outcome, status, label) {
+  assert.ok(outcome.status >= 400, label + ': unexpected HTTP ' + outcome.status)
+  assert.equal(outcome.body.error?.status, status, label + ': ' + JSON.stringify(outcome.body))
+  cases.push(label)
+}
+async function main() {
+  const owner = await signup('rfinal48-owner'), foreign = await signup('rfinal48-foreign')
+  const uid = owner.localId
+  try {
+    await seed(uid)
+    const first = packet(uid, 'syntheticFirstPrivateMemory')
+    denied(await call(confirmed(first), null), 'UNAUTHENTICATED', 'anonymous rejected by real callable')
+    denied(await call(confirmed(first), foreign.idToken), 'FAILED_PRECONDITION', 'foreign owner token rejected')
+    const missing = confirmed(first); missing.ownerConfirmation.authorize = false
+    denied(await call(missing, owner.idToken), 'FAILED_PRECONDITION', 'separate owner confirmation required')
+    assert.equal((await db.doc(pathFor(uid, 'syntheticFirstPrivateMemory')).get()).exists, false)
+    const created = await call(confirmed(first), owner.idToken)
+    assert.equal(created.status, 200, JSON.stringify(created.body))
+    assert.deepEqual(created.body.result, { memoryId: 'syntheticFirstPrivateMemory', ownerId: uid,
+      visibility: 'hidden', state: 'created-without-media' })
+    const snapshot = await db.doc(pathFor(uid, 'syntheticFirstPrivateMemory')).get()
+    assert.equal(snapshot.exists, true)
+    const data = snapshot.data()
+    assert.equal(data.ownerId, uid)
+    assert.equal(data.privacy, 'hidden')
+    assert.equal(data.sourceMedia.length, 0)
+    assert.equal(data.firstPrivateMemoryConsent.canonicalConsentReceiptHash, 'a'.repeat(64))
+    assert.ok(data.createdAt instanceof admin.firestore.Timestamp, 'Actual committed server timestamp required')
+    cases.push('real Firestore transaction committed hidden owner-scoped memory')
+    denied(await call(confirmed(first), owner.idToken), 'FAILED_PRECONDITION', 'duplicate create refused')
+    assert.equal((await db.doc(pathFor(uid, 'syntheticFirstPrivateMemory')).get()).get('sourceProvenance.originalSha256'), 'c'.repeat(64))
+    await db.doc('consentRecords/' + uid + '_memory_storage').update({ status: 'revoked' })
+    denied(await call(confirmed(packet(uid, 'syntheticAfterRevoke')), owner.idToken), 'FAILED_PRECONDITION', 'revoked C1 denied')
+    assert.equal((await db.doc(pathFor(uid, 'syntheticAfterRevoke')).get()).exists, false)
+    await db.doc('consentRecords/' + uid + '_memory_storage').update({ status: 'granted' })
+    await db.doc('privacyDeletionTombstones/' + uid).set({ uid, active: true })
+    denied(await call(confirmed(packet(uid, 'syntheticWithDeletionFence')), owner.idToken), 'FAILED_PRECONDITION', 'deletion fence denied')
+    assert.equal((await db.doc(pathFor(uid, 'syntheticWithDeletionFence')).get()).exists, false)
+    console.log(JSON.stringify({ schemaVersion: 'urai-rfinal48-first-memory-emulator-v1', outcome: 'PASS',
+      realAuthEmulatorIdTokens: true, realFirestoreTransactions: true, actualCallableEndpoint: true,
+      privateMediaImported: false, productionTested: false, browserPlaybackTested: false, cases }, null, 2))
+  } finally {
+    await db.recursiveDelete(db.doc('users/' + uid)).catch(() => {})
+    await db.doc('consentRecords/' + uid + '_memory_storage').delete().catch(() => {})
+    await db.doc('privacyDeletionTombstones/' + uid).delete().catch(() => {})
+    await admin.auth().deleteUser(uid).catch(() => {})
+    await admin.auth().deleteUser(foreign.localId).catch(() => {})
+    await db.terminate(); await app.delete()
+  }
+}
+main().catch(error => { console.error(error); process.exitCode = 1 })
