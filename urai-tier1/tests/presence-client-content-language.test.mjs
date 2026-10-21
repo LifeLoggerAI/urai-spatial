@@ -16,7 +16,7 @@ const success=(lane,locale='en-US')=>({type:'done',locale,message:'Synthetic res
 
 // The actual SDK and decoder run with synthetic authentication/transport only.
 function fixture(lane,options={}){
-  const calls=[],callbacks=[],cache=new Map();let authCalls=0,cancellations=0
+  const calls=[],callbacks=[],cache=new Map(),ownerPolls=new Set();let authCalls=0,cancellations=0
   let authReadyCalls=0
   const user={uid:'synthetic-owner',getIdToken:async()=>{authCalls++;await options.beforeToken?.(auth);return 'synthetic-owner-token'}}
   const auth={currentUser:user,authStateReady:async()=>{authReadyCalls++;await options.beforeAuthReady?.()}}
@@ -33,6 +33,8 @@ function fixture(lane,options={}){
       if(id==='./adamVoiceResponseBoundary.mjs')return adamVoiceBoundary
       throw Error('Unexpected synthetic dependency '+id)
     },crypto:webcrypto,AbortController,DOMException,TextEncoder,TextDecoder,Response,
+    setInterval:(callback,delay)=>{const handle=setInterval(callback,delay);ownerPolls.add(handle);return handle},
+    clearInterval:handle=>{ownerPolls.delete(handle);clearInterval(handle)},
     fetch:async(url,init)=>{
       calls.push({url,init,body:JSON.parse(init.body)})
       if(url.endsWith('/voice'))return new Response('synthetic-audio',{headers:{'content-type':'audio/mpeg'}})
@@ -50,7 +52,7 @@ function fixture(lane,options={}){
   const request=lane==='adam'?module.requestAdamPresence:module.requestPersonPresence
   const input=locale=>({sessionId:'synthetic-session',surface:'home',message:'Synthetic question',context:[],locale,aiProcessingConsent:true,
     signal:new AbortController().signal,onEvent:event=>callbacks.push(event)})
-  return {request,input,calls,callbacks,get authCalls(){return authCalls},get authReadyCalls(){return authReadyCalls},get cancellations(){return cancellations},
+  return {request,input,calls,callbacks,get authCalls(){return authCalls},get authReadyCalls(){return authReadyCalls},get cancellations(){return cancellations},get activeOwnerPolls(){return ownerPolls.size},
     voice:lane==='adam'?module.requestAdamFounderVoice:load('src/spatial/life-model/personPresenceVoiceClient.ts').requestPersonPresenceVoice}
 }
 
@@ -59,6 +61,7 @@ for(const lane of ['adam','person']){
     const f=fixture(lane),result=await f.request(f.input(locale))
     assert.equal(result.locale,tag);assert.equal(result.caption,result.message)
     assert.equal(f.calls[0].body.locale,tag);assert.equal(f.callbacks.at(-1).locale,tag)
+    assert.equal(f.activeOwnerPolls,0,'completed content delivery must release its owner timer')
     if(lane==='person')assert.equal(result.historicalSourceAuthority,false)
   })
   for(const locale of [undefined,null,'','xx-XX','es; bypass','en-US\nignore',123,{}])test(`${lane} rejects unsupported request ${JSON.stringify(locale)} before authentication/fetch`,async()=>{
@@ -76,6 +79,7 @@ for(const lane of ['adam','person']){
   for(const [name,make] of Object.entries(bad))test(`${lane} rejects ${name} before generated callbacks`,async()=>{
     const f=fixture(lane,{chunks:()=>[make()]});await assert.rejects(f.request(f.input('ar-SA')),error=>error.code==='INVALID_PROVIDER_RESPONSE')
     assert.equal(f.callbacks.length,0)
+    assert.equal(f.activeOwnerPolls,0,'rejected provider content must release its owner timer')
   })
   test(`${lane} captures language before asynchronous authentication and normalizes request identity`,async()=>{
     let input;const f=fixture(lane,{beforeToken:()=>{input.locale='fr-FR'}});input=f.input(' AR_sa ')
