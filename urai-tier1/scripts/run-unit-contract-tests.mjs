@@ -107,6 +107,7 @@ const focusedContractTests = [
   'tests/adam-stalled-owner-change.test.mjs',
   'tests/adam-voice-poll-lifecycle.test.mjs',
   'tests/private-movie-response-boundary.test.mjs',
+  'tests/private-media-stalled-owner-rotation.test.mjs',
   'tests/adam-replay-abort-pending-read.test.mjs',
   'tests/private-movie-reconnect-policy.test.mjs',
   'tests/private-movie-content-length-policy.test.mjs',
