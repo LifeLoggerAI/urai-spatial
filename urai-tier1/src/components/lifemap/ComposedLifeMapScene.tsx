@@ -143,6 +143,11 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   useEffect(() => {
     const canvas = gl.domElement;
     let timer: number | null = null;
+    let frameProofObserver: MutationObserver | null = null;
+    const clearFrameProofObserver = () => {
+      frameProofObserver?.disconnect();
+      frameProofObserver = null;
+    };
     const clearRecoveryTimer = () => {
       if (timer === null) return;
       window.clearTimeout(timer);
@@ -151,6 +156,7 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
     const lost = (event: Event) => {
       event.preventDefault();
       clearRecoveryTimer();
+      clearFrameProofObserver();
       onStateChange("lost");
       timer = window.setTimeout(() => {
         timer = null;
@@ -159,13 +165,27 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
     };
     const restored = () => {
       clearRecoveryTimer();
-      onStateChange("ready");
+      clearFrameProofObserver();
+      // Context restoration is not evidence that the authored galaxy has drawn.
+      // Keep semantic recovery actions available until a new world-frame proof.
+      onStateChange("recovering");
+      const owner = canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+      if (!owner) return;
+      owner.dataset.lifeMapRenderReady = "false";
+      const acceptFreshFrame = () => {
+        if (gl.getContext().isContextLost() || owner.dataset.lifeMapRenderReady !== "true") return;
+        clearFrameProofObserver();
+        onStateChange("ready");
+      };
+      frameProofObserver = new MutationObserver(acceptFreshFrame);
+      frameProofObserver.observe(owner, { attributes: true, attributeFilter: ["data-life-map-render-ready"] });
     };
     canvas.addEventListener("webglcontextlost", lost, false);
     canvas.addEventListener("webglcontextrestored", restored, false);
     onStateChange("ready");
     return () => {
       clearRecoveryTimer();
+      clearFrameProofObserver();
       canvas.removeEventListener("webglcontextlost", lost, false);
       canvas.removeEventListener("webglcontextrestored", restored, false);
     };
