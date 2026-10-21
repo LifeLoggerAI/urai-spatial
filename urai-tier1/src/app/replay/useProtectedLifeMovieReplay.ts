@@ -8,6 +8,7 @@ import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selec
 import { parsePrivateLifeMovieTimeline, selectPrivateLifeMovieSegment, type PrivateLifeMovieTimeline, type PrivateLifeMovieSegment } from './privateLifeMovieSegmentTimeline'
 import { createPrivateMovieReconnectPolicy } from './privateMovieReconnectPolicy'
 import { privateMovieContentLengthAllowed } from './privateMovieContentLengthPolicy'
+import { readBoundedPrivateMovieBlob } from './privateMovieResponseBoundary.mjs'
 
 const PLAN = /^lmp_[A-Za-z0-9_-]{20,64}$/
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
@@ -198,11 +199,10 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
                         result.headers.get('x-urai-private-segment-start-ms') !== String(segment.startMs) ||
                         result.headers.get('x-urai-private-segment-end-ms') !== String(segment.endMs))
                       throw new Error('private_segment_metadata_invalid')
-                    const bytes = await result.arrayBuffer()
-                    if (!inSession() || bytes.byteLength !== length)
-                      throw new Error('private_segment_integrity_invalid')
-                    return { blob: new Blob([bytes], { type:mime }),
-                      playlist:result.headers.get('x-urai-private-playlist-digest') }
+                    const blob = await readBoundedPrivateMovieBlob(result, {
+                      kind, expectedBytes:length, signal:requestController.signal, isCurrent:inSession,
+                    })
+                    return { blob, playlist:result.headers.get('x-urai-private-playlist-digest') }
                   }
                   const video = await getSegment('mp4'), captions = await getSegment('srt')
                   if (!inSession() || !video.playlist || video.playlist !== captions.playlist)
@@ -260,10 +260,10 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
                   !result.headers.get('cache-control')?.includes('no-store') ||
                   !privateMovieContentLengthAllowed(kind,length))
                 throw new Error('private_movie_delivery_unavailable')
-              const bytes = await result.arrayBuffer()
-              if (!currentSession() || bytes.byteLength !== length) throw new Error('private_movie_delivery_changed')
-              return { blob: new Blob([bytes],{type:mime}),
-                playlist:result.headers.get('x-urai-private-playlist-digest') }
+              const blob = await readBoundedPrivateMovieBlob(result, {
+                kind, expectedBytes:length, signal:controller.signal, isCurrent:currentSession,
+              })
+              return { blob, playlist:result.headers.get('x-urai-private-playlist-digest') }
             }
             const video = await retrieve('mp4'), captions = await retrieve('srt')
             if (!currentSession() || !video.playlist || video.playlist !== captions.playlist ||
