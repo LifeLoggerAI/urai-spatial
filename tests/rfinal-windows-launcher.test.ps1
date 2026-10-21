@@ -27,6 +27,12 @@ try {
         foreach($remote in @('https://github.com/LifeLoggerAI/urai-spatial.git','git@github.com:LifeLoggerAI/urai-spatial.git','ssh://git@github.com/LifeLoggerAI/urai-spatial.git')) { Equal (IsOriginalRemote $remote) $true }
         foreach($remote in @('https://github.com/other/urai-spatial.git','https://evil.invalid/LifeLoggerAI/urai-spatial.git','https://github.com/LifeLoggerAI/urai-spatial-extra.git')) { Equal (IsOriginalRemote $remote) $false }
     }
+    Check 'launcher does not borrow recovered checkout object store' {
+        $launcherText = Get-Content -LiteralPath $launcher -Raw
+        if ($launcherText -match "clone','--shared'") { throw 'Shared clone dependency reintroduced' }
+        if ($launcherText -notmatch "isolated-canonical-clone") { throw 'Canonical isolated clone proof missing' }
+        if ($launcherText -notmatch [regex]::Escape($script:CanonicalRemote)) { throw 'Canonical remote clone missing' }
+    }
     Check 'canonical remote without usable HEAD is rejected during source validation' {
         $headless = Join-Path $root 'headless source'
         New-Item -ItemType Directory -Path $headless | Out-Null
