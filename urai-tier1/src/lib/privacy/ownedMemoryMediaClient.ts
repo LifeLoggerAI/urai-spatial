@@ -15,7 +15,7 @@ function stopped(): never { throw new DOMException('File attachment stopped.', '
 
 export async function attachOwnedMemoryFile(memory: Memory, file: FileSource, lifecycle: Lifecycle, suppliedOperationId?: string) {
   const auth = getAuth(app), owner = auth.currentUser
-  if (!firebasePublicEnvReady || !owner || memory.demo || memory.privacy !== 'private' || memory.ownerId !== owner.uid
+  if (!firebasePublicEnvReady || !owner || memory.demo || (memory.privacy !== 'private' && memory.privacy !== 'hidden') || memory.ownerId !== owner.uid
     || !/^[A-Za-z0-9_-]{1,128}$/.test(memory.id)) throw new Error('PRIVATE_MEMORY_REQUIRED')
   if (!Number.isSafeInteger(file.size) || file.size < 1 || file.size > MEMORY_MEDIA_MAX_BYTES || !kinds[file.type]) throw new Error('FILE_TYPE_OR_SIZE_UNSUPPORTED')
   const operationId = suppliedOperationId ?? `memory-media-${crypto.randomUUID()}`
