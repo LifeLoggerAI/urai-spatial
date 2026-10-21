@@ -4,6 +4,7 @@ import vm from 'node:vm'
 import test from 'node:test'
 import { webcrypto } from 'node:crypto'
 import ts from 'typescript'
+import * as adamVoiceBoundary from '../src/spatial/adam/adamVoiceResponseBoundary.mjs'
 import { contentLanguage,contentLanguageProps,URAI_CONTENT_LANGUAGES } from '../../packages/localization/src/contentLanguage.ts'
 
 const root=new URL('../',import.meta.url)
@@ -29,11 +30,12 @@ function fixture(lane,options={}){
       if(id.endsWith('/clientApiUrl'))return {clientApiUrl:path=>path}
       if(id.endsWith('/contentLanguage'))return {contentLanguage,contentLanguageProps}
       if(id.endsWith('/presenceContentStream'))return load('src/lib/i18n/presenceContentStream.ts')
+      if(id==='./adamVoiceResponseBoundary.mjs')return adamVoiceBoundary
       throw Error('Unexpected synthetic dependency '+id)
     },crypto:webcrypto,AbortController,DOMException,TextEncoder,TextDecoder,Response,
     fetch:async(url,init)=>{
       calls.push({url,init,body:JSON.parse(init.body)})
-      if(url.endsWith('/voice'))return new Response('synthetic-audio')
+      if(url.endsWith('/voice'))return new Response('synthetic-audio',{headers:{'content-type':'audio/mpeg'}})
       const locale=calls.at(-1).body.locale;let index=0
       const chunks=options.chunks?.(locale)??[frame({type:'status',status:'streaming',locale})+frame(success(lane,locale))]
       return new Response(new ReadableStream({async pull(controller){
@@ -121,7 +123,8 @@ test('ADAM awaits persisted authentication and refuses a switched actor token be
   resume()
   const answer=await pending
   assert.equal(answer.locale,'en-US')
-  assert.equal(waiting.authReadyCalls,1)
+  // Both actor capture and bearer acquisition await restored authentication.
+  assert.equal(waiting.authReadyCalls,2)
   const switched=fixture('adam',{beforeToken:auth=>{auth.currentUser={uid:'other-owner'}}})
   await assert.rejects(switched.request(switched.input('en')),error=>error.code==='AUTH_REQUIRED')
   assert.equal(switched.calls.length,0)

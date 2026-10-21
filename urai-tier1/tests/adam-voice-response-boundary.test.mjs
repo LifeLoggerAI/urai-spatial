@@ -74,3 +74,25 @@ test('invalid advertised length cancels unread private voice body',async()=>{
   await assert.rejects(readAuthorizedAdamVoice(response,approved()),denies('ADAM_VOICE_LENGTH_INVALID'))
   assert.equal(cancels,1)
 })
+
+for (const result of [undefined, null, 1, 'approved', Promise.resolve(true)]) {
+  test(`authorization must be literal true (${String(result)})`, {timeout:500}, async () => {
+    let cancels = 0
+    const response = new Response(new ReadableStream({cancel(){cancels++}}),
+      {headers:{'content-type':'audio/mpeg'}})
+    await assert.rejects(readAuthorizedAdamVoice(response, {
+      signal:new AbortController().signal, isAuthorized:()=>result,
+    }), denies('ADAM_VOICE_SESSION_CHANGED'))
+    assert.equal(cancels,1)
+  })
+}
+test('throwing authorization denies and cancels unread voice with a redacted error', async () => {
+  let cancels = 0
+  const response = new Response(new ReadableStream({cancel(){cancels++}}),
+    {headers:{'content-type':'audio/mpeg'}})
+  await assert.rejects(readAuthorizedAdamVoice(response, {
+    signal:new AbortController().signal,
+    isAuthorized:()=>{throw new Error('private authorization details')},
+  }), denies('ADAM_VOICE_SESSION_CHANGED'))
+  assert.equal(cancels,1)
+})

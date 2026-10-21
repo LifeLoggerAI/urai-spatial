@@ -218,7 +218,9 @@ test('only excluded historical Windows-invalid names are allowed in the exact Gi
   ]
   const good = auditWindowsSparsePaths([...allowed, ...preserved])
   assert.equal(good.tracked, allowed.length+preserved.length)
-  assert.equal(good.excludedUnsafe, 8)
+  // The .ai-backups and _quarantine directory names themselves are NTFS-safe;
+  // only their invalid descendants contribute to the unsafe-path count.
+  assert.equal(good.excludedUnsafe, 6)
   assert.deepEqual(good.unexpected,[])
   assert.deepEqual(good.collisions,[])
   const rejected = auditWindowsSparsePaths([...preserved,
@@ -308,9 +310,12 @@ test('portable Node authority reaches pnpm grandchildren even when ambient PATH 
     mkdirSync(path.join(root, 'scripts'), { recursive: true })
     mkdirSync(path.join(root, 'node_modules/pnpm/bin'), { recursive: true })
     writeFileSync(path.join(root, 'scripts/run-pnpm.mjs'), readFileSync(new URL('../scripts/run-pnpm.mjs', import.meta.url)))
+    writeFileSync(path.join(root, 'scripts/pnpm-bootstrap-resolver.mjs'), readFileSync(new URL('../scripts/pnpm-bootstrap-resolver.mjs', import.meta.url)))
     // Disclosed CLI boundary fixture; the grandchild is a real Node process,
     // resolved by name exactly as pnpm's Next/tsc shims resolve their runtime.
-    writeFileSync(path.join(root, 'node_modules/pnpm/bin/pnpm.cjs'), `
+    const pinnedBin = path.join(root, 'node_modules/.pnpm/pnpm@10.0.0/node_modules/pnpm/bin')
+    mkdirSync(pinnedBin, { recursive: true })
+    writeFileSync(path.join(pinnedBin, 'pnpm.cjs'), `
       const {spawnSync}=require('node:child_process');
       const result=spawnSync('node',['-p','process.execPath'],{encoding:'utf8'});
       if(result.error)console.error(result.error.code);
@@ -426,7 +431,10 @@ test('R-FINAL visual evidence requires original owned files, not symlinks or ext
   assert.match(source, /isOwnedVisualEvidencePath\(evidenceDir, reportFile\)/)
   assert.match(source, /isOwnedVisualEvidencePath\(evidenceDir, file\)/)
   assert.match(source, /visual_artifact_ownership_tests/)
-  assert.doesNotMatch(source, /!statSync\(file\)\.isFile\(\)/)
+  // This check guards screenshot admission, not unrelated source-file audits.
+  const visualSource = source.slice(source.indexOf('export function verifyVisualBrowserArtifacts('), source.indexOf('\nfunction normalize('))
+  assert.ok(visualSource.length > 0)
+  assert.doesNotMatch(visualSource, /!statSync\(file\)\.isFile\(\)/)
 })
 
 test('portable pnpm bootstrap regression is native-tested before frozen dependency install', () => {

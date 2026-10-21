@@ -29,7 +29,12 @@ export async function readAuthorizedAdamVoice(response, { signal, isAuthorized }
     }
     throw new AdamVoiceResponseError(code)
   }
-  const current = () => !signal.aborted && !authorityLost && isAuthorized()
+  const current = () => {
+    // Authorization is a synchronous boolean contract. A thrown lookup or a
+    // truthy non-boolean (including a Promise) cannot authorize private audio.
+    try { return !signal.aborted && !authorityLost && isAuthorized() === true }
+    catch { return false }
+  }
   if (!current()) deny('ADAM_VOICE_SESSION_CHANGED')
   if (!response.ok || !response.body) deny('ADAM_VOICE_RESPONSE_INVALID')
   const contentType = (response.headers.get('content-type') ?? '').split(';', 1)[0].trim().toLowerCase()
