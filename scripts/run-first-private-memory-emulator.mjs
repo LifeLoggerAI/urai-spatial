@@ -27,7 +27,7 @@ if (process.env.FIREBASE_AUTH_EMULATOR_HOST && process.env.FIREBASE_AUTH_EMULATO
 if (process.env.FIRESTORE_EMULATOR_HOST && process.env.FIRESTORE_EMULATOR_HOST !== '127.0.0.1:8080')
   throw Error('REFUSE_NONLOCAL_FIRESTORE_EMULATOR')
 if (Number(process.versions.node.split('.')[0]) !== 22) throw Error('NODE22_REQUIRED')
-const necessary = ['firebase.json', 'apps/functions/package.json',
+const necessary = ['firebase.json', 'firebase.captured-reality-emulator.json', 'apps/functions/package.json',
   'apps/functions/src/createFirstPrivateMemory.ts',
   'apps/functions/scripts/first-private-memory-emulator-proof.cjs',
   'scripts/run-pnpm.mjs']
@@ -55,7 +55,7 @@ function run(label, args) {
 }
 run('MAINTAINED_FUNCTIONS_BUILD', ['--filter', 'urai-functions', 'build'])
 run('ACTUAL_AUTH_FIRESTORE_FUNCTIONS_EMULATORS', ['exec', 'firebase', 'emulators:exec',
-  '--project', project, '--only', 'auth,firestore,functions',
+  '--project', project, '--config', 'firebase.captured-reality-emulator.json', '--only', 'auth,firestore,functions',
   'node apps/functions/scripts/first-private-memory-emulator-proof.cjs'])
 console.log(JSON.stringify({ ...report, firebaseBackendProofExecuted: true,
   result: 'PASS (synthetic local emulator only)', browserPlaybackVerified: false,
