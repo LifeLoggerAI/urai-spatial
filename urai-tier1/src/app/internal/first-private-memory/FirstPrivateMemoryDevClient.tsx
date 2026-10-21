@@ -17,6 +17,7 @@ export default function FirstPrivateMemoryDevClient() {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('Select fictional handoff JSON and a matching fictional audio derivative.')
   const [receipt, setReceipt] = useState<Receipt | null>(null)
+  const [derivativeSha256, setDerivativeSha256] = useState<string | null>(null)
   const epoch = useRef(0)
   const inFlight = useRef<AbortController | null>(null)
   const invalidate = () => {
