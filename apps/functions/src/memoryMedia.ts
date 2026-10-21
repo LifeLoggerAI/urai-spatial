@@ -444,7 +444,12 @@ function playbackHashes(uid: string, r: MediaReceipt, creationTime: string, expi
 
 async function playbackObject(uid: string, r: MediaReceipt, requireCurrent: () => Promise<unknown>) {
   const bucket = admin.storage().bucket()
-  const [bucketMetadata] = await bucket.getMetadata()
+  // Storage emulator does not attest cloud bucket IAM. Missing/unsupported
+  // metadata stays fail-closed; callers receive a specific evidence error,
+  // never a synthetic success or a bypass of production bucket security.
+  let bucketMetadata: Awaited<ReturnType<typeof bucket.getMetadata>>[0]
+  try { [bucketMetadata] = await bucket.getMetadata() }
+  catch { fail('MEMORY_MEDIA_BUCKET_IAM_UNVERIFIABLE') }
   await requireCurrent()
   if (bucketMetadata.iamConfiguration?.uniformBucketLevelAccess?.enabled !== true
     || bucketMetadata.iamConfiguration?.publicAccessPrevention !== 'enforced') fail('MEMORY_MEDIA_PRIVATE_BUCKET_REQUIRED')
