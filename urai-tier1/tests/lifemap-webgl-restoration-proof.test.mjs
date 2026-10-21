@@ -13,7 +13,7 @@ test('initial mount and restored contexts share a real world-frame acceptance pa
   assert.match(recovery, /const watchForWorldFrame = \(invalidatePreviousProof: boolean\) =>/)
   assert.match(recovery, /onStateChange\("recovering"\)/)
   assert.match(recovery, /const restored = \(\) => watchForWorldFrame\(true\)/)
-  assert.match(recovery, /watchForWorldFrame\(false\)/)
+  assert.match(recovery, /watchForWorldFrame\(true\)/)
   assert.doesNotMatch(recovery, /canvas\.addEventListener\("webglcontextrestored", restored, false\);\s*onStateChange\("ready"\)/)
 })
 
@@ -37,4 +37,9 @@ test('semantic recovery actions remain available without changing owner boundari
   assert.match(scene, /const recovery = webglState !== "ready"/)
   assert.match(scene, /<button onClick=\{overview\}>Open semantic overview<\/button>/)
   assert.match(scene, /<button onClick=\{returnHome\}>Return Home<\/button>/)
+})
+
+test('initial mount invalidates stale inherited world-frame proof', () => {
+  assert.doesNotMatch(recovery, /watchForWorldFrame\\(false\\)/)
+  assert.match(recovery, /watchForWorldFrame\\(true\\)/)
 })
