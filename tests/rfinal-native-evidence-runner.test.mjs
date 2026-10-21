@@ -201,6 +201,10 @@ test('reviewed Windows sparse exclusions preserve real sources, codecs and Home 
 
 test('only excluded historical Windows-invalid names are allowed in the exact Git tree', () => {
   const allowed = [
+    '*audit',
+    'urai-tier1/*audit',
+    '.ai-backups',
+    '_quarantine',
     '*audit/20260402*legacy/backup/page.tsx',
     'urai-tier1/*audit/20260419*legacy/run.log',
     '.ai-backups/20260320*legacy/payload.ts',
@@ -214,7 +218,7 @@ test('only excluded historical Windows-invalid names are allowed in the exact Gi
   ]
   const good = auditWindowsSparsePaths([...allowed, ...preserved])
   assert.equal(good.tracked, allowed.length+preserved.length)
-  assert.equal(good.excludedUnsafe, 4)
+  assert.equal(good.excludedUnsafe, 8)
   assert.deepEqual(good.unexpected,[])
   assert.deepEqual(good.collisions,[])
   const rejected = auditWindowsSparsePaths([...preserved,
