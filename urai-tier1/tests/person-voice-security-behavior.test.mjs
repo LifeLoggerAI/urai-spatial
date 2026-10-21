@@ -20,9 +20,9 @@ function fixture(config={}){
  if(n==='@/lib/i18n/contentLanguage')return {contentLanguage:x=>x==='en-US'?{speechTag:'en-US'}:null}
  if(n==='../adam/adamVoiceResponseBoundary.mjs')return boundary
  throw Error('unknown dependency '+n)
- },fetch:async(...args)=>{calls.push(args);return config.fetch?config.fetch(...args):new Response(Uint8Array.of(1,2),{headers:{'content-type':'audio/mpeg'}})},Response,Blob,Uint8Array,AbortController},{filename:'personPresenceVoiceClient.ts'})
+ },fetch:async(...args)=>{calls.push(args);return config.fetch?config.fetch(...args):new Response(Uint8Array.of(1,2),{headers:{'content-type':'audio/mpeg'}})},Response,Blob,Uint8Array,AbortController,TextDecoder,setInterval,clearInterval},{filename:'personPresenceVoiceClient.ts'})
  const ac=new AbortController()
- return {request:out.requestPersonPresenceVoice,auth,user,calls,ac,input:{sessionId:'synthetic',text:'test',locale:'en-US',externalProcessingConsent:true,signal:ac.signal}}
+ return {request:out.requestPersonPresenceVoice,requestPersonPresenceVoice:out.requestPersonPresenceVoice,auth,user,calls,ac,input:{sessionId:'synthetic',text:'test',locale:'en-US',externalProcessingConsent:true,signal:ac.signal}}
 }
 test('Person voice denies same-UID actor replacement before dispatch',async()=>{
  const gate=deferred(),f=fixture({token:()=>gate.promise}),work=f.request(f.input)
