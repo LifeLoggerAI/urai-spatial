@@ -53,6 +53,7 @@ const tests = [
   'tests/import-first-prepared-memory.test.mjs',
   'tests/first-private-memory-dev-source-contract.test.mjs',
   'tests/first-private-memory-activation-panel.contract.test.mjs',
+  'tests/first-private-memory-playback-endpoint.test.mjs',
   'tests/first-private-memory-selected-consumer.test.mjs',
   'tests/selected-memory-exact-actor-rotation.test.mjs',
   'tests/private-file-integrity.test.mjs',
