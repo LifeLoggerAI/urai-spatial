@@ -89,7 +89,7 @@ async function main() {
   if (!encodedFixture) { for (let i = 0; i < bytes.length; i++) bytes[i] = i % 251; bytes.write('ftyp', 4) }
   let receipt, proof, bucketPrivacyMetadataUnavailable = false
   try {
-    const batch = db.batch(); batch.set(db.doc(userPath), { accountStatus: 'active' }); batch.set(db.doc(memoryPath), { ownerId: uid, privacy: 'private', sourceMedia: [] })
+    const batch = db.batch(); batch.set(db.doc(userPath), { accountStatus: 'active' }); batch.set(db.doc(memoryPath), { ownerId: uid, consentState: 'authorized', privacy: 'private', sourceMedia: [] })
     batch.set(db.doc(policyPath), policy); batch.set(db.doc(consentPath), consent); await batch.commit()
     denied(await call('getMemoryMediaPlaybackAuthority', { memoryId, receiptId: 'c'.repeat(64) }), 'UNAUTHENTICATED', 'anonymous callable')
     const unsigned = await fetch(`${base}/streamMemoryMediaPlayback`, { signal: AbortSignal.timeout(10000) })
