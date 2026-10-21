@@ -336,3 +336,23 @@ for (const kind of ['mp4', 'timeline']) {
     assert.equal(canceled, true, 'silent private response must release its stream')
   })
 }
+
+for (const kind of ['mp4', 'timeline']) {
+  test('empty chunks cannot keep a private ' + kind + ' download alive without progress', async () => {
+    let pulls = 0, canceled = false
+    const response = new Response(new ReadableStream({
+      pull(controller) {
+        if (pulls++ < 20) controller.enqueue(new Uint8Array(0))
+        else { controller.enqueue(Uint8Array.of(65)); controller.close() }
+      },
+      cancel() { canceled = true },
+    }, { highWaterMark: 0 }), { status: 200 })
+    const request = kind === 'mp4'
+      ? readBoundedPrivateMovieBlob(response, { kind: 'mp4', expectedBytes: 1, ...token(), readStallMs: 30 })
+      : timelineReader(response, { ...token(), readStallMs: 30 })
+    await assert.rejects(request, kind === 'mp4'
+      ? /private_movie_delivery_unavailable/
+      : /private_timeline_size_invalid/)
+    assert.equal(canceled, true)
+  })
+}

@@ -65,7 +65,7 @@ export async function readBoundedPrivateMovieBlob(response, { kind, expectedByte
       })
       if (!current()) throw unavailable()
       if (done) break
-      if (!(value instanceof Uint8Array) || value.byteLength > expectedBytes - written)
+      if (!(value instanceof Uint8Array) || value.byteLength === 0 || value.byteLength > expectedBytes - written)
         throw unavailable()
       buffer.set(value, written)
       written += value.byteLength
@@ -143,7 +143,7 @@ export async function readBoundedPrivateMovieTimelineText(response, { signal, is
       })
       if (!current()) throw unavailable()
       if (done) break
-      if (!(value instanceof Uint8Array) || value.byteLength > MAX_TIMELINE_BYTES - written)
+      if (!(value instanceof Uint8Array) || value.byteLength === 0 || value.byteLength > MAX_TIMELINE_BYTES - written)
         throw unavailable()
       scratch.set(value, written)
       written += value.byteLength
