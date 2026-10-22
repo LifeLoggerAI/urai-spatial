@@ -27,7 +27,9 @@ export function FocusEscapeBridge() {
       routeToLifeMap()
     }
 
-    // Focus selection is owned by the current authenticated route, never an\n    // unscoped session manifest or a delayed history rewrite.\n    window.addEventListener('keydown', handleKeyDown, { capture: true })
+    // Focus selection is owned by the current authenticated route, never an
+    // unscoped session manifest or a delayed history rewrite.
+    window.addEventListener('keydown', handleKeyDown, { capture: true })
     document.addEventListener('keydown', handleKeyDown, { capture: true })
     return () => {
       window.removeEventListener('keydown', handleKeyDown, { capture: true })
