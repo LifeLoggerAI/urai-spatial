@@ -14,7 +14,7 @@ type StoredMessage = OrbMessage & { source: 'conversation-not-historical-evidenc
 type StoredContinuity = {
   version: 1
   ownerId: string
-  enabled: true
+  enabled: boolean
   epoch: string
   revision: number
   messages: StoredMessage[]
@@ -49,20 +49,24 @@ function messageList(value: unknown, seed = false): StoredMessage[] {
   })
 }
 function continuityOf(value: unknown, uid: string): StoredContinuity {
-  if (!isRecord(value) || value.version !== 1 || value.ownerId !== uid || value.enabled !== true
+  if (!isRecord(value) || value.version !== 1 || value.ownerId !== uid || typeof value.enabled !== 'boolean'
     || typeof value.epoch !== 'string' || !/^[a-f0-9-]{36}$/.test(value.epoch)
     || !Number.isSafeInteger(value.revision) || Number(value.revision) < 1
     || !Array.isArray(value.recentTurnIds) || value.recentTurnIds.length > 20
     || value.recentTurnIds.some(id => typeof id !== 'string' || !/^[A-Za-z0-9_-]{8,96}$/.test(id))) {
     throw new functions.https.HttpsError('failed-precondition', 'Stored Orb continuity is invalid.')
   }
-  return { version: 1, ownerId: uid, enabled: true, epoch: value.epoch as string,
-    revision: value.revision as number, messages: messageList(value.messages),
+  const messages = messageList(value.messages)
+  if (!value.enabled && (messages.length || value.recentTurnIds.length)) {
+    throw new functions.https.HttpsError('failed-precondition', 'Disabled conversation contains retained content.')
+  }
+  return { version: 1, ownerId: uid, enabled: value.enabled as boolean, epoch: value.epoch as string,
+    revision: value.revision as number, messages,
     recentTurnIds: value.recentTurnIds as string[] }
 }
 function publicState(state: StoredContinuity | null) {
-  return state ? { enabled: true, epoch: state.epoch, revision: state.revision,
-    messages: state.messages.map(({ role, content }) => ({ role, content })) }
+  return state ? { enabled: state.enabled, epoch: state.epoch, revision: state.revision,
+    messages: state.enabled ? state.messages.map(({ role, content }) => ({ role, content })) : [] }
     : { enabled: false, epoch: null, revision: 0, messages: [] as OrbMessage[] }
 }
 function memoryReady(
@@ -106,7 +110,8 @@ export const orbConversationContinuity = functions.https.onCall(async (input, co
   const fenceRef = db.doc('users/' + uid + '/privacyRuntime/exportAuthority')
   const tombstoneRef = db.doc('privacyDeletionTombstones/' + uid)
   const seed = action === 'enable' ? messageList(body.seed ?? [], true) : []
-  const epoch = action === 'enable' || action === 'clear' ? randomUUID() : ''
+  if (action === 'enable' && body.epoch !== null && typeof body.epoch !== 'string') invalid('Previous conversation state is required.')
+  const epoch = ['enable', 'clear', 'disable'].includes(String(action)) ? randomUUID() : ''
   const turnId = action === 'append' ? body.turnId : ''
   if (action === 'append' && (typeof turnId !== 'string' || !/^[A-Za-z0-9_-]{8,96}$/.test(turnId))) {
     invalid('Invalid conversation turn identity.')
@@ -116,11 +121,19 @@ export const orbConversationContinuity = functions.https.onCall(async (input, co
       { role: 'assistant', content: body.assistantMessage }], true)
     : []
   return db.runTransaction(async transaction => {
-    // A disabled owner may delete a prior checkpoint even after memory consent
-    // has been revoked; no read access to the old messages is granted.
+    // Read-before-write fences concurrent saves. A disabled checkpoint retains
+    // only a non-content epoch marker, which rejects a stale cross-device
+    // re-enable until it reads the newest epoch. Private messages are erased.
+    // Disable remains possible even if memory consent was revoked.
     if (action === 'disable') {
-      transaction.delete(ref)
-      return publicState(null)
+      const existing = await transaction.get(ref)
+      const priorRevision = existing.exists && Number.isSafeInteger(existing.get('revision'))
+        ? Math.max(0, Number(existing.get('revision'))) : 0
+      if (priorRevision >= Number.MAX_SAFE_INTEGER) invalid('Conversation revision limit reached.')
+      const disabled: StoredContinuity = { version: 1, ownerId: uid, enabled: false,
+        epoch, revision: priorRevision + 1, messages: [], recentTurnIds: [] }
+      transaction.set(ref, { ...disabled, updatedAt: admin.firestore.FieldValue.serverTimestamp() })
+      return publicState(disabled)
     }
     const [owner, policy, fence, tombstone, existing] = await Promise.all([
       transaction.get(ownerRef), transaction.get(policyRef), transaction.get(fenceRef),
@@ -130,13 +143,15 @@ export const orbConversationContinuity = functions.https.onCall(async (input, co
     const state = existing.exists ? continuityOf(existing.data(), uid) : null
     if (action === 'read') return publicState(state)
     if (action === 'enable') {
-      if (state) return publicState(state)
+      if (state?.enabled) return publicState(state)
+      // An old tab cannot restore messages after another tab disabled them.
+      if ((state?.epoch ?? null) !== (body.epoch ?? null)) denied()
       const created: StoredContinuity = { version: 1, ownerId: uid,
-        enabled: true, epoch, revision: 1, messages: seed, recentTurnIds: [] }
+        enabled: true, epoch, revision: (state?.revision ?? 0) + 1, messages: seed, recentTurnIds: [] }
       transaction.set(ref, { ...created, updatedAt: admin.firestore.FieldValue.serverTimestamp() })
       return publicState(created)
     }
-    if (!state) denied()
+    if (!state || !state.enabled) denied()
     if (action === 'clear') {
       const cleared: StoredContinuity = { ...state, epoch, revision: state.revision + 1,
         messages: [], recentTurnIds: [] }

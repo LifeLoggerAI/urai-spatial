@@ -5,7 +5,7 @@ import type { OrbConversationMessage } from './openaiClient'
 
 export type OrbContinuityInput =
   | { action: 'read' | 'disable' | 'clear' }
-  | { action: 'enable'; seed: OrbConversationMessage[] }
+  | { action: 'enable'; seed: OrbConversationMessage[]; epoch: string | null }
   | { action: 'append'; epoch: string; turnId: string; userMessage: string; assistantMessage: string }
 export type OrbContinuityState = {
   enabled: boolean
@@ -19,8 +19,8 @@ function cleanState(value: unknown): OrbContinuityState {
   const object = value as Record<string, unknown>
   if (typeof object.enabled !== 'boolean' || !Number.isSafeInteger(object.revision)
     || !Array.isArray(object.messages) || object.messages.length > 20
-    || (object.enabled && (typeof object.epoch !== 'string' || !/^[a-f0-9-]{36}$/.test(object.epoch)))
-    || (!object.enabled && object.epoch !== null)) throw new Error('Invalid Orb continuity response.')
+    || (object.epoch !== null && (typeof object.epoch !== 'string' || !/^[a-f0-9-]{36}$/.test(object.epoch)))
+    || (object.enabled && typeof object.epoch !== 'string')) throw new Error('Invalid Orb continuity response.')
   const messages = object.messages.map((item: unknown) => {
     if (!item || typeof item !== 'object') throw new Error('Invalid saved Orb message.')
     const message = item as Record<string, unknown>
@@ -30,7 +30,8 @@ function cleanState(value: unknown): OrbContinuityState {
     }
     return { role: message.role as 'user' | 'assistant', content: message.content }
   })
-  return { enabled: object.enabled, epoch: object.enabled ? object.epoch as string : null,
+  if (!object.enabled && messages.length) throw new Error('Disabled conversation still contains messages.')
+  return { enabled: object.enabled, epoch: typeof object.epoch === 'string' ? object.epoch : null,
     revision: object.revision as number, messages }
 }
 

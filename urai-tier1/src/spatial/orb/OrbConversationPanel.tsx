@@ -39,6 +39,7 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
   const [continuity, setContinuity] = useState<OrbContinuityState | null>(null)
   const [continuityBusy, setContinuityBusy] = useState(false)
+  const [continuityHydrating, setContinuityHydrating] = useState(Boolean(actor.uid))
   const continuityRef = useRef<OrbContinuityState | null>(null)
   const continuityPending = useRef<Promise<unknown>>(Promise.resolve())
   const [result, setResult] = useState<OrbProviderResult | null>(null)
@@ -66,15 +67,20 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
       if (saved.enabled) setHistory(saved.messages)
     }).catch(() => {
       if (!cancelled && isCurrentAIActorSnapshot(actor)) setStatus('Private conversation continuity is unavailable; this chat remains temporary.')
+    }).finally(() => {
+      if (!cancelled && isCurrentAIActorSnapshot(actor)) setContinuityHydrating(false)
     })
     return () => { cancelled = true; continuityRef.current = null }
   }, [actor])
 
   const changeContinuity = async (action: 'enable' | 'disable' | 'clear') => {
-    if (!isCurrentAIActorSnapshot(actor) || continuityBusy) return
+    if (!isCurrentAIActorSnapshot(actor) || continuityBusy || continuityHydrating || busy) return
     setContinuityBusy(true)
     try {
-      const input = action === 'enable' ? { action: 'enable' as const, seed: history.slice(-20) } : { action }
+      // Clear/disable must not be overtaken by a completed in-flight save.
+      await continuityPending.current.catch(() => undefined)
+      if (!isCurrentAIActorSnapshot(actor)) return
+      const input = action === 'enable' ? { action: 'enable' as const, seed: history.slice(-20), epoch: continuityRef.current?.epoch ?? null } : { action }
       const saved = await requestOrbContinuity(actor, input)
       if (!saved) return
       continuityRef.current = saved
@@ -226,7 +232,7 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
     event.preventDefault()
     if (!isCurrentAIActorSnapshot(actor)) return
     const trimmed = message.trim()
-    if (!trimmed || busy || !active) return
+    if (!trimmed || busy || !active || continuityBusy || continuityHydrating) return
     if (!aiConsent) {
       setStatus('Turn on OpenAI processing consent before sending.')
       publishConversationState('privacy', 1800)
@@ -386,11 +392,11 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
             Allow Orb replies and narrator lines to use the configured natural external voice provider this session.
           </label>
           <div className={styles.actions}>
-            <button type="button" disabled={!actor.uid || continuityBusy || busy} onClick={() => void changeContinuity(continuity?.enabled ? 'disable' : 'enable')}>
-              {continuity?.enabled ? 'Stop remembering Orb conversations' : 'Remember Orb conversations across devices'}
+            <button type="button" disabled={!actor.uid || continuityBusy || continuityHydrating || busy} onClick={() => void changeContinuity(continuity?.enabled ? 'disable' : 'enable')}>
+              {continuity?.enabled ? 'Turn off remembering and delete saved Orb messages' : 'Remember Orb conversations across devices'}
             </button>
-            {continuity?.enabled ? <button type="button" disabled={continuityBusy || busy} onClick={() => void changeContinuity('clear')}>Clear saved Orb conversation</button> : null}
-            <button type="submit" disabled={busy || !message.trim() || !aiConsent}>Send</button>
+            {continuity?.enabled ? <button type="button" disabled={continuityBusy || continuityHydrating || busy} onClick={() => void changeContinuity('clear')}>Clear saved Orb conversation</button> : null}
+            <button type="submit" disabled={busy || continuityBusy || continuityHydrating || !message.trim() || !aiConsent}>Send</button>
             <button type="button" disabled={!busy && !voicePlaying} onClick={stop}>Stop</button>
             <button
               type="button"
@@ -422,6 +428,12 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
         <p className={styles.status} role="status" aria-live="polite" aria-atomic="true">
           {status}
         </p>
+        {continuity?.enabled && history.length > 0 ? (
+          <section className={styles.response} aria-label="Saved Orb conversation">
+            <p>Recent saved conversation (not verified historical evidence)</p>
+            <ol>{history.map((item, index) => <li key={index}><strong>{item.role === 'assistant' ? 'Orb' : 'You'}:</strong> {item.content}</li>)}</ol>
+          </section>
+        ) : null}
         {streamedText ? (
           <section className={styles.response} aria-label="Orb response">
             <p {...contentLanguageProps(responseLocale)} style={{ textAlign: 'start', overflowWrap: 'anywhere' }}>{streamedText}</p>

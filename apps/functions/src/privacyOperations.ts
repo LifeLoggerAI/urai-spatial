@@ -1416,6 +1416,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'transitionStates',
     'bodyBiometricSnapshots',
     'orbCompanionEvents',
+    'orbConversationContinuity',
     'spatialAnchors',
     'userSpatialPreferences',
     'spatialSessions',
