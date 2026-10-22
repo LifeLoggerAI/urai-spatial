@@ -16,10 +16,21 @@ function visibleInSceneHierarchy(object) {
   return true
 }
 
+// Three.js can retain meshes that are intentionally unrenderable. Their
+// existence must never certify a visible Home study. This remains scene-graph
+// evidence, not a substitute for an actual browser frame or human review.
+function renderableMaterial(value) {
+  const items = Array.isArray(value) ? value : [value]
+  return items.some(material => material && typeof material === 'object'
+    && material.visible !== false && material.colorWrite !== false
+    && material.opacity !== 0)
+}
+
 export function inspectHomeVisualStudyScene(scene, { goldenHour, groundCover, qualityTier }) {
   const skyGroup = scene.getObjectByName('home-golden-hour-sky')
   const skyMeshCount = Array.isArray(skyGroup?.children)
-    ? skyGroup.children.filter((child) => child.isMesh === true && !!child.geometry && visibleInSceneHierarchy(child)).length
+    ? skyGroup.children.filter((child) => child.isMesh === true && !!child.geometry
+      && renderableMaterial(child.material) && visibleInSceneHierarchy(child)).length
     : 0
   const skyReady = !goldenHour || (visibleInSceneHierarchy(skyGroup) && skyMeshCount > 0)
 
@@ -27,9 +38,7 @@ export function inspectHomeVisualStudyScene(scene, { goldenHour, groundCover, qu
   const coverInstances = cover?.isInstancedMesh === true ? cover.count : 0
   const coverVertices = cover?.geometry?.getAttribute?.('position')?.count ?? 0
   const coverMaterial = cover?.material
-  const coverMaterialReady = Array.isArray(coverMaterial)
-    ? coverMaterial.some(Boolean)
-    : Boolean(coverMaterial)
+  const coverMaterialReady = renderableMaterial(coverMaterial)
   const expected = HOME_GROUND_COVER_INSTANCE_BUDGET[qualityTier] ?? 0
   const coverReady = !groundCover || (visibleInSceneHierarchy(cover) && expected > 0 && coverInstances === expected && coverVertices > 0 && coverMaterialReady)
 
