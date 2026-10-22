@@ -135,7 +135,9 @@ export function destinationSurfaceReady(destination: UraiWorldTravelRequest['des
     if (mountedId !== expectedId) return false
     const requestedManifest = params.get('manifestId')
     const mountedManifest = surface.getAttribute('data-manifest-id')
-    return !requestedManifest || !mountedManifest || requestedManifest === mountedManifest
+    // A selected private-memory surface must expose the requested manifest.
+    // Neutral loading or denied states return above, before this guard.
+    return !requestedManifest || requestedManifest === mountedManifest
   }
   if (destination === 'focus') return selectedMemorySurfaceMatchesRoute(document.querySelector('[data-testid="urai-final-focus-chamber"]'))
   if (destination === 'life-map') return Boolean(
