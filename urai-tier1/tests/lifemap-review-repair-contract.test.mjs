@@ -12,7 +12,7 @@ test('selected camera goals use the rendered selected-stage transform', () => {
   assert.match(scene, /new THREE\.Vector3\(1\.12, 1\.12, 1\.08\)/)
   assert.match(scene, /new THREE\.Vector3\(0, -0\.08, 0\.9\)/)
   assert.match(scene, /new THREE\.Vector3\(0, -0\.16, 0\.62\)/)
-  assert.match(scene, /goalForNode\(selected, phase, portrait\)/)
+  assert.match(scene, /goalForNode\(selected, phase, portrait, departureOrigin\.current \?\? undefined\)/)
   assert.doesNotMatch(scene, /goalForNode\(selected, phase\)/)
 })
 
