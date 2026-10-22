@@ -75,6 +75,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - name: Install exact dependencies
+        id: deps
         shell: bash
         run: |
           set -euo pipefail
@@ -89,6 +90,9 @@ jobs:
           pnpm --dir urai-tier1 exec node --import tsx --test tests/import-first-prepared-memory.test.mjs 2>&1 | tee "$RUNNER_TEMP/urai-first-memory/importer-test.tap"
           pnpm --filter urai-functions test 2>&1 | tee "$RUNNER_TEMP/urai-first-memory/functions-test.tap"
       - name: Run local real Auth Firestore Functions emulator
+        # Preserve the independent Firebase receipt even if a maintained test fails.
+        # Neither failure is waived; the failing test step keeps the job red.
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
