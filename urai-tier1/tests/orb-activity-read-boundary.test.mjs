@@ -8,8 +8,8 @@ const panel = fs.readFileSync(new URL('src/spatial/orb/OrbConversationPanel.tsx'
 
 test('activity requires a deliberate owner-bound read without silent model context injection', () => {
   assert.match(panel, /Review my recent UrAi activity/)
-  assert.match(panel, /onClick=\\{\\(\\) => void showActivity\\(\\)\\}/)
-  assert.match(client, /isCurrentAIActorSnapshot\\(actor\\)/)
+  assert.match(panel, /onClick=\{\(\) => void showActivity\(\)\}/)
+  assert.match(client, /isCurrentAIActorSnapshot\(actor\)/)
   assert.match(client, /getAILedgerEntries/)
   assert.match(client, /row.ownerId !== actor.uid/)
   assert.match(client, /truthKind !== 'user-assertion'/)
