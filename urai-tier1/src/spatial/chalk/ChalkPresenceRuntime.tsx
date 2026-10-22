@@ -4,7 +4,9 @@ import {usePathname} from 'next/navigation'
 import {onAuthStateChanged,type User} from 'firebase/auth'
 import {getUraiAuth,firebasePublicEnvReady} from '@/lib/firebase/client'
 import {chalkIntent,chalkDiagnostic} from './chalkSpatialContract.mjs'
-import {readChalkEmulatorJobs} from './chalkJobsEmulatorClient'
+import {readChalkEmulatorJobs,submitChalkEmulatorDiagnostic} from './chalkJobsEmulatorClient'
+import {makeChalkEngineeringIntakeProposal} from './chalkEngineeringIntakeProposal.mjs'
+import type {ChalkEngineeringIntakeProposal} from './chalkEngineeringIntakeProposal.mjs'
 type Line={speaker:string;text:string}
 export default function ChalkPresenceRuntime(){
  const route=usePathname()||'/'
@@ -14,13 +16,14 @@ export default function ChalkPresenceRuntime(){
  const [status,setStatus]=useState('Engineering preview. No autonomous execution.'),[busy,setBusy]=useState(false)
  const [speechConsent,setSpeechConsent]=useState(false),[listening,setListening]=useState(false)
  const [report,setReport]=useState(''),[jobs,setJobs]=useState<Array<{jobId:string;status:string}>>([])
+ const [pending,setPending]=useState<{proposal:ChalkEngineeringIntakeProposal;ownerUid:string;epoch:number}|null>(null)
  const generation=useRef(0),recognition=useRef<{abort():void}|null>(null),closeRef=useRef<HTMLButtonElement>(null)
  const stop=()=>{recognition.current?.abort();recognition.current=null;setListening(false)}
  useEffect(()=>{if(!firebasePublicEnvReady){setAccess('unavailable');return}
   let disposed=false;const auth=getUraiAuth()
   const unsubscribe=onAuthStateChanged(auth,async current=>{
    const epoch=++generation.current;recognition.current?.abort();recognition.current=null
-   setListening(false);setUser(null);setLines([]);setJobs([]);setReport('');setBusy(false);setInput('');setSpeechConsent(false)
+   setListening(false);setUser(null);setLines([]);setJobs([]);setReport('');setPending(null);setBusy(false);setInput('');setSpeechConsent(false)
    if(!current){setAccess('denied');return}
    setAccess('checking')
    try{const token=await current.getIdTokenResult(true);const c=token.claims as Record<string,unknown>
@@ -32,7 +35,7 @@ export default function ChalkPresenceRuntime(){
   },()=>{generation.current++;setAccess('denied');setUser(null)})
   return()=>{disposed=true;generation.current++;unsubscribe();recognition.current?.abort()}
  },[])
- useEffect(()=>{setReport('')},[route])
+ useEffect(()=>{setReport('');setPending(null)},[route])
  useEffect(()=>{if(open)closeRef.current?.focus()},[open])
  if(!permitted)return null
  const active=(saved:User,epoch:number)=>generation.current===epoch&&getUraiAuth().currentUser===saved
@@ -71,10 +74,32 @@ export default function ChalkPresenceRuntime(){
     if(!active(saved,epoch))return
     const diagnostic=chalkDiagnostic({route,component,sourceSha,actorUid:saved.uid,frames:deltas})
     setReport(JSON.stringify(diagnostic,null,2))
+    const proposal=makeChalkEngineeringIntakeProposal({requestId:crypto.randomUUID(),sourceSha,route,diagnostic,issue:/choppy|lag|stutter|slow|jitter|transition/i.test(text)?'performance':'interaction'})
+    setPending({proposal,ownerUid:saved.uid,epoch})
     add('Chalk','Local scene diagnostic captured. It is NOT a submitted engineering job; no private Star or source media was read.')
    }else add('Chalk','That engineering action is not connected or approved. No action was taken.')
   }catch{if(active(saved,epoch))add('Chalk','The protected capability or exact source identity is unavailable. No job or approval was changed.')}
   finally{if(active(saved,epoch))setBusy(false)}
+ }
+ const submitPending=async()=>{
+  const selected=pending,saved=user
+  if(!selected||!saved||busy||access!=='permitted'||!active(saved,selected.epoch)||
+     selected.ownerUid!==saved.uid||selected.proposal.route!==route)return
+  setBusy(true)
+  try{
+   const result=await submitChalkEmulatorDiagnostic({problem:selected.proposal.problem,
+    requestId:selected.proposal.requestId,diagnostic:selected.proposal.diagnostic,
+    sourceSha:selected.proposal.sourceSha})
+   if(!active(saved,selected.epoch)||selected.proposal.route!==route)return
+   setPending(null)
+   add('Chalk','Jobs emulator acknowledged held engineering request '+result.jobId+'. No worker was dispatched.')
+   setStatus('HELD_UNQUEUED · awaiting separate human-governed worker approval')
+  }catch{
+   if(active(saved,selected.epoch)){
+    add('Chalk','Protected intake unavailable or permission denied. No submission receipt was obtained.')
+    setStatus('Submission unverified. Request remains local for explicit retry.')
+   }
+  }finally{if(active(saved,selected.epoch))setBusy(false)}
  }
  const voice=()=>{if(!speechConsent||!user||busy)return
   const scope=window as unknown as {SpeechRecognition?:new()=>any;webkitSpeechRecognition?:new()=>any}
@@ -104,6 +129,7 @@ export default function ChalkPresenceRuntime(){
    </form>
    <p role="status" style={{fontSize:12}}>{status}</p>
    {jobs.length?<ul aria-label="Engineering job status">{jobs.map((j,i)=><li key={j.jobId||i}>{j.jobId}: {j.status}</li>)}</ul>:null}
+   {pending?<section aria-label="Engineering diagnostic review" style={{padding:10,border:'1px solid #718997',borderRadius:12}}><p>Nonprivate scene diagnostic prepared for held engineering review. Nothing has been submitted.</p><p>{pending.proposal.problem}</p><div style={{display:'flex',gap:8}}><button type="button" style={button} disabled={busy} onClick={submitPending}>Submit held diagnostic (emulator only)</button><button type="button" style={button} disabled={busy} onClick={()=>setPending(null)}>Discard</button></div></section>:null}
    {report?<section><strong>Local diagnostic — NOT SUBMITTED</strong><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontSize:11}}>{report}</pre></section>:null}
    </>}
    <small>Source review and a deployed protected Jobs callable are required before real task readback. Never treat client diagnostics as server evidence.</small>
