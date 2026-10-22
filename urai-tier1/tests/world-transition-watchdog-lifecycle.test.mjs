@@ -129,7 +129,19 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     get observerCount() { return observers.size },
     get observedIdentityAttributes() { return [...observerOptions.values()].flatMap(options => options.attributeFilter ?? []) },
     get locationListenerCount() { return (listeners.get('popstate')?.size ?? 0) + (listeners.get('hashchange')?.size ?? 0) },
-    travel(destination, href) { window.dispatchEvent({ type: events.URAI_WORLD_TRAVEL_EVENT, detail: { destination, href } }) },
+    travel(destination, href) {
+      // The actual travel event is cancelable and claimed synchronously by the
+      // mounted world controller; the fixture must reproduce that handshake.
+      const event = {
+        type: events.URAI_WORLD_TRAVEL_EVENT,
+        detail: { destination, href },
+        cancelable: true,
+        defaultPrevented: false,
+        preventDefault() { if (this.cancelable) this.defaultPrevented = true },
+      }
+      window.dispatchEvent(event)
+      return event
+    },
     async navigate(href, method = 'pushState') {
       window.history[method](null, '', href)
       await Promise.resolve() // browserLocationStore notifies after the framework commit.
@@ -350,4 +362,14 @@ test('mounted same-route Focus identity changes notify the watchdog without anot
   }
   page.unmount()
   assert.equal(page.observerCount, 0)
+})
+
+test('canonical controller claims cancelable travel before its delayed router handoff', () => {
+  const page = mount()
+  const event = page.travel('replay', '/replay')
+  assert.equal(event.cancelable, true)
+  assert.equal(event.defaultPrevented, true,
+    'the mounted controller must acknowledge travel synchronously to suppress the competing emergency fallback')
+  assert.equal(page.assignments.length, 0)
+  page.unmount()
 })
