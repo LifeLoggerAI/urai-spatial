@@ -101,16 +101,6 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
   const departureOrigin = useRef<THREE.Vector3 | null>(null);
   const departureNodeId = useRef<string | null>(null);
   useEffect(() => {
-    if (phase === "overview") {
-      departureOrigin.current = null;
-      departureNodeId.current = null;
-    } else if (phase === "departure" && selected && departureNodeId.current !== selected.id) {
-      // Begin star travel from the real camera pose reached by exploration.
-      departureOrigin.current = camera.position.clone();
-      departureNodeId.current = selected.id;
-    }
-  }, [camera, phase, selected]);
-  useEffect(() => {
     // Selection, unloading and blur must never leave a motion key stuck.
     heldFlightKeys.current.clear();
     if (phase !== "overview") return;
@@ -191,6 +181,15 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
   }, [camera, phase, resolve]);
 
   useFrame(({ pointer }, delta) => {
+    // Capture before resolving this frame's camera goal, never one effect later.
+    // The first departure frame must originate at the camera's explored pose.
+    if (phase === "overview") {
+      departureOrigin.current = null;
+      departureNodeId.current = null;
+    } else if (phase === "departure" && selected && departureNodeId.current !== selected.id) {
+      departureOrigin.current = camera.position.clone();
+      departureNodeId.current = selected.id;
+    }
     const portrait = resolve();
     if (phase === "overview") {
       const focused = document.activeElement;
