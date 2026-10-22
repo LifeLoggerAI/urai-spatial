@@ -71,3 +71,11 @@ test('mounted Focus delegates Escape to the shared realm owner predicate', () =>
   assert.match(focus, /const onEscape = \(event: KeyboardEvent\) => \{\s*if \(!shouldHandleRealmEscape\(event\)\) return/)
   assert.match(focus, /window\.addEventListener\('keydown', onEscape\)/)
 })
+
+test('mounted Life Map honors shared Escape guard and ADAM panel ownership', () => {
+  const scene = read('../src/components/lifemap/ComposedLifeMapScene.tsx')
+  assert.match(scene, /import \{ shouldHandleRealmEscape \} from "@\/spatial\/world\/realmEscapeEligibility\.mjs"/)
+  assert.match(scene, /event\.key !== "Escape" \|\| !shouldHandleRealmEscape\(event\)/)
+  assert.match(scene, /#life-map-navigator, \[role="dialog"\]\[aria-modal="true"\], \[data-urai-adam-presence\]/)
+  assert.match(scene, /if \(selectedId\) overview\(\); else returnHome\(\)/)
+})
