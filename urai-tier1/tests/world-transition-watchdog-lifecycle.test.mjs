@@ -12,6 +12,7 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
   let world = { destination: 'focus', layer: 'infrastructure-world', demo: true }
   let phase = 'idle'
   const timers = new Map(), listeners = new Map(), observers = new Set()
+  const observerOptions = new Map()
   const hooks = [], effects = [], pushes = [], assignments = [], travelRequests = []
   const mountedSurfaces = new Set()
   const clock = {
@@ -51,8 +52,8 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
   const document = { body: {}, querySelector: selector => mountedSurfaces.has(selector) ? {getAttribute: () => null} : null }
   class MutationObserver {
     constructor(callback) { this.callback = callback }
-    observe() { observers.add(this) }
-    disconnect() { observers.delete(this) }
+    observe(_target, options) { observers.add(this); observerOptions.set(this, options) }
+    disconnect() { observers.delete(this); observerOptions.delete(this) }
   }
   const depsChanged = (old, next) => !old || old.length !== next.length || next.some((value, index) => !Object.is(old[index], value))
   const effect = (callback, deps) => {
@@ -114,7 +115,8 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     pushes, assignments, travelRequests, clock,
     get pathname() { return currentUrl.pathname },
     get pendingTimers() { return timers.size },
-    get observerCount() { return observers.size },
+    get observerCount() { return observers.size }
+    get observedIdentityAttributes() { return [...observerOptions.values()].flatMap(options => options.attributeFilter ?? []) },,
     get locationListenerCount() { return (listeners.get('popstate')?.size ?? 0) + (listeners.get('hashchange')?.size ?? 0) },
     travel(destination, href) { window.dispatchEvent({ type: events.URAI_WORLD_TRAVEL_EVENT, detail: { destination, href } }) },
     async navigate(href, method = 'pushState') {
@@ -324,4 +326,15 @@ test('same-path Focus memory change cannot count the previous mounted Focus as d
   assert.deepEqual(page.assignments, [page.pushes[0]],
     'same pathname is insufficient: the selected memory/manifest URL never committed')
   page.unmount()
+})
+
+test('mounted same-route Focus identity changes notify the watchdog without another DOM insertion', () => {
+  const page = mount()
+  page.travel('focus', '/focus/?demo=1&memoryId=new-selection')
+  assert.equal(page.observerCount, 1)
+  for (const name of ['data-memory-id', 'data-manifest-id', 'data-memory-status']) {
+    assert.ok(page.observedIdentityAttributes.includes(name), name + ' must wake the route admission observer')
+  }
+  page.unmount()
+  assert.equal(page.observerCount, 0)
 })
