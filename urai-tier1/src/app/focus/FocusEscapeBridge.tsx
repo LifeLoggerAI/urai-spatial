@@ -33,7 +33,7 @@ export function FocusEscapeBridge() {
 
     function routeToLifeMap() {
       setSceneMode('life-map')
-      window.sessionStorage.setItem('urai-spatial-escape-stack-return-home', '1')
+      // Life Map owns the NEXT deliberate Escape; do not arm auto-Home.
       router.push('/life-map')
     }
 
