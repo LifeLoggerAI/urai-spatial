@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { advanceLifeMapFlight, lifeMapFlightLookTarget, lifeMapApproachWaypoints } from "../src/components/lifemap/lifeMapFlight.mjs";
+import { advanceLifeMapFlight, lifeMapFlightLookTarget, lifeMapApproachWaypoints, lifeMapWorldStageTransform, lifeMapStagePoint } from "../src/components/lifemap/lifeMapFlight.mjs";
 
 const origin = () => ({ position: [0, 1.55, 13.4], velocity: [0, 0, 0], yaw: 0, pitch: 0 });
 
@@ -108,5 +108,23 @@ test("hundreds of near and far selections never increase distance to memory star
     const waypoints = lifeMapApproachWaypoints(start, target);
     const d = ["departure", "travel", "approach", "arrival"].map(k => distance(waypoints[k], target));
     assert.ok(d.every((v, j) => j === 0 || v <= d[j - 1] + 1e-8), `non-progressive approach: ${JSON.stringify(d)}`);
+  }
+});
+
+test("world transform does not change when a star is selected", () => {
+  const world = readFileSync(new URL("../src/components/lifemap/LifeMapProductionWorld.tsx", import.meta.url), "utf8");
+  assert.match(world, /const stage = lifeMapWorldStageTransform\(portrait\)/);
+  assert.doesNotMatch(world, /const stageScale: Point3 = selected \?/);
+  assert.match(world, /const visible = !selected \|\| active \|\| related/);
+});
+test("camera aims at star in the same fixed transformed world coordinates", () => {
+  const scene = readFileSync(new URL("../src/components/lifemap/ComposedLifeMapScene.tsx", import.meta.url), "utf8");
+  assert.match(scene, /new THREE\.Vector3\(\.\.\.lifeMapStagePoint\(node\.position, portrait\)\)/);
+  for (const portrait of [true, false]) {
+    const stage = lifeMapWorldStageTransform(portrait);
+    for (let i = 0; i < 1000; i++) {
+      const point = [Math.sin(i) * 18, Math.cos(i) * 12, Math.sin(i * 0.19) * 27];
+      assert.deepEqual(lifeMapStagePoint(point, portrait), point.map((v, n) => v * stage.scale[n] + stage.position[n]));
+    }
   }
 });
