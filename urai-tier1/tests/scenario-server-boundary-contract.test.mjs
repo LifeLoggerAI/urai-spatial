@@ -31,7 +31,10 @@ test('Self-ledger rejects hidden reasoning and requires provider model version',
 })
 
 test('Scenario owner reads and AI Ledger callable-only memory consent', () => {
-  assert.match(rules, /match \/scenarios\/\{scenarioId\} \{[\s\S]*allow read: if isSelf\(uid\) \|\| isAdmin\(\);[\s\S]*allow write: if false;/)
+  const scenarioRule = rules.slice(rules.indexOf('match /scenarios/{scenarioId} {')).split('\n      }')[0]
+  assert.match(scenarioRule, /allow read, write: if false;/)
+  assert.match(ops, /getPossibleFuture = functions\.https\.onCall/)
+  assert.match(ops, /getPossibleFutureCouncilBundle = functions\.https\.onCall/)
   const ledgerRule = rules.slice(rules.indexOf('match /aiLedger/{entryId} {')).split('\n      }')[0]
   assert.match(ledgerRule, /allow read, write: if false;/)
   assert.match(ledger, /authorizedLedgerMemory\(ownerId, owner, policy, fence, tombstone\)/)

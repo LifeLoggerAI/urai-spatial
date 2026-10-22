@@ -199,8 +199,9 @@ service cloud.firestore {
       }
 
       match /scenarios/{scenarioId} {
-        allow read: if isSelf(uid) || isAdmin();
-        allow write: if false;
+        // Scenario documents can contain private questions and evidence IDs.
+        // Current owner/deletion authority must be checked in the callable.
+        allow read, write: if false;
       }
       match /aiLedger/{entryId} {
         // Read through the consent-gated callable; Admin SDK handles export/deletion.

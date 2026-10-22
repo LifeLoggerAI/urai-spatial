@@ -286,7 +286,9 @@ export const getPossibleFuture = functions.https.onCall(async (data, context) =>
   const ownerId = uid(context)
   const scenarioId = ensureScenarioId(data?.scenarioId)
   const ref = scenarioRef(ownerId, scenarioId)
-  const scenario = await ref.get()
+  return db.runTransaction(async tx => {
+    await requireCurrentScenarioOwner(tx, ownerId)
+    const scenario = await tx.get(ref)
   if (!scenario.exists || scenario.data()?.ownerId !== ownerId || scenario.data()?.status === 'discarded')
     throw new functions.https.HttpsError('not-found', 'Scenario not found.')
   // Only the current scenario-owned branch IDs are eligible. A collection
@@ -295,8 +297,8 @@ export const getPossibleFuture = functions.https.onCall(async (data, context) =>
   if (branchIds.some((id) => !safeContextId(id)))
     throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_ID_INVALID')
   const [basis, branches] = await Promise.all([
-    ref.collection('basis').doc('current').get(),
-    Promise.all(branchIds.map((id) => ref.collection('branches').doc(id).get())),
+    tx.get(ref.collection('basis').doc('current')),
+    Promise.all(branchIds.map((id) => tx.get(ref.collection('branches').doc(id)))),
   ])
   if (branches.some((doc) => !doc.exists || doc.data()?.ownerId !== ownerId))
     throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_MISSING')
@@ -305,6 +307,7 @@ export const getPossibleFuture = functions.https.onCall(async (data, context) =>
     basis: basis.exists ? basis.data() : null,
     branches: branches.map((doc) => doc.data()),
   }
+  })
 })
 
 export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data, context) => {
@@ -315,7 +318,9 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
     throw new functions.https.HttpsError('invalid-argument', 'Invalid Scenario branch ID.')
   }
   const ref = scenarioRef(ownerId, scenarioId)
-  const scenarioSnap = await ref.get()
+  return db.runTransaction(async tx => {
+    await requireCurrentScenarioOwner(tx, ownerId)
+    const scenarioSnap = await tx.get(ref)
   if (!scenarioSnap.exists || scenarioSnap.data()?.ownerId !== ownerId)
     throw new functions.https.HttpsError('not-found', 'Scenario not found.')
   const scenario = scenarioSnap.data() ?? {}
@@ -328,8 +333,8 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
   if (requestedBranchId && !branchIds.includes(requestedBranchId))
     throw new functions.https.HttpsError('not-found', 'Scenario branch not found.')
   const [basisSnap, branchSnapshots] = await Promise.all([
-    ref.collection('basis').doc('current').get(),
-    Promise.all(branchIds.map((id) => ref.collection('branches').doc(id).get())),
+    tx.get(ref.collection('basis').doc('current')),
+    Promise.all(branchIds.map((id) => tx.get(ref.collection('branches').doc(id)))),
   ])
   if (!basisSnap.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
   if (branchSnapshots.some((doc) => !doc.exists || doc.data()?.ownerId !== ownerId))
@@ -358,12 +363,14 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
     evidenceKinds,
     disclosure: 'Possible Future only. Not a memory, prediction, consensus, or authority decision.',
   }
+  })
 })
 
 export const savePossibleFuture = functions.https.onCall(async (data, context) => {
   const ownerId = uid(context); operationId(data?.operationId); const scenarioId = ensureScenarioId(data?.scenarioId)
   const ref = scenarioRef(ownerId, scenarioId)
   await db.runTransaction(async (tx) => {
+    await requireCurrentScenarioOwner(tx, ownerId)
     const snapshot = await tx.get(ref)
     const current = snapshot.exists ? snapshot.data() : null
     if (!current || current.ownerId !== ownerId || current.status === 'discarded') {
@@ -380,6 +387,7 @@ export const discardPossibleFuture = functions.https.onCall(async (data, context
   const scenarioId = ensureScenarioId(data?.scenarioId)
   const ref = scenarioRef(ownerId, scenarioId)
   await db.runTransaction(async (tx) => {
+    await requireCurrentScenarioOwner(tx, ownerId)
     const snapshot = await tx.get(ref)
     if (!snapshot.exists || snapshot.data()?.ownerId !== ownerId)
       throw new functions.https.HttpsError('not-found', 'Scenario not found.')
