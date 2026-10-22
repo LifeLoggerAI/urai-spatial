@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { makeChalkEngineeringIntakeProposal } from '../src/spatial/chalk/chalkEngineeringIntakeProposal.mjs';
+const SHA='a'.repeat(40);
+const diagnostic=()=>({kind:'chalk-spatial-diagnostic-v1',repository:'LifeLoggerAI/urai-spatial',sourceSha:SHA,component:'life-map',route:'/life-map',selectedStar:null,frameSamples:18,p95Ms:53,status:'LOCAL_UNSUBMITTED',authority:'client-observation-not-server-verified'});
+const request=()=>({requestId:'842b011c-2026-4ac2-9dc2-3ca6f65ca92b',sourceSha:SHA,route:'/life-map',diagnostic:diagnostic(),issue:'performance'});
+test('source-pinned nonprivate payload',()=>{const x=makeChalkEngineeringIntakeProposal(request());assert.equal(x.operation,'submit');assert.match(x.problem,/performance/);assert.equal(x.diagnostic.frameSamples,18);assert.equal(x.diagnostic.selectedStar,null);assert.equal(x.sourceSha,SHA);assert.equal(Object.isFrozen(x),true)});
+test('repeat preserves stable id and payload',()=>assert.deepEqual(makeChalkEngineeringIntakeProposal(request()),makeChalkEngineeringIntakeProposal(request())));
+for(const [name,patch] of [['unverified source',{sourceSha:'current'}],['wrong route',{route:'/replay'}],['unsupported route',{route:'/admin'}],['unsupported purpose',{issue:'personal-memory'}],['wrong SHA',{diagnostic:{...diagnostic(),sourceSha:'b'.repeat(40)}}],['private star',{diagnostic:{...diagnostic(),selectedStar:{id:'secret-memory'}}}],['extra tool instruction',{diagnostic:{...diagnostic(),command:'github.merge'}}],['malformed id',{requestId:'../unsafe'}],['untrusted media',{diagnostic:{...diagnostic(),sourceMedia:['secret.jpg']}}]])test('rejects '+name,()=>assert.throws(()=>makeChalkEngineeringIntakeProposal({...request(),...patch}),/CHALK_/));
+test('raw private conversation never forwarded',()=>{const x=makeChalkEngineeringIntakeProposal({...request(),transcript:'XX_PRIVATE_MARKER',memoryTitle:'XX_PRIVATE_MARKER'});assert.equal(JSON.stringify(x).includes('XX_PRIVATE_MARKER'),false);assert.equal(JSON.stringify(x).includes('transcript'),false)});
+for(const route of ['/','/home','/ascent','/focus','/replay'])test('route '+route,()=>{const x={...request(),route,diagnostic:{...diagnostic(),route,component:route==='/'?'home':route.slice(1)}};assert.equal(makeChalkEngineeringIntakeProposal(x).route,route)});
