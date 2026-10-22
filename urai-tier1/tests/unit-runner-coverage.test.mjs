@@ -12,6 +12,7 @@ const requiredFocusedTests = [
   'tests/life-map-auth-route-boundary.test.mjs',
   'tests/lifemap-exploration-origin-continuity.test.mjs',
   'tests/lifemap-selection-camera-continuity.test.mjs',
+  'tests/focus-neighbor-continuity.test.mjs',
   'tests/lifemap-free-exploration.test.mjs',
   'tests/lifemap-flight-key-guard.test.mjs',
   'tests/lifemap-webgl-restoration-proof.test.mjs',
