@@ -42,6 +42,9 @@ export async function importFirstPreparedMemory(packet: unknown, file: FirstFile
     || (file.type !== 'audio/ogg' && file.type !== 'audio/mpeg') || file.type !== request.contentType
     || !Number.isSafeInteger(file.size) || file.size < 1 || file.size > MEMORY_MEDIA_MAX_BYTES
     || file.size !== upload.fileByteLength) invalid()
+  // Keep narrowed untrusted packet values in stable typed bindings.
+  const memoryId: string = id
+  const operationId: string = request.operationId as string
   // Identity freshness precedes local media reads. A token refresh does not
   // reauthenticate an old session and must not authorize private file access.
   const token = await owner.getIdTokenResult(true); check()
@@ -92,7 +95,7 @@ export async function importFirstPreparedMemory(packet: unknown, file: FirstFile
   // The record is deliberately left for later owner-authorized recovery.
   try {
     const receipt = await attachOwnedMemoryFile({ id, ownerId: owner.uid, privacy: 'hidden' }, file,
-      lifecycle, request.operationId, sha)
+      lifecycle, operationId, sha)
     check()
     if (receipt.memoryId !== id || typeof receipt.receiptId !== 'string' || !SHA.test(receipt.receiptId))
       throw new Error('FIRST_MEMORY_UPLOAD_RECEIPT_INVALID')
@@ -100,7 +103,7 @@ export async function importFirstPreparedMemory(packet: unknown, file: FirstFile
       visibility: 'hidden', state: 'ready-but-hidden' }
   } catch (cause) {
     if (!isCurrent()) stopped()
-    throw new FirstPrivateMemoryUploadIncomplete(id, cause)
+    throw new FirstPrivateMemoryUploadIncomplete(memoryId, cause)
   }
 }
 
