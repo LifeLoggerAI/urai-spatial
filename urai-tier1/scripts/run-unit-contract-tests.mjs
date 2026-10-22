@@ -111,6 +111,7 @@ const focusedContractTests = [
   'tests/lifemap-cinematic-contract.test.mjs',
   'tests/lifemap-scene-behavior.test.mjs',
   'tests/lifemap-exploration-origin-continuity.test.mjs',
+  'tests/lifemap-selection-camera-continuity.test.mjs',
   'tests/lifemap-flight-key-guard.test.mjs',
   'tests/lifemap-free-exploration.test.mjs',
   'tests/launch-ungating-runtime-contract.test.mjs',
