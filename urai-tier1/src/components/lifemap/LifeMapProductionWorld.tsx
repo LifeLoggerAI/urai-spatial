@@ -894,4 +894,43 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
   );
 }
 
+/** Reuse Life Map's authored stars and world-space volume in Focus.
+ * Only already consent-scoped neighboring nodes are passed in by Focus.
+ * The selected star is rendered separately by the existing photosphere.
+ */
+export function FocusLifeMapContext({ selected, neighbors, profile, onSelect }: {
+  selected: LifeMapNode | null;
+  neighbors: readonly LifeMapNode[];
+  profile: SpatialQualityProfile;
+  onSelect: (node: LifeMapNode) => void;
+}) {
+  if (!selected) return null;
+  const center: Point3 = [0, 0.35, -1.55];
+  const position: Point3 = [
+    center[0] - selected.position[0],
+    center[1] - selected.position[1],
+    center[2] - selected.position[2],
+  ];
+  return (
+    <LifeMapReducedMotionContext.Provider value={profile.reducedMotion}>
+      <group name="focus-shared-authored-galaxy" position={position}>
+        <GalaxyDepth tier={profile.tier === "high" ? "medium" : profile.tier} reducedMotion={profile.reducedMotion} />
+        {neighbors.map(node => (
+          <group key={node.id} name={`focus-neighbor-${node.id}`} position={node.position}>
+            <Suspense fallback={null}>
+              <AuthoredMemoryStar aura={node.aura} active={false} scale={0.62} />
+            </Suspense>
+            <mesh onClick={event => { event.stopPropagation(); onSelect(node); }}
+              onPointerOver={event => { event.stopPropagation(); document.body.style.cursor = "pointer"; }}
+              onPointerOut={event => { event.stopPropagation(); document.body.style.cursor = ""; }}>
+              <sphereGeometry args={[0.85, 24, 18]} />
+              <meshBasicMaterial color={node.aura} transparent opacity={0} depthWrite={false} colorWrite={false} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+    </LifeMapReducedMotionContext.Provider>
+  );
+}
+
 useGLTF.preload(MEMORY_STAR_MODEL);
