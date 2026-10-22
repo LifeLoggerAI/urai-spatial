@@ -71,6 +71,9 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('thread')
     target.searchParams.delete('personId')
     target.searchParams.delete('placeId')
+    // Camera/portal labels from a private realm belong to the in-memory
+    // transition, not to neutral Home/Hub URL history.
+    for (const key of ['entryPortal', 'cameraCheckpoint', 'returnNode']) target.searchParams.delete(key)
     // Keep Orb/companion neutral navigation as private as the controller
     // and the emergency world fallback: no stale consent or scenario hints.
     for (const key of ['privacyMode', 'originRealm', 'returnToken', 'fidelity',
@@ -87,8 +90,8 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   if (memoryDestination && context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (!neutralDestination && context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
   if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
-  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
-  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+  if (!neutralDestination && request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
+  if (!neutralDestination && request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
   return `${target.pathname}${target.search}${target.hash}`
 }
 
