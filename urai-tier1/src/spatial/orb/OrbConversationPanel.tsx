@@ -5,6 +5,8 @@ import { getAIActorSnapshot, getServerAIActorSnapshot, isCurrentAIActorSnapshot,
 import { publishOrbState } from '@/app/home/orbStateController'
 import { requestOrbContinuity } from './orbContinuityClient'
 import { createPossibleFutureClient } from '@/lib/scenario/scenarioClient'
+import { readOrbActivity } from './orbActivityClient'
+import type { OrbActivityItem } from './orbActivityClient'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import type { OrbContinuityState } from './orbContinuityClient'
 import { requestExternalVoiceAudio } from '@/spatial/narrator/elevenlabsClient'
@@ -42,6 +44,8 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
   const [continuity, setContinuity] = useState<OrbContinuityState | null>(null)
   const [continuityBusy, setContinuityBusy] = useState(false)
   const [scenarioBusy, setScenarioBusy] = useState(false)
+  const [activityBusy, setActivityBusy] = useState(false)
+  const [activity, setActivity] = useState<OrbActivityItem[] | null>(null)
   const [continuityHydrating, setContinuityHydrating] = useState(Boolean(actor.uid))
   const continuityRef = useRef<OrbContinuityState | null>(null)
   const continuityPending = useRef<Promise<unknown>>(Promise.resolve())
@@ -103,6 +107,25 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
       setStatus('Unable to change saved conversation. Check your current memory/privacy permissions.')
     } finally {
       if (isCurrentAIActorSnapshot(actor)) setContinuityBusy(false)
+    }
+  }
+
+  const showActivity = async () => {
+    if (!actor.uid || !isCurrentAIActorSnapshot(actor) || busy || activityBusy) return
+    setActivityBusy(true)
+    try {
+      const items = await readOrbActivity(actor)
+      if (!isCurrentAIActorSnapshot(actor)) return
+      if (items === null) return
+      setActivity(items)
+      setStatus('This is a private activity record, not independently verified autobiographical memory.')
+    } catch {
+      if (isCurrentAIActorSnapshot(actor)) {
+        setActivity(null)
+        setStatus('Activity could not be loaded with current permissions.')
+      }
+    } finally {
+      if (isCurrentAIActorSnapshot(actor)) setActivityBusy(false)
     }
   }
 
@@ -462,6 +485,8 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
               onClick={() => void exploreWhatIf()}>
               Explore this question in Possible Futures
             </button>
+            <button type="button" disabled={!actor.uid || activityBusy || busy || scenarioBusy}
+              onClick={() => void showActivity()}>Review my recent UrAi activity</button>
             <button type="submit" disabled={busy || scenarioBusy || continuityBusy || continuityHydrating || !message.trim() || !aiConsent}>Send</button>
             <button type="button" disabled={!busy && !voicePlaying} onClick={stop}>Stop</button>
             <button
@@ -495,6 +520,20 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
         <p className={styles.status} role="status" aria-live="polite" aria-atomic="true">
           {status}
         </p>
+        {activity !== null ? (
+          <section className={styles.response} aria-label="Private UrAi activity history">
+            <p>Activity history · scenario proposals and unverified outcome reports</p>
+            {activity.length ? <ol>
+              {activity.map(item => <li key={item.id}>
+                <strong>{item.kind === 'outcome-report' ? 'Owner report' : item.kind === 'outcome-observation' ? 'Observation receipt' : 'Scenario proposal'}</strong>
+                {' · '}{item.truthKind === 'user-assertion' ? 'User-reported, not independently verified' : item.truthKind === 'scenario' ? 'Hypothetical only' : 'Evidence status requires review'}
+                {' · '}{item.recordedAt}
+                {item.scenarioId ? ` · Scenario ${item.scenarioId.slice(0, 18)}…` : ''}
+              </li>)}
+            </ol> : <p>No recent activity records found.</p>}
+            <p>This view does not send ledger entries to the model or authorize actions.</p>
+          </section>
+        ) : null}
         {continuity?.enabled && history.length > 0 ? (
           <section className={styles.response} aria-label="Saved Orb conversation">
             <p>Recent saved conversation (not verified historical evidence)</p>
