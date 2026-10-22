@@ -7,6 +7,7 @@ import {app,functions,getUraiAuth,firebasePublicEnvReady,uraiJourneyEmulatorEnab
 import {chalkIntent,chalkDiagnostic} from './chalkSpatialContract.mjs'
 import {chalkReviewRequest,chalkReviewReceipt} from './chalkReviewBridge.mjs'
 import {selectChalkCallableFunctions} from './chalkEmulatorRouting.mjs'
+import {chalkRouteEpochCurrent} from './chalkRouteEpoch.mjs'
 type Line={speaker:string;text:string}
 const reviewRequested=process.env.NEXT_PUBLIC_URAI_CHALK_EMULATOR_REVIEW==='true'
 const jobsEmulatorRequested=process.env.NEXT_PUBLIC_URAI_CHALK_JOBS_EMULATOR==='true'
@@ -24,7 +25,7 @@ export default function ChalkPresenceRuntime(){
  const [status,setStatus]=useState('Engineering preview. No autonomous execution.'),[busy,setBusy]=useState(false)
  const [speechConsent,setSpeechConsent]=useState(false),[listening,setListening]=useState(false)
  const [report,setReport]=useState(''),[reviewRequest,setReviewRequest]=useState<ReturnType<typeof chalkReviewRequest>|null>(null),[reviewId,setReviewId]=useState(''),[jobs,setJobs]=useState<Array<{jobId:string;status:string}>>([])
- const generation=useRef(0),recognition=useRef<{abort():void}|null>(null),closeRef=useRef<HTMLButtonElement>(null)
+ const routeEpoch=useRef(0),currentRoute=useRef(route),generation=useRef(0),recognition=useRef<{abort():void}|null>(null),closeRef=useRef<HTMLButtonElement>(null)
  const stop=()=>{recognition.current?.abort();recognition.current=null;setListening(false)}
  useEffect(()=>{if(!firebasePublicEnvReady){setAccess('unavailable');return}
   let disposed=false;const auth=getUraiAuth()
@@ -42,20 +43,20 @@ export default function ChalkPresenceRuntime(){
   },()=>{generation.current++;setAccess('denied');setUser(null)})
   return()=>{disposed=true;generation.current++;unsubscribe();recognition.current?.abort()}
  },[])
- useEffect(()=>{setReport('');setReviewRequest(null);setReviewId('')},[route])
+ useEffect(()=>{if(currentRoute.current!==route){currentRoute.current=route;routeEpoch.current++;setBusy(false);stop();setReport('');setReviewRequest(null);setReviewId('')}},[route])
  useEffect(()=>{if(open)closeRef.current?.focus()},[open])
  if(!permitted)return null
- const active=(saved:User,epoch:number)=>generation.current===epoch&&getUraiAuth().currentUser===saved
+ const active=(saved:User,epoch:number,routeAtStart:string,routeVersion:number)=>generation.current===epoch&&getUraiAuth().currentUser===saved&&chalkRouteEpochCurrent({startRoute:routeAtStart,currentPathname:currentRoute.current,startEpoch:routeVersion,currentEpoch:routeEpoch.current})
  const add=(speaker:string,text:string)=>setLines(prev=>[...prev.slice(-9),{speaker,text}])
  const send=async(e:FormEvent)=>{
   e.preventDefault();const text=input.trim();if(!text||busy||!user||access!=='permitted')return
-  const saved=user,epoch=generation.current;stop();setInput('');add('You',text);setBusy(true)
+  const saved=user,epoch=generation.current,routeVersion=routeEpoch.current,routeAtStart=route;stop();setInput('');add('You',text);setBusy(true)
   try{const intent=chalkIntent(text)
    if(intent==='READ_JOBS'){
     const call=httpsCallable<{limit:number},{jobs:Array<{jobId:string;status:string}>}>(
       chalkFunctions(),'listChalkEngineeringJobs',{timeout:12000})
     const result=await call({limit:40})
-    if(!active(saved,epoch))return
+    if(!active(saved,epoch,routeAtStart,routeVersion))return
     if(!Array.isArray(result.data.jobs))throw Error('INVALID_READBACK')
     setJobs(result.data.jobs)
     add('Chalk',result.data.jobs.length+' protected, owner-scoped engineering Jobs returned in a bounded window. No task was created.')
@@ -72,40 +73,40 @@ export default function ChalkPresenceRuntime(){
      const tick=(t:number)=>{if(done)return;if(prior)deltas.push(t-prior);prior=t;if(deltas.length>=24)finish();else frame=requestAnimationFrame(tick)}
      frame=requestAnimationFrame(tick)
     })
-    if(!active(saved,epoch))return
+    if(!active(saved,epoch,routeAtStart,routeVersion))return
     const diagnostic=chalkDiagnostic({route,component,sourceSha,actorUid:saved.uid,frames:deltas})
     setReport(JSON.stringify(diagnostic,null,2));setReviewRequest(chalkReviewRequest(diagnostic,crypto.randomUUID()));setReviewId('')
     add('Chalk','Local scene diagnostic captured. It is NOT a submitted engineering job; no private Star or source media was read.')
    }else add('Chalk','That engineering action is not connected or approved. No action was taken.')
-  }catch{if(active(saved,epoch))add('Chalk','The protected capability or exact source identity is unavailable. No job or approval was changed.')}
-  finally{if(active(saved,epoch))setBusy(false)}
+  }catch{if(active(saved,epoch,routeAtStart,routeVersion))add('Chalk','The protected capability or exact source identity is unavailable. No job or approval was changed.')}
+  finally{if(active(saved,epoch,routeAtStart,routeVersion))setBusy(false)}
  }
  const reviewEnabled=reviewOptedIn && uraiJourneyEmulatorEnabled && app.options.projectId==='demo-urai-auth-journey'
  const saveReview=async()=>{
   if(!reviewEnabled||!reviewRequest||busy||!user||access!=='permitted')return
-  const saved=user,epoch=generation.current;setBusy(true)
+  const saved=user,epoch=generation.current,routeVersion=routeEpoch.current,routeAtStart=route;setBusy(true)
   try{
    const functions=chalkFunctions()
    const submit=httpsCallable<typeof reviewRequest, {reviewId:string;requestId:string;sourceSha:string;state:string;result:string}>(functions,'submitChalkDiagnosticReview',{timeout:15000})
    const detail=httpsCallable<{reviewId:string},{reviewId:string;requestId:string;sourceSha:string;state:string;component:string;route:string;digest:string}>(functions,'getChalkDiagnosticReview',{timeout:15000})
    const submitted=(await submit(reviewRequest)).data
-   if(!active(saved,epoch))return
+   if(!active(saved,epoch,routeAtStart,routeVersion))return
    const checked=(await detail({reviewId:submitted.reviewId})).data
-   if(!active(saved,epoch))return
+   if(!active(saved,epoch,routeAtStart,routeVersion))return
    const receipt=await chalkReviewReceipt(reviewRequest,submitted,checked)
-   if(!active(saved,epoch))return
+   if(!active(saved,epoch,routeAtStart,routeVersion))return
    setReviewId(receipt.reviewId);setReviewRequest(null)
    add('Chalk','Source-bound review receipt saved and read back. No engineering job was queued or executed.')
-  }catch{if(active(saved,epoch))add('Chalk','Review receipt unavailable or unverified. No engineering task was created.')}
-  finally{if(active(saved,epoch))setBusy(false)}
+  }catch{if(active(saved,epoch,routeAtStart,routeVersion))add('Chalk','Review receipt unavailable or unverified. No engineering task was created.')}
+  finally{if(active(saved,epoch,routeAtStart,routeVersion))setBusy(false)}
  }
  const voice=()=>{if(!speechConsent||!user||busy)return
-  const scope=window as unknown as {SpeechRecognition?:new()=>any;webkitSpeechRecognition?:new()=>any}
+  const routeAtStart=route,routeVersion=routeEpoch.current;const scope=window as unknown as {SpeechRecognition?:new()=>any;webkitSpeechRecognition?:new()=>any}
   const C=scope.SpeechRecognition||scope.webkitSpeechRecognition
   if(!C){setStatus('Browser speech input unavailable. Type instead.');return}
   stop();const r=new C(),saved=user,epoch=generation.current
   r.continuous=false;r.interimResults=false;r.lang='en-US'
-  r.onresult=(ev:{results:ArrayLike<{0:{transcript:string}}>})=>{if(recognition.current===r&&active(saved,epoch))setInput(Array.from(ev.results).map(v=>v[0]?.transcript||'').join(' ').slice(0,1200))}
+  r.onresult=(ev:{results:ArrayLike<{0:{transcript:string}}>})=>{if(recognition.current===r&&active(saved,epoch,routeAtStart,routeVersion))setInput(Array.from(ev.results).map(v=>v[0]?.transcript||'').join(' ').slice(0,1200))}
   r.onend=()=>{if(recognition.current===r){recognition.current=null;setListening(false)}}
   r.onerror=r.onend;recognition.current=r;setListening(true)
   try{r.start()}catch{stop();setStatus('Voice recognition could not start.')}
