@@ -216,7 +216,15 @@ test('WebGL context loss preserves truthful semantic recovery', () => {
   assert.ok(source.includes('Your selected memory, privacy state, and return position remain preserved.'))
   assert.ok(source.includes('Open semantic overview'))
   assert.ok(canonical.includes('data-testid="urai-life-map-authored-fallback"'))
-  assert.ok(canonical.includes('requestUraiWorldReturn()'))
+  // In an authored loading/recovery threshold there may be no trustworthy
+  // prior world destination. Escape must match the visible Home action.
+  const loadingStart = canonical.indexOf('function LifeMapLoading(')
+  const loadingEnd = canonical.indexOf('function SignedOutLifeMap(', loadingStart)
+  assert.ok(loadingStart >= 0 && loadingEnd > loadingStart)
+  const loading = canonical.slice(loadingStart, loadingEnd)
+  assert.ok(loading.includes('shouldHandleRealmEscape(event)'))
+  assert.ok(loading.includes('router.push("/home")'))
+  assert.doesNotMatch(loading, /requestUraiWorldReturn\\(/)
 })
 
 
