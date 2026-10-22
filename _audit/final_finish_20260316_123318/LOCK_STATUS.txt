@@ -1,2 +1,0 @@
-BUILD_OK=1
-SMOKE_OK=1
