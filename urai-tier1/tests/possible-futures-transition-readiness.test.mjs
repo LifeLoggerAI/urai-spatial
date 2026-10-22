@@ -15,7 +15,7 @@ const until = events.indexOf('\nfunction shouldBeginHomeAscent(', from)
 assert.ok(from >= 0 && until > from, 'Canonical destination readiness function must exist')
 const code = events.slice(from, until).replace(/^export /, '')
 const transpiled = ts.transpileModule(code, {
-  compilerOptions: { module: ts.ModuleKind.None, target: ts.ScriptTarget.ES2022 },
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   reportDiagnostics: true,
 })
 assert.deepEqual(transpiled.diagnostics ?? [], [], 'The production readiness function must transpile')
