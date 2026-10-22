@@ -149,3 +149,10 @@ test("physical selected star enters Replay only upon authorized arrival", () => 
   assert.match(scene, /router\.push\(destinationHref\("replay"\)\)/);
   assert.match(scene, /forwardPrivateMovieRouteSelection\(next, params/);
 });
+
+test("world-coordinate helpers used by renderer are declared for TypeScript", () => {
+  const declarations = readFileSync(new URL("../src/components/lifemap/lifeMapFlight.d.mts", import.meta.url), "utf8");
+  for (const symbol of ["lifeMapWorldStageTransform", "lifeMapStagePoint", "lifeMapWorldStarAction"]) {
+    assert.match(declarations, new RegExp("export function " + symbol + "\\("));
+  }
+});
