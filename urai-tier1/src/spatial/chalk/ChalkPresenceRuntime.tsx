@@ -8,6 +8,7 @@ import {readChalkEmulatorJobs,submitChalkEmulatorDiagnostic,signInChalkJobsLocal
 import {makeChalkEngineeringIntakeProposal} from './chalkEngineeringIntakeProposal.mjs'
 import type {ChalkEngineeringIntakeProposal} from './chalkEngineeringIntakeProposal.mjs'
 import {isChalkSessionLeaseCurrent} from './chalkSessionLease.mjs'
+import {isChalkSpatialOperatorClaim} from './chalkSpatialOperatorRole.mjs'
 import {resetChalkRouteState} from './chalkRouteReset.mjs'
 type Line={speaker:string;text:string}
 export default function ChalkPresenceRuntime(){
@@ -33,8 +34,7 @@ export default function ChalkPresenceRuntime(){
    setAccess('checking')
    try{const token=await current.getIdTokenResult(true);const c=token.claims as Record<string,unknown>
     if(disposed||generation.current!==epoch||auth.currentUser!==current)return
-    const roles=Array.isArray(c.roles)?c.roles:[]
-    if(!(c.role==='admin'||c.role==='operator'||c.uraiJobsAdmin===true||roles.includes('admin')||roles.includes('operator'))){setAccess('denied');return}
+    if(!isChalkSpatialOperatorClaim(c)){setAccess('denied');return}
     setUser(current);setAccess('permitted')
    }catch{if(!disposed&&generation.current===epoch)setAccess('denied')}
   },()=>{generation.current++;setAccess('denied');setUser(null)})
