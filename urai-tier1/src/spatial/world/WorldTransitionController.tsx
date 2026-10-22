@@ -12,6 +12,7 @@ import {
   destinationSurfaceReady,
 } from './worldEvents'
 import { previousDestinationForReturn } from './worldTypes'
+import { isFocusInRealmTravel } from './focusInRealmTravel'
 import type { UraiDestination, UraiOriginRealm, UraiWorldTravelRequest } from './worldTypes'
 
 const CONTEXT_KEYS = [
@@ -160,6 +161,12 @@ export function WorldTransitionController() {
   const executeTravel = useCallback((request: UraiWorldTravelRequest) => {
     clearTimer()
     const currentWorld = worldRef.current
+    // Neighbor selection stays in Focus, without a full world transition curtain.
+    // Selection authorization still belongs to the destination Focus hook.
+    if (isFocusInRealmTravel(request, window.location.pathname)) {
+      router.push(buildTravelHref(request), { scroll: false })
+      return
+    }
     beginTravelRef.current(request)
 
     if (currentWorld.destination === 'home') {
