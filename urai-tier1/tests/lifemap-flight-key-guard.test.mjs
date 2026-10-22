@@ -26,10 +26,11 @@ function harness() {
   const heldFlightKeys = { current: keys }
   const flightOffset = { current: { x: 2, y: 4, z: 6, set(x, y, z) { this.x = x; this.y = y; this.z = z } } }
   const flightVelocity = { current: { x: 1, y: 2, z: 3, set(x, y, z) { this.x = x; this.y = y; this.z = z } } }
+  const flightOrientation = { current: { yaw: 0.4, pitch: 0.2 } }
   const release = () => { keys.clear(); flightVelocity.current.set(0, 0, 0) }
   const module = { exports: {} }
-  new Function('module', 'exports', 'document', 'HTMLElement', 'heldFlightKeys', 'flightOffset', 'flightVelocity', 'release', compiled)(
-    module, module.exports, document, FakeElement, heldFlightKeys, flightOffset, flightVelocity, release,
+  new Function('module', 'exports', 'document', 'HTMLElement', 'heldFlightKeys', 'flightOffset', 'flightVelocity', 'flightOrientation', 'release', compiled)(
+    module, module.exports, document, FakeElement, heldFlightKeys, flightOffset, flightVelocity, flightOrientation, release,
   )
   function press(code, target = new FakeElement(), modifiers = {}) {
     const event = {
@@ -39,7 +40,7 @@ function harness() {
     module.exports.keyDown(event)
     return event
   }
-  return { keys, flightOffset, flightVelocity, press, setDialog: value => { dialogOpen = value } }
+  return { keys, flightOffset, flightVelocity, flightOrientation, press, setDialog: value => { dialogOpen = value } }
 }
 
 test('camera keyboard permits exploration but prevents page scroll', () => {
@@ -76,6 +77,7 @@ test('R recenters displacement and clears movement without selecting a star', ()
   assert.deepEqual([h.flightOffset.current.x, h.flightOffset.current.y, h.flightOffset.current.z], [0, 0, 0])
   assert.deepEqual([...h.keys], [])
   assert.equal(h.flightVelocity.current.z, 0)
+  assert.deepEqual(h.flightOrientation.current, { yaw: 0, pitch: 0 })
 })
 
 test('modified shortcuts and pre-handled events do not become flight input', () => {

@@ -14,6 +14,7 @@ import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProdu
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
 import { shouldHandleRealmEscape } from "@/spatial/world/realmEscapeEligibility.mjs";
+import { lifeMapRotateFlightAxes, advanceLifeMapViewOrientation, lifeMapRotatedLookTarget } from "./lifeMapFlightOrientation.mjs";
 import { lifeMapStagePoint } from "./lifeMapStageContinuity.mjs";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
@@ -65,11 +66,11 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, 
 type LifeMapFlightVector = { x: number; y: number; z: number };
 function stepLifeMapFlight(
   offset: LifeMapFlightVector, velocity: LifeMapFlightVector,
-  held: ReadonlySet<string>, delta: number, reducedMotion: boolean,
+  held: ReadonlySet<string>, delta: number, reducedMotion: boolean, yaw = 0,
 ) {
   const dt = Math.max(0, Math.min(0.05, Number.isFinite(delta) ? delta : 0));
   const axis = (positive: string, negative: string) => Number(held.has(positive)) - Number(held.has(negative));
-  const input = { x: axis('KeyD', 'KeyA'), y: axis('KeyE', 'KeyQ'), z: axis('KeyS', 'KeyW') };
+  const input = lifeMapRotateFlightAxes({ x: axis('KeyD', 'KeyA'), y: axis('KeyE', 'KeyQ'), z: axis('KeyS', 'KeyW') }, yaw);
   const magnitude = Math.hypot(input.x, input.y, input.z);
   const speed = held.has('ShiftLeft') || held.has('ShiftRight') ? 9 : 5.5;
   const smoothing = reducedMotion ? 1 : 1 - Math.exp(-12 * dt);
@@ -98,6 +99,7 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
   const flightOffset = useRef(new THREE.Vector3());
   const flightVelocity = useRef(new THREE.Vector3());
   const heldFlightKeys = useRef(new Set<string>());
+  const flightOrientation = useRef({ yaw: 0, pitch: 0 });
   const departureOrigin = useRef<THREE.Vector3 | null>(null);
   const departureNodeId = useRef<string | null>(null);
   const previousCameraPhase = useRef<JourneyPhase>("overview");
@@ -105,7 +107,7 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     // Selection, unloading and blur must never leave a motion key stuck.
     heldFlightKeys.current.clear();
     if (phase !== "overview") return;
-    const controls = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE']);
+    const controls = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
     const keyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
       const target = event.target;
@@ -121,6 +123,7 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
       if (event.code === 'KeyR') {
         event.preventDefault();
         flightOffset.current.set(0, 0, 0);
+        flightOrientation.current = { yaw: 0, pitch: 0 };
         flightVelocity.current.set(0, 0, 0);
         heldFlightKeys.current.clear();
         return;
@@ -204,11 +207,12 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
         heldFlightKeys.current.clear();
         flightVelocity.current.set(0, 0, 0);
       }
+      flightOrientation.current = advanceLifeMapViewOrientation(flightOrientation.current, heldFlightKeys.current, delta);
       const offset = flightOffset.current, velocity = flightVelocity.current;
       const next = stepLifeMapFlight(
         { x: offset.x, y: offset.y, z: offset.z },
         { x: velocity.x, y: velocity.y, z: velocity.z },
-        heldFlightKeys.current, delta, reducedMotion,
+        heldFlightKeys.current, delta, reducedMotion, flightOrientation.current.yaw,
       );
       offset.set(next.offset.x, next.offset.y, next.offset.z);
       velocity.set(next.velocity.x, next.velocity.y, next.velocity.z);
@@ -218,6 +222,14 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     const flightWeight = phase === "overview" ? 1 : 0;
     positionGoal.current.addScaledVector(flightOffset.current, flightWeight);
     targetGoal.current.addScaledVector(flightOffset.current, flightWeight);
+    if (phase === "overview") {
+      const rotated = lifeMapRotatedLookTarget(
+        [positionGoal.current.x, positionGoal.current.y, positionGoal.current.z],
+        [targetGoal.current.x, targetGoal.current.y, targetGoal.current.z],
+        flightOrientation.current,
+      );
+      targetGoal.current.set(...rotated);
+    }
     if (phase === "overview" && !reducedMotion) {
       positionGoal.current.x += pointer.x * (portrait ? 0.45 : 1.05);
       positionGoal.current.y += pointer.y * (portrait ? 0.24 : 0.42);
@@ -603,7 +615,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
         left: 18, margin: 0, padding: "9px 12px", maxWidth: "min(345px,calc(100vw - 36px))",
         borderRadius: 12, background: "rgba(2,8,16,.75)", color: "#ceeaf6", fontSize: 12,
         pointerEvents: "none" }}>
-      Explore: W A S D move · Q E rise/fall · Shift faster · R recenter
+      Explore: W A S D move · Q E rise/fall · arrows look · Shift faster · R recenter
     </p> : null}
     <header className="life-map-title">
       <span>URAI · LIFE MAP</span>

@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import { lifeMapStagePoint } from '../src/components/lifemap/lifeMapStageContinuity.mjs'
 
 const require = createRequire(import.meta.url)
 const ts = require('typescript')
@@ -29,7 +30,7 @@ ${body}
 export { goalForNode }
 `, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
 const exports = {}
-new Function('exports', 'THREE', compiled)(exports, { Vector3 })
+new Function('exports', 'THREE', 'lifeMapStagePoint', compiled)(exports, { Vector3 }, lifeMapStagePoint)
 const { goalForNode } = exports
 const selected = { position: [4, 1, -7], id: 'memory-star' }
 const travelOrigin = new Vector3(9, 3, 18)
