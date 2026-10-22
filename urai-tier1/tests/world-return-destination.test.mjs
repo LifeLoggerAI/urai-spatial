@@ -25,7 +25,7 @@ test('Replay Escape is handled by the local playback owner once, not by the glob
   const replay = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
   const proof = readFileSync(new URL('../../tests/replay-tier5-lock.mjs', import.meta.url), 'utf8')
   assert.match(controller, /currentWorld\.destination === 'replay' \|\| currentWorld\.destination === 'life-map'/)
-  assert.match(replay, /if \(event\.key === 'Escape'\) \{ pauseMemory\(\); event\.preventDefault\(\); unwind\(\); return \}/)
+  assert.match(replay, /if \(event\.key === 'Escape'\) \{[\s\S]*?if \(!shouldHandleRealmEscape\(event\)\) return[\s\S]*?unwind\(\)/)
   assert.match(proof, /cinematic-replay-client'\)\.waitFor\(\{ state: 'detached'/)
   assert.match(proof, /Escape completes one Replay return route transition/)
 })
@@ -81,4 +81,11 @@ test('Focus does not silently rewrite an unselected route using a stale session 
   assert.doesNotMatch(focus, /window\.history\.replaceState|PopStateEvent|router\.replace\(target\)/)
   assert.doesNotMatch(focus, /setTimeout\(/)
   assert.doesNotMatch(focus, /urai-replay-return-manifest-id/)
+})
+
+test('Life Map authored loading Escape explicitly goes Home, never through stale global previous destination', () => {
+ const canonical = readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
+ assert.match(canonical, /if \(event\.defaultPrevented \|\| event\.key !== "Escape"/)
+ assert.match(canonical, /router\.push\("\/home"\)/)
+ assert.doesNotMatch(canonical, /requestUraiWorldReturn/)
 })
