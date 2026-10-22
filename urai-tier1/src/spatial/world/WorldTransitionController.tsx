@@ -230,7 +230,7 @@ export function WorldTransitionController() {
         if (generation !== navigationGeneration.current) return
         clearTimer()
         if (
-          normalizedPathname(window.location.pathname) !== targetPathname ||
+          locationKey() !== targetLocation ||
           !destinationSurfaceReady(request.destination)
         ) {
           window.location.assign(href)

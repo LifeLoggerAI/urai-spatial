@@ -48,7 +48,7 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     removeEventListener(type, listener) { listeners.get(type)?.delete(listener) },
     dispatchEvent(event) { for (const listener of [...listeners.get(event.type) ?? []]) listener(event) },
   }
-  const document = { body: {}, querySelector: selector => mountedSurfaces.has(selector) ? {} : null }
+  const document = { body: {}, querySelector: selector => mountedSurfaces.has(selector) ? {getAttribute: () => null} : null }
   class MutationObserver {
     constructor(callback) { this.callback = callback }
     observe() { observers.add(this) }
@@ -122,6 +122,7 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
       await Promise.resolve() // browserLocationStore notifies after the framework commit.
     },
     admit(destination) {
+      if (destination === 'focus') mountedSurfaces.add('[data-testid="urai-final-focus-chamber"]')
       if (destination === 'replay') mountedSurfaces.add('[data-testid="cinematic-replay-client"]')
       if (destination === 'passport') mountedSurfaces.add('main[data-route-owner="passport-ownership-vault"]')
       for (const observer of [...observers]) observer.callback()
@@ -308,5 +309,19 @@ test('normal-motion Focus → Replay keeps its 1900 ms transition and 2500 ms re
   assert.deepEqual(page.assignments, [])
   page.clock.tick(1)
   assert.deepEqual(page.assignments, [page.pushes[0]])
+  page.unmount()
+})
+
+test('same-path Focus memory change cannot count the previous mounted Focus as destination', () => {
+  const page = mount()
+  page.admit('focus') // Existing chamber is mounted for an older selection.
+  page.travel('focus', '/focus/?demo=1&memoryId=new-selection&manifestId=new-manifest')
+  page.clock.tick(260)
+  assert.equal(page.pushes.length, 1)
+  page.clock.tick(2499)
+  assert.deepEqual(page.assignments, [])
+  page.clock.tick(1)
+  assert.deepEqual(page.assignments, [page.pushes[0]],
+    'same pathname is insufficient: the selected memory/manifest URL never committed')
   page.unmount()
 })
