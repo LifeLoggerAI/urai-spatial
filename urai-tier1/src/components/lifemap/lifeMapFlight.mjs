@@ -36,3 +36,35 @@ export function lifeMapFlightLookTarget(pose) {
   ];
 }
 
+/**
+ * Camera journey waypoints live on a single forward trajectory. A bounded side/up
+ * arc adds parallax without stepping backward between selected-star phases.
+ * This is geometric motion only; memory authorization remains with the caller.
+ */
+export function lifeMapApproachWaypoints(from, target, standoff = 5.8) {
+  const start = [0, 1.55, 13.4].map((fallback, i) =>
+    Number.isFinite(from?.[i]) ? from[i] : fallback);
+  const focus = [0, 0, -4.5].map((fallback, i) =>
+    Number.isFinite(target?.[i]) ? target[i] : fallback);
+  const delta = start.map((v, i) => v - focus[i]);
+  const length = Math.hypot(...delta);
+  const direction = length > 0.01 ? delta.map(v => v / length) : [0, 0.02, 1];
+  const safeStandoff = clampLifeMap(standoff, 2, 10);
+  const arrival = focus.map((v, i) => v + direction[i] * safeStandoff + (i === 1 ? 0.34 : 0));
+  const span = Math.hypot(...arrival.map((v, i) => v - start[i]));
+  const sideLength = Math.hypot(direction[2], direction[0]) || 1;
+  const side = [-direction[2] / sideLength, 0, direction[0] / sideLength];
+  const bend = Math.min(1, span * 0.1);
+  const point = (fraction) => {
+    const arc = Math.sin(fraction * Math.PI) * bend;
+    return start.map((v, i) =>
+      v + (arrival[i] - v) * fraction + side[i] * arc * 0.55 + (i === 1 ? arc * 0.45 : 0));
+  };
+  return {
+    departure: start,
+    travel: point(0.48),
+    approach: point(0.82),
+    arrival,
+    target: focus,
+  };
+}
