@@ -92,7 +92,8 @@ export default function ChalkPresenceRuntime(){
    if(!active(saved,epoch))return
    const checked=(await detail({reviewId:submitted.reviewId})).data
    if(!active(saved,epoch))return
-   const receipt=chalkReviewReceipt(reviewRequest,submitted,checked)
+   const receipt=await chalkReviewReceipt(reviewRequest,submitted,checked)
+   if(!active(saved,epoch))return
    setReviewId(receipt.reviewId);setReviewRequest(null)
    add('Chalk','Source-bound review receipt saved and read back. No engineering job was queued or executed.')
   }catch{if(active(saved,epoch))add('Chalk','Review receipt unavailable or unverified. No engineering task was created.')}
