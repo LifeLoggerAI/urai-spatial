@@ -528,7 +528,21 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
                 <strong>{item.kind === 'outcome-report' ? 'Owner report' : item.kind === 'outcome-observation' ? 'Observation receipt' : 'Scenario proposal'}</strong>
                 {' · '}{item.truthKind === 'user-assertion' ? 'User-reported, not independently verified' : item.truthKind === 'scenario' ? 'Hypothetical only' : 'Evidence status requires review'}
                 {' · '}{item.recordedAt}
-                {item.scenarioId ? ` · Scenario ${item.scenarioId.slice(0, 18)}…` : ''}
+                {item.scenarioId ? (
+                  <button type="button" disabled={!actor.uid || busy || scenarioBusy}
+                    onClick={() => {
+                      if (!isCurrentAIActorSnapshot(actor)) return
+                      requestUraiWorldTravel({
+                        destination: 'possible-futures',
+                        href: '/possible-futures',
+                        entryPortal: 'orb-history-scenario-recall',
+                        cameraCheckpoint: 'possible-futures-arrival',
+                        context: { scenarioId: item.scenarioId!, scenarioOrigin: 'home', truthMode: 'scenario' },
+                      })
+                    }}>
+                    Open related Scenario
+                  </button>
+                ) : null}
               </li>)}
             </ol> : <p>No recent activity records found.</p>}
             <p>This view does not send ledger entries to the model or authorize actions.</p>

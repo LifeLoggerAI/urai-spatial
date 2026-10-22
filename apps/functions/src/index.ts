@@ -78,6 +78,7 @@ export {
   discardPossibleFuture,
   comparePossibleFutureBranches,
   recordPossibleFutureOutcome,
+  getPossibleFutureOwnerReports,
   deletePossibleFuture,
 } from './scenarioOperations'
 export { calibratePossibleFutureOutcome } from './scenarioCalibration'

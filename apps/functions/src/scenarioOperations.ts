@@ -504,6 +504,70 @@ export const recordPossibleFutureOutcome = functions.https.onCall(async (data, c
   return { observationId, scenarioId, verified: false, source: 'user-assertion', idempotent }
 })
 
+/**
+ * Owner-only, read-only recall of reports for a CURRENT Scenario branch.
+ * User assertions are not independent observations or model-authorized facts.
+ * Never return provider secrets or unverified references as evidence.
+ */
+export const getPossibleFutureOwnerReports = functions.https.onCall(async (data, context) => {
+  const ownerId = uid(context)
+  const scenarioId = ensureScenarioId(data?.scenarioId)
+  const branchId = data?.branchId
+  if (typeof branchId !== 'string' || !/^br_[A-Za-z0-9_-]{12,96}$/.test(branchId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'A valid Scenario branch is required.')
+  }
+  const ref = scenarioRef(ownerId, scenarioId)
+  return db.runTransaction(async tx => {
+    await requireCurrentScenarioOwner(tx, ownerId)
+    const [scenarioSnap, branchSnap, policySnap, reportSnaps] = await Promise.all([
+      tx.get(ref),
+      tx.get(ref.collection('branches').doc(branchId)),
+      tx.get(db.doc('users/' + ownerId + '/privacyPolicy/current')),
+      tx.get(ref.collection('outcomeObservations').where('branchId', '==', branchId).limit(20)),
+    ])
+    const scenario = scenarioSnap.data()
+    const activeIds = asStringArray(scenario?.branchIds, BRANCH_LIMIT)
+    if (!scenarioSnap.exists || scenario?.ownerId !== ownerId
+      || !['ready', 'saved'].includes(String(scenario.status))
+      || !activeIds.includes(branchId) || !branchSnap.exists
+      || branchSnap.get('ownerId') !== ownerId
+      || branchSnap.get('scenarioId') !== scenarioId
+      || branchSnap.get('truthKind') !== 'scenario') {
+      throw new functions.https.HttpsError('not-found', 'Current Scenario branch not found.')
+    }
+    const policy = policySnap.data()
+    if (!policySnap.exists || !isCanonicalStoredPolicy(policy, ownerId)
+      || policy.domains.memory.mode !== 'granted'
+      || policy.enforcement.state !== 'fully-enforced') {
+      throw new functions.https.HttpsError('permission-denied', 'Current memory consent is required to read owner outcome reports.')
+    }
+    const reports: Array<{
+      observationId: string; branchId: string; assertion: string;
+      source: 'user-assertion'; verified: false; reportedAt: string | null;
+    }> = []
+    for (const doc of reportSnaps.docs) {
+      const row = doc.data()
+      // Old, foreign, synthetic, or independently unverified observation IDs
+      // never enter this owner-assertion recall surface.
+      if (row.ownerId !== ownerId || row.scenarioId !== scenarioId
+        || row.branchId !== branchId || row.source !== 'user-assertion'
+        || row.truthKind !== 'user-assertion'
+        || row.verification !== 'unverified-user-report'
+        || typeof row.assertion !== 'string' || !row.assertion.trim()
+        || row.assertion.length > 1200 || !/^obs_[A-Za-z0-9_-]{12,96}$/.test(doc.id)) continue
+      const recorded = row.reportedAt
+      const reportedAt = recorded && typeof recorded.toDate === 'function'
+        ? recorded.toDate().toISOString() : null
+      reports.push({
+        observationId: doc.id, branchId, assertion: row.assertion,
+        source: 'user-assertion', verified: false, reportedAt,
+      })
+    }
+    reports.sort((a, b) => (b.reportedAt ?? '').localeCompare(a.reportedAt ?? ''))
+    return { scenarioId, branchId, reports }
+  })
+})
+
 export const deletePossibleFuture = functions.https.onCall(async (data, context) => {
   const ownerId = uid(context); operationId(data?.operationId); const scenarioId = ensureScenarioId(data?.scenarioId)
   const ref = scenarioRef(ownerId, scenarioId)

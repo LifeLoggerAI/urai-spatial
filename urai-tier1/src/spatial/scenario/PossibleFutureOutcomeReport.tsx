@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { getAIActorSnapshot, getServerAIActorSnapshot, isCurrentAIActorSnapshot, subscribeAIActor, type AIActorSnapshot } from '@/lib/privacy/aiActorBoundary'
-import { reportPossibleFutureOwnerOutcomeClient } from '@/lib/scenario/scenarioClient'
+import { getPossibleFutureOwnerReportsClient, reportPossibleFutureOwnerOutcomeClient } from '@/lib/scenario/scenarioClient'
+import type { PossibleFutureOwnerReport } from '@/lib/scenario/scenarioClient'
 
 /**
  * Reports do not become independently verified memories. This component
@@ -28,6 +29,32 @@ function ActorBoundOwnerOutcomeReport({ actor, scenarioId, branchId }: {
   const [status, setStatus] = useState('No outcome has been reported for this branch in this session.')
   const [receipt, setReceipt] = useState<string | null>(null)
   const attempt = useRef<{ fingerprint: string; operationId: string } | null>(null)
+  const readGeneration = useRef(0)
+  const [reports, setReports] = useState<PossibleFutureOwnerReport[] | null>(null)
+  const [readStatus, setReadStatus] = useState('Checking for previously saved owner reports.')
+
+  const refreshReports = useCallback(async () => {
+    if (!actor.actor || !actor.uid || !isCurrentAIActorSnapshot(actor)) return
+    const generation = ++readGeneration.current
+    setReadStatus('Loading private outcome reports…')
+    try {
+      const saved = await getPossibleFutureOwnerReportsClient({ scenarioId, branchId })
+      if (generation !== readGeneration.current || !isCurrentAIActorSnapshot(actor)) return
+      setReports(saved)
+      setReadStatus(saved.length
+        ? 'Saved owner reports · unverified, not independent evidence'
+        : 'No owner reports saved for this Scenario branch.')
+    } catch {
+      if (generation !== readGeneration.current || !isCurrentAIActorSnapshot(actor)) return
+      setReports(null)
+      setReadStatus('Outcome history unavailable. No private reports were displayed.')
+    }
+  }, [actor, scenarioId, branchId])
+
+  useEffect(() => {
+    void refreshReports()
+    return () => { readGeneration.current += 1 }
+  }, [refreshReports])
 
   const report = async () => {
     const description = assertion.trim()
@@ -65,6 +92,7 @@ function ActorBoundOwnerOutcomeReport({ actor, scenarioId, branchId }: {
       setAcknowledged(false)
       attempt.current = null
       setStatus('Owner report saved. This is not independent evidence or a verified memory.')
+      void refreshReports()
     } catch {
       if (isCurrentAIActorSnapshot(actor)) {
         setStatus('The report was not confirmed. You may retry without changing the text; this reuses the same operation ID.')
@@ -106,5 +134,24 @@ function ActorBoundOwnerOutcomeReport({ actor, scenarioId, branchId }: {
     </button>
     <p role="status" aria-live="polite" style={{ margin: 0, fontSize: 12, opacity: .85 }}>{status}</p>
     {receipt ? <small>Saved report reference: {receipt}</small> : null}
+    <div aria-label="Previously saved owner outcome reports" style={{ display: 'grid', gap: 8 }}>
+      <strong>Previously reported outcomes</strong>
+      <button type="button" onClick={() => void refreshReports()} disabled={busy || !actor.uid}
+        style={{ minHeight: 48, padding: '0 14px', borderRadius: 999, color: 'inherit',
+          background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.3)' }}>
+        Refresh saved reports
+      </button>
+      <p role="status" aria-live="polite" style={{ margin: 0, fontSize: 12 }}>{readStatus}</p>
+      {reports && reports.length > 0
+        ? <ol style={{ margin: 0, paddingInlineStart: 24 }}>
+          {reports.map(item => <li key={item.observationId} style={{ marginBlock: 8 }}>
+            <strong>User-reported · not independently verified</strong>
+            <p style={{ margin: '4px 0', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+              {item.assertion}
+            </p>
+            <small>{item.reportedAt ?? 'Time unavailable'}</small>
+          </li>)}
+        </ol> : null}
+    </div>
   </section>
 }
