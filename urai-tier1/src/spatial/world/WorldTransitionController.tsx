@@ -61,7 +61,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
     // Relationship hints from an old memory never scope a different selection.
     if ((key === 'thread' || key === 'personId' || key === 'placeId') && (neutralDestination || (selectedMemoryId && !sameMemory))) continue
-    // Preserve private mode only for the matching selected memory.
+    // A privacy-mode hint from an old memory cannot describe a new star or neutral realm.
     if (key === 'privacyMode' && (!memoryDestination || !sameMemory)) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
@@ -116,6 +116,16 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
 
   // No node-to-memory or memory-to-node inference: these are separate
   // identities, and each consumer must independently validate access.
+  // Neutral destinations have a deliberately tiny URL contract. Unknown
+  // query keys can themselves carry owner IDs, session tokens or memory refs.
+  if (neutralDestination) {
+    const language = new URLSearchParams()
+    for (const key of ['locale', 'lang']) {
+      const value = target.searchParams.get(key)
+      if (value && /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/.test(value)) language.set(key, value)
+    }
+    target.search = language.toString()
+  }
   return `${target.pathname}${target.search}${target.hash}`
 }
 
