@@ -2,11 +2,23 @@
 import {useEffect,useRef,useState,type FormEvent,type CSSProperties} from 'react'
 import {usePathname} from 'next/navigation'
 import {onAuthStateChanged,type User} from 'firebase/auth'
-import {httpsCallable,getFunctions} from 'firebase/functions'
-import {app,getUraiAuth,firebasePublicEnvReady} from '@/lib/firebase/client'
+import {httpsCallable,getFunctions,connectFunctionsEmulator} from 'firebase/functions'
+import {app,getUraiAuth,firebasePublicEnvReady,uraiJourneyEmulatorEnabled} from '@/lib/firebase/client'
 import {chalkIntent,chalkDiagnostic} from './chalkSpatialContract.mjs'
 import {chalkReviewRequest,chalkReviewReceipt} from './chalkReviewBridge.mjs'
+import {CHALK_FUNCTIONS_REGION,requireChalkReviewEmulator} from './chalkEmulatorRouting.mjs'
 type Line={speaker:string;text:string}
+let regionalEmulatorConnected=false
+const reviewOptedIn=process.env.NEXT_PUBLIC_URAI_CHALK_EMULATOR_REVIEW==='true' && process.env.NEXT_PUBLIC_URAI_CHALK_JOBS_EMULATOR==='true'
+function chalkFunctions(){
+ const instance=getFunctions(app,CHALK_FUNCTIONS_REGION)
+ if(reviewOptedIn){
+  const address=requireChalkReviewEmulator({journeyEmulatorEnabled:uraiJourneyEmulatorEnabled,
+   projectId:app.options.projectId,reviewRequested:true,jobsEmulatorRequested:true})
+  if(!regionalEmulatorConnected){connectFunctionsEmulator(instance,address.host,address.port);regionalEmulatorConnected=true}
+ }
+ return instance
+}
 export default function ChalkPresenceRuntime(){
  const route=usePathname()||'/'
  const permitted=['/','/home','/ascent','/life-map','/focus','/replay'].includes(route)
@@ -44,7 +56,7 @@ export default function ChalkPresenceRuntime(){
   try{const intent=chalkIntent(text)
    if(intent==='READ_JOBS'){
     const call=httpsCallable<{limit:number},{jobs:Array<{jobId:string;status:string}>}>(
-      getFunctions(app,'us-central1'),'listChalkEngineeringJobs',{timeout:12000})
+      chalkFunctions(),'listChalkEngineeringJobs',{timeout:12000})
     const result=await call({limit:40})
     if(!active(saved,epoch))return
     if(!Array.isArray(result.data.jobs))throw Error('INVALID_READBACK')
@@ -71,12 +83,12 @@ export default function ChalkPresenceRuntime(){
   }catch{if(active(saved,epoch))add('Chalk','The protected capability or exact source identity is unavailable. No job or approval was changed.')}
   finally{if(active(saved,epoch))setBusy(false)}
  }
- const reviewEnabled=process.env.NEXT_PUBLIC_URAI_CHALK_EMULATOR_REVIEW==='true' && process.env.NEXT_PUBLIC_URAI_CHALK_JOBS_EMULATOR==='true'
+ const reviewEnabled=reviewOptedIn && uraiJourneyEmulatorEnabled && app.options.projectId==='demo-urai-auth-journey'
  const saveReview=async()=>{
   if(!reviewEnabled||!reviewRequest||busy||!user||access!=='permitted')return
   const saved=user,epoch=generation.current;setBusy(true)
   try{
-   const functions=getFunctions(app,'us-central1')
+   const functions=chalkFunctions()
    const submit=httpsCallable<typeof reviewRequest, {reviewId:string;requestId:string;sourceSha:string;state:string;result:string}>(functions,'submitChalkDiagnosticReview',{timeout:15000})
    const detail=httpsCallable<{reviewId:string},{reviewId:string;requestId:string;sourceSha:string;state:string;component:string;route:string;digest:string}>(functions,'getChalkDiagnosticReview',{timeout:15000})
    const submitted=(await submit(reviewRequest)).data
