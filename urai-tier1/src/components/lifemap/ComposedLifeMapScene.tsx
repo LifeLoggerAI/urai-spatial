@@ -13,7 +13,7 @@ import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
-import { advanceLifeMapFlight, lifeMapFlightLookTarget, lifeMapApproachWaypoints, type LifeMapFlightInput, type LifeMapFlightPose } from "./lifeMapFlight.mjs";
+import { advanceLifeMapFlight, lifeMapFlightLookTarget, lifeMapApproachWaypoints, lifeMapStagePoint, type LifeMapFlightInput, type LifeMapFlightPose } from "./lifeMapFlight.mjs";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
@@ -39,7 +39,7 @@ function selectedStagePoint(node: LifeMapNode, portrait: boolean) {
 }
 
 function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, departureFrom?: THREE.Vector3): CameraGoal {
-  const target = selectedStagePoint(node, portrait);
+  const target = new THREE.Vector3(...lifeMapStagePoint(node.position, portrait));
   const from = departureFrom?.toArray() ?? [...OVERVIEW_POSITION];
   const waypoints = lifeMapApproachWaypoints(from, target.toArray(), SELECTED_MEMORY_STANDOFF);
   const point = phase === "departure" ? waypoints.departure :
