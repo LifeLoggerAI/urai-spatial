@@ -433,7 +433,8 @@ export default function FocusChamberClient() {
     if (!href) return
     requestUraiWorldTravel({
       destination: 'focus', href, entryPortal: 'focus-neighbor-star',
-      cameraCheckpoint: `focus:${memory.star.id}`,
+      // The travel destination is the *new* star, not the one being left.
+      cameraCheckpoint: `focus:${node.id}`,
       context: { memoryId: memory.demo ? node.id : node.memoryId, replayManifestId: memory.demo ? undefined : node.replayManifestId, demo: memory.demo },
     })
   }, [committed, memory])
