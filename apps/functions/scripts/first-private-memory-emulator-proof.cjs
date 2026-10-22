@@ -142,11 +142,27 @@ async function main() {
     assert.equal(data.firstPrivateMemoryConsent.canonicalConsentReceiptHash, 'a'.repeat(64))
     assert.ok(data.createdAt instanceof admin.firestore.Timestamp, 'Actual committed server timestamp required')
     cases.push('real Firestore transaction committed hidden owner-scoped memory')
+    // Creation consent is not Life Map/Replay visibility. A legitimate owner
+    // policy change advances the revision BEFORE the upload receipt is issued.
+    // Receipts from an older policy revision must never be silently rebased.
+    assert.equal(data.firstPrivateMemoryConsent.consentRevision, 4)
     // Ready media MUST remain inaccessible before the owner's second decision.
     const send = (name, data, token) => fetch(FUNCTIONS + '/' + name, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
       body: JSON.stringify({ data }), signal: AbortSignal.timeout(30000),
     }).then(async r => ({ status: r.status, body: await r.json() }))
+    const prePermissionActivation = await send('activateFirstPrivateMemory', {
+      memoryId: 'syntheticFirstPrivateMemory', receiptId: 'd'.repeat(64),
+      derivativeSha256: sha(media), confirmPrivateReplay: true }, owner.idToken)
+    denied(prePermissionActivation, 'FAILED_PRECONDITION',
+      'private activation denied without Life Map/Replay permission, before media upload')
+    // Explicit synthetic owner consent update: a new policy epoch (5) precedes
+    // ALL uploads and private-activation receipt issuance.
+    await db.doc('users/' + uid + '/privacyPolicy/current').update({
+      revision: 5, 'domains.memory.lifeMapVisible': true, 'domains.memory.replayVisible': true,
+    })
+    const revisedPolicy = await db.doc('users/' + uid + '/privacyPolicy/current').get()
+    assert.equal(revisedPolicy.get('revision'), 5)
     const early = await send('getMemoryMediaUploadAuthority', { memoryId: 'syntheticFirstPrivateMemory' }, owner.idToken)
     assert.equal(early.status, 200, JSON.stringify(early.body))
     const attach = await send('registerMemoryMedia', { memoryId: 'syntheticFirstPrivateMemory',
@@ -159,12 +175,6 @@ async function main() {
     const hiddenPlayback = await send('getMemoryMediaPlaybackAuthority',
       { memoryId: 'syntheticFirstPrivateMemory', receiptId: uploadReceipt.receiptId }, owner.idToken)
     denied(hiddenPlayback, 'FAILED_PRECONDITION', 'hidden uploaded source cannot be played without second owner authorization')
-    const activateDenied = await send('activateFirstPrivateMemory', { memoryId: 'syntheticFirstPrivateMemory',
-      receiptId: uploadReceipt.receiptId, derivativeSha256: sha(media), confirmPrivateReplay: true }, owner.idToken)
-    denied(activateDenied, 'FAILED_PRECONDITION', 'private replay requires separate Life Map and Replay policy grants')
-    await db.doc('users/' + uid + '/privacyPolicy/current').update({
-      'domains.memory.lifeMapVisible': true, 'domains.memory.replayVisible': true,
-    })
     const activated = await send('activateFirstPrivateMemory', { memoryId: 'syntheticFirstPrivateMemory',
       receiptId: uploadReceipt.receiptId, derivativeSha256: sha(media), confirmPrivateReplay: true }, owner.idToken)
     assert.equal(activated.status, 200, JSON.stringify(activated.body))
@@ -172,6 +182,10 @@ async function main() {
     const bound = await db.doc(pathFor(uid, 'syntheticFirstPrivateMemory')).get()
     assert.equal(bound.get('privacy'), 'private')
     assert.equal(bound.get('firstPrivateMemoryActivation.mediaReceiptId'), uploadReceipt.receiptId)
+    assert.equal(bound.get('firstPrivateMemoryConsent.consentRevision'), 4)
+    assert.equal(bound.get('firstPrivateMemoryActivation.consentRevision'), 5)
+    const committedReceipt = await db.doc('users/' + uid + '/memoryMediaReceipts/' + uploadReceipt.receiptId).get()
+    assert.equal(committedReceipt.get('consentRevision'), 5)
     // Bucket IAM is not emulated. Authenticated activation is proven separately
     // from byte delivery; the emulator must deny unverifiable bucket security.
     const descriptor = await send('getMemoryMediaPlaybackAuthority',
