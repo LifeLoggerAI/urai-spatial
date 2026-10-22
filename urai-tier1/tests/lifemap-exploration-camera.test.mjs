@@ -115,7 +115,7 @@ test("world transform does not change when a star is selected", () => {
   const world = readFileSync(new URL("../src/components/lifemap/LifeMapProductionWorld.tsx", import.meta.url), "utf8");
   assert.match(world, /const stage = lifeMapWorldStageTransform\(portrait\)/);
   assert.doesNotMatch(world, /const stageScale: Point3 = selected \?/);
-  assert.match(world, /const visible = !selected \|\| active \|\| related/);
+  assert.match(world, /const visible = true/);
 });
 test("camera aims at star in the same fixed transformed world coordinates", () => {
   const scene = readFileSync(new URL("../src/components/lifemap/ComposedLifeMapScene.tsx", import.meta.url), "utf8");
@@ -127,4 +127,12 @@ test("camera aims at star in the same fixed transformed world coordinates", () =
       assert.deepEqual(lifeMapStagePoint(point, portrait), point.map((v, n) => v * stage.scale[n] + stage.position[n]));
     }
   }
+});
+
+test("arrival preserves one authored selected star and surrounding visible alternatives", () => {
+  const world = readFileSync(new URL("../src/components/lifemap/LifeMapProductionWorld.tsx", import.meta.url), "utf8");
+  const arrival = world.slice(world.indexOf("function SelectedMemoryArrival("), world.indexOf("function ArchiveParticles(", world.indexOf("function SelectedMemoryArrival(")));
+  assert.ok(arrival.includes('semanticOwner: "life-map-selected-memory-atmosphere"'));
+  assert.doesNotMatch(arrival, /<AuthoredMemoryStar /);
+  assert.match(world, /const visible = true/);
 });
