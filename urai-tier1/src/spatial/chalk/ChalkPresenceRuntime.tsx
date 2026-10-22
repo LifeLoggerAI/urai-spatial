@@ -111,7 +111,7 @@ export default function ChalkPresenceRuntime(){
   const scope=window as unknown as {SpeechRecognition?:new()=>any;webkitSpeechRecognition?:new()=>any}
   const C=scope.SpeechRecognition||scope.webkitSpeechRecognition
   if(!C){setStatus('Browser speech input unavailable. Type instead.');return}
-  stop();const r=new C(),saved=user,epoch=generation.current
+  stop();const r=new C(),saved=user,epoch=generation.current,originRoute=route,originRouteEpoch=routeEpoch.current
   r.continuous=false;r.interimResults=false;r.lang='en-US'
   r.onresult=(ev:{results:ArrayLike<{0:{transcript:string}}>})=>{if(recognition.current===r&&active(saved,epoch,originRoute,originRouteEpoch))setInput(Array.from(ev.results).map(v=>v[0]?.transcript||'').join(' ').slice(0,1200))}
   r.onend=()=>{if(recognition.current===r){recognition.current=null;setListening(false)}}
