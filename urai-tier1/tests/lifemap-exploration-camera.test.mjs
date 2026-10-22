@@ -164,3 +164,11 @@ test("neighboring memory stars remain distant clusters through selected Focus ap
   assert.match(world, /scale=\{0\.58 \+ importance \* 0\.22\}/);
   assert.doesNotMatch(world, /scale=\{active \? 1\.46 : selected && !related/);
 });
+
+test("particle Memory Stars have a raycast hit surface without a duplicate visible star", () => {
+  const world = readFileSync(new URL("../src/components/lifemap/LifeMapProductionWorld.tsx", import.meta.url), "utf8");
+  assert.match(world, /name=\{`life-map-star-hit-\$\{node\.id\}`\}/);
+  assert.match(world, /semanticRole: "memory-star-hit"/);
+  assert.match(world, /<sphereGeometry args=\{\[overviewCluster \? 1\.42 : 1\.06, 14, 10\]\}/);
+  assert.match(world, /<meshBasicMaterial colorWrite=\{false\} depthWrite=\{false\} transparent opacity=\{0\}/);
+});
