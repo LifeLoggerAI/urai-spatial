@@ -151,11 +151,27 @@ async function main() {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
       body: JSON.stringify({ data }), signal: AbortSignal.timeout(30000),
     }).then(async r => ({ status: r.status, body: await r.json() }))
+    // An invented receipt could be denied for missing media, not permissions.
+    // Create a SECOND fictional hidden memory and upload real synthetic audio
+    // while visibility remains disabled. A ready receipt isolates the policy gate.
+    const permissionGated = packet(uid, 'syntheticVisibilityDenied', media)
+    const gatedCreated = await call(confirmed(permissionGated), owner.idToken)
+    assert.equal(gatedCreated.status, 200, JSON.stringify(gatedCreated.body))
+    const gatedUpload = await send('registerMemoryMedia', {
+      memoryId: 'syntheticVisibilityDenied', operationId: permissionGated.upload.request.operationId,
+      kind: 'audio', contentType: 'audio/ogg', base64: media.toString('base64'),
+    }, owner.idToken)
+    assert.equal(gatedUpload.status, 200, JSON.stringify(gatedUpload.body))
+    assert.equal(gatedUpload.body.result.state, 'ready')
+    const gatedReceipt = await db.doc('users/' + uid + '/memoryMediaReceipts/' + gatedUpload.body.result.receiptId).get()
+    assert.equal(gatedReceipt.get('consentRevision'), 4)
     const prePermissionActivation = await send('activateFirstPrivateMemory', {
-      memoryId: 'syntheticFirstPrivateMemory', receiptId: 'd'.repeat(64),
+      memoryId: 'syntheticVisibilityDenied', receiptId: gatedUpload.body.result.receiptId,
       derivativeSha256: sha(media), confirmPrivateReplay: true }, owner.idToken)
     denied(prePermissionActivation, 'FAILED_PRECONDITION',
-      'private activation denied without Life Map/Replay permission, before media upload')
+      'ready upload cannot activate while Life Map/Replay permission is denied')
+    assert.equal(prePermissionActivation.body.error?.message, 'FIRST_PRIVATE_MEMORY_ACTIVATION_NOT_AUTHORIZED')
+    assert.equal((await db.doc(pathFor(uid, 'syntheticVisibilityDenied')).get()).get('privacy'), 'hidden')
     // Explicit synthetic owner consent update: a new policy epoch (5) precedes
     // ALL uploads and private-activation receipt issuance.
     await db.doc('users/' + uid + '/privacyPolicy/current').update({
