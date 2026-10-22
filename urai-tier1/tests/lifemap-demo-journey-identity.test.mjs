@@ -363,9 +363,27 @@ for(const sample of canonicalLifeMapDemoNodes.filter(sample=>!sample.locked)) te
     assert.equal(destination.searchParams.get('manifestId'),expectedManifest)
     assert.equal(destination.searchParams.get('demo'),'1')
   }
-  const restored=fixture(returnedLifeMap.search,{component:'scene',memoryNodes:canonicalLifeMapDemoNodes}).render()
-  assert.equal(restored.props['data-life-map-mode'],'selected');assert.equal(restored.props['data-life-map-phase'],'arrival')
-  const title=descendants(restored).find(element=>element.props.className==='life-map-title')
+  // Focus unwinds outward into the actual Life Map OVERVIEW. A stale URL
+  // node hint must not silently reopen its memory or bypass the overview.
+  // Memory identity remains in the authorized demo URL for explicit re-entry.
+  assert.equal(returnedLifeMap.searchParams.get('overview'),'1')
+  const restored=fixture(returnedLifeMap.search,{component:'scene',memoryNodes:canonicalLifeMapDemoNodes})
+  const overviewScene=restored.render()
+  assert.equal(overviewScene.props['data-life-map-mode'],'overview')
+  assert.equal(overviewScene.props['data-life-map-phase'],'overview')
+  const overviewTitle=descendants(overviewScene).find(element=>element.props.className==='life-map-title')
+  assert.equal(overviewTitle.props.children[1].props.children,'Your living universe')
+  // A deliberate second star selection, not URL hydration, restores the
+  // original disclosed sample and its one canonical replay manifest.
+  const reselected=restored.select(1,sample.id)
+  assert.equal(reselected.get('node'),sample.id)
+  assert.equal(reselected.get('memoryId'),sample.id)
+  assert.deepEqual(reselected.getAll('manifestId'),[expectedManifest])
+  assert.equal(reselected.get('demo'),'1')
+  const selectedScene=restored.render()
+  assert.equal(selectedScene.props['data-life-map-mode'],'selected')
+  assert.equal(selectedScene.props['data-life-map-phase'],'arrival')
+  const title=descendants(selectedScene).find(element=>element.props.className==='life-map-title')
   assert.equal(title.props.children[1].props.children,sample.title)
 })
 
