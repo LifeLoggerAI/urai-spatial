@@ -100,6 +100,7 @@ const tests = [
   'tests/world-return-destination.test.mjs',
   'tests/world-destination-surface-readiness.test.mjs',
   'tests/world-route-identity-readiness.test.mjs',
+  'tests/world-neutral-route-privacy.test.mjs',
   'tests/world-travel-fallback-generation.test.mjs',
   'tests/world-return-identity-isolation.test.mjs',
   'tests/replay-trail-geometry.test.mjs',
