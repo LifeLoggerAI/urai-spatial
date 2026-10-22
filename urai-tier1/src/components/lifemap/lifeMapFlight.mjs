@@ -48,9 +48,14 @@ export function lifeMapApproachWaypoints(from, target, standoff = 5.8) {
     Number.isFinite(target?.[i]) ? target[i] : fallback);
   const delta = start.map((v, i) => v - focus[i]);
   const length = Math.hypot(...delta);
-  const direction = length > 0.01 ? delta.map(v => v / length) : [0, 0.02, 1];
+  const direction = length > 0.01 ? delta.map(v => v / length) : [0, 0, 1];
   const safeStandoff = clampLifeMap(standoff, 2, 10);
-  const arrival = focus.map((v, i) => v + direction[i] * safeStandoff + (i === 1 ? 0.34 : 0));
+  // A nearby star must not push the viewer several units backward.
+  // Retreat is allowed only when already inside the minimum safety clearance.
+  const arrivalDistance = length >= safeStandoff ? safeStandoff :
+    length > 0.85 ? Math.max(0.85, length * 0.8) : 0.85;
+  const lift = Math.min(0.34, Math.max(0, length - arrivalDistance) * 0.2);
+  const arrival = focus.map((v, i) => v + direction[i] * arrivalDistance + (i === 1 ? lift : 0));
   const span = Math.hypot(...arrival.map((v, i) => v - start[i]));
   const sideLength = Math.hypot(direction[2], direction[0]) || 1;
   const side = [-direction[2] / sideLength, 0, direction[0] / sideLength];
