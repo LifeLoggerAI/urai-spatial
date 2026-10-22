@@ -27,7 +27,7 @@ import MemoryMediaAttachment from '@/spatial/memory/MemoryMediaAttachment'
 import { FocusLifeMapContext } from '@/components/lifemap/LifeMapProductionWorld'
 import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
 import type { LifeMapNode } from '@/components/lifemap/lifeMapData'
-import { currentFocusNode, eligibleFocusNeighbors, focusNeighborHref } from './focusNeighborContinuity'
+import { currentFocusNode, eligibleFocusNeighbors, focusNeighborHref, isAuthorizedFocusNeighborReturn } from './focusNeighborContinuity'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { shouldHandleRealmEscape } from '@/spatial/world/realmEscapeEligibility.mjs'
 
@@ -406,10 +406,11 @@ export default function FocusChamberClient() {
     const validNode = Boolean(node && /^[A-Za-z0-9._:-]{1,120}$/.test(node))
     const fromLifeMap = incoming.get('from') === 'life-map' || incoming.get('from') === 'life-map-semantic'
     const originalSelection = fromLifeMap && node === incoming.get('returnNode')
+    const verifiedNeighborSelection = isAuthorizedFocusNeighborReturn(node, incoming.get('from'), selectedNode)
     const projectedSelection = node === `canonical-memory:${memory.id}`
     // A projected Memory Star has a distinct scene ID from its canonical memory.
     // Preserve it across Focus -> Replay -> Focus without ever treating it as authority.
-    const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id
+    const returnNode = sameMemory && validNode && (originalSelection || projectedSelection || verifiedNeighborSelection) ? node! : memory.star.id
     const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: returnNode, from: 'focus-artifact' })
     if (returnNode !== memory.star.id) next.set('returnNode', returnNode)
     if (memory.demo) next.set('demo', '1')
@@ -420,7 +421,7 @@ export default function FocusChamberClient() {
       })
     }
     return `/replay?${next.toString()}`
-  }, [memory, location])
+  }, [memory, location, selectedNode])
 
   const enterReplay = useCallback(() => {
     if (!memory || !replayHref || committed) return
