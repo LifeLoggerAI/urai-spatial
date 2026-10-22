@@ -89,3 +89,14 @@ export function lifeMapStagePoint(point, portrait) {
   const { scale, position } = lifeMapWorldStageTransform(portrait);
   return [0, 1, 2].map((index) => point[index] * scale[index] + position[index]);
 }
+
+/** Physical Memory Star tap intent only. Semantic navigator re-selection
+ * remains a pure selection operation and never implicitly enters Replay.
+ * This is a UI gate; the server continues to enforce owner/media authority.
+ */
+export function lifeMapWorldStarAction(clickedId, selectedId, phase, replayAllowed) {
+  if (!clickedId) return "ignore";
+  if (clickedId !== selectedId) return "select";
+  if (phase !== "arrival") return "ignore";
+  return replayAllowed ? "replay" : "ignore";
+}
