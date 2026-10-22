@@ -65,6 +65,7 @@ import SensorySafeRuntime from '@/spatial/accessibility/SensorySafeRuntime'
 import LocaleRuntime from './LocaleRuntime'
 import NativeLinkRuntime from './NativeLinkRuntime'
 import AdamPresenceRuntime from '@/spatial/adam/AdamPresenceRuntime'
+import ChalkPresenceRuntime from '@/spatial/chalk/ChalkPresenceRuntime'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
@@ -150,6 +151,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <UraiV2OnboardingLayer />
             <Suspense fallback={null}>
               <AdamPresenceRuntime />
+              <ChalkPresenceRuntime />
             </Suspense>
           </ManualEmotionalWeatherProvider>
         </WorldRuntimeBoundary>
