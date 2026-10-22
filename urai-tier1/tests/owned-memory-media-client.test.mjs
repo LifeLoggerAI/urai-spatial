@@ -10,6 +10,8 @@ import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 const require = createRequire(import.meta.url), ts = require('typescript')
 const compile = source => ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
 const code = compile(fs.readFileSync('src/lib/privacy/ownedMemoryMediaClient.ts', 'utf8'))
+assert.match(fs.readFileSync('src/lib/privacy/ownedMemoryMediaClient.ts', 'utf8'), /getUraiAuth\(\)/)
+assert.doesNotMatch(fs.readFileSync('src/lib/privacy/ownedMemoryMediaClient.ts', 'utf8'), /\bgetAuth\(app\)/)
 const componentCode = compile(fs.readFileSync('src/spatial/memory/MemoryMediaAttachment.tsx', 'utf8'))
 const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3])
 const digest = createHash('sha256').update(bytes).digest('hex')
@@ -21,7 +23,7 @@ function fixture() {
   } }; auth.currentUser = user
   const authority = { schemaVersion: 'urai-owned-memory-media-v1', ownerId: memory.ownerId, memoryId: memory.id, consentRevision: 4, expiresAt: Date.now() + 30000 }
   const receipt = { memoryId: memory.id, receiptId: 'a'.repeat(64), state: 'ready', sha256: digest, byteLength: bytes.length, contentType: 'image/png' }
-  const imports = { 'firebase/auth': { getAuth: () => auth }, '@/lib/firebase/client': { app, firebasePublicEnvReady: true, functions: {} },
+  const imports = { 'firebase/auth': { getAuth: () => auth }, '@/lib/firebase/client': { app, firebasePublicEnvReady: true, functions: {}, getUraiAuth: () => auth },
     'firebase/functions': { httpsCallable: (_functions, name) => async payload => {
       state.calls.push({ name, payload }); await control[name]?.(payload)
       return { data: name === 'getMemoryMediaUploadAuthority' ? { ...authority } : { ...receipt } }
