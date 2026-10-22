@@ -31,6 +31,7 @@ import { memoryWorldReplayHref } from '@/spatial/memory-world/memoryWorldReplay'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { shouldHandleRealmEscape } from '@/spatial/world/realmEscapeEligibility.mjs'
 import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
 import { ReplayProductControls } from './ReplayProductControls'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
@@ -610,7 +611,13 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     const onKey = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null
       const interactive = Boolean(target?.closest('button, input, textarea, select, summary, a, [role="button"]'))
-      if (event.key === 'Escape') { pauseMemory(); event.preventDefault(); unwind(); return }
+      if (event.key === 'Escape') {
+        if (!shouldHandleRealmEscape(event)) return
+        pauseMemory()
+        event.preventDefault()
+        unwind()
+        return
+      }
       if (!interactive && (event.key === ' ' || event.key === 'Enter')) { event.preventDefault(); togglePlayback() }
     }
     window.addEventListener('keydown', onKey)
