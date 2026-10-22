@@ -25,6 +25,8 @@ const tests = [
   'tests/lifemap-demo-journey-identity.test.mjs',
   'tests/lifemap-route-transaction-query-lifecycle.test.mjs',
   'tests/lifemap-context-readiness-fence.test.mjs',
+  'tests/life-map-auth-hydration.test.mjs',
+  'tests/life-map-auth-route-boundary.test.mjs',
   'tests/lifemap-webgl-restoration-proof.test.mjs',
   'tests/lifemap-data-boundary.test.mjs',
   'tests/lifemap-semantic-owner-contract.test.mjs',
