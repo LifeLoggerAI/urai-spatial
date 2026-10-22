@@ -201,7 +201,10 @@ export function WorldTransitionController() {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['data-testid', 'data-route-owner'],
+      // A mounted Focus/Replay scene may switch memories without replacing its
+      // DOM node. Identity changes must wake the route-ownership observer,
+      // otherwise the old watchdog can hold the transition veil unnecessarily.
+      attributeFilter: ['data-testid', 'data-route-owner', 'data-memory-id', 'data-manifest-id', 'data-memory-status'],
     })
     stopNavigationObservation.current = () => {
       unsubscribeLocation()
