@@ -112,8 +112,16 @@ test('Relationships use curved semantic path classes, living pulses, and privacy
 })
 
 test('Selection Focus Replay Overview and Escape preserve artifact identity', () => {
-  assert.ok(source.includes('next.set("memoryId", node.id)'))
-  assert.ok(source.includes('next.set("node", node.id)'))
+  const start = source.indexOf('const selectNode = useCallback(')
+  const end = source.indexOf('const overview = useCallback(', start)
+  assert.ok(start >= 0 && end > start, 'canonical in-world selection boundary missing')
+  const selection = source.slice(start, end)
+  assert.ok(selection.includes('setSelectedId(node.id)'))
+  assert.ok(selection.includes('setPhase("departure")'))
+  assert.doesNotMatch(selection, /router\\.(?:replace|push)\\(/, 'selection must not remount the scene mid-flight')
+  assert.ok(source.includes('next.set("node", selected.id)'))
+  assert.ok(source.includes('if (explicitDemoRequested) next.set("memoryId", selected.id)'))
+  assert.ok(source.includes('else if (selected.authorizedMemory && selected.memoryId) next.set("memoryId", selected.memoryId)'))
   assert.ok(source.includes('next.set("returnNode", selected.id)'))
   assert.ok(source.includes('next.set("artifactFamily", resolveArtifactFamily(selected))'))
   assert.ok(source.includes('router.push(destinationHref("focus"))'))
