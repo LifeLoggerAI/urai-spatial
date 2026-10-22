@@ -42,7 +42,11 @@ export default function ChalkPresenceRuntime(){
   const saved=user,epoch=generation.current;stop();setInput('');add('You',text);setBusy(true)
   try{const intent=chalkIntent(text)
    if(intent==='READ_JOBS'){
-    // Spatial and Jobs use distinct Firebase projects. No cross-project token exchange is approved.\n    // Stay fail-closed: do not call the Jobs function with a Spatial ID token.\n    add('Chalk','Engineering Jobs readback is unavailable until the protected cross-project identity bridge is accepted. No tasks were accessed.');\n    setStatus('Jobs integration not yet authorized.');\n   }else if(intent==='DIAGNOSTIC'){
+    // Spatial and Jobs use distinct Firebase projects. No cross-project token exchange is approved.
+    // Stay fail-closed: do not call the Jobs function with a Spatial ID token.
+    add('Chalk','Engineering Jobs readback is unavailable until the protected cross-project identity bridge is accepted. No tasks were accessed.');
+    setStatus('Jobs integration not yet authorized.');
+   }else if(intent==='DIAGNOSTIC'){
     const component=route==='/'?'home':route.slice(1)
     const sourceSha=process.env.NEXT_PUBLIC_URAI_BUILD_SHA||''
     // Never infer private selection from query strings, the scene DOM or model text.
