@@ -75,3 +75,10 @@ test('Focus and Life Map share the realm-owned Escape guard', () => {
   const lifeMap = readFileSync(new URL('../src/app/life-map/LifeMapEscapeBridge.tsx', import.meta.url), 'utf8')
   for (const source of [focus, lifeMap]) assert.match(source, /if \(!shouldHandleRealmEscape\(event\)\) return/)
 })
+
+test('Focus does not silently rewrite an unselected route using a stale session manifest', () => {
+  const focus = readFileSync(new URL('../src/app/focus/FocusEscapeBridge.tsx', import.meta.url), 'utf8')
+  assert.doesNotMatch(focus, /window\.history\.replaceState|PopStateEvent|router\.replace\(target\)/)
+  assert.doesNotMatch(focus, /setTimeout\(/)
+  assert.doesNotMatch(focus, /urai-replay-return-manifest-id/)
+})
