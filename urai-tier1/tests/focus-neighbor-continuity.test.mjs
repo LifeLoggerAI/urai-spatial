@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { currentFocusNode, eligibleFocusNeighbors, focusNeighborHref } from '../src/app/focus/focusNeighborContinuity.ts'
+import { currentFocusNode, eligibleFocusNeighbors, focusNeighborHref, isAuthorizedFocusNeighborReturn } from '../src/app/focus/focusNeighborContinuity.ts'
 
 const node = (id, memoryId, authorizedMemory = true, position = [0, 0, 0]) => ({
   id, type: 'memory', title: id, position, intensity: 0.7,
@@ -83,4 +83,11 @@ test('non-replayable disclosed artifacts stay in Life Map, never appear as Focus
   assert.deepEqual(eligibleFocusNeighbors([nodes[0], pattern, nodes[1]], nodes[0], sample).map(n => n.id), ['star-b'])
   assert.equal(focusNeighborHref(pattern, true), null)
   assert.equal(new URL(focusNeighborHref(nodes[1], true), 'https://example.invalid').searchParams.get('memoryId'), 'star-b')
+})
+
+test('Replay carries a neighboring star only when Focus verified its selected node', () => {
+  assert.equal(isAuthorizedFocusNeighborReturn('star-b', 'focus-neighbor', nodes[1]), true)
+  assert.equal(isAuthorizedFocusNeighborReturn('star-c', 'focus-neighbor', nodes[1]), false)
+  assert.equal(isAuthorizedFocusNeighborReturn('star-b', 'forged-origin', nodes[1]), false)
+  assert.equal(isAuthorizedFocusNeighborReturn('star-b', 'focus-neighbor', null), false)
 })
