@@ -832,12 +832,14 @@ function GalaxyDepth({ tier, reducedMotion }: { tier: SpatialQualityProfile["tie
   );
 }
 
-export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSelect, cameraRig, webglRecovery }: {
+export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSelect, onStarClick, cameraRig, webglRecovery }: {
   nodes: LifeMapNode[];
   selected: LifeMapNode | null;
   phase: LifeMapJourneyPhase;
   profile: SpatialQualityProfile;
   onSelect: (node: LifeMapNode) => void;
+  /** Physical star click is distinct from semantic navigator selection. */
+  onStarClick: (node: LifeMapNode) => void;
   cameraRig: ReactNode;
   webglRecovery: ReactNode;
 }) {
@@ -889,7 +891,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
           <ForegroundObservatory selected={selected} />
           <OverviewLandmarks selected={selected} />
           <group name="life-map-memory-artifact-families">
-            {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}
+            {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onStarClick} />)}
           </group>
           <group name="life-map-selected-relationship-context" />
           <SelectedMemoryArrival selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
