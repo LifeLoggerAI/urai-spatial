@@ -11,6 +11,7 @@ test('Focus Replay forwards the selected canonical Memory Star without minting m
  assert.match(source,/const verifiedNeighborSelection = isAuthorizedFocusNeighborReturn\(node, incoming\.get\('from'\), selectedNode\)/)
  assert.match(source,/const returnNode = sameMemory && validNode && \(originalSelection \|\| projectedSelection \|\| verifiedNeighborSelection\)/)
  assert.match(source,/next.set\('returnNode', returnNode\)/)
+ assert.match(source,/data-star-id=\{memory\?\.star\.id\} data-node=\{selectedNode\?\.id \?\? memory\?\.star\.id\}/)
  assert.match(source,/cameraCheckpoint: `focus:\$\{selectedNode\?\.id \?\? memory\.star\.id\}`/)
  assert.match(source,/\[committed, memory, replayHref, selectedNode\]/)
 
