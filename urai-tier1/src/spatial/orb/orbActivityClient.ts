@@ -39,7 +39,7 @@ export async function readOrbActivity(actor: AIActorSnapshot): Promise<OrbActivi
       id: row.entryId,
       kind,
       truthKind,
-      recordedAt: typeof row.timestamp === 'string' && /^\\d{4}-\\d{2}-\\d{2}T/.test(row.timestamp)
+      recordedAt: typeof row.timestamp === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(row.timestamp)
         ? row.timestamp.slice(0, 19).replace('T', ' ') + ' UTC' : 'Time unavailable',
       scenarioId: typeof row.scenarioId === 'string' && /^scn_[A-Za-z0-9_-]{12,96}$/.test(row.scenarioId)
         ? row.scenarioId : null,
