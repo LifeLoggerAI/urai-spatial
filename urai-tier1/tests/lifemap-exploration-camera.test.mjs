@@ -146,5 +146,6 @@ test("physical selected star enters Replay only upon authorized arrival", () => 
   const scene = readFileSync(new URL("../src/components/lifemap/ComposedLifeMapScene.tsx", import.meta.url), "utf8");
   assert.match(scene, /onStarClick=\{activateWorldStar\}/);
   assert.match(scene, /node\.replayAvailable && !node\.locked && \(explicitDemoRequested \|\| node\.authorizedMemory\)/);
+  assert.match(scene, /router\.push\(destinationHref\("replay"\)\)/);
   assert.match(scene, /forwardPrivateMovieRouteSelection\(next, params/);
 });
