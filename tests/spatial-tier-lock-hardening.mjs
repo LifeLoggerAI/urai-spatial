@@ -198,17 +198,22 @@ async function runNavigationStack(page, stage, report) {
   await enterDemoFocus(page);
   await enterDemoReplay(page);
   report.checks.push({ name: 'Real Home to disclosed Life Map, Focus and Replay', status: 'passed' });
-  await page.locator('.replayWorld button.unwind').first().click();
+  // Founder browser regression: one Escape per world, with an overview-ready
+  // Life Map after Focus Unwind. Button navigation alone missed this defect.
+  await page.keyboard.press('Escape');
   await page.waitForURL(/\/focus(?:\?|$)/, { timeout: 40000 });
   await expectAttr(page.getByTestId('urai-final-focus-chamber'), 'data-manifest-id', DEMO_MANIFEST, 40000);
-  await page.locator('.focusControls button.unwind').first().click();
+  await page.keyboard.press('Escape');
   await page.waitForURL(/\/life-map(?:\/|\?|$)/, { timeout: 40000 });
   const scene = page.getByTestId('urai-true-3d-life-map');
   await expectVisible(scene, 'returned Life Map', 40000);
   await expectAttr(scene, 'data-life-map-source', 'explicit-demo', 30000);
-  await page.locator('.life-map-thresholds .overview-return').click();
   await expectAttr(scene, 'data-life-map-mode', 'overview', 30000);
-  await page.locator('.life-map-overview-controls .overview-home-return').click();
+  if (new URL(page.url()).searchParams.get('overview') !== '1') {
+    throw new Error('FOCUS_UNWIND_DID_NOT_LAND_LIFE_MAP_OVERVIEW');
+  }
+  report.checks.push({name:'Replay -> Focus -> Life Map overview requires one Escape each',status:'passed'});
+  await page.keyboard.press('Escape');
   await page.waitForURL(/\/home(?:\/|\?|$)/, { timeout: 40000 });
   await screenshot(page, report, 'real-navigation-return-home');
 }
