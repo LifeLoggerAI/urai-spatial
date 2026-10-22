@@ -43,12 +43,13 @@ const policy = { ownerId: 'owner', revision: 12, domains: {
 const isRecord = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 const isCanonicalStoredPolicy = (value, uid) => value?.ownerId === uid && value?.revision === 12
 
-function fixture(overrides = {}) {
-  const writes = []
-  const doc = (exists, data = {}) => ({
+const makeDoc = (exists, data = {}) => ({
     exists, data: () => exists ? data : undefined,
     get: (key) => exists ? data[key] : undefined,
   })
+function fixture(overrides = {}) {
+  const writes = []
+  const doc = makeDoc
   const records = {
     'users/owner': doc(true, { deleted: false, accountStatus: 'active', privacyRevision: 12 }),
     'users/owner/privacyPolicy/current': doc(true, policy),
@@ -81,7 +82,7 @@ test('active owner can record a single bounded voice rate increment', async () =
 })
 test('deleting or deleted owner cannot create voice rate limit records', async () => {
   for (const state of ['deleting', 'deleted', 'disabled']) {
-    const { consumeRateLimit, writes, doc } = fixture({ 'users/owner': doc(true, { accountStatus: state }) })
+    const { consumeRateLimit, writes, doc } = fixture({ 'users/owner': makeDoc(true, { accountStatus: state }) })
     await assert.rejects(consumeRateLimit('owner','elevenlabs',6), e => e.code === 'PROVIDER_OWNER_INACTIVE')
     assert.equal(writes.length, 0)
   }
@@ -100,7 +101,7 @@ test('pending deletion, tombstone, and invalid fence each block voice limiter wr
 })
 test('stale privacy revision blocks voice limiter before writing', async () => {
   const { consumeRateLimit, writes, doc } = fixture({
-    'users/owner': doc(true, { privacyRevision: 11, accountStatus: 'active' }),
+    'users/owner': makeDoc(true, { privacyRevision: 11, accountStatus: 'active' }),
   })
   await assert.rejects(consumeRateLimit('owner','elevenlabs',6), e => e.code === 'PROVIDER_OWNER_INACTIVE')
   assert.equal(writes.length, 0)
@@ -115,7 +116,7 @@ test('active owner telemetry writes only aggregates in the same transaction as o
 })
 test('late telemetry cannot recreate private records after account deletion', async () => {
   for (const owner of [{ deleted: true }, { accountStatus: 'deleting' }]) {
-    const { recordTelemetry, writes, doc } = fixture({ 'users/owner': doc(true,owner) })
+    const { recordTelemetry, writes, doc } = fixture({ 'users/owner': makeDoc(true,owner) })
     await recordTelemetry({uid:'owner',provider:'elevenlabs',outcome:'failure',inputUnits:0,latencyMs:6})
     assert.equal(writes.length,0)
   }
