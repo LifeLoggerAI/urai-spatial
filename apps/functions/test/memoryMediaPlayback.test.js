@@ -435,6 +435,8 @@ test('actual backend and browser adapter agree on private descriptor, full immut
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(clientPath, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText,
   { module: client, exports: client.exports, URL, Uint8Array, Blob, AbortController, setTimeout, clearTimeout, fetch, crypto: crypto.webcrypto,
+    // Explicitly exercise the production endpoint. Never inherit developer emulator flags.
+    process: { env: { NODE_ENV: 'production', NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR: 'false', NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'urai-4dc1d' } },
     require: name => { throw new Error(`Unexpected private browser dependency ${name}`) } }, { filename: clientPath })
   assert.equal(client.exports.validateOwnedMemoryPlaybackDescriptor(d, { ownerId: uid, memoryId, receipt: { kind: 'video', mediaReceiptId: receiptId } }), true)
   const server = http.createServer(async (request, response) => {
