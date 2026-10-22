@@ -161,7 +161,9 @@ async function enterDemoFocus(page) {
   await chooseDisclosedMemory(page);
   const action = selectedMemoryFocusAction(page);
   await expectVisible(action, 'real selected Focus action', 30000);
-  await action.click();
+  // A cold Next dev-server Focus compilation can exceed Playwright's default
+  // 30-second implicit navigation wait. Keep explicit URL and scene assertions.
+  await action.click({ timeout: 60000 });
   await page.waitForURL(/\/focus(?:\?|$)/, { timeout: 40000 });
   const focus = page.getByTestId('urai-final-focus-chamber');
   await expectVisible(focus, 'canonical stellar Focus', 40000);
@@ -206,8 +208,15 @@ async function runNavigationStack(page, stage, report) {
   const scene = page.getByTestId('urai-true-3d-life-map');
   await expectVisible(scene, 'returned Life Map', 40000);
   await expectAttr(scene, 'data-life-map-source', 'explicit-demo', 30000);
-  await page.locator('.life-map-thresholds .overview-return').click();
+  // Focus unwind deliberately lands on Life Map overview=1, not a re-selected
+  // star. Preserve the actual Focus -> overview -> Home founder journey.
+  await page.waitForURL(
+    (url) => /^\/life-map\/?$/.test(url.pathname) && url.searchParams.get('overview') === '1',
+    { timeout: 40000 },
+  );
   await expectAttr(scene, 'data-life-map-mode', 'overview', 30000);
+  await expectAttr(scene, 'data-life-map-phase', 'overview', 30000);
+  await page.locator('.life-map-thresholds').waitFor({ state: 'detached', timeout: 30000 });
   await page.locator('.life-map-overview-controls .overview-home-return').click();
   await page.waitForURL(/\/home(?:\/|\?|$)/, { timeout: 40000 });
   await screenshot(page, report, 'real-navigation-return-home');
