@@ -440,37 +440,6 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
   }, [explicitDemoRequested, params, profile.reducedMotion, router, withIdentity]);
 
-  const activateWorldStar = useCallback((node: LifeMapNode) => {
-    const action = lifeMapWorldStarAction(node.id, selectedId, phase,
-      node.replayAvailable && !node.locked && (explicitDemoRequested || node.authorizedMemory));
-    if (action === "select") {
-      selectNode(node);
-      return;
-    }
-    if (action === "replay") {
-      // Physical tap enters the same protected Replay route as the existing button.
-      const next = withIdentity(new URLSearchParams(), node.id);
-      next.set("node", node.id);
-      if (explicitDemoRequested) next.set("memoryId", node.id);
-      else if (node.authorizedMemory && node.memoryId) next.set("memoryId", node.memoryId);
-      else next.delete("memoryId");
-      if (!explicitDemoRequested) {
-        next.delete("manifestId");
-        if (node.authorizedMemory && node.replayManifestId) next.set("manifestId", node.replayManifestId);
-        if (node.authorizedMemory && node.memoryId && node.replayManifestId) {
-          forwardPrivateMovieRouteSelection(next, params, {
-            memoryId: node.memoryId, manifestId: node.replayManifestId,
-            authorizedOwner: true, demo: false,
-          });
-        }
-      }
-      next.set("returnNode", node.id);
-      next.set("artifactFamily", resolveArtifactFamily(node));
-      next.set("from", "life-map");
-      router.push(`/replay?${next.toString()}`);
-    }
-  }, [selectedId, phase, explicitDemoRequested, params, router, selectNode, withIdentity]);
-
   const overview = useCallback(() => {
     const retainedId = selectedId || queryNode;
     restoredRoutePending.current = false;
@@ -531,6 +500,21 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     }
     return `/${route}?${next.toString()}`;
   }, [explicitDemoRequested, params, phase, selected, withIdentity]);
+
+  const activateWorldStar = useCallback((node: LifeMapNode) => {
+    const action = lifeMapWorldStarAction(node.id, selectedId, phase,
+      node.replayAvailable && !node.locked && (explicitDemoRequested || node.authorizedMemory));
+    if (action === "select") {
+      selectNode(node);
+      return;
+    }
+    if (action === "replay" && selected?.id === node.id) {
+      // Physical star and accessible Replay button share one route/identity owner.
+      // No duplicated memory/manifest construction or alternative authorization path.
+      router.push(destinationHref("replay"));
+    }
+  }, [destinationHref, explicitDemoRequested, phase, router, selectNode, selected, selectedId]);
+
 
   useEffect(() => {
     if (!overviewRequested) return;
