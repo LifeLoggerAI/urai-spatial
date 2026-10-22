@@ -8,7 +8,7 @@ const PHASES = ['memory', 'emotion', 'pattern', 'return'] as const
 const TITLES = ['Recording', 'Listening', 'Context', 'Return'] as const
 const CAPTION = 'Original recording. Word-level captions and individual speaker attribution have not been verified.'
 const LINE = 'Source-backed family recording; no dialogue, identity, or event detail is inferred from this marker.'
-const bad = (): never => { throw new Error('FIRST_PRIVATE_MEMORY_PACKET_INVALID') }
+function bad(): never { throw new Error('FIRST_PRIVATE_MEMORY_PACKET_INVALID') }
 const record = (value: unknown): Row => value && typeof value === 'object' && !Array.isArray(value) ? value as Row : bad()
 const only = (row: Row, keys: readonly string[]) => Object.keys(row).every(key => keys.includes(key))
 const date = (value: unknown): value is string => typeof value === 'string' && TIME.test(value)
