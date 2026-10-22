@@ -13,7 +13,8 @@ const rules = fs.readFileSync(new URL('../../firebase/firestore.rules', root), '
 test('conversation checkpoint is opt-in and callable-only', () => {
   assert.match(server, /action === 'enable'/)
   assert.match(server, /action === 'disable'/)
-  assert.match(server, /const existing = await transaction\.get\(ref\)/)
+  assert.match(server, /transaction\.get\(tombstoneRef\), transaction\.get\(ref\)/)
+  assert.match(server, /currentOwnerNotDeleting\(owner, fence, tombstone\)/)
   assert.match(server, /const disabled: StoredContinuity/)
   assert.match(server, /transaction\.set\(ref, \{ \.\.\.disabled,/)
   assert.match(server, /state\?\.epoch \?\? null/)
@@ -26,6 +27,7 @@ test('conversation checkpoint is opt-in and callable-only', () => {
   assert.match(server, /MAX_MESSAGES = 20/)
   assert.match(server, /state\.recentTurnIds\.includes\(turnId/)
   assert.match(server, /body\.epoch !== state\.epoch/)
+  assert.match(server, /Object\.values\(pending\)\.some\(value => value === true\)/)
   assert.match(rules, /match \/orbConversationContinuity\/\{docId\} \{[\s\S]*?allow read, write: if false;/)
 })
 
@@ -41,6 +43,9 @@ test('Orb only restores current authenticated actor and saves successful replies
   assert.match(panel, /await continuityPending\.current/)
   assert.match(panel, /Saved Orb conversation/)
   assert.match(client, /epoch: string \| null/)
+  assert.match(client, /action: 'clear'; epoch: string/)
+  assert.match(panel, /action: 'clear' as const, epoch: continuityRef\.current/)
+  assert.match(panel, /Delete any saved Orb conversations/)
   assert.match(panel, /Remember Orb conversations across devices/)
   assert.match(index, /orbConversationContinuity/)
 })
