@@ -57,3 +57,10 @@ test('Replay horizon returns once and unregisters listener', () => {
   stop()
   assert.equal(handler,null)
 })
+
+test('Focus Escape listener is actual code, not commented by literal backslash-n', () => {
+  const focus = read('../src/app/focus/FocusEscapeBridge.tsx')
+  assert.doesNotMatch(focus, /\\n\s*window\.addEventListener/)
+  const line = focus.split(/\r?\n/).find(value => value.includes("window.addEventListener('keydown', handleKeyDown"))
+  assert.ok(line && line.trim().startsWith("window.addEventListener("), 'Escape listener is not an executable statement')
+})
