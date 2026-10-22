@@ -84,6 +84,7 @@ function mount({ webgl = false } = {}) {
     ['next/navigation', { useRouter: () => ({ push: href => routerCalls.push(href) }), useSearchParams: () => new URLSearchParams() }],
     ['./HomeSpatialCanvas', { useWebGLAvailable: () => webgl }],
     ['./ground/GroundWorldModel', { DESTINATIONS: [] }],
+    ['./GroundWorkforcePresences', { GROUND_WORKFORCE: [], GroundWorkforcePresences: () => null }],
     ['@/spatial/store/useSceneStore', { useSceneStore: { getState: () => ({}) } }],
     ['../store/useSceneStore', { useSceneStore: { getState: () => ({}) } }],
     ['@react-three/fiber', { Canvas: 'canvas', useFrame() {}, useThree: () => ({}) }],

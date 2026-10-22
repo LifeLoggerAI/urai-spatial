@@ -14,6 +14,7 @@ import { canonicalLifeMapDemoNodes } from '../src/components/lifemap/canonicalLi
 import { DEMO_MEMORY_STAR_NODES } from '../src/spatial/memory/memoryStarSchema.ts'
 import { definitionForDestination } from '../src/spatial/world/destinationRegistry.ts'
 import { previousDestinationForReturn } from '../src/spatial/world/worldTypes.ts'
+import { shouldHandleRealmEscape } from '../src/spatial/world/realmEscapeEligibility.mjs'
 
 const source = fs.readFileSync(process.env.URAI_LIFEMAP_NAVIGATOR_SOURCE ?? 'src/components/lifemap/LifeMapSemanticNavigator.tsx', 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
@@ -59,6 +60,7 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     '@/lib/i18n/useUraiLocale':{useUraiLocale:()=>({preference:{requested:'en',preview:false},locale:'en',text:key=>{assert.ok(messages[key]);return messages[key].source},props:()=>({lang:'en',dir:'ltr'}),formatProps:{},number:String})},
     '@/lib/i18n/JourneyOfflineNotice':{__esModule:true,default:()=>null},
     '@/spatial/memory/lifeMapSelectionJourney':{withLifeMapSelectionIdentity},
+    '@/spatial/world/realmEscapeEligibility.mjs':{shouldHandleRealmEscape},
     '@react-three/fiber':{Canvas:'synthetic-Canvas'},three:{},
     '@/spatial/performance/useAdaptiveSpatialQuality':{useAdaptiveSpatialQuality:()=>({tier:'low',pixelRatioMax:1,reducedMotion:true,documentVisible:true})},
     '@/spatial/navigation/homeSkyInteraction':{homeJourneyHref:()=>'/home'},

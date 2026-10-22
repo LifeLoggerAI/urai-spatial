@@ -117,6 +117,7 @@ function fixture(options = {}) {
         if (name === './consentPolicyAuthority') return load('consentPolicyAuthority')
         if (name === './memoryMedia') return load('memoryMedia')
         if (name === './memoryMediaProjectBoundary') return load('memoryMediaProjectBoundary')
+        if (name === './privatePreparedMediaAuthority') return load('privatePreparedMediaAuthority')
         if (name === './personPresenceAuthority') return load('personPresenceAuthority')
         if (name === 'node:crypto' || name === 'node:stream/promises') return require(name)
         throw new Error(`Unexpected private-input dependency: ${name}`)
