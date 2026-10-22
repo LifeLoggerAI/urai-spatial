@@ -201,6 +201,7 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   const targetLocation = `${target.pathname}${target.search}${target.hash}`
 
   let settled = false
+  let reachedTarget = false
   let observer = 0
   const fallback = window.setTimeout(() => {
     if (settled || generation !== fallbackGeneration) return
@@ -209,8 +210,10 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
     pendingFallbackTimeout = null
     pendingFallbackObserver = null
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    // A direct router navigation elsewhere supersedes this attempt too.
+    // A direct router navigation elsewhere (including Back after reaching the
+    // intended target) supersedes this attempt; never resurrect that route.
     if (currentLocation !== startingLocation && currentLocation !== targetLocation) return
+    if (currentLocation === startingLocation && reachedTarget) return
     if (currentLocation === startingLocation || !destinationSurfaceReady(request.destination)) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
 
@@ -218,7 +221,9 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   observer = window.setInterval(() => {
     if (generation !== fallbackGeneration) { window.clearInterval(observer); return }
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation || (currentLocation === targetLocation && !destinationSurfaceReady(request.destination))) return
+    if (currentLocation === targetLocation && targetLocation !== startingLocation) reachedTarget = true
+    if (currentLocation === startingLocation && !reachedTarget) return
+    if (currentLocation === targetLocation && !destinationSurfaceReady(request.destination)) return
     settled = true
     window.clearTimeout(fallback)
     window.clearInterval(observer)
