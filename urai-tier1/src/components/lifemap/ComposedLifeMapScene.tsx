@@ -71,7 +71,7 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     position: [...OVERVIEW_POSITION], velocity: [0, 0, 0], yaw: 0, pitch: -0.075,
   });
   const keys = useRef(new Set<string>());
-  const pointer = useRef<{ id: number; x: number; y: number } | null>(null);
+  const pointer = useRef<{ id: number; x: number; y: number; startX: number; startY: number; dragged: boolean } | null>(null);
   const lookDelta = useRef({ x: 0, y: 0 });
   const wasOverview = useRef(true);
   const departureOrigin = useRef(new THREE.Vector3(...OVERVIEW_POSITION));
@@ -86,7 +86,8 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
       if (phase === "overview") {
         positionGoal.current.set(0, 2.15, 16.6);
         targetGoal.current.set(0, 0.2, -4.6);
-      } else {
+      } else if (phase !== "departure") {
+        // Departure must begin at the precise explored camera location even in portrait.
         const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.34);
         positionGoal.current.copy(targetGoal.current).add(offset);
         positionGoal.current.y += 0.42;
@@ -118,26 +119,40 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
       Boolean(target.closest("input, textarea, select, button, a, [contenteditable='true'], [role='dialog']"));
     const keyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || editable(event.target) || event.altKey || event.ctrlKey || event.metaKey) return;
+      // Do not hijack keyboard navigation when search, dialogs or other controls own focus.
+      if (document.activeElement !== canvas && document.activeElement !== document.body) return;
       if (/^(Key[WASDQE]|Arrow(Up|Down|Left|Right)|ShiftLeft|ShiftRight)$/.test(event.code)) {
         keys.current.add(event.code);
         if (document.activeElement === canvas || document.activeElement === document.body) event.preventDefault();
       }
     };
     const keyUp = (event: KeyboardEvent) => keys.current.delete(event.code);
-    const clear = () => { keys.current.clear(); pointer.current = null; lookDelta.current = { x: 0, y: 0 }; };
+    const clear = () => {
+      keys.current.clear(); pointer.current = null; lookDelta.current = { x: 0, y: 0 };
+      if (shellRef.current) shellRef.current.dataset.lifeMapFlightControl = "";
+    };
+    const clearWhenHidden = () => { if (document.hidden) clear(); };
     const down = (event: PointerEvent) => {
       if (event.button !== 0 || event.target !== canvas || selected) return;
-      pointer.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
-      canvas.setPointerCapture(event.pointerId);
+      // Do not capture on pointer-down: R3F memory stars must receive normal clicks.
+      // Capture only an intentional look drag after crossing the movement threshold.
+      pointer.current = {
+        id: event.pointerId, x: event.clientX, y: event.clientY,
+        startX: event.clientX, startY: event.clientY, dragged: false,
+      };
     };
     const move = (event: PointerEvent) => {
       const last = pointer.current;
       if (!last || last.id !== event.pointerId || selected) return;
+      if (!last.dragged && Math.hypot(event.clientX - last.startX, event.clientY - last.startY) < 6) return;
+      if (!last.dragged) {
+        // A normal tap/click still selects the exact star; deliberate drag owns look.
+        canvas.setPointerCapture(event.pointerId);
+      }
       const dx = event.clientX - last.x, dy = event.clientY - last.y;
-      // Touch drag looks around; keys and accessible buttons provide locomotion.
       lookDelta.current.x += THREE.MathUtils.clamp(dx * 0.0025, -0.15, 0.15);
       lookDelta.current.y -= THREE.MathUtils.clamp(dy * 0.0025, -0.15, 0.15);
-      pointer.current = { id: last.id, x: event.clientX, y: event.clientY };
+      pointer.current = { ...last, x: event.clientX, y: event.clientY, dragged: true };
     };
     const end = (event: PointerEvent) => {
       if (pointer.current?.id === event.pointerId) pointer.current = null;
@@ -146,6 +161,7 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     window.addEventListener("keydown", keyDown);
     window.addEventListener("keyup", keyUp);
     window.addEventListener("blur", clear);
+    document.addEventListener("visibilitychange", clearWhenHidden);
     canvas.addEventListener("pointerdown", down);
     canvas.addEventListener("pointermove", move);
     canvas.addEventListener("pointerup", end);
@@ -155,6 +171,7 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
       window.removeEventListener("keydown", keyDown);
       window.removeEventListener("keyup", keyUp);
       window.removeEventListener("blur", clear);
+      document.removeEventListener("visibilitychange", clearWhenHidden);
       canvas.removeEventListener("pointerdown", down);
       canvas.removeEventListener("pointermove", move);
       canvas.removeEventListener("pointerup", end);
@@ -190,8 +207,10 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
         vertical: Number(active("KeyE")) - Number(active("KeyQ")),
         turn: Number(active("ArrowRight")) - Number(active("ArrowLeft")),
         sprint: held.has("ShiftLeft") || held.has("ShiftRight"),
-        lookX: reducedMotion ? 0 : lookDelta.current.x,
-        lookY: reducedMotion ? 0 : lookDelta.current.y,
+        // Reduced motion still permits deliberate looking and accessible navigation;
+        // the kernel avoids easing when that preference is enabled.
+        lookX: lookDelta.current.x,
+        lookY: lookDelta.current.y,
         reducedMotion,
       };
       lookDelta.current = { x: 0, y: 0 };
