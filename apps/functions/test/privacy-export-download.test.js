@@ -187,7 +187,7 @@ function fixture(options = {}) {
       module: result, exports: result.exports, Buffer, Error, Date: class extends Date { static now() { return options.clock?.value ?? now } },
       process: { env: { GCLOUD_PROJECT: 'urai-4dc1d', ...options.env } },
       require: name => { if (name === 'firebase-admin') return admin; if (name === 'firebase-admin/firestore') return { Timestamp, FieldPath: { documentId: () => '__name__' }, FieldValue: admin.firestore.FieldValue }; if (name === 'firebase-functions/v1') return functions;
-        if (name === 'node:crypto') return crypto; if (name === 'node:stream/promises') return require(name); if (name === './exportPagination') return loadPagination(); if (name === './consentPolicyAuthority') return loadPolicyAuthority(); if (name === './memoryMediaProjectBoundary') return require(path.join(path.dirname(filename), 'memoryMediaProjectBoundary.js')); throw new Error(`Unexpected memory-media dependency ${name}`) },
+        if (name === 'node:crypto') return crypto; if (name === 'node:stream/promises') return require(name); if (name === './exportPagination') return loadPagination(); if (name === './consentPolicyAuthority') return loadPolicyAuthority(); if (name === './memoryMediaProjectBoundary') return require(path.join(path.dirname(filename), 'memoryMediaProjectBoundary.js')); if (name === './privatePreparedMediaAuthority') return require(path.join(path.dirname(filename), 'privatePreparedMediaAuthority.js')); throw new Error(`Unexpected memory-media dependency ${name}`) },
     }, { filename: 'memoryMedia.strict-compiled.js' })
     return memoryMedia = result.exports
   }
