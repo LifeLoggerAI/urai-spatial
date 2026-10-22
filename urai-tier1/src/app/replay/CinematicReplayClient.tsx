@@ -32,6 +32,7 @@ import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { shouldHandleRealmEscape } from '@/spatial/world/realmEscapeEligibility.mjs'
+import { bindReplayHorizonEscape } from '@/spatial/world/replayHorizonEscape.mjs'
 import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
 import { ReplayProductControls } from './ReplayProductControls'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
@@ -705,13 +706,15 @@ function ReplayMemoryHorizon({ memoryStatus, message, quality }: { memoryStatus:
   const locale = useUraiLocale()
   const webgl = useReplayWebGL()
   const chooseMemory = useCallback(() => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/', entryPortal: 'replay-memory-horizon', cameraCheckpoint: 'life-map-overview' }), [])
+  const returnToFocus = useCallback(() => requestUraiWorldReturn(), [])
+  useEffect(() => bindReplayHorizonEscape(window, returnToFocus), [returnToFocus])
 
   return (
     <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-replay-neutral="memory-horizon" data-replay-spatial-owner="neutral-memory-horizon" data-webgl-state={webgl.state}>
       {webgl.state === 'ready' ? <ReplayCanvasBoundary key={webgl.attempt} onFailure={webgl.fail}><Canvas className="replaySpatialCanvas" dpr={[Math.min(1, quality.pixelRatioMax), quality.pixelRatioMax]} frameloop={quality.documentVisible ? (quality.reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true })}>
         <ReplayNeutralSpatialScene />
       </Canvas></ReplayCanvasBoundary> : null}
-      <section role={memoryStatus === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p {...locale.props(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}>{locale.text(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}</p><h1 {...locale.props(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')} style={{overflowWrap:'anywhere'}}>{locale.text(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')}</h1><span>{message}</span><JourneyOfflineNotice /><div className="replayHorizonActions">{memoryStatus === 'loading' ? null : <button type="button" className="replayChooseMemory" onClick={chooseMemory} {...locale.props('replay.chooseMemory')}>{locale.text('replay.chooseMemory')}</button>}<AdamLauncherSlot name="replay-horizon-controls" as="div" /></div>{webgl.state !== 'ready' && webgl.state !== 'checking' ? <span role="status" {...locale.props('replay.selectionAccessible')}>{locale.text('replay.selectionAccessible')}</span> : null}</section>
+      <section role={memoryStatus === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p {...locale.props(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}>{locale.text(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}</p><h1 {...locale.props(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')} style={{overflowWrap:'anywhere'}}>{locale.text(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')}</h1><span>{message}</span><JourneyOfflineNotice /><div className="replayHorizonActions"><button type="button" data-testid="replay-horizon-unwind" onClick={returnToFocus} aria-label="Return to Focus">← Focus</button>{memoryStatus === 'loading' ? null : <button type="button" className="replayChooseMemory" onClick={chooseMemory} {...locale.props('replay.chooseMemory')}>{locale.text('replay.chooseMemory')}</button>}<AdamLauncherSlot name="replay-horizon-controls" as="div" /></div>{webgl.state !== 'ready' && webgl.state !== 'checking' ? <span role="status" {...locale.props('replay.selectionAccessible')}>{locale.text('replay.selectionAccessible')}</span> : null}</section>
       <style>{stateCss}</style>
     </main>
   )
