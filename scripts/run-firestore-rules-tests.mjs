@@ -92,7 +92,7 @@ if (javaCheck.status === 0) {
       '--config', rulesOnlyConfig,
       '--project', 'demo-urai-rules',
       '--only', 'firestore',
-      'node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs',
+      'node scripts/firestore-live-rule-session.mjs',
     ], { env: emulatorEnv })
     emulatorExitCode = result.status ?? 1
   } finally {

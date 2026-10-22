@@ -29,6 +29,7 @@ function runCase(javaPresent, emulatorCode, staticShouldFail, overrides = {}) {
       "process.stdout.write('EMULATOR_PORT='+config.emulators.firestore.port+'\\n');",
       "process.stdout.write('EMULATOR_UI='+config.emulators.ui.enabled+'\\n');",
       "process.stdout.write('INHERITED_FIRESTORE_HOST='+(process.env.FIRESTORE_EMULATOR_HOST||'none')+'\\n');",
+      "process.stdout.write('EMULATOR_EXEC_SCRIPT='+process.argv.at(-1)+'\\n');",
       "process.exit(Number(process.env.URAI_FIXTURE_EMULATOR_EXIT||0));",
     ].join('\n'))
     for(const name of ['assetManifests','privacyConsent','lifeModel']) {
@@ -56,6 +57,7 @@ test('emulator success must not run static fallback',()=>{
   const r=runCase(true,0,true)
   assert.equal(r.code,0,r.stdout+'\n'+r.stderr)
   assert.match(r.stdout,/EMULATOR_FIXTURE_RAN/)
+  assert.match(r.stdout,/EMULATOR_EXEC_SCRIPT=node scripts\/firestore-live-rule-session\.mjs/)
   assert.doesNotMatch(r.stderr,/Running static Firestore rules boundary tests instead/)
 })
 test('isolated Firestore emulator reserves loopback port and discards stale inherited address',()=> {
