@@ -65,3 +65,19 @@ test('Focus shares original galaxy and model with visible star choices', () => {
   assert.match(focus, /<FocusLifeMapContext/)
   assert.match(focus, /data-focus-neighbors="authorized"/)
 })
+
+test('same-realm focus travel only accelerates explicit eligible neighbor routes', async () => {
+  const { isFocusInRealmTravel } = await import('../src/spatial/world/focusInRealmTravel.ts')
+  const request = { destination: 'focus', entryPortal: 'focus-neighbor-star',
+    href: '/focus?node=star-b&memoryId=owned-b&manifestId=manifest-owned-b' }
+  assert.equal(isFocusInRealmTravel(request, '/focus'), true)
+  assert.equal(isFocusInRealmTravel(request, '/replay'), false)
+  assert.equal(isFocusInRealmTravel({ ...request, destination: 'replay' }, '/focus'), false)
+  assert.equal(isFocusInRealmTravel({ ...request, entryPortal: 'other' }, '/focus'), false)
+  assert.equal(isFocusInRealmTravel({ ...request, href: '/focus?node=star-b&memoryId=owned-b' }, '/focus'), false)
+  assert.equal(isFocusInRealmTravel({ ...request, href: '/focus?node=star-b&memoryId=owned-b&demo=1' }, '/focus'), true)
+  assert.equal(isFocusInRealmTravel({ ...request, href: '/focus?node=star-b&memoryId=owned-b&demo=1&manifestId=bad' }, '/focus'), false)
+  const controller = readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx', import.meta.url), 'utf8')
+  assert.match(controller, /isFocusInRealmTravel\(request, window\.location\.pathname\)/)
+  assert.match(controller, /router\.push\(buildTravelHref\(request\), \{ scroll: false \}\)/)
+})
