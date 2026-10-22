@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type Fo
 import { getAIActorSnapshot, getServerAIActorSnapshot, isCurrentAIActorSnapshot, subscribeAIActor, type AIActorSnapshot } from '@/lib/privacy/aiActorBoundary'
 import { publishOrbState } from '@/app/home/orbStateController'
 import { requestOrbContinuity } from './orbContinuityClient'
+import { createPossibleFutureClient } from '@/lib/scenario/scenarioClient'
+import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import type { OrbContinuityState } from './orbContinuityClient'
 import { requestExternalVoiceAudio } from '@/spatial/narrator/elevenlabsClient'
 import { URAI_VOICE_CONFIG } from '@/spatial/narrator/narratorCopy'
@@ -39,6 +41,7 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
   const [continuity, setContinuity] = useState<OrbContinuityState | null>(null)
   const [continuityBusy, setContinuityBusy] = useState(false)
+  const [scenarioBusy, setScenarioBusy] = useState(false)
   const [continuityHydrating, setContinuityHydrating] = useState(Boolean(actor.uid))
   const continuityRef = useRef<OrbContinuityState | null>(null)
   const continuityPending = useRef<Promise<unknown>>(Promise.resolve())
@@ -56,6 +59,10 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
   const voicePlayback = useRef<OrbVoicePlayback | null>(null)
   const voicePreferences = useRef({ muted: false, externalConsent: false, active, sensorySafe: false })
   const stateResetTimer = useRef<number | null>(null)
+  // A What-If begins only when the owner explicitly presses its button.
+  // Do not send the remainder of conversation history or private life data.
+  const latestUserTurn = [...history].reverse().find(turn => turn.role === 'user')?.content ?? ''
+  const whatIfQuestion = message.trim() || latestUserTurn.trim()
 
   useEffect(() => {
     if (!actor.uid || !actor.actor) return
@@ -96,6 +103,53 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
       setStatus('Unable to change saved conversation. Check your current memory/privacy permissions.')
     } finally {
       if (isCurrentAIActorSnapshot(actor)) setContinuityBusy(false)
+    }
+  }
+
+  const exploreWhatIf = async () => {
+    if (!actor.uid || !isCurrentAIActorSnapshot(actor)
+      || busy || scenarioBusy || continuityBusy || continuityHydrating) return
+    const question = whatIfQuestion.trim()
+    if (!question || question.length > 1200) {
+      setStatus('A What-If question must be between 1 and 1200 characters.')
+      return
+    }
+    setScenarioBusy(true)
+    setStatus('Creating your assumption-only Possible Future. No AI or workers are being started.')
+    try {
+      const returnToken = `orb-what-if-${globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36)}`
+      const created = await createPossibleFutureClient({
+        question, originRealm: 'home', returnToken,
+        worldRevision: 'orb-conversation-question-v1',
+        assumptionOnly: true, timeHorizon: { amount: 1, unit: 'month' },
+      })
+      // A late response from a previous owner must not move a new owner
+      // into somebody else's private scenario.
+      if (!isCurrentAIActorSnapshot(actor)) return
+      if (!/^scn_[A-Za-z0-9_-]{12,96}$/.test(created.scenarioId)
+        || !Number.isSafeInteger(created.basisRevision) || created.basisRevision < 1) {
+        throw new Error('Invalid Scenario receipt.')
+      }
+      requestUraiWorldTravel({
+        destination: 'possible-futures',
+        href: '/possible-futures',
+        entryPortal: 'orb-conversation-what-if',
+        cameraCheckpoint: 'possible-futures-arrival',
+        context: {
+          scenarioId: created.scenarioId,
+          scenarioBasisRevision: created.basisRevision,
+          scenarioOrigin: 'home',
+          truthMode: 'scenario',
+          returnToken,
+        },
+      })
+      setStatus('Possible Future created. This remains a hypothetical scenario, not a memory.')
+    } catch {
+      if (isCurrentAIActorSnapshot(actor)) {
+        setStatus('Could not create a Possible Future. No simulated outcome was recorded as reality.')
+      }
+    } finally {
+      if (isCurrentAIActorSnapshot(actor)) setScenarioBusy(false)
     }
   }
 
@@ -236,7 +290,7 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
     event.preventDefault()
     if (!isCurrentAIActorSnapshot(actor)) return
     const trimmed = message.trim()
-    if (!trimmed || busy || !active || continuityBusy || continuityHydrating) return
+    if (!trimmed || busy || scenarioBusy || !active || continuityBusy || continuityHydrating) return
     if (!aiConsent) {
       setStatus('Turn on OpenAI processing consent before sending.')
       publishConversationState('privacy', 1800)
@@ -354,7 +408,7 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
             value={message}
             maxLength={2000}
             rows={3}
-            disabled={busy}
+            disabled={busy || scenarioBusy}
             onFocus={() => { if (!busy && !voicePlaying) publishConversationState('attention') }}
             onBlur={() => { if (!busy && !voicePlaying) publishConversationState('idle') }}
             onChange={(event) => setMessage(event.target.value)}
@@ -402,7 +456,13 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
             {continuity?.enabled
               ? <button type="button" disabled={continuityBusy || continuityHydrating || busy} onClick={() => void changeContinuity('clear')}>Clear saved Orb conversation</button>
               : <button type="button" disabled={!actor.uid || continuityBusy || continuityHydrating || busy} onClick={() => void changeContinuity('disable')}>Delete any saved Orb conversations</button>}
-            <button type="submit" disabled={busy || continuityBusy || continuityHydrating || !message.trim() || !aiConsent}>Send</button>
+            <button type="button"
+              disabled={!actor.uid || busy || scenarioBusy || continuityBusy || continuityHydrating
+                || !whatIfQuestion || whatIfQuestion.length > 1200}
+              onClick={() => void exploreWhatIf()}>
+              Explore this question in Possible Futures
+            </button>
+            <button type="submit" disabled={busy || scenarioBusy || continuityBusy || continuityHydrating || !message.trim() || !aiConsent}>Send</button>
             <button type="button" disabled={!busy && !voicePlaying} onClick={stop}>Stop</button>
             <button
               type="button"
@@ -431,6 +491,7 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
             </button>
           </div>
         </form>
+        <p className={styles.disclosure}>What-If saves only this question as an assumption-only Scenario. It does not run an AI prediction, dispatch workers, or make a memory.</p>
         <p className={styles.status} role="status" aria-live="polite" aria-atomic="true">
           {status}
         </p>

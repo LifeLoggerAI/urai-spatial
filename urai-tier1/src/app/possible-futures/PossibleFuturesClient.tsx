@@ -142,10 +142,10 @@ export default function PossibleFuturesClient() {
   const [branchLabels,setBranchLabels] = useState<string[]>([])
   const [branchesLoaded,setBranchesLoaded] = useState(!existingScenarioId)
   const [basisRevision,setBasisRevision] = useState(Number(params.get('basisRevision') ?? 1))
-  const [setup,setSetup] = useState<SetupState>(existingScenarioId?'exploring':'question')
+  const [setup,setSetup] = useState<SetupState>(existingScenarioId?'creating':'question')
   const [question,setQuestion] = useState('')
   const [manualSummaries,setManualSummaries] = useState(['','',''])
-  const [message,setMessage] = useState(existingScenarioId?'This is a possibility, not a prediction.':'Ask a what-if question. No provider will be simulated if one is unavailable.')
+  const [message,setMessage] = useState(existingScenarioId?'Loading an existing Possible Future…':'Ask a what-if question. No provider will be simulated if one is unavailable.')
   const horizon = params.get('horizon') ?? 'Exploratory horizon'
 
   useEffect(() => {
@@ -162,9 +162,22 @@ export default function PossibleFuturesClient() {
       setBranch((current) => Math.min(current, Math.max(0, ids.length - 1)))
       const revision = Number(result.scenario?.basisRevision ?? result.basis?.revision ?? 1)
       if (Number.isInteger(revision) && revision > 0) setBasisRevision(revision)
+      const scenarioStatus = String(result.scenario?.status ?? '')
+      if (scenarioStatus === 'awaiting-assumptions' && !ids.length) {
+        setQuestion(String(result.scenario?.question ?? '').slice(0, 1200))
+        setSetup('manual')
+        setMessage('This is an assumption-only What-If. Enter possible branches yourself; no AI generated a prediction.')
+      } else if ((scenarioStatus === 'ready' || scenarioStatus === 'saved') && ids.length) {
+        setSetup('exploring')
+        setMessage('This is a possibility, not a prediction or autobiographical memory.')
+      } else {
+        setSetup('error')
+        setMessage('The Scenario has an incomplete state. No simulated outcome will be shown as reality.')
+      }
       setBranchesLoaded(true)
     }).catch(() => {
       if (!active) return
+      setSetup('error')
       setBranchesLoaded(true)
       setMessage('This Scenario could not be reloaded. Its truth boundary remains closed.')
     })
@@ -208,7 +221,7 @@ export default function PossibleFuturesClient() {
     <section aria-label="Possible Future controls" style={{ position:'absolute',zIndex:1,inset:'0 0 max(120px, calc(env(safe-area-inset-bottom, 0px) + 110px)) 0',pointerEvents:'none',display:'flex',flexDirection:'column',justifyContent:'space-between',gap:20,padding:'max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 18px max(18px, env(safe-area-inset-left))',scrollPaddingBlock:'12px 16px',overflowY:'auto',boxSizing:'border-box' }}>
       <header style={{ flexShrink:0,maxWidth:620,pointerEvents:'auto',textShadow:'0 2px 18px #000' }}><p style={{ margin:0,letterSpacing:'.16em',fontSize:12,fontWeight:700 }}>POSSIBLE FUTURE · NOT A MEMORY</p><h1 style={{ margin:'8px 0 4px',fontSize:'clamp(24px,4vw,42px)',fontWeight:520 }}>Possible Futures</h1><p aria-live="polite" style={{ margin:0,opacity:.82 }}>{message}</p></header>
       {setup==='question'||setup==='creating'||setup==='error'?<div style={{...panelStyle,flexShrink:0}}><label htmlFor="possible-future-question">What do you want to explore?</label><textarea id="possible-future-question" value={question} onChange={(e)=>setQuestion(e.target.value)} disabled={setup==='creating'} placeholder="What if I move?" style={{...inputStyle,minHeight:88,marginTop:8}} /><p style={{opacity:.72,fontSize:13}}>Direct arrival without evidence uses an explicit assumption-only basis. Nothing here becomes autobiographical memory.</p><button type="button" disabled={!question.trim()||setup==='creating'} onClick={createScenario} style={{...inputStyle,width:'auto',cursor:'pointer'}}>Create Possible Future</button></div>:null}
-      {setup==='manual'?<div style={{...panelStyle,flexShrink:0}}><strong>Manual Scenario</strong><p style={{opacity:.76}}>Provider generation is unavailable. Write one or more possible branches yourself.</p>{BRANCH_LABELS.map((label,index)=><label key={label} style={{display:'block',marginTop:10}}>{label}<textarea value={manualSummaries[index]} onChange={(e)=>setManualSummaries((current)=>current.map((value,i)=>i===index?e.target.value:value))} style={{...inputStyle,minHeight:64,marginTop:5}} /></label>)}<button type="button" onClick={submitManual} disabled={!manualSummaries.some((value)=>value.trim())} style={{...inputStyle,width:'auto',marginTop:12}}>Enter Manual Scenario</button></div>:null}
+      {setup==='manual'?<div style={{...panelStyle,flexShrink:0}}><strong>Manual Scenario</strong>{question?<p>What-If question: {question}</p>:null}<p style={{opacity:.76}}>Provider generation is unavailable. Write one or more possible branches yourself.</p>{BRANCH_LABELS.map((label,index)=><label key={label} style={{display:'block',marginTop:10}}>{label}<textarea value={manualSummaries[index]} onChange={(e)=>setManualSummaries((current)=>current.map((value,i)=>i===index?e.target.value:value))} style={{...inputStyle,minHeight:64,marginTop:5}} /></label>)}<button type="button" onClick={submitManual} disabled={!manualSummaries.some((value)=>value.trim())} style={{...inputStyle,width:'auto',marginTop:12}}>Enter Manual Scenario</button></div>:null}
       {setup==='exploring'&&scenarioId&&branchesLoaded?<ScenarioCouncilPanel scenarioId={scenarioId} branchId={branchIds[branch]} />:null}
       <footer style={{flexShrink:0,display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',pointerEvents:'auto'}}><button type="button" onClick={requestUraiWorldReturn} style={{minHeight:48,padding:'0 18px',borderRadius:999,border:'1px solid rgba(255,255,255,.25)',background:'rgba(8,13,16,.78)',color:'inherit'}}>Return</button>{setup==='exploring'&&visibleBranchLabels.length?<div role="group" aria-label="Scenario branches" style={{display:'flex',flexWrap:'wrap',maxWidth:'100%',gap:8,padding:6,borderRadius:18,background:'rgba(8,13,16,.78)',border:'1px solid rgba(255,255,255,.16)'}}>{visibleBranchLabels.map((label,index)=><button key={label} type="button" aria-pressed={branch===index} onClick={()=>setBranch(index)} style={{minHeight:48,padding:'0 14px',borderRadius:999,border:branch===index?'1px solid rgba(238,244,242,.7)':'1px solid transparent',background:branch===index?'rgba(238,244,242,.12)':'transparent',color:'inherit'}}>{label}</button>)}</div>:null}<AdamLauncherSlot name="possible-futures-controls" /><span style={{fontSize:12,opacity:.65}}>{scenarioId?`Scenario ${scenarioId.slice(0,18)}… · `:''}{horizon}</span></footer>
     </section>

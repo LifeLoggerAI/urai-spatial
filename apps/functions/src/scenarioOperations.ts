@@ -25,6 +25,28 @@ function operationId(value: unknown) {
 function opaque(prefix: string) { return `${prefix}${randomUUID().replace(/-/g, '')}` }
 function stableReceipt(ownerId: string, op: string, kind: string) { return createHash('sha256').update(`${kind}:${ownerId}:${op}`).digest('hex').slice(0, 40) }
 function scenarioRef(ownerId: string, scenarioId: string) { return db.doc(`users/${ownerId}/scenarios/${scenarioId}`) }
+
+// A delayed authenticated callable must not resurrect a deleted account's
+// private scenarios or leave new receipts while deletion is in flight.
+async function requireCurrentScenarioOwner(tx: FirebaseFirestore.Transaction, ownerId: string) {
+  const [owner, fence, tombstone] = await Promise.all([
+    tx.get(db.doc(`users/${ownerId}`)),
+    tx.get(db.doc(`users/${ownerId}/privacyRuntime/exportAuthority`)),
+    tx.get(db.doc(`privacyDeletionTombstones/${ownerId}`)),
+  ])
+  if (!owner.exists || owner.get('deleted') === true
+    || ['deleting', 'deleted', 'disabled'].includes(String(owner.get('accountStatus') ?? ''))
+    || tombstone.exists) {
+    throw new functions.https.HttpsError('permission-denied', 'Scenario owner is not active.')
+  }
+  if (fence.exists) {
+    const pending = fence.get('pendingDeletions')
+    if (!pending || typeof pending !== 'object' || Array.isArray(pending)
+      || Object.values(pending as Record<string, unknown>).some(value => value === true)) {
+      throw new functions.https.HttpsError('failed-precondition', 'Deletion is pending. Scenarios are paused.')
+    }
+  }
+}
 function ensureScenarioId(value: unknown) {
   const id = String(value ?? '')
   if (!/^scn_[A-Za-z0-9_-]{12,96}$/.test(id)) throw new functions.https.HttpsError('invalid-argument', 'Invalid scenarioId.')
@@ -137,6 +159,7 @@ export const createPossibleFuture = functions.https.onCall(async (data, context)
   const ref = scenarioRef(ownerId, scenarioId)
   const receiptId = stableReceipt(ownerId, op, 'scenario-create')
   await db.runTransaction(async (tx) => {
+    await requireCurrentScenarioOwner(tx, ownerId)
     const receiptRef = db.doc(`users/${ownerId}/privacyReceipts/${receiptId}`)
     const existing = await tx.get(receiptRef)
     if (existing.exists) throw new functions.https.HttpsError('already-exists', 'Operation already completed.', { receiptId })
@@ -182,6 +205,7 @@ export const generatePossibleFutureBranches = functions.https.onCall(async (data
     const receiptId = stableReceipt(ownerId, op, 'scenario-provider-unavailable')
     const receiptRef = db.doc('scenarioProviderReceipts/' + receiptId)
     await db.runTransaction(async (tx) => {
+      await requireCurrentScenarioOwner(tx, ownerId)
       const scenarioSnapshot = await tx.get(ref)
       const basisRef = ref.collection('basis').doc('current')
       const basisSnapshot = await tx.get(basisRef)
@@ -231,6 +255,7 @@ export const generatePossibleFutureBranches = functions.https.onCall(async (data
       createdAt: fv.serverTimestamp(), updatedAt: fv.serverTimestamp() }
   })
   await db.runTransaction(async (tx) => {
+    await requireCurrentScenarioOwner(tx, ownerId)
     const basisRef = ref.collection('basis').doc('current')
     const [snapshot, basisSnapshot] = await Promise.all([tx.get(ref), tx.get(basisRef)])
     if (!snapshot.exists || !basisSnapshot.exists ||
