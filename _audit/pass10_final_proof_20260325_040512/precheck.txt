@@ -1,4 +1,0 @@
-=== PRECHECK ===
-/home/user/urai-spatial
-app ok
-

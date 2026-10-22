@@ -1,2 +1,0 @@
-69:      mode: "lifemap",
-77:      mode: "lifemap",
