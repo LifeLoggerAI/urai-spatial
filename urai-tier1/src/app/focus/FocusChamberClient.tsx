@@ -29,6 +29,7 @@ import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
 import type { LifeMapNode } from '@/components/lifemap/lifeMapData'
 import { currentFocusNode, eligibleFocusNeighbors, focusNeighborHref } from './focusNeighborContinuity'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { shouldHandleRealmEscape } from '@/spatial/world/realmEscapeEligibility.mjs'
 
 const focusAccessibilityCss = `
 .focusControls button:focus-visible,.focusHelp summary:focus-visible,.neutralActions button:focus-visible,.webglRecovery button:focus-visible,.focus-spatial-aperture-button:focus-visible{outline:3px solid #e7fbff;outline-offset:3px}
@@ -440,7 +441,7 @@ export default function FocusChamberClient() {
 
   useEffect(() => {
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented || document.querySelector('[role="dialog"][aria-modal="true"]') || (event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"],[role="menu"]'))) return
+      if (!shouldHandleRealmEscape(event)) return
       event.preventDefault()
       unwind()
     }
