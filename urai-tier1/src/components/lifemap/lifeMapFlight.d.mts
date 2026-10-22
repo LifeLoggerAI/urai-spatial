@@ -29,3 +29,11 @@ export type LifeMapApproachWaypoints = {
 export function lifeMapApproachWaypoints(from: number[], target: number[], standoff?: number): LifeMapApproachWaypoints;
 
 export function lifeMapWorldStarAction(clickedId: string | null, selectedId: string | null, phase: string, replayAllowed: boolean): "ignore" | "select" | "replay";
+
+export type LifeMapWorldStageTransform = {
+  scale: [number, number, number];
+  position: [number, number, number];
+};
+
+export function lifeMapWorldStageTransform(portrait: boolean): LifeMapWorldStageTransform;
+export function lifeMapStagePoint(point: readonly number[], portrait: boolean): [number, number, number];
