@@ -81,6 +81,7 @@ const focusedContractTests = [
   'tests/owned-memory-media-release-teardown.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
   'tests/world-return-destination.test.mjs',
+  'tests/world-destination-surface-readiness.test.mjs',
   'tests/world-return-identity-isolation.test.mjs',
   'tests/replay-trail-geometry.test.mjs',
   'tests/software-webgl-renderer-quality.test.mjs',
