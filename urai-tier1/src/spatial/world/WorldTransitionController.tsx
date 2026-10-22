@@ -278,7 +278,12 @@ export function WorldTransitionController() {
   }, [executeTravel])
 
   useLayoutEffect(() => {
-    const onTravel = (event: WindowEventMap[typeof URAI_WORLD_TRAVEL_EVENT]) => executeTravel(event.detail)
+    const onTravel = (event: WindowEventMap[typeof URAI_WORLD_TRAVEL_EVENT]) => {
+      // Acknowledge ownership synchronously so the shared emergency fallback
+      // cannot interrupt the controller's deliberate 1900ms Replay transition.
+      event.preventDefault()
+      executeTravel(event.detail)
+    }
     const onReturn = () => reverseTravel()
     const onKeyDown = (event: KeyboardEvent) => {
       const currentWorld = worldRef.current
