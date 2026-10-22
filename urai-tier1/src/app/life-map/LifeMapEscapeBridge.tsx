@@ -21,18 +21,12 @@ export function LifeMapEscapeBridge() {
       routeToHome()
     }
 
-    const shouldReturnHome = window.sessionStorage.getItem('urai-spatial-escape-stack-return-home') === '1'
-    const fallbackTimer = shouldReturnHome
-      ? window.setTimeout(() => {
-          window.sessionStorage.removeItem('urai-spatial-escape-stack-return-home')
-          routeToHome()
-        }, 800)
-      : undefined
-
+    // Life Map is a stable destination after Focus Escape. The previous
+    // delayed automatic home return raced route mounting and skipped a level.
+    // A second, deliberate Escape is handled by this bridge.
     window.addEventListener('keydown', handleKeyDown, { capture: true })
     document.addEventListener('keydown', handleKeyDown, { capture: true })
     return () => {
-      if (fallbackTimer) window.clearTimeout(fallbackTimer)
       window.removeEventListener('keydown', handleKeyDown, { capture: true })
       document.removeEventListener('keydown', handleKeyDown, { capture: true })
     }
