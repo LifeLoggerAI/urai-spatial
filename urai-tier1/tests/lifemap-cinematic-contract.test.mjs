@@ -42,7 +42,7 @@ test('memory lenses select in place before Focus or Replay navigation', () => {
     'selectedId, setSelectedId',
     'setSelectedId(node.id)',
     'function selectedStagePoint(node: LifeMapNode, portrait: boolean)',
-    'goalForNode(selected, phase, portrait)',
+    'goalForNode(selected, phase, portrait, departureOrigin.current ?? undefined)',
     'destinationHref("focus")',
     'destinationHref("replay")',
     'Enter Focus',
