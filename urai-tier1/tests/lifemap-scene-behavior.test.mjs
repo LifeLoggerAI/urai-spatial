@@ -93,7 +93,15 @@ test('Production artifacts are differentiated by meaning rather than generic bub
   for (const component of ['VisualArtifact', 'AudioArtifact', 'RelationshipArtifact', 'PlaceArtifact', 'EmotionArtifact', 'PatternArtifact', 'AchievementArtifact', 'GoalArtifact', 'EverydayArtifact', 'ArchiveArtifact', 'ProtectedArtifact']) {
     assert.match(world, new RegExp(`function ${component}`))
   }
-  assert.doesNotMatch(world.slice(world.indexOf('function MemoryArtifact'), world.indexOf('function SemanticPath')), /sphereGeometry/)
+  const artifact = world.slice(world.indexOf('function MemoryArtifact'), world.indexOf('function SemanticPath'))
+  // One raycast surface is intentional: it is fully invisible, writes neither
+  // color nor depth, and must never become a duplicate visible Memory Star.
+  const hit = artifact.match(/<mesh name=\{`life-map-star-hit-\$\{node\.id\}`\}[\s\S]*?<\/mesh>/)
+  assert.ok(hit, 'physical Memory Star needs one semantic hit surface')
+  assert.equal((artifact.match(/<sphereGeometry/g) || []).length, 1, 'no second sphere geometry or generic bubble')
+  assert.match(hit[0], /<meshBasicMaterial colorWrite=\{false\} depthWrite=\{false\} transparent opacity=\{0\} \/>/)
+  assert.match(hit[0], /<sphereGeometry args=\{\[overviewCluster \? 1\.42 : 1\.06, 14, 10\]\} \/>/)
+  assert.doesNotMatch(artifact.replace(hit[0], ''), /sphereGeometry/, 'no visible bubble geometry outside hit surface')
   assert.match(world, /name={`life-map-artifact-\${resolveArtifactFamily\(node\)}-\${node\.id}`}/)
   assert.match(world, /scale={active \? 1\.46 : 0\.58 \+ importance \* 0\.22}/)
   assert.match(world, /artifactFamilyLabel\(node\)/)
