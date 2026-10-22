@@ -57,7 +57,7 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
     if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
     // Relationship hints from an old memory never scope a different selection.
     if ((key === 'thread' || key === 'personId' || key === 'placeId') && (neutralDestination || (selectedMemoryId && !sameMemory))) continue
-    // A privacy-mode hint from an old memory cannot describe a new star or a neutral realm.
+    // A privacy-mode hint from an old memory cannot describe a new star or neutral realm.
     if (key === 'privacyMode' && (!memoryDestination || !sameMemory)) continue
     if (!target.searchParams.has(key) && current.has(key)) target.searchParams.set(key, current.get(key) ?? '')
   }
@@ -74,6 +74,12 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('thread')
     target.searchParams.delete('personId')
     target.searchParams.delete('placeId')
+    // Keep Orb/companion neutral navigation as private as the controller
+    // and the emergency world fallback: no stale consent or scenario hints.
+    for (const key of ['privacyMode', 'originRealm', 'returnToken', 'fidelity',
+      'scenario', 'branch', 'basisRevision', 'truthMode', 'scenarioOrigin']) {
+      target.searchParams.delete(key)
+    }
   }
   if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (!neutralDestination && context?.threadId) target.searchParams.set('thread', context.threadId)
