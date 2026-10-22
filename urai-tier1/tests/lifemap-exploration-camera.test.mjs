@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { advanceLifeMapFlight, lifeMapFlightLookTarget } from "../src/components/lifemap/lifeMapFlight.mjs";
+import { advanceLifeMapFlight, lifeMapFlightLookTarget, lifeMapApproachWaypoints } from "../src/components/lifemap/lifeMapFlight.mjs";
 
 const origin = () => ({ position: [0, 1.55, 13.4], velocity: [0, 0, 0], yaw: 0, pitch: 0 });
 
@@ -53,6 +53,18 @@ test("selected memory departure inherits the explored camera checkpoint", () => 
   const scene = readFileSync(new URL("../src/components/lifemap/ComposedLifeMapScene.tsx", import.meta.url), "utf8");
   assert.match(scene, /departureOrigin\.current\.copy\(camera\.position\)/);
   assert.match(scene, /goalForNode\(selected, phase, portrait, departureOrigin\.current\)/);
-  assert.match(scene, /if \(phase === "departure"\) return \{ position: tuple\(overview\), target: tuple\(target\) \}/);
-  assert.doesNotMatch(scene, /if \(phase === "departure"\) return \{ position: OVERVIEW_POSITION/);
+  assert.match(scene, /phase === "departure" \? waypoints\.departure/);
+  assert.doesNotMatch(scene, /travel\.x \+=/);
+});
+
+test("star travel waypoints remain finite and depart exactly from explored camera", () => {
+  const start = [24, 6, -17], target = [-8, 0, -22];
+  const journey = lifeMapApproachWaypoints(start, target);
+  assert.deepEqual(journey.departure, start);
+  for (const key of ["travel", "approach", "arrival"]) assert.ok(journey[key].every(Number.isFinite));
+  assert.ok(Math.hypot(...journey.arrival.map((x, i) => x - target[i])) < 7);
+});
+test("nearby stars do not produce NaN camera waypoints", () => {
+  const journey = lifeMapApproachWaypoints([2, 2, 2], [2, 2, 2]);
+  assert.ok(Object.values(journey).every(p => p.every(Number.isFinite)));
 });
