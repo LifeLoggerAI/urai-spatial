@@ -68,3 +68,19 @@ test("nearby stars do not produce NaN camera waypoints", () => {
   const journey = lifeMapApproachWaypoints([2, 2, 2], [2, 2, 2]);
   assert.ok(Object.values(journey).every(p => p.every(Number.isFinite)));
 });
+
+test("selecting a nearby star never pulls the camera several units backward", () => {
+  const start = [2, 2, 3], target = [2, 2, 2];
+  const journey = lifeMapApproachWaypoints(start, target);
+  const distance = (a, b) => Math.hypot(...a.map((x, i) => x - b[i]));
+  assert.ok(distance(journey.arrival, target) <= distance(start, target));
+  assert.ok(distance(journey.arrival, start) < 0.3);
+});
+
+test("distant star journey progresses inward through both approach phases", () => {
+  const target = [-5, 0, -24];
+  const journey = lifeMapApproachWaypoints([0, 1.55, 13.4], target);
+  const distances = ["departure", "travel", "approach", "arrival"].map((phase) =>
+    Math.hypot(...journey[phase].map((x, i) => x - target[i])));
+  assert.ok(distances.every((value, i) => i === 0 || value < distances[i - 1]));
+});
