@@ -35,3 +35,37 @@ test('daytime scene does not claim validated Sky while missing geometry', () => 
   const opts = { goldenHour: true, groundCover: false, qualityTier: 'medium' }
   assert.equal(inspectHomeVisualStudyScene({ getObjectByName: () => ({ children: [{ isMesh: true, visible: true }] }) }, opts).skyReady, false)
 })
+
+test('sky study cannot pass with invisible sky group, child or ancestor', () => {
+  const opts = { goldenHour: true, groundCover: false, qualityTier: 'high' }
+  const group = { visible: false, children: [{ isMesh: true, visible: true, geometry: {} }] }
+  group.children[0].parent = group
+  assert.equal(inspectHomeVisualStudyScene({ getObjectByName: () => group }, opts).ready, false)
+  group.visible = true
+  group.children[0].visible = false
+  assert.equal(inspectHomeVisualStudyScene({ getObjectByName: () => group }, opts).ready, false)
+  group.children[0].visible = true
+  group.parent = { visible: false }
+  assert.equal(inspectHomeVisualStudyScene({ getObjectByName: () => group }, opts).ready, false)
+})
+
+test('meadow study cannot pass with hidden mesh or hidden ancestor', () => {
+  const opts = { goldenHour: false, groundCover: true, qualityTier: 'high' }
+  const cover = { isInstancedMesh: true, visible: false, count: 1600,
+    geometry: { getAttribute: () => ({ count: 75 }) }, material: {} }
+  const scene = { getObjectByName: () => cover }
+  assert.equal(inspectHomeVisualStudyScene(scene, opts).ready, false)
+  cover.visible = true
+  cover.parent = { visible: false }
+  assert.equal(inspectHomeVisualStudyScene(scene, opts).ready, false)
+  cover.parent.visible = true
+  assert.equal(inspectHomeVisualStudyScene(scene, opts).ready, true)
+})
+
+test('corrupt cyclic ancestors never produce evidence of rendered Home assets', () => {
+  const opts = { goldenHour: false, groundCover: true, qualityTier: 'high' }
+  const cover = { isInstancedMesh: true, count: 1600,
+    geometry: { getAttribute: () => ({ count: 75 }) }, material: {} }
+  cover.parent = cover
+  assert.equal(inspectHomeVisualStudyScene({ getObjectByName: () => cover }, opts).ready, false)
+})
