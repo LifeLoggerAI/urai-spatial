@@ -195,7 +195,11 @@ test('travel infrastructure preserves fallback, route ownership and canonical as
   for (const marker of ['enterLifeMap: () => set({ mode: "ASCENT"', 'phase: "ASCENT"', 'isTransitioning: true', 'inputLocked: true', 'progress: 0']) has(sceneStore, marker)
   assert.match(worldTransitions, /currentWorld\.destination === 'life-map' \|\| currentWorld\.destination === 'location-map'/)
   assert.doesNotMatch(worldTransitions, /requiresHardDocumentNavigation/)
-  assert.match(worldTransitions, /normalizedPathname\(window\.location\.pathname\) !== targetPathname[\s\S]*!destinationSurfaceReady\(request\.destination\)[\s\S]*window\.location\.assign\(href\)/)
+  // Travel is now scoped to the exact URL (including owner-safe query) and
+  // live scene readiness; checking pathname alone would admit a stale realm.
+  assert.match(worldTransitions, /const targetLocation = `\$\{targetPathname\}\$\{target.search\}\$\{target.hash\}`/)
+  assert.match(worldTransitions, /if \(currentLocation !== startingLocation \|\| reachedTarget\) clearTimer\(\)/)
+  assert.match(worldTransitions, /if\s*\(\s*locationKey\(\) !== targetLocation \|\|\s*!destinationSurfaceReady\(request\.destination\)\s*\)\s*\{\s*window\.location\.assign\(href\)/)
 })
 
 test('embodied movement never removes semantic Focus and Replay exits', () => {

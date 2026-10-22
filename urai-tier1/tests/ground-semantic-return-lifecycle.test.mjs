@@ -90,6 +90,9 @@ function mount({ webgl = false } = {}) {
     ['@react-three/drei', { Sparkles: 'sparkles', useAnimations: () => ({}), useGLTF: Object.assign(() => ({}), { preload() {} }) }],
     ['@react-three/postprocessing', { Bloom: 'bloom', EffectComposer: 'composer', Vignette: 'vignette' }],
     ['@/spatial/adam/AdamLauncherSlot', { __esModule: true, default: 'founder-slot' }],
+    // The workforce is presentation-only in this Escape/Home-return harness.
+    // Admit exactly this actual Ground dependency; all other unknown imports fail.
+    ['./GroundWorkforcePresences', { GROUND_WORKFORCE: [], GroundWorkforcePresences: 'ground-workforce-presences' }],
   ])
   const context = vm.createContext({ window, document, Element: Target, HTMLElement: Target, Event: HarnessEvent, CustomEvent: HarnessEvent, URL, URLSearchParams, setTimeout, clearTimeout, console })
   function load(path) {
