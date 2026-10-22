@@ -126,8 +126,8 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     pushes, assignments, travelRequests, clock,
     get pathname() { return currentUrl.pathname },
     get pendingTimers() { return timers.size },
-    get observerCount() { return observers.size }
-    get observedIdentityAttributes() { return [...observerOptions.values()].flatMap(options => options.attributeFilter ?? []) },,
+    get observerCount() { return observers.size },
+    get observedIdentityAttributes() { return [...observerOptions.values()].flatMap(options => options.attributeFilter ?? []) },
     get locationListenerCount() { return (listeners.get('popstate')?.size ?? 0) + (listeners.get('hashchange')?.size ?? 0) },
     travel(destination, href) {
       // The real world-travel event is cancelable. Its controller claims
@@ -369,5 +369,16 @@ test('canonical world controller acknowledges cancelable travel before async tra
   const event = page.travel('replay', '/replay')
   assert.equal(event.cancelable, true)
   assert.equal(event.defaultPrevented, true, 'controller must claim travel to suppress the concurrent hard fallback')
+  page.unmount()
+})
+
+
+test('canonical controller claims cancelable travel before its delayed router handoff', () => {
+  const page = mount()
+  const event = page.travel('replay', '/replay')
+  assert.equal(event.cancelable, true)
+  assert.equal(event.defaultPrevented, true,
+    'the mounted controller must acknowledge travel synchronously to suppress the competing emergency fallback')
+  assert.equal(page.assignments.length, 0)
   page.unmount()
 })

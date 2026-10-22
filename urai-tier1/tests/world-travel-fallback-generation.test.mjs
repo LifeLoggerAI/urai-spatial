@@ -90,6 +90,33 @@ test('Back after already-admitted Focus allows an immediate new Focus request',(
  assert.deepEqual(f.navigation,[A.href], 'a completed trip must not suppress a new click after Back')
 })
 
+
+test('mounted world controller owns cancelable travel; emergency fallback does not race it',()=>{
+ const events=[]
+ const f=fixture((request,_h,event)=>{
+   events.push({request,cancelable:event.cancelable})
+   event.preventDefault()
+ })
+ f.requestUraiWorldTravel(A)
+ assert.deepEqual(events.map(e=>e.cancelable),[true])
+ assert.equal(f.timers,0,'cancelled event cannot arm a competing fallback timer')
+ assert.equal(f.popstateListeners,0)
+ f.advance(5000)
+ assert.deepEqual(f.navigation,[],'controller-owned travel must use its own watchdog')
+})
+
+test('unowned travel keeps emergency fallback as a safety net',()=>{
+ const f=fixture((_request,_h,event)=>{
+   assert.equal(event.cancelable,true)
+   assert.equal(event.defaultPrevented,false)
+ })
+ f.requestUraiWorldTravel(A)
+ assert.ok(f.timers>0,'missing owner should keep fallback timer')
+ f.advance(2400)
+ assert.deepEqual(f.navigation,[A.href])
+})
+
+
 test('controller-owned travel cannot trigger competing early hard fallback',()=>{
  const f=fixture((_request,_runtime,event)=>event.preventDefault())
  f.requestUraiWorldTravel({destination:'replay',href:'/replay?demo=1&memoryId=a'})

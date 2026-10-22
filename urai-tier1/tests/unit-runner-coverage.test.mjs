@@ -83,6 +83,7 @@ const requiredFocusedTests = [
   'tests/world-route-identity-readiness.test.mjs',
   'tests/world-neutral-route-privacy.test.mjs',
   'tests/world-travel-fallback-generation.test.mjs',
+  'tests/world-transition-watchdog-lifecycle.test.mjs',
   'tests/world-return-identity-isolation.test.mjs',
   'tests/replay-trail-geometry.test.mjs',
   'tests/software-webgl-renderer-quality.test.mjs',
