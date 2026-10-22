@@ -1,6 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { createRequire } from 'node:module'
+const localRequire = createRequire(import.meta.url)
+const scenarioOwnerAuthorityDecision = localRequire('../lib/apps/functions/src/scenarioOwnerAuthority.js').scenarioOwnerAuthorityDecision
 import vm from 'node:vm'
 import ts from 'typescript'
 
@@ -14,8 +17,11 @@ function callable(name) {
   assert.ok(next > start, name + ' must have a following callable')
   return source.slice(start, next)
 }
+const ownerStart = source.indexOf('async function requireCurrentScenarioOwner(')
+const ownerEnd = source.indexOf('\nfunction ensureScenarioId(', ownerStart)
+assert.ok(ownerStart >= 0 && ownerEnd > ownerStart, 'Real owner guard must be present')
 const compiled = ts.transpileModule(
-  callable('getPossibleFuture') + '\n' + callable('getPossibleFutureCouncilBundle') + '\n' + callable('comparePossibleFutureBranches'),
+  source.slice(ownerStart, ownerEnd) + '\n' + callable('getPossibleFuture') + '\n' + callable('getPossibleFutureCouncilBundle') + '\n' + callable('comparePossibleFutureBranches'),
   { fileName: 'scenarioOperations.ts', reportDiagnostics: true,
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
 )
@@ -69,8 +75,9 @@ function harness({
     asStringArray: (value, max = 64) => Array.isArray(value)
       ? value.filter(item => typeof item === 'string' && item.length > 0).slice(0, max) : [],
     BRANCH_LIMIT: 3,
+    scenarioOwnerAuthorityDecision,
     operationId: (value) => value,
-    db: { runTransaction: async (fn) => {
+    db: { doc: location => ({ get: async () => ({ exists:location==='users/owner-synthetic', get:key=>key==='deleted'?false:key==='accountStatus'?'active':undefined }) }), runTransaction: async (fn) => {
       if (scenarioOnTransaction) scenario = scenarioOnTransaction
       return fn({
         get: async (ref) => ref.get(),

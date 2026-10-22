@@ -429,7 +429,11 @@ function leafFixture(leaf, change = {}) {
     if (path.startsWith('spatialPaidProviderBindings/')) return originalDoc(path)
     return { path, get:async () => snapshot(path), set:async () => undefined, update:async () => undefined }
   }
-  const snapshot = path => ({ exists:path.endsWith('privacyPolicy/current'), data:() => path.endsWith('privacyPolicy/current') ? privacy : {} })
+  const snapshot = path => {
+    const ownerPath = 'users/' + UID
+    const value = path.endsWith('privacyPolicy/current') ? privacy : path === ownerPath ? { deleted:false, accountStatus:'active', privacyRevision:privacy.revision } : {}
+    return { exists:path.endsWith('privacyPolicy/current') || path === ownerPath, data:() => value, get:key => key.split('.').reduce((row,part) => row?.[part], value) }
+  }
   f.db.runTransaction = async fn => fn({ get:ref => Promise.resolve(snapshot(ref.path)), set:() => undefined, create:() => undefined })
   const firestore = Object.assign(() => f.db, { Timestamp, FieldValue:{ increment:x => x, serverTimestamp:() => 'synthetic-time' } })
   class PersonPresenceAuthorityError extends Error {}
@@ -442,6 +446,8 @@ function leafFixture(leaf, change = {}) {
     if (id === 'firebase-functions/v2/https') return { onRequest:(options,handler) => { assert.ok(options.secrets.includes(f.helper.SPATIAL_SPEND_WORKER_TOKENS_JSON)); return handler } }
     if (id === '../../../packages/localization/src/contentLanguage') return language
     if (id === './consentPolicyAuthority') return policyAuthority
+    if (id === './providerOwnerAuthority') return sourceModule('../src/providerOwnerAuthority.ts', name => { throw Error('Unexpected owner-authority dependency ' + name) })
+    if (id === './orbActivitySnapshotAuthority') return sourceModule('../src/orbActivitySnapshotAuthority.ts', name => { if (name === 'node:crypto') return { createHash }; throw Error('Unexpected Orb-activity dependency ' + name) })
     if (id === './adamFounderVoiceReceiptContract.mjs') return founderVoiceReceiptContract
     if (id === './councilGraphEvidenceAuthority') return graphEvidenceAuthority
     if (id === './protectedProviderSpend') return { ...f.helper, paidSpatialFetch:f.paidFetch }

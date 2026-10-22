@@ -187,7 +187,7 @@ function fixture(options = {}) {
       module: result, exports: result.exports, Buffer, Error, Date: class extends Date { static now() { return options.clock?.value ?? now } },
       process: { env: { GCLOUD_PROJECT: 'urai-4dc1d', ...options.env } },
       require: name => { if (name === 'firebase-admin') return admin; if (name === 'firebase-admin/firestore') return { Timestamp, FieldPath: { documentId: () => '__name__' }, FieldValue: admin.firestore.FieldValue }; if (name === 'firebase-functions/v1') return functions;
-        if (name === 'node:crypto') return crypto; if (name === 'node:stream/promises') return require(name); if (name === './exportPagination') return loadPagination(); if (name === './consentPolicyAuthority') return loadPolicyAuthority(); if (name === './memoryMediaProjectBoundary') return require(path.join(path.dirname(filename), 'memoryMediaProjectBoundary.js')); throw new Error(`Unexpected memory-media dependency ${name}`) },
+        if (name === 'node:crypto') return crypto; if (name === 'node:stream/promises') return require(name); if (name === './exportPagination') return loadPagination(); if (name === './consentPolicyAuthority') return loadPolicyAuthority(); if (name === './memoryMediaProjectBoundary') return require(path.join(path.dirname(filename), 'memoryMediaProjectBoundary.js')); if (name === './privatePreparedMediaAuthority') return require(path.join(path.dirname(filename), 'privatePreparedMediaAuthority.js')); throw new Error(`Unexpected memory-media dependency ${name}`) },
     }, { filename: 'memoryMedia.strict-compiled.js' })
     return memoryMedia = result.exports
   }
@@ -260,7 +260,7 @@ test('unbound memory media cannot publish a portable package containing a bearer
 const fictionalPng = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.from('fictional memory pixels')])
 function mediaFixture(options = {}) {
   const f = fixture(options)
-  f.records.set(`${prefix}/memories/synthetic-memory`, { ownerId: uid, sourceMedia: [] })
+  f.records.set(`${prefix}/memories/synthetic-memory`, { ownerId: uid, consentState: 'authorized', sourceMedia: [] })
   f.records.set(`consentRecords/${uid}_memory_storage`, { uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0',
     status: 'granted', receiptHash: 'b'.repeat(64), expiresAt: new f.Timestamp(now + 3600000) })
   f.upload = (changes = {}, context = f.context) => f.media.registerMemoryMedia({ memoryId: 'synthetic-memory', operationId: 'synthetic-media-upload',
@@ -951,7 +951,7 @@ test('legacy receipt-before-queue crash reconciles only independently absent mem
   f.records.set('deletionReceipts/' + d.receiptId, {
     kind: 'deletion', result: 'completed', scope: 'memories', jobId: d.jobId, receiptId: d.receiptId,
     ownerDigest: hash('urai-owner:' + uid),
-    deletedCollections: ['memories','memoryMediaReceipts','replayEvents','spatialMemories','canonChains'],
+    deletedCollections: ['memories','memoryMediaReceipts','replayEvents','spatialMemories','canonChains','orbConversationContinuity'],
     removedMemoryStarEvents: 0, memoryMediaObjectsFenced: 0,
   })
   await f.handlers.processDeletionGraceQueue()
@@ -1502,4 +1502,27 @@ test('compiled operational privacy uses real modular Firestore sentinels, not ab
   assert.match(compiled, /firebase-admin\/firestore/, 'compiled callable must import modular Firestore SDK')
   const currentSource = fs.readFileSync(path.resolve(__dirname, '../src/privacyOperations.ts'), 'utf8')
   assert.doesNotMatch(currentSource, /admin\.firestore\.(?:FieldValue|Timestamp)/, 'legacy namespace static must not be reused')
+})
+
+
+test('legacy durable receipt without Orb conversation coverage remains fenced for review', async () => {
+  const f = fixture()
+  const d = await f.handlers.createDeletionRequest({
+    operationId: 'synthetic-legacy-incomplete-orb-deletion', scope: 'memories', confirmation: 'CONFIRM DELETE',
+  }, f.context)
+  const queue = 'deletionQueue/' + d.jobId, owner = prefix + '/deletionJobs/' + d.jobId
+  for (const key of [queue, owner])
+    f.records.set(key, { ...f.records.get(key), state: 'in-progress', startedAt: new f.Timestamp(now - 31 * 60 * 1000) })
+  f.records.set('deletionReceipts/' + d.receiptId, {
+    kind: 'deletion', result: 'completed', scope: 'memories', jobId: d.jobId, receiptId: d.receiptId,
+    ownerDigest: hash('urai-owner:' + uid),
+    deletedCollections: ['memories','memoryMediaReceipts','replayEvents','spatialMemories','canonChains'],
+    removedMemoryStarEvents: 0, memoryMediaObjectsFenced: 0,
+  })
+  await f.handlers.processDeletionGraceQueue()
+  assert.equal(f.records.get(queue).state, 'reconciliation-required')
+  assert.equal(f.records.get(owner).state, 'reconciliation-required')
+  assert.equal(f.records.get(prefix + '/privacyReceipts/' + d.receiptId).result, 'reconciliation-required')
+  assert.equal(f.records.get(fencePath).pendingDeletions[d.jobId], true)
+  assert.equal(f.stats.deleted.length, 0, 'an incomplete durable receipt cannot trigger destructive replay')
 })

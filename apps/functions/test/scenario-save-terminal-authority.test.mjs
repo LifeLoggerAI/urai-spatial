@@ -2,6 +2,9 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import vm from 'node:vm'
+import { createRequire } from 'node:module'
+const localRequire = createRequire(import.meta.url)
+const scenarioOwnerAuthorityDecision = localRequire('../lib/apps/functions/src/scenarioOwnerAuthority.js').scenarioOwnerAuthorityDecision
 import ts from 'typescript'
 
 // Compile the exact original callable, never a test-owned substitute.
@@ -9,7 +12,10 @@ const source = readFileSync(new URL('../src/scenarioOperations.ts', import.meta.
 const start = source.indexOf('export const savePossibleFuture = functions.https.onCall(')
 const end = source.indexOf('\nexport const discardPossibleFuture', start)
 assert.ok(start >= 0 && end > start, 'original savePossibleFuture must remain available')
-const compiled = ts.transpileModule(source.slice(start, end), {
+const ownerStart=source.indexOf('async function requireCurrentScenarioOwner(')
+const ownerEnd=source.indexOf('\nfunction ensureScenarioId(', ownerStart)
+assert.ok(ownerStart>=0&&ownerEnd>ownerStart,'Actual owner guard is required')
+const compiled = ts.transpileModule(source.slice(ownerStart,ownerEnd) + '\n' + source.slice(start, end), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   reportDiagnostics: true,
 })
@@ -29,14 +35,14 @@ function fixture({ exists = true, status = 'ready', storedOwner = 'owner-synthet
   }
   const exports = {}
   vm.runInNewContext(compiled.outputText, {
-    exports, functions: { https: { onCall: fn => fn, HttpsError } },
+    exports, scenarioOwnerAuthorityDecision, functions: { https: { onCall: fn => fn, HttpsError } },
     uid: ctx => ctx.auth.uid,
     operationId: id => { assert.equal(id, 'operation_long_0001'); return id },
     ensureScenarioId: id => { assert.equal(id, 'scn_0123456789abcdef'); return id },
     scenarioRef: (ownerId, scenarioId) => {
       assert.equal(ownerId, 'owner-synthetic'); assert.equal(scenarioId, 'scn_0123456789abcdef'); return ref
     },
-    db: { runTransaction: async fn => fn(tx) },
+    db: { doc:location=>({get:async()=>({exists:location==='users/owner-synthetic',get:key=>key==='deleted'?false:key==='accountStatus'?'active':undefined})}),runTransaction: async fn => fn(tx) },
     fv: { serverTimestamp: () => 'TEST_TIME' },
   })
   return { invoke: () => exports.savePossibleFuture({ operationId:'operation_long_0001', scenarioId:'scn_0123456789abcdef' }, { auth: { uid:'owner-synthetic' } }), writes, reads, stored }
