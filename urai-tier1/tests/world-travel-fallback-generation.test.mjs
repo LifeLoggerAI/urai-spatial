@@ -33,3 +33,15 @@ test('home ascent supersedes pending fallback',()=>{const f=fixture();f.requestU
 test('reentrant later request wins',()=>{let entered=false;const f=fixture((_request,h)=>{if(!entered){entered=true;h.requestUraiWorldTravel(B)}});f.requestUraiWorldTravel(A);f.advance(2400);assert.deepEqual(f.navigation,[B.href])})
 test('direct route elsewhere cancels stale recovery',()=>{const f=fixture();f.requestUraiWorldTravel(A);f.advance(100);f.location.jump('/home?changed=1');f.advance(4000);assert.deepEqual(f.navigation,[])})
 test('intended location without surface still recovers',()=>{const f=fixture();f.requestUraiWorldTravel(A);f.advance(100);f.location.jump(A.href);f.advance(2300);assert.deepEqual(f.navigation,[A.href])})
+
+test('Back after reaching target does not resurrect obsolete Focus fallback', () => {
+  const f = fixture()
+  f.requestUraiWorldTravel(A)
+  f.advance(100)
+  f.location.jump(A.href)
+  f.advance(100)
+  f.location.jump('/home')
+  f.advance(4000)
+  assert.deepEqual(f.navigation, [], 'history Back must not force the prior Focus target')
+  assert.equal(f.pendingTimers, 0)
+})
