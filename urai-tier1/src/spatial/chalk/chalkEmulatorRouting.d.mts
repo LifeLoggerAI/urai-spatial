@@ -8,3 +8,5 @@ export type ChalkReviewEmulatorContext = {
 };
 export function chalkReviewEmulatorAllowed(context: ChalkReviewEmulatorContext): boolean;
 export function requireChalkReviewEmulator(context: ChalkReviewEmulatorContext): Readonly<{host:'127.0.0.1';port:5001}>;
+
+export function selectChalkCallableFunctions<T extends object>(existingFunctions:T,context:ChalkReviewEmulatorContext):T;

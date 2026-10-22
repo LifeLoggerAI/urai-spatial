@@ -2,22 +2,19 @@
 import {useEffect,useRef,useState,type FormEvent,type CSSProperties} from 'react'
 import {usePathname} from 'next/navigation'
 import {onAuthStateChanged,type User} from 'firebase/auth'
-import {httpsCallable,getFunctions,connectFunctionsEmulator} from 'firebase/functions'
-import {app,getUraiAuth,firebasePublicEnvReady,uraiJourneyEmulatorEnabled} from '@/lib/firebase/client'
+import {httpsCallable} from 'firebase/functions'
+import {app,functions,getUraiAuth,firebasePublicEnvReady,uraiJourneyEmulatorEnabled} from '@/lib/firebase/client'
 import {chalkIntent,chalkDiagnostic} from './chalkSpatialContract.mjs'
 import {chalkReviewRequest,chalkReviewReceipt} from './chalkReviewBridge.mjs'
-import {CHALK_FUNCTIONS_REGION,requireChalkReviewEmulator} from './chalkEmulatorRouting.mjs'
+import {selectChalkCallableFunctions} from './chalkEmulatorRouting.mjs'
 type Line={speaker:string;text:string}
-let regionalEmulatorConnected=false
-const reviewOptedIn=process.env.NEXT_PUBLIC_URAI_CHALK_EMULATOR_REVIEW==='true' && process.env.NEXT_PUBLIC_URAI_CHALK_JOBS_EMULATOR==='true'
+const reviewRequested=process.env.NEXT_PUBLIC_URAI_CHALK_EMULATOR_REVIEW==='true'
+const jobsEmulatorRequested=process.env.NEXT_PUBLIC_URAI_CHALK_JOBS_EMULATOR==='true'
+const reviewOptedIn=reviewRequested&&jobsEmulatorRequested
 function chalkFunctions(){
- const instance=getFunctions(app,CHALK_FUNCTIONS_REGION)
- if(reviewOptedIn){
-  const address=requireChalkReviewEmulator({journeyEmulatorEnabled:uraiJourneyEmulatorEnabled,
-   projectId:app.options.projectId,reviewRequested:true,jobsEmulatorRequested:true})
-  if(!regionalEmulatorConnected){connectFunctionsEmulator(instance,address.host,address.port);regionalEmulatorConnected=true}
- }
- return instance
+ return selectChalkCallableFunctions(functions,{
+  journeyEmulatorEnabled:uraiJourneyEmulatorEnabled,
+  projectId:app.options.projectId,reviewRequested,jobsEmulatorRequested})
 }
 export default function ChalkPresenceRuntime(){
  const route=usePathname()||'/'
