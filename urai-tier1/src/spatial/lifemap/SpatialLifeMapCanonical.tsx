@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { assetCssStack, lifeMapAssets } from "@/spatial/assets/uraiAssets";
-import { requestUraiWorldReturn } from "@/spatial/world/worldEvents";
+
 import LifeMapRouteBoundary from "@/components/lifemap/LifeMapRouteBoundary";
 import LifeMapSemanticNavigator from "@/components/lifemap/LifeMapSemanticNavigator";
 import { firebasePublicEnvReady, getUraiAuth } from "@/lib/firebase/client";
@@ -24,11 +24,13 @@ function LifeMapLoading({ label = "Opening your memory universe" }: { label?: st
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.key !== "Escape" || isEditableTarget(event.target)) return;
       event.preventDefault();
-      requestUraiWorldReturn();
+      // The loading state has no selected star. Its Escape must return Home,
+      // not reverse the global world history to a stale Focus/Replay realm.
+      router.push("/home");
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, []);
+  }, [router]);
   return <main aria-label="Life Map authored fallback" data-testid="urai-life-map-authored-fallback" data-life-map-fallback="authored-semantic" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"radial-gradient(circle at 30% 30%,rgba(103,232,249,.16),transparent 26%),radial-gradient(circle at 72% 54%,rgba(196,181,253,.14),transparent 28%),#01030a" }}>
     <div aria-hidden="true" style={{ position:"absolute", inset:0, backgroundImage:assetCssStack(lifeMapAssets.primary), backgroundSize:"cover", backgroundPosition:"center", opacity:.12 }} />
     <section style={{ position:"absolute", left:"50%", top:"50%", transform:"translate(-50%,-50%)", width:"min(560px,calc(100% - 36px))", padding:28, border:"1px solid rgba(180,239,255,.2)", borderRadius:28, background:"rgba(2,7,18,.74)", backdropFilter:"blur(22px)", textAlign:"center" }}>
