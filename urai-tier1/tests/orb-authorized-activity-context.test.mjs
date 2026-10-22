@@ -46,7 +46,8 @@ test('server validates live memory consent, deletion and provenance', () => {
 
 test('revocation, deletion or correction closes private context before dispatch and delivery', () => {
   assert.match(provider, /const assertActivitySnapshotCurrent = async \(\) =>/)
-  assert.match(provider, /JSON\.stringify\(current\) !== authorizedActivityData/)
+  assert.match(provider, /matchesOrbActivitySnapshot\(authorizedActivityData, current\)/)
+  assert.match(provider, /canonicalOrbActivitySnapshot\(activity\)/)
   assert.match(provider, /ACTIVITY_CONTEXT_CHANGED/)
   assert.match(client, /ACTIVITY_CONTEXT_CHANGED/)
   // After admission, before provider dispatch, after model generation, and

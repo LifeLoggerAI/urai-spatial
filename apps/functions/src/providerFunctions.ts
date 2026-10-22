@@ -5,6 +5,7 @@ import { onRequest } from 'firebase-functions/v2/https'
 import { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS } from '../../../packages/localization/src/contentLanguage'
 import { paidSpatialFetch, assertSpatialPaidOutputCurrent, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
+import { canonicalOrbActivitySnapshot, matchesOrbActivitySnapshot, ORB_ACTIVITY_CONTEXT_LIMIT, type OrbAllowedActivity } from './orbActivitySnapshotAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -216,11 +217,6 @@ async function reserveOpenAiRequest(uid: string, requestId: string, expectedRequ
 }
 
 
-type OrbAllowedActivity = {
-  category: 'hypothetical-scenario' | 'unverified-owner-report'
-  description: string
-}
-const ORB_ACTIVITY_CONTEXT_LIMIT = 3
 
 async function readAuthorizedOrbActivity(uid: string): Promise<OrbAllowedActivity[]> {
   const userRef = db.doc('users/' + uid)
@@ -365,14 +361,14 @@ export const openAiOrbProvider = onRequest({
     const apiKey = OPENAI_API_KEY.value()
     if (!apiKey) throw new ProviderError(503, 'PROVIDER_UNCONFIGURED', 'The external provider is not configured.')
     const recent = context.map((item, index) => `${index + 1}. ${item.role}: ${item.content}`).join('\n')
-    const authorizedActivityData = JSON.stringify(activity)
+    const authorizedActivityData = canonicalOrbActivitySnapshot(activity)
     // Permission may remain granted even when a particular record was deleted
     // or corrected after its text was assembled for the provider. Use a fresh
     // owner-authorized read at every dispatch and delivery boundary.
     const assertActivitySnapshotCurrent = async () => {
       if (!includeActivityContext) return
       const current = await readAuthorizedOrbActivity(uid)
-      if (JSON.stringify(current) !== authorizedActivityData) {
+      if (!matchesOrbActivitySnapshot(authorizedActivityData, current)) {
         throw new ProviderError(409, 'ACTIVITY_CONTEXT_CHANGED', 'Activity changed; a stale-context answer must not be delivered.')
       }
     }
