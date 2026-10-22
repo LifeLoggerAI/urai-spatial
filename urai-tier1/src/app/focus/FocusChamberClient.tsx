@@ -426,8 +426,10 @@ export default function FocusChamberClient() {
   const enterReplay = useCallback(() => {
     if (!memory || !replayHref || committed) return
     setCommitted(true)
-    requestUraiWorldTravel({ destination: 'replay', href: replayHref, entryPortal: 'focus-memory-aperture', cameraCheckpoint: `focus:${memory.star.id}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
-  }, [committed, memory, replayHref])
+    // currentFocusNode already verified selectedNode against this memory/manifest.
+    // Keep the exact visible Memory Star's camera identity when entering Replay.
+    requestUraiWorldTravel({ destination: 'replay', href: replayHref, entryPortal: 'focus-memory-aperture', cameraCheckpoint: `focus:${selectedNode?.id ?? memory.star.id}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
+  }, [committed, memory, replayHref, selectedNode])
   const onSelectNeighbor = useCallback((node: LifeMapNode) => {
     if (committed || !memory) return
     const href = focusNeighborHref(node, memory.demo)
