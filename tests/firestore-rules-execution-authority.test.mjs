@@ -18,7 +18,19 @@ function runCase(javaPresent, emulatorCode, staticShouldFail, overrides = {}) {
     const packageDir = path.join(dir,'node_modules','firebase-tools')
     mkdirSync(path.join(packageDir,'bin'),{recursive:true})
     writeFileSync(path.join(packageDir,'package.json'), JSON.stringify({ name:'firebase-tools', version:'0.0.0-fixture', bin:{firebase:'bin/firebase.js'}}))
-    writeFileSync(path.join(packageDir,'bin','firebase.js'), "process.stdout.write('EMULATOR_FIXTURE_RAN\\n'); process.stdout.write('JAVA_PATH_FIRST='+process.env.PATH.split(require('node:path').delimiter)[0]+'\\n'); process.exit(Number(process.env.URAI_FIXTURE_EMULATOR_EXIT||0));")
+    writeFileSync(path.join(packageDir,'bin','firebase.js'), [
+      "const fs = require('node:fs');",
+      "const p = process.argv.indexOf('--config');",
+      "if (p < 0) process.exit(77);",
+      "const config = JSON.parse(fs.readFileSync(process.argv[p+1],'utf8'));",
+      "process.stdout.write('EMULATOR_FIXTURE_RAN\\n');",
+      "process.stdout.write('JAVA_PATH_FIRST='+process.env.PATH.split(require('node:path').delimiter)[0]+'\\n');",
+      "process.stdout.write('EMULATOR_HOST='+config.emulators.firestore.host+'\\n');",
+      "process.stdout.write('EMULATOR_PORT='+config.emulators.firestore.port+'\\n');",
+      "process.stdout.write('EMULATOR_UI='+config.emulators.ui.enabled+'\\n');",
+      "process.stdout.write('INHERITED_FIRESTORE_HOST='+(process.env.FIRESTORE_EMULATOR_HOST||'none')+'\\n');",
+      "process.exit(Number(process.env.URAI_FIXTURE_EMULATOR_EXIT||0));",
+    ].join('\n'))
     for(const name of ['assetManifests','privacyConsent','lifeModel']) {
       const t = path.join(dir,'tests',`firestore.${name}.rules.static.test.mjs`)
       mkdirSync(path.dirname(t),{recursive:true})
@@ -34,6 +46,7 @@ function runCase(javaPresent, emulatorCode, staticShouldFail, overrides = {}) {
     delete env.NODE_TEST_CONTEXT
     delete env.URAI_FIRESTORE_TEST_JAVA_EXE
     if (overrides.pinnedJava) env.URAI_FIRESTORE_TEST_JAVA_EXE = overrides.pinnedJava
+    if (overrides.inheritedHost) env.FIRESTORE_EMULATOR_HOST = overrides.inheritedHost
     const run=spawnSync(process.execPath,[tempScript],{cwd:dir,encoding:'utf8',env})
     return {code:run.status,stdout:run.stdout,stderr:run.stderr}
   }finally{rmSync(dir,{recursive:true,force:true})}
@@ -45,6 +58,17 @@ test('emulator success must not run static fallback',()=>{
   assert.match(r.stdout,/EMULATOR_FIXTURE_RAN/)
   assert.doesNotMatch(r.stderr,/Running static Firestore rules boundary tests instead/)
 })
+test('isolated Firestore emulator reserves loopback port and discards stale inherited address',()=> {
+  const r=runCase(true,0,false,{inheritedHost:'127.0.0.1:8080'})
+  assert.equal(r.code,0,r.stdout+'\n'+r.stderr)
+  assert.match(r.stdout,/EMULATOR_HOST=127\.0\.0\.1/)
+  assert.match(r.stdout,/EMULATOR_UI=false/)
+  assert.match(r.stdout,/INHERITED_FIRESTORE_HOST=none/)
+  const port=/EMULATOR_PORT=(\d+)/.exec(r.stdout)
+  assert.ok(port,'Firebase config must include a local emulator port')
+  assert.ok(Number(port[1])>=1024 && Number(port[1])<=65535,'bound TCP port required')
+})
+
 test('emulator failure must remain a failure despite passing static tests',()=>{
   const r=runCase(true,3,false)
   assert.equal(r.code,3,r.stdout+'\n'+r.stderr)

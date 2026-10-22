@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process'
+import { createServer } from 'node:net'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { createRequire } from 'node:module'
@@ -10,6 +11,25 @@ const run = (executable, args, options = {}) => spawnSync(executable, args, {
   shell: false,
   ...options,
 })
+
+// Reserve an independent loopback port rather than terminate or reuse an
+// unrelated running Firestore emulator. A bind race is a real emulator FAIL;
+// it must never turn into a passing static-rules fallback.
+async function allocateIsolatedFirestorePort() {
+  return new Promise((resolvePort, rejectPort) => {
+    const listener = createServer()
+    listener.once('error', rejectPort)
+    listener.listen(0, '127.0.0.1', () => {
+      const address = listener.address()
+      if (!address || typeof address === 'string' || !Number.isInteger(address.port) || address.port < 1024) {
+        listener.close()
+        rejectPort(new Error('FIRESTORE_TEST_LOOPBACK_PORT_INVALID'))
+        return
+      }
+      listener.close(error => error ? rejectPort(error) : resolvePort(address.port))
+    })
+  })
+}
 
 // A portable Node 22 process on Windows may not resolve the same 'java'
 // command as interactive PowerShell. Permit an exact executable path for
@@ -46,18 +66,22 @@ if (javaCheck.status === 0) {
   // but provide a Firestore-only emulator config outside the source tree.
   const rulesFile = resolve('firebase/firestore.rules')
   if (!existsSync(rulesFile)) throw new Error('FIRESTORE_RULES_SOURCE_MISSING')
+  const firestorePort = await allocateIsolatedFirestorePort()
   const temporary = mkdtempSync(join(tmpdir(), 'urai-firestore-only-'))
   let emulatorExitCode = 1
   try {
     const rulesOnlyConfig = join(temporary, 'firebase.json')
     writeFileSync(rulesOnlyConfig, JSON.stringify({
       firestore: { rules: rulesFile },
-      emulators: { ui: { enabled: false } },
+      emulators: { ui: { enabled: false }, firestore: { host: '127.0.0.1', port: firestorePort } },
     }))
     // A demo- project has no live Firebase resources, even on failed fallback.
     // Firebase probes and starts `java` by name in its own subprocesses. The
     // explicit executable must control that process tree, not just our probe.
     const emulatorEnv = { ...process.env }
+    // The emulator subprocess must not inherit another process's address.
+    // emulators:exec will set FIRESTORE_EMULATOR_HOST for its own test clients.
+    delete emulatorEnv.FIRESTORE_EMULATOR_HOST
     if (explicitJava) {
       const pathKey = Object.keys(emulatorEnv).find(key => key.toLowerCase() === 'path') || 'PATH'
       emulatorEnv[pathKey] = dirname(explicitJava) + delimiter + (emulatorEnv[pathKey] || '')
