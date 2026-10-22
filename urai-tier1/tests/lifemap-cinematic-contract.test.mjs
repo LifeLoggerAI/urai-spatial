@@ -51,7 +51,10 @@ test('memory lenses select in place before Focus or Replay navigation', () => {
   ])
   assert.match(scene, /const target = selectedStagePoint\(node, portrait\)/)
   assert.match(scene, /const destinationHref = useCallback/)
-  assert.match(scene, /next\.set\("memoryId", selected\.id\)/)
+  // Demo may use the selected node ID; private memories require the source-owned
+  // memoryId, never an unscoped star identifier.
+  assert.match(scene, /if \(explicitDemoRequested\) next\.set\("memoryId", selected\.id\)/)
+  assert.match(scene, /else if \(selected\.authorizedMemory && selected\.memoryId\) next\.set\("memoryId", selected\.memoryId\)/)
   assert.match(scene, /withIdentity\(new URLSearchParams\(\), selected\.id\)/)
   assert.match(scene, /next\.set\("node", selected\.id\)/)
   assert.match(scene, /next\.set\("returnNode", selected\.id\)/)
