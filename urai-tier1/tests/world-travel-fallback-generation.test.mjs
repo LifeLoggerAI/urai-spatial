@@ -18,8 +18,8 @@ function fixture(onTravel, ready = false){
  const schedule=(fn,ms,interval=0)=>{const i=++id;timers.set(i,{fn,when:now+ms,interval});return i}
  function advance(ms){const end=now+ms;for(let k=0;k<10000;k++){const due=[...timers.entries()].filter(([,v])=>v.when<=end).sort((a,b)=>a[1].when-b[1].when)[0];if(!due){now=end;return}const [i,t]=due;now=t.when;if(t.interval)t.when+=t.interval;else timers.delete(i);t.fn()}throw Error('timer loop')}
  let h
- const window={location,setTimeout:(fn,ms)=>schedule(fn,ms),clearTimeout:i=>timers.delete(i),setInterval:(fn,ms)=>schedule(fn,ms,ms),clearInterval:i=>timers.delete(i),addEventListener(type,fn){const group=listeners.get(type)??new Set();group.add(fn);listeners.set(type,group)},removeEventListener(type,fn){listeners.get(type)?.delete(fn)},dispatchEvent(e){if(e.type==='urai:world-travel')onTravel?.(e.detail,h)}}
- const module={exports:{}},ctx={module,exports:module.exports,window,URL,URLSearchParams,Date:{now:()=>now},Event:class{constructor(type){this.type=type}},CustomEvent:class{constructor(type,{detail}){this.type=type;this.detail=detail}},WORLD_TRAVEL_DEBOUNCE_MS:1500,WORLD_TRAVEL_FALLBACK_MS:2400,WORLD_TRAVEL_OBSERVE_MS:50,URAI_WORLD_TRAVEL_EVENT:'urai:world-travel',URAI_WORLD_RETURN_EVENT:'urai:world-return',URAI_HOME_ASCENT_EVENT:'urai:home-ascent',lastTravelAt:0,lastTravelFingerprint:'',useSceneStore:{getState:()=>({phase:'IDLE',enterLifeMap(){}})},shouldBeginHomeAscent:r=>r.entryPortal==='home-sky'&&r.cameraCheckpoint==='home-sky-ascent',markHomeAscentClosing(){},dispatchSpatialAudioCue(){},buildFallbackHref:r=>r.href,destinationSurfaceReady:()=>ready,commitHardFallback:href=>location.assign(href)}
+ const window={location,setTimeout:(fn,ms)=>schedule(fn,ms),clearTimeout:i=>timers.delete(i),setInterval:(fn,ms)=>schedule(fn,ms,ms),clearInterval:i=>timers.delete(i),addEventListener(type,fn){const group=listeners.get(type)??new Set();group.add(fn);listeners.set(type,group)},removeEventListener(type,fn){listeners.get(type)?.delete(fn)},dispatchEvent(e){if(e.type==='urai:world-travel')onTravel?.(e.detail,h,e)}}
+ const module={exports:{}},ctx={module,exports:module.exports,window,URL,URLSearchParams,Date:{now:()=>now},Event:class{constructor(type){this.type=type}},CustomEvent:class{constructor(type,{detail,cancelable=false}){this.type=type;this.detail=detail;this.cancelable=cancelable;this.defaultPrevented=false}preventDefault(){if(this.cancelable)this.defaultPrevented=true}},WORLD_TRAVEL_DEBOUNCE_MS:1500,WORLD_TRAVEL_FALLBACK_MS:2400,WORLD_TRAVEL_OBSERVE_MS:50,URAI_WORLD_TRAVEL_EVENT:'urai:world-travel',URAI_WORLD_RETURN_EVENT:'urai:world-return',URAI_HOME_ASCENT_EVENT:'urai:home-ascent',lastTravelAt:0,lastTravelFingerprint:'',useSceneStore:{getState:()=>({phase:'IDLE',enterLifeMap(){}})},shouldBeginHomeAscent:r=>r.entryPortal==='home-sky'&&r.cameraCheckpoint==='home-sky-ascent',markHomeAscentClosing(){},dispatchSpatialAudioCue(){},buildFallbackHref:r=>r.href,destinationSurfaceReady:()=>ready,commitHardFallback:href=>location.assign(href)}
  vm.runInNewContext(js,ctx)
  h={...module.exports,navigation,location,advance,get timers(){return timers.size},get popstateListeners(){return listeners.get('popstate')?.size??0}}
  return h
@@ -88,4 +88,30 @@ test('Back after already-admitted Focus allows an immediate new Focus request',(
  f.requestUraiWorldTravel(A)
  f.advance(2400)
  assert.deepEqual(f.navigation,[A.href], 'a completed trip must not suppress a new click after Back')
+})
+
+
+test('mounted world controller owns cancelable travel; emergency fallback does not race it',()=>{
+ const events=[]
+ const f=fixture((request,_h,event)=>{
+   events.push({request,cancelable:event.cancelable})
+   event.preventDefault()
+ })
+ f.requestUraiWorldTravel(A)
+ assert.deepEqual(events.map(e=>e.cancelable),[true])
+ assert.equal(f.timers,0,'cancelled event cannot arm a competing fallback timer')
+ assert.equal(f.popstateListeners,0)
+ f.advance(5000)
+ assert.deepEqual(f.navigation,[],'controller-owned travel must use its own watchdog')
+})
+
+test('unowned travel keeps emergency fallback as a safety net',()=>{
+ const f=fixture((_request,_h,event)=>{
+   assert.equal(event.cancelable,true)
+   assert.equal(event.defaultPrevented,false)
+ })
+ f.requestUraiWorldTravel(A)
+ assert.ok(f.timers>0,'missing owner should keep fallback timer')
+ f.advance(2400)
+ assert.deepEqual(f.navigation,[A.href])
 })

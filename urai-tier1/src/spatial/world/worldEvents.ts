@@ -200,8 +200,11 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   lastTravelAt = now
   const startingLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
   dispatchSpatialAudioCue('transition')
-  window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request }))
-  if (generation !== fallbackGeneration) return
+  // The mounted world controller owns the client transition and its own
+  // delayed recovery watchdog. Do not race it with a second hard fallback.
+  const travelEvent = new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request, cancelable: true })
+  window.dispatchEvent(travelEvent)
+  if (generation !== fallbackGeneration || travelEvent.defaultPrevented) return
 
   const fallbackHref = buildFallbackHref(request)
   if (!fallbackHref) return
