@@ -5,7 +5,7 @@ import { onRequest } from 'firebase-functions/v2/https'
 import { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS } from '../../../packages/localization/src/contentLanguage'
 import { paidSpatialFetch, assertSpatialPaidOutputCurrent, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
-import { canonicalOrbActivitySnapshot, matchesOrbActivitySnapshot, ORB_ACTIVITY_CONTEXT_LIMIT, type OrbAllowedActivity } from './orbActivitySnapshotAuthority'
+import { sealOrbAuthorizedActivity, matchesOrbAuthorizedActivity, ORB_ACTIVITY_CONTEXT_LIMIT, type OrbAuthorizedActivityRead, type OrbAuthorizedActivity } from './orbActivitySnapshotAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -218,7 +218,7 @@ async function reserveOpenAiRequest(uid: string, requestId: string, expectedRequ
 
 
 
-async function readAuthorizedOrbActivity(uid: string): Promise<OrbAllowedActivity[]> {
+async function readAuthorizedOrbActivity(uid: string): Promise<OrbAuthorizedActivityRead> {
   const userRef = db.doc('users/' + uid)
   return db.runTransaction(async tx => {
     const [owner, policySnap, fence, tombstone, ledger] = await Promise.all([
@@ -248,7 +248,7 @@ async function readAuthorizedOrbActivity(uid: string): Promise<OrbAllowedActivit
       }
     }
 
-    const result: OrbAllowedActivity[] = []
+    const result: OrbAuthorizedActivity[] = []
     for (const doc of ledger.docs) {
       if (result.length >= ORB_ACTIVITY_CONTEXT_LIMIT) break
       const entry = doc.data()
@@ -262,7 +262,13 @@ async function readAuthorizedOrbActivity(uid: string): Promise<OrbAllowedActivit
         && entry.outputRecordRef === scenarioRef.path) {
         const question = scenario.get('question')
         if (typeof question === 'string' && question.trim()) {
-          result.push({ category: 'hypothetical-scenario', description: question.trim().slice(0, 280) })
+          result.push({
+            category: 'hypothetical-scenario', description: question.trim().slice(0, 280),
+            sourceKey: digest(canonicalJson({
+              ledgerPath: doc.ref.path, ledgerUpdate: doc.updateTime?.toMillis() ?? 0,
+              scenarioPath: scenarioRef.path, scenarioUpdate: scenario.updateTime?.toMillis() ?? 0,
+            })),
+          })
         }
         continue
       }
@@ -279,10 +285,17 @@ async function readAuthorizedOrbActivity(uid: string): Promise<OrbAllowedActivit
         && observed.get('truthKind') === 'user-assertion'
         && observed.get('verification') === 'unverified-user-report'
         && typeof assertion === 'string' && assertion.trim()) {
-        result.push({ category: 'unverified-owner-report', description: assertion.trim().slice(0, 280) })
+        result.push({
+          category: 'unverified-owner-report', description: assertion.trim().slice(0, 280),
+          sourceKey: digest(canonicalJson({
+            ledgerPath: doc.ref.path, ledgerUpdate: doc.updateTime?.toMillis() ?? 0,
+            reportPath: observationRef.path, reportUpdate: observed.updateTime?.toMillis() ?? 0,
+            scenarioUpdate: scenario.updateTime?.toMillis() ?? 0,
+          })),
+        })
       }
     }
-    return result
+    return { privacyRevision: Number(policy.revision), entries: result }
   })
 }
 
@@ -357,18 +370,19 @@ export const openAiOrbProvider = onRequest({
       throw new ProviderError(400, 'INVALID_CONTEXT', 'Activity context selection must be a boolean.')
     const includeActivityContext = body.includeActivityContext === true
     await requireProviderConsent(uid, 'openai', body.aiProcessingConsent === true)
-    const activity = includeActivityContext ? await readAuthorizedOrbActivity(uid) : []
+    const activityRead = includeActivityContext ? await readAuthorizedOrbActivity(uid) : null
     const apiKey = OPENAI_API_KEY.value()
     if (!apiKey) throw new ProviderError(503, 'PROVIDER_UNCONFIGURED', 'The external provider is not configured.')
     const recent = context.map((item, index) => `${index + 1}. ${item.role}: ${item.content}`).join('\n')
-    const authorizedActivityData = canonicalOrbActivitySnapshot(activity)
+    const activitySeal = activityRead ? sealOrbAuthorizedActivity(activityRead) : null
+    const authorizedActivityData = activitySeal?.modelContext ?? '[]'
     // Permission may remain granted even when a particular record was deleted
     // or corrected after its text was assembled for the provider. Use a fresh
     // owner-authorized read at every dispatch and delivery boundary.
     const assertActivitySnapshotCurrent = async () => {
       if (!includeActivityContext) return
       const current = await readAuthorizedOrbActivity(uid)
-      if (!matchesOrbActivitySnapshot(authorizedActivityData, current)) {
+      if (!matchesOrbAuthorizedActivity(activitySeal!, current)) {
         throw new ProviderError(409, 'ACTIVITY_CONTEXT_CHANGED', 'Activity changed; a stale-context answer must not be delivered.')
       }
     }

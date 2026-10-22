@@ -14,7 +14,7 @@ test('activity context is a single-reply opt-in rather than automatic memory sha
   assert.match(panel, /up to three recent UrAi Scenario questions or owner-reported outcomes/)
   assert.match(client, /includeActivityContext\?: boolean/)
   assert.match(client, /includeActivityContext: input.includeActivityContext === true/)
-  assert.match(provider, /includeActivityContext \? await readAuthorizedOrbActivity\(uid\) : \[\]/)
+  assert.match(provider, /includeActivityContext \? await readAuthorizedOrbActivity\(uid\) : null/)
 })
 test('provider request identity and moderated content are bound to opt-in', () => {
   assert.match(client, /stableIntentRequestId\(input.message, input.context, locale, input.includeActivityContext === true\)/)
@@ -46,8 +46,8 @@ test('server validates live memory consent, deletion and provenance', () => {
 
 test('revocation, deletion or correction closes private context before dispatch and delivery', () => {
   assert.match(provider, /const assertActivitySnapshotCurrent = async \(\) =>/)
-  assert.match(provider, /matchesOrbActivitySnapshot\(authorizedActivityData, current\)/)
-  assert.match(provider, /canonicalOrbActivitySnapshot\(activity\)/)
+  assert.match(provider, /matchesOrbAuthorizedActivity\(activitySeal!, current\)/)
+  assert.match(provider, /sealOrbAuthorizedActivity\(activityRead\)/)
   assert.match(provider, /ACTIVITY_CONTEXT_CHANGED/)
   assert.match(client, /ACTIVITY_CONTEXT_CHANGED/)
   // After admission, before provider dispatch, after model generation, and
