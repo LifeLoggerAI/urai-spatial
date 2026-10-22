@@ -4,7 +4,7 @@ import { HOME_GROUND_COVER_INSTANCE_BUDGET, inspectHomeVisualStudyScene } from '
 
 function scene({ sky = false, cover = 0, vertices = 75, hasMaterial = true } = {}) {
   const objects = {
-    'home-golden-hour-sky': sky ? { children: [{ isMesh: true, visible: true, geometry: {} }] } : undefined,
+    'home-golden-hour-sky': sky ? { children: [{ isMesh: true, visible: true, geometry: {}, material: {} }] } : undefined,
     'home-authored-ground-cover-study': cover ? { isInstancedMesh: true, count: cover, geometry: { getAttribute: () => ({ count: vertices }) }, material: hasMaterial ? {} : null } : undefined,
   }
   return { getObjectByName: (key) => objects[key] }
@@ -68,4 +68,32 @@ test('corrupt cyclic ancestors never produce evidence of rendered Home assets', 
     geometry: { getAttribute: () => ({ count: 75 }) }, material: {} }
   cover.parent = cover
   assert.equal(inspectHomeVisualStudyScene({ getObjectByName: () => cover }, opts).ready, false)
+})
+
+
+test('sky cannot pass with missing, hidden, non-color-writing or zero-opacity material', () => {
+  const opts = { goldenHour: true, groundCover: false, qualityTier: 'high' }
+  const mesh = { isMesh: true, visible: true, geometry: {}, material: null }
+  const group = { children: [mesh] }; mesh.parent = group
+  const scene = { getObjectByName: () => group }
+  assert.equal(inspectHomeVisualStudyScene(scene, opts).ready, false)
+  for (const material of [{visible:false}, {colorWrite:false}, {opacity:0}, [{visible:false},{opacity:0}]]) {
+    mesh.material = material
+    assert.equal(inspectHomeVisualStudyScene(scene, opts).ready, false)
+  }
+  mesh.material = {visible:true, opacity:1, colorWrite:true}
+  assert.equal(inspectHomeVisualStudyScene(scene, opts).ready, true)
+})
+
+test('meadow cannot pass with hidden, non-color-writing or zero-opacity material', () => {
+  const opts = { goldenHour: false, groundCover: true, qualityTier: 'high' }
+  const cover = { isInstancedMesh:true, count:1600, visible:true,
+    geometry:{getAttribute:()=>({count:75})}, material:null }
+  const scene = {getObjectByName:()=>cover}
+  for (const material of [null, {visible:false}, {colorWrite:false}, {transparent:true,opacity:0}, [{visible:false},{colorWrite:false}]]) {
+    cover.material=material
+    assert.equal(inspectHomeVisualStudyScene(scene, opts).ready, false)
+  }
+  cover.material=[{visible:false},{opacity:1}]
+  assert.equal(inspectHomeVisualStudyScene(scene, opts).ready, true)
 })
