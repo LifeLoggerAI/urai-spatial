@@ -37,3 +37,19 @@ for (const [path, name] of cases) {
     assert.equal(url.searchParams.get('manifestId'),'allowed')
   })
 }
+
+for (const [path, name] of cases) {
+  const source = readFileSync(new URL(path, import.meta.url), 'utf8')
+  const ast = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true)
+  const fn = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === name)
+  const js = ts.transpileModule(fn.getText(ast), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
+  test(name + ' neutral routes discard visual camera, portal and return-node identity', () => {
+    const module = {exports:{}}
+    const window = {location:{origin:'https://urai.invalid',search:'?memoryId=private-5&node=private-5'}}
+    const ctx = {module,exports:module.exports,window,URL,URLSearchParams,CONTEXT_KEYS:sensitive,WORLD_TRAVEL_CONTEXT_KEYS:sensitive,definitionForDestination:d=>({href:'/'+d})}
+    vm.runInNewContext(js + '\nmodule.exports.' + name + ' = ' + name,ctx)
+    const request = {destination:'home',href:'/home?entryPortal=old-private-world&cameraCheckpoint=focus:private-star&returnNode=secret-return',entryPortal:'focus-memory-aperture',cameraCheckpoint:'focus:private-star'}
+    const url = new URL(module.exports[name](request),'https://urai.invalid')
+    for (const key of ['entryPortal','cameraCheckpoint','returnNode']) assert.equal(url.searchParams.has(key),false,name+' leaked '+key)
+  })
+}
