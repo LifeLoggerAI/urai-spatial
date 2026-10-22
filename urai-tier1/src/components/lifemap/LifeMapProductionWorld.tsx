@@ -6,6 +6,7 @@ import { Suspense, createContext, useCallback, useContext, useEffect, useMemo, u
 import * as THREE from "three";
 import StellarCorona from "@/spatial/stellar/StellarCorona";
 import GalacticSpiralStructure from "./GalacticSpiralStructure";
+import { lifeMapWorldStageTransform } from "./lifeMapFlight.mjs";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import type { LifeMapNode } from "./lifeMapData";
@@ -623,7 +624,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
   const root = useRef<THREE.Group>(null);
   const active = selected?.id === node.id;
   const related = Boolean(selected && (selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)));
-  const visible = !selected || active || (related && phase !== "arrival");
+  const visible = !selected || active || related;
   const importance = artifactImportance(node);
   // The atlas owns the overview. Memory identity resolves into stellar
   // clusters at a distance; a physical photosphere only appears after a
@@ -839,8 +840,10 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
 }) {
   const { size } = useThree();
   const portrait = size.height > size.width;
-  const stageScale: Point3 = selected ? (portrait ? [0.92, 0.96, 0.92] : [1.12, 1.12, 1.08]) : portrait ? [0.54, 0.96, 0.78] : [1.12, 1.18, 1.08];
-  const stagePosition: Point3 = selected ? (portrait ? [0, -0.08, 0.9] : [0, -0.16, 0.62]) : portrait ? [0, -0.18, 1.1] : [0, 0.05, 0.9];
+  // Selection moves the camera, never the authored world or the selected star.
+  const stage = lifeMapWorldStageTransform(portrait);
+  const stageScale = stage.scale as Point3;
+  const stagePosition = stage.position as Point3;
   const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;
 
   useEffect(() => {
