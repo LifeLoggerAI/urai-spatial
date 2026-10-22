@@ -53,3 +53,22 @@ for (const [path, name] of cases) {
     for (const key of ['entryPortal','cameraCheckpoint','returnNode']) assert.equal(url.searchParams.has(key),false,name+' leaked '+key)
   })
 }
+
+for (const [path, name] of cases) {
+  const source = readFileSync(new URL(path, import.meta.url), 'utf8')
+  const ast = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true)
+  const fn = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === name)
+  const js = ts.transpileModule(fn.getText(ast), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
+  test(name + ' clears private URL fragments on neutral worlds', () => {
+    const module = {exports:{}}
+    const window = {location:{origin:'https://urai.invalid',search:'?memoryId=private'}}
+    const ctx = {module,exports:module.exports,window,URL,URLSearchParams,CONTEXT_KEYS:sensitive,WORLD_TRAVEL_CONTEXT_KEYS:sensitive,definitionForDestination:d=>({href:'/'+d})}
+    vm.runInNewContext(js + '\nmodule.exports.' + name + '=' + name,ctx)
+    for (const destination of ['home','infrastructure-hub']) {
+      const href = module.exports[name]({destination,href:'/'+destination+'?locale=en#memoryId=private&returnToken=secret'})
+      const url = new URL(href,'https://urai.invalid')
+      assert.equal(url.hash,'',name+' leaked private fragment on '+destination)
+      assert.equal(url.searchParams.get('locale'),'en')
+    }
+  })
+}
