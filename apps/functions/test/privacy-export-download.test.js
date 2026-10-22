@@ -260,7 +260,7 @@ test('unbound memory media cannot publish a portable package containing a bearer
 const fictionalPng = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.from('fictional memory pixels')])
 function mediaFixture(options = {}) {
   const f = fixture(options)
-  f.records.set(`${prefix}/memories/synthetic-memory`, { ownerId: uid, sourceMedia: [] })
+  f.records.set(`${prefix}/memories/synthetic-memory`, { ownerId: uid, consentState: 'authorized', sourceMedia: [] })
   f.records.set(`consentRecords/${uid}_memory_storage`, { uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0',
     status: 'granted', receiptHash: 'b'.repeat(64), expiresAt: new f.Timestamp(now + 3600000) })
   f.upload = (changes = {}, context = f.context) => f.media.registerMemoryMedia({ memoryId: 'synthetic-memory', operationId: 'synthetic-media-upload',
@@ -499,6 +499,9 @@ for (const [label, change] of [
   ['paused memory domain', f => { f.records.get(policyPath).domains.memory.mode = 'paused' }],
   ['unenforced policy', f => { f.records.get(policyPath).enforcement.state = 'pending' }],
   ['foreign memory', f => { f.records.get(`${prefix}/memories/synthetic-memory`).ownerId = 'other-owner' }],
+  ['missing selected-memory authorization', f => { delete f.records.get(`${prefix}/memories/synthetic-memory`).consentState }],
+  ['revoked selected-memory authorization', f => { f.records.get(`${prefix}/memories/synthetic-memory`).consentState = 'revoked' }],
+  ['pending selected-memory authorization', f => { f.records.get(`${prefix}/memories/synthetic-memory`).consentState = 'pending' }],
   ['deleted memory', f => { f.records.get(`${prefix}/memories/synthetic-memory`).deleted = true }],
   ['canonical deletion', f => { f.records.get(canonicalFencePath).active = true }],
   ['central source block', f => f.records.set(`jobConsentBlocks/${hash(uid + '\n' + 'memory.storage')}`, { active: true })],
