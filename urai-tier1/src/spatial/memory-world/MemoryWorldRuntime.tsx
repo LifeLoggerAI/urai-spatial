@@ -37,6 +37,31 @@ function BoundedTemplateGeometry({ world }: { world: MemoryWorld }) {
   const wallColor = preset?.wallColor ?? '#58534e'
   const props = preset?.props ?? []
 
+  // An unrecognized memory place is NOT a hallway from the person's life.
+  // The old generic fallback generated three opaque gray walls even with no
+  // source or contextual archetype; the founder's browser recording exposed
+  // that box as if it were an immersive Replay reconstruction.
+  // An open, abstract threshold communicates uncertainty without inventing
+  // location geometry. Named, admitted blockout presets retain their bounds.
+  if (!preset) {
+    return (
+      <group name="memory-world-unreconstructed-threshold" userData={{ truthClass: 'T4_CONTEXT_TEMPLATE', autobiographical: false, maturity: 'unreconstructed', geometryClaim: 'none', sourceAdmitted: false }}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, -3]} receiveShadow>
+          <circleGeometry args={[24, 64]} />
+          <meshStandardMaterial color="#203037" roughness={1} metalness={0} />
+        </mesh>
+        <mesh position={[0, 0.8, -13]}>
+          <sphereGeometry args={[2.2, 32, 24]} />
+          <meshBasicMaterial color="#87b8b5" transparent opacity={0.08} depthWrite={false} />
+        </mesh>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.15, -10]}>
+          <ringGeometry args={[3.6, 3.65, 64]} />
+          <meshBasicMaterial color="#91c1ba" transparent opacity={0.34} depthWrite={false} />
+        </mesh>
+      </group>
+    )
+  }
+
   if (environment === 'outdoor') {
     return (
       <group name="memory-world-blockout-outdoor" userData={{ truthClass: 'T4_CONTEXT_TEMPLATE', autobiographical: false, maturity: 'blockout', presetId: preset?.id ?? 'generic' }}>
@@ -135,7 +160,7 @@ export default function MemoryWorldRuntime({ world, onExit, validationContext }:
   }
 
   return (
-    <main data-testid="memory-world-runtime" data-memory-world-state={rendererState === 'ready' ? 'rendered' : 'semantic-fallback'} data-memory-world-renderer={rendererState} data-memory-world-id={world.worldId} data-memory-world-archetype={world.archetypeId} data-memory-world-truth={plan.truthLabel} data-memory-world-navigation={plan.navigation} style={{position:'fixed',inset:0,overflow:'hidden',background:'#071018',color:'#fff'}}>
+    <main data-testid="memory-world-runtime" data-memory-world-state={rendererState === 'ready' ? 'rendered' : 'semantic-fallback'} data-memory-world-renderer={rendererState} data-memory-world-id={world.worldId} data-memory-world-archetype={world.archetypeId} data-memory-world-truth={plan.truthLabel} data-memory-world-navigation={plan.navigation} data-memory-world-presentation={blockoutPresetForWorld(world) ? 'contextual-blockout-not-admitted' : 'neutral-threshold-no-reconstruction'} style={{position:'fixed',inset:0,overflow:'hidden',background:'#071018',color:'#fff'}}>
       <MemoryWorldRendererBoundary fallback={fallback} onFailure={() => setRendererState('unavailable')}>
       {rendererState === 'ready' ? <div data-testid="memory-world-canvas-shell" style={{position:'absolute',inset:0,width:'100%',height:'100%',minWidth:300,minHeight:300}}>
         <Canvas fallback={fallback} onCreated={({ gl, camera: view }) => {
@@ -160,7 +185,7 @@ export default function MemoryWorldRuntime({ world, onExit, validationContext }:
         <p style={{margin:0,fontSize:11,letterSpacing:'.14em',textTransform:'uppercase',color:'#b7f7ee'}}>Memory World · bounded runtime</p>
         <h1 style={{margin:'7px 0 6px',fontSize:'clamp(1.4rem,4vw,2.5rem)'}}>{world.label}</h1>
         <strong>{plan.truthLabel}</strong>
-        <p style={{fontSize:12,lineHeight:1.5,color:'rgba(255,255,255,.72)'}}>Context template: this view uses a contextual template unless source-backed reconstruction is explicitly available. It does not claim missing geometry or events were recorded.</p>
+        <p style={{fontSize:12,lineHeight:1.5,color:'rgba(255,255,255,.72)'}}>{blockoutPresetForWorld(world) ? 'Context template only. This blockout is not recorded or reconstructed history; verified source media must be admitted separately.' : 'No verified location geometry is available for this memory. This open, abstract threshold is not a reconstruction of a remembered place.'}</p>
         <button type="button" onClick={onExit} style={{minHeight:48,padding:'0 16px',borderRadius:999}}>← Replay</button>
       {rendererState === 'ready' ? <nav aria-label="Memory World view controls" style={{marginTop:12,display:'flex',flexWrap:'wrap',gap:8,maxWidth:'calc(100% - 32px)'}}>{(['left','right','nearer','farther'] as const).map((direction) => <button key={direction} type="button" onClick={() => moveView(direction)} style={{minWidth:48,minHeight:48,padding:'0 12px',borderRadius:12,background:'#112731',color:'#fff'}}>{direction === 'left' ? 'Look left' : direction === 'right' ? 'Look right' : direction === 'nearer' ? 'Move nearer' : 'Move farther'}</button>)}</nav> : null}
         <details style={{marginTop:10,fontSize:12}}><summary style={{minHeight:48,display:'flex',alignItems:'center',cursor:'pointer'}}>Truth & provenance</summary><p>Archetype: {world.archetypeId}</p><p>Correction revision: {world.provenance.userCorrectionRevision}</p><p>Runtime: {plan.runtimeVersion}</p></details>
