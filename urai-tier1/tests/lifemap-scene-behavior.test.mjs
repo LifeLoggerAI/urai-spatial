@@ -224,7 +224,7 @@ test('WebGL context loss preserves truthful semantic recovery', () => {
   const loading = canonical.slice(loadingStart, loadingEnd)
   assert.ok(loading.includes('shouldHandleRealmEscape(event)'))
   assert.ok(loading.includes('router.push("/home")'))
-  assert.doesNotMatch(loading, /requestUraiWorldReturn\\(/)
+  assert.doesNotMatch(loading, /requestUraiWorldReturn\(/)
 })
 
 
