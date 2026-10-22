@@ -20,7 +20,7 @@ for (const [path, name] of cases) {
     const module = {exports:{}}
     const window = {location:{origin:'https://urai.invalid',search:'?memoryId=secret&node=secret-node&manifestId=secret-manifest&returnToken=secret-token&privacyMode=held-private&scenario=private-scenario&demo=1&thread=secret-thread'}}
     const ctx = {module,exports:module.exports,window,URL,URLSearchParams,CONTEXT_KEYS:sensitive,WORLD_TRAVEL_CONTEXT_KEYS:sensitive,definitionForDestination: destination => ({href:'/'+destination})}
-    vm.runInNewContext(js,ctx)
+    vm.runInNewContext(js + '\nmodule.exports.' + name + ' = ' + name,ctx)
     return module.exports[name](request)
   }
   test(name+' strips private context from neutral Home and Infrastructure Hub', () => {
