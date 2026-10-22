@@ -64,6 +64,14 @@ test('offline first memory is schema-compatible but not admitted as authorized b
     } }
   const result = parse(activated, 'synthetic-owner', 'synthetic-memory', 'nonproduction-bucket')
   assert.equal(result.status, 'ready')
+  assert.equal(parse(activated, 'synthetic-owner', 'synthetic-memory', 'nonproduction-bucket', 4).status, 'ready')
+  assert.equal(parse(activated, 'synthetic-owner', 'synthetic-memory', 'nonproduction-bucket', 5).status, 'unauthorized',
+    'policy revision advanced since activation: new confirmation required')
+  const later = { ...activated, firstPrivateMemoryActivation: {
+    ...activated.firstPrivateMemoryActivation, consentRevision: 5,
+  } }
+  assert.equal(parse(later, 'synthetic-owner', 'synthetic-memory', 'nonproduction-bucket', 5).status, 'ready',
+    'activation can legitimately occur at a later revision than first creation')
   assert.equal(result.memory.ownerId, 'synthetic-owner')
   assert.equal(result.memory.privacy, 'private')
   assert.equal(result.memory.demo, false)
