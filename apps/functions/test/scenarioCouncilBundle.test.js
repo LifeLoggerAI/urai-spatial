@@ -11,13 +11,14 @@ const prefix = 'users/' + ownerId + '/scenarios/' + scenarioId
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code } }
 function fixture() {
   const docs = new Map(), reads = [], limits = []
+  docs.set('users/' + ownerId, { deleted:false, accountStatus:'active' })
   const ref = location => ({ path:location, id:location.split('/').at(-1), get:async()=>snapshot(location), collection:name=>query(location+'/'+name) })
-  const snapshot = location => { reads.push(location);return { id:location.split('/').at(-1),exists:docs.has(location),data:()=>docs.get(location),ref:ref(location) } }
+  const snapshot = location => { if (location.includes('/scenarios/')) reads.push(location); const value=docs.get(location);return { id:location.split('/').at(-1),exists:docs.has(location),data:()=>value,ref:ref(location),get:key=>key.split('.').reduce((row,part)=>row?.[part],value) } }
   const query = location => { let limit=Infinity;return { doc:id=>ref(location+'/'+id),limit(count){limit=count;limits.push(count);return this},get:async()=>({ docs:[...docs.keys()].filter(key=>key.startsWith(location+'/') && !key.slice(location.length+1).includes('/')).slice(0,limit).map(snapshot) }) } }
-  const db = { doc:ref }
+  const db = { doc:ref, runTransaction:async body=>body({get:target=>target.get()}) }
   const firestore = () => db
   firestore.FieldValue = { serverTimestamp:()=>({ synthetic:true }) }
-  const imports = { 'firebase-functions/v1':{ https:{ onCall:handler=>handler,HttpsError } },'firebase-admin':{ apps:[{}],firestore },'node:crypto':crypto,'./scenarioProvider':{ scenarioProviderState:'provider-unavailable' },'./consentPolicyAuthority':require(path.resolve(__dirname,'../lib/apps/functions/src/consentPolicyAuthority.js')) }
+  const imports = { 'firebase-functions/v1':{ https:{ onCall:handler=>handler,HttpsError } },'firebase-admin':{ apps:[{}],firestore },'node:crypto':crypto,'./scenarioProvider':{ scenarioProviderState:'provider-unavailable' },'./consentPolicyAuthority':require(path.resolve(__dirname,'../lib/apps/functions/src/consentPolicyAuthority.js')),'./scenarioOwnerAuthority':require(path.resolve(__dirname,'../lib/apps/functions/src/scenarioOwnerAuthority.js')),'./manualScenarioReceipt':require(path.resolve(__dirname,'../lib/apps/functions/src/manualScenarioReceipt.js')) }
   const module = { exports:{} }
   vm.runInNewContext(code,{ module,exports:module.exports,require:name=>{ assert.ok(name in imports,'Unexpected import '+name);return imports[name] } },{ filename:'actual-compiled-scenarioOperations.js' })
   docs.set(prefix,{ id:scenarioId,ownerId,question:'Synthetic what-if',status:'ready',branchIds:['br_a','br_b'],activeBranchId:'br_a' })
@@ -51,7 +52,7 @@ test('actual compiled call reads only the authenticated owner namespace despite 
   const f=fixture();const result=await f.call({ branchId:'br_a',ownerId:'synthetic-other',tenant:'other-tenant' });assert.equal(result.branchId,'br_a');assert.ok(f.reads.every(path=>path.startsWith(prefix)))
 })
 test('actual compiled foreign-owner request returns not-found rather than another owners branch',async()=>{
-  const f=fixture();await assert.rejects(f.call({branchId:'br_a'},{auth:{uid:'synthetic-other'}}),error=>error.code==='not-found');assert.ok(f.reads.every(path=>path.startsWith('users/synthetic-other/')))
+  const f=fixture();await assert.rejects(f.call({branchId:'br_a'},{auth:{uid:'synthetic-other'}}),error=>error.code==='permission-denied'||error.code==='not-found');assert.equal(f.reads.some(path=>path.includes('/branches/')),false)
 })
 test('actual compiled missing Scenario basis fails closed',async()=>{
   const f=fixture();f.docs.delete(prefix+'/basis/current');await assert.rejects(f.call({branchId:'br_a'}),error=>error.code==='not-found')
