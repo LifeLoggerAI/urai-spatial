@@ -1,2 +1,0 @@
-/home/user/urai-spatial/urai-tier1/src/app/layout.tsx
-/home/user/urai-spatial/urai-tier1/src/app/page.tsx
