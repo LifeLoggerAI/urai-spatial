@@ -1,5 +1,5 @@
 'use client'
-import {useEffect,useRef,useState,type FormEvent} from 'react'
+import {useEffect,useRef,useState,type FormEvent,type CSSProperties} from 'react'
 import {usePathname} from 'next/navigation'
 import {onAuthStateChanged,type User} from 'firebase/auth'
 import {httpsCallable,getFunctions} from 'firebase/functions'
@@ -81,7 +81,7 @@ export default function ChalkPresenceRuntime(){
   r.onerror=r.onend;recognition.current=r;setListening(true)
   try{r.start()}catch{stop();setStatus('Voice recognition could not start.')}
  }
- const button:React.CSSProperties={minHeight:48,borderRadius:12,padding:'8px 14px',border:'1px solid #708995',background:'#20313c',color:'#f4fbff',cursor:'pointer'}
+ const button:CSSProperties={minHeight:48,borderRadius:12,padding:'8px 14px',border:'1px solid #708995',background:'#20313c',color:'#f4fbff',cursor:'pointer'}
  return <>
   {!open?<button data-urai-chalk-launcher="true" onClick={()=>setOpen(true)} style={{...button,position:'fixed',right:12,bottom:90,zIndex:1901}} aria-label="Open Chalk engineering presence">Chalk</button>:
   <aside data-urai-chalk-presence="restricted-v1" aria-label="Chalk engineering presence" onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();e.preventDefault();stop();setOpen(false)}}} style={{position:'fixed',right:12,bottom:12,zIndex:2147483602,width:'min(410px,calc(100vw - 24px))',maxHeight:'min(650px,calc(100dvh - 24px))',overflowY:'auto',boxSizing:'border-box',background:'rgba(8,17,26,.97)',border:'1px solid #5c7889',borderRadius:22,padding:16,color:'#f3faff',font:'14px/1.5 system-ui',boxShadow:'0 20px 60px #0009'}}>
