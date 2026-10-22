@@ -26,6 +26,7 @@ let lastTravelAt = 0
 let fallbackGeneration = 0
 let pendingFallbackTimeout: number | null = null
 let pendingFallbackObserver: number | null = null
+let pendingFallbackPopstateListener: (() => void) | null = null
 
 function cancelPendingWorldTravelFallback() {
   // Invalidate callbacks that were already queued before timers were cleared.
@@ -33,9 +34,11 @@ function cancelPendingWorldTravelFallback() {
   if (typeof window !== 'undefined') {
     if (pendingFallbackTimeout !== null) window.clearTimeout(pendingFallbackTimeout)
     if (pendingFallbackObserver !== null) window.clearInterval(pendingFallbackObserver)
+    if (pendingFallbackPopstateListener !== null) window.removeEventListener('popstate', pendingFallbackPopstateListener)
   }
   pendingFallbackTimeout = null
   pendingFallbackObserver = null
+  pendingFallbackPopstateListener = null
 }
 
 function dispatchSpatialAudioCue(cue: 'transition' | 'orb-confirm' | 'error') {
@@ -203,12 +206,19 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   let settled = false
   let reachedTarget = false
   let observer = 0
+  // Browser Back/Forward is an immediate ownership change; polling can miss
+  // a target-and-return completed entirely between two 50ms samples.
+  const onPopstate = () => cancelPendingWorldTravelFallback()
+  window.addEventListener('popstate', onPopstate)
+  pendingFallbackPopstateListener = onPopstate
   const fallback = window.setTimeout(() => {
     if (settled || generation !== fallbackGeneration) return
     settled = true
     if (observer) window.clearInterval(observer)
     pendingFallbackTimeout = null
     pendingFallbackObserver = null
+    window.removeEventListener('popstate', onPopstate)
+    if (pendingFallbackPopstateListener === onPopstate) pendingFallbackPopstateListener = null
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
     // A direct router navigation elsewhere (including Back after reaching the
     // intended target) supersedes this attempt; never resurrect that route.
@@ -229,6 +239,8 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
     window.clearInterval(observer)
     pendingFallbackTimeout = null
     pendingFallbackObserver = null
+    window.removeEventListener('popstate', onPopstate)
+    if (pendingFallbackPopstateListener === onPopstate) pendingFallbackPopstateListener = null
   }, WORLD_TRAVEL_OBSERVE_MS)
   pendingFallbackObserver = observer
 }
