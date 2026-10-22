@@ -204,7 +204,7 @@ export function WorldTransitionController() {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['data-testid', 'data-route-owner'],
+      attributeFilter: ['data-testid', 'data-route-owner', 'data-memory-id', 'data-manifest-id', 'data-memory-status'],
     })
     stopNavigationObservation.current = () => {
       unsubscribeLocation()
