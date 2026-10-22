@@ -13,6 +13,7 @@ import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
+import { advanceLifeMapFlight, lifeMapFlightLookTarget, type LifeMapFlightInput, type LifeMapFlightPose } from "./lifeMapFlight.mjs";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
@@ -61,11 +62,19 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean):
 }
 
 function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean; shellRef: RefObject<HTMLElement | null> }) {
-  const { camera, size } = useThree();
+  const { camera, size, gl } = useThree();
   const initialized = useRef(false);
   const positionGoal = useRef(new THREE.Vector3());
   const targetGoal = useRef(new THREE.Vector3());
   const lookTarget = useRef(new THREE.Vector3(...OVERVIEW_TARGET));
+  const flight = useRef<LifeMapFlightPose>({
+    position: [...OVERVIEW_POSITION], velocity: [0, 0, 0], yaw: 0, pitch: -0.075,
+  });
+  const keys = useRef(new Set<string>());
+  const pointer = useRef<{ id: number; x: number; y: number } | null>(null);
+  const lookDelta = useRef({ x: 0, y: 0 });
+  const wasOverview = useRef(true);
+  const restoreTarget = useRef(false);
 
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
@@ -91,6 +100,10 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     camera.position.copy(positionGoal.current);
     lookTarget.current.copy(targetGoal.current);
     camera.lookAt(lookTarget.current);
+    flight.current.position = camera.position.toArray();
+    const bearing = lookTarget.current.clone().sub(camera.position).normalize();
+    flight.current.yaw = Math.atan2(bearing.x, -bearing.z);
+    flight.current.pitch = Math.asin(THREE.MathUtils.clamp(bearing.y, -1, 1));
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.fov = portrait ? (phase === "overview" ? 55 : 57) : (phase === "arrival" ? 44 : 46);
       camera.updateProjectionMatrix();
@@ -98,33 +111,118 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     initialized.current = true;
   }, [camera, phase, resolve]);
 
-  useFrame(({ pointer }, delta) => {
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const editable = (target: EventTarget | null) => target instanceof HTMLElement &&
+      Boolean(target.closest("input, textarea, select, button, a, [contenteditable='true'], [role='dialog']"));
+    const keyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || editable(event.target) || event.altKey || event.ctrlKey || event.metaKey) return;
+      if (/^(Key[WASDQE]|Arrow(Up|Down|Left|Right)|ShiftLeft|ShiftRight)$/.test(event.code)) {
+        keys.current.add(event.code);
+        if (document.activeElement === canvas || document.activeElement === document.body) event.preventDefault();
+      }
+    };
+    const keyUp = (event: KeyboardEvent) => keys.current.delete(event.code);
+    const clear = () => { keys.current.clear(); pointer.current = null; lookDelta.current = { x: 0, y: 0 }; };
+    const down = (event: PointerEvent) => {
+      if (event.button !== 0 || event.target !== canvas || selected) return;
+      pointer.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+      canvas.setPointerCapture(event.pointerId);
+    };
+    const move = (event: PointerEvent) => {
+      const last = pointer.current;
+      if (!last || last.id !== event.pointerId || selected) return;
+      const dx = event.clientX - last.x, dy = event.clientY - last.y;
+      // Touch drag looks around; keys and accessible buttons provide locomotion.
+      lookDelta.current.x += THREE.MathUtils.clamp(dx * 0.0025, -0.15, 0.15);
+      lookDelta.current.y -= THREE.MathUtils.clamp(dy * 0.0025, -0.15, 0.15);
+      pointer.current = { id: last.id, x: event.clientX, y: event.clientY };
+    };
+    const end = (event: PointerEvent) => {
+      if (pointer.current?.id === event.pointerId) pointer.current = null;
+      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    };
+    window.addEventListener("keydown", keyDown);
+    window.addEventListener("keyup", keyUp);
+    window.addEventListener("blur", clear);
+    canvas.addEventListener("pointerdown", down);
+    canvas.addEventListener("pointermove", move);
+    canvas.addEventListener("pointerup", end);
+    canvas.addEventListener("pointercancel", end);
+    return () => {
+      clear();
+      window.removeEventListener("keydown", keyDown);
+      window.removeEventListener("keyup", keyUp);
+      window.removeEventListener("blur", clear);
+      canvas.removeEventListener("pointerdown", down);
+      canvas.removeEventListener("pointermove", move);
+      canvas.removeEventListener("pointerup", end);
+      canvas.removeEventListener("pointercancel", end);
+    };
+  }, [gl, selected]);
+
+  useFrame((_, delta) => {
     const portrait = resolve();
-    if (phase === "overview" && !reducedMotion) {
-      positionGoal.current.x += pointer.x * (portrait ? 0.45 : 1.05);
-      positionGoal.current.y += pointer.y * (portrait ? 0.24 : 0.42);
-      targetGoal.current.x += pointer.x * 0.34;
-      targetGoal.current.y += pointer.y * 0.16;
-    }
-    const fov = portrait ? (phase === "overview" ? 55 : 57) : (phase === "arrival" ? 44 : 46);
-    if (reducedMotion) {
-      camera.position.copy(positionGoal.current);
-      lookTarget.current.copy(targetGoal.current);
+    const shell = shellRef.current;
+    if (phase === "overview" && !selected) {
+      if (!wasOverview.current) {
+        // Re-enter explorer mode at the actual camera location, not an overview snap.
+        const direction = lookTarget.current.clone().sub(camera.position).normalize();
+        flight.current = {
+          position: camera.position.toArray(), velocity: [0, 0, 0],
+          yaw: Math.atan2(direction.x, -direction.z),
+          pitch: Math.asin(THREE.MathUtils.clamp(direction.y, -1, 1)),
+        };
+        restoreTarget.current = true;
+      }
+      const held = keys.current;
+      const virtual = shell?.dataset.lifeMapFlightControl || "";
+      const active = (name: string) => held.has(name) || virtual === name;
+      const input: LifeMapFlightInput = {
+        forward: Number(active("KeyW") || active("ArrowUp")) - Number(active("KeyS") || active("ArrowDown")),
+        strafe: Number(active("KeyD")) - Number(active("KeyA")),
+        vertical: Number(active("KeyE")) - Number(active("KeyQ")),
+        turn: Number(active("ArrowRight")) - Number(active("ArrowLeft")),
+        sprint: held.has("ShiftLeft") || held.has("ShiftRight"),
+        lookX: reducedMotion ? 0 : lookDelta.current.x,
+        lookY: reducedMotion ? 0 : lookDelta.current.y,
+        reducedMotion,
+      };
+      lookDelta.current = { x: 0, y: 0 };
+      flight.current = advanceLifeMapFlight(flight.current, input, delta);
+      const position = flight.current.position;
+      const target = lifeMapFlightLookTarget(flight.current);
+      camera.position.set(position[0], position[1], position[2]);
+      lookTarget.current.set(target[0], target[1], target[2]);
+      restoreTarget.current = false;
+      if (shell) shell.dataset.lifeMapExplorerActive = "true";
     } else {
+      if (wasOverview.current) {
+        // Departure begins from the actual explored position.
+        const from = camera.position.clone();
+        positionGoal.current.copy(from);
+      }
       const rate = phase === "travel" ? 1.9 : phase === "approach" ? 2.9 : phase === "arrival" ? 5.2 : 4.1;
-      camera.position.x = THREE.MathUtils.damp(camera.position.x, positionGoal.current.x, rate, delta);
-      camera.position.y = THREE.MathUtils.damp(camera.position.y, positionGoal.current.y, rate, delta);
-      camera.position.z = THREE.MathUtils.damp(camera.position.z, positionGoal.current.z, rate, delta);
-      lookTarget.current.x = THREE.MathUtils.damp(lookTarget.current.x, targetGoal.current.x, 5.6, delta);
-      lookTarget.current.y = THREE.MathUtils.damp(lookTarget.current.y, targetGoal.current.y, 5.6, delta);
-      lookTarget.current.z = THREE.MathUtils.damp(lookTarget.current.z, targetGoal.current.z, 5.6, delta);
+      if (reducedMotion) {
+        camera.position.copy(positionGoal.current);
+        lookTarget.current.copy(targetGoal.current);
+      } else {
+        camera.position.x = THREE.MathUtils.damp(camera.position.x, positionGoal.current.x, rate, delta);
+        camera.position.y = THREE.MathUtils.damp(camera.position.y, positionGoal.current.y, rate, delta);
+        camera.position.z = THREE.MathUtils.damp(camera.position.z, positionGoal.current.z, rate, delta);
+        lookTarget.current.x = THREE.MathUtils.damp(lookTarget.current.x, targetGoal.current.x, 5.6, delta);
+        lookTarget.current.y = THREE.MathUtils.damp(lookTarget.current.y, targetGoal.current.y, 5.6, delta);
+        lookTarget.current.z = THREE.MathUtils.damp(lookTarget.current.z, targetGoal.current.z, 5.6, delta);
+      }
+      if (shell) shell.dataset.lifeMapExplorerActive = "false";
     }
+    wasOverview.current = phase === "overview" && !selected;
     camera.lookAt(lookTarget.current);
     if (camera instanceof THREE.PerspectiveCamera) {
+      const fov = portrait ? (phase === "overview" ? 55 : 57) : (phase === "arrival" ? 44 : 46);
       camera.fov = reducedMotion ? fov : THREE.MathUtils.damp(camera.fov, fov, 4.6, delta);
       camera.updateProjectionMatrix();
     }
-    const shell = shellRef.current;
     if (shell) {
       shell.dataset.lifeMapCameraX = camera.position.x.toFixed(4);
       shell.dataset.lifeMapCameraY = camera.position.y.toFixed(4);
