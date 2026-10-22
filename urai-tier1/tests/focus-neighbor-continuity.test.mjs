@@ -27,6 +27,11 @@ test('URL node hints cannot relabel another memory as the selected private star'
   assert.equal(currentFocusNode(nodes, { ...memory, id: 'other-owner' }, 'star-a'), null)
   assert.equal(currentFocusNode(nodes, { ...memory, privacy: 'hidden' }, 'star-a'), null)
 })
+test('disclosed demo URL hints cannot mismatch the selected photosphere and sample content', () => {
+  const sample = { ...memory, demo: true, star: { id: 'star-a' } }
+  assert.equal(currentFocusNode(nodes, sample, 'star-b')?.id, 'star-a')
+  assert.equal(currentFocusNode(nodes, { ...sample, star: { id: 'unknown-sample' } }, 'star-b'), null)
+})
 test('neighbor choice only includes eligible and canonical authorized memories', () => {
   assert.deepEqual(eligibleFocusNeighbors(nodes, nodes[0], memory).map(n => n.id), ['star-b', 'star-c'])
   assert.deepEqual(eligibleFocusNeighbors(nodes, null, memory), [])
