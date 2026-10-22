@@ -14,6 +14,7 @@ import { canonicalLifeMapDemoNodes } from '../src/components/lifemap/canonicalLi
 import { DEMO_MEMORY_STAR_NODES } from '../src/spatial/memory/memoryStarSchema.ts'
 import { definitionForDestination } from '../src/spatial/world/destinationRegistry.ts'
 import { previousDestinationForReturn } from '../src/spatial/world/worldTypes.ts'
+import { isAuthorizedFocusNeighborReturn } from '../src/app/focus/focusNeighborContinuity.ts'
 // Bind the actual dependency-free runtime helpers to the isolated VM rather than
 // replacing privacy, motion, coordinate, or Escape behavior with invented mocks.
 import { shouldHandleRealmEscape } from '../src/spatial/world/realmEscapeEligibility.mjs'
@@ -311,7 +312,16 @@ function execute(source,globals) {
   return module.exports
 }
 function replayDestination(memory,current) {
-  const href=execute('exports.href = ('+replayHrefCallback+')();',{memory,location:current.href,window:{location:current}}).href
+  // replayHref is the actual Focus production callback, extracted unchanged.
+  // Bind its actual authorization dependency, never a permissive node match.
+  // This Life Map roundtrip does not model a verified Focus-neighbor selection:
+  // null is deliberately fail-closed, not an invented authorized node.
+  const href=execute('exports.href = ('+replayHrefCallback+')();',{
+    memory, location:current.href, window:{location:current},
+    selectedNode:null,
+    isAuthorizedFocusNeighborReturn,
+    forwardPrivateMovieRouteSelection:privateLifeMovieRouteSelection.forwardPrivateMovieRouteSelection,
+  }).href
   return new URL(href,current)
 }
 function returnDestination(memory,destination,previousDestination,current) {
