@@ -620,7 +620,7 @@ function ArtifactShape(props: ArtifactProps) {
   return <EverydayArtifact {...props} />;
 }
 
-function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect, onStarClick }: { node: LifeMapNode; index: number; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void; onStarClick: (node: LifeMapNode) => void }) {
+function MemoryArtifact({ node, index, selected, phase, reducedMotion, onStarClick }: { node: LifeMapNode; index: number; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean; onStarClick: (node: LifeMapNode) => void }) {
   const root = useRef<THREE.Group>(null);
   const active = selected?.id === node.id;
   const related = Boolean(selected && (selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)));
@@ -892,7 +892,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
           <ForegroundObservatory selected={selected} />
           <OverviewLandmarks selected={selected} />
           <group name="life-map-memory-artifact-families">
-            {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} onStarClick={onStarClick} />)}
+            {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onStarClick={onStarClick} />)}
           </group>
           <group name="life-map-selected-relationship-context" />
           <SelectedMemoryArrival selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
