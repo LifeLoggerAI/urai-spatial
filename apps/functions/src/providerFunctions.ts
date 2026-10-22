@@ -117,9 +117,21 @@ function assertProviderOwnerActive(
 
 async function consumeRateLimit(uid: string, provider: Provider, maximum: number) {
   const ref = db.doc(`users/${uid}/providerRateLimits/${provider}`)
+  const policyRef = db.doc(`users/${uid}/privacyPolicy/current`)
+  const providerRef = db.doc(`users/${uid}/providerConnections/${provider}`)
+  const ownerRef = db.doc(`users/${uid}`)
+  const fenceRef = db.doc(`users/${uid}/privacyRuntime/exportAuthority`)
+  const tombstoneRef = db.doc(`privacyDeletionTombstones/${uid}`)
   const now = Date.now()
   await db.runTransaction(async (transaction) => {
-    const snapshot = await transaction.get(ref)
+    const [snapshot, policySnapshot, providerSnapshot, ownerSnapshot, fenceSnapshot, tombstoneSnapshot] = await Promise.all([
+      transaction.get(ref), transaction.get(policyRef), transaction.get(providerRef),
+      transaction.get(ownerRef), transaction.get(fenceRef), transaction.get(tombstoneRef),
+    ])
+    // The voice rate limiter must never recreate a document after account
+    // deletion or a consent revocation between the caller's earlier checks.
+    assertProviderConsent(uid, policySnapshot, providerSnapshot)
+    assertProviderOwnerActive(uid, ownerSnapshot, policySnapshot, fenceSnapshot, tombstoneSnapshot)
     const data = snapshot.data() ?? {}
     const prior = data.windowStartedAt instanceof admin.firestore.Timestamp ? data.windowStartedAt.toMillis() : 0
     const active = prior > 0 && now - prior < RATE_WINDOW_MS
@@ -147,16 +159,30 @@ async function recordTelemetry(input: {
     const requestDigest = input.upstreamRequestId
       ? createHash('sha256').update(input.upstreamRequestId).digest('hex').slice(0, 24)
       : null
-    await db.doc(`users/${input.uid}/providerTelemetry/${input.provider}`).set({
-      provider: input.provider,
-      requestCount: admin.firestore.FieldValue.increment(1),
-      inputUnits: admin.firestore.FieldValue.increment(Math.max(0, Math.trunc(input.inputUnits))),
-      outputUnits: admin.firestore.FieldValue.increment(Math.max(0, Math.trunc(input.outputUnits ?? 0))),
-      lastOutcome: input.outcome,
-      lastLatencyMs: Math.max(0, Math.trunc(input.latencyMs)),
-      lastRequestDigest: requestDigest,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true })
+    const telemetryRef = db.doc(`users/${input.uid}/providerTelemetry/${input.provider}`)
+    const ownerRef = db.doc(`users/${input.uid}`)
+    const policyRef = db.doc(`users/${input.uid}/privacyPolicy/current`)
+    const fenceRef = db.doc(`users/${input.uid}/privacyRuntime/exportAuthority`)
+    const tombstoneRef = db.doc(`privacyDeletionTombstones/${input.uid}`)
+    await db.runTransaction(async (transaction) => {
+      const [ownerSnapshot, policySnapshot, fenceSnapshot, tombstoneSnapshot] = await Promise.all([
+        transaction.get(ownerRef), transaction.get(policyRef),
+        transaction.get(fenceRef), transaction.get(tombstoneRef),
+      ])
+      // Telemetry is non-blocking, but it may NOT resurrect deleted private
+      // provider collections after an in-flight request finally settles.
+      assertProviderOwnerActive(input.uid, ownerSnapshot, policySnapshot, fenceSnapshot, tombstoneSnapshot)
+      transaction.set(telemetryRef, {
+        provider: input.provider,
+        requestCount: admin.firestore.FieldValue.increment(1),
+        inputUnits: admin.firestore.FieldValue.increment(Math.max(0, Math.trunc(input.inputUnits))),
+        outputUnits: admin.firestore.FieldValue.increment(Math.max(0, Math.trunc(input.outputUnits ?? 0))),
+        lastOutcome: input.outcome,
+        lastLatencyMs: Math.max(0, Math.trunc(input.latencyMs)),
+        lastRequestDigest: requestDigest,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true })
+    })
   } catch {
     // Aggregate telemetry is non-blocking and never stores prompts or generated text.
   }
