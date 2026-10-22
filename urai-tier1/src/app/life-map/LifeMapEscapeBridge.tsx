@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { shouldHandleRealmEscape } from '@/spatial/world/realmEscapeEligibility.mjs'
 
 export function LifeMapEscapeBridge() {
   const router = useRouter()
@@ -14,7 +15,7 @@ export function LifeMapEscapeBridge() {
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return
+      if (!shouldHandleRealmEscape(event)) return
       event.preventDefault()
       event.stopPropagation()
       event.stopImmediatePropagation()
