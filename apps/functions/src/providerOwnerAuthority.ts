@@ -25,7 +25,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function providerOwnerAuthorityDecision(input: ProviderOwnerAuthorityInput): ProviderOwnerAuthorityDecision {
-  if (!input || !input.ownerExists || input.ownerDeleted === true || input.tombstoneExists
+  if (!input || !input.ownerExists || input.tombstoneExists
+    || (input.ownerDeleted !== undefined && input.ownerDeleted !== null && input.ownerDeleted !== false)
     || ['deleting', 'deleted', 'disabled'].includes(String(input.accountStatus ?? ''))) {
     return 'inactive-owner'
   }
