@@ -48,21 +48,36 @@ test('offline first memory is schema-compatible but not admitted as authorized b
   const prepared = parse(packet.memory, 'synthetic-owner', 'synthetic-memory', 'nonproduction-bucket')
   assert.equal(prepared.status, 'unauthorized', 'offline packet does not grant individual consent')
   assert.equal(prepared.memory, null)
-  const result = parse({ ...packet.memory, consentState: 'authorized' }, 'synthetic-owner', 'synthetic-memory', 'nonproduction-bucket')
-  assert.equal(result.status, 'ready', 'explicit server-owned consent can admit structurally compatible memory')
+  const created = { ...packet.memory, consentState: 'authorized', firstPrivateMemoryConsent: {
+    status: 'explicit-owner-confirmation', ownerId: 'synthetic-owner', memoryId: 'synthetic-memory',
+    derivativeSha256: packet.memory.sourceProvenance.derivativeSha256,
+    canonicalConsentReceiptHash: 'b'.repeat(64), consentRevision: 4,
+  } }
+  assert.equal(parse(created, 'synthetic-owner', 'synthetic-memory').status, 'unauthorized',
+    'created hidden memory must not enter Focus without second confirmation')
+  const receiptId = 'a'.repeat(64)
+  const activated = { ...created, privacy: 'private', sourceMedia: [{ kind: 'audio', mediaReceiptId: receiptId }],
+    firstPrivateMemoryActivation: {
+      status: 'explicit-owner-private-replay', ownerId: 'synthetic-owner', memoryId: 'synthetic-memory',
+      mediaReceiptId: receiptId, derivativeSha256: packet.memory.sourceProvenance.derivativeSha256,
+      consentRevision: 4, consentReceiptHash: 'b'.repeat(64),
+    } }
+  const result = parse(activated, 'synthetic-owner', 'synthetic-memory', 'nonproduction-bucket')
+  assert.equal(result.status, 'ready')
   assert.equal(result.memory.ownerId, 'synthetic-owner')
-  assert.equal(result.memory.authorization, 'owner')
-  assert.equal(result.memory.privacy, 'hidden')
+  assert.equal(result.memory.privacy, 'private')
   assert.equal(result.memory.demo, false)
-  assert.equal(result.memory.id, 'synthetic-memory')
-  assert.equal(result.memory.star.id, 'synthetic-memory')
-  assert.equal(result.memory.replayManifest.id, packet.memory.replayManifest.id)
   assert.equal(result.memory.replayManifest.durationMs, 6000)
-  assert.deepEqual(Array.from(result.memory.replayManifest.segments, x => x.id), ['memory', 'emotion', 'pattern', 'return'])
-  assert.equal(result.memory.sourceMedia.length, 0)
-  assert.equal(result.memory.sourceMediaReceipts, undefined)
+  assert.deepEqual(Array.from(result.memory.replayManifest.segments, x => x.id), ['memory','emotion','pattern','return'])
+  assert.equal(result.memory.sourceMediaReceipts[0].mediaReceiptId, receiptId)
   assert.equal(result.memory.replayManifest.audioUrl, undefined)
   assert.equal(packet.status, 'PREPARED_NOT_IMPORTED_NOT_PLAYBACK_PROVEN')
+  for (const bad of [
+    { ...activated, privacy: 'hidden' },
+    { ...activated, firstPrivateMemoryActivation: { ...activated.firstPrivateMemoryActivation, ownerId: 'foreign' } },
+    { ...activated, firstPrivateMemoryActivation: { ...activated.firstPrivateMemoryActivation, consentRevision: 3 } },
+    { ...activated, sourceMedia: [] },
+  ]) assert.equal(parse(bad, 'synthetic-owner', 'synthetic-memory').status, 'unauthorized')
 })
 
 test('another signed-in owner cannot parse the same synthetic first-memory packet as their own', async () => {
@@ -92,9 +107,8 @@ test('a future synthetic receipt shape stays owner-bound and does not become a d
   const raw = { ...packet.memory, consentState: 'authorized', sourceMedia: [{ kind: 'audio', mediaReceiptId: receiptId }] }
   const parse = selectedMemoryParser()
   const result = parse(raw, 'synthetic-owner', 'synthetic-memory', 'nonproduction-bucket')
-  assert.equal(result.status, 'ready')
-  assert.equal(result.memory.sourceMedia.length, 0)
-  assert.equal(result.memory.sourceMediaReceipts.length, 1)
-  assert.equal(result.memory.sourceMediaReceipts[0].mediaReceiptId, receiptId)
+  assert.equal(result.status, 'unauthorized', 'unactivated prepared source must not expose receipt')
+  assert.equal(result.memory, null)
+
   assert.equal(parse(raw, 'different-owner', 'synthetic-memory', 'nonproduction-bucket').status, 'unauthorized')
 })
