@@ -246,7 +246,14 @@ export function WorldTransitionController() {
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
-      href: definition.href,
+      // Unwind from Focus returns to the Life Map *overview*. Retaining the
+      // authorized memory identity in buildTravelHref is safe, but leaving a
+      // star selected would consume the next Escape clearing that selection
+      // instead of making the requested Life Map -> Home return.
+      // A fresh Life Map selection still owns its normal Escape-to-overview.
+      href: currentWorld.destination === 'focus' && destination === 'life-map'
+        ? `${definition.href}?overview=1`
+        : definition.href,
       entryPortal: currentWorld.entryPortal ?? definition.entryPortal,
       cameraCheckpoint: destination === 'home' ? 'home-threshold' : definition.cameraCheckpoint,
       context: {
