@@ -73,7 +73,18 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     useEffect: effect,
     useLayoutEffect: effect,
   }
-  const router = { push(href) { pushes.push(href); if (pushCommits) window.history.pushState(null, '', href) } }
+  const router = { push(href) {
+    pushes.push(href)
+    if (pushCommits) {
+      window.history.pushState(null, '', href)
+      // This fixture option represents a *successful* synchronous destination
+      // commit, not merely a new URL with the old world's DOM still mounted.
+      if (new URL(href, currentUrl).pathname.replace(/\/+$/, '') === '/life-map') {
+        mountedSurfaces.add('[data-testid="urai-r3f-canonical-lifemap"]')
+      }
+      for (const observer of [...observers]) observer.callback()
+    }
+  } }
   const beginTravel = request => { travelRequests.push(request) }
   const jsx = (type, props) => ({ type, props })
   const modules = new Map([
@@ -125,6 +136,7 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     },
     admit(destination) {
       if (destination === 'focus') mountedSurfaces.add('[data-testid="urai-final-focus-chamber"]')
+      if (destination === 'life-map') mountedSurfaces.add('[data-testid="urai-r3f-canonical-lifemap"]')
       if (destination === 'replay') mountedSurfaces.add('[data-testid="cinematic-replay-client"]')
       if (destination === 'passport') mountedSurfaces.add('main[data-route-owner="passport-ownership-vault"]')
       for (const observer of [...observers]) observer.callback()
@@ -142,6 +154,7 @@ test('reduced Focus → admitted Life Map → Home before 2500 ms cannot be reve
   page.clock.tick(1)
   const staleRecovery = page.clock.queuedCallback()
   await page.navigate(page.pushes[0].replace('/life-map?', '/life-map/?'))
+  page.admit('life-map')
   page.syncWorld('life-map')
   assert.equal(page.pendingTimers, 0, 'destination admission retires the recovery timer immediately')
   assert.equal(page.observerCount, 0)
@@ -172,7 +185,7 @@ test('router never changing location still recovers once at the original 2500 ms
   page.unmount()
 })
 
-for (const destination of ['replay', 'passport']) {
+for (const destination of ['focus', 'life-map', 'replay', 'passport']) {
   test(`${destination} URL without its real destination surface retains failed-mount recovery`, async () => {
     const page = mount()
     page.travel(destination, `/${destination}`)
