@@ -1,9 +1,0 @@
-# Canon Migration Approval
-
-CANON_MIGRATION_APPROVED
-LOCS_TIER_2_MIGRATION_APPROVED
-LOCS_TIER_3_MIGRATION_APPROVED
-LOCS_TIER_4_MIGRATION_APPROVED
-LOCS_TIER_5_MIGRATION_APPROVED
-
-Scope: LOCS enforcement scripts, CI checks, and migration process hardening.
