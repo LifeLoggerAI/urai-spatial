@@ -102,7 +102,11 @@ test('error after verified account change still downgrades to signed-out', () =>
 test('original Life Map consumer uses bounded Firebase authority and does not bypass demo/privacy gate', () => {
   const map = readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8');
   assert.match(map, /return subscribeLifeMapAuth\(\{/);
-  assert.match(map, /listen:\s*\(onIdentity, onFailure\)\s*=>\s*onAuthStateChanged\(getUraiAuth\(\)\)/);
+  assert.match(map, /listen:\s*\(onIdentity, onFailure\)\s*=>\s*\{/);
+  assert.match(map, /const auth = getUraiAuth\(\)/);
+  assert.match(map, /onAuthStateChanged\(auth, user\s*=>/);
+  assert.match(map, /auth\.currentUser === user \? user\.uid : null/);
+  assert.doesNotMatch(map, /onIdentity\(user\?\.uid \?\? null\)/);
   assert.match(map, /onResolved:\s*userId\s*=>/);
   assert.match(map, /setMode\(userId \? "private" : "signed-out"\)/);
   assert.match(map, /data-private-memory-mounted=\{mode === "signed-out" \? "false"/);
