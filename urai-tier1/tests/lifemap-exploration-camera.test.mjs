@@ -156,3 +156,11 @@ test("world-coordinate helpers used by renderer are declared for TypeScript", ()
     assert.match(declarations, new RegExp("export function " + symbol + "\\("));
   }
 });
+
+test("neighboring memory stars remain distant clusters through selected Focus approach", () => {
+  const world = readFileSync(new URL("../src/components/lifemap/LifeMapProductionWorld.tsx", import.meta.url), "utf8");
+  assert.match(world, /const overviewCluster = !active \|\| phase === "departure" \|\| phase === "travel"/);
+  assert.match(world, /THREE\.MathUtils\.damp\(root\.current\.scale\.x, targetScale, 3\.4/);
+  assert.match(world, /scale=\{0\.58 \+ importance \* 0\.22\}/);
+  assert.doesNotMatch(world, /scale=\{active \? 1\.46 : selected && !related/);
+});
