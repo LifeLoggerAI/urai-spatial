@@ -36,3 +36,17 @@ export function focusNeighborHref(node: LifeMapNode, demo: boolean): string | nu
   }
   return `/focus?${params}`
 }
+
+/**
+ * A URL node label is not memory authority. Preserve the exact neighboring
+ * star across Focus -> Replay only after currentFocusNode verified the owner-
+ * scoped selected memory and manifest. The caller independently checks both
+ * memoryId and replayManifestId against the current SelectedMemory.
+ */
+export function isAuthorizedFocusNeighborReturn(
+  nodeHint: string | null,
+  origin: string | null,
+  selected: Pick<LifeMapNode, 'id'> | null,
+): boolean {
+  return origin === 'focus-neighbor' && Boolean(nodeHint && selected?.id === nodeHint)
+}
