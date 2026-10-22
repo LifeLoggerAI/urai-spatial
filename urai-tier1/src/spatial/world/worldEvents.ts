@@ -210,7 +210,12 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   let observer = 0
   // Browser Back/Forward is an immediate ownership change; polling can miss
   // a target-and-return completed entirely between two 50ms samples.
-  const onPopstate = () => cancelPendingWorldTravelFallback()
+  const onPopstate = () => {
+    cancelPendingWorldTravelFallback()
+    // Browser history is new user intent, never the prior click's debounce.
+    lastTravelFingerprint = ''
+    lastTravelAt = 0
+  }
   window.addEventListener('popstate', onPopstate)
   pendingFallbackPopstateListener = onPopstate
   const fallback = window.setTimeout(() => {
