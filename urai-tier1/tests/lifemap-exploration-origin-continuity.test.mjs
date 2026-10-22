@@ -67,5 +67,11 @@ test('departure origin is captured before resolving the first rendered camera go
   const capture = source.indexOf('departureOrigin.current = camera.position.clone()', frame)
   const resolve = source.indexOf('const portrait = resolve();', frame)
   assert.ok(frame >= 0 && capture > frame && resolve > capture)
-  assert.match(source.slice(frame, resolve), /phase === "departure" && selected && departureNodeId.current !== selected.id/)
+  assert.match(source.slice(frame, resolve), /phase === "departure" && selected &&/)
+})
+
+test('same-star reentry recaptures origin after a completed journey', () => {
+  assert.match(source, /const previousCameraPhase = useRef<JourneyPhase>\("overview"\)/)
+  assert.match(source, /departureNodeId\.current !== selected\.id \|\| previousCameraPhase\.current !== "departure"/)
+  assert.match(source, /previousCameraPhase\.current = phase;/)
 })
