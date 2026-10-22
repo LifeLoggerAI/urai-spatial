@@ -24,7 +24,7 @@ test('Replay Escape is handled by the local playback owner once, not by the glob
   const controller = readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx', import.meta.url), 'utf8')
   const replay = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
   const proof = readFileSync(new URL('../../tests/replay-tier5-lock.mjs', import.meta.url), 'utf8')
-  assert.match(controller, /currentWorld\.destination === 'replay' \|\| currentWorld\.destination === 'life-map'/)
+  assert.match(controller, /currentWorld\.destination === 'replay' \|\| currentWorld\.destination === 'focus' \|\| currentWorld\.destination === 'life-map'/)
   assert.match(replay, /if \(event\.key === 'Escape'\) \{[\s\S]*?if \(!shouldHandleRealmEscape\(event\)\) return[\s\S]*?unwind\(\)/)
   assert.match(proof, /cinematic-replay-client'\)\.waitFor\(\{ state: 'detached'/)
   assert.match(proof, /Escape completes one Replay return route transition/)
@@ -88,4 +88,12 @@ test('Life Map authored loading Escape explicitly goes Home, never through stale
  assert.match(canonical, /if \(event\.defaultPrevented \|\| event\.key !== "Escape"/)
  assert.match(canonical, /router\.push\("\/home"\)/)
  assert.doesNotMatch(canonical, /requestUraiWorldReturn/)
+})
+
+test('mounted Focus owns Escape with no duplicate global controller return', () => {
+  const controller = readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx', import.meta.url), 'utf8')
+  const focus = readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
+  assert.match(controller, /currentWorld\.destination === 'focus' \|\| currentWorld\.destination === 'life-map'/)
+  assert.match(focus, /if \(!shouldHandleRealmEscape\(event\)\) return/)
+  assert.match(focus, /window\.addEventListener\('keydown', onEscape\)/)
 })
