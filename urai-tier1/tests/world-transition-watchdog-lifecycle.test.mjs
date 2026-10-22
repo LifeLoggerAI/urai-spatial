@@ -49,7 +49,7 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     removeEventListener(type, listener) { listeners.get(type)?.delete(listener) },
     dispatchEvent(event) { for (const listener of [...listeners.get(event.type) ?? []]) listener(event) },
   }
-  const document = { body: {}, querySelector: selector => mountedSurfaces.has(selector) ? {getAttribute: () => null} : null }
+  const document = { body: {}, querySelector: selector => mountedSurfaces.has(selector) ? {getAttribute: name => name === 'data-memory-status' ? 'loading' : null} : null }
   class MutationObserver {
     constructor(callback) { this.callback = callback }
     observe(_target, options) { observers.add(this); observerOptions.set(this, options) }
