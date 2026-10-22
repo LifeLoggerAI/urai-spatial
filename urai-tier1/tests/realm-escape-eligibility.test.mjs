@@ -28,3 +28,14 @@ test('ignores repetition, composing, canceled, irrelevant and in-flight transiti
   assert.equal(shouldHandleRealmEscape(event({ key: 'Enter' }), doc()), false)
   assert.equal(shouldHandleRealmEscape(event(), doc('travelling')), false)
 })
+
+test('open ADAM panel owns Escape before window-capture world navigation', () => {
+  const openAdam = { querySelector(selector) {
+    return selector === '[data-urai-adam-presence]' ? { dataset: { uraiAdamPresence: 'runtime-v1' } } : null
+  } }
+  assert.equal(shouldHandleRealmEscape(event(), openAdam), false)
+})
+
+test('closed ADAM launcher leaves realm Escape available', () => {
+  assert.equal(shouldHandleRealmEscape(event(), { querySelector: () => null }), true)
+})
