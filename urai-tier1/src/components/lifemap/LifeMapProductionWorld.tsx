@@ -624,7 +624,9 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
   const root = useRef<THREE.Group>(null);
   const active = selected?.id === node.id;
   const related = Boolean(selected && (selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)));
-  const visible = !selected || active || related;
+  // All authorized source nodes remain in the same physical galaxy at arrival.
+  // A nearby unrelated star may still be selected without an overview reset.
+  const visible = true;
   const importance = artifactImportance(node);
   // The atlas owns the overview. Memory identity resolves into stellar
   // clusters at a distance; a physical photosphere only appears after a
@@ -643,7 +645,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       ref={root}
       position={node.position}
       visible={visible}
-      scale={active ? 1.46 : 0.58 + importance * 0.22}
+      scale={active ? 1.46 : selected && !related ? 0.43 + importance * 0.13 : 0.58 + importance * 0.22}
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
       userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
       onClick={(event) => {
@@ -736,12 +738,13 @@ function SelectedMemoryArrival({ selected, phase, reducedMotion }: { selected: L
       userData={{
         scaleMode: "intimate",
         depthBand: "near",
-        semanticOwner: "life-map-intimate-memory-star",
+        semanticOwner: "life-map-selected-memory-atmosphere",
         runtimeAsset: MEMORY_STAR_MODEL,
       }}
       position={selected.position}
     >
-      <AuthoredMemoryStar aura={selected.aura} active scale={1.38} clip="MemoryStar_Focus" />
+      {/* The selected MemoryArtifact already owns the physical star.
+          Arrival adds surrounding atmosphere, never a second star. */}
       <FieldParticles seed={996} count={160} radius={5.4} depth={8.2} height={7.6} color={selected.aura} opacity={0.42} size={0.065} />
       <Sparkles count={72} scale={[8.4, 7.2, 8.4]} size={2.15} speed={reducedMotion ? 0 : 0.07} opacity={0.34} color={ICE} />
       <pointLight color={selected.aura} intensity={9} distance={26} decay={2} />
