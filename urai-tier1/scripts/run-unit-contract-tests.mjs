@@ -108,6 +108,8 @@ const focusedContractTests = [
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
   'tests/lifemap-cinematic-contract.test.mjs',
   'tests/lifemap-scene-behavior.test.mjs',
+  'tests/lifemap-exploration-origin-continuity.test.mjs',
+  'tests/lifemap-free-exploration.test.mjs',
   'tests/launch-ungating-runtime-contract.test.mjs',
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
