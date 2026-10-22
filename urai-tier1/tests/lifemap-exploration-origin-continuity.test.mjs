@@ -61,3 +61,11 @@ test('existing exploration, reduced motion and focus route remain wired', () => 
   assert.match(source, /destinationHref\("focus"\)/)
   assert.match(source, /destinationHref\("replay"\)/)
 })
+
+test('departure origin is captured before resolving the first rendered camera goal', () => {
+  const frame = source.indexOf('useFrame(({ pointer }, delta) => {')
+  const capture = source.indexOf('departureOrigin.current = camera.position.clone()', frame)
+  const resolve = source.indexOf('const portrait = resolve();', frame)
+  assert.ok(frame >= 0 && capture > frame && resolve > capture)
+  assert.match(source.slice(frame, resolve), /phase === "departure" && selected && departureNodeId.current !== selected.id/)
+})
