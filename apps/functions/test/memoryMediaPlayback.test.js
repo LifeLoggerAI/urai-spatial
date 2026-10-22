@@ -434,7 +434,7 @@ test('actual backend and browser adapter agree on private descriptor, full immut
   const clientPath = path.resolve(__dirname, '../../../urai-tier1/src/spatial/memory/ownedMemoryMediaPlayback.ts'), client = { exports: {} }
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(clientPath, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText,
-  { module: client, exports: client.exports, URL, Uint8Array, Blob, AbortController, setTimeout, clearTimeout, fetch, crypto: crypto.webcrypto,
+  { module: client, exports: client.exports, process: { env: Object.freeze({ NODE_ENV: 'production' }) }, URL, Uint8Array, Blob, AbortController, setTimeout, clearTimeout, fetch, crypto: crypto.webcrypto,
     require: name => { throw new Error(`Unexpected private browser dependency ${name}`) } }, { filename: clientPath })
   assert.equal(client.exports.validateOwnedMemoryPlaybackDescriptor(d, { ownerId: uid, memoryId, receipt: { kind: 'video', mediaReceiptId: receiptId } }), true)
   const server = http.createServer(async (request, response) => {
