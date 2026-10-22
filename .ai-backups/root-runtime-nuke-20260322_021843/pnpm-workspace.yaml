@@ -1,4 +1,0 @@
-packages:
-  - "urai-tier1"
-  - "!**/_audit/**"
-  - "!**/.next/**"

@@ -1,2 +1,0 @@
-38:  exitReplayToFocus: () => void;
-97:  exitReplayToFocus: () => {

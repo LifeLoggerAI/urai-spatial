@@ -1,9 +1,0 @@
-# Council second-opinion implementation — canonical Spatial integration dependency
-
-Parent: spatial canonical release controller PR #1636, `repair/release-closure-integration-20261007`. This draft child branch **must not be merged as an alternative Gold Master**, and cannot be called production-certified until independent review and runtime canary.
-
-A primary Council question can now optionally request a second enabled provider. The second provider receives the original question, consented bounded conversation context, and the first provider's response. Separate consent is required, switching primary/reviewer clears reviewer consent, and the second answer is shown **as a separate, attributed, unverified opinion**; it never automatically replaces the first answer. Provider requests still use existing authenticated server boundaries, protected Firebase consent policies, actor cancellation and spend admission. No additional model calls occur unless a user enables and consents to the second opinion; no providers are marked live solely from configuration.
-
-This is a **real client-to-server integration step**, not yet the multi-agent production Council with Life Graph evidence. Independent reviewing after seeing the initial answer is not blind assessment. A server-only evidence service and strictly consent-scoped Life Graph connector, deterministic review gate, multi-provider authentication/consent canaries, and full spatial end-to-end acceptance remain required. No claim of accuracy improvement or global-launch readiness is made.
-
-Validation: `node --import tsx --test urai-tier1/tests/council-second-opinion.test.mjs`, existing Council provider-contract tests, `apps/functions` TypeScript build, and downstream production CI. The tests use fictional prompts and a synthetic dispatcher; genuine upstream provider canaries require authorized credentials and explicit spend limits.
