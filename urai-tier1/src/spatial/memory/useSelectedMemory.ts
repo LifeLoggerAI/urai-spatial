@@ -126,7 +126,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
                 setResult(unavailable('Selected memory could not be found.'))
                 return
               }
-              const parsed = parseSelectedMemory(snapshot.data(), user.uid, memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
+              const parsed = parseSelectedMemory(snapshot.data(), user.uid, memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, currentRevision)
               if (parsed.memory && manifestId && parsed.memory.replayManifest.id !== manifestId) {
                 setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this memory.' })
                 return
