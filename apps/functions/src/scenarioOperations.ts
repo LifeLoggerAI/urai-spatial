@@ -273,6 +273,8 @@ export const generatePossibleFutureBranches = functions.https.onCall(async (data
         snapshot.data()?.ownerId !== ownerId || basisSnapshot.data()?.ownerId !== ownerId)
       throw new functions.https.HttpsError('not-found', 'Scenario basis not found.')
     const scenario = snapshot.data() ?? {}
+    if (scenario.status === 'discarded')
+      throw new functions.https.HttpsError('not-found', 'Scenario not found.')
     const decision = resolveManualBranchMutation({
       ownerId, scenarioId, operationId: op, requestHash,
       scenarioStatus: scenario.status, activeBranchIds: scenario.branchIds,
