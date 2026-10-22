@@ -39,8 +39,9 @@ export function submitManualScenarioBranchesClient(payload: {
   scenarioId: string
   expectedRevision: number
   branches: readonly { label: string; summary: string }[]
+  operationId: string
 }) {
-  return call<{ status: string; branchIds: string[] }>('generatePossibleFutureBranches', { scenarioId: payload.scenarioId, expectedRevision: payload.expectedRevision, manualBranches: payload.branches, operationId: op('scenario-manual') })
+  return call<{ status: string; branchIds: string[] }>('generatePossibleFutureBranches', { scenarioId: payload.scenarioId, expectedRevision: payload.expectedRevision, manualBranches: payload.branches, operationId: payload.operationId })
 }
 
 export function getPossibleFutureClient(scenarioId: string) {

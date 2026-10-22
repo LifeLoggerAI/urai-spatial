@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 import { createHash, randomUUID } from 'node:crypto'
 import { scenarioProviderState } from './scenarioProvider'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
+import { resolveManualBranchMutation } from './manualScenarioReceipt'
 
 if (!admin.apps.length) admin.initializeApp()
 const db = admin.firestore()
@@ -254,14 +255,36 @@ export const generatePossibleFutureBranches = functions.https.onCall(async (data
       evidenceRefIds, uncertainty: asStringArray(item.uncertainty), source: 'manual-scenario',
       createdAt: fv.serverTimestamp(), updatedAt: fv.serverTimestamp() }
   })
+  const requestHash = createHash('sha256').update(JSON.stringify({
+    scenarioId, expectedRevision: Number(data?.expectedRevision),
+    branches: branches.map(({ label, summary, assumptionIds, evidenceRefIds, uncertainty }) =>
+      ({ label, summary, assumptionIds, evidenceRefIds, uncertainty })),
+  })).digest('hex')
+  const receiptRef = db.doc(`users/${ownerId}/privacyReceipts/${stableReceipt(ownerId, op, 'scenario-manual-branches')}`)
+  let committedBranchIds = branchIds
   await db.runTransaction(async (tx) => {
     await requireCurrentScenarioOwner(tx, ownerId)
     const basisRef = ref.collection('basis').doc('current')
-    const [snapshot, basisSnapshot] = await Promise.all([tx.get(ref), tx.get(basisRef)])
+    const [snapshot, basisSnapshot, receiptSnap] = await Promise.all([tx.get(ref), tx.get(basisRef), tx.get(receiptRef)])
     if (!snapshot.exists || !basisSnapshot.exists ||
         snapshot.data()?.ownerId !== ownerId || basisSnapshot.data()?.ownerId !== ownerId)
       throw new functions.https.HttpsError('not-found', 'Scenario basis not found.')
     const scenario = snapshot.data() ?? {}
+    const decision = resolveManualBranchMutation({
+      ownerId, scenarioId, operationId: op, requestHash,
+      scenarioStatus: scenario.status, activeBranchIds: scenario.branchIds,
+      receipt: receiptSnap.exists ? receiptSnap.data() : null,
+    })
+    if (decision.status === 'repeat') {
+      committedBranchIds = decision.branchIds
+      return
+    }
+    if (decision.status === 'operation-conflict')
+      throw new functions.https.HttpsError('already-exists', 'SCENARIO_OPERATION_ID_REUSED_WITH_DIFFERENT_CONTENT')
+    if (decision.status === 'receipt-stale')
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_RECEIPT_NO_LONGER_CURRENT')
+    if (decision.status === 'scenario-not-awaiting')
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_BRANCHES_ALREADY_COMMITTED')
     if (scenario.status === 'discarded')
       throw new functions.https.HttpsError('not-found', 'Scenario not found.')
     if (scenario.status === 'saved')
@@ -279,8 +302,12 @@ export const generatePossibleFutureBranches = functions.https.onCall(async (data
       tx.create(ref.collection('branches').doc(branch.id), branch)
     tx.update(ref, { status: 'ready', branchIds, activeBranchId: branchIds[0],
       updatedAt: fv.serverTimestamp() })
+    tx.create(receiptRef, {
+      kind: 'scenario-manual-branches', ownerId, scenarioId, operationId: op,
+      requestHash, branchIds, createdAt: fv.serverTimestamp(),
+    })
   })
-  return { status: 'ready', branchIds, source: 'manual-scenario' }
+  return { status: 'ready', branchIds: committedBranchIds, source: 'manual-scenario' }
 })
 export const getPossibleFuture = functions.https.onCall(async (data, context) => {
   const ownerId = uid(context)

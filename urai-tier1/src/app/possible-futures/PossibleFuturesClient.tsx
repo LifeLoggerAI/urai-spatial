@@ -157,6 +157,7 @@ function ActorBoundPossibleFuturesClient({ actor }: { actor: AIActorSnapshot }) 
   const [setup,setSetup] = useState<SetupState>(existingScenarioId?'creating':'question')
   const [question,setQuestion] = useState('')
   const [manualSummaries,setManualSummaries] = useState(['','',''])
+  const manualAttempt = useRef<{ fingerprint: string; operationId: string } | null>(null)
   const [message,setMessage] = useState(existingScenarioId?'Loading an existing Possible Future…':'Ask a what-if question. No provider will be simulated if one is unavailable.')
   const horizon = params.get('horizon') ?? 'Exploratory horizon'
 
@@ -253,13 +254,20 @@ function ActorBoundPossibleFuturesClient({ actor }: { actor: AIActorSnapshot }) 
     const branches = manualSummaries.map((summary,index)=>({ label:BRANCH_LABELS[index], summary:summary.trim() })).filter((item)=>item.summary)
     if (!isOwnerCurrent() || !branches.length || !scenarioId) return
     setSetup('creating'); setMessage('Saving your Manual Scenario…')
+    const fingerprint = JSON.stringify({ scenarioId, basisRevision, branches })
+    if (!manualAttempt.current || manualAttempt.current.fingerprint !== fingerprint) {
+      const random = globalThis.crypto?.randomUUID?.()
+      if (!random) { setSetup('error'); setMessage('Secure operation identity unavailable. No branches were written.'); return }
+      manualAttempt.current = { fingerprint, operationId: 'scenario-manual-' + random.replace(/-/g, '') }
+    }
     try {
-      const result = await submitManualScenarioBranchesClient({ scenarioId, expectedRevision:basisRevision, branches })
+      const result = await submitManualScenarioBranchesClient({ scenarioId, expectedRevision:basisRevision, branches, operationId: manualAttempt.current.operationId })
       if (!isOwnerCurrent()) return
       if (!Array.isArray(result.branchIds) || result.branchIds.length !== branches.length
         || result.branchIds.some(id => !/^br_[A-Za-z0-9_-]{12,96}$/.test(id)))
         throw new Error('SCENARIO_MANUAL_BRANCH_RECEIPT_INVALID')
       setBranchIds(result.branchIds); setBranchLabels(branches.map((item)=>item.label))
+      manualAttempt.current = null
       setBranch(0); setBranchesLoaded(true); setSetup('exploring')
       setMessage('Manual Scenario loaded. These branches came from your assumptions, not an AI prediction.')
     } catch (error) {
