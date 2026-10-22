@@ -35,19 +35,22 @@ const missing = necessary.filter(file => !existsSync(resolve(root, file)))
 const java = spawnSync('java', ['-version'], { encoding: 'utf8' })
 const version = /version\s+"(\d+)/.exec(java.stderr || java.stdout || '')
 const java21 = java.status === 0 && Number(version?.[1]) >= 21
+const ffmpeg = spawnSync('ffmpeg', ['-version'], { encoding: 'utf8' })
+const ffprobe = spawnSync('ffprobe', ['-version'], { encoding: 'utf8' })
+const ffmpegAvailable = ffmpeg.status === 0 && !ffmpeg.error
+const ffprobeAvailable = ffprobe.status === 0 && !ffprobe.error
 const report = { schema: 'urai-first-memory-emulator-runner-v1', project, mode,
   localOnly: true, productionMutations: false, syntheticSourceOnly: true,
-  node: process.versions.node, java21, missing, firebaseBackendProofExecuted: false }
+  node: process.versions.node, java21, ffmpegAvailable, ffprobeAvailable,
+  missing, firebaseBackendProofExecuted: false }
 if (mode === '--preflight') {
   console.log(JSON.stringify(report, null, 2))
-  process.exit(missing.length || !java21 ? 1 : 0)
+  process.exit(missing.length || !java21 || !ffmpegAvailable || !ffprobeAvailable ? 1 : 0)
 }
 if (missing.length) throw Error('FULL_REPOSITORY_CHECKOUT_REQUIRED:' + missing.join(','))
 if (!java21) throw Error('JAVA21_REQUIRED')
-const ffmpeg = spawnSync('ffmpeg', ['-version'], { encoding: 'utf8' })
-if (ffmpeg.status !== 0) throw Error('SYNTHETIC_OPUS_GENERATOR_FFMPEG_REQUIRED')
-const ffprobe = spawnSync('ffprobe', ['-version'], { encoding: 'utf8' })
-if (ffprobe.status !== 0) throw Error('SYNTHETIC_OPUS_DURATION_FFPROBE_REQUIRED')
+if (!ffmpegAvailable) throw Error('SYNTHETIC_OPUS_GENERATOR_FFMPEG_REQUIRED')
+if (!ffprobeAvailable) throw Error('SYNTHETIC_OPUS_DURATION_FFPROBE_REQUIRED')
 const env = { ...process.env, GCLOUD_PROJECT: project, GCP_PROJECT: project, GOOGLE_CLOUD_PROJECT: project }
 function run(label, args) {
   console.log(`[RFINAL] ${label}`)
@@ -63,4 +66,5 @@ run('ACTUAL_AUTH_FIRESTORE_FUNCTIONS_EMULATORS', ['exec', 'firebase', 'emulators
   'node apps/functions/scripts/first-private-memory-emulator-proof.cjs'])
 console.log(JSON.stringify({ ...report, firebaseBackendProofExecuted: true,
   result: 'PASS (synthetic local emulator only)', browserPlaybackVerified: false,
-  protectedMediaUploaded: false, productionAccepted: false }, null, 2))
+  protectedMediaUploadedInLocalEmulator: true, protectedPlaybackBytesVerified: false,
+  cloudBucketIAMVerified: false, productionAccepted: false }, null, 2))
