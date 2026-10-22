@@ -27,3 +27,5 @@ export type LifeMapApproachWaypoints = {
   target: number[];
 };
 export function lifeMapApproachWaypoints(from: number[], target: number[], standoff?: number): LifeMapApproachWaypoints;
+
+export function lifeMapWorldStarAction(clickedId: string | null, selectedId: string | null, phase: string, replayAllowed: boolean): "ignore" | "select" | "replay";
