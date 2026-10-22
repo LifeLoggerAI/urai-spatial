@@ -75,9 +75,20 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('demo')
   }
   if (neutralDestination) {
+    // Neutral realms must not preserve private scene fragments in URL history.
+    target.hash = ''
     target.searchParams.delete('thread')
     target.searchParams.delete('personId')
     target.searchParams.delete('placeId')
+    // Camera/portal labels from a private realm belong to the in-memory
+    // transition, not to neutral Home/Hub URL history.
+    for (const key of ['entryPortal', 'cameraCheckpoint', 'returnNode']) target.searchParams.delete(key)
+    // Home and Infrastructure Hub are neutral: never preserve memory,
+    // consent or scenario routing state in URLs/history/referrers.
+    for (const key of ['privacyMode', 'originRealm', 'returnToken', 'fidelity',
+      'scenario', 'branch', 'basisRevision', 'truthMode', 'scenarioOrigin']) {
+      target.searchParams.delete(key)
+    }
   }
 
   if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
@@ -87,21 +98,31 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (memoryDestination && context?.replayManifestId && selectedMemoryId) target.searchParams.set('manifestId', context.replayManifestId)
   if (memoryDestination && context?.movieId) target.searchParams.set('movieId', context.movieId)
   if (memoryDestination && context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
-  if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
-  if (context?.originRealm) target.searchParams.set('originRealm', context.originRealm)
-  if (context?.returnToken) target.searchParams.set('returnToken', context.returnToken)
-  if (context?.reconstructionFidelity) target.searchParams.set('fidelity', context.reconstructionFidelity)
-  if (context?.scenarioId) target.searchParams.set('scenario', context.scenarioId)
-  if (context?.scenarioBranchId) target.searchParams.set('branch', context.scenarioBranchId)
-  if (context?.scenarioBasisRevision !== undefined) target.searchParams.set('basisRevision', String(context.scenarioBasisRevision))
-  if (context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
-  if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
+  if (!neutralDestination && context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
+  if (!neutralDestination && context?.originRealm) target.searchParams.set('originRealm', context.originRealm)
+  if (!neutralDestination && context?.returnToken) target.searchParams.set('returnToken', context.returnToken)
+  if (!neutralDestination && context?.reconstructionFidelity) target.searchParams.set('fidelity', context.reconstructionFidelity)
+  if (!neutralDestination && context?.scenarioId) target.searchParams.set('scenario', context.scenarioId)
+  if (!neutralDestination && context?.scenarioBranchId) target.searchParams.set('branch', context.scenarioBranchId)
+  if (!neutralDestination && context?.scenarioBasisRevision !== undefined) target.searchParams.set('basisRevision', String(context.scenarioBasisRevision))
+  if (!neutralDestination && context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
+  if (!neutralDestination && context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
   if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
-  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
-  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+  if (!neutralDestination && request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
+  if (!neutralDestination && request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
   // No node-to-memory or memory-to-node inference: these are separate
   // identities, and each consumer must independently validate access.
+  // Neutral destinations have a deliberately tiny URL contract. Unknown
+  // query keys can themselves carry owner IDs, session tokens or memory refs.
+  if (neutralDestination) {
+    const language = new URLSearchParams()
+    for (const key of ['locale', 'lang']) {
+      const value = target.searchParams.get(key)
+      if (value && /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/.test(value)) language.set(key, value)
+    }
+    target.search = language.toString()
+  }
   return `${target.pathname}${target.search}${target.hash}`
 }
 
@@ -201,7 +222,10 @@ export function WorldTransitionController() {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['data-testid', 'data-route-owner'],
+      // A mounted Focus/Replay scene may switch memories without replacing its
+      // DOM node. Identity changes must wake the route-ownership observer,
+      // otherwise the old watchdog can hold the transition veil unnecessarily.
+      attributeFilter: ['data-testid', 'data-route-owner', 'data-memory-id', 'data-manifest-id', 'data-memory-status'],
     })
     stopNavigationObservation.current = () => {
       unsubscribeLocation()
@@ -227,7 +251,7 @@ export function WorldTransitionController() {
         if (generation !== navigationGeneration.current) return
         clearTimer()
         if (
-          normalizedPathname(window.location.pathname) !== targetPathname ||
+          locationKey() !== targetLocation ||
           !destinationSurfaceReady(request.destination)
         ) {
           window.location.assign(href)
@@ -246,7 +270,14 @@ export function WorldTransitionController() {
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
-      href: definition.href,
+      // Unwind from Focus returns to the Life Map *overview*. Retaining the
+      // authorized memory identity in buildTravelHref is safe, but leaving a
+      // star selected would consume the next Escape clearing that selection
+      // instead of making the requested Life Map -> Home return.
+      // A fresh Life Map selection still owns its normal Escape-to-overview.
+      href: currentWorld.destination === 'focus' && destination === 'life-map'
+        ? `${definition.href}?overview=1`
+        : definition.href,
       entryPortal: currentWorld.entryPortal ?? definition.entryPortal,
       cameraCheckpoint: destination === 'home' ? 'home-threshold' : definition.cameraCheckpoint,
       context: {
@@ -268,7 +299,12 @@ export function WorldTransitionController() {
   }, [executeTravel])
 
   useLayoutEffect(() => {
-    const onTravel = (event: WindowEventMap[typeof URAI_WORLD_TRAVEL_EVENT]) => executeTravel(event.detail)
+    const onTravel = (event: WindowEventMap[typeof URAI_WORLD_TRAVEL_EVENT]) => {
+      // Acknowledge ownership synchronously so the shared emergency fallback
+      // cannot interrupt the controller's deliberate 1900ms Replay transition.
+      event.preventDefault()
+      executeTravel(event.detail)
+    }
     const onReturn = () => reverseTravel()
     const onKeyDown = (event: KeyboardEvent) => {
       const currentWorld = worldRef.current
@@ -281,7 +317,7 @@ export function WorldTransitionController() {
       // URAI_WORLD_RETURN_EVENT. Handling the same key here as well can issue
       // two reverse travels against the same transition state and leave the
       // client URL on Replay while the Focus surface is already changing.
-      if (currentWorld.destination === 'replay' || currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map' || currentWorld.destination === 'privacy-controls') return
+      if (currentWorld.destination === 'replay' || currentWorld.destination === 'focus' || currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map' || currentWorld.destination === 'privacy-controls') return
       event.preventDefault()
       reverseTravel()
     }

@@ -12,6 +12,7 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
   let world = { destination: 'focus', layer: 'infrastructure-world', demo: true }
   let phase = 'idle'
   const timers = new Map(), listeners = new Map(), observers = new Set()
+  const observerOptions = new Map()
   const hooks = [], effects = [], pushes = [], assignments = [], travelRequests = []
   const mountedSurfaces = new Set()
   const clock = {
@@ -48,11 +49,11 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     removeEventListener(type, listener) { listeners.get(type)?.delete(listener) },
     dispatchEvent(event) { for (const listener of [...listeners.get(event.type) ?? []]) listener(event) },
   }
-  const document = { body: {}, querySelector: selector => mountedSurfaces.has(selector) ? {} : null }
+  const document = { body: {}, querySelector: selector => mountedSurfaces.has(selector) ? {getAttribute: name => name === 'data-memory-status' ? 'loading' : null} : null }
   class MutationObserver {
     constructor(callback) { this.callback = callback }
-    observe() { observers.add(this) }
-    disconnect() { observers.delete(this) }
+    observe(_target, options) { observers.add(this); observerOptions.set(this, options) }
+    disconnect() { observers.delete(this); observerOptions.delete(this) }
   }
   const depsChanged = (old, next) => !old || old.length !== next.length || next.some((value, index) => !Object.is(old[index], value))
   const effect = (callback, deps) => {
@@ -72,7 +73,18 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     useEffect: effect,
     useLayoutEffect: effect,
   }
-  const router = { push(href) { pushes.push(href); if (pushCommits) window.history.pushState(null, '', href) } }
+  const router = { push(href) {
+    pushes.push(href)
+    if (pushCommits) {
+      window.history.pushState(null, '', href)
+      // This fixture option represents a *successful* synchronous destination
+      // commit, not merely a new URL with the old world's DOM still mounted.
+      if (new URL(href, currentUrl).pathname.replace(/\/+$/, '') === '/life-map') {
+        mountedSurfaces.add('[data-testid="urai-r3f-canonical-lifemap"]')
+      }
+      for (const observer of [...observers]) observer.callback()
+    }
+  } }
   const beginTravel = request => { travelRequests.push(request) }
   const jsx = (type, props) => ({ type, props })
   const modules = new Map([
@@ -114,14 +126,29 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     pushes, assignments, travelRequests, clock,
     get pathname() { return currentUrl.pathname },
     get pendingTimers() { return timers.size },
-    get observerCount() { return observers.size },
+    get observerCount() { return observers.size }
+    get observedIdentityAttributes() { return [...observerOptions.values()].flatMap(options => options.attributeFilter ?? []) },,
     get locationListenerCount() { return (listeners.get('popstate')?.size ?? 0) + (listeners.get('hashchange')?.size ?? 0) },
-    travel(destination, href) { window.dispatchEvent({ type: events.URAI_WORLD_TRAVEL_EVENT, detail: { destination, href } }) },
+    travel(destination, href) {
+      // The real world-travel event is cancelable. Its controller claims
+      // ownership synchronously to suppress the competing 2400ms fallback.
+      const event = {
+        type: events.URAI_WORLD_TRAVEL_EVENT,
+        detail: { destination, href },
+        cancelable: true,
+        defaultPrevented: false,
+        preventDefault() { if (this.cancelable) this.defaultPrevented = true },
+      }
+      window.dispatchEvent(event)
+      return event
+    },
     async navigate(href, method = 'pushState') {
       window.history[method](null, '', href)
       await Promise.resolve() // browserLocationStore notifies after the framework commit.
     },
     admit(destination) {
+      if (destination === 'focus') mountedSurfaces.add('[data-testid="urai-final-focus-chamber"]')
+      if (destination === 'life-map') mountedSurfaces.add('[data-testid="urai-r3f-canonical-lifemap"]')
       if (destination === 'replay') mountedSurfaces.add('[data-testid="cinematic-replay-client"]')
       if (destination === 'passport') mountedSurfaces.add('main[data-route-owner="passport-ownership-vault"]')
       for (const observer of [...observers]) observer.callback()
@@ -139,6 +166,7 @@ test('reduced Focus → admitted Life Map → Home before 2500 ms cannot be reve
   page.clock.tick(1)
   const staleRecovery = page.clock.queuedCallback()
   await page.navigate(page.pushes[0].replace('/life-map?', '/life-map/?'))
+  page.admit('life-map')
   page.syncWorld('life-map')
   assert.equal(page.pendingTimers, 0, 'destination admission retires the recovery timer immediately')
   assert.equal(page.observerCount, 0)
@@ -169,7 +197,7 @@ test('router never changing location still recovers once at the original 2500 ms
   page.unmount()
 })
 
-for (const destination of ['replay', 'passport']) {
+for (const destination of ['focus', 'life-map', 'replay', 'passport']) {
   test(`${destination} URL without its real destination surface retains failed-mount recovery`, async () => {
     const page = mount()
     page.travel(destination, `/${destination}`)
@@ -308,5 +336,38 @@ test('normal-motion Focus → Replay keeps its 1900 ms transition and 2500 ms re
   assert.deepEqual(page.assignments, [])
   page.clock.tick(1)
   assert.deepEqual(page.assignments, [page.pushes[0]])
+  page.unmount()
+})
+
+test('same-path Focus memory change cannot count the previous mounted Focus as destination', () => {
+  const page = mount()
+  page.admit('focus') // Existing chamber is mounted for an older selection.
+  page.travel('focus', '/focus/?demo=1&memoryId=new-selection&manifestId=new-manifest')
+  page.clock.tick(260)
+  assert.equal(page.pushes.length, 1)
+  page.clock.tick(2499)
+  assert.deepEqual(page.assignments, [])
+  page.clock.tick(1)
+  assert.deepEqual(page.assignments, [page.pushes[0]],
+    'same pathname is insufficient: the selected memory/manifest URL never committed')
+  page.unmount()
+})
+
+test('mounted same-route Focus identity changes notify the watchdog without another DOM insertion', () => {
+  const page = mount()
+  page.travel('focus', '/focus/?demo=1&memoryId=new-selection')
+  assert.equal(page.observerCount, 1)
+  for (const name of ['data-memory-id', 'data-manifest-id', 'data-memory-status']) {
+    assert.ok(page.observedIdentityAttributes.includes(name), name + ' must wake the route admission observer')
+  }
+  page.unmount()
+  assert.equal(page.observerCount, 0)
+})
+
+test('canonical world controller acknowledges cancelable travel before async transition', () => {
+  const page = mount()
+  const event = page.travel('replay', '/replay')
+  assert.equal(event.cancelable, true)
+  assert.equal(event.defaultPrevented, true, 'controller must claim travel to suppress the concurrent hard fallback')
   page.unmount()
 })

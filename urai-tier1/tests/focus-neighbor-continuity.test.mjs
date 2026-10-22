@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { currentFocusNode, eligibleFocusNeighbors, focusNeighborHref } from '../src/app/focus/focusNeighborContinuity.ts'
+import { currentFocusNode, eligibleFocusNeighbors, focusNeighborHref, isAuthorizedFocusNeighborReturn } from '../src/app/focus/focusNeighborContinuity.ts'
 
 const node = (id, memoryId, authorizedMemory = true, position = [0, 0, 0]) => ({
   id, type: 'memory', title: id, position, intensity: 0.7,
@@ -64,4 +64,37 @@ test('Focus shares original galaxy and model with visible star choices', () => {
   assert.match(focus, /useLifeMapEvents\(/)
   assert.match(focus, /<FocusLifeMapContext/)
   assert.match(focus, /data-focus-neighbors="authorized"/)
+})
+
+test('neighbor travel checkpoints the destination star rather than the departing star', () => {
+  const focus = readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
+  const start = focus.indexOf('const onSelectNeighbor = useCallback(')
+  const end = focus.indexOf('const unwind = useCallback(', start)
+  assert.ok(start >= 0 && end > start, 'neighbor selection callback missing')
+  const selection = focus.slice(start, end)
+  assert.match(selection, /cameraCheckpoint: `focus:\$\{node\.id\}`/)
+  assert.doesNotMatch(selection, /cameraCheckpoint: `focus:\$\{memory\.star\.id\}`/)
+  assert.match(selection, /const href = focusNeighborHref\(node, memory\.demo\)/)
+})
+
+test('non-replayable disclosed artifacts stay in Life Map, never appear as Focus memory neighbors', () => {
+  const pattern = { ...node('recurring-pressure-loop', undefined, false, [1, 0, -1]), type: 'ritual', replayAvailable: false }
+  const sample = { ...memory, demo: true }
+  assert.deepEqual(eligibleFocusNeighbors([nodes[0], pattern, nodes[1]], nodes[0], sample).map(n => n.id), ['star-b'])
+  assert.equal(focusNeighborHref(pattern, true), null)
+  assert.equal(new URL(focusNeighborHref(nodes[1], true), 'https://example.invalid').searchParams.get('memoryId'), 'star-b')
+})
+
+test('Replay carries a neighboring star only when Focus verified its selected node', () => {
+  assert.equal(isAuthorizedFocusNeighborReturn('star-b', 'focus-neighbor', nodes[1]), true)
+  assert.equal(isAuthorizedFocusNeighborReturn('star-c', 'focus-neighbor', nodes[1]), false)
+  assert.equal(isAuthorizedFocusNeighborReturn('star-b', 'forged-origin', nodes[1]), false)
+  assert.equal(isAuthorizedFocusNeighborReturn('star-b', 'focus-neighbor', null), false)
+})
+
+test('verified neighboring star survives Replay -> Focus -> Replay without original from marker', () => {
+  assert.equal(isAuthorizedFocusNeighborReturn('star-b', null, nodes[1]), true)
+  assert.equal(isAuthorizedFocusNeighborReturn('star-c', null, nodes[1]), false)
+  assert.equal(isAuthorizedFocusNeighborReturn('star-b', 'forged-origin', nodes[1]), false)
+  assert.equal(isAuthorizedFocusNeighborReturn('star-b', null, null), false)
 })

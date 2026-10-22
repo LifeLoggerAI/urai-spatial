@@ -27,8 +27,9 @@ import MemoryMediaAttachment from '@/spatial/memory/MemoryMediaAttachment'
 import { FocusLifeMapContext } from '@/components/lifemap/LifeMapProductionWorld'
 import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
 import type { LifeMapNode } from '@/components/lifemap/lifeMapData'
-import { currentFocusNode, eligibleFocusNeighbors, focusNeighborHref } from './focusNeighborContinuity'
+import { currentFocusNode, eligibleFocusNeighbors, focusNeighborHref, isAuthorizedFocusNeighborReturn } from './focusNeighborContinuity'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { shouldHandleRealmEscape } from '@/spatial/world/realmEscapeEligibility.mjs'
 
 const focusAccessibilityCss = `
 .focusControls button:focus-visible,.focusHelp summary:focus-visible,.neutralActions button:focus-visible,.webglRecovery button:focus-visible,.focus-spatial-aperture-button:focus-visible{outline:3px solid #e7fbff;outline-offset:3px}
@@ -405,10 +406,11 @@ export default function FocusChamberClient() {
     const validNode = Boolean(node && /^[A-Za-z0-9._:-]{1,120}$/.test(node))
     const fromLifeMap = incoming.get('from') === 'life-map' || incoming.get('from') === 'life-map-semantic'
     const originalSelection = fromLifeMap && node === incoming.get('returnNode')
+    const verifiedNeighborSelection = isAuthorizedFocusNeighborReturn(node, incoming.get('from'), selectedNode)
     const projectedSelection = node === `canonical-memory:${memory.id}`
     // A projected Memory Star has a distinct scene ID from its canonical memory.
     // Preserve it across Focus -> Replay -> Focus without ever treating it as authority.
-    const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id
+    const returnNode = sameMemory && validNode && (originalSelection || projectedSelection || verifiedNeighborSelection) ? node! : memory.star.id
     const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: returnNode, from: 'focus-artifact' })
     if (returnNode !== memory.star.id) next.set('returnNode', returnNode)
     if (memory.demo) next.set('demo', '1')
@@ -419,20 +421,23 @@ export default function FocusChamberClient() {
       })
     }
     return `/replay?${next.toString()}`
-  }, [memory, location])
+  }, [memory, location, selectedNode])
 
   const enterReplay = useCallback(() => {
     if (!memory || !replayHref || committed) return
     setCommitted(true)
-    requestUraiWorldTravel({ destination: 'replay', href: replayHref, entryPortal: 'focus-memory-aperture', cameraCheckpoint: `focus:${memory.star.id}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
-  }, [committed, memory, replayHref])
+    // currentFocusNode already verified selectedNode against this memory/manifest.
+    // Keep the exact visible Memory Star's camera identity when entering Replay.
+    requestUraiWorldTravel({ destination: 'replay', href: replayHref, entryPortal: 'focus-memory-aperture', cameraCheckpoint: `focus:${selectedNode?.id ?? memory.star.id}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
+  }, [committed, memory, replayHref, selectedNode])
   const onSelectNeighbor = useCallback((node: LifeMapNode) => {
     if (committed || !memory) return
     const href = focusNeighborHref(node, memory.demo)
     if (!href) return
     requestUraiWorldTravel({
       destination: 'focus', href, entryPortal: 'focus-neighbor-star',
-      cameraCheckpoint: `focus:${memory.star.id}`,
+      // The travel destination is the *new* star, not the one being left.
+      cameraCheckpoint: `focus:${node.id}`,
       context: { memoryId: memory.demo ? node.id : node.memoryId, replayManifestId: memory.demo ? undefined : node.replayManifestId, demo: memory.demo },
     })
   }, [committed, memory])
@@ -440,7 +445,7 @@ export default function FocusChamberClient() {
 
   useEffect(() => {
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented || document.querySelector('[role="dialog"][aria-modal="true"]') || (event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"],[role="menu"]'))) return
+      if (!shouldHandleRealmEscape(event)) return
       event.preventDefault()
       unwind()
     }
@@ -464,7 +469,7 @@ export default function FocusChamberClient() {
   const preparingField = Boolean(memory) && !semanticFallback && (!fieldReady || memoryRevealState === 'loading')
   const fieldStatusId = semanticFallback || memoryRevealState === 'unavailable' ? 'common.spatialAccessible' : webglState === 'lost' ? 'focus.paused' : webglState === 'restoring' ? 'focus.restoring' : fieldReady ? memoryRevealState === 'loading' ? 'focus.openingSelected' : 'focus.ready' : 'focus.opening'
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-memory-reveal-state={semanticFallback ? 'absent' : memoryRevealState} data-focus-render-ready={fieldReady ? 'true' : 'false'} data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x={DEFAULT_CAMERA[0].toFixed(3)} data-focus-camera-y={DEFAULT_CAMERA[1].toFixed(3)} data-focus-camera-z={DEFAULT_CAMERA[2].toFixed(3)} data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-renderer-mode={softwareRenderer ? 'software' : 'hardware-or-unknown'} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-memory-reveal-state={semanticFallback ? 'absent' : memoryRevealState} data-focus-render-ready={fieldReady ? 'true' : 'false'} data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x={DEFAULT_CAMERA[0].toFixed(3)} data-focus-camera-y={DEFAULT_CAMERA[1].toFixed(3)} data-focus-camera-z={DEFAULT_CAMERA[2].toFixed(3)} data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-renderer-mode={softwareRenderer ? 'software' : 'hardware-or-unknown'} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={selectedNode?.id ?? memory?.star.id}>
     <h1 className="srOnly" {...locale.props('focus.title')}>{locale.text('focus.title')}</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     {!webglUsable ? <div className="focusFog" aria-hidden="true" /> : null}
