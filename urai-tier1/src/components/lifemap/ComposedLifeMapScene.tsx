@@ -45,7 +45,7 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, 
   direction.normalize();
   const arrival = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF);
   arrival.y += 0.34;
-  if (phase === "departure") return { position: OVERVIEW_POSITION, target: tuple(target) };
+  if (phase === "departure") return { position: tuple(overview), target: tuple(target) };
   if (phase === "travel") {
     const travel = overview.clone().lerp(arrival, 0.5);
     travel.x += (Math.sign(target.x) || 1) * 1.25;
