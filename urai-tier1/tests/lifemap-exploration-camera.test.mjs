@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { advanceLifeMapFlight, lifeMapFlightLookTarget, lifeMapApproachWaypoints, lifeMapWorldStageTransform, lifeMapStagePoint } from "../src/components/lifemap/lifeMapFlight.mjs";
+import { advanceLifeMapFlight, lifeMapFlightLookTarget, lifeMapApproachWaypoints, lifeMapWorldStageTransform, lifeMapStagePoint, lifeMapWorldStarAction } from "../src/components/lifemap/lifeMapFlight.mjs";
 
 const origin = () => ({ position: [0, 1.55, 13.4], velocity: [0, 0, 0], yaw: 0, pitch: 0 });
 
@@ -135,4 +135,16 @@ test("arrival preserves one authored selected star and surrounding visible alter
   assert.ok(arrival.includes('semanticOwner: "life-map-selected-memory-atmosphere"'));
   assert.doesNotMatch(arrival, /<AuthoredMemoryStar /);
   assert.match(world, /const visible = true/);
+});
+
+test("physical selected star enters Replay only upon authorized arrival", () => {
+  assert.equal(lifeMapWorldStarAction("star-a", null, "overview", false), "select");
+  assert.equal(lifeMapWorldStarAction("star-b", "star-a", "arrival", true), "select");
+  assert.equal(lifeMapWorldStarAction("star-a", "star-a", "approach", true), "ignore");
+  assert.equal(lifeMapWorldStarAction("star-a", "star-a", "arrival", false), "ignore");
+  assert.equal(lifeMapWorldStarAction("star-a", "star-a", "arrival", true), "replay");
+  const scene = readFileSync(new URL("../src/components/lifemap/ComposedLifeMapScene.tsx", import.meta.url), "utf8");
+  assert.match(scene, /onStarClick=\{activateWorldStar\}/);
+  assert.match(scene, /node\.replayAvailable && !node\.locked && \(explicitDemoRequested \|\| node\.authorizedMemory\)/);
+  assert.match(scene, /forwardPrivateMovieRouteSelection\(next, params/);
 });
