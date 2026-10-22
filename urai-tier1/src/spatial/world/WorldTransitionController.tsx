@@ -281,7 +281,7 @@ export function WorldTransitionController() {
       // URAI_WORLD_RETURN_EVENT. Handling the same key here as well can issue
       // two reverse travels against the same transition state and leave the
       // client URL on Replay while the Focus surface is already changing.
-      if (currentWorld.destination === 'replay' || currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map' || currentWorld.destination === 'privacy-controls') return
+      if (currentWorld.destination === 'replay' || currentWorld.destination === 'focus' || currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map' || currentWorld.destination === 'privacy-controls') return
       event.preventDefault()
       reverseTravel()
     }
