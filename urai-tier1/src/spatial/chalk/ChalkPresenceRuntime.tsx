@@ -4,6 +4,7 @@ import {usePathname} from 'next/navigation'
 import {onAuthStateChanged,type User} from 'firebase/auth'
 import {getUraiAuth,firebasePublicEnvReady} from '@/lib/firebase/client'
 import {chalkIntent,chalkDiagnostic} from './chalkSpatialContract.mjs'
+import {readChalkEmulatorJobs} from './chalkJobsEmulatorClient'
 type Line={speaker:string;text:string}
 export default function ChalkPresenceRuntime(){
  const route=usePathname()||'/'
@@ -41,8 +42,19 @@ export default function ChalkPresenceRuntime(){
   const saved=user,epoch=generation.current;stop();setInput('');add('You',text);setBusy(true)
   try{const intent=chalkIntent(text)
    if(intent==='READ_JOBS'){
-    add('Chalk','Engineering Jobs require two verified emulator sessions and a protected owner binding. No task was accessed.');
-    setStatus('Jobs readback is not connected to this production-disabled interface.');
+    try {
+      const actual=await readChalkEmulatorJobs()
+      if(!active(saved,epoch))return
+      setJobs(actual.map(j=>({jobId:j.jobId,status:j.admission==='HELD_UNQUEUED'?'HELD_UNQUEUED':j.status})))
+      add('Chalk',actual.length+' authorized engineering job records returned by the protected Jobs emulator. Held requests are not running.')
+      setStatus('Emulator-only readback verified for this session.')
+    } catch {
+      if(active(saved,epoch)){
+        setJobs([])
+        add('Chalk','Jobs readback unavailable. Separate emulator authentication and approved binding are required. No results were invented.')
+        setStatus('Engineering Jobs unavailable or access denied.')
+      }
+    }
    }else if(intent==='DIAGNOSTIC'){
     const component=route==='/'?'home':route.slice(1)
     const sourceSha=process.env.NEXT_PUBLIC_URAI_BUILD_SHA||''
