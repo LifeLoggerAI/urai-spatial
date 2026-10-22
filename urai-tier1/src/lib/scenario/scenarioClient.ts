@@ -65,3 +65,16 @@ export function getPossibleFutureCouncilBundleClient(scenarioId: string, branchI
     disclosure: string
   }>('getPossibleFutureCouncilBundle', { scenarioId, ...(branchId ? { branchId } : {}) })
 }
+
+/** User-owned report only. Independent observations need trusted server evidence verification. */
+export function reportPossibleFutureOwnerOutcomeClient(payload: {
+  scenarioId: string
+  branchId: string
+  assertion: string
+  operationId: string
+}) {
+  return call<{ observationId: string; scenarioId: string; verified: false; source: 'user-assertion'; idempotent: boolean }>(
+    'recordPossibleFutureOutcome',
+    { ...payload, source: 'user-assertion' },
+  )
+}
