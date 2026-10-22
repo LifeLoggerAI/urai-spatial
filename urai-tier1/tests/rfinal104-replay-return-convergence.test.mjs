@@ -64,3 +64,10 @@ test('Focus Escape listener is actual code, not commented by literal backslash-n
   const line = focus.split(/\r?\n/).find(value => value.includes("window.addEventListener('keydown', handleKeyDown"))
   assert.ok(line && line.trim().startsWith("window.addEventListener("), 'Escape listener is not an executable statement')
 })
+
+test('mounted Focus delegates Escape to the shared realm owner predicate', () => {
+  const focus = read('../src/app/focus/FocusChamberClient.tsx')
+  assert.match(focus, /import \{ shouldHandleRealmEscape \} from '@\/spatial\/world\/realmEscapeEligibility\.mjs'/)
+  assert.match(focus, /const onEscape = \(event: KeyboardEvent\) => \{\s*if \(!shouldHandleRealmEscape\(event\)\) return/)
+  assert.match(focus, /window\.addEventListener\('keydown', onEscape\)/)
+})
