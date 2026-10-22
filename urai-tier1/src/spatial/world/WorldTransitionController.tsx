@@ -75,6 +75,8 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('demo')
   }
   if (neutralDestination) {
+    // Neutral realms must not preserve private scene fragments in URL history.
+    target.hash = ''
     target.searchParams.delete('thread')
     target.searchParams.delete('personId')
     target.searchParams.delete('placeId')
