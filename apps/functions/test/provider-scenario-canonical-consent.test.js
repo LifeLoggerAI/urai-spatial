@@ -91,7 +91,7 @@ for(const[label,mutate]of malformed){
  })
 }
 for(const provider of ['openai','elevenlabs'])for(const revision of [0,4])test('actual '+provider+' retains canonical granted processing at revision '+revision,async()=>{
- const f=providerFixture();f.records.get(policyPath).revision=revision;assert.equal(policyAuthority.isCanonicalStoredPolicy(f.records.get(policyPath),owner),true);await f.call(provider);assert.equal(f.stats.status,200);assert.equal(f.stats.ended,true);assert.equal(f.stats.paidCalls.length,provider==='openai'?2:1);assert.ok(f.stats.bytes>0)
+ const f=providerFixture();f.records.get(policyPath).revision=revision;f.records.get('users/'+owner).privacyRevision=revision;assert.equal(policyAuthority.isCanonicalStoredPolicy(f.records.get(policyPath),owner),true);await f.call(provider);assert.equal(f.stats.status,200);assert.equal(f.stats.ended,true);assert.equal(f.stats.paidCalls.length,provider==='openai'?2:1);assert.ok(f.stats.bytes>0)
 })
 for(const memoryMode of ['granted','limited'])for(const modelMode of ['granted','limited'])test('actual Scenario retains bounded canonical '+memoryMode+'/'+modelMode+' evidence in the creation transaction',async()=>{
  const f=scenarioFixture();f.records.get(policyPath).domains.memory.mode=memoryMode;f.records.get(policyPath).domains.models.mode=modelMode;const result=await f.call();assert.equal(result.assumptionOnly,false);assert.equal(f.basis().evidenceRefs.length,3);assert.ok(f.basis().evidenceRefs.every(row=>row.sourceRevision===4&&row.purpose==='scenario.explore'));assert.equal(f.basis().permissionReceiptIds.length,0);assert.equal(f.stats.reads.length,0);assert.ok(f.stats.transactionReads.includes(policyPath))
