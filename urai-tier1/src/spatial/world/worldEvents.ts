@@ -23,6 +23,20 @@ const WORLD_TRAVEL_CONTEXT_KEYS = [
 ] as const
 let lastTravelFingerprint = ''
 let lastTravelAt = 0
+let fallbackGeneration = 0
+let pendingFallbackTimeout: number | null = null
+let pendingFallbackObserver: number | null = null
+
+function cancelPendingWorldTravelFallback() {
+  // Invalidate callbacks that were already queued before timers were cleared.
+  fallbackGeneration += 1
+  if (typeof window !== 'undefined') {
+    if (pendingFallbackTimeout !== null) window.clearTimeout(pendingFallbackTimeout)
+    if (pendingFallbackObserver !== null) window.clearInterval(pendingFallbackObserver)
+  }
+  pendingFallbackTimeout = null
+  pendingFallbackObserver = null
+}
 
 function dispatchSpatialAudioCue(cue: 'transition' | 'orb-confirm' | 'error') {
   window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue } }))
@@ -48,7 +62,7 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
     if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
     // Relationship hints from an old memory never scope a different selection.
     if ((key === 'thread' || key === 'personId' || key === 'placeId') && (neutralDestination || (selectedMemoryId && !sameMemory))) continue
-    // Never inherit stale privacy metadata across memory or neutral scene boundaries.
+    // A privacy-mode hint from an old memory cannot describe a new star or neutral realm.
     if (key === 'privacyMode' && (!memoryDestination || !sameMemory)) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
@@ -157,6 +171,9 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   if (typeof window === 'undefined') return
 
   if (shouldBeginHomeAscent(request)) {
+    cancelPendingWorldTravelFallback()
+    lastTravelFingerprint = ''
+    lastTravelAt = 0
     const scene = useSceneStore.getState()
     if (scene.phase !== 'ASCENT') scene.enterLifeMap()
     dispatchSpatialAudioCue('transition')
@@ -172,36 +189,51 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   const now = Date.now()
   const fingerprint = JSON.stringify(request)
   if (fingerprint === lastTravelFingerprint && now - lastTravelAt < WORLD_TRAVEL_DEBOUNCE_MS) return
+  cancelPendingWorldTravelFallback()
+  const generation = fallbackGeneration
   lastTravelFingerprint = fingerprint
   lastTravelAt = now
   const startingLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
   dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request }))
+  if (generation !== fallbackGeneration) return
 
   const fallbackHref = buildFallbackHref(request)
   if (!fallbackHref) return
+  const target = new URL(fallbackHref, window.location.origin)
+  const targetLocation = `${target.pathname}${target.search}${target.hash}`
 
   let settled = false
   let observer = 0
   const fallback = window.setTimeout(() => {
-    if (settled) return
+    if (settled || generation !== fallbackGeneration) return
     settled = true
     if (observer) window.clearInterval(observer)
+    pendingFallbackTimeout = null
+    pendingFallbackObserver = null
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
+    // A direct router navigation elsewhere supersedes this attempt too.
+    if (currentLocation !== startingLocation && currentLocation !== targetLocation) return
     if (currentLocation === startingLocation || !destinationSurfaceReady(request.destination)) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
 
+  pendingFallbackTimeout = fallback
   observer = window.setInterval(() => {
+    if (generation !== fallbackGeneration) { window.clearInterval(observer); return }
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation || !destinationSurfaceReady(request.destination)) return
+    if (currentLocation === startingLocation || (currentLocation === targetLocation && !destinationSurfaceReady(request.destination))) return
     settled = true
     window.clearTimeout(fallback)
     window.clearInterval(observer)
+    pendingFallbackTimeout = null
+    pendingFallbackObserver = null
   }, WORLD_TRAVEL_OBSERVE_MS)
+  pendingFallbackObserver = observer
 }
 
 export function requestUraiWorldReturn() {
   if (typeof window === 'undefined') return
+  cancelPendingWorldTravelFallback()
   // A real return ends the prior journey. Keep duplicate-click protection
   // within one traversal, but never suppress a new Focus -> Replay entry just
   // because the user legitimately returned in under 1.5 seconds.
