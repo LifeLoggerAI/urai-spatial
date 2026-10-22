@@ -3,7 +3,7 @@
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { Component, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import type { PerspectiveCamera } from 'three'
 import type { MemoryWorld, MemoryWorldValidationContext } from './memoryWorld'
@@ -30,7 +30,7 @@ function SemanticBlockoutProp({ prop }: { prop: MemoryWorldBlockoutProp }) {
   )
 }
 
-function BoundedTemplateGeometry({ world }: { world: MemoryWorld }) {
+function BoundedTemplateGeometry({ world, onFirstFrame }: { world: MemoryWorld; onFirstFrame: () => void }) {
   const preset = blockoutPresetForWorld(world)
   const environment = preset?.environment ?? 'interior'
   const floorColor = preset?.floorColor ?? '#3b3936'
@@ -46,7 +46,7 @@ function BoundedTemplateGeometry({ world }: { world: MemoryWorld }) {
   if (!preset) {
     return (
       <group name="memory-world-unreconstructed-threshold" userData={{ truthClass: 'T4_CONTEXT_TEMPLATE', autobiographical: false, maturity: 'unreconstructed', geometryClaim: 'none', sourceAdmitted: false }}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, -3]} receiveShadow>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, -3]} receiveShadow onAfterRender={onFirstFrame}>
           <circleGeometry args={[24, 64]} />
           <meshStandardMaterial color="#203037" roughness={1} metalness={0} />
         </mesh>
@@ -65,7 +65,7 @@ function BoundedTemplateGeometry({ world }: { world: MemoryWorld }) {
   if (environment === 'outdoor') {
     return (
       <group name="memory-world-blockout-outdoor" userData={{ truthClass: 'T4_CONTEXT_TEMPLATE', autobiographical: false, maturity: 'blockout', presetId: preset?.id ?? 'generic' }}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow userData={{ semanticTag: 'surface:ground' }}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow onAfterRender={onFirstFrame} userData={{ semanticTag: 'surface:ground' }}>
           <planeGeometry args={[34, 34, 1, 1]} />
           <meshStandardMaterial color={floorColor} roughness={0.95} />
         </mesh>
@@ -77,7 +77,7 @@ function BoundedTemplateGeometry({ world }: { world: MemoryWorld }) {
   if (environment === 'vehicle') {
     return (
       <group name="memory-world-blockout-vehicle" userData={{ truthClass: 'T4_CONTEXT_TEMPLATE', autobiographical: false, maturity: 'blockout', presetId: preset?.id ?? 'generic' }}>
-        <mesh position={[0,-1,-2]} receiveShadow userData={{ semanticTag: 'surface:vehicle-floor' }}><boxGeometry args={[4,.18,7]} /><meshStandardMaterial color={floorColor} roughness={.9} /></mesh>
+        <mesh position={[0,-1,-2]} receiveShadow onAfterRender={onFirstFrame} userData={{ semanticTag: 'surface:vehicle-floor' }}><boxGeometry args={[4,.18,7]} /><meshStandardMaterial color={floorColor} roughness={.9} /></mesh>
         <mesh position={[0,1.1,-5]} userData={{ semanticTag: 'structure:windshield-frame' }}><boxGeometry args={[4,3,.16]} /><meshStandardMaterial color={wallColor} roughness={.8} /></mesh>
         <mesh position={[-2,1,-2]} userData={{ semanticTag: 'structure:left-door' }}><boxGeometry args={[.16,3,6]} /><meshStandardMaterial color={wallColor} roughness={.8} /></mesh>
         <mesh position={[2,1,-2]} userData={{ semanticTag: 'structure:right-door' }}><boxGeometry args={[.16,3,6]} /><meshStandardMaterial color={wallColor} roughness={.8} /></mesh>
@@ -88,7 +88,7 @@ function BoundedTemplateGeometry({ world }: { world: MemoryWorld }) {
 
   return (
     <group name="memory-world-blockout-interior" userData={{ truthClass: 'T4_CONTEXT_TEMPLATE', autobiographical: false, maturity: 'blockout', presetId: preset?.id ?? 'generic' }}>
-      <mesh position={[0,-1.2,-2]} receiveShadow userData={{ semanticTag: 'surface:floor' }}><boxGeometry args={[10,.2,10]} /><meshStandardMaterial color={floorColor} roughness={.86} /></mesh>
+      <mesh position={[0,-1.2,-2]} receiveShadow onAfterRender={onFirstFrame} userData={{ semanticTag: 'surface:floor' }}><boxGeometry args={[10,.2,10]} /><meshStandardMaterial color={floorColor} roughness={.86} /></mesh>
       <mesh position={[0,2.4,-7]} receiveShadow userData={{ semanticTag: 'structure:back-wall' }}><boxGeometry args={[10,7,.18]} /><meshStandardMaterial color={wallColor} roughness={.92} /></mesh>
       <mesh position={[-5,2.4,-2]} receiveShadow userData={{ semanticTag: 'structure:left-wall' }}><boxGeometry args={[.18,7,10]} /><meshStandardMaterial color={wallColor} roughness={.92} /></mesh>
       <mesh position={[5,2.4,-2]} receiveShadow userData={{ semanticTag: 'structure:right-wall' }}><boxGeometry args={[.18,7,10]} /><meshStandardMaterial color={wallColor} roughness={.92} /></mesh>
@@ -116,6 +116,19 @@ export default function MemoryWorldRuntime({ world, onExit, validationContext }:
   const camera = useRef<PerspectiveCamera | null>(null)
   const [rendererState, setRendererState] = useState<'checking' | 'ready' | 'unavailable' | 'lost'>('checking')
   const cleanupRenderer = useRef<(() => void) | null>(null)
+  const firstFrameRecorded = useRef(false)
+  const [firstFrameRendered, setFirstFrameRendered] = useState(false)
+  const recordFirstFrame = useCallback(() => {
+    // This callback comes from a scene mesh AFTER an actual renderer draw,
+    // unlike the separate, preliminary WebGL context capability check.
+    if (firstFrameRecorded.current) return
+    firstFrameRecorded.current = true
+    setFirstFrameRendered(true)
+  }, [])
+  useEffect(() => {
+    firstFrameRecorded.current = false
+    setFirstFrameRendered(false)
+  }, [world.worldId])
   useEffect(() => {
     try {
       const canvas = document.createElement('canvas')
@@ -160,13 +173,13 @@ export default function MemoryWorldRuntime({ world, onExit, validationContext }:
   }
 
   return (
-    <main data-testid="memory-world-runtime" data-memory-world-state={rendererState === 'ready' ? 'rendered' : 'semantic-fallback'} data-memory-world-renderer={rendererState} data-memory-world-id={world.worldId} data-memory-world-archetype={world.archetypeId} data-memory-world-truth={plan.truthLabel} data-memory-world-navigation={plan.navigation} data-memory-world-presentation={blockoutPresetForWorld(world) ? 'contextual-blockout-not-admitted' : 'neutral-threshold-no-reconstruction'} style={{position:'fixed',inset:0,overflow:'hidden',background:'#071018',color:'#fff'}}>
+    <main data-testid="memory-world-runtime" data-memory-world-state={rendererState === 'ready' ? (firstFrameRendered ? 'rendered' : 'waiting-first-frame') : 'semantic-fallback'} data-memory-world-renderer={rendererState} data-memory-world-first-frame={firstFrameRendered ? 'drawn' : 'pending'} data-memory-world-id={world.worldId} data-memory-world-archetype={world.archetypeId} data-memory-world-truth={plan.truthLabel} data-memory-world-navigation={plan.navigation} data-memory-world-presentation={blockoutPresetForWorld(world) ? 'contextual-blockout-not-admitted' : 'neutral-threshold-no-reconstruction'} style={{position:'fixed',inset:0,overflow:'hidden',background:'#071018',color:'#fff'}}>
       <MemoryWorldRendererBoundary fallback={fallback} onFailure={() => setRendererState('unavailable')}>
       {rendererState === 'ready' ? <div data-testid="memory-world-canvas-shell" style={{position:'absolute',inset:0,width:'100%',height:'100%',minWidth:300,minHeight:300}}>
         <Canvas fallback={fallback} onCreated={({ gl, camera: view }) => {
           camera.current = view as PerspectiveCamera
           const canvas = gl.domElement
-          const lost = (event: Event) => { event.preventDefault(); setRendererState('lost') }
+          const lost = (event: Event) => { event.preventDefault(); firstFrameRecorded.current = false; setFirstFrameRendered(false); setRendererState('lost') }
           canvas.addEventListener('webglcontextlost', lost)
           cleanupRenderer.current = () => canvas.removeEventListener('webglcontextlost', lost)
         }} style={{display:'block',width:'100%',height:'100%',minWidth:300,minHeight:300}} shadows={quality.shadows} dpr={[1,quality.pixelRatioMax]} frameloop={quality.documentVisible?'always':'never'} camera={{position:[0,1.35,7.8],fov:52,near:.05,far:120}}>
@@ -176,7 +189,7 @@ export default function MemoryWorldRuntime({ world, onExit, validationContext }:
           <hemisphereLight intensity={.62} color="#d7f5ff" groundColor="#172019" />
           <directionalLight position={[5,8,4]} intensity={1.5} color="#fff1d6" castShadow={quality.shadows} />
           <pointLight position={[0,2,-4]} intensity={2.3} color={accent} distance={18} />
-          <BoundedTemplateGeometry world={world} />
+          <BoundedTemplateGeometry world={world} onFirstFrame={recordFirstFrame} />
           <OrbitControls ref={controls} enablePan={false} enableDamping={!quality.reducedMotion} minDistance={2.5} maxDistance={12} target={[0,.4,-3]} />
         </Canvas>
       </div> : fallback}
