@@ -19,3 +19,11 @@ export type LifeMapFlightInput = {
 
 export function advanceLifeMapFlight(pose: LifeMapFlightPose, input: LifeMapFlightInput, seconds: number): LifeMapFlightPose;
 export function lifeMapFlightLookTarget(pose: LifeMapFlightPose): number[];
+export type LifeMapApproachWaypoints = {
+  departure: number[];
+  travel: number[];
+  approach: number[];
+  arrival: number[];
+  target: number[];
+};
+export function lifeMapApproachWaypoints(from: number[], target: number[], standoff?: number): LifeMapApproachWaypoints;
