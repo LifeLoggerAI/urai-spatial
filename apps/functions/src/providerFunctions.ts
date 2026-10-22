@@ -5,6 +5,7 @@ import { onRequest } from 'firebase-functions/v2/https'
 import { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS } from '../../../packages/localization/src/contentLanguage'
 import { paidSpatialFetch, assertSpatialPaidOutputCurrent, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
+import { providerOwnerAuthorityDecision } from './providerOwnerAuthority'
 import { sealOrbAuthorizedActivity, matchesOrbAuthorizedActivity, ORB_ACTIVITY_CONTEXT_LIMIT, type OrbAuthorizedActivityRead, type OrbAuthorizedActivity } from './orbActivitySnapshotAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -51,11 +52,19 @@ async function authenticatedUid(request: { headers: Record<string, unknown> }) {
 
 async function requireProviderConsent(uid: string, provider: Provider, explicitConsent: boolean) {
   if (!explicitConsent) throw new ProviderError(403, 'EXPLICIT_CONSENT_REQUIRED', 'External processing consent is required.')
-  const [policySnapshot, providerSnapshot] = await Promise.all([
-    db.doc(`users/${uid}/privacyPolicy/current`).get(),
-    db.doc(`users/${uid}/providerConnections/${provider}`).get(),
-  ])
-  assertProviderConsent(uid, policySnapshot, providerSnapshot)
+  // A consented request must not survive owner deletion: read the account and
+  // its deletion fence in the same snapshot as model/provider authorization.
+  await db.runTransaction(async transaction => {
+    const [policySnapshot, providerSnapshot, ownerSnapshot, fenceSnapshot, tombstoneSnapshot] = await Promise.all([
+      transaction.get(db.doc(`users/${uid}/privacyPolicy/current`)),
+      transaction.get(db.doc(`users/${uid}/providerConnections/${provider}`)),
+      transaction.get(db.doc(`users/${uid}`)),
+      transaction.get(db.doc(`users/${uid}/privacyRuntime/exportAuthority`)),
+      transaction.get(db.doc(`privacyDeletionTombstones/${uid}`)),
+    ])
+    assertProviderConsent(uid, policySnapshot, providerSnapshot)
+    assertProviderOwnerActive(uid, ownerSnapshot, policySnapshot, fenceSnapshot, tombstoneSnapshot)
+  })
 }
 
 function assertProviderConsent(uid: string, policySnapshot: FirebaseFirestore.DocumentSnapshot, providerSnapshot: FirebaseFirestore.DocumentSnapshot) {
@@ -77,6 +86,32 @@ function assertProviderConsent(uid: string, policySnapshot: FirebaseFirestore.Do
     if (connection.processingAllowed !== true || ['requested', 'pending', 'complete'].includes(revocationState)) {
       throw new ProviderError(403, 'PROVIDER_PROCESSING_REVOKED', 'Provider processing is not authorized.')
     }
+  }
+}
+
+function assertProviderOwnerActive(
+  uid: string,
+  ownerSnapshot: FirebaseFirestore.DocumentSnapshot,
+  policySnapshot: FirebaseFirestore.DocumentSnapshot,
+  fenceSnapshot: FirebaseFirestore.DocumentSnapshot,
+  tombstoneSnapshot: FirebaseFirestore.DocumentSnapshot,
+) {
+  const policy = policySnapshot.data()
+  if (!isCanonicalStoredPolicy(policy, uid)) {
+    throw new ProviderError(403, 'CONSENT_POLICY_REQUIRED', 'A canonical privacy policy is required.')
+  }
+  const decision = providerOwnerAuthorityDecision({
+    ownerExists: ownerSnapshot.exists,
+    ownerDeleted: ownerSnapshot.get('deleted'),
+    accountStatus: ownerSnapshot.get('accountStatus'),
+    tombstoneExists: tombstoneSnapshot.exists,
+    fenceExists: fenceSnapshot.exists,
+    pendingDeletions: fenceSnapshot.exists ? fenceSnapshot.get('pendingDeletions') : undefined,
+    ownerPrivacyRevision: ownerSnapshot.get('privacyRevision'),
+    canonicalPolicyRevision: policy.revision,
+  })
+  if (decision !== 'active') {
+    throw new ProviderError(403, 'PROVIDER_OWNER_INACTIVE', 'Account or privacy deletion authority is not active.')
   }
 }
 
@@ -174,15 +209,20 @@ async function reserveOpenAiRequest(uid: string, requestId: string, expectedRequ
   const policy = db.doc(`users/${uid}/privacyPolicy/current`)
   const provider = db.doc(`users/${uid}/providerConnections/openai`)
   const rate = db.doc(`users/${uid}/providerRateLimits/openai`)
+  const ownerRef = db.doc(`users/${uid}`)
+  const fenceRef = db.doc(`users/${uid}/privacyRuntime/exportAuthority`)
+  const tombstoneRef = db.doc(`privacyDeletionTombstones/${uid}`)
   const now = Date.now()
 
   // Firestore retries this transaction, never the external request. A committed
   // reservation is never released or expired into permission to submit again.
   await db.runTransaction(async (transaction) => {
-    const [policySnapshot, providerSnapshot, prior, rateSnapshot] = await Promise.all([
+    const [policySnapshot, providerSnapshot, prior, rateSnapshot, ownerSnapshot, fenceSnapshot, tombstoneSnapshot] = await Promise.all([
       transaction.get(policy), transaction.get(provider), transaction.get(reservation), transaction.get(rate),
+      transaction.get(ownerRef), transaction.get(fenceRef), transaction.get(tombstoneRef),
     ])
     assertProviderConsent(uid, policySnapshot, providerSnapshot)
+    assertProviderOwnerActive(uid, ownerSnapshot, policySnapshot, fenceSnapshot, tombstoneSnapshot)
     if (prior.exists) {
       const saved = prior.data() ?? {}
       if (saved.ownerDigest !== ownerDigest || saved.requestDigest !== requestDigest || saved.purpose !== OPENAI_REQUEST_PURPOSE
