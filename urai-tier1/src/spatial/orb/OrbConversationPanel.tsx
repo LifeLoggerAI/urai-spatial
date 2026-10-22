@@ -80,7 +80,11 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
       // Clear/disable must not be overtaken by a completed in-flight save.
       await continuityPending.current.catch(() => undefined)
       if (!isCurrentAIActorSnapshot(actor)) return
-      const input = action === 'enable' ? { action: 'enable' as const, seed: history.slice(-20), epoch: continuityRef.current?.epoch ?? null } : { action }
+      const input = action === 'enable'
+        ? { action: 'enable' as const, seed: history.slice(-20), epoch: continuityRef.current?.epoch ?? null }
+        : action === 'clear'
+          ? { action: 'clear' as const, epoch: continuityRef.current?.epoch ?? '' }
+          : { action: 'disable' as const }
       const saved = await requestOrbContinuity(actor, input)
       if (!saved) return
       continuityRef.current = saved
@@ -395,7 +399,9 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
             <button type="button" disabled={!actor.uid || continuityBusy || continuityHydrating || busy} onClick={() => void changeContinuity(continuity?.enabled ? 'disable' : 'enable')}>
               {continuity?.enabled ? 'Turn off remembering and delete saved Orb messages' : 'Remember Orb conversations across devices'}
             </button>
-            {continuity?.enabled ? <button type="button" disabled={continuityBusy || continuityHydrating || busy} onClick={() => void changeContinuity('clear')}>Clear saved Orb conversation</button> : null}
+            {continuity?.enabled
+              ? <button type="button" disabled={continuityBusy || continuityHydrating || busy} onClick={() => void changeContinuity('clear')}>Clear saved Orb conversation</button>
+              : <button type="button" disabled={!actor.uid || continuityBusy || continuityHydrating || busy} onClick={() => void changeContinuity('disable')}>Delete any saved Orb conversations</button>}
             <button type="submit" disabled={busy || continuityBusy || continuityHydrating || !message.trim() || !aiConsent}>Send</button>
             <button type="button" disabled={!busy && !voicePlaying} onClick={stop}>Stop</button>
             <button
