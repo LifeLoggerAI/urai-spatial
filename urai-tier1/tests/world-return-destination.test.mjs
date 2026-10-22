@@ -97,3 +97,12 @@ test('mounted Focus owns Escape with no duplicate global controller return', () 
   assert.match(focus, /if \(!shouldHandleRealmEscape\(event\)\) return/)
   assert.match(focus, /window\.addEventListener\('keydown', onEscape\)/)
 })
+
+test('Focus Unwind lands Life Map overview so the next Escape goes Home', () => {
+  const controller = readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx', import.meta.url), 'utf8')
+  const scene = readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+  assert.match(controller, /currentWorld\.destination === 'focus' && destination === 'life-map'/)
+  assert.match(controller, /\?overview=1/)
+  assert.match(scene, /const overviewRequested = params\.get\("overview"\) === "1"/)
+  assert.match(scene, /if \(selectedId\) overview\(\); else returnHome\(\)/)
+})
