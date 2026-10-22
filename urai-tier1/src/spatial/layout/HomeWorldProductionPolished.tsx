@@ -22,6 +22,7 @@ import { createAuthoredOrbLightPresentation, disposeAuthoredOrbLightPresentation
 import styles from './HomeWorldProduction.module.css'
 import HomeSanctuaryPerimeterGrove from './HomeSanctuaryPerimeterGrove'
 import HomeSanctuaryGroundCover from './HomeSanctuaryGroundCover'
+import { inspectHomeVisualStudyScene } from './homeVisualStudyEvidence.mjs'
 import { showHomeThresholdLabel } from './HomeThresholdVisibility'
 import { HomeCC0ReviewMaterial } from './HomeCC0ReviewMaterial'
 import { HomeCC0ReviewShrubs } from './HomeCC0ReviewShrubs'
@@ -913,7 +914,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
   return null
 }
 
-function SceneReady({ onReady, previewW13V3 }: { onReady: () => void; previewW13V3: boolean }) {
+function SceneReady({ onReady, previewW13V3, goldenHourStudy, groundCoverStudy, qualityTier }: { onReady: () => void; previewW13V3: boolean; goldenHourStudy: boolean; groundCoverStudy: boolean; qualityTier: 'low' | 'medium' | 'high' }) {
   const { scene, invalidate, gl } = useThree(); const frames = useRef(0); const done = useRef(false)
   useFrame(() => {
     if (done.current) return
@@ -936,7 +937,9 @@ function SceneReady({ onReady, previewW13V3 }: { onReady: () => void; previewW13
       for (const surface of surfaces) if (surface) materials.add(surface.uuid)
     })
     const previewReady = Boolean(preview && meshCount > 0 && materials.size > 0)
-    const sceneReady = common.every((name) => scene.getObjectByName(name)) && (previewW13V3 ? previewReady : ordinary.every((name) => scene.getObjectByName(name)))
+    const study = inspectHomeVisualStudyScene(scene, { goldenHour: goldenHourStudy && !useSceneStore.getState().phase.startsWith('ASCENT'), groundCover: groundCoverStudy && !previewW13V3, qualityTier })
+    if (sceneOwner && sceneOwner.dataset.homeVisualStudyReady !== String(study.ready)) sceneOwner.dataset.homeVisualStudyReady = String(study.ready)
+    const sceneReady = common.every((name) => scene.getObjectByName(name)) && (previewW13V3 ? previewReady : ordinary.every((name) => scene.getObjectByName(name))) && study.ready
     if (renderedFrames < 4 || !sceneReady) { invalidate(); return }
     // Runtime mesh evidence is derived from the actual R3F scene graph, not
     // the GLB manifest or an assumed successful loader callback.
@@ -970,7 +973,7 @@ function Scene(props: { previewW13V3: boolean; groundCoverStudy: boolean; golden
   return <>
     <color attach="background" args={[cosmic ? '#01050b' : goldenHour ? '#b7bdb1' : '#101d30']} />
     {goldenHour
-      ? <Sky distance={450000} sunPosition={[-45, 13, -80]} turbidity={8} rayleigh={2.4} mieCoefficient={.005} mieDirectionalG={.8} />
+      ? <group name="home-golden-hour-sky"><Sky distance={450000} sunPosition={[-45, 13, -80]} turbidity={8} rayleigh={2.4} mieCoefficient={.005} mieDirectionalG={.8} /></group>
       : !cosmic ? <HomeSkyGradient /> : null}
     {!goldenHour ? <Stars radius={190} depth={90} count={cosmic ? 2200 : 700} factor={cosmic ? 2.7 : 1.1} saturation={.12} fade speed={props.reducedMotion ? 0 : .02} /> : null}
     <fogExp2 attach="fog" args={[cosmic ? '#050b14' : goldenHour ? '#aab5a7' : '#172a38', cosmic ? .0017 : goldenHour ? .0045 : .006]} />
@@ -1007,7 +1010,7 @@ function Scene(props: { previewW13V3: boolean; groundCoverStudy: boolean; golden
     <HomeSkyInteraction groundDescent={props.groundDescent} onAscent={props.onLifeMap} />
     <Thresholds onGround={props.onGround} onLifeMap={props.onLifeMap} nearby={props.nearby} />
     <PlayerRig previewW13V3={props.previewW13V3} orbAnchor={orbAnchor} input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.onNearby} groundDescent={props.groundDescent} reducedMotion={props.reducedMotion} onGroundComplete={props.onGroundComplete} onTransitionSequence={props.onTransitionSequence} />
-    <SceneReady key={props.previewW13V3 ? 'w13-v3' : 'canonical'} previewW13V3={props.previewW13V3} onReady={props.onReady} />
+    <SceneReady key={props.previewW13V3 ? 'w13-v3' : 'canonical'} previewW13V3={props.previewW13V3} goldenHourStudy={props.goldenHourStudy} groundCoverStudy={props.groundCoverStudy} qualityTier={props.qualityTier} onReady={props.onReady} />
   </>
 }
 
