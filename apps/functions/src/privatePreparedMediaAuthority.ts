@@ -15,7 +15,7 @@ export function assertPreparedPrivateMediaFirstUpload(
 ): void {
   const row = asRow(memory)
   const provenance = asRow(row.sourceProvenance)
-  const isPrepared = Object.hasOwn(provenance, 'derivativeSha256')
+  const isPrepared = Object.prototype.hasOwnProperty.call(provenance, 'derivativeSha256')
     || provenance.authenticity === 'source-derivative-not-generated-autobiography'
   const marked = operationId.startsWith('firstlife_')
   const current = row.sourceMedia
@@ -58,7 +58,7 @@ export function assertFirstPrivateMemoryPlaybackBinding(
   const selected = asRow(memory)
   if (selected.privacy === 'hidden') throw new Error('FIRST_PRIVATE_MEMORY_REPLAY_NOT_ACTIVATED')
   const source = asRow(selected.sourceProvenance)
-  const prepared = Object.hasOwn(source, 'derivativeSha256')
+  const prepared = Object.prototype.hasOwnProperty.call(source, 'derivativeSha256')
     || source.authenticity === 'source-derivative-not-generated-autobiography'
   if (!prepared) return
   const activation = asRow(selected.firstPrivateMemoryActivation)
