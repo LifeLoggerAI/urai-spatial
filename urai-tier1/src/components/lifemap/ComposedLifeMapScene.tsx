@@ -100,6 +100,7 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
   const heldFlightKeys = useRef(new Set<string>());
   const departureOrigin = useRef<THREE.Vector3 | null>(null);
   const departureNodeId = useRef<string | null>(null);
+  const previousCameraPhase = useRef<JourneyPhase>("overview");
   useEffect(() => {
     // Selection, unloading and blur must never leave a motion key stuck.
     heldFlightKeys.current.clear();
@@ -186,10 +187,14 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     if (phase === "overview") {
       departureOrigin.current = null;
       departureNodeId.current = null;
-    } else if (phase === "departure" && selected && departureNodeId.current !== selected.id) {
+    } else if (phase === "departure" && selected &&
+      (departureNodeId.current !== selected.id || previousCameraPhase.current !== "departure")) {
+      // Re-selecting the same star after arrival is a new journey, not a
+      // continuation of its old departure camera pose.
       departureOrigin.current = camera.position.clone();
       departureNodeId.current = selected.id;
     }
+    previousCameraPhase.current = phase;
     const portrait = resolve();
     if (phase === "overview") {
       const focused = document.activeElement;
