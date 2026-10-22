@@ -8,6 +8,9 @@ export function shouldHandleRealmEscape(event, documentRef = typeof document ===
   if (target && typeof target.closest === 'function' && target.closest(
     'input, textarea, select, [contenteditable="true"], [role="textbox"], [role="dialog"], [role="menu"], [data-urai-adam-presence], [data-urai-escape-owner]'
   )) return false
+  // ADAM is a document-level conversation portal. Its panel may own Escape
+  // even when the key target is not inside the panel (window capture).
+  if (documentRef?.querySelector?.('[data-urai-adam-presence]')) return false
   if (documentRef?.querySelector?.('[role="dialog"][aria-modal="true"], [data-urai-escape-owner="active"]')) return false
   const phase = documentRef?.querySelector?.('.urai-world-transition[data-phase]')?.getAttribute?.('data-phase')
   if (phase && phase !== 'idle') return false
