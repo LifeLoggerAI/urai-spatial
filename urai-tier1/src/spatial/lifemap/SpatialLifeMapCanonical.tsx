@@ -3,12 +3,12 @@
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { assetCssStack, lifeMapAssets } from "@/spatial/assets/uraiAssets";
 import { requestUraiWorldReturn } from "@/spatial/world/worldEvents";
 import LifeMapRouteBoundary from "@/components/lifemap/LifeMapRouteBoundary";
 import LifeMapSemanticNavigator from "@/components/lifemap/LifeMapSemanticNavigator";
-import { app, firebasePublicEnvReady } from "@/lib/firebase/client";
+import { firebasePublicEnvReady, getUraiAuth } from "@/lib/firebase/client";
 import { subscribeLifeMapAuth } from './lifeMapAuthGate';
 
 const DEMO_MANIFEST_ID = "replay-recovery-thread";
@@ -111,7 +111,14 @@ function LifeMapAccessGate() {
 
     setMode("checking");
     return subscribeLifeMapAuth({
-      listen: (onIdentity, onFailure) => onAuthStateChanged(getAuth(app), user => onIdentity(user?.uid ?? null), onFailure),
+      listen: (onIdentity, onFailure) => {
+        const auth = getUraiAuth();
+        // A delayed callback for a replaced Firebase User (even the same UID)
+        // cannot restore a private Life Map owner. Fail closed until the
+        // canonical auth instance reports its current actor.
+        return onAuthStateChanged(auth, user =>
+          onIdentity(user && auth.currentUser === user ? user.uid : null), onFailure);
+      },
       onResolved: userId => {
         setAuthenticatedUserId(userId);
         setMode(userId ? "private" : "signed-out");

@@ -70,7 +70,7 @@ function fixture({ component = 'scene', sourceMode = 'signed-out', pathname = '/
     './LifeMapProductionWorld': { LifeMapProductionWorld: 'synthetic-production-world-boundary' },
     './lifeMapVisualSystem': { artifactFamilyLabel: () => 'Visual memory', resolveArtifactFamily: () => 'visual' },
     'firebase/auth': { getAuth: () => ({}), onAuthStateChanged: (_auth, callback) => { callback(null); return () => {} } },
-    '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true },
+    '@/lib/firebase/client': { getUraiAuth: () => ({}), firebasePublicEnvReady: true },
     '@/spatial/assets/uraiAssets': { assetCssStack: () => '', lifeMapAssets: { primary: { src: 'synthetic-primary' }, mobile: { src: 'synthetic-mobile' } } },
     '@/spatial/adam/AdamLauncherSlot': 'synthetic-founder-slot',
     '@/components/lifemap/LifeMapRouteBoundary': 'synthetic-scene-boundary',
