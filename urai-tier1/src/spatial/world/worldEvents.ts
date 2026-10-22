@@ -81,6 +81,9 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('thread')
     target.searchParams.delete('personId')
     target.searchParams.delete('placeId')
+    // Camera/portal labels from a private realm belong to the in-memory
+    // transition, not to neutral Home/Hub URL history.
+    for (const key of ['entryPortal', 'cameraCheckpoint', 'returnNode']) target.searchParams.delete(key)
     for (const key of ['privacyMode', 'originRealm', 'returnToken', 'fidelity',
       'scenario', 'branch', 'basisRevision', 'truthMode', 'scenarioOrigin']) {
       target.searchParams.delete(key)
@@ -103,8 +106,8 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (!neutralDestination && context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
   if (!neutralDestination && context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
   if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
-  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
-  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+  if (!neutralDestination && request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
+  if (!neutralDestination && request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
   return `${target.pathname}${target.search}${target.hash}`
 }
