@@ -5,7 +5,9 @@ import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
 const ts = require('typescript')
 const source = readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
-const found = source.match(/type LifeMapFlightVector =[\s\S]*?\nfunction stepLifeMapFlight\([\s\S]*?\n\}\n/)
+// Git on Windows can checkout TypeScript as CRLF even when the test stays LF.
+// Match the real production function on either platform; do not bypass proof.
+const found = source.match(/type LifeMapFlightVector =[\s\S]*?\r?\nfunction stepLifeMapFlight\([\s\S]*?\r?\n\}\r?\n/)
 assert.ok(found, 'Production Life Map flight model not found')
 const compiled = ts.transpileModule(found[0] + '\nexport { stepLifeMapFlight };', {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
