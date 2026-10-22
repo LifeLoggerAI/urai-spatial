@@ -219,6 +219,41 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
   const ownerId = stringValue(raw.ownerId ?? raw.userId)
   if (!ownerId || ownerId !== expectedOwnerId) return { status: 'unauthorized', memory: null, message: 'This memory is not available to this account.' }
 
+  // Prepared, owner-scoped sources enter Firestore hidden. C1 creation consent
+  // alone is not the separate authorization to reveal them in Focus or Replay.
+  // The protected server playback authority independently enforces this same
+  // activation under current C1 and the full deletion/consent fences.
+  const provenance = raw.sourceProvenance && typeof raw.sourceProvenance === 'object'
+    && !Array.isArray(raw.sourceProvenance) ? raw.sourceProvenance as Record<string, unknown> : {}
+  const isPreparedFirstMemory = Object.hasOwn(provenance, 'derivativeSha256')
+    || provenance.authenticity === 'source-derivative-not-generated-autobiography'
+    || Object.hasOwn(raw, 'firstPrivateMemoryConsent')
+  if (isPreparedFirstMemory) {
+    const confirmation = raw.firstPrivateMemoryConsent && typeof raw.firstPrivateMemoryConsent === 'object'
+      && !Array.isArray(raw.firstPrivateMemoryConsent) ? raw.firstPrivateMemoryConsent as Record<string, unknown> : {}
+    const activation = raw.firstPrivateMemoryActivation && typeof raw.firstPrivateMemoryActivation === 'object'
+      && !Array.isArray(raw.firstPrivateMemoryActivation) ? raw.firstPrivateMemoryActivation as Record<string, unknown> : {}
+    const matchingReceipts = Array.isArray(raw.sourceMedia) ? raw.sourceMedia.filter(item => item !== null
+      && typeof item === 'object' && !Array.isArray(item)
+      && (item as Record<string, unknown>).kind === 'audio'
+      && (item as Record<string, unknown>).mediaReceiptId === activation.mediaReceiptId) : []
+    const sha256 = /^[a-f0-9]{64}$/
+    if (raw.privacy !== 'private' || provenance.authenticity !== 'source-derivative-not-generated-autobiography'
+      || !sha256.test(String(provenance.derivativeSha256))
+      || confirmation.status !== 'explicit-owner-confirmation' || confirmation.ownerId !== ownerId
+      || confirmation.memoryId !== id || confirmation.derivativeSha256 !== provenance.derivativeSha256
+      || !sha256.test(String(confirmation.canonicalConsentReceiptHash))
+      || !Number.isSafeInteger(confirmation.consentRevision) || Number(confirmation.consentRevision) < 1
+      || activation.status !== 'explicit-owner-private-replay' || activation.ownerId !== ownerId
+      || activation.memoryId !== id || !sha256.test(String(activation.mediaReceiptId))
+      || activation.derivativeSha256 !== provenance.derivativeSha256
+      || activation.consentRevision !== confirmation.consentRevision
+      || activation.consentReceiptHash !== confirmation.canonicalConsentReceiptHash
+      || matchingReceipts.length !== 1) {
+      return { status: 'unauthorized', memory: null, message: 'Private memory activation has not been authorized.' }
+    }
+  }
+
   const title = stringValue(raw.title)
   const occurredAt = isoDateValue(raw.occurredAt)
   const summary = stringValue(raw.summary)
