@@ -26,7 +26,7 @@ function fixture() {
   }
   const modules = {
     react,
-    'firebase/auth': { getAuth: () => auth, onAuthStateChanged: (_auth, fn) => {active.auth=fn;return ()=>{} } },
+    'firebase/auth': { onAuthStateChanged: (_auth, fn) => {active.auth=fn;return ()=>{} } },
     'firebase/firestore': {
       doc: (_db, ...path) => path,
       onSnapshot: (path, fn) => {
@@ -37,7 +37,7 @@ function fixture() {
         return () => {record.unsubscribed=true}
       },
     },
-    '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true, getFirebaseDb: () => ({}) },
+    '@/lib/firebase/client': { getUraiAuth: () => auth, firebasePublicEnvReady: true, getFirebaseDb: () => ({}) },
     '@/hooks/useBrowserLocation': { useBrowserLocation: () => '/focus?memoryId=synthetic-memory' },
     '@/app/privacy-controls/consentModel': { isConsentPolicy: () => true },
     './explicitDemoMemory': { buildNamedExplicitDemoMemory: () => {throw Error('unexpected demo')} },
