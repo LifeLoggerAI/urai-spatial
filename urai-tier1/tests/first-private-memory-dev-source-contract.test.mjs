@@ -40,3 +40,20 @@ test('never persist private handoff or manufacture visibility and playback claim
   assert.doesNotMatch(client, /\/replay\?memoryId=/)
   assert.match(client, /hidden/)
 })
+
+test('incomplete upload exposes a separate affirmative recovery action, never a second create', () => {
+  assert.match(client, /resumeFirstPreparedMemoryUpload\(/)
+  assert.match(client, /mode === 'recover'/)
+  assert.match(client, /setRecoveryMemoryId\(error\.memoryId\)/)
+  assert.match(client, /setRecoveryApproved\(false\)/)
+  assert.match(client, /!recoveryApproved/)
+  assert.match(client, /submit\('recover'\)/)
+  assert.match(client, /Recover protected upload without recreating memory/)
+  assert.match(client, /disabled=\{!signedIn \|\| !packetFile \|\| !mediaFile \|\| !approved \|\| busy \|\| Boolean\(recoveryMemoryId\)\}/)
+})
+test('owner and selected file changes invalidate local retry authority', () => {
+  assert.match(client, /setRecoveryMemoryId\(null\)/)
+  assert.match(client, /inFlight\.current\?\.abort\(\)/)
+  assert.match(client, /epoch\.current\+\+/)
+  assert.match(client, /setRecoveryApproved\(false\)/)
+})
