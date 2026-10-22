@@ -48,3 +48,11 @@ test("original world still owns WebGL and owner authorization", () => {
   assert.match(scene, /phase === "overview" && !selected/);
   assert.match(scene, /window\.addEventListener\("blur", clear\)/);
 });
+
+test("selected memory departure inherits the explored camera checkpoint", () => {
+  const scene = readFileSync(new URL("../src/components/lifemap/ComposedLifeMapScene.tsx", import.meta.url), "utf8");
+  assert.match(scene, /departureOrigin\.current\.copy\(camera\.position\)/);
+  assert.match(scene, /goalForNode\(selected, phase, portrait, departureOrigin\.current\)/);
+  assert.match(scene, /if \(phase === "departure"\) return \{ position: tuple\(overview\), target: tuple\(target\) \}/);
+  assert.doesNotMatch(scene, /if \(phase === "departure"\) return \{ position: OVERVIEW_POSITION/);
+});
