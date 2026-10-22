@@ -3,6 +3,8 @@ import * as admin from 'firebase-admin'
 import { createHash, randomUUID } from 'node:crypto'
 import { scenarioProviderState } from './scenarioProvider'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
+import { scenarioOwnerAuthorityDecision } from './scenarioOwnerAuthority'
+import { resolveManualBranchMutation } from './manualScenarioReceipt'
 
 if (!admin.apps.length) admin.initializeApp()
 const db = admin.firestore()
@@ -25,6 +27,28 @@ function operationId(value: unknown) {
 function opaque(prefix: string) { return `${prefix}${randomUUID().replace(/-/g, '')}` }
 function stableReceipt(ownerId: string, op: string, kind: string) { return createHash('sha256').update(`${kind}:${ownerId}:${op}`).digest('hex').slice(0, 40) }
 function scenarioRef(ownerId: string, scenarioId: string) { return db.doc(`users/${ownerId}/scenarios/${scenarioId}`) }
+
+// A delayed authenticated callable must not resurrect a deleted account's
+// private scenarios or leave new receipts while deletion is in flight.
+async function requireCurrentScenarioOwner(tx: FirebaseFirestore.Transaction, ownerId: string) {
+  const [owner, fence, tombstone] = await Promise.all([
+    tx.get(db.doc(`users/${ownerId}`)),
+    tx.get(db.doc(`users/${ownerId}/privacyRuntime/exportAuthority`)),
+    tx.get(db.doc(`privacyDeletionTombstones/${ownerId}`)),
+  ])
+  const decision = scenarioOwnerAuthorityDecision({
+    ownerExists: owner.exists,
+    ownerDeleted: owner.get('deleted'),
+    accountStatus: owner.get('accountStatus'),
+    tombstoneExists: tombstone.exists,
+    fenceExists: fence.exists,
+    pendingDeletions: fence.exists ? fence.get('pendingDeletions') : undefined,
+  })
+  if (decision === 'inactive-owner')
+    throw new functions.https.HttpsError('permission-denied', 'Scenario owner is not active.')
+  if (decision !== 'active')
+    throw new functions.https.HttpsError('failed-precondition', 'Deletion authority is not clear. Scenarios are paused.')
+}
 function ensureScenarioId(value: unknown) {
   const id = String(value ?? '')
   if (!/^scn_[A-Za-z0-9_-]{12,96}$/.test(id)) throw new functions.https.HttpsError('invalid-argument', 'Invalid scenarioId.')
@@ -137,6 +161,7 @@ export const createPossibleFuture = functions.https.onCall(async (data, context)
   const ref = scenarioRef(ownerId, scenarioId)
   const receiptId = stableReceipt(ownerId, op, 'scenario-create')
   await db.runTransaction(async (tx) => {
+    await requireCurrentScenarioOwner(tx, ownerId)
     const receiptRef = db.doc(`users/${ownerId}/privacyReceipts/${receiptId}`)
     const existing = await tx.get(receiptRef)
     if (existing.exists) throw new functions.https.HttpsError('already-exists', 'Operation already completed.', { receiptId })
@@ -182,6 +207,7 @@ export const generatePossibleFutureBranches = functions.https.onCall(async (data
     const receiptId = stableReceipt(ownerId, op, 'scenario-provider-unavailable')
     const receiptRef = db.doc('scenarioProviderReceipts/' + receiptId)
     await db.runTransaction(async (tx) => {
+      await requireCurrentScenarioOwner(tx, ownerId)
       const scenarioSnapshot = await tx.get(ref)
       const basisRef = ref.collection('basis').doc('current')
       const basisSnapshot = await tx.get(basisRef)
@@ -230,13 +256,38 @@ export const generatePossibleFutureBranches = functions.https.onCall(async (data
       evidenceRefIds, uncertainty: asStringArray(item.uncertainty), source: 'manual-scenario',
       createdAt: fv.serverTimestamp(), updatedAt: fv.serverTimestamp() }
   })
+  const requestHash = createHash('sha256').update(JSON.stringify({
+    scenarioId, expectedRevision: Number(data?.expectedRevision),
+    branches: branches.map((branch: (typeof branches)[number]) => {
+      const { label, summary, assumptionIds, evidenceRefIds, uncertainty } = branch
+      return { label, summary, assumptionIds, evidenceRefIds, uncertainty }
+    }),
+  })).digest('hex')
+  const receiptRef = db.doc(`users/${ownerId}/privacyReceipts/${stableReceipt(ownerId, op, 'scenario-manual-branches')}`)
+  let committedBranchIds = branchIds
   await db.runTransaction(async (tx) => {
+    await requireCurrentScenarioOwner(tx, ownerId)
     const basisRef = ref.collection('basis').doc('current')
-    const [snapshot, basisSnapshot] = await Promise.all([tx.get(ref), tx.get(basisRef)])
+    const [snapshot, basisSnapshot, receiptSnap] = await Promise.all([tx.get(ref), tx.get(basisRef), tx.get(receiptRef)])
     if (!snapshot.exists || !basisSnapshot.exists ||
         snapshot.data()?.ownerId !== ownerId || basisSnapshot.data()?.ownerId !== ownerId)
       throw new functions.https.HttpsError('not-found', 'Scenario basis not found.')
     const scenario = snapshot.data() ?? {}
+    const decision = resolveManualBranchMutation({
+      ownerId, scenarioId, operationId: op, requestHash,
+      scenarioStatus: scenario.status, activeBranchIds: scenario.branchIds,
+      receipt: receiptSnap.exists ? receiptSnap.data() : null,
+    })
+    if (decision.status === 'repeat') {
+      committedBranchIds = decision.branchIds
+      return
+    }
+    if (decision.status === 'operation-conflict')
+      throw new functions.https.HttpsError('already-exists', 'SCENARIO_OPERATION_ID_REUSED_WITH_DIFFERENT_CONTENT')
+    if (decision.status === 'receipt-stale')
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_RECEIPT_NO_LONGER_CURRENT')
+    if (decision.status === 'scenario-not-awaiting')
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_BRANCHES_ALREADY_COMMITTED')
     if (scenario.status === 'discarded')
       throw new functions.https.HttpsError('not-found', 'Scenario not found.')
     if (scenario.status === 'saved')
@@ -254,14 +305,20 @@ export const generatePossibleFutureBranches = functions.https.onCall(async (data
       tx.create(ref.collection('branches').doc(branch.id), branch)
     tx.update(ref, { status: 'ready', branchIds, activeBranchId: branchIds[0],
       updatedAt: fv.serverTimestamp() })
+    tx.create(receiptRef, {
+      kind: 'scenario-manual-branches', ownerId, scenarioId, operationId: op,
+      requestHash, branchIds, createdAt: fv.serverTimestamp(),
+    })
   })
-  return { status: 'ready', branchIds, source: 'manual-scenario' }
+  return { status: 'ready', branchIds: committedBranchIds, source: 'manual-scenario' }
 })
 export const getPossibleFuture = functions.https.onCall(async (data, context) => {
   const ownerId = uid(context)
   const scenarioId = ensureScenarioId(data?.scenarioId)
   const ref = scenarioRef(ownerId, scenarioId)
-  const scenario = await ref.get()
+  return db.runTransaction(async tx => {
+    await requireCurrentScenarioOwner(tx, ownerId)
+    const scenario = await tx.get(ref)
   if (!scenario.exists || scenario.data()?.ownerId !== ownerId || scenario.data()?.status === 'discarded')
     throw new functions.https.HttpsError('not-found', 'Scenario not found.')
   // Only the current scenario-owned branch IDs are eligible. A collection
@@ -270,8 +327,8 @@ export const getPossibleFuture = functions.https.onCall(async (data, context) =>
   if (branchIds.some((id) => !safeContextId(id)))
     throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_ID_INVALID')
   const [basis, branches] = await Promise.all([
-    ref.collection('basis').doc('current').get(),
-    Promise.all(branchIds.map((id) => ref.collection('branches').doc(id).get())),
+    tx.get(ref.collection('basis').doc('current')),
+    Promise.all(branchIds.map((id) => tx.get(ref.collection('branches').doc(id)))),
   ])
   if (branches.some((doc) => !doc.exists || doc.data()?.ownerId !== ownerId))
     throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_MISSING')
@@ -280,6 +337,7 @@ export const getPossibleFuture = functions.https.onCall(async (data, context) =>
     basis: basis.exists ? basis.data() : null,
     branches: branches.map((doc) => doc.data()),
   }
+  })
 })
 
 export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data, context) => {
@@ -290,7 +348,9 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
     throw new functions.https.HttpsError('invalid-argument', 'Invalid Scenario branch ID.')
   }
   const ref = scenarioRef(ownerId, scenarioId)
-  const scenarioSnap = await ref.get()
+  return db.runTransaction(async tx => {
+    await requireCurrentScenarioOwner(tx, ownerId)
+    const scenarioSnap = await tx.get(ref)
   if (!scenarioSnap.exists || scenarioSnap.data()?.ownerId !== ownerId)
     throw new functions.https.HttpsError('not-found', 'Scenario not found.')
   const scenario = scenarioSnap.data() ?? {}
@@ -303,8 +363,8 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
   if (requestedBranchId && !branchIds.includes(requestedBranchId))
     throw new functions.https.HttpsError('not-found', 'Scenario branch not found.')
   const [basisSnap, branchSnapshots] = await Promise.all([
-    ref.collection('basis').doc('current').get(),
-    Promise.all(branchIds.map((id) => ref.collection('branches').doc(id).get())),
+    tx.get(ref.collection('basis').doc('current')),
+    Promise.all(branchIds.map((id) => tx.get(ref.collection('branches').doc(id)))),
   ])
   if (!basisSnap.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
   if (branchSnapshots.some((doc) => !doc.exists || doc.data()?.ownerId !== ownerId))
@@ -333,12 +393,14 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
     evidenceKinds,
     disclosure: 'Possible Future only. Not a memory, prediction, consensus, or authority decision.',
   }
+  })
 })
 
 export const savePossibleFuture = functions.https.onCall(async (data, context) => {
   const ownerId = uid(context); operationId(data?.operationId); const scenarioId = ensureScenarioId(data?.scenarioId)
   const ref = scenarioRef(ownerId, scenarioId)
   await db.runTransaction(async (tx) => {
+    await requireCurrentScenarioOwner(tx, ownerId)
     const snapshot = await tx.get(ref)
     const current = snapshot.exists ? snapshot.data() : null
     if (!current || current.ownerId !== ownerId || current.status === 'discarded') {
@@ -355,6 +417,7 @@ export const discardPossibleFuture = functions.https.onCall(async (data, context
   const scenarioId = ensureScenarioId(data?.scenarioId)
   const ref = scenarioRef(ownerId, scenarioId)
   await db.runTransaction(async (tx) => {
+    await requireCurrentScenarioOwner(tx, ownerId)
     const snapshot = await tx.get(ref)
     if (!snapshot.exists || snapshot.data()?.ownerId !== ownerId)
       throw new functions.https.HttpsError('not-found', 'Scenario not found.')
@@ -380,6 +443,7 @@ export const comparePossibleFutureBranches = functions.https.onCall(async (data,
   // transaction. A concurrent discard/regeneration must trigger revalidation,
   // never commit a stale or foreign-owner branch comparison.
   await db.runTransaction(async (tx) => {
+    await requireCurrentScenarioOwner(tx, ownerId)
     const scenarioSnap = await tx.get(ref)
     const scenario = scenarioSnap.exists ? scenarioSnap.data() : null
     if (!scenario || scenario.ownerId !== ownerId || scenario.status === 'discarded')
@@ -402,14 +466,144 @@ export const comparePossibleFutureBranches = functions.https.onCall(async (data,
 })
 
 export const recordPossibleFutureOutcome = functions.https.onCall(async (data, context) => {
-  const ownerId = uid(context); operationId(data?.operationId); const scenarioId = ensureScenarioId(data?.scenarioId)
-  const source = String(data?.source ?? '')
-  if (source !== 'observation' && source !== 'user-assertion') throw new functions.https.HttpsError('invalid-argument', 'Outcome requires an independent observation or user assertion.')
-  const observedTruthRecordIds = asStringArray(data?.observedTruthRecordIds)
-  if (!observedTruthRecordIds.length) throw new functions.https.HttpsError('invalid-argument', 'Outcome requires independent truth record references.')
-  const observationId = opaque('obs_')
-  await scenarioRef(ownerId, scenarioId).collection('outcomeObservations').doc(observationId).create({ id: observationId, ownerId, scenarioId, branchId: typeof data?.branchId === 'string' ? data.branchId : null, source, observedTruthRecordIds, observedAt: fv.serverTimestamp(), createdAt: fv.serverTimestamp() })
-  return { observationId, scenarioId }
+  const ownerId = uid(context)
+  const op = operationId(data?.operationId)
+  const scenarioId = ensureScenarioId(data?.scenarioId)
+  const source = data?.source
+  if (source !== 'observation' && source !== 'user-assertion') {
+    throw new functions.https.HttpsError('invalid-argument', 'An outcome source is required.')
+  }
+  // "Observation" must have authoritative, independently resolved truth sources.
+  // The old endpoint accepted arbitrary client-supplied truth IDs and turned
+  // them into trusted ledger evidence. Until that resolver exists, fail closed.
+  if (source === 'observation') {
+    throw new functions.https.HttpsError('failed-precondition', 'INDEPENDENT_OUTCOME_EVIDENCE_VERIFICATION_UNAVAILABLE')
+  }
+  if (data?.observedTruthRecordIds !== undefined) {
+    throw new functions.https.HttpsError('permission-denied', 'CLIENT_OUTCOME_TRUTH_REFS_FORBIDDEN')
+  }
+  const assertion = typeof data?.assertion === 'string' ? data.assertion.trim() : ''
+  if (!assertion || assertion.length > 1200) {
+    throw new functions.https.HttpsError('invalid-argument', 'A bounded owner outcome report is required.')
+  }
+  const branchId = data?.branchId
+  if (typeof branchId !== 'string' || !/^br_[A-Za-z0-9_-]{12,96}$/.test(branchId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'An active Scenario branch is required.')
+  }
+  // Stable for retried callable requests; a reused operation ID with different
+  // user text is a conflict, never two different outcome records.
+  const observationId = 'obs_' + stableReceipt(ownerId, scenarioId + ':' + op, 'scenario-owner-outcome')
+  const requestDigest = createHash('sha256').update(JSON.stringify({ scenarioId, branchId, source, assertion })).digest('hex')
+  const ref = scenarioRef(ownerId, scenarioId)
+  const outcomeRef = ref.collection('outcomeObservations').doc(observationId)
+  let idempotent = false
+  await db.runTransaction(async tx => {
+    await requireCurrentScenarioOwner(tx, ownerId)
+    const policyRef = db.doc(`users/${ownerId}/privacyPolicy/current`)
+    const [scenarioSnap, branchSnap, policySnap, existing] = await Promise.all([
+      tx.get(ref), tx.get(ref.collection('branches').doc(branchId)),
+      tx.get(policyRef), tx.get(outcomeRef),
+    ])
+    const scenario = scenarioSnap.data()
+    if (!scenarioSnap.exists || scenario?.ownerId !== ownerId || scenario?.status === 'discarded') {
+      throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+    }
+    if (!['ready', 'saved'].includes(String(scenario.status))) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_NOT_READY_FOR_OUTCOME')
+    }
+    const activeIds = asStringArray(scenario.branchIds, BRANCH_LIMIT)
+    if (!activeIds.includes(branchId) || !branchSnap.exists || branchSnap.get('ownerId') !== ownerId
+      || branchSnap.get('scenarioId') !== scenarioId || branchSnap.get('truthKind') !== 'scenario') {
+      throw new functions.https.HttpsError('not-found', 'Current Scenario branch not found.')
+    }
+    // A personal outcome report is private stored history, not a simulation.
+    // It must not be created while its owner's memory consent is absent.
+    const policy = policySnap.data()
+    if (!policySnap.exists || !isCanonicalStoredPolicy(policy, ownerId)
+      || policy.domains.memory.mode !== 'granted'
+      || policy.enforcement.state !== 'fully-enforced') {
+      throw new functions.https.HttpsError('permission-denied', 'Current memory consent is required for owner outcome reports.')
+    }
+    if (existing.exists) {
+      if (existing.get('ownerId') !== ownerId || existing.get('requestDigest') !== requestDigest) {
+        throw new functions.https.HttpsError('already-exists', 'Operation ID was already used with different content.')
+      }
+      idempotent = true
+      return
+    }
+    tx.create(outcomeRef, {
+      id: observationId, ownerId, scenarioId, branchId,
+      source: 'user-assertion', truthKind: 'user-assertion',
+      verification: 'unverified-user-report', assertion,
+      observedTruthRecordIds: [], operationId: op, requestDigest,
+      reportedAt: fv.serverTimestamp(), createdAt: fv.serverTimestamp(),
+    })
+  })
+  return { observationId, scenarioId, verified: false, source: 'user-assertion', idempotent }
+})
+
+/**
+ * Owner-only, read-only recall of reports for a CURRENT Scenario branch.
+ * User assertions are not independent observations or model-authorized facts.
+ * Never return provider secrets or unverified references as evidence.
+ */
+export const getPossibleFutureOwnerReports = functions.https.onCall(async (data, context) => {
+  const ownerId = uid(context)
+  const scenarioId = ensureScenarioId(data?.scenarioId)
+  const branchId = data?.branchId
+  if (typeof branchId !== 'string' || !/^br_[A-Za-z0-9_-]{12,96}$/.test(branchId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'A valid Scenario branch is required.')
+  }
+  const ref = scenarioRef(ownerId, scenarioId)
+  return db.runTransaction(async tx => {
+    await requireCurrentScenarioOwner(tx, ownerId)
+    const [scenarioSnap, branchSnap, policySnap, reportSnaps] = await Promise.all([
+      tx.get(ref),
+      tx.get(ref.collection('branches').doc(branchId)),
+      tx.get(db.doc('users/' + ownerId + '/privacyPolicy/current')),
+      tx.get(ref.collection('outcomeObservations').where('branchId', '==', branchId).limit(20)),
+    ])
+    const scenario = scenarioSnap.data()
+    const activeIds = asStringArray(scenario?.branchIds, BRANCH_LIMIT)
+    if (!scenarioSnap.exists || scenario?.ownerId !== ownerId
+      || !['ready', 'saved'].includes(String(scenario.status))
+      || !activeIds.includes(branchId) || !branchSnap.exists
+      || branchSnap.get('ownerId') !== ownerId
+      || branchSnap.get('scenarioId') !== scenarioId
+      || branchSnap.get('truthKind') !== 'scenario') {
+      throw new functions.https.HttpsError('not-found', 'Current Scenario branch not found.')
+    }
+    const policy = policySnap.data()
+    if (!policySnap.exists || !isCanonicalStoredPolicy(policy, ownerId)
+      || policy.domains.memory.mode !== 'granted'
+      || policy.enforcement.state !== 'fully-enforced') {
+      throw new functions.https.HttpsError('permission-denied', 'Current memory consent is required to read owner outcome reports.')
+    }
+    const reports: Array<{
+      observationId: string; branchId: string; assertion: string;
+      source: 'user-assertion'; verified: false; reportedAt: string | null;
+    }> = []
+    for (const doc of reportSnaps.docs) {
+      const row = doc.data()
+      // Old, foreign, synthetic, or independently unverified observation IDs
+      // never enter this owner-assertion recall surface.
+      if (row.ownerId !== ownerId || row.scenarioId !== scenarioId
+        || row.branchId !== branchId || row.source !== 'user-assertion'
+        || row.truthKind !== 'user-assertion'
+        || row.verification !== 'unverified-user-report'
+        || typeof row.assertion !== 'string' || !row.assertion.trim()
+        || row.assertion.length > 1200 || !/^obs_[A-Za-z0-9_-]{12,96}$/.test(doc.id)) continue
+      const recorded = row.reportedAt
+      const reportedAt = recorded && typeof recorded.toDate === 'function'
+        ? recorded.toDate().toISOString() : null
+      reports.push({
+        observationId: doc.id, branchId, assertion: row.assertion,
+        source: 'user-assertion', verified: false, reportedAt,
+      })
+    }
+    reports.sort((a, b) => (b.reportedAt ?? '').localeCompare(a.reportedAt ?? ''))
+    return { scenarioId, branchId, reports }
+  })
 })
 
 export const deletePossibleFuture = functions.https.onCall(async (data, context) => {

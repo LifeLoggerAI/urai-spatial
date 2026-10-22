@@ -476,7 +476,8 @@ async function enforceConsentJob(snapshot: FirebaseFirestore.DocumentSnapshot) {
         const suffix = domain === authority.job.domain ? jobId + ':' + plan.provider.id : jobId + ':' + plan.provider.id + ':' + domain
         return { queueId: stableId(uid, suffix, 'provider-revocation'), providerId: plan.provider.id, domain }
       }))
-      const writes = projections.length + 4 + providerPlans.length + queues.length + derivatives.length
+      const purgeOrbContinuity = authority.job.domain === 'memory' && !consentEnabled(authority.policy.domains.memory)
+      const writes = projections.length + 4 + providerPlans.length + queues.length + derivatives.length + (purgeOrbContinuity ? 1 : 0)
       if (writes > CONSENT_ENFORCEMENT_LIMITS.writeOperations) {
         throw new functions.https.HttpsError('resource-exhausted', 'CONSENT_WRITE_BUDGET_EXCEEDED')
       }
@@ -485,6 +486,7 @@ async function enforceConsentJob(snapshot: FirebaseFirestore.DocumentSnapshot) {
       // queried document makes the SDK retry against live authority before any
       // projection, provider flag, derivative, queue or completion can commit.
       const now = fieldValue.serverTimestamp()
+      if (purgeOrbContinuity) transaction.delete(db.doc('users/' + uid + '/orbConversationContinuity/current'))
       const revision = authority.policy.revision
       for (const projection of projections) {
         transaction.set(db.doc('users/' + uid + '/privacyRuntime/' + projection.target), {
@@ -909,6 +911,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
     if (scopes.includes('intelligence')) {
       data.scenarios = await scenarioExportTree(userRef, context)
       data.aiLedger = await collectionDocuments(userRef.collection('aiLedger'), context)
+      data.orbConversationContinuity = await collectionDocuments(userRef.collection('orbConversationContinuity'), context)
     }
     if (scopes.includes('spatial')) {
       data.homeWorld = await collectionDocuments(userRef.collection('homeWorld'), context)
@@ -1353,7 +1356,7 @@ export const createDeletionRequest = functions.https.onCall(async (data, context
 const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> = {
   'export-history': ['exportJobs', 'spatialExportDownloads'],
   'privacy-history': ['privacyAudit'],
-  memories: ['memories', 'memoryMediaReceipts', 'replayEvents', 'spatialMemories', 'canonChains'],
+  memories: ['memories', 'memoryMediaReceipts', 'replayEvents', 'spatialMemories', 'canonChains', 'orbConversationContinuity'],
   'life-model': [
     'lifeEntities',
     'lifeEntityStates',
@@ -1375,7 +1378,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'privateLifeModelTranscripts',
     'privateLifeModelProvenance',
   ],
-  intelligence: ['scenarios', 'aiLedger'],
+  intelligence: ['scenarios', 'aiLedger', 'orbConversationContinuity'],
   'spatial-state': [
     'homeWorld',
     'homeWorldExplainability',
@@ -1383,6 +1386,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'transitionStates',
     'bodyBiometricSnapshots',
     'orbCompanionEvents',
+    'orbConversationContinuity',
     'spatialAnchors',
     'userSpatialPreferences',
     'spatialSessions',
@@ -1412,6 +1416,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'transitionStates',
     'bodyBiometricSnapshots',
     'orbCompanionEvents',
+    'orbConversationContinuity',
     'spatialAnchors',
     'userSpatialPreferences',
     'spatialSessions',

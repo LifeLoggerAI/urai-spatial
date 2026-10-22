@@ -39,6 +39,7 @@ const PRE_DISPATCH_REJECTION_CODES = new Set([
   'INVALID_MESSAGE', 'INVALID_REQUEST_ID', 'INVALID_CONTEXT', 'INVALID_LOCALE',
   'EXPLICIT_CONSENT_REQUIRED', 'CONSENT_POLICY_REQUIRED', 'MODEL_PROCESSING_NOT_AUTHORIZED',
   'CONSENT_ENFORCEMENT_PENDING', 'PROVIDER_PROCESSING_REVOKED', 'RATE_LIMITED', 'PROVIDER_UNCONFIGURED',
+  'ACTIVITY_CONTEXT_NOT_AUTHORIZED', 'ACTIVITY_CONTEXT_CHANGED', 'PROVIDER_OWNER_INACTIVE',
 ])
 
 export class OrbProviderAttemptError extends Error {
@@ -85,11 +86,13 @@ export function uncertainExternalOrbFallback(message = ''): OrbProviderResult {
   )
 }
 
-async function stableIntentRequestId(message: string, context: OrbConversationMessage[], locale: string) {
+async function stableIntentRequestId(message: string, context: OrbConversationMessage[], locale: string, includeActivityContext = false) {
   if (!globalThis.crypto?.subtle) return null
   message = message.trim()
   context = context.slice(-8).map(({ role, content }) => ({ role, content: content.trim() }))
-  const intent = JSON.stringify({ message, context: context.slice(-8), locale })
+  const intent = JSON.stringify(includeActivityContext
+    ? { message, context: context.slice(-8), locale, includeActivityContext: true }
+    : { message, context: context.slice(-8), locale })
   const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(intent))
   return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('')
 }
@@ -98,6 +101,7 @@ export async function requestOpenAIOrb(input: {
   message: string
   context: OrbConversationMessage[]
   aiProcessingConsent: boolean
+  includeActivityContext?: boolean
   locale?: string
   signal: AbortSignal
   onEvent?: (event: OrbProviderEvent) => void
@@ -110,10 +114,14 @@ export async function requestOpenAIOrb(input: {
   try {
   const token = await actor.wait(actor.actor.getIdToken())
   if (!token) return null
-  const requestId = await actor.wait(stableIntentRequestId(input.message, input.context, locale))
+  const requestId = await actor.wait(stableIntentRequestId(input.message, input.context, locale, input.includeActivityContext === true))
   if (!requestId) return null
   actor.check()
-  const body = JSON.stringify({ message: input.message, context: input.context.slice(-8), aiProcessingConsent: true, requestId, locale })
+  const body = JSON.stringify({
+    message: input.message, context: input.context.slice(-8),
+    aiProcessingConsent: true, requestId, locale,
+    includeActivityContext: input.includeActivityContext === true,
+  })
   actor.check()
 
   let response: Response

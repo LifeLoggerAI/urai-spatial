@@ -34,6 +34,12 @@ export function parsePreparedFirstPrivateMemory(packet: unknown, uid: string): {
     if (Buffer.byteLength(JSON.stringify(packet), 'utf8') > 16 * 1024) bad()
   } catch { return bad() }
   const memoryId = request.memoryId
+  const title = m.title, summary = m.summary
+  const manifestSegments = manifest.segments
+  // Narrow untrusted JSON primitives before using them in a trusted memory.
+  if (typeof memoryId !== 'string' || !ID.test(memoryId)) bad()
+  if (!text(title, 3, 160) || !text(summary, 10, 2000)) bad()
+  if (!Array.isArray(manifestSegments)) bad()
   if (!only(p, ['schemaVersion', 'status', 'firestorePath', 'memory', 'upload', 'recordedTruth'])
     || !only(m, ['ownerId', 'title', 'occurredAt', 'summary', 'emotionalState', 'emotionalArc', 'people', 'privacy', 'deleted',
       'sourceMedia', 'sourceProvenance', 'replayManifest', 'narrator', 'star', 'visuals'])
@@ -51,7 +57,7 @@ export function parsePreparedFirstPrivateMemory(packet: unknown, uid: string): {
     || p.status !== 'PREPARED_NOT_IMPORTED_NOT_PLAYBACK_PROVEN'
     || typeof memoryId !== 'string' || !ID.test(memoryId)
     || p.firestorePath !== 'users/' + uid + '/memories/' + memoryId
-    || m.ownerId !== uid || !text(m.title, 3, 160) || !text(m.summary, 10, 2000)
+    || m.ownerId !== uid || !text(title, 3, 160) || !text(summary, 10, 2000)
     || !date(m.occurredAt) || m.privacy !== 'hidden' || m.deleted !== false
     || m.emotionalState !== 'unknown' || !Array.isArray(m.emotionalArc) || m.emotionalArc.length !== 0
     || !Array.isArray(m.people) || m.people.length !== 0
@@ -85,7 +91,7 @@ export function parsePreparedFirstPrivateMemory(packet: unknown, uid: string): {
   const duration = manifest.durationMs
   if (manifest.id !== 'source-' + memoryId || manifest.version !== 1
     || !Number.isSafeInteger(duration) || Number(duration) < 4000 || Number(duration) > 7 * 86400000
-    || !Array.isArray(manifest.segments) || manifest.segments.length !== 4) bad()
+    || manifestSegments.length !== 4) bad()
   // The output is reconstructed from validated primitives, not spread from
   // owner-supplied JSON. No private media URL, path, arbitrary person or
   // generated historical claim can silently enter the canonical document.
@@ -94,11 +100,11 @@ export function parsePreparedFirstPrivateMemory(packet: unknown, uid: string): {
   const segments = PHASES.map((id, i) => ({ id, label: TITLES[i], caption: CAPTION, narratorLine: LINE,
     startsAtMs: stops[i], durationMs: stops[i+1] - stops[i] }))
   for (let i = 0; i < 4; i++) {
-    const seg = record(manifest.segments[i])
+    const seg = record(manifestSegments[i])
     if (seg.id !== PHASES[i] || seg.startsAtMs !== stops[i] || seg.durationMs !== stops[i+1]-stops[i]) bad()
   }
   return { memoryId, memory: {
-    ownerId: uid, title: m.title.trim(), occurredAt: m.occurredAt, summary: m.summary.trim(),
+    ownerId: uid, title: title.trim(), occurredAt: m.occurredAt, summary: summary.trim(),
     emotionalState: 'unknown', emotionalArc: [], people: [], privacy: 'hidden', deleted: false,
     consentState: 'authorized', sourceMedia: [],
     sourceProvenance: {

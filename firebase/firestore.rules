@@ -102,17 +102,23 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Client profile fields never control entitlement, account deletion or
+    // the server-projected privacy revision used by provider/Scenario guards.
+    function serverOwnedUserRootFields() {
+      return ['entitlementTier', 'isAdmin', 'founderOverride', 'deleted', 'accountStatus', 'privacyRevision'];
+    }
+
     match /users/{uid} {
       allow read: if isSelf(uid) || isAdmin();
+      // Presence on CREATE is forbidden; a self-assigned false/active value
+      // would be enough to override trusted deletion or policy projections.
       allow create: if isSelf(uid)
-        && !('entitlementTier' in request.resource.data)
-        && !('isAdmin' in request.resource.data)
-        && !('founderOverride' in request.resource.data)
+        && !request.resource.data.keys().hasAny(serverOwnedUserRootFields())
         && isPrivateSpatialPayloadSafe();
+      // affectedKeys covers ADDED, MODIFIED and REMOVED fields. changedKeys
+      // alone fails open for privilege fields injected into an old profile.
       allow update: if isSelf(uid)
-        && !('entitlementTier' in request.resource.data.diff(resource.data).changedKeys())
-        && !('isAdmin' in request.resource.data.diff(resource.data).changedKeys())
-        && !('founderOverride' in request.resource.data.diff(resource.data).changedKeys())
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(serverOwnedUserRootFields())
         && isPrivateSpatialPayloadSafe();
       allow delete: if false;
 
@@ -199,12 +205,14 @@ service cloud.firestore {
       }
 
       match /scenarios/{scenarioId} {
-        allow read: if isSelf(uid) || isAdmin();
-        allow write: if false;
+        // Scenario documents can contain private questions and evidence IDs.
+        // Current owner/deletion authority must be checked in the callable.
+        allow read, write: if false;
       }
       match /aiLedger/{entryId} {
-        allow read: if isSelf(uid) || isAdmin();
-        allow write: if false;
+        // Read through the consent-gated callable; Admin SDK handles export/deletion.
+        // Direct SDK reads bypass the current memory-policy revision check.
+        allow read, write: if false;
       }
 
       match /lifeMovies/{movieId} {
@@ -329,6 +337,10 @@ service cloud.firestore {
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
+      }
+      // Private Orb transcripts are server-authoritative, including owner-scoped reads.
+      match /orbConversationContinuity/{docId} {
+        allow read, write: if false;
       }
       match /orbCompanionEvents/{docId} {
         allow read: if isSelf(uid) || isAdmin();

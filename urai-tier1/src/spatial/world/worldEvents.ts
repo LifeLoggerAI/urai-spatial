@@ -105,6 +105,8 @@ function commitHardFallback(href: string) {
 export function destinationSurfaceReady(destination: UraiWorldTravelRequest['destination']) {
   if (destination === 'replay') return Boolean(document.querySelector('[data-testid="cinematic-replay-client"]'))
   if (destination === 'passport') return Boolean(document.querySelector('main[data-route-owner="passport-ownership-vault"]'))
+  // URL navigation alone does not prove this private Scenario world mounted.
+  if (destination === 'possible-futures') return Boolean(document.querySelector('main[data-testid="urai-possible-futures"]'))
   return true
 }
 

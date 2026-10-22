@@ -1,0 +1,46 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import test from 'node:test'
+
+const root = new URL('../', import.meta.url)
+const server = fs.readFileSync(new URL('../../apps/functions/src/scenarioOperations.ts', root), 'utf8')
+const index = fs.readFileSync(new URL('../../apps/functions/src/index.ts', root), 'utf8')
+const client = fs.readFileSync(new URL('src/lib/scenario/scenarioClient.ts', root), 'utf8')
+const ui = fs.readFileSync(new URL('src/spatial/scenario/PossibleFutureOutcomeReport.tsx', root), 'utf8')
+const orb = fs.readFileSync(new URL('src/spatial/orb/OrbConversationPanel.tsx', root), 'utf8')
+
+test('owner outcome recall is server-governed and bounded', () => {
+  const start = server.indexOf('export const getPossibleFutureOwnerReports')
+  const end = server.indexOf('\nexport const deletePossibleFuture', start)
+  assert.ok(start >= 0 && end > start)
+  const source = server.slice(start, end)
+  assert.match(index, /getPossibleFutureOwnerReports/)
+  assert.match(source, /const ownerId = uid\(context\)/)
+  assert.match(source, /await requireCurrentScenarioOwner\(tx, ownerId\)/)
+  assert.match(source, /tx\.get\(ref\.collection\('branches'\)\.doc\(branchId\)\)/)
+  assert.match(source, /activeIds\.includes\(branchId\)/)
+  assert.match(source, /isCanonicalStoredPolicy\(policy, ownerId\)/)
+  assert.match(source, /policy\.domains\.memory\.mode !== 'granted'/)
+  assert.match(source, /policy\.enforcement\.state !== 'fully-enforced'/)
+  assert.match(source, /\.where\('branchId', '==', branchId\)\.limit\(20\)/)
+  assert.match(source, /row\.source !== 'user-assertion'/)
+  assert.match(source, /row\.verification !== 'unverified-user-report'/)
+  assert.match(source, /verified: false/)
+  assert.doesNotMatch(source, /writeAILedgerEntry|requestOpenAIOrb|paidSpatialFetch/)
+})
+
+test('client and screen restore actual saved unverified assertions', () => {
+  assert.match(client, /getPossibleFutureOwnerReportsClient/)
+  assert.match(client, /getPossibleFutureOwnerReports'/)
+  assert.match(client, /row\.verified !== false/)
+  assert.match(client, /row\.assertion\.length > 1200/)
+  assert.match(ui, /Previously reported outcomes/)
+  assert.match(ui, /User-reported · not independently verified/)
+  assert.match(ui, /isCurrentAIActorSnapshot\(actor\)/)
+  assert.match(ui, /readGeneration\.current/)
+  assert.match(ui, /void refreshReports\(\)/)
+  assert.match(ui, /item\.assertion/)
+  assert.match(orb, /Open related Scenario/)
+  assert.match(orb, /entryPortal: 'orb-history-scenario-recall'/)
+  assert.match(orb, /truthMode: 'scenario'/)
+})
