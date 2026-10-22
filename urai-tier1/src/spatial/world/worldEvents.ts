@@ -241,6 +241,10 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
     if (currentLocation === targetLocation && targetLocation !== startingLocation) reachedTarget = true
     if (currentLocation === startingLocation && !reachedTarget) return
     if (currentLocation === targetLocation && !destinationSurfaceReady(request.destination)) return
+    // A completed destination admission ends its duplicate-click scope.
+    // Browser Back after the temporary listener retires can now retry promptly.
+    lastTravelFingerprint = ''
+    lastTravelAt = 0
     settled = true
     window.clearTimeout(fallback)
     window.clearInterval(observer)
