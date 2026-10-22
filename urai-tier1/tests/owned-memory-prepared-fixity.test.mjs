@@ -15,7 +15,7 @@ function fixture() {
  const owner={uid:'owner',getIdTokenResult:async()=>({claims:{auth_time:Math.floor(Date.now()/1000)}})}; auth.currentUser=owner
  const authdata={schemaVersion:'urai-owned-memory-media-v1',ownerId:'owner',memoryId:'private-memory',consentRevision:3,expiresAt:Date.now()+50000}
  const success={receiptId:'a'.repeat(64),memoryId:'private-memory',state:'ready',sha256:hash,byteLength:bytes.length,contentType:'image/png'}
- const imports={'firebase/auth':{getAuth:()=>auth},'firebase/functions':{httpsCallable:(_f,name)=>async(data)=>{calls.push({name,data});return{data:name==='getMemoryMediaUploadAuthority'?authdata:success}}},'@/lib/firebase/client':{app,functions:{},firebasePublicEnvReady:true}}
+ const imports={'firebase/auth':{getAuth:()=>auth},'firebase/functions':{httpsCallable:(_f,name)=>async(data)=>{calls.push({name,data});return{data:name==='getMemoryMediaUploadAuthority'?authdata:success}}},'@/lib/firebase/client':{app,functions:{},firebasePublicEnvReady:true,getUraiAuth:()=>auth}}
  const module={exports:{}}
  const context={module,exports:module.exports,require:name=>{assert.ok(name in imports, 'unexpected import '+name);return imports[name]},DOMException,Uint8Array,Date,btoa,crypto:webcrypto,navigator:{onLine:true}}
  vm.runInNewContext(cjs,context)
