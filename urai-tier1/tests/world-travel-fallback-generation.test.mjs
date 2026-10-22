@@ -11,7 +11,7 @@ const functions = new Set(['cancelPendingWorldTravelFallback','requestUraiWorldT
 const vars = new Set(['fallbackGeneration','pendingFallbackTimeout','pendingFallbackObserver','pendingFallbackPopstateListener'])
 const declarations = tree.statements.filter(n => ts.isFunctionDeclaration(n)&&functions.has(n.name?.text) || ts.isVariableStatement(n)&&n.declarationList.declarations.some(d=>ts.isIdentifier(d.name)&&vars.has(d.name.text)))
 const js=ts.transpileModule(declarations.map(n=>n.getText(tree)).join('\n'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
-function fixture(onTravel){
+function fixture(onTravel, ready = false){
  let now=1000,id=0,current='/home'
  const navigation=[],timers=new Map(),listeners=new Map()
  const location={origin:'https://urai.invalid',get pathname(){return new URL(current,this.origin).pathname},get search(){return new URL(current,this.origin).search},get hash(){return ''},assign(href){navigation.push(href);current=href},jump(href){current=href},back(href){current=href;for(const fn of listeners.get('popstate')??[])fn({type:'popstate'})}}
@@ -19,7 +19,7 @@ function fixture(onTravel){
  function advance(ms){const end=now+ms;for(let k=0;k<10000;k++){const due=[...timers.entries()].filter(([,v])=>v.when<=end).sort((a,b)=>a[1].when-b[1].when)[0];if(!due){now=end;return}const [i,t]=due;now=t.when;if(t.interval)t.when+=t.interval;else timers.delete(i);t.fn()}throw Error('timer loop')}
  let h
  const window={location,setTimeout:(fn,ms)=>schedule(fn,ms),clearTimeout:i=>timers.delete(i),setInterval:(fn,ms)=>schedule(fn,ms,ms),clearInterval:i=>timers.delete(i),addEventListener(type,fn){const group=listeners.get(type)??new Set();group.add(fn);listeners.set(type,group)},removeEventListener(type,fn){listeners.get(type)?.delete(fn)},dispatchEvent(e){if(e.type==='urai:world-travel')onTravel?.(e.detail,h)}}
- const module={exports:{}},ctx={module,exports:module.exports,window,URL,URLSearchParams,Date:{now:()=>now},Event:class{constructor(type){this.type=type}},CustomEvent:class{constructor(type,{detail}){this.type=type;this.detail=detail}},WORLD_TRAVEL_DEBOUNCE_MS:1500,WORLD_TRAVEL_FALLBACK_MS:2400,WORLD_TRAVEL_OBSERVE_MS:50,URAI_WORLD_TRAVEL_EVENT:'urai:world-travel',URAI_WORLD_RETURN_EVENT:'urai:world-return',URAI_HOME_ASCENT_EVENT:'urai:home-ascent',lastTravelAt:0,lastTravelFingerprint:'',useSceneStore:{getState:()=>({phase:'IDLE',enterLifeMap(){}})},shouldBeginHomeAscent:r=>r.entryPortal==='home-sky'&&r.cameraCheckpoint==='home-sky-ascent',markHomeAscentClosing(){},dispatchSpatialAudioCue(){},buildFallbackHref:r=>r.href,destinationSurfaceReady:()=>false,commitHardFallback:href=>location.assign(href)}
+ const module={exports:{}},ctx={module,exports:module.exports,window,URL,URLSearchParams,Date:{now:()=>now},Event:class{constructor(type){this.type=type}},CustomEvent:class{constructor(type,{detail}){this.type=type;this.detail=detail}},WORLD_TRAVEL_DEBOUNCE_MS:1500,WORLD_TRAVEL_FALLBACK_MS:2400,WORLD_TRAVEL_OBSERVE_MS:50,URAI_WORLD_TRAVEL_EVENT:'urai:world-travel',URAI_WORLD_RETURN_EVENT:'urai:world-return',URAI_HOME_ASCENT_EVENT:'urai:home-ascent',lastTravelAt:0,lastTravelFingerprint:'',useSceneStore:{getState:()=>({phase:'IDLE',enterLifeMap(){}})},shouldBeginHomeAscent:r=>r.entryPortal==='home-sky'&&r.cameraCheckpoint==='home-sky-ascent',markHomeAscentClosing(){},dispatchSpatialAudioCue(){},buildFallbackHref:r=>r.href,destinationSurfaceReady:()=>ready,commitHardFallback:href=>location.assign(href)}
  vm.runInNewContext(js,ctx)
  h={...module.exports,navigation,location,advance,get timers(){return timers.size},get popstateListeners(){return listeners.get('popstate')?.size??0}}
  return h
@@ -76,4 +76,16 @@ test('browser Back permits immediate new attempt to the same destination',()=>{
  f.requestUraiWorldTravel(A)
  f.advance(2400)
  assert.deepEqual(f.navigation,[A.href], 'a new user selection after Back must not be suppressed by stale debounce')
+})
+
+test('Back after already-admitted Focus allows an immediate new Focus request',()=>{
+ const f=fixture(undefined, true)
+ f.requestUraiWorldTravel(A)
+ f.location.jump(A.href)
+ f.advance(50)
+ assert.equal(f.popstateListeners,0)
+ f.location.back('/home')
+ f.requestUraiWorldTravel(A)
+ f.advance(2400)
+ assert.deepEqual(f.navigation,[A.href], 'a completed trip must not suppress a new click after Back')
 })
