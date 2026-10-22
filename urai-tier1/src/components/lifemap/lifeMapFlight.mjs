@@ -53,9 +53,11 @@ export function lifeMapApproachWaypoints(from, target, standoff = 5.8) {
   // A nearby star must not push the viewer several units backward.
   // Retreat is allowed only when already inside the minimum safety clearance.
   const arrivalDistance = length >= safeStandoff ? safeStandoff :
-    length > 0.85 ? Math.max(0.85, length * 0.8) : 0.85;
+    length > 0.85 ? Math.max(0.85, length * 0.8) : length;
   const lift = Math.min(0.34, Math.max(0, length - arrivalDistance) * 0.2);
   const arrival = focus.map((v, i) => v + direction[i] * arrivalDistance + (i === 1 ? lift : 0));
+  // Already inside the visual threshold: stay in place rather than reverse out of the star.
+  if (length <= 0.85) return { departure: start, travel: start.slice(), approach: start.slice(), arrival: start.slice(), target: focus };
   const span = Math.hypot(...arrival.map((v, i) => v - start[i]));
   const sideLength = Math.hypot(direction[2], direction[0]) || 1;
   const side = [-direction[2] / sideLength, 0, direction[0] / sideLength];
