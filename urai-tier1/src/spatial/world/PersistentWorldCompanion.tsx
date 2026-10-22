@@ -71,6 +71,12 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('thread')
     target.searchParams.delete('personId')
     target.searchParams.delete('placeId')
+    // Keep Orb/companion neutral navigation as private as the controller
+    // and the emergency world fallback: no stale consent or scenario hints.
+    for (const key of ['privacyMode', 'originRealm', 'returnToken', 'fidelity',
+      'scenario', 'branch', 'basisRevision', 'truthMode', 'scenarioOrigin']) {
+      target.searchParams.delete(key)
+    }
   }
   if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (!neutralDestination && context?.threadId) target.searchParams.set('thread', context.threadId)
@@ -79,7 +85,7 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   if (memoryDestination && context?.replayManifestId && selectedMemoryId) target.searchParams.set('manifestId', context.replayManifestId)
   if (memoryDestination && context?.movieId) target.searchParams.set('movieId', context.movieId)
   if (memoryDestination && context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
-  if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
+  if (!neutralDestination && context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
   if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
