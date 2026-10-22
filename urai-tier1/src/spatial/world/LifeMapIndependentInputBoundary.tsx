@@ -1,13 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { lifeMapForegroundControlsOwnKeys } from '@/components/lifemap/lifeMapInputOwnership.mjs'
 
 function isLifeMapRoute() {
   return window.location.pathname.replace(/\/+$/, '') === '/life-map'
-}
-
-function isEditableTarget(target: EventTarget | null) {
-  return target instanceof Element && Boolean(target.closest('input,textarea,select,[contenteditable="true"],button,a,summary,details'))
 }
 
 function overviewButton() {
@@ -31,37 +28,16 @@ export function LifeMapIndependentInputBoundary() {
       setAnnouncement('Returned to the whole private constellation.')
     }
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!isLifeMapRoute() || isEditableTarget(event.target)) return
-      // Arrow keys are owned directly by LifeMapSemanticNavigator so one URL-aware
-      // step implementation controls deep links, keyboard input, and journey controls.
-      if (event.code === 'KeyA' || event.code === 'KeyQ') {
-        requestStep(-1)
-        event.preventDefault()
-        return
-      }
-      if (event.code === 'KeyD' || event.code === 'KeyE') {
-        requestStep(1)
-        event.preventDefault()
-        return
-      }
-      if (event.code === 'KeyR' || event.code === 'KeyO' || event.code === 'Home') {
-        reset()
-        event.preventDefault()
-      }
-    }
-
     const onCommand = (event: Event) => {
+      if (!isLifeMapRoute() || lifeMapForegroundControlsOwnKeys(document)) return
       const action = (event as CustomEvent<{ action?: string }>).detail?.action
       if (action === 'previous') requestStep(-1)
       if (action === 'next') requestStep(1)
       if (action === 'overview') reset()
     }
 
-    window.addEventListener('keydown', onKeyDown, true)
     window.addEventListener('urai:life-map-movement', onCommand as EventListener)
     return () => {
-      window.removeEventListener('keydown', onKeyDown, true)
       window.removeEventListener('urai:life-map-movement', onCommand as EventListener)
     }
   }, [])
@@ -70,7 +46,7 @@ export function LifeMapIndependentInputBoundary() {
     <>
       <details className="life-map-movement-help" data-movement-ui="true" data-life-map-movement-help="true">
         <summary>Explore Life Map</summary>
-        <p>Choose an anchored memory to travel through the same universe. A/D or arrow keys move between memories. R, O, or Home returns to Overview. Escape unwinds the selected memory, then returns Home.</p>
+        <p>Explore in 3D: W/A/S/D move, Q/E rise or fall, Shift moves faster, R recenter. Arrow Left/Right step between memories. O or Home returns to Overview. Escape unwinds the selected memory, then returns Home.</p>
       </details>
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
       <style jsx>{`

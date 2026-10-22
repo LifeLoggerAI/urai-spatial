@@ -1,9 +1,10 @@
 'use client'
 // No production bridge: separate locally signed-in Jobs and Spatial identities.
 import { getApps, initializeApp } from 'firebase/app'
-import { connectAuthEmulator, getAuth } from 'firebase/auth'
+import { connectAuthEmulator, getAuth, inMemoryPersistence, setPersistence, signInWithEmailAndPassword, signOut } from 'firebase/auth'
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions'
 import { getUraiAuth, uraiJourneyEmulatorEnabled } from '@/lib/firebase/client'
+import {assertChalkJobsLocalOperatorLogin,assertChalkJobsLocalOrigin} from './chalkJobsLocalOperatorAccess.mjs'
 import {requireChalkJobsEmulator,chalkJobsDiagnosticRequest,chalkJobsIntakeReceipt,chalkJobsStatusProjection,type ChalkDiagnosticReference} from './chalkJobsTransportBoundary.mjs'
 const JOBS_PROJECT='demo-urai-jobs', APP_NAME='chalk-jobs-local-emulator'
 let authAttached=false, functionsAttached=false
@@ -31,4 +32,19 @@ async function protectedCall(payload:Record<string,unknown>):Promise<unknown>{
 export async function readChalkEmulatorJobs(){return chalkJobsStatusProjection(await protectedCall({operation:'read',limit:40}))}
 export async function submitChalkEmulatorDiagnostic(input:{problem:string;requestId:string;diagnostic:ChalkDiagnosticReference;sourceSha:string}){
  return chalkJobsIntakeReceipt(await protectedCall(chalkJobsDiagnosticRequest(input)))
+}
+
+// A separate, explicit Jobs emulator login. Never store credentials or silently
+// provision an operator; the Jobs backend still checks current server-owned grants.
+export async function signInChalkJobsLocalOperator(email:string,password:string){
+ const {jobsAuth}=emulatorClient()
+ assertChalkJobsLocalOperatorLogin({hostname:window.location.hostname,email,password})
+ await setPersistence(jobsAuth,inMemoryPersistence)
+ const user=await signInWithEmailAndPassword(jobsAuth,email,password)
+ return {uid:user.user.uid}
+}
+export async function signOutChalkJobsLocalOperator(){
+ assertChalkJobsLocalOrigin(window.location.hostname)
+ const {jobsAuth}=emulatorClient()
+ await signOut(jobsAuth)
 }

@@ -11,6 +11,7 @@ import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 import { localizedMessage } from '@/lib/i18n/localePreference'
 import type { UraiLaunchLocale } from '@/lib/i18n/locales'
 import { withLifeMapSelectionIdentity } from '@/spatial/memory/lifeMapSelectionJourney'
+import { lifeMapForegroundControlsOwnKeys } from './lifeMapInputOwnership.mjs'
 
 const LIFE_MAP_TYPE_MESSAGES = {"memory": "lifeMap.type.memory", "relationship": "lifeMap.type.relationship", "season": "lifeMap.type.season", "recovery": "lifeMap.type.recovery", "threshold": "lifeMap.type.threshold", "ritual": "lifeMap.type.ritual", "forecast": "lifeMap.type.forecast", "legacy": "lifeMap.type.legacy"} as const
 
@@ -165,9 +166,9 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return
-      // Founder dismisses on the document bubble listener, after this capture listener.
-      // Its active panel owns keyboard input until it restores the launcher focus.
-      if (document.querySelector('[data-urai-adam-presence]')) return
+      // ADAM and Chalk own keyboard input while their in-world panels are open.
+      // Window-capture map shortcuts must yield before the panels handle Escape.
+      if (lifeMapForegroundControlsOwnKeys(document)) return
       if (event.key === 'Escape' && open) { event.preventDefault(); closeNavigator(); return }
       if (event.altKey || event.ctrlKey || event.metaKey || isEditableTarget(event.target)) return
       // Search controls own their keys while open. World shortcuts must not change
