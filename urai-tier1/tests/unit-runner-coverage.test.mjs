@@ -8,6 +8,8 @@ const compactRunnerSource = fs.readFileSync(new URL('../scripts/run-unit-contrac
 const requiredFocusedTests = [
   'tests/lifemap-founder-harness-contract.test.mjs',
   'tests/lifemap-context-readiness-fence.test.mjs',
+  'tests/life-map-auth-hydration.test.mjs',
+  'tests/life-map-auth-route-boundary.test.mjs',
   'tests/lifemap-exploration-origin-continuity.test.mjs',
   'tests/lifemap-free-exploration.test.mjs',
   'tests/lifemap-flight-key-guard.test.mjs',
