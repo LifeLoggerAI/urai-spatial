@@ -7,6 +7,7 @@ import ts from 'typescript'
 const cases = [
   ['../src/spatial/world/WorldTransitionController.tsx', 'buildTravelHref'],
   ['../src/spatial/world/worldEvents.ts', 'buildFallbackHref'],
+  ['../src/spatial/world/PersistentWorldCompanion.tsx', 'buildCompanionTravelHref'],
 ]
 const sensitive = ['memoryId','node','manifestId','movieId','chapterId','thread','personId','placeId','privacyMode','originRealm','returnToken','fidelity','scenario','branch','basisRevision','truthMode','scenarioOrigin','demo']
 for (const [path, name] of cases) {
