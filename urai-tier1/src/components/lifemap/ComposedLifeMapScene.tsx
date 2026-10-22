@@ -14,6 +14,7 @@ import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProdu
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
 import { shouldHandleRealmEscape } from "@/spatial/world/realmEscapeEligibility.mjs";
+import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapRotateFlightAxes, advanceLifeMapViewOrientation, lifeMapRotatedLookTarget } from "./lifeMapFlightOrientation.mjs";
 import { lifeMapStagePoint } from "./lifeMapStageContinuity.mjs";
 
@@ -510,6 +511,15 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     return `/${route}?${next.toString()}`;
   }, [explicitDemoRequested, params, phase, selected, withIdentity]);
 
+  const activateWorldStar = useCallback((node: LifeMapNode) => {
+    const action = lifeMapPhysicalStarAction(node.id, selectedId, phase,
+      lifeMapPhysicalReplayAllowed(node, sourceMode));
+    if (action === "select") { selectNode(node); return; }
+    if (action === "replay" && selected?.id === node.id && webglState === "ready") {
+      router.push(destinationHref("replay"));
+    }
+  }, [destinationHref, phase, router, selectNode, selected, selectedId, sourceMode, webglState]);
+
   useEffect(() => {
     if (!overviewRequested) return;
     restoredRoutePending.current = false;
@@ -604,6 +614,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
           phase={phase as LifeMapJourneyPhase}
           profile={profile}
           onSelect={selectNode}
+          onStarClick={activateWorldStar}
           cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} shellRef={shellRef} />}
           webglRecovery={null}
         />
