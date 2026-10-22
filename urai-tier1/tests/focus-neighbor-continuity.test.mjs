@@ -91,3 +91,10 @@ test('Replay carries a neighboring star only when Focus verified its selected no
   assert.equal(isAuthorizedFocusNeighborReturn('star-b', 'forged-origin', nodes[1]), false)
   assert.equal(isAuthorizedFocusNeighborReturn('star-b', 'focus-neighbor', null), false)
 })
+
+test('verified neighboring star survives Replay -> Focus -> Replay without original from marker', () => {
+  assert.equal(isAuthorizedFocusNeighborReturn('star-b', null, nodes[1]), true)
+  assert.equal(isAuthorizedFocusNeighborReturn('star-c', null, nodes[1]), false)
+  assert.equal(isAuthorizedFocusNeighborReturn('star-b', 'forged-origin', nodes[1]), false)
+  assert.equal(isAuthorizedFocusNeighborReturn('star-b', null, null), false)
+})
