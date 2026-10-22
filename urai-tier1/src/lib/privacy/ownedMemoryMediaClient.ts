@@ -1,8 +1,7 @@
 'use client'
 
-import { getAuth } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
-import { app, firebasePublicEnvReady, functions } from '@/lib/firebase/client'
+import { firebasePublicEnvReady, functions, getUraiAuth } from '@/lib/firebase/client'
 
 export const MEMORY_MEDIA_MAX_BYTES = 4 * 1024 * 1024
 export const MEMORY_MEDIA_TYPES = 'image/png,image/jpeg,image/webp,audio/mpeg,audio/wav,audio/ogg,video/mp4,video/webm'
@@ -14,7 +13,7 @@ type FileSource = Pick<File, 'size' | 'type' | 'arrayBuffer'>
 function stopped(): never { throw new DOMException('File attachment stopped.', 'AbortError') }
 
 export async function attachOwnedMemoryFile(memory: Memory, file: FileSource, lifecycle: Lifecycle, suppliedOperationId?: string, expectedPreparedSha256?: string) {
-  const auth = getAuth(app), owner = auth.currentUser
+  const auth = getUraiAuth(), owner = auth.currentUser
   if (!firebasePublicEnvReady || !owner || memory.demo || (memory.privacy !== 'private' && memory.privacy !== 'hidden') || memory.ownerId !== owner.uid
     || !/^[A-Za-z0-9_-]{1,128}$/.test(memory.id)) throw new Error('PRIVATE_MEMORY_REQUIRED')
   if (!Number.isSafeInteger(file.size) || file.size < 1 || file.size > MEMORY_MEDIA_MAX_BYTES || !kinds[file.type]) throw new Error('FILE_TYPE_OR_SIZE_UNSUPPORTED')
