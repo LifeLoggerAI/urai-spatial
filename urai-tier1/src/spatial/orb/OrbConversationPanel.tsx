@@ -55,6 +55,7 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
   const [status, setStatus] = useState('Orb conversation is idle.')
   const [busy, setBusy] = useState(false)
   const [aiConsent, setAiConsent] = useState(false)
+  const [includeActivityContext, setIncludeActivityContext] = useState(false)
   const [externalVoiceConsent, setExternalVoiceConsent] = useState(false)
   const [voiceMuted, setVoiceMuted] = useState(false)
   const [voicePhase, setVoicePhase] = useState<OrbVoicePhase>('idle')
@@ -322,6 +323,9 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
 
     aborter.current?.abort()
     stopVoice()
+    const includeActivityForThisMessage = includeActivityContext
+    // One-message consent: never reuse an earlier opt-in for the next request.
+    setIncludeActivityContext(false)
     const controller = new AbortController()
     aborter.current = controller
     setBusy(true)
@@ -337,6 +341,7 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
         message: trimmed,
         context: history,
         aiProcessingConsent: true,
+        includeActivityContext: includeActivityForThisMessage,
         locale: requestedLocale,
         signal: controller.signal,
         onEvent: (providerEvent) => {
@@ -384,7 +389,9 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
         ])
       }
       setMessage('')
-      setStatus(resolved.provider === 'openai' ? 'Live Orb response ready.' : 'Local fallback response ready.')
+      setStatus(resolved.provider === 'openai' ? 'Live Orb response ready.' : includeActivityForThisMessage
+        ? 'Activity-context provider request was not admitted; local fallback ready.'
+        : 'Local fallback response ready.')
       publishConversationState('attention', 1800)
       emitAudioCue('orb-confirm')
       if (!voicePreferences.current.muted) {
@@ -444,6 +451,7 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
                 const allowed = event.target.checked
                 setAiConsent(allowed)
                 if (!allowed) {
+                  setIncludeActivityContext(false)
                   aborter.current?.abort()
                   aborter.current = null
                   stopVoice()
@@ -454,6 +462,13 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
               }}
             />
             Allow this message and bounded recent context to be processed by OpenAI.
+          </label>
+          <label className={styles.consent}>
+            <input type="checkbox" checked={includeActivityContext}
+              disabled={!actor.uid || !aiConsent || busy || scenarioBusy}
+              onChange={(event) => setIncludeActivityContext(event.target.checked)} />
+            Include up to three recent UrAi Scenario questions or owner-reported outcomes in this one OpenAI reply.
+            Off by default; requires current memory and model permissions. Reports remain unverified.
           </label>
           <label className={styles.consent}>
             <input
