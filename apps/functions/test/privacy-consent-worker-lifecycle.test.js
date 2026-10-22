@@ -121,7 +121,8 @@ function fixture() {
         const value = clone(old)
         for (const [k, field] of Object.entries(op.value)) setField(value, k, field)
         staged.set(op.path, value)
-      } else staged.set(op.path, op.merge ? merge(old, op.value) : clone(op.value))
+      } else if (op.kind === 'delete') staged.set(op.path, undefined)
+      else staged.set(op.path, op.merge ? merge(old, op.value) : clone(op.value))
     }
     for (const [p, value] of staged) write(p, value)
     committed.push(...ops.map(op => ({ ...op, mode })))
@@ -153,6 +154,7 @@ function fixture() {
           set: (r, v, o) => stage('set', r, v, o),
           create: (r, v) => stage('create', r, v),
           update: (r, v) => stage('update', r, v),
+          delete: r => stage('delete', r),
         })
         if (await commit(ops, observed, observedQueries, 'transaction')) return result
       }
