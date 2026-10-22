@@ -14,6 +14,12 @@ import { canonicalLifeMapDemoNodes } from '../src/components/lifemap/canonicalLi
 import { DEMO_MEMORY_STAR_NODES } from '../src/spatial/memory/memoryStarSchema.ts'
 import { definitionForDestination } from '../src/spatial/world/destinationRegistry.ts'
 import { previousDestinationForReturn } from '../src/spatial/world/worldTypes.ts'
+// Bind the actual dependency-free runtime helpers to the isolated VM rather than
+// replacing privacy, motion, coordinate, or Escape behavior with invented mocks.
+import { shouldHandleRealmEscape } from '../src/spatial/world/realmEscapeEligibility.mjs'
+import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed } from '../src/components/lifemap/lifeMapPhysicalStarAction.mjs'
+import { lifeMapRotateFlightAxes, advanceLifeMapViewOrientation, lifeMapRotatedLookTarget } from '../src/components/lifemap/lifeMapFlightOrientation.mjs'
+import { lifeMapStagePoint } from '../src/components/lifemap/lifeMapStageContinuity.mjs'
 
 const source = fs.readFileSync(process.env.URAI_LIFEMAP_NAVIGATOR_SOURCE ?? 'src/components/lifemap/LifeMapSemanticNavigator.tsx', 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
@@ -36,6 +42,9 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
   browser.setTimeout = () => { throw Error('Reduced-motion component must avoid travel timers') }
   browser.clearTimeout = () => {}
   browser.history = { state:{}, replaceState(_state, _title, destination) { calls.push({kind:'identity', destination}); browser.location = new URL(destination, browser.location) } }
+  // VM components receive this document; the real pure realm predicate must
+  // evaluate the same document, including the Founder-owned Escape boundary.
+  const testDocument = {body:{style:{}},querySelector:selector=>selector==='[data-urai-adam-presence]'&&founderOpen?{}:null}
   const changed = (a,b) => !a || !b || a.length !== b.length || a.some((value,index) => !Object.is(value,b[index]))
   const react = {
     useState(initial) { const index=cursor++; slots[index] ??= {value:initial}; return [slots[index].value, next => {slots[index].value=typeof next==='function'?next(slots[index].value):next; dirty=true}] },
@@ -72,12 +81,16 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     '@/app/privacy-controls/consentModel':consentModel,
     '@/spatial/life-movie/privateLifeMovieRouteSelection':privateLifeMovieRouteSelection,
     './explicitDemoMemory':{buildNamedExplicitDemoMemory},
+    '@/spatial/world/realmEscapeEligibility.mjs':{shouldHandleRealmEscape:event=>shouldHandleRealmEscape(event,testDocument)},
+    './lifeMapPhysicalStarAction.mjs':{lifeMapPhysicalStarAction,lifeMapPhysicalReplayAllowed},
+    './lifeMapFlightOrientation.mjs':{lifeMapRotateFlightAxes,advanceLifeMapViewOrientation,lifeMapRotatedLookTarget},
+    './lifeMapStageContinuity.mjs':{lifeMapStagePoint},
   }
   const adamSlotModule = {exports:{}}
   vm.runInNewContext(adamSlotCompiled,{exports:adamSlotModule.exports,module:adamSlotModule,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]}},{filename:'actual-AdamLauncherSlot.tsx'})
   imports['@/spatial/adam/AdamLauncherSlot'] = adamSlotModule.exports
   const module = {exports:{}}
-  vm.runInNewContext(component==='memory'?selectedMemoryCompiled:component==='scene'?sceneCompiled:compiled,{exports:module.exports,module,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]},window:browser,document:{body:{style:{}},querySelector:selector=>selector==='[data-urai-adam-presence]'&&founderOpen?{}:null},URLSearchParams,HTMLElement:class {},Element:class {}},{filename:component==='memory'?'actual-useSelectedMemory.ts':component==='scene'?'actual-ComposedLifeMapScene.tsx':'actual-LifeMapSemanticNavigator.tsx'})
+  vm.runInNewContext(component==='memory'?selectedMemoryCompiled:component==='scene'?sceneCompiled:compiled,{exports:module.exports,module,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]},window:browser,document:testDocument,URLSearchParams,HTMLElement:class {},Element:class {}},{filename:component==='memory'?'actual-useSelectedMemory.ts':component==='scene'?'actual-ComposedLifeMapScene.tsx':'actual-LifeMapSemanticNavigator.tsx'})
   const render = () => {
     for (let pass=0;pass<12;pass++) {cursor=0;dirty=false;const tree=component==='memory'?module.exports.useSelectedMemory():module.exports.default({authenticatedUserId:'synthetic-owner'});const effects=queued;queued=[];effects.forEach(effect=>effect());if(!dirty)return tree}
     throw Error('Actual navigator hooks did not settle')
