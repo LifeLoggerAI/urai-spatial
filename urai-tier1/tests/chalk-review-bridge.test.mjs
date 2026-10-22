@@ -1,0 +1,16 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {chalkReviewRequest,chalkReviewReceipt} from '../src/spatial/chalk/chalkReviewBridge.mjs';
+const sha='a'.repeat(40),id='11111111-2222-4333-8444-555555555555';
+const d=()=>({kind:'chalk-spatial-diagnostic-v1',repository:'LifeLoggerAI/urai-spatial',sourceSha:sha,component:'focus',route:'/focus',selectedStar:null,frameSamples:2,p95Ms:33,status:'LOCAL_UNSUBMITTED',authority:'client-observation-not-server-verified'});
+test('strict private-free review request',()=>{const r=chalkReviewRequest(d(),id);assert.equal(r.diagnostic.selectedStar,null);assert.deepEqual(Object.keys(r),['requestId','diagnostic']);});
+test('rejects injected private fields',()=>assert.throws(()=>chalkReviewRequest({...d(),privateMedia:'secret'},id),/CHALK_REVIEW_FIELDS/));
+test('rejects unauthorized star references',()=>assert.throws(()=>chalkReviewRequest({...d(),selectedStar:{id:'private'}},id),/CHALK_REVIEW_AUTHORITY/));
+test('rejects false server authority',()=>assert.throws(()=>chalkReviewRequest({...d(),authority:'server-approved'},id),/CHALK_REVIEW_AUTHORITY/));
+test('rejects malformed source and routes',()=>{assert.throws(()=>chalkReviewRequest({...d(),sourceSha:'main'},id),/CHALK_REVIEW_SOURCE/);assert.throws(()=>chalkReviewRequest({...d(),route:'/privacy'},id),/CHALK_REVIEW_ROUTE/);});
+test('rejects invalid frame metrics',()=>assert.throws(()=>chalkReviewRequest({...d(),p95Ms:Infinity},id),/CHALK_REVIEW_METRICS/));
+const submitted=()=>({reviewId:'cr_'+'c'.repeat(64),requestId:id,sourceSha:sha,state:'REVIEW_ONLY_NOT_QUEUED',result:'RECORDED'});
+const readback=()=>({reviewId:'cr_'+'c'.repeat(64),requestId:id,sourceSha:sha,state:'REVIEW_ONLY_NOT_QUEUED',component:'focus',route:'/focus',digest:'d'.repeat(64)});
+test('verifies receipt with independent readback and never claims a job',()=>assert.equal(chalkReviewReceipt(chalkReviewRequest(d(),id),submitted(),readback()).state,'REVIEW_ONLY_NOT_QUEUED'));
+test('rejects spoofed queued acknowledgments',()=>assert.throws(()=>chalkReviewReceipt(chalkReviewRequest(d(),id),{...submitted(),state:'QUEUED'},readback()),/CHALK_REVIEW_RECEIPT/));
+test('rejects mismatched readback identity',()=>assert.throws(()=>chalkReviewReceipt(chalkReviewRequest(d(),id),submitted(),{...readback(),requestId:'fake'}),/CHALK_REVIEW_RECEIPT/));
