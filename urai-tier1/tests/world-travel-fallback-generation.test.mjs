@@ -115,3 +115,12 @@ test('unowned travel keeps emergency fallback as a safety net',()=>{
  f.advance(2400)
  assert.deepEqual(f.navigation,[A.href])
 })
+
+
+test('controller-owned travel cannot trigger competing early hard fallback',()=>{
+ const f=fixture((_request,_runtime,event)=>event.preventDefault())
+ f.requestUraiWorldTravel({destination:'replay',href:'/replay?demo=1&memoryId=a'})
+ f.advance(6000)
+ assert.deepEqual(f.navigation,[])
+ assert.equal(f.timers,0)
+})
