@@ -330,6 +330,10 @@ service cloud.firestore {
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
       }
+      // Private Orb transcripts are server-authoritative, including owner-scoped reads.
+      match /orbConversationContinuity/{docId} {
+        allow read, write: if false;
+      }
       match /orbCompanionEvents/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());

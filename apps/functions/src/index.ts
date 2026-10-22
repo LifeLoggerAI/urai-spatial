@@ -7,6 +7,7 @@ export {
 } from './stripeEntitlements'
 export { elevenLabsVoiceProvider, openAiOrbProvider } from './providerFunctions'
 export { adamFounderVoiceProvider, adamPresenceProvider } from './adamPresenceFunctions'
+export { orbConversationContinuity } from './orbContinuityFunctions'
 export {
   googleOAuthCallback,
   googleOAuthDisconnect,

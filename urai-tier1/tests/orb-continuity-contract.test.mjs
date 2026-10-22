@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import test from 'node:test'
+
+const root = new URL('../', import.meta.url)
+const server = fs.readFileSync(new URL('../../apps/functions/src/orbContinuityFunctions.ts', root), 'utf8')
+const client = fs.readFileSync(new URL('src/spatial/orb/orbContinuityClient.ts', root), 'utf8')
+const panel = fs.readFileSync(new URL('src/spatial/orb/OrbConversationPanel.tsx', root), 'utf8')
+const privacy = fs.readFileSync(new URL('../../apps/functions/src/privacyOperations.ts', root), 'utf8')
+const index = fs.readFileSync(new URL('../../apps/functions/src/index.ts', root), 'utf8')
+const rules = fs.readFileSync(new URL('../../firebase/firestore.rules', root), 'utf8')
+
+test('conversation checkpoint is opt-in and callable-only', () => {
+  assert.match(server, /action === 'enable'/)
+  assert.match(server, /action === 'disable'/)
+  assert.match(server, /transaction\.delete\(ref\)/)
+  assert.match(server, /isCanonicalStoredPolicy\(policy, uid\)/)
+  assert.match(server, /policy\.domains\.memory\.mode !== 'granted'/)
+  assert.match(server, /policy\.enforcement\.state !== 'fully-enforced'/)
+  assert.match(server, /pendingDeletions/)
+  assert.match(server, /tombstone\.exists/)
+  assert.match(server, /'conversation-not-historical-evidence'/)
+  assert.match(server, /MAX_MESSAGES = 20/)
+  assert.match(server, /state\.recentTurnIds\.includes\(turnId/)
+  assert.match(server, /body\.epoch !== state\.epoch/)
+  assert.match(rules, /match \/orbConversationContinuity\/\{docId\} \{[\s\S]*?allow read, write: if false;/)
+})
+
+test('Orb only restores current authenticated actor and saves successful replies', () => {
+  assert.match(client, /isCurrentAIActorSnapshot\(actor\)/)
+  assert.match(client, /httpsCallable<OrbContinuityInput, unknown>/)
+  assert.match(panel, /requestOrbContinuity\(actor, \{ action: 'read' \}\)/)
+  assert.match(panel, /action: 'enable', seed: history/)
+  assert.match(panel, /action: 'disable'/)
+  assert.match(panel, /action: 'append'/)
+  assert.match(panel, /if \(liveResult\)/)
+  assert.match(panel, /Remember Orb conversations across devices/)
+  assert.match(index, /orbConversationContinuity/)
+})
+
+test('continuity is present in intelligence export, memory/intelligence/all deletion and revocation enforcement', () => {
+  assert.match(privacy, /data\.orbConversationContinuity = await collectionDocuments\(userRef\.collection\('orbConversationContinuity'\), context\)/)
+  assert.match(privacy, /memories: \[[^\]]*'orbConversationContinuity'/)
+  assert.match(privacy, /intelligence: \[[^\]]*'orbConversationContinuity'/)
+  assert.match(privacy, /'all-repository-data': \[[\s\S]*?'orbConversationContinuity'/)
+  assert.match(privacy, /purgeOrbContinuity/)
+  assert.match(privacy, /transaction\.delete\(db\.doc\('users\/' \+ uid \+ '\/orbConversationContinuity\/current'\)\)/)
+})

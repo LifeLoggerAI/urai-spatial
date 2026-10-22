@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
 import { getAIActorSnapshot, getServerAIActorSnapshot, isCurrentAIActorSnapshot, subscribeAIActor, type AIActorSnapshot } from '@/lib/privacy/aiActorBoundary'
 import { publishOrbState } from '@/app/home/orbStateController'
+import { requestOrbContinuity } from './orbContinuityClient'
+import type { OrbContinuityState } from './orbContinuityClient'
 import { requestExternalVoiceAudio } from '@/spatial/narrator/elevenlabsClient'
 import { URAI_VOICE_CONFIG } from '@/spatial/narrator/narratorCopy'
 import { narratorPlayback } from '@/spatial/narrator/narratorPlayback'
@@ -35,6 +37,10 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
 function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; actor: AIActorSnapshot }) {
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
+  const [continuity, setContinuity] = useState<OrbContinuityState | null>(null)
+  const [continuityBusy, setContinuityBusy] = useState(false)
+  const continuityRef = useRef<OrbContinuityState | null>(null)
+  const continuityPending = useRef<Promise<unknown>>(Promise.resolve())
   const [result, setResult] = useState<OrbProviderResult | null>(null)
   const [streamedText, setStreamedText] = useState('')
   const [responseLocale, setResponseLocale] = useState('en-US')
@@ -49,6 +55,39 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
   const voicePlayback = useRef<OrbVoicePlayback | null>(null)
   const voicePreferences = useRef({ muted: false, externalConsent: false, active, sensorySafe: false })
   const stateResetTimer = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!actor.uid || !actor.actor) return
+    let cancelled = false
+    void requestOrbContinuity(actor, { action: 'read' }).then(saved => {
+      if (cancelled || !saved || !isCurrentAIActorSnapshot(actor)) return
+      continuityRef.current = saved
+      setContinuity(saved)
+      if (saved.enabled) setHistory(saved.messages)
+    }).catch(() => {
+      if (!cancelled && isCurrentAIActorSnapshot(actor)) setStatus('Private conversation continuity is unavailable; this chat remains temporary.')
+    })
+    return () => { cancelled = true; continuityRef.current = null }
+  }, [actor])
+
+  const changeContinuity = async (action: 'enable' | 'disable' | 'clear') => {
+    if (!isCurrentAIActorSnapshot(actor) || continuityBusy) return
+    setContinuityBusy(true)
+    try {
+      const input = action === 'enable' ? { action: 'enable' as const, seed: history.slice(-20) } : { action }
+      const saved = await requestOrbContinuity(actor, input)
+      if (!saved) return
+      continuityRef.current = saved
+      setContinuity(saved)
+      if (action === 'clear') setHistory([])
+      if (action === 'disable') setHistory([])
+      setStatus(action === 'enable' ? 'Private Orb continuity enabled.' : action === 'clear' ? 'Saved Orb conversation cleared.' : 'Private Orb continuity disabled and stored transcript deleted.')
+    } catch {
+      setStatus('Unable to change saved conversation. Check your current memory/privacy permissions.')
+    } finally {
+      if (isCurrentAIActorSnapshot(actor)) setContinuityBusy(false)
+    }
+  }
 
   const publishConversationState = useCallback((state: 'idle' | 'attention' | 'thinking' | 'speaking' | 'privacy' | 'warning', resetAfterMs?: number) => {
     if (stateResetTimer.current !== null) {
@@ -230,6 +269,27 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
       setResponseLocale(resolved.locale)
       setStreamedText(resolved.message)
       if (liveResult) {
+        const savedAtSend = continuityRef.current
+        if (savedAtSend?.enabled && savedAtSend.epoch) {
+          const turnId = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : ''
+          if (turnId) {
+            continuityPending.current = continuityPending.current.catch(() => undefined).then(async () => {
+              if (!isCurrentAIActorSnapshot(actor)) return
+              const current = continuityRef.current
+              if (!current?.enabled || current.epoch !== savedAtSend.epoch) return
+              const persisted = await requestOrbContinuity(actor, {
+                action: 'append', epoch: savedAtSend.epoch!, turnId,
+                userMessage: trimmed, assistantMessage: liveResult.message,
+              })
+              if (persisted && isCurrentAIActorSnapshot(actor)) {
+                continuityRef.current = persisted
+                setContinuity(persisted)
+              }
+            }).catch(() => {
+              if (isCurrentAIActorSnapshot(actor)) setStatus('Orb answered, but the private conversation was not saved.')
+            })
+          }
+        }
         setHistory((current) => [
           ...current.slice(-6),
           { role: 'user', content: trimmed },
@@ -326,6 +386,10 @@ function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; ac
             Allow Orb replies and narrator lines to use the configured natural external voice provider this session.
           </label>
           <div className={styles.actions}>
+            <button type="button" disabled={!actor.uid || continuityBusy || busy} onClick={() => void changeContinuity(continuity?.enabled ? 'disable' : 'enable')}>
+              {continuity?.enabled ? 'Stop remembering Orb conversations' : 'Remember Orb conversations across devices'}
+            </button>
+            {continuity?.enabled ? <button type="button" disabled={continuityBusy || busy} onClick={() => void changeContinuity('clear')}>Clear saved Orb conversation</button> : null}
             <button type="submit" disabled={busy || !message.trim() || !aiConsent}>Send</button>
             <button type="button" disabled={!busy && !voicePlaying} onClick={stop}>Stop</button>
             <button
