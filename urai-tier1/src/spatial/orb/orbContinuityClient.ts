@@ -4,7 +4,8 @@ import { isCurrentAIActorSnapshot, type AIActorSnapshot } from '@/lib/privacy/ai
 import type { OrbConversationMessage } from './openaiClient'
 
 export type OrbContinuityInput =
-  | { action: 'read' | 'disable' | 'clear' }
+  | { action: 'read' | 'disable' }
+  | { action: 'clear'; epoch: string }
   | { action: 'enable'; seed: OrbConversationMessage[]; epoch: string | null }
   | { action: 'append'; epoch: string; turnId: string; userMessage: string; assistantMessage: string }
 export type OrbContinuityState = {
