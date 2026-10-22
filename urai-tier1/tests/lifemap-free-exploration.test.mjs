@@ -56,5 +56,5 @@ test('flight key listeners are released, text inputs and modal dialogs guarded',
   assert.match(source, /window\.addEventListener\('blur', release\)/)
   assert.match(source, /target\.isContentEditable/)
   assert.match(source, /\[role="dialog"\]/)
-  assert.match(source, /flightWeight = phase === "overview" \|\| phase === "departure"/)
+  assert.match(source, /flightWeight = phase === "overview" \? 1 : 0/)
 })
