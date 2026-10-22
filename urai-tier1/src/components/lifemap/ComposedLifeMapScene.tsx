@@ -13,6 +13,7 @@ import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
+import { advanceLifeMapFlight, lifeMapFlightLookTarget, lifeMapApproachWaypoints, lifeMapStagePoint, lifeMapWorldStarAction, type LifeMapFlightInput, type LifeMapFlightPose } from "./lifeMapFlight.mjs";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
@@ -37,46 +38,43 @@ function selectedStagePoint(node: LifeMapNode, portrait: boolean) {
   return new THREE.Vector3(...node.position).multiply(scale).add(position);
 }
 
-function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean): CameraGoal {
-  const target = selectedStagePoint(node, portrait);
-  const overview = new THREE.Vector3(...OVERVIEW_POSITION);
-  const direction = overview.clone().sub(target);
-  if (direction.lengthSq() < 0.01) direction.set(0, 0.1, 1);
-  direction.normalize();
-  const arrival = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF);
-  arrival.y += 0.34;
-  if (phase === "departure") return { position: OVERVIEW_POSITION, target: tuple(target) };
-  if (phase === "travel") {
-    const travel = overview.clone().lerp(arrival, 0.5);
-    travel.x += (Math.sign(target.x) || 1) * 1.25;
-    travel.y += 1.2;
-    return { position: tuple(travel), target: tuple(target) };
-  }
-  if (phase === "approach") {
-    const approach = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF + 2.1);
-    approach.y += 0.7;
-    return { position: tuple(approach), target: tuple(target) };
-  }
-  return { position: tuple(arrival), target: tuple(target) };
+function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, departureFrom?: THREE.Vector3): CameraGoal {
+  const target = new THREE.Vector3(...lifeMapStagePoint(node.position, portrait));
+  const from = departureFrom?.toArray() ?? [...OVERVIEW_POSITION];
+  const waypoints = lifeMapApproachWaypoints(from, target.toArray(), SELECTED_MEMORY_STANDOFF);
+  const point = phase === "departure" ? waypoints.departure :
+    phase === "travel" ? waypoints.travel :
+    phase === "approach" ? waypoints.approach : waypoints.arrival;
+  return { position: [point[0], point[1], point[2]], target: [target.x, target.y, target.z] };
 }
 
 function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean; shellRef: RefObject<HTMLElement | null> }) {
-  const { camera, size } = useThree();
+  const { camera, size, gl } = useThree();
   const initialized = useRef(false);
   const positionGoal = useRef(new THREE.Vector3());
   const targetGoal = useRef(new THREE.Vector3());
   const lookTarget = useRef(new THREE.Vector3(...OVERVIEW_TARGET));
+  const flight = useRef<LifeMapFlightPose>({
+    position: [...OVERVIEW_POSITION], velocity: [0, 0, 0], yaw: 0, pitch: -0.075,
+  });
+  const keys = useRef(new Set<string>());
+  const pointer = useRef<{ id: number; x: number; y: number; startX: number; startY: number; dragged: boolean } | null>(null);
+  const lookDelta = useRef({ x: 0, y: 0 });
+  const wasOverview = useRef(true);
+  const departureOrigin = useRef(new THREE.Vector3(...OVERVIEW_POSITION));
+  const selectedJourneyId = useRef<string | null>(null);
 
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
-    const goal = selected ? goalForNode(selected, phase, portrait) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
+    const goal = selected ? goalForNode(selected, phase, portrait, departureOrigin.current) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
     positionGoal.current.set(...goal.position);
     targetGoal.current.set(...goal.target);
     if (portrait) {
       if (phase === "overview") {
         positionGoal.current.set(0, 2.15, 16.6);
         targetGoal.current.set(0, 0.2, -4.6);
-      } else {
+      } else if (phase !== "departure") {
+        // Departure must begin at the precise explored camera location even in portrait.
         const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.34);
         positionGoal.current.copy(targetGoal.current).add(offset);
         positionGoal.current.y += 0.42;
@@ -91,6 +89,10 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     camera.position.copy(positionGoal.current);
     lookTarget.current.copy(targetGoal.current);
     camera.lookAt(lookTarget.current);
+    flight.current.position = camera.position.toArray();
+    const bearing = lookTarget.current.clone().sub(camera.position).normalize();
+    flight.current.yaw = Math.atan2(bearing.x, -bearing.z);
+    flight.current.pitch = Math.asin(THREE.MathUtils.clamp(bearing.y, -1, 1));
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.fov = portrait ? (phase === "overview" ? 55 : 57) : (phase === "arrival" ? 44 : 46);
       camera.updateProjectionMatrix();
@@ -98,33 +100,135 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     initialized.current = true;
   }, [camera, phase, resolve]);
 
-  useFrame(({ pointer }, delta) => {
-    const portrait = resolve();
-    if (phase === "overview" && !reducedMotion) {
-      positionGoal.current.x += pointer.x * (portrait ? 0.45 : 1.05);
-      positionGoal.current.y += pointer.y * (portrait ? 0.24 : 0.42);
-      targetGoal.current.x += pointer.x * 0.34;
-      targetGoal.current.y += pointer.y * 0.16;
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const editable = (target: EventTarget | null) => target instanceof HTMLElement &&
+      Boolean(target.closest("input, textarea, select, button, a, [contenteditable='true'], [role='dialog']"));
+    const keyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || editable(event.target) || event.altKey || event.ctrlKey || event.metaKey) return;
+      // Do not hijack keyboard navigation when search, dialogs or other controls own focus.
+      if (document.activeElement !== canvas && document.activeElement !== document.body) return;
+      if (/^(Key[WASDQE]|Arrow(Up|Down|Left|Right)|ShiftLeft|ShiftRight)$/.test(event.code)) {
+        keys.current.add(event.code);
+        if (document.activeElement === canvas || document.activeElement === document.body) event.preventDefault();
+      }
+    };
+    const keyUp = (event: KeyboardEvent) => keys.current.delete(event.code);
+    const clear = () => {
+      keys.current.clear(); pointer.current = null; lookDelta.current = { x: 0, y: 0 };
+      if (shellRef.current) shellRef.current.dataset.lifeMapFlightControl = "";
+    };
+    const clearWhenHidden = () => { if (document.hidden) clear(); };
+    const down = (event: PointerEvent) => {
+      if (event.button !== 0 || event.target !== canvas || selected) return;
+      // Do not capture on pointer-down: R3F memory stars must receive normal clicks.
+      // Capture only an intentional look drag after crossing the movement threshold.
+      pointer.current = {
+        id: event.pointerId, x: event.clientX, y: event.clientY,
+        startX: event.clientX, startY: event.clientY, dragged: false,
+      };
+    };
+    const move = (event: PointerEvent) => {
+      const last = pointer.current;
+      if (!last || last.id !== event.pointerId || selected) return;
+      if (!last.dragged && Math.hypot(event.clientX - last.startX, event.clientY - last.startY) < 6) return;
+      if (!last.dragged) {
+        // A normal tap/click still selects the exact star; deliberate drag owns look.
+        canvas.setPointerCapture(event.pointerId);
+      }
+      const dx = event.clientX - last.x, dy = event.clientY - last.y;
+      lookDelta.current.x += THREE.MathUtils.clamp(dx * 0.0025, -0.15, 0.15);
+      lookDelta.current.y -= THREE.MathUtils.clamp(dy * 0.0025, -0.15, 0.15);
+      pointer.current = { ...last, x: event.clientX, y: event.clientY, dragged: true };
+    };
+    const end = (event: PointerEvent) => {
+      if (pointer.current?.id === event.pointerId) pointer.current = null;
+      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    };
+    window.addEventListener("keydown", keyDown);
+    window.addEventListener("keyup", keyUp);
+    window.addEventListener("blur", clear);
+    document.addEventListener("visibilitychange", clearWhenHidden);
+    canvas.addEventListener("pointerdown", down);
+    canvas.addEventListener("pointermove", move);
+    canvas.addEventListener("pointerup", end);
+    canvas.addEventListener("pointercancel", end);
+    return () => {
+      clear();
+      window.removeEventListener("keydown", keyDown);
+      window.removeEventListener("keyup", keyUp);
+      window.removeEventListener("blur", clear);
+      document.removeEventListener("visibilitychange", clearWhenHidden);
+      canvas.removeEventListener("pointerdown", down);
+      canvas.removeEventListener("pointermove", move);
+      canvas.removeEventListener("pointerup", end);
+      canvas.removeEventListener("pointercancel", end);
+    };
+  }, [gl, selected]);
+
+  useFrame((_, delta) => {
+    // Capture each selected journey once, at the camera position actually explored.
+    // Do not retarget later phases to the static first-mount overview origin.
+    if (selected?.id !== selectedJourneyId.current) {
+      if (selected) departureOrigin.current.copy(camera.position);
+      selectedJourneyId.current = selected?.id ?? null;
     }
-    const fov = portrait ? (phase === "overview" ? 55 : 57) : (phase === "arrival" ? 44 : 46);
-    if (reducedMotion) {
-      camera.position.copy(positionGoal.current);
-      lookTarget.current.copy(targetGoal.current);
+    const portrait = resolve();
+    const shell = shellRef.current;
+    if (phase === "overview" && !selected) {
+      if (!wasOverview.current) {
+        // Re-enter explorer mode at the actual camera location, not an overview snap.
+        const direction = lookTarget.current.clone().sub(camera.position).normalize();
+        flight.current = {
+          position: camera.position.toArray(), velocity: [0, 0, 0],
+          yaw: Math.atan2(direction.x, -direction.z),
+          pitch: Math.asin(THREE.MathUtils.clamp(direction.y, -1, 1)),
+        };
+      }
+      const held = keys.current;
+      const virtual = shell?.dataset.lifeMapFlightControl || "";
+      const active = (name: string) => held.has(name) || virtual === name;
+      const input: LifeMapFlightInput = {
+        forward: Number(active("KeyW") || active("ArrowUp")) - Number(active("KeyS") || active("ArrowDown")),
+        strafe: Number(active("KeyD")) - Number(active("KeyA")),
+        vertical: Number(active("KeyE")) - Number(active("KeyQ")),
+        turn: Number(active("ArrowRight")) - Number(active("ArrowLeft")),
+        sprint: held.has("ShiftLeft") || held.has("ShiftRight"),
+        // Reduced motion still permits deliberate looking and accessible navigation;
+        // the kernel avoids easing when that preference is enabled.
+        lookX: lookDelta.current.x,
+        lookY: lookDelta.current.y,
+        reducedMotion,
+      };
+      lookDelta.current = { x: 0, y: 0 };
+      flight.current = advanceLifeMapFlight(flight.current, input, delta);
+      const position = flight.current.position;
+      const target = lifeMapFlightLookTarget(flight.current);
+      camera.position.set(position[0], position[1], position[2]);
+      lookTarget.current.set(target[0], target[1], target[2]);
+      if (shell) shell.dataset.lifeMapExplorerActive = "true";
     } else {
       const rate = phase === "travel" ? 1.9 : phase === "approach" ? 2.9 : phase === "arrival" ? 5.2 : 4.1;
-      camera.position.x = THREE.MathUtils.damp(camera.position.x, positionGoal.current.x, rate, delta);
-      camera.position.y = THREE.MathUtils.damp(camera.position.y, positionGoal.current.y, rate, delta);
-      camera.position.z = THREE.MathUtils.damp(camera.position.z, positionGoal.current.z, rate, delta);
-      lookTarget.current.x = THREE.MathUtils.damp(lookTarget.current.x, targetGoal.current.x, 5.6, delta);
-      lookTarget.current.y = THREE.MathUtils.damp(lookTarget.current.y, targetGoal.current.y, 5.6, delta);
-      lookTarget.current.z = THREE.MathUtils.damp(lookTarget.current.z, targetGoal.current.z, 5.6, delta);
+      if (reducedMotion) {
+        camera.position.copy(positionGoal.current);
+        lookTarget.current.copy(targetGoal.current);
+      } else {
+        camera.position.x = THREE.MathUtils.damp(camera.position.x, positionGoal.current.x, rate, delta);
+        camera.position.y = THREE.MathUtils.damp(camera.position.y, positionGoal.current.y, rate, delta);
+        camera.position.z = THREE.MathUtils.damp(camera.position.z, positionGoal.current.z, rate, delta);
+        lookTarget.current.x = THREE.MathUtils.damp(lookTarget.current.x, targetGoal.current.x, 5.6, delta);
+        lookTarget.current.y = THREE.MathUtils.damp(lookTarget.current.y, targetGoal.current.y, 5.6, delta);
+        lookTarget.current.z = THREE.MathUtils.damp(lookTarget.current.z, targetGoal.current.z, 5.6, delta);
+      }
+      if (shell) shell.dataset.lifeMapExplorerActive = "false";
     }
+    wasOverview.current = phase === "overview" && !selected;
     camera.lookAt(lookTarget.current);
     if (camera instanceof THREE.PerspectiveCamera) {
+      const fov = portrait ? (phase === "overview" ? 55 : 57) : (phase === "arrival" ? 44 : 46);
       camera.fov = reducedMotion ? fov : THREE.MathUtils.damp(camera.fov, fov, 4.6, delta);
       camera.updateProjectionMatrix();
     }
-    const shell = shellRef.current;
     if (shell) {
       shell.dataset.lifeMapCameraX = camera.position.x.toFixed(4);
       shell.dataset.lifeMapCameraY = camera.position.y.toFixed(4);
@@ -397,6 +501,21 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     return `/${route}?${next.toString()}`;
   }, [explicitDemoRequested, params, phase, selected, withIdentity]);
 
+  const activateWorldStar = useCallback((node: LifeMapNode) => {
+    const action = lifeMapWorldStarAction(node.id, selectedId, phase,
+      node.replayAvailable && !node.locked && (explicitDemoRequested || node.authorizedMemory));
+    if (action === "select") {
+      selectNode(node);
+      return;
+    }
+    if (action === "replay" && selected?.id === node.id) {
+      // Physical star and accessible Replay button share one route/identity owner.
+      // No duplicated memory/manifest construction or alternative authorization path.
+      router.push(destinationHref("replay"));
+    }
+  }, [destinationHref, explicitDemoRequested, phase, router, selectNode, selected, selectedId]);
+
+
   useEffect(() => {
     if (!overviewRequested) return;
     restoredRoutePending.current = false;
@@ -488,6 +607,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
           phase={phase as LifeMapJourneyPhase}
           profile={profile}
           onSelect={selectNode}
+          onStarClick={activateWorldStar}
           cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} shellRef={shellRef} />}
           webglRecovery={null}
         />
@@ -515,6 +635,30 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
     </nav> : null}
 
+    {!thresholdsVisible && !recovery && sourceMode !== "signed-out" ? <nav className="life-map-flight-controls" aria-label="Explore the Life Map">
+      {([
+        ["KeyW", "Forward"], ["KeyS", "Back"], ["KeyA", "Left"], ["KeyD", "Right"],
+        ["KeyE", "Rise"], ["KeyQ", "Descend"], ["ArrowLeft", "Turn left"], ["ArrowRight", "Turn right"],
+      ] as const).map(([control, label]) =>
+        <button key={control} type="button" aria-label={label}
+          onPointerDown={(event) => {
+            if (event.pointerType === "mouse" && event.button !== 0) return;
+            if (shellRef.current) shellRef.current.dataset.lifeMapFlightControl = control;
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerUp={() => { if (shellRef.current) shellRef.current.dataset.lifeMapFlightControl = ""; }}
+          onPointerCancel={() => { if (shellRef.current) shellRef.current.dataset.lifeMapFlightControl = ""; }}
+          onBlur={() => { if (shellRef.current) shellRef.current.dataset.lifeMapFlightControl = ""; }}
+          onKeyDown={(event) => {
+            if ((event.key === "Enter" || event.key === " ") && shellRef.current) {
+              shellRef.current.dataset.lifeMapFlightControl = control;
+              event.preventDefault();
+            }
+          }}
+          onKeyUp={() => { if (shellRef.current) shellRef.current.dataset.lifeMapFlightControl = ""; }}>
+          {label}
+        </button>)}
+    </nav> : null}
     {!thresholdsVisible && sourceMode !== "signed-out" ? <nav className="life-map-overview-controls" aria-label="Life Map overview controls">
       <button type="button" className="overview-home-return" data-life-map-overview-home-return="true" onClick={returnHome}>Return Home</button>
       {!recovery ? <AdamLauncherSlot name="life-map-overview-controls" as="div" /> : null}
@@ -541,6 +685,10 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       .life-map-thresholds .overview-return,.overview-home-return{font-size:13px;letter-spacing:0;text-transform:none}
       @media(max-width:700px){.life-map-title{max-width:calc(100vw - 28px);gap:6px}.life-map-title strong{font-size:30px;max-width:16ch}.life-map-title span,.life-map-title em{font-size:10px;letter-spacing:.08em}.life-map-status{top:auto;right:14px;bottom:max(152px,calc(env(safe-area-inset-bottom) + 146px));max-width:calc(100vw - 28px);padding:8px 10px}.life-map-status span{font-size:11px}.life-map-status small{display:block;font-size:12px;max-width:32ch;text-align:right}:global(.life-map-world-label){max-width:130px;padding:7px 9px}:global(.life-map-world-label strong){font-size:12px}:global(.life-map-world-label span){font-size:10px}}
       @media(max-height:500px) and (min-width:501px){.life-map-title{max-width:46vw}.life-map-title strong{font-size:30px}.life-map-status{top:16px;bottom:auto;max-width:42vw}.life-map-thresholds{left:auto;right:16px;bottom:16px;transform:none;width:48vw;grid-template-columns:1fr 1fr auto}.life-map-thresholds .overview-return{grid-column:auto;min-width:64px;width:auto}.life-map-thresholds button span{display:none}}
+      .life-map-flight-controls{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(84px,calc(env(safe-area-inset-bottom) + 76px));z-index:17;display:grid;grid-template-columns:repeat(4,minmax(58px,1fr));gap:6px;max-width:min(360px,calc(100vw - 24px))}
+      .life-map-flight-controls button{min-width:58px;min-height:48px;border:1px solid rgba(213,239,251,.3);border-radius:12px;background:rgba(2,9,21,.77);color:#e2f5ff;font:700 11px Inter,system-ui;touch-action:none;cursor:pointer}
+      .life-map-flight-controls button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+      @media(max-width:700px){.life-map-flight-controls{bottom:max(88px,calc(env(safe-area-inset-bottom) + 76px));grid-template-columns:repeat(4,1fr);max-width:280px}.life-map-flight-controls button{min-width:54px;font-size:10px}}
       .life-map-root .life-map-title::after{content:none!important;display:none!important}
       /* The adopted scene owns the route hierarchy. Memory identity and search
          remain with the existing semantic navigator, outside the 3D world. */

@@ -6,6 +6,7 @@ import { Suspense, createContext, useCallback, useContext, useEffect, useMemo, u
 import * as THREE from "three";
 import StellarCorona from "@/spatial/stellar/StellarCorona";
 import GalacticSpiralStructure from "./GalacticSpiralStructure";
+import { lifeMapWorldStageTransform } from "./lifeMapFlight.mjs";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import type { LifeMapNode } from "./lifeMapData";
@@ -623,17 +624,29 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
   const root = useRef<THREE.Group>(null);
   const active = selected?.id === node.id;
   const related = Boolean(selected && (selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)));
-  const visible = !selected || active || (related && phase !== "arrival");
+  // All authorized source nodes remain in the same physical galaxy at arrival.
+  // A nearby unrelated star may still be selected without an overview reset.
+  const visible = true;
   const importance = artifactImportance(node);
   // The atlas owns the overview. Memory identity resolves into stellar
   // clusters at a distance; a physical photosphere only appears after a
   // memory is selected. This removes the dashboard-like field of equal balls
   // while retaining semantic selection through the navigator and world event.
-  const overviewCluster = selected === null;
+  // Only the approached memory transforms; neighboring stars retain their
+  // distant cluster identity throughout the selected journey.
+  const overviewCluster = !active || phase === "departure" || phase === "travel";
   const chapter = chapterForNode(node, index);
   const semanticLabel = artifactFamilyLabel(node);
-  useFrame(({ clock }) => {
-    if (!root.current || reducedMotion) return;
+  useFrame(({ clock }, delta) => {
+    if (!root.current) return;
+    // A selection must not resize the authored star in a single render frame.
+    // Camera travel provides most of the apparent approach; the remaining
+    // stellar emphasis eases in without snapping the surrounding galaxy.
+    const targetScale = active ? 1.46 : 0.58 + importance * 0.22;
+    root.current.scale.setScalar(reducedMotion
+      ? targetScale
+      : THREE.MathUtils.damp(root.current.scale.x, targetScale, 3.4, Math.min(delta, 0.05)));
+    if (reducedMotion) return;
     root.current.rotation.y = Math.sin(clock.elapsedTime * 0.13 + index) * 0.08;
     root.current.position.y = node.position[1] + Math.sin(clock.elapsedTime * 0.28 + index * 0.7) * 0.16;
   });
@@ -642,10 +655,16 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       ref={root}
       position={node.position}
       visible={visible}
-      scale={active ? 1.46 : 0.58 + importance * 0.22}
+      scale={0.58 + importance * 0.22}
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
       userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
-      onClick={(event) => { event.stopPropagation(); onSelect(node); }}
+      onClick={(event) => {
+        // R3F click events may follow deliberate camera drag. Treat movement
+        // beyond the explorer's 6px look threshold as motion, never selection.
+        if (event.delta > 6) return;
+        event.stopPropagation();
+        onSelect(node);
+      }}
     >
       {overviewCluster ? <FieldParticles seed={index * 137 + node.id.length * 17} count={44} radius={2.25} depth={5.8} height={3.8} color={node.aura} opacity={0.42} size={0.052} /> : <ArtifactShape node={node} active={active} />}
       <Sparkles count={active ? 34 : overviewCluster ? 14 : 10} scale={active ? [3.4, 3.8, 3.4] : overviewCluster ? [3.8, 4.3, 5.1] : [1.8, 2.2, 1.8]} size={active ? 2.4 : overviewCluster ? 0.92 : 1.3} speed={reducedMotion ? 0 : 0.11} opacity={active ? 0.72 : overviewCluster ? 0.28 : 0.34} color={node.aura} />
@@ -729,12 +748,13 @@ function SelectedMemoryArrival({ selected, phase, reducedMotion }: { selected: L
       userData={{
         scaleMode: "intimate",
         depthBand: "near",
-        semanticOwner: "life-map-intimate-memory-star",
+        semanticOwner: "life-map-selected-memory-atmosphere",
         runtimeAsset: MEMORY_STAR_MODEL,
       }}
       position={selected.position}
     >
-      <AuthoredMemoryStar aura={selected.aura} active scale={1.38} clip="MemoryStar_Focus" />
+      {/* The selected MemoryArtifact already owns the physical star.
+          Arrival adds surrounding atmosphere, never a second star. */}
       <FieldParticles seed={996} count={160} radius={5.4} depth={8.2} height={7.6} color={selected.aura} opacity={0.42} size={0.065} />
       <Sparkles count={72} scale={[8.4, 7.2, 8.4]} size={2.15} speed={reducedMotion ? 0 : 0.07} opacity={0.34} color={ICE} />
       <pointLight color={selected.aura} intensity={9} distance={26} decay={2} />
@@ -822,19 +842,23 @@ function GalaxyDepth({ tier, reducedMotion }: { tier: SpatialQualityProfile["tie
   );
 }
 
-export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSelect, cameraRig, webglRecovery }: {
+export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSelect, onStarClick, cameraRig, webglRecovery }: {
   nodes: LifeMapNode[];
   selected: LifeMapNode | null;
   phase: LifeMapJourneyPhase;
   profile: SpatialQualityProfile;
   onSelect: (node: LifeMapNode) => void;
+  /** Physical star click is distinct from semantic navigator selection. */
+  onStarClick: (node: LifeMapNode) => void;
   cameraRig: ReactNode;
   webglRecovery: ReactNode;
 }) {
   const { size } = useThree();
   const portrait = size.height > size.width;
-  const stageScale: Point3 = selected ? (portrait ? [0.92, 0.96, 0.92] : [1.12, 1.12, 1.08]) : portrait ? [0.54, 0.96, 0.78] : [1.12, 1.18, 1.08];
-  const stagePosition: Point3 = selected ? (portrait ? [0, -0.08, 0.9] : [0, -0.16, 0.62]) : portrait ? [0, -0.18, 1.1] : [0, 0.05, 0.9];
+  // Selection moves the camera, never the authored world or the selected star.
+  const stage = lifeMapWorldStageTransform(portrait);
+  const stageScale = stage.scale as Point3;
+  const stagePosition = stage.position as Point3;
   const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;
 
   useEffect(() => {
@@ -877,7 +901,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
           <ForegroundObservatory selected={selected} />
           <OverviewLandmarks selected={selected} />
           <group name="life-map-memory-artifact-families">
-            {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}
+            {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onStarClick} />)}
           </group>
           <group name="life-map-selected-relationship-context" />
           <SelectedMemoryArrival selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
