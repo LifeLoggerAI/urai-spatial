@@ -12,6 +12,7 @@ import PossibleFutureOutcomeReport from '@/spatial/scenario/PossibleFutureOutcom
 import { useWebGLAvailable } from '../HomeSpatialCanvas'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { getAIActorSnapshot, getServerAIActorSnapshot, isCurrentAIActorSnapshot, subscribeAIActor, type AIActorSnapshot } from '@/lib/privacy/aiActorBoundary'
+import { resolvePossibleFutureBranchIndex } from '@/lib/scenario/possibleFutureBranchSelection'
 
 const BRANCH_LABELS = ['Current path', 'Requested change', 'Alternative constraint'] as const
 type SetupState = 'question' | 'creating' | 'manual' | 'exploring' | 'error'
@@ -143,10 +144,10 @@ export default function PossibleFuturesClient() {
 }
 
 function ActorBoundPossibleFuturesClient({ actor }: { actor: AIActorSnapshot }) {
-  const params = useSearchParams(); const requestedBranch = Number(params.get('branch') ?? 0)
+  const params = useSearchParams(); const requestedBranch = params.get('branch')
   const isOwnerCurrent = () => Boolean(actor.uid && actor.actor && isCurrentAIActorSnapshot(actor))
   const webglAvailable = useWebGLAvailable()
-  const [branch,setBranch] = useState(Number.isInteger(requestedBranch)&&requestedBranch>=0&&requestedBranch<BRANCH_LABELS.length?requestedBranch:0)
+  const [branch,setBranch] = useState(0)
   const existingScenarioId = params.get('scenario')
   const [scenarioId,setScenarioId] = useState(existingScenarioId ?? '')
   const [branchIds,setBranchIds] = useState<string[]>([])
@@ -165,12 +166,17 @@ function ActorBoundPossibleFuturesClient({ actor }: { actor: AIActorSnapshot }) 
     setBranchesLoaded(false)
     void getPossibleFutureClient(existingScenarioId).then((result) => {
       if (!active || !isOwnerCurrent()) return
+      if (result.scenario?.ownerId !== actor.uid || result.scenario?.id !== existingScenarioId) {
+        setSetup('error'); setBranchesLoaded(true)
+        setMessage('Scenario identity does not match the current owner.')
+        return
+      }
       const branchRecords = Array.isArray(result.branches) ? result.branches.slice(0, BRANCH_LABELS.length) : []
       const ids = branchRecords.map((entry) => String(entry.id ?? '')).filter(Boolean)
       const labels = branchRecords.map((entry, index) => String(entry.label ?? BRANCH_LABELS[index] ?? `Branch ${index + 1}`)).slice(0, ids.length)
       setBranchIds(ids)
       setBranchLabels(labels)
-      setBranch((current) => Math.min(current, Math.max(0, ids.length - 1)))
+      // Select only a branch actually belonging to the loaded Scenario.
       const revision = Number(result.scenario?.basisRevision ?? result.basis?.revision ?? 1)
       if (Number.isInteger(revision) && revision > 0) setBasisRevision(revision)
       const scenarioStatus = String(result.scenario?.status ?? '')
@@ -179,8 +185,15 @@ function ActorBoundPossibleFuturesClient({ actor }: { actor: AIActorSnapshot }) 
         setSetup('manual')
         setMessage('This is an assumption-only What-If. Enter possible branches yourself; no AI generated a prediction.')
       } else if ((scenarioStatus === 'ready' || scenarioStatus === 'saved') && ids.length) {
-        setSetup('exploring')
-        setMessage('This is a possibility, not a prediction or autobiographical memory.')
+        const selected = resolvePossibleFutureBranchIndex(requestedBranch, ids, 0)
+        if (selected === null) {
+          setSetup('error')
+          setMessage('Requested Scenario branch unavailable; no other branch was selected.')
+        } else {
+          setBranch(selected)
+          setSetup('exploring')
+          setMessage('This is a possibility, not a prediction or autobiographical memory.')
+        }
       } else {
         setSetup('error')
         setMessage('The Scenario has an incomplete state. No simulated outcome will be shown as reality.')
@@ -193,7 +206,7 @@ function ActorBoundPossibleFuturesClient({ actor }: { actor: AIActorSnapshot }) 
       setMessage('This Scenario could not be reloaded. Its truth boundary remains closed.')
     })
     return () => { active = false }
-  }, [existingScenarioId, actor])
+  }, [existingScenarioId, requestedBranch, actor])
 
   const visibleBranchLabels = branchLabels.length
     ? branchLabels
