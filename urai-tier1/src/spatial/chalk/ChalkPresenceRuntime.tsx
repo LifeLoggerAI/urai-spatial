@@ -2,9 +2,9 @@
 import {useEffect,useRef,useState,type FormEvent,type CSSProperties} from 'react'
 import {usePathname} from 'next/navigation'
 import {onAuthStateChanged,type User} from 'firebase/auth'
-import {httpsCallable,getFunctions} from 'firebase/functions'
 import {getUraiAuth,firebasePublicEnvReady} from '@/lib/firebase/client'
 import {chalkIntent,chalkDiagnostic} from './chalkSpatialContract.mjs'
+import {readChalkEmulatorJobs} from './chalkJobsEmulatorClient'
 type Line={speaker:string;text:string}
 export default function ChalkPresenceRuntime(){
  const route=usePathname()||'/'
@@ -42,7 +42,20 @@ export default function ChalkPresenceRuntime(){
   const saved=user,epoch=generation.current;stop();setInput('');add('You',text);setBusy(true)
   try{const intent=chalkIntent(text)
    if(intent==='READ_JOBS'){
-    // Spatial and Jobs use distinct Firebase projects. No cross-project token exchange is approved.\n    // Stay fail-closed: do not call the Jobs function with a Spatial ID token.\n    add('Chalk','Engineering Jobs readback is unavailable until the protected cross-project identity bridge is accepted. No tasks were accessed.');\n    setStatus('Jobs integration not yet authorized.');\n   }else if(intent==='DIAGNOSTIC'){
+    try {
+      const actual=await readChalkEmulatorJobs()
+      if(!active(saved,epoch))return
+      setJobs(actual.map(j=>({jobId:j.jobId,status:j.admission==='HELD_UNQUEUED'?'HELD_UNQUEUED':j.status})))
+      add('Chalk',actual.length+' authorized engineering job records returned by the protected Jobs emulator. Held requests are not running.')
+      setStatus('Emulator-only readback verified for this session.')
+    } catch {
+      if(active(saved,epoch)){
+        setJobs([])
+        add('Chalk','Jobs readback unavailable. Separate emulator authentication and approved binding are required. No results were invented.')
+        setStatus('Engineering Jobs unavailable or access denied.')
+      }
+    }
+   }else if(intent==='DIAGNOSTIC'){
     const component=route==='/'?'home':route.slice(1)
     const sourceSha=process.env.NEXT_PUBLIC_URAI_BUILD_SHA||''
     // Never infer private selection from query strings, the scene DOM or model text.
