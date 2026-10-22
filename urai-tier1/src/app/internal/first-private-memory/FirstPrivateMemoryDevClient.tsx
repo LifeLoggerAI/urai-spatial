@@ -7,6 +7,7 @@ import FirstPrivateMemoryActivationPanel from './FirstPrivateMemoryActivationPan
 
 const MAX_PACKET_BYTES = 16 * 1024
 const MAX_MEDIA_BYTES = 4 * 1024 * 1024
+const MEMORY_ID = /^[A-Za-z0-9_-]{1,128}$/
 type Receipt = Awaited<ReturnType<typeof importFirstPreparedMemory>>
 
 export default function FirstPrivateMemoryDevClient() {
@@ -14,6 +15,7 @@ export default function FirstPrivateMemoryDevClient() {
   const [packetFile, setPacketFile] = useState<File | null>(null)
   const [mediaFile, setMediaFile] = useState<File | null>(null)
   const [approved, setApproved] = useState(false)
+  const [recoveryMode, setRecoveryMode] = useState(false)
   const [recoveryMemoryId, setRecoveryMemoryId] = useState<string | null>(null)
   const [recoveryApproved, setRecoveryApproved] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -34,7 +36,7 @@ export default function FirstPrivateMemoryDevClient() {
     const unsub = onAuthStateChanged(getUraiAuth(), user => {
       epoch.current++; inFlight.current?.abort(); inFlight.current = null
       setSignedIn(Boolean(user)); setPacketFile(null); setMediaFile(null)
-      setApproved(false); setRecoveryMemoryId(null); setRecoveryApproved(false)
+      setApproved(false); setRecoveryMode(false); setRecoveryMemoryId(null); setRecoveryApproved(false)
       setBusy(false); setReceipt(null); setDerivativeSha256(null)
       setMessage(user ? 'Fictional local owner session ready.' : 'Sign in to the fictional local Firebase emulator.')
     })
@@ -44,8 +46,8 @@ export default function FirstPrivateMemoryDevClient() {
     // Recovery requires its OWN affirmative owner decision. An incomplete
     // upload never authorizes recreation of an existing hidden memory.
     if (!uraiJourneyEmulatorEnabled || !signedIn || !packetFile || !mediaFile || busy || inFlight.current
-      || (mode === 'create' && (!approved || recoveryMemoryId))
-      || (mode === 'recover' && (!recoveryMemoryId || !recoveryApproved))) return
+      || (mode === 'create' && (!approved || recoveryMode))
+      || (mode === 'recover' && (!recoveryMode || !recoveryMemoryId || !MEMORY_ID.test(recoveryMemoryId) || !recoveryApproved))) return
     const controller = new AbortController(), generation = epoch.current
     inFlight.current = controller
     const current = () => epoch.current === generation && inFlight.current === controller && !controller.signal.aborted
@@ -64,7 +66,7 @@ export default function FirstPrivateMemoryDevClient() {
         : await importFirstPreparedMemory(packet, mediaFile, true, { signal: controller.signal, isCurrent: current })
       if (!current()) return
       setReceipt(result)
-      setRecoveryMemoryId(null); setRecoveryApproved(false)
+      setRecoveryMode(false); setRecoveryMemoryId(null); setRecoveryApproved(false)
       const prepared = packet as { upload?: { sha256?: unknown } }
       setDerivativeSha256(typeof prepared.upload?.sha256 === 'string' ? prepared.upload.sha256 : null)
       setMessage('Protected synthetic upload receipt received. Memory remains hidden pending explicit visibility authorization.')
@@ -72,7 +74,7 @@ export default function FirstPrivateMemoryDevClient() {
       if (!current()) return
       if (error instanceof FirstPrivateMemoryUploadIncomplete) {
         // Never expose a create button for this known committed identity.
-        setRecoveryMemoryId(error.memoryId); setRecoveryApproved(false); setApproved(false)
+        setRecoveryMode(true); setRecoveryMemoryId(error.memoryId); setRecoveryApproved(false); setApproved(false)
         setMessage('Hidden memory ' + error.memoryId + ' has an incomplete protected upload. It remains hidden. You may explicitly request a current-owner recovery; closing, aborted, revoked or stale receipts still require server-governed reconciliation.')
       } else if (mode === 'recover') {
         setRecoveryApproved(false)
@@ -100,21 +102,30 @@ export default function FirstPrivateMemoryDevClient() {
             onChange={event => { invalidate(); setMediaFile(event.currentTarget.files?.[0] ?? null) }} />
         </label>
         <label style={{ display: 'flex', gap: 12 }}>
-          <input type="checkbox" checked={approved} disabled={!signedIn || busy || Boolean(recoveryMemoryId)}
+          <input type="checkbox" checked={approved} disabled={!signedIn || busy || recoveryMode}
             onChange={event => { setApproved(event.currentTarget.checked); setReceipt(null) }} />
           I explicitly confirm creating this one fictional owner-bound memory as hidden, subject to current server C1 consent and deletion barriers.
         </label>
-        <button type="submit" disabled={!signedIn || !packetFile || !mediaFile || !approved || busy || Boolean(recoveryMemoryId)}
+        <button type="submit" disabled={!signedIn || !packetFile || !mediaFile || !approved || busy || recoveryMode}
           style={{ minHeight: 48, padding: 12, color: '#06131b', background: '#ccf3f9', borderRadius: 12, fontWeight: 700 }}>
           {busy ? 'Verifying…' : 'Verify and import hidden synthetic memory'}
         </button>
       </form>
-      {recoveryMemoryId && signedIn ? <section aria-label="Recover hidden synthetic memory upload"
+      {signedIn && !recoveryMode ? <button type="button"
+        onClick={() => { setRecoveryMode(true); setApproved(false); setRecoveryApproved(false); setReceipt(null) }}
+        style={{ minHeight: 48, marginTop: 18 }}>Recover an existing hidden fictional memory after reopening this page</button> : null}
+      {recoveryMode && signedIn ? <section aria-label="Recover hidden synthetic memory upload"
         style={{ marginTop: 22, padding: 20, border: '1px solid #8aaab3', borderRadius: 12 }}>
         <h2>Recover existing hidden memory</h2>
-        <p>Memory ID: <code>{recoveryMemoryId}</code>. The original memory will not be created again.
-          Select the same source files and confirm this separate upload attempt. Current consent,
-          receipt state, owner authentication and deletion barriers are checked again.</p>
+        <p>The original memory will not be created again. Select the same fictional source files
+          and enter the existing hidden memory ID from its handoff packet. The current owner,
+          source integrity, consent and deletion barriers must still be verified on the server.</p>
+        <label>Existing hidden memory ID
+          <input type="text" maxLength={128} autoComplete="off" spellCheck={false}
+            value={recoveryMemoryId ?? ''}
+            onChange={event => { setRecoveryMemoryId(event.currentTarget.value); setRecoveryApproved(false) }}
+            disabled={busy} style={{ display: 'block', minHeight: 48, width: '100%' }} />
+        </label>
         <label style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <input type="checkbox" checked={recoveryApproved} disabled={busy}
             onChange={event => setRecoveryApproved(event.currentTarget.checked)} />
@@ -122,7 +133,7 @@ export default function FirstPrivateMemoryDevClient() {
           I understand that stale, aborted or revoked receipts may require server-side reconciliation.
         </label>
         <button type="button" onClick={() => void submit('recover')}
-          disabled={!recoveryApproved || busy || !packetFile || !mediaFile}
+          disabled={!recoveryApproved || !recoveryMemoryId || !MEMORY_ID.test(recoveryMemoryId) || busy || !packetFile || !mediaFile}
           style={{ minHeight: 48, marginTop: 14 }}>
           {busy ? 'Verifying recovery…' : 'Recover protected upload without recreating memory'}
         </button>

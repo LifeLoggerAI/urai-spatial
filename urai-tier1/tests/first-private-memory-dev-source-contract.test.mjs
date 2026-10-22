@@ -49,11 +49,22 @@ test('incomplete upload exposes a separate affirmative recovery action, never a 
   assert.match(client, /!recoveryApproved/)
   assert.match(client, /submit\('recover'\)/)
   assert.match(client, /Recover protected upload without recreating memory/)
-  assert.match(client, /disabled=\{!signedIn \|\| !packetFile \|\| !mediaFile \|\| !approved \|\| busy \|\| Boolean\(recoveryMemoryId\)\}/)
+  assert.match(client, /disabled=\{!signedIn \|\| !packetFile \|\| !mediaFile \|\| !approved \|\| busy \|\| recoveryMode\}/)
 })
 test('owner and selected file changes invalidate local retry authority', () => {
   assert.match(client, /setRecoveryMemoryId\(null\)/)
   assert.match(client, /inFlight\.current\?\.abort\(\)/)
   assert.match(client, /epoch\.current\+\+/)
   assert.match(client, /setRecoveryApproved\(false\)/)
+})
+
+test('existing hidden memory can be recovered after page refresh without retained browser storage', () => {
+  assert.match(client, /Recover an existing hidden fictional memory after reopening this page/)
+  assert.match(client, /setRecoveryMode\(true\)/)
+  assert.match(client, /Existing hidden memory ID/)
+  assert.match(client, /value=\{recoveryMemoryId \?\? ''\}/)
+  assert.match(client, /MEMORY_ID\.test\(recoveryMemoryId\)/)
+  assert.match(client, /mode === 'create' && \(!approved \|\| recoveryMode\)/)
+  assert.match(client, /mode === 'recover' && \(!recoveryMode/)
+  assert.doesNotMatch(client, /localStorage|sessionStorage|indexedDB/)
 })
