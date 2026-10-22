@@ -32,7 +32,7 @@ function simulate() {
     '@/spatial/world/worldEvents':{requestUraiWorldReturn:()=>{}},
     '@/components/lifemap/LifeMapRouteBoundary':{__esModule:true,default:boundary},
     '@/components/lifemap/LifeMapSemanticNavigator':{__esModule:true,default:fakeComponent('LifeMapSemanticNavigator')},
-    '@/lib/firebase/client':{app:{},firebasePublicEnvReady:true},
+    '@/lib/firebase/client':{getUraiAuth:()=>({}),firebasePublicEnvReady:true},
     './lifeMapAuthGate':{subscribeLifeMapAuth:({onResolved})=>{authListener=onResolved;historicalListeners.push(onResolved);return()=>{authListener=null}}},
   }
   const mod={exports:{}}
