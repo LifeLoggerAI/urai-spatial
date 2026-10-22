@@ -61,7 +61,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
     // Relationship hints from an old memory never scope a different selection.
     if ((key === 'thread' || key === 'personId' || key === 'placeId') && (neutralDestination || (selectedMemoryId && !sameMemory))) continue
-    // A privacy-mode hint from an old memory cannot describe a new star or neutral realm.
+    // Preserve private mode only for the matching selected memory.
     if (key === 'privacyMode' && (!memoryDestination || !sameMemory)) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
@@ -81,6 +81,9 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('thread')
     target.searchParams.delete('personId')
     target.searchParams.delete('placeId')
+    // Camera/portal labels from a private realm belong to the in-memory
+    // transition, not to neutral Home/Hub URL history.
+    for (const key of ['entryPortal', 'cameraCheckpoint', 'returnNode']) target.searchParams.delete(key)
     // Home and Infrastructure Hub are neutral: never preserve memory,
     // consent or scenario routing state in URLs/history/referrers.
     for (const key of ['privacyMode', 'originRealm', 'returnToken', 'fidelity',
@@ -106,8 +109,8 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (!neutralDestination && context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
   if (!neutralDestination && context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
   if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
-  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
-  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+  if (!neutralDestination && request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
+  if (!neutralDestination && request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
   // No node-to-memory or memory-to-node inference: these are separate
   // identities, and each consumer must independently validate access.

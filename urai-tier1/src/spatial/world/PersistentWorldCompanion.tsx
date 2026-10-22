@@ -57,7 +57,7 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
     if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
     // Relationship hints from an old memory never scope a different selection.
     if ((key === 'thread' || key === 'personId' || key === 'placeId') && (neutralDestination || (selectedMemoryId && !sameMemory))) continue
-    // A privacy-mode hint from an old memory cannot describe a new star or neutral realm.
+    // Preserve private mode only for the matching selected memory.
     if (key === 'privacyMode' && (!memoryDestination || !sameMemory)) continue
     if (!target.searchParams.has(key) && current.has(key)) target.searchParams.set(key, current.get(key) ?? '')
   }
@@ -74,6 +74,9 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('thread')
     target.searchParams.delete('personId')
     target.searchParams.delete('placeId')
+    // Camera/portal labels from a private realm belong to the in-memory
+    // transition, not to neutral Home/Hub URL history.
+    for (const key of ['entryPortal', 'cameraCheckpoint', 'returnNode']) target.searchParams.delete(key)
     // Keep Orb/companion neutral navigation as private as the controller
     // and the emergency world fallback: no stale consent or scenario hints.
     for (const key of ['privacyMode', 'originRealm', 'returnToken', 'fidelity',
@@ -90,8 +93,8 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   if (memoryDestination && context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (memoryDestination && context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
   if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
-  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
-  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+  if (!neutralDestination && request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
+  if (!neutralDestination && request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
   return `${target.pathname}${target.search}${target.hash}`
 }
 
