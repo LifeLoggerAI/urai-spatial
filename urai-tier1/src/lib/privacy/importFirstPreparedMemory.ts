@@ -11,7 +11,7 @@ type FirstFile = Pick<File, 'size' | 'type' | 'arrayBuffer'>
 const ID = /^[A-Za-z0-9_-]{1,128}$/
 const SHA = /^[a-f0-9]{64}$/
 const row = (value: unknown): Row => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Row : {}
-const invalid = (): never => { throw new Error('FIRST_MEMORY_PREPARED_PACKET_INVALID') }
+function invalid(): never { throw new Error('FIRST_MEMORY_PREPARED_PACKET_INVALID') }
 const stopped = (): never => { throw new DOMException('First memory import cancelled.', 'AbortError') }
 
 /** The offline packet is a claim, not authentication or consent. No media bytes or
@@ -44,7 +44,7 @@ export async function importFirstPreparedMemory(packet: unknown, file: FirstFile
     || file.size !== upload.fileByteLength) invalid()
   // Keep narrowed untrusted packet values in stable typed bindings.
   const memoryId: string = id
-  const operationId: string = request.operationId as string
+  const operationId: string = request.operationId
   // Identity freshness precedes local media reads. A token refresh does not
   // reauthenticate an old session and must not authorize private file access.
   const token = await owner.getIdTokenResult(true); check()
