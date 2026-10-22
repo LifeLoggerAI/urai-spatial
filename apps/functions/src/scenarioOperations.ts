@@ -258,8 +258,7 @@ export const generatePossibleFutureBranches = functions.https.onCall(async (data
   })
   const requestHash = createHash('sha256').update(JSON.stringify({
     scenarioId, expectedRevision: Number(data?.expectedRevision),
-    branches: branches.map(({ label, summary, assumptionIds, evidenceRefIds, uncertainty }) =>
-      ({ label, summary, assumptionIds, evidenceRefIds, uncertainty })),
+    branches: branches.map((branch: (typeof branches)[number]) => {\n      const { label, summary, assumptionIds, evidenceRefIds, uncertainty } = branch\n      return { label, summary, assumptionIds, evidenceRefIds, uncertainty }\n    }),
   })).digest('hex')
   const receiptRef = db.doc(`users/${ownerId}/privacyReceipts/${stableReceipt(ownerId, op, 'scenario-manual-branches')}`)
   let committedBranchIds = branchIds
