@@ -107,8 +107,14 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
       if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
       const target = event.target;
       if (target instanceof HTMLElement && (target.isContentEditable
-        || target.closest('input,textarea,select,[role="textbox"],[role="dialog"],[data-urai-adam-presence]'))) return;
-      if (document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"]')) return;
+        || target.closest('input,textarea,select,[role="textbox"],[role="dialog"],[data-urai-adam-presence]'))) {
+        release();
+        return;
+      }
+      if (document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"]')) {
+        release();
+        return;
+      }
       if (event.code === 'KeyR') {
         event.preventDefault();
         flightOffset.current.set(0, 0, 0);
@@ -123,10 +129,17 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     };
     const keyUp = (event: KeyboardEvent) => { heldFlightKeys.current.delete(event.code); };
     const release = () => { heldFlightKeys.current.clear(); flightVelocity.current.set(0, 0, 0); };
+    const focusIn = (event: FocusEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable
+        || target.closest('input,textarea,select,[role="textbox"],[role="dialog"],[data-urai-adam-presence]'))) release();
+    };
+    window.addEventListener('focusin', focusIn);
     window.addEventListener('keydown', keyDown);
     window.addEventListener('keyup', keyUp);
     window.addEventListener('blur', release);
     return () => {
+      window.removeEventListener('focusin', focusIn);
       window.removeEventListener('keydown', keyDown);
       window.removeEventListener('keyup', keyUp);
       window.removeEventListener('blur', release);
@@ -168,6 +181,13 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
   useFrame(({ pointer }, delta) => {
     const portrait = resolve();
     if (phase === "overview") {
+      const focused = document.activeElement;
+      if ((focused instanceof HTMLElement && (focused.isContentEditable
+        || focused.closest('input,textarea,select,[role="textbox"],[role="dialog"],[data-urai-adam-presence]')))
+        || document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"]')) {
+        heldFlightKeys.current.clear();
+        flightVelocity.current.set(0, 0, 0);
+      }
       const offset = flightOffset.current, velocity = flightVelocity.current;
       const next = stepLifeMapFlight(
         { x: offset.x, y: offset.y, z: offset.z },
