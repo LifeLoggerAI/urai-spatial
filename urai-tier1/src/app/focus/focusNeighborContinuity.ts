@@ -4,8 +4,9 @@ import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 export function currentFocusNode(nodes: readonly LifeMapNode[], memory: SelectedMemory | null, hint: string | null): LifeMapNode | null {
   if (!memory || memory.privacy === 'hidden') return null
   const valid = (node: LifeMapNode) => !node.locked && node.privacyLevel !== 'hidden'
-    && (memory.demo || (node.authorizedMemory === true && node.memoryId === memory.id
-      && node.replayManifestId === memory.replayManifest.id))
+    && (memory.demo ? node.id === memory.star.id
+      : (node.authorizedMemory === true && node.memoryId === memory.id
+        && node.replayManifestId === memory.replayManifest.id))
   return nodes.find(node => node.id === hint && valid(node))
     ?? nodes.find(node => (node.id === memory.star.id || node.memoryId === memory.id) && valid(node))
     ?? null
