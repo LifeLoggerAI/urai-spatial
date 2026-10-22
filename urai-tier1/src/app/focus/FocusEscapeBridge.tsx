@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { shouldHandleRealmEscape } from '@/spatial/world/realmEscapeEligibility.mjs'
 
 const DEFAULT_REPLAY_MANIFEST_ID = 'seed-memory-bloom'
 
@@ -38,7 +39,7 @@ export function FocusEscapeBridge() {
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return
+      if (!shouldHandleRealmEscape(event)) return
       event.preventDefault()
       event.stopPropagation()
       event.stopImmediatePropagation()
