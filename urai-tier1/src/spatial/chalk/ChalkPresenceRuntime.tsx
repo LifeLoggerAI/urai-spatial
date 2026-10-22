@@ -53,13 +53,10 @@ export default function ChalkPresenceRuntime(){
   const saved=user,epoch=generation.current,routeVersion=routeEpoch.current,routeAtStart=route;stop();setInput('');add('You',text);setBusy(true)
   try{const intent=chalkIntent(text)
    if(intent==='READ_JOBS'){
-    const call=httpsCallable<{limit:number},{jobs:Array<{jobId:string;status:string}>}>(
-      chalkFunctions(),'listChalkEngineeringJobs',{timeout:12000})
-    const result=await call({limit:40})
-    if(!active(saved,epoch,routeAtStart,routeVersion))return
-    if(!Array.isArray(result.data.jobs))throw Error('INVALID_READBACK')
-    setJobs(result.data.jobs)
-    add('Chalk',result.data.jobs.length+' protected, owner-scoped engineering Jobs returned in a bounded window. No task was created.')
+    // A Spatial Firebase ID token cannot authorize Jobs in a distinct cloud project.
+    // No approved cross-project identity exchange is installed; fail closed.
+    add('Chalk','Engineering Jobs readback is unavailable until the cross-project identity bridge is authorized. No tasks were accessed.');
+    setStatus('Jobs integration not yet authorized.');
    }else if(intent==='DIAGNOSTIC'){
     const component=route==='/'?'home':route.slice(1)
     const sourceSha=process.env.NEXT_PUBLIC_URAI_BUILD_SHA||''
