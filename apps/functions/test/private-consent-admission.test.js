@@ -17,7 +17,7 @@ const ast = ts.createSourceFile(fixtureFile, fixtureSource.slice(0, prefixEnd), 
 const declarations = ast.statements.filter(n => ts.isFunctionDeclaration(n)
   || (ts.isVariableStatement(n) && !n.declarationList.declarations.some(d => ['require', 'ts'].includes(d.name.getText(ast)))))
 let fixtureCode = declarations.map(n => n.getText(ast)).join('\n')
-const existingLoader = "const code = ts.transpileModule(fs.readFileSync(\`src/\${filename}.ts\`, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText"
+const existingLoader = "const code = ts.transpileModule(fs.readFileSync(new URL(\`../src/\${filename}.ts\`, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText"
 assert.equal(fixtureCode.split(existingLoader).length, 2, 'one actual module loader expected')
 fixtureCode = fixtureCode.replace(existingLoader,
   'const code = fs.readFileSync(' + JSON.stringify(moduleRoot + '/') + " + filename + '.js', 'utf8')")
