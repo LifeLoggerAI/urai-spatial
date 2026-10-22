@@ -4,7 +4,7 @@ import { disclosedSampleStar, selectedMemoryFocusAction } from './canonical-brow
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
-import { allocateEphemeralPort, waitForOwnedHome, warmOwnedLifeMap } from './spatial-owned-server.mjs';
+import { allocateEphemeralPort, waitForOwnedHome, warmOwnedLifeMap, warmOwnedJourneyRealm } from './spatial-owned-server.mjs';
 import { assertVisibleSpatialScene } from './spatial-png-scene-proof.mjs';
 
 // The browser harness lives at the repo root, but Playwright is owned by the
@@ -161,7 +161,9 @@ async function enterDemoFocus(page) {
   await chooseDisclosedMemory(page);
   const action = selectedMemoryFocusAction(page);
   await expectVisible(action, 'real selected Focus action', 30000);
-  await action.click();
+  // A cold Next dev-server Focus compilation can exceed Playwright's default
+  // 30-second implicit navigation wait. Keep explicit URL and scene assertions.
+  await action.click({ timeout: 60000 });
   await page.waitForURL(/\/focus(?:\?|$)/, { timeout: 40000 });
   const focus = page.getByTestId('urai-final-focus-chamber');
   await expectVisible(focus, 'canonical stellar Focus', 40000);
@@ -206,8 +208,15 @@ async function runNavigationStack(page, stage, report) {
   const scene = page.getByTestId('urai-true-3d-life-map');
   await expectVisible(scene, 'returned Life Map', 40000);
   await expectAttr(scene, 'data-life-map-source', 'explicit-demo', 30000);
-  await page.locator('.life-map-thresholds .overview-return').click();
+  // Focus unwind deliberately lands on Life Map overview=1, not a re-selected
+  // star. Preserve the actual Focus -> overview -> Home founder journey.
+  await page.waitForURL(
+    (url) => /^\/life-map\/?$/.test(url.pathname) && url.searchParams.get('overview') === '1',
+    { timeout: 40000 },
+  );
   await expectAttr(scene, 'data-life-map-mode', 'overview', 30000);
+  await expectAttr(scene, 'data-life-map-phase', 'overview', 30000);
+  await page.locator('.life-map-thresholds').waitFor({ state: 'detached', timeout: 30000 });
   await page.locator('.life-map-overview-controls .overview-home-return').click();
   await page.waitForURL(/\/home(?:\/|\?|$)/, { timeout: 40000 });
   await screenshot(page, report, 'real-navigation-return-home');
@@ -433,12 +442,15 @@ async function run() {
   try {
     server = await startServer();
     await waitForOwnedHome(BASE_URL, server);
-    // Root-maintained --suite=all runs a cold development compiler. First
-    // compile original /life-map independently without counting it as browser
-    // journey success; retain the original per-interaction browser timeouts.
-    if (SUITE === 'all' && !USE_EXISTING) {
+    // An isolated --suite=navigation launch is just as cold as --suite=all.
+    // Precompile the public, context-free Life Map, Focus and Replay routes on
+    // this owned server before measuring clicks. Keep every browser assertion
+    // and per-interaction deadline: route preflight is NOT journey acceptance.
+    if ((SUITE === 'all' || SUITE === 'navigation') && !USE_EXISTING) {
       await warmOwnedLifeMap(BASE_URL, server);
-      report.checks.push({ name: 'Owned dev Life Map compile complete before real journey; not release acceptance', status: 'passed' });
+      await warmOwnedJourneyRealm(BASE_URL, server, '/focus');
+      await warmOwnedJourneyRealm(BASE_URL, server, '/replay');
+      report.checks.push({ name: 'Owned dev Life Map / Focus / Replay compile complete before real journey; not release acceptance', status: 'passed' });
     }
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });

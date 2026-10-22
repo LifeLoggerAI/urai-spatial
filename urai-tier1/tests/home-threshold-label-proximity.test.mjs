@@ -28,7 +28,11 @@ test('current original scene conditions labels without altering physical thresho
   assert.match(renderer, /function Thresholds\(\{ onGround, onLifeMap, nearby \}/)
   assert.match(renderer, /thresholds\.filter\(\(\{ destination \}\) => showHomeThresholdLabel\(phase, nearby, destination\)\)/)
   assert.match(renderer, /<Thresholds onGround=\{props\.onGround\} onLifeMap=\{props\.onLifeMap\} nearby=\{props\.nearby\} \/>/)
-  assert.match(renderer, /<Scene key=\{previewW13V3 \? 'w13-v3' : 'canonical'\} previewW13V3=\{previewW13V3\} nearby=\{nearby\}/)
+  // The authored scene and readiness probe share the same preview identity, but
+  // Scene's nearby prop is no longer adjacent to the preview prop in JSX.
+  assert.match(renderer, /<Scene key=\{previewW13V3 \? 'w13-v3' : 'canonical'\} previewW13V3=\{previewW13V3\}/)
+  assert.match(renderer, /<Scene key=\{previewW13V3 \? 'w13-v3' : 'canonical'\}[^\n]* nearby=\{nearby\}/)
+  assert.match(renderer, /<SceneReady key=\{props\.previewW13V3 \? 'w13-v3' : 'canonical'\} previewW13V3=\{props\.previewW13V3\}/)
   assert.match(renderer, /name="home-ground-environmental-threshold"/)
   assert.match(renderer, /name="home-life-map-sky-lookout"/)
   assert.match(renderer, /onClick=\{\(e\) => \{ e\.stopPropagation\(\); onGround\(\) \}\}/)

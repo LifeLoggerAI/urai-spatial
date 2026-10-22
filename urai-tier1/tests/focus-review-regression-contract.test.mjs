@@ -64,8 +64,16 @@ test('hard travel fallback preserves same-memory replay identity but excludes st
   assert.match(worldEvents, /if \(\(key === 'thread'[\s\S]*?\(neutralDestination \|\| \(selectedMemoryId && !sameMemory\)\)\) continue/)
   assert.match(worldEvents, /if \(!memoryDestination\) \{[\s\S]*?target\.searchParams\.delete\('memoryId'\)[\s\S]*?target\.searchParams\.delete\('node'\)/)
   assert.match(worldEvents, /if \(neutralDestination\) \{[\s\S]*?target\.searchParams\.delete\('thread'\)/)
+  // Preserve portal/camera context for scoped world travel, but never expose
+  // a private arrival checkpoint on neutral Home or Infrastructure Hub URLs.
+  // world-neutral-route-privacy.test.mjs also executes all three route builders
+  // and verifies that explicit private/visual selectors are stripped.
   const contextIndex = worldEvents.indexOf("if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')")
-  const entryPortalIndex = worldEvents.indexOf("if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)")
-  const cameraCheckpointIndex = worldEvents.indexOf("if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)")
+  const entryPortalIndex = worldEvents.indexOf("if (!neutralDestination && request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)")
+  const cameraCheckpointIndex = worldEvents.indexOf("if (!neutralDestination && request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)")
   assert.ok(contextIndex > -1 && entryPortalIndex > contextIndex && cameraCheckpointIndex > entryPortalIndex)
+  assert.match(worldEvents, /for \(const key of \['entryPortal', 'cameraCheckpoint', 'returnNode'\]\) target\.searchParams\.delete\(key\)/)
+  assert.match(worldEvents, /if \(neutralDestination\) \{\s*const language = new URLSearchParams\(\)/)
+  assert.doesNotMatch(worldEvents, /if \(request\.entryPortal\) target\.searchParams\.set\('entryPortal', request\.entryPortal\)/)
+  assert.doesNotMatch(worldEvents, /if \(request\.cameraCheckpoint\) target\.searchParams\.set\('cameraCheckpoint', request\.cameraCheckpoint\)/)
 })

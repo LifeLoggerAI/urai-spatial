@@ -35,6 +35,9 @@ const component = compile(read('src/app/GroundSpatialWorldClean.tsx') + '\nexpor
   ['next/navigation', {}], ['@react-three/fiber', { useThree: () => ({ camera, size: { width: 1440, height: 900 } }), useFrame: fn => { frame = fn } }], ['@react-three/drei', { useGLTF: Object.assign(() => ({}), { preload() {} }) }],
   ['@react-three/postprocessing', {}], ['./HomeSpatialCanvas', {}], ['./ground/GroundWorldModel', model],
   ['@/spatial/navigation/EmbodiedNavigation', { stepEmbodiedMotion: ({ position }) => position.set(activeDestination.camera[0], 0, activeDestination.camera[2]) }], ['@/spatial/world/worldEvents', {}], ['@/spatial/adam/AdamLauncherSlot', { default: 'adam-slot' }],
+  // Only Ground model geometry/Player are exercised here; keep workforce
+  // presentational imports inert, and refuse every other unexpected dependency.
+  ['./GroundWorkforcePresences', { GROUND_WORKFORCE: [], GroundWorkforcePresences: 'ground-workforce-presences' }],
 ]))
 
 // Read real position/index bytes and node transforms from the retained GLB.

@@ -81,3 +81,32 @@ export async function warmOwnedLifeMap(baseUrl, child, {
   if (!isUraiHomeDocument(await response.text())) throw new Error('URAI_OWNED_LIFEMAP_NOT_ORIGINAL_DOCUMENT')
   return { endpoint, status: 200 }
 }
+
+
+/** Warm exact, public, neutral realm routes before measuring timed navigation.
+ * This proves only a successful owned Next compilation, never an entered world.
+ * No selected memory ID, owner context or user-provided URL is permitted. */
+export async function warmOwnedJourneyRealm(baseUrl, child, route, {
+  fetchImpl = fetch, timeoutMs = 180000,
+} = {}) {
+  if (route !== '/focus' && route !== '/replay') {
+    throw new Error('URAI_OWNED_JOURNEY_WARMUP_ROUTE_REJECTED')
+  }
+  const realm = route.slice(1).toUpperCase()
+  if (ownedChildExited(child)) throw new Error(`URAI_OWNED_${realm}_CHILD_EXITED_BEFORE_WARMUP`)
+  const endpoint = new URL(route, baseUrl).toString()
+  let response
+  try {
+    response = await fetchImpl(endpoint, {
+      redirect: 'manual', signal: AbortSignal.timeout(timeoutMs),
+    })
+  } catch (error) {
+    throw new Error(`URAI_OWNED_${realm}_WARMUP_NETWORK_FAILED: ` + (error?.message || String(error)))
+  }
+  if (ownedChildExited(child)) throw new Error(`URAI_OWNED_${realm}_CHILD_EXITED_DURING_WARMUP`)
+  if (response.status !== 200 || !/text\/html/i.test(response.headers?.get?.('content-type') || '')) {
+    throw new Error(`URAI_OWNED_${realm}_WARMUP_HTTP_` + String(response.status))
+  }
+  if (!isUraiHomeDocument(await response.text())) throw new Error(`URAI_OWNED_${realm}_NOT_ORIGINAL_DOCUMENT`)
+  return { endpoint, status: 200 }
+}
