@@ -106,14 +106,30 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     if(component==='scene') {
       const world=descendants(render()).find(el=>el.type==='synthetic-production-world-boundary')
       const selected=memoryNodes.find(candidate=>candidate.id===id)
-      assert.ok(world);assert.ok(selected);world.props.onSelect(selected);render()
+      assert.ok(world);assert.ok(selected)
+      const locationBefore = browser.location.href
+      const callsBefore = calls.length
+      // Auth-gated Life Map scenes must NOT rewrite the same-route URL during
+      // physical star approach: doing so unmounts the traveling camera.
+      world.props.onSelect(selected)
+      const selectedTree = render()
+      assert.equal(browser.location.href,locationBefore,'star approach preserves current route')
+      assert.deepEqual(calls.slice(callsBefore),[],'no same-route identity/navigation during physical travel')
+      // Read the production-owned staged Focus URL, not the intentionally
+      // unchanged in-flight Life Map URL.
+      const focus = descendants(selectedTree).find(el=>el.props.className==='focus-threshold')
+      assert.ok(focus,'selected star exposes its authored Focus destination')
+      assert.equal(typeof focus.props['data-destination-href'],'string')
+      return new URL(focus.props['data-destination-href'],browser.location).searchParams
     } else {
       const result=descendants(open()).find(el=>el.props['data-life-map-node-id']===id);assert.ok(result);result.props.onClick({detail})
     }
     return browser.location.searchParams
   },destination(route) {
     const control=descendants(render()).find(el=>el.props.className===route+'-threshold')
-    assert.ok(control);control.props.onClick()
+    assert.ok(control)
+    assert.equal(control.props.disabled,false,route+' navigation cannot bypass a disabled memory threshold')
+    control.props.onClick()
     return new URL(calls.at(-1).destination,'http://localhost')
   },overview() {
     const control=descendants(render()).find(el=>el.props.className==='overview-return')
@@ -144,9 +160,20 @@ test('actual scene overview groups Founder with Return Home without changing its
   const f=fixture('?demo=1&overview=1',{component:'scene'})
   const group=descendants(f.render()).find(el=>el.type==='nav' && el.props['aria-label']==='Life Map overview controls')
   assert.ok(group)
-  const returnHome=descendants(group).find(el=>el.props['data-life-map-overview-home-return']==='true')
-  const founder=descendants(group).find(el=>typeof el.type==='function' && el.type.name==='AdamLauncherSlot')
-  assert.ok(returnHome);assert.ok(founder)
+  const unreadyReturnHome=descendants(group).find(el=>el.props['data-life-map-overview-home-return']==='true')
+  const unreadyFounder=descendants(group).find(el=>typeof el.type==='function' && el.type.name==='AdamLauncherSlot')
+  assert.ok(unreadyReturnHome,'Return Home remains available during WebGL recovery')
+  assert.equal(unreadyFounder,undefined,'ADAM stays unmounted until the real render-ready signal')
+  // Explicitly simulate the renderer's ready-frame proof through the real
+  // bridge callback; no fake unconditional "ready" default is supplied.
+  const bridge=descendants(f.render()).find(el=>typeof el.type==='function' && el.type.name==='WebGLRecoveryBridge')
+  assert.ok(bridge,'actual scene retains its renderer-recovery bridge')
+  bridge.props.onStateChange('ready')
+  const readyGroup=descendants(f.render()).find(el=>el.type==='nav' && el.props['aria-label']==='Life Map overview controls')
+  assert.ok(readyGroup)
+  const returnHome=descendants(readyGroup).find(el=>el.props['data-life-map-overview-home-return']==='true')
+  const founder=descendants(readyGroup).find(el=>typeof el.type==='function' && el.type.name==='AdamLauncherSlot')
+  assert.ok(returnHome);assert.ok(founder,'ADAM appears after render readiness')
   assert.equal(founder.props.name,'life-map-overview-controls')
   returnHome.props.onClick()
   assert.equal(f.calls.at(-1).kind,'destination')
@@ -229,10 +256,14 @@ for(const marker of ['','0','true','01']) test('canonical private scene does not
   const selected=f.select()
   assert.equal(selected.get('manifestId'),null);assert.equal(selected.get('demo'),null)
   for(const route of ['focus','replay']) {
-    const destination=f.destination(route)
-    assert.equal(destination.searchParams.get('manifestId'),null);assert.equal(destination.searchParams.get('demo'),null)
-    for(const flag of ['onboarding','firstRun']) assert.equal(destination.searchParams.get(flag),'1')
+    const control=descendants(f.render()).find(el=>el.props.className===route+'-threshold')
+    assert.ok(control)
+    assert.equal(control.props.disabled,true,'unverified private nodes cannot open '+route)
+    const staged=new URL(control.props['data-destination-href'],'http://localhost')
+    assert.equal(staged.searchParams.get('manifestId'),null);assert.equal(staged.searchParams.get('demo'),null)
+    for(const flag of ['onboarding','firstRun']) assert.equal(staged.searchParams.get(flag),'1')
   }
+  assert.equal(f.calls.filter(call=>call.kind==='destination').length,0,'disabled private thresholds cannot navigate')
 })
 
 test('canonical scene retains an existing manifest for the same private memory through destinations and Overview',()=>{
