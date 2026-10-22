@@ -38,15 +38,15 @@ function selectedStagePoint(node: LifeMapNode, portrait: boolean) {
   return new THREE.Vector3(...node.position).multiply(scale).add(position);
 }
 
-function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean): CameraGoal {
+function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, departureFrom?: THREE.Vector3): CameraGoal {
   const target = selectedStagePoint(node, portrait);
-  const overview = new THREE.Vector3(...OVERVIEW_POSITION);
+  const overview = departureFrom?.clone() ?? new THREE.Vector3(...OVERVIEW_POSITION);
   const direction = overview.clone().sub(target);
   if (direction.lengthSq() < 0.01) direction.set(0, 0.1, 1);
   direction.normalize();
   const arrival = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF);
   arrival.y += 0.34;
-  if (phase === "departure") return { position: OVERVIEW_POSITION, target: tuple(target) };
+  if (phase === "departure") return { position: tuple(overview), target: tuple(target) };
   if (phase === "travel") {
     const travel = overview.clone().lerp(arrival, 0.5);
     travel.x += (Math.sign(target.x) || 1) * 1.25;
@@ -74,11 +74,12 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
   const pointer = useRef<{ id: number; x: number; y: number } | null>(null);
   const lookDelta = useRef({ x: 0, y: 0 });
   const wasOverview = useRef(true);
-  const restoreTarget = useRef(false);
+  const departureOrigin = useRef(new THREE.Vector3(...OVERVIEW_POSITION));
+  const selectedJourneyId = useRef<string | null>(null);
 
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
-    const goal = selected ? goalForNode(selected, phase, portrait) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
+    const goal = selected ? goalForNode(selected, phase, portrait, departureOrigin.current) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
     positionGoal.current.set(...goal.position);
     targetGoal.current.set(...goal.target);
     if (portrait) {
@@ -162,6 +163,12 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
   }, [gl, selected]);
 
   useFrame((_, delta) => {
+    // Capture each selected journey once, at the camera position actually explored.
+    // Do not retarget later phases to the static first-mount overview origin.
+    if (selected?.id !== selectedJourneyId.current) {
+      if (selected) departureOrigin.current.copy(camera.position);
+      selectedJourneyId.current = selected?.id ?? null;
+    }
     const portrait = resolve();
     const shell = shellRef.current;
     if (phase === "overview" && !selected) {
@@ -173,7 +180,6 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
           yaw: Math.atan2(direction.x, -direction.z),
           pitch: Math.asin(THREE.MathUtils.clamp(direction.y, -1, 1)),
         };
-        restoreTarget.current = true;
       }
       const held = keys.current;
       const virtual = shell?.dataset.lifeMapFlightControl || "";
@@ -194,14 +200,8 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
       const target = lifeMapFlightLookTarget(flight.current);
       camera.position.set(position[0], position[1], position[2]);
       lookTarget.current.set(target[0], target[1], target[2]);
-      restoreTarget.current = false;
       if (shell) shell.dataset.lifeMapExplorerActive = "true";
     } else {
-      if (wasOverview.current) {
-        // Departure begins from the actual explored position.
-        const from = camera.position.clone();
-        positionGoal.current.copy(from);
-      }
       const rate = phase === "travel" ? 1.9 : phase === "approach" ? 2.9 : phase === "arrival" ? 5.2 : 4.1;
       if (reducedMotion) {
         camera.position.copy(positionGoal.current);
