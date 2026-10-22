@@ -8,6 +8,7 @@ import {readChalkEmulatorJobs,submitChalkEmulatorDiagnostic,signInChalkJobsLocal
 import {makeChalkEngineeringIntakeProposal} from './chalkEngineeringIntakeProposal.mjs'
 import type {ChalkEngineeringIntakeProposal} from './chalkEngineeringIntakeProposal.mjs'
 import {isChalkSessionLeaseCurrent} from './chalkSessionLease.mjs'
+import {resetChalkRouteState} from './chalkRouteReset.mjs'
 type Line={speaker:string;text:string}
 export default function ChalkPresenceRuntime(){
  const route=usePathname()||'/'
@@ -39,7 +40,7 @@ export default function ChalkPresenceRuntime(){
   },()=>{generation.current++;setAccess('denied');setUser(null)})
   return()=>{disposed=true;generation.current++;unsubscribe();recognition.current?.abort()}
  },[])
- useEffect(()=>{setReport('');setPending(null)},[route])
+ useEffect(()=>{resetChalkRouteState({stop,setReport,setPending,setJobs,setBusy})},[route])
  useEffect(()=>{if(open)closeRef.current?.focus()},[open])
  if(!permitted)return null
  const active=(saved:User,epoch:number,originRoute=route,originRouteEpoch=routeEpoch.current)=>
