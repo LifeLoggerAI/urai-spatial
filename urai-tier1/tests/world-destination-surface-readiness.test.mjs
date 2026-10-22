@@ -15,7 +15,7 @@ const js = ts.transpileModule(source.slice(start, end), {
 
 function readinessFor(available = []) {
   const module = { exports: {} }
-  const document = { querySelector(selector) { return available.includes(selector) ? {} : null } }
+  const document = { querySelector(selector) { return available.includes(selector) ? { getAttribute: name => name === 'data-memory-status' ? 'loading' : null } : null } }
   new Function('module', 'exports', 'document', js)(module, module.exports, document)
   return module.exports.destinationSurfaceReady
 }
