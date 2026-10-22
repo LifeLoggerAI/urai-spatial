@@ -75,3 +75,17 @@ export function lifeMapApproachWaypoints(from, target, standoff = 5.8) {
     target: focus,
   };
 }
+
+/** One authored world transform across overview, approach and arrival.
+ * Moving the stage at selection makes a star teleport before the camera travels.
+ */
+export function lifeMapWorldStageTransform(portrait) {
+  return portrait
+    ? { scale: [0.54, 0.96, 0.78], position: [0, -0.18, 1.1] }
+    : { scale: [1.12, 1.18, 1.08], position: [0, 0.05, 0.9] };
+}
+
+export function lifeMapStagePoint(point, portrait) {
+  const { scale, position } = lifeMapWorldStageTransform(portrait);
+  return [0, 1, 2].map((index) => point[index] * scale[index] + position[index]);
+}
