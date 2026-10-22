@@ -65,3 +65,14 @@ test('Focus shares original galaxy and model with visible star choices', () => {
   assert.match(focus, /<FocusLifeMapContext/)
   assert.match(focus, /data-focus-neighbors="authorized"/)
 })
+
+test('neighbor travel checkpoints the destination star rather than the departing star', () => {
+  const focus = readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
+  const start = focus.indexOf('const onSelectNeighbor = useCallback(')
+  const end = focus.indexOf('const unwind = useCallback(', start)
+  assert.ok(start >= 0 && end > start, 'neighbor selection callback missing')
+  const selection = focus.slice(start, end)
+  assert.match(selection, /cameraCheckpoint: `focus:\$\{node\.id\}`/)
+  assert.doesNotMatch(selection, /cameraCheckpoint: `focus:\$\{memory\.star\.id\}`/)
+  assert.match(selection, /const href = focusNeighborHref\(node, memory\.demo\)/)
+})
