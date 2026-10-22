@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 import { createHash, randomUUID } from 'node:crypto'
 import { scenarioProviderState } from './scenarioProvider'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
+import { scenarioOwnerAuthorityDecision } from './scenarioOwnerAuthority'
 import { resolveManualBranchMutation } from './manualScenarioReceipt'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -35,18 +36,18 @@ async function requireCurrentScenarioOwner(tx: FirebaseFirestore.Transaction, ow
     tx.get(db.doc(`users/${ownerId}/privacyRuntime/exportAuthority`)),
     tx.get(db.doc(`privacyDeletionTombstones/${ownerId}`)),
   ])
-  if (!owner.exists || owner.get('deleted') === true
-    || ['deleting', 'deleted', 'disabled'].includes(String(owner.get('accountStatus') ?? ''))
-    || tombstone.exists) {
+  const decision = scenarioOwnerAuthorityDecision({
+    ownerExists: owner.exists,
+    ownerDeleted: owner.get('deleted'),
+    accountStatus: owner.get('accountStatus'),
+    tombstoneExists: tombstone.exists,
+    fenceExists: fence.exists,
+    pendingDeletions: fence.exists ? fence.get('pendingDeletions') : undefined,
+  })
+  if (decision === 'inactive-owner')
     throw new functions.https.HttpsError('permission-denied', 'Scenario owner is not active.')
-  }
-  if (fence.exists) {
-    const pending = fence.get('pendingDeletions')
-    if (!pending || typeof pending !== 'object' || Array.isArray(pending)
-      || Object.values(pending as Record<string, unknown>).some(value => value === true)) {
-      throw new functions.https.HttpsError('failed-precondition', 'Deletion is pending. Scenarios are paused.')
-    }
-  }
+  if (decision !== 'active')
+    throw new functions.https.HttpsError('failed-precondition', 'Deletion authority is not clear. Scenarios are paused.')
 }
 function ensureScenarioId(value: unknown) {
   const id = String(value ?? '')
