@@ -65,3 +65,15 @@ test('legitimate hard fallback removes history observer after recovery',()=>{
  assert.deepEqual(f.navigation,[A.href])
  assert.equal(f.popstateListeners,0)
 })
+
+test('browser Back permits immediate new attempt to the same destination',()=>{
+ const f=fixture()
+ f.requestUraiWorldTravel(A)
+ f.advance(100)
+ f.location.jump(A.href)
+ f.location.back('/home')
+ f.advance(100)
+ f.requestUraiWorldTravel(A)
+ f.advance(2400)
+ assert.deepEqual(f.navigation,[A.href], 'a new user selection after Back must not be suppressed by stale debounce')
+})
