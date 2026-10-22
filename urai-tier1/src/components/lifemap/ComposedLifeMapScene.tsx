@@ -613,6 +613,30 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
     </nav> : null}
 
+    {!thresholdsVisible && !recovery && sourceMode !== "signed-out" ? <nav className="life-map-flight-controls" aria-label="Explore the Life Map">
+      {([
+        ["KeyW", "Forward"], ["KeyS", "Back"], ["KeyA", "Left"], ["KeyD", "Right"],
+        ["KeyE", "Rise"], ["KeyQ", "Descend"], ["ArrowLeft", "Turn left"], ["ArrowRight", "Turn right"],
+      ] as const).map(([control, label]) =>
+        <button key={control} type="button" aria-label={label}
+          onPointerDown={(event) => {
+            if (event.pointerType === "mouse" && event.button !== 0) return;
+            if (shellRef.current) shellRef.current.dataset.lifeMapFlightControl = control;
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerUp={() => { if (shellRef.current) shellRef.current.dataset.lifeMapFlightControl = ""; }}
+          onPointerCancel={() => { if (shellRef.current) shellRef.current.dataset.lifeMapFlightControl = ""; }}
+          onBlur={() => { if (shellRef.current) shellRef.current.dataset.lifeMapFlightControl = ""; }}
+          onKeyDown={(event) => {
+            if ((event.key === "Enter" || event.key === " ") && shellRef.current) {
+              shellRef.current.dataset.lifeMapFlightControl = control;
+              event.preventDefault();
+            }
+          }}
+          onKeyUp={() => { if (shellRef.current) shellRef.current.dataset.lifeMapFlightControl = ""; }}>
+          {label}
+        </button>)}
+    </nav> : null}
     {!thresholdsVisible && sourceMode !== "signed-out" ? <nav className="life-map-overview-controls" aria-label="Life Map overview controls">
       <button type="button" className="overview-home-return" data-life-map-overview-home-return="true" onClick={returnHome}>Return Home</button>
       {!recovery ? <AdamLauncherSlot name="life-map-overview-controls" as="div" /> : null}
@@ -639,6 +663,10 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       .life-map-thresholds .overview-return,.overview-home-return{font-size:13px;letter-spacing:0;text-transform:none}
       @media(max-width:700px){.life-map-title{max-width:calc(100vw - 28px);gap:6px}.life-map-title strong{font-size:30px;max-width:16ch}.life-map-title span,.life-map-title em{font-size:10px;letter-spacing:.08em}.life-map-status{top:auto;right:14px;bottom:max(152px,calc(env(safe-area-inset-bottom) + 146px));max-width:calc(100vw - 28px);padding:8px 10px}.life-map-status span{font-size:11px}.life-map-status small{display:block;font-size:12px;max-width:32ch;text-align:right}:global(.life-map-world-label){max-width:130px;padding:7px 9px}:global(.life-map-world-label strong){font-size:12px}:global(.life-map-world-label span){font-size:10px}}
       @media(max-height:500px) and (min-width:501px){.life-map-title{max-width:46vw}.life-map-title strong{font-size:30px}.life-map-status{top:16px;bottom:auto;max-width:42vw}.life-map-thresholds{left:auto;right:16px;bottom:16px;transform:none;width:48vw;grid-template-columns:1fr 1fr auto}.life-map-thresholds .overview-return{grid-column:auto;min-width:64px;width:auto}.life-map-thresholds button span{display:none}}
+      .life-map-flight-controls{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(84px,calc(env(safe-area-inset-bottom) + 76px));z-index:17;display:grid;grid-template-columns:repeat(4,minmax(58px,1fr));gap:6px;max-width:min(360px,calc(100vw - 24px))}
+      .life-map-flight-controls button{min-width:58px;min-height:48px;border:1px solid rgba(213,239,251,.3);border-radius:12px;background:rgba(2,9,21,.77);color:#e2f5ff;font:700 11px Inter,system-ui;touch-action:none;cursor:pointer}
+      .life-map-flight-controls button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+      @media(max-width:700px){.life-map-flight-controls{bottom:max(88px,calc(env(safe-area-inset-bottom) + 76px));grid-template-columns:repeat(4,1fr);max-width:280px}.life-map-flight-controls button{min-width:54px;font-size:10px}}
       .life-map-root .life-map-title::after{content:none!important;display:none!important}
       /* The adopted scene owns the route hierarchy. Memory identity and search
          remain with the existing semantic navigator, outside the 3D world. */
