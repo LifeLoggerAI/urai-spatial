@@ -69,6 +69,21 @@ function publicState(state: StoredContinuity | null) {
     messages: state.enabled ? state.messages.map(({ role, content }) => ({ role, content })) : [] }
     : { enabled: false, epoch: null, revision: 0, messages: [] as OrbMessage[] }
 }
+function currentOwnerNotDeleting(
+  owner: FirebaseFirestore.DocumentSnapshot,
+  fence: FirebaseFirestore.DocumentSnapshot,
+  tombstone: FirebaseFirestore.DocumentSnapshot,
+) {
+  if (!owner.exists || owner.get('deleted') === true
+    || ['deleting', 'deleted', 'disabled'].includes(String(owner.get('accountStatus') ?? ''))
+    || tombstone.exists) denied()
+  // Reading the deletion fence in the same transaction as the transcript
+  // prevents the last client action from recreating data after deletion.
+  if (fence.exists) {
+    const pending = fence.get('pendingDeletions')
+    if (!isRecord(pending) || Object.values(pending).some(value => value === true)) denied()
+  }
+}
 function memoryReady(
   uid: string,
   owner: FirebaseFirestore.DocumentSnapshot,
@@ -76,18 +91,13 @@ function memoryReady(
   fence: FirebaseFirestore.DocumentSnapshot,
   tombstone: FirebaseFirestore.DocumentSnapshot,
 ) {
+  currentOwnerNotDeleting(owner, fence, tombstone)
   const policy = policyDoc.data()
-  if (!owner.exists || owner.get('deleted') === true
-    || ['deleting', 'deleted', 'disabled'].includes(String(owner.get('accountStatus') ?? ''))
-    || tombstone.exists || !policyDoc.exists || !isCanonicalStoredPolicy(policy, uid)
+  if (!policyDoc.exists || !isCanonicalStoredPolicy(policy, uid)
     || policy.domains.memory.mode !== 'granted'
     || policy.enforcement.state !== 'fully-enforced') denied()
   if (typeof owner.get('privacyRevision') === 'number'
     && owner.get('privacyRevision') !== policy.revision) denied()
-  if (fence.exists) {
-    const pending = fence.get('pendingDeletions')
-    if (!isRecord(pending) || Object.keys(pending).some(key => pending[key] === true)) denied()
-  }
 }
 function actionOf(data: unknown) {
   if (!isRecord(data) || typeof data.action !== 'string'
@@ -126,7 +136,11 @@ export const orbConversationContinuity = functions.https.onCall(async (input, co
     // re-enable until it reads the newest epoch. Private messages are erased.
     // Disable remains possible even if memory consent was revoked.
     if (action === 'disable') {
-      const existing = await transaction.get(ref)
+      const [owner, fence, tombstone, existing] = await Promise.all([
+        transaction.get(ownerRef), transaction.get(fenceRef),
+        transaction.get(tombstoneRef), transaction.get(ref),
+      ])
+      currentOwnerNotDeleting(owner, fence, tombstone)
       const priorRevision = existing.exists && Number.isSafeInteger(existing.get('revision'))
         ? Math.max(0, Number(existing.get('revision'))) : 0
       if (priorRevision >= Number.MAX_SAFE_INTEGER) invalid('Conversation revision limit reached.')
@@ -153,6 +167,7 @@ export const orbConversationContinuity = functions.https.onCall(async (input, co
     }
     if (!state || !state.enabled) denied()
     if (action === 'clear') {
+      if (body.epoch !== state.epoch) denied()
       const cleared: StoredContinuity = { ...state, epoch, revision: state.revision + 1,
         messages: [], recentTurnIds: [] }
       transaction.set(ref, { ...cleared, updatedAt: admin.firestore.FieldValue.serverTimestamp() })
