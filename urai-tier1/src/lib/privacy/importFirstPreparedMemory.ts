@@ -1,7 +1,8 @@
 'use client'
 
 import { httpsCallable } from 'firebase/functions'
-import { getUraiAuth, firebasePublicEnvReady, functions } from '@/lib/firebase/client'
+import { doc, getDocFromServer } from 'firebase/firestore'
+import { getUraiAuth, getFirebaseDb, firebasePublicEnvReady, functions } from '@/lib/firebase/client'
 import { attachOwnedMemoryFile, MEMORY_MEDIA_MAX_BYTES } from '@/lib/privacy/ownedMemoryMediaClient'
 
 type Row = Record<string, unknown>
@@ -17,7 +18,7 @@ const stopped = (): never => { throw new DOMException('First memory import cance
  * owner-controlled Firestore fields are submitted until the protected callable
  * validates the packet again under current server authority. */
 export async function importFirstPreparedMemory(packet: unknown, file: FirstFile,
-  explicitOwnerConfirmation: boolean, lifecycle: Lifecycle): Promise<{
+  explicitOwnerConfirmation: boolean, lifecycle: Lifecycle, recovery?: { existingHiddenMemoryId: string }): Promise<{
     ownerId: string; memoryId: string; receiptId: string; visibility: 'hidden'; state: 'ready-but-hidden'
   }> {
   if (!firebasePublicEnvReady) throw new Error('FIREBASE_CONFIGURATION_REQUIRED')
@@ -47,19 +48,46 @@ export async function importFirstPreparedMemory(packet: unknown, file: FirstFile
   const authTime = token.claims.auth_time, now = Math.floor(Date.now() / 1000)
   if (!Number.isSafeInteger(authTime) || Number(authTime) <= 0 || Number(authTime) > now
     || now - Number(authTime) > 300) throw new Error('FIRST_MEMORY_RECENT_REAUTH_REQUIRED')
+  if (recovery !== undefined) {
+    // An incomplete upload is not permission to create or overwrite a memory.
+    // Read the canonical server snapshot. Protected upload separately rechecks
+    // current C1, policy, deletion, ownership and source fixity transactionally.
+    if (recovery.existingHiddenMemoryId !== id) throw new Error('FIRST_MEMORY_RECOVERY_ID_MISMATCH')
+    const snapshot = await getDocFromServer(doc(getFirebaseDb(), 'users', owner.uid, 'memories', id)); check()
+    if (!snapshot.exists()) throw new Error('FIRST_MEMORY_RECOVERY_NOT_AVAILABLE')
+    const stored = row(snapshot.data()), source = row(stored.sourceProvenance)
+    const confirmation = row(stored.firstPrivateMemoryConsent), attachments = stored.sourceMedia
+    if (stored.ownerId !== owner.uid || stored.deleted !== false || stored.privacy !== 'hidden'
+      || stored.consentState !== 'authorized' || stored.firstPrivateMemoryActivation !== undefined
+      || source.authenticity !== 'source-derivative-not-generated-autobiography'
+      || source.derivativeSha256 !== sha || source.derivativeByteLength !== file.size
+      || source.derivedContentType !== file.type
+      || source.originalSha256 !== provenance.originalSha256
+      || confirmation.status !== 'explicit-owner-confirmation' || confirmation.ownerId !== owner.uid
+      || confirmation.memoryId !== id || confirmation.derivativeSha256 !== sha
+      || !SHA.test(String(confirmation.canonicalConsentReceiptHash))
+      || !Number.isSafeInteger(confirmation.consentRevision) || Number(confirmation.consentRevision) < 1
+      || !Array.isArray(attachments) || attachments.length > 1
+      || (attachments.length === 1 && (row(attachments[0]).kind !== 'audio'
+        || !SHA.test(String(row(attachments[0]).mediaReceiptId))))) {
+      throw new Error('FIRST_MEMORY_RECOVERY_NOT_AUTHORIZED')
+    }
+  }
   const bytes = new Uint8Array(await file.arrayBuffer()); check()
   if (bytes.byteLength !== file.size) throw new Error('FIRST_MEMORY_SELECTED_FILE_CHANGED')
   const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)),
     value => value.toString(16).padStart(2, '0')).join(''); check()
   if (digest !== sha) throw new Error('FIRST_MEMORY_SELECTED_FILE_FIXITY_MISMATCH')
-  const create = httpsCallable<Record<string, unknown>, Record<string, unknown>>(functions, 'createFirstPrivateMemory')
-  const created = await create({ packet, ownerConfirmation: {
-    authorize: true, memoryId: id, derivativeSha256: sha, visibility: 'hidden',
-  } }); check()
-  const result = row(created.data)
-  if (result.memoryId !== id || result.ownerId !== owner.uid || result.visibility !== 'hidden'
-    || result.state !== 'created-without-media' || Object.keys(result).some(key =>
-      !['memoryId', 'ownerId', 'visibility', 'state'].includes(key))) throw new Error('FIRST_MEMORY_CREATE_RECEIPT_INVALID')
+  if (recovery === undefined) {
+    const create = httpsCallable<Record<string, unknown>, Record<string, unknown>>(functions, 'createFirstPrivateMemory')
+    const created = await create({ packet, ownerConfirmation: {
+      authorize: true, memoryId: id, derivativeSha256: sha, visibility: 'hidden',
+    } }); check()
+    const result = row(created.data)
+    if (result.memoryId !== id || result.ownerId !== owner.uid || result.visibility !== 'hidden'
+      || result.state !== 'created-without-media' || Object.keys(result).some(key =>
+        !['memoryId', 'ownerId', 'visibility', 'state'].includes(key))) throw new Error('FIRST_MEMORY_CREATE_RECEIPT_INVALID')
+    }
   // A failed upload must NEVER turn the hidden, media-less memory visible.
   // The record is deliberately left for later owner-authorized recovery.
   try {
@@ -81,4 +109,12 @@ export class FirstPrivateMemoryUploadIncomplete extends Error {
     super('FIRST_MEMORY_CREATED_BUT_MEDIA_UPLOAD_INCOMPLETE', { cause })
     this.name = 'FirstPrivateMemoryUploadIncomplete'
   }
+}
+
+/** Non-destructive owner-authorized retry for an ALREADY-created hidden memory.
+ * Aborted/closing/revoked upload receipts remain fail-closed on the server. */
+export function resumeFirstPreparedMemoryUpload(packet: unknown, file: FirstFile,
+  explicitRecoveryConfirmation: boolean, lifecycle: Lifecycle, existingHiddenMemoryId: string) {
+  return importFirstPreparedMemory(packet, file, explicitRecoveryConfirmation, lifecycle,
+    { existingHiddenMemoryId })
 }
