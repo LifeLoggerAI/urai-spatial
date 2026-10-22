@@ -111,7 +111,14 @@ function LifeMapAccessGate() {
 
     setMode("checking");
     return subscribeLifeMapAuth({
-      listen: (onIdentity, onFailure) => onAuthStateChanged(getUraiAuth(), user => onIdentity(user?.uid ?? null), onFailure),
+      listen: (onIdentity, onFailure) => {
+        const auth = getUraiAuth();
+        // A delayed callback for a replaced Firebase User (even the same UID)
+        // cannot restore a private Life Map owner. Fail closed until the
+        // canonical auth instance reports its current actor.
+        return onAuthStateChanged(auth, user =>
+          onIdentity(user && auth.currentUser === user ? user.uid : null), onFailure);
+      },
       onResolved: userId => {
         setAuthenticatedUserId(userId);
         setMode(userId ? "private" : "signed-out");
