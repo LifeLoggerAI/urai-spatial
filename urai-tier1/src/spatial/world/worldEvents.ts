@@ -111,6 +111,16 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (!neutralDestination && request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (!neutralDestination && request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
+  // Neutral destinations have a deliberately tiny URL contract. Unknown
+  // query keys can themselves carry owner IDs, session tokens or memory refs.
+  if (neutralDestination) {
+    const language = new URLSearchParams()
+    for (const key of ['locale', 'lang']) {
+      const value = target.searchParams.get(key)
+      if (value && /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/.test(value)) language.set(key, value)
+    }
+    target.search = language.toString()
+  }
   return `${target.pathname}${target.search}${target.hash}`
 }
 
