@@ -405,6 +405,7 @@ export const comparePossibleFutureBranches = functions.https.onCall(async (data,
   // transaction. A concurrent discard/regeneration must trigger revalidation,
   // never commit a stale or foreign-owner branch comparison.
   await db.runTransaction(async (tx) => {
+    await requireCurrentScenarioOwner(tx, ownerId)
     const scenarioSnap = await tx.get(ref)
     const scenario = scenarioSnap.exists ? scenarioSnap.data() : null
     if (!scenario || scenario.ownerId !== ownerId || scenario.status === 'discarded')
@@ -427,14 +428,80 @@ export const comparePossibleFutureBranches = functions.https.onCall(async (data,
 })
 
 export const recordPossibleFutureOutcome = functions.https.onCall(async (data, context) => {
-  const ownerId = uid(context); operationId(data?.operationId); const scenarioId = ensureScenarioId(data?.scenarioId)
-  const source = String(data?.source ?? '')
-  if (source !== 'observation' && source !== 'user-assertion') throw new functions.https.HttpsError('invalid-argument', 'Outcome requires an independent observation or user assertion.')
-  const observedTruthRecordIds = asStringArray(data?.observedTruthRecordIds)
-  if (!observedTruthRecordIds.length) throw new functions.https.HttpsError('invalid-argument', 'Outcome requires independent truth record references.')
-  const observationId = opaque('obs_')
-  await scenarioRef(ownerId, scenarioId).collection('outcomeObservations').doc(observationId).create({ id: observationId, ownerId, scenarioId, branchId: typeof data?.branchId === 'string' ? data.branchId : null, source, observedTruthRecordIds, observedAt: fv.serverTimestamp(), createdAt: fv.serverTimestamp() })
-  return { observationId, scenarioId }
+  const ownerId = uid(context)
+  const op = operationId(data?.operationId)
+  const scenarioId = ensureScenarioId(data?.scenarioId)
+  const source = data?.source
+  if (source !== 'observation' && source !== 'user-assertion') {
+    throw new functions.https.HttpsError('invalid-argument', 'An outcome source is required.')
+  }
+  // "Observation" must have authoritative, independently resolved truth sources.
+  // The old endpoint accepted arbitrary client-supplied truth IDs and turned
+  // them into trusted ledger evidence. Until that resolver exists, fail closed.
+  if (source === 'observation') {
+    throw new functions.https.HttpsError('failed-precondition', 'INDEPENDENT_OUTCOME_EVIDENCE_VERIFICATION_UNAVAILABLE')
+  }
+  if (data?.observedTruthRecordIds !== undefined) {
+    throw new functions.https.HttpsError('permission-denied', 'CLIENT_OUTCOME_TRUTH_REFS_FORBIDDEN')
+  }
+  const assertion = typeof data?.assertion === 'string' ? data.assertion.trim() : ''
+  if (!assertion || assertion.length > 1200) {
+    throw new functions.https.HttpsError('invalid-argument', 'A bounded owner outcome report is required.')
+  }
+  const branchId = data?.branchId
+  if (typeof branchId !== 'string' || !/^br_[A-Za-z0-9_-]{12,96}$/.test(branchId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'An active Scenario branch is required.')
+  }
+  // Stable for retried callable requests; a reused operation ID with different
+  // user text is a conflict, never two different outcome records.
+  const observationId = 'obs_' + stableReceipt(ownerId, scenarioId + ':' + op, 'scenario-owner-outcome')
+  const requestDigest = createHash('sha256').update(JSON.stringify({ scenarioId, branchId, source, assertion })).digest('hex')
+  const ref = scenarioRef(ownerId, scenarioId)
+  const outcomeRef = ref.collection('outcomeObservations').doc(observationId)
+  let idempotent = false
+  await db.runTransaction(async tx => {
+    await requireCurrentScenarioOwner(tx, ownerId)
+    const policyRef = db.doc(`users/${ownerId}/privacyPolicy/current`)
+    const [scenarioSnap, branchSnap, policySnap, existing] = await Promise.all([
+      tx.get(ref), tx.get(ref.collection('branches').doc(branchId)),
+      tx.get(policyRef), tx.get(outcomeRef),
+    ])
+    const scenario = scenarioSnap.data()
+    if (!scenarioSnap.exists || scenario?.ownerId !== ownerId || scenario?.status === 'discarded') {
+      throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+    }
+    if (!['ready', 'saved'].includes(String(scenario.status))) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_NOT_READY_FOR_OUTCOME')
+    }
+    const activeIds = asStringArray(scenario.branchIds, BRANCH_LIMIT)
+    if (!activeIds.includes(branchId) || !branchSnap.exists || branchSnap.get('ownerId') !== ownerId
+      || branchSnap.get('scenarioId') !== scenarioId || branchSnap.get('truthKind') !== 'scenario') {
+      throw new functions.https.HttpsError('not-found', 'Current Scenario branch not found.')
+    }
+    // A personal outcome report is private stored history, not a simulation.
+    // It must not be created while its owner's memory consent is absent.
+    const policy = policySnap.data()
+    if (!policySnap.exists || !isCanonicalStoredPolicy(policy, ownerId)
+      || policy.domains.memory.mode !== 'granted'
+      || policy.enforcement.state !== 'fully-enforced') {
+      throw new functions.https.HttpsError('permission-denied', 'Current memory consent is required for owner outcome reports.')
+    }
+    if (existing.exists) {
+      if (existing.get('ownerId') !== ownerId || existing.get('requestDigest') !== requestDigest) {
+        throw new functions.https.HttpsError('already-exists', 'Operation ID was already used with different content.')
+      }
+      idempotent = true
+      return
+    }
+    tx.create(outcomeRef, {
+      id: observationId, ownerId, scenarioId, branchId,
+      source: 'user-assertion', truthKind: 'user-assertion',
+      verification: 'unverified-user-report', assertion,
+      observedTruthRecordIds: [], operationId: op, requestDigest,
+      reportedAt: fv.serverTimestamp(), createdAt: fv.serverTimestamp(),
+    })
+  })
+  return { observationId, scenarioId, verified: false, source: 'user-assertion', idempotent }
 })
 
 export const deletePossibleFuture = functions.https.onCall(async (data, context) => {
