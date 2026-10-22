@@ -84,3 +84,9 @@ test("distant star journey progresses inward through both approach phases", () =
     Math.hypot(...journey[phase].map((x, i) => x - target[i])));
   assert.ok(distances.every((value, i) => i === 0 || value < distances[i - 1]));
 });
+
+test("deliberate camera drag cannot trigger memory-star selection", () => {
+  const world = readFileSync(new URL("../src/components/lifemap/LifeMapProductionWorld.tsx", import.meta.url), "utf8");
+  assert.match(world, /if \(event\.delta > 6\) return/);
+  assert.match(world, /event\.stopPropagation\(\);\s*onSelect\(node\)/);
+});
