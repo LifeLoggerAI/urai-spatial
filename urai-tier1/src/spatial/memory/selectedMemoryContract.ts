@@ -209,7 +209,7 @@ export function buildExplicitDemoMemory(id: string): SelectedMemory {
   }
 }
 
-export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerId: string, id: string, trustedStorageBucket?: string | null): SelectedMemoryResult {
+export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerId: string, id: string, trustedStorageBucket?: string | null, currentPolicyRevision?: number): SelectedMemoryResult {
   if (raw.deleted === true) return { status: 'deleted', memory: null, message: 'This memory was deleted.' }
   if (raw.consentState === 'revoked') return { status: 'unauthorized', memory: null, message: 'Consent for this memory was revoked.' }
   if (raw.consentState === 'pending') return { status: 'unauthorized', memory: null, message: 'Consent for this memory is pending.' }
@@ -247,7 +247,12 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
       || activation.status !== 'explicit-owner-private-replay' || activation.ownerId !== ownerId
       || activation.memoryId !== id || !sha256.test(String(activation.mediaReceiptId))
       || activation.derivativeSha256 !== provenance.derivativeSha256
-      || activation.consentRevision !== confirmation.consentRevision
+      // Policy revision can advance after creation, but activation must be
+      // under the currently admitted policy epoch, never an older one.
+      || !Number.isSafeInteger(activation.consentRevision)
+      || Number(activation.consentRevision) < Number(confirmation.consentRevision)
+      || (currentPolicyRevision !== undefined && (
+        !Number.isSafeInteger(currentPolicyRevision) || Number(currentPolicyRevision) !== Number(activation.consentRevision)))
       || activation.consentReceiptHash !== confirmation.canonicalConsentReceiptHash
       || matchingReceipts.length !== 1) {
       return { status: 'unauthorized', memory: null, message: 'Private memory activation has not been authorized.' }
