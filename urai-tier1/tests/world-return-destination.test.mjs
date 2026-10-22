@@ -60,3 +60,12 @@ test('unknown-location Memory World is visibly nonreconstructed, not a gray encl
   assert.match(runtime, /neutral-threshold-no-reconstruction/)
   assert.match(runtime, /No verified location geometry is available/)
 })
+
+test('Memory World only declares rendered after scene mesh first-frame callback', () => {
+  const source = readFileSync(new URL('../src/spatial/memory-world/MemoryWorldRuntime.tsx', import.meta.url), 'utf8')
+  assert.match(source, /data-memory-world-first-frame=\{firstFrameRendered \? 'drawn' : 'pending'\}/)
+  assert.match(source, /firstFrameRendered \? 'rendered' : 'waiting-first-frame'/)
+  assert.match(source, /onAfterRender=\{onFirstFrame\}/)
+  assert.match(source, /firstFrameRecorded\.current = false; setFirstFrameRendered\(false\); setRendererState\('lost'\)/)
+  assert.doesNotMatch(source, /data-memory-world-state=\{rendererState === 'ready' \? 'rendered'/)
+})
