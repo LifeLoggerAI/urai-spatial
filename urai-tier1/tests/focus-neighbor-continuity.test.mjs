@@ -76,3 +76,11 @@ test('neighbor travel checkpoints the destination star rather than the departing
   assert.doesNotMatch(selection, /cameraCheckpoint: `focus:\$\{memory\.star\.id\}`/)
   assert.match(selection, /const href = focusNeighborHref\(node, memory\.demo\)/)
 })
+
+test('non-replayable disclosed artifacts stay in Life Map, never appear as Focus memory neighbors', () => {
+  const pattern = { ...node('recurring-pressure-loop', undefined, false, [1, 0, -1]), type: 'ritual', replayAvailable: false }
+  const sample = { ...memory, demo: true }
+  assert.deepEqual(eligibleFocusNeighbors([nodes[0], pattern, nodes[1]], nodes[0], sample).map(n => n.id), ['star-b'])
+  assert.equal(focusNeighborHref(pattern, true), null)
+  assert.equal(new URL(focusNeighborHref(nodes[1], true), 'https://example.invalid').searchParams.get('memoryId'), 'star-b')
+})
