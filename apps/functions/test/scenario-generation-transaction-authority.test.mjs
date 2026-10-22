@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { createHash } from 'node:crypto'
+import { createRequire } from 'node:module'
+const localRequire = createRequire(import.meta.url)
+const scenarioOwnerAuthorityDecision = localRequire('../lib/apps/functions/src/scenarioOwnerAuthority.js').scenarioOwnerAuthorityDecision
+const resolveManualBranchMutation = localRequire('../lib/apps/functions/src/manualScenarioReceipt.js').resolveManualBranchMutation
 import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
@@ -14,7 +19,9 @@ function handler(name) {
   assert.ok(node, 'Missing original ' + name)
   return node.getText(ast)
 }
-const compiled = ts.transpileModule(handler('generatePossibleFutureBranches') + '\n' + handler('discardPossibleFuture'), {
+const ownerGuardNode = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.getText(ast) === 'requireCurrentScenarioOwner')
+assert.ok(ownerGuardNode, 'Original owner guard must exist')
+const compiled = ts.transpileModule(ownerGuardNode.getText(ast) + '\n' + handler('generatePossibleFutureBranches') + '\n' + handler('discardPossibleFuture'), {
   compilerOptions: {module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022},reportDiagnostics:true,
 })
 assert.deepEqual(compiled.diagnostics ?? [], [])
@@ -25,7 +32,8 @@ function setup({status='awaiting-assumptions',scenario=true,foreign=false,basis=
   const rows=new Map(),writes=[],reads=[]
   if(scenario)rows.set(base,{ownerId:foreign?'foreign':owner,status,basisRevision:revision,branchIds:[]})
   if(basis)rows.set(base+'/basis/current',{ownerId:foreignBasis?'foreign':owner,evidenceRefs:[{id:'known'}]})
-  const snap=r=>({exists:rows.has(r.path),data:()=>rows.get(r.path),id:r.id})
+  rows.set('users/'+owner,{deleted:false,accountStatus:'active'})
+  const snap=r=>({exists:rows.has(r.path),data:()=>rows.get(r.path),id:r.id,get:key=>key.split('.').reduce((value,part)=>value?.[part],rows.get(r.path))})
   const mutate=(action,r,value,opt)=>{writes.push({action,path:r.path});
     if(action==='create')assert.equal(rows.has(r.path),false)
     if(action==='update')assert.equal(rows.has(r.path),true)
@@ -49,7 +57,7 @@ function setup({status='awaiting-assumptions',scenario=true,foreign=false,basis=
       return result
     }}
   const exports={}
-  vm.runInNewContext(compiled.outputText,{exports,Promise,Set,db,
+  vm.runInNewContext(compiled.outputText,{exports,Promise,Set,db,createHash,scenarioOwnerAuthorityDecision,resolveManualBranchMutation,
     functions:{https:{onCall:fn=>fn,HttpsError}},uid:c=>c.auth.uid,
     operationId:x=>x,ensureScenarioId:x=>x,scenarioRef:(u,s)=>{assert.equal(u,owner);assert.equal(s,id);return ref(base)},
     BRANCH_LIMIT:3,evidenceIdsFromBasis:v=>new Set((v?.evidenceRefs??[]).map(x=>x.id)),
