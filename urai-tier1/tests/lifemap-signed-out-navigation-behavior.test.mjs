@@ -6,6 +6,7 @@ import ts from 'typescript'
 import { withLifeMapSelectionIdentity } from '../src/spatial/memory/lifeMapSelectionJourney.ts'
 import { buildNamedExplicitDemoMemory } from '../src/spatial/memory/explicitDemoMemory.ts'
 import { subscribeLifeMapAuth } from '../src/spatial/lifemap/lifeMapAuthGate.ts'
+import { shouldHandleRealmEscape } from '../src/spatial/world/realmEscapeEligibility.mjs'
 
 // Execute the actual scene and canonical threshold with explicit synthetic
 // hook/router/Auth/WebGL adapters. This is component proof, not browser,
@@ -76,7 +77,7 @@ function fixture({ component = 'scene', sourceMode = 'signed-out', pathname = '/
     '@/components/lifemap/LifeMapRouteBoundary': 'synthetic-scene-boundary',
     '@/components/lifemap/LifeMapSemanticNavigator': 'synthetic-semantic-boundary',
     '@/spatial/world/worldEvents': { requestUraiWorldReturn: () => calls.worldReturn++ },
-    '@/spatial/world/realmEscapeEligibility.mjs': { shouldHandleRealmEscape: event => event.key === 'Escape' && !event.defaultPrevented && !event.repeat && !event.isComposing && !(event.target?.matches?.('input,textarea,select,[role="textbox"]')) },
+    '@/spatial/world/realmEscapeEligibility.mjs': { shouldHandleRealmEscape: event => shouldHandleRealmEscape(event, { querySelector: () => null }) },
   }
   const module = { exports: {} }
   vm.runInNewContext(component === 'canonical' ? canonicalCode : sceneCode, {
