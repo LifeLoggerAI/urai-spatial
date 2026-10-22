@@ -128,9 +128,10 @@ export function destinationSurfaceReady(destination: UraiWorldTravelRequest['des
     if (typeof window === 'undefined') return true
     const params = new URLSearchParams(window.location.search)
     const mountedId = surface.getAttribute('data-memory-id')
-    // A neutral loading or denied-state surface is truthful; never require
-    // its private media to resolve just to acknowledge a mounted route.
-    if (!mountedId) return true
+    // Only a truthful neutral memory state can mount without an identity.
+    // A ready/demo memory without its own ID is never admission evidence.
+    if (!mountedId) return ['loading', 'unavailable', 'deleted', 'unauthorized', 'corrupt']
+      .includes(surface.getAttribute('data-memory-status') ?? '')
     const requestedId = params.get('memoryId')
     if (!requestedId) return false
     const expectedId = params.get('demo') === '1' && !requestedId.startsWith('demo:')

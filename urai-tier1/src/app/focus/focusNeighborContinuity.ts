@@ -48,5 +48,7 @@ export function isAuthorizedFocusNeighborReturn(
   origin: string | null,
   selected: Pick<LifeMapNode, 'id'> | null,
 ): boolean {
-  return origin === 'focus-neighbor' && Boolean(nodeHint && selected?.id === nodeHint)
+  // Replay -> Focus drops the original `from` marker. The visual node may
+  // still be preserved only when it matches the currently verified selection.
+  return (origin === 'focus-neighbor' || origin === null) && Boolean(nodeHint && selected?.id === nodeHint)
 }

@@ -49,7 +49,7 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     removeEventListener(type, listener) { listeners.get(type)?.delete(listener) },
     dispatchEvent(event) { for (const listener of [...listeners.get(event.type) ?? []]) listener(event) },
   }
-  const document = { body: {}, querySelector: selector => mountedSurfaces.has(selector) ? {getAttribute: () => null} : null }
+  const document = { body: {}, querySelector: selector => mountedSurfaces.has(selector) ? {getAttribute: name => name === 'data-memory-status' ? 'loading' : null} : null }
   class MutationObserver {
     constructor(callback) { this.callback = callback }
     observe(_target, options) { observers.add(this); observerOptions.set(this, options) }
@@ -130,8 +130,8 @@ function mount({ reducedMotion = true, pushCommits = false } = {}) {
     get observedIdentityAttributes() { return [...observerOptions.values()].flatMap(options => options.attributeFilter ?? []) },
     get locationListenerCount() { return (listeners.get('popstate')?.size ?? 0) + (listeners.get('hashchange')?.size ?? 0) },
     travel(destination, href) {
-      // The actual travel event is cancelable and claimed synchronously by the
-      // mounted world controller; the fixture must reproduce that handshake.
+      // The real world-travel event is cancelable. Its controller claims
+      // ownership synchronously to suppress the competing 2400ms fallback.
       const event = {
         type: events.URAI_WORLD_TRAVEL_EVENT,
         detail: { destination, href },
@@ -363,6 +363,15 @@ test('mounted same-route Focus identity changes notify the watchdog without anot
   page.unmount()
   assert.equal(page.observerCount, 0)
 })
+
+test('canonical world controller acknowledges cancelable travel before async transition', () => {
+  const page = mount()
+  const event = page.travel('replay', '/replay')
+  assert.equal(event.cancelable, true)
+  assert.equal(event.defaultPrevented, true, 'controller must claim travel to suppress the concurrent hard fallback')
+  page.unmount()
+})
+
 
 test('canonical controller claims cancelable travel before its delayed router handoff', () => {
   const page = mount()

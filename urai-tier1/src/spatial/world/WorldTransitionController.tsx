@@ -61,7 +61,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
     // Relationship hints from an old memory never scope a different selection.
     if ((key === 'thread' || key === 'personId' || key === 'placeId') && (neutralDestination || (selectedMemoryId && !sameMemory))) continue
-    // A privacy-mode hint from an old memory cannot describe a new star or a neutral realm.
+    // A privacy-mode hint from an old memory cannot describe a new star or neutral realm.
     if (key === 'privacyMode' && (!memoryDestination || !sameMemory)) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
@@ -204,6 +204,9 @@ export function WorldTransitionController() {
       childList: true,
       subtree: true,
       attributes: true,
+      // A mounted Focus/Replay scene may switch memories without replacing its
+      // DOM node. Identity changes must wake the route-ownership observer,
+      // otherwise the old watchdog can hold the transition veil unnecessarily.
       attributeFilter: ['data-testid', 'data-route-owner', 'data-memory-id', 'data-manifest-id', 'data-memory-status'],
     })
     stopNavigationObservation.current = () => {

@@ -33,7 +33,7 @@ test('demo route matches canonical demo memory ID',()=>{
  assert.equal(readiness({route:'/focus?demo=1&memoryId=voice-note-home',surfaces:{[focus]:surface('demo:voice-note-home','voice-note-home')}})('focus'),true)
 })
 test('truthful loading and authorization fallback can mount without a selected memory',()=>{
- assert.equal(readiness({surfaces:{[focus]:{'data-memory-id':null}}})('focus'),true)
+ assert.equal(readiness({surfaces:{[focus]:{'data-memory-id':null,'data-memory-status':'loading'}}})('focus'),true)
 })
 test('neutral destination cannot mistake a stale mounted private memory for its own Focus screen',()=>{
  assert.equal(readiness({route:'/focus',surfaces:{[focus]:surface('old','manifest-old')}})('focus'),false)
@@ -45,5 +45,18 @@ test('requested private manifest cannot be satisfied by an absent mounted manife
 })
 test('matching selected private manifest remains ready and neutral fallback remains available',()=>{
  assert.equal(readiness({surfaces:{[focus]:surface('new','manifest-new')}})('focus'),true)
- assert.equal(readiness({surfaces:{[focus]:{'data-memory-id':null}}})('focus'),true)
+ assert.equal(readiness({surfaces:{[focus]:{'data-memory-id':null,'data-memory-status':'loading'}}})('focus'),true)
+})
+
+test('ready and demo screens without identity never satisfy destination readiness',()=>{
+ for(const [destination, marker] of [['focus',focus],['replay',replay]]){
+  for(const status of ['ready','demo']) {
+   const route = destination === 'focus' ? '/focus?memoryId=new&manifestId=manifest-new' : '/replay?demo=1&memoryId=quiet'
+   assert.equal(readiness({route,surfaces:{[marker]:{'data-memory-status':status}}})(destination),false)
+  }
+  for(const status of ['loading','unavailable','deleted','unauthorized','corrupt']) {
+   assert.equal(readiness({surfaces:{[marker]:{'data-memory-status':status}}})(destination),true)
+  }
+  assert.equal(readiness({surfaces:{[marker]:{}}})(destination),false)
+ }
 })
