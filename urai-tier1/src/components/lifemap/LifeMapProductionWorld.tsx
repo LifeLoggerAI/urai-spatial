@@ -2,6 +2,7 @@
 
 import { Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
+import { lifeMapWorldStageTransform } from "./lifeMapStageContinuity.mjs";
 import { Suspense, createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import StellarCorona from "@/spatial/stellar/StellarCorona";
@@ -833,8 +834,10 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
 }) {
   const { size } = useThree();
   const portrait = size.height > size.width;
-  const stageScale: Point3 = selected ? (portrait ? [0.92, 0.96, 0.92] : [1.12, 1.12, 1.08]) : portrait ? [0.54, 0.96, 0.78] : [1.12, 1.18, 1.08];
-  const stagePosition: Point3 = selected ? (portrait ? [0, -0.08, 0.9] : [0, -0.16, 0.62]) : portrait ? [0, -0.18, 1.1] : [0, 0.05, 0.9];
+  // Selecting a memory must move the camera, not the galaxy or neighboring stars.
+  const stage = lifeMapWorldStageTransform(portrait);
+  const stageScale: Point3 = stage.scale as Point3;
+  const stagePosition: Point3 = stage.position as Point3;
   const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;
 
   useEffect(() => {

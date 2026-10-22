@@ -14,6 +14,7 @@ import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProdu
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
 import { shouldHandleRealmEscape } from "@/spatial/world/realmEscapeEligibility.mjs";
+import { lifeMapStagePoint } from "./lifeMapStageContinuity.mjs";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
@@ -33,9 +34,7 @@ function tuple(vector: THREE.Vector3): [number, number, number] {
 }
 
 function selectedStagePoint(node: LifeMapNode, portrait: boolean) {
-  const scale = portrait ? new THREE.Vector3(0.92, 0.96, 0.92) : new THREE.Vector3(1.12, 1.12, 1.08);
-  const position = portrait ? new THREE.Vector3(0, -0.08, 0.9) : new THREE.Vector3(0, -0.16, 0.62);
-  return new THREE.Vector3(...node.position).multiply(scale).add(position);
+  return new THREE.Vector3(...lifeMapStagePoint(node.position, portrait));
 }
 
 function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, origin?: THREE.Vector3): CameraGoal {
