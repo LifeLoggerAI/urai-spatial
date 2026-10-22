@@ -15,6 +15,7 @@ const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const lifeMapBoundary = read('src/spatial/world/LifeMapIndependentInputBoundary.tsx')
 const lifeMapNavigator = read('src/components/lifemap/LifeMapSemanticNavigator.tsx')
 const lifeMapScene = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
+const lifeMapCanonicalCamera = read('src/components/lifemap/ComposedLifeMapScene.tsx')
 const lifeMapProduction = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
 const routeOwner = read('src/spatial/world/routeOwnerConvergence.css')
@@ -173,7 +174,9 @@ test('Ground remains walkable infrastructure with paths, boundaries and semantic
 })
 
 test('Life Map keeps independent non-Orb travel, semantic depth and overview recovery', () => {
-  for (const marker of ['KeyA', 'KeyQ', 'KeyD', 'KeyE', 'urai:life-map-step', 'urai:life-map-overview', 'life-map-movement-help']) has(lifeMapBoundary, marker)
+  for (const marker of ['urai:life-map-step', 'urai:life-map-overview', 'life-map-movement-help', 'lifeMapForegroundControlsOwnKeys(document)']) has(lifeMapBoundary, marker)
+  for (const key of ['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','ShiftLeft','KeyR']) has(lifeMapCanonicalCamera, key)
+  assert.doesNotMatch(lifeMapBoundary, /window\.addEventListener\('keydown'/)
   for (const marker of ['ArrowLeft', 'ArrowRight', "step(-1)", "step(1)", 'urai:life-map-step']) has(lifeMapNavigator, marker)
   assert.doesNotMatch(lifeMapBoundary, /const indexRef = useRef|function memoryButtons|cycle\(-1\)|cycle\(1\)/)
   for (const marker of ['type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival"', 'goalForNode', 'CameraRig', 'life-map-depth-near', 'life-map-depth-middle', 'life-map-depth-far', 'setPhase("departure")', 'setPhase("travel")', 'setPhase("approach")', 'setPhase("arrival")', 'data-life-map-phase={phase}', 'data-home-companion-owned="false"']) has(lifeMapScene, marker)

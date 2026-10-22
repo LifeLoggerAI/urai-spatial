@@ -13,6 +13,7 @@ import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
+import { lifeMapForegroundControlsOwnKeys } from "./lifeMapInputOwnership.mjs";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
@@ -105,6 +106,7 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     const controls = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE']);
     const keyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      if (lifeMapForegroundControlsOwnKeys(document)) { release(); return; }
       const target = event.target;
       if (target instanceof HTMLElement && (target.isContentEditable
         || target.closest('input,textarea,select,[role="textbox"],[role="dialog"],[data-urai-adam-presence]'))) {
@@ -182,7 +184,7 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     const portrait = resolve();
     if (phase === "overview") {
       const focused = document.activeElement;
-      if ((focused instanceof HTMLElement && (focused.isContentEditable
+      if (lifeMapForegroundControlsOwnKeys(document) || (focused instanceof HTMLElement && (focused.isContentEditable
         || focused.closest('input,textarea,select,[role="textbox"],[role="dialog"],[data-urai-adam-presence]')))
         || document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"]')) {
         heldFlightKeys.current.clear();
@@ -533,7 +535,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.key !== "Escape" || (event.target instanceof HTMLElement && event.target.matches("input,textarea,select,[role='textbox']"))) return;
-      if (document.querySelector('#life-map-navigator, [role="dialog"][aria-modal="true"], [data-urai-adam-presence]')) return;
+      if (lifeMapForegroundControlsOwnKeys(document) || document.querySelector('#life-map-navigator, [role="dialog"][aria-modal="true"]')) return;
       event.preventDefault();
       if (selectedId) overview(); else returnHome();
     };
