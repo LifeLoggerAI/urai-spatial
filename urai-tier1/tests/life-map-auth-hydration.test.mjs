@@ -112,3 +112,70 @@ test('original Life Map consumer uses bounded Firebase authority and does not by
   assert.match(map, /data-private-memory-mounted=\{mode === "signed-out" \? "false"/);
   assert.match(map, /if \(current.get\("demo"\) === "1"\)/);
 });
+
+
+// Exercise the real callback extracted from the source component rather than
+// asserting its presence by a string match. Firebase and React remain mocked.
+function canonicalLifeMapActorFixture() {
+  const source = readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
+  const callback = source.match(/listen:\s*\(onIdentity, onFailure\)\s*=>\s*\{[\s\S]*?\n\s*\},/)
+  assert.ok(callback, 'Canonical Life Map auth listener missing')
+  const compileListener = new Function('getUraiAuth', 'onAuthStateChanged',
+    'return ({' + callback[0] + '}).listen')
+  const actor = { uid: 'owner-A' }
+  const auth = { currentUser: actor }
+  const values = []
+  let emit
+  const listener = compileListener(
+    () => auth,
+    (actualAuth, callbackFn) => {
+      assert.equal(actualAuth, auth)
+      emit = callbackFn
+      return () => { emit = null }
+    },
+  )
+  const cleanup = listener(uid => values.push(uid), () => values.push('ERROR'))
+  return { actor, auth, values, notify: user => emit(user), cleanup }
+}
+
+test('real Life Map Auth callback admits the exact current Firebase user', () => {
+  const f = canonicalLifeMapActorFixture()
+  try {
+    f.notify(f.actor)
+    assert.deepEqual(f.values, ['owner-A'])
+  } finally { f.cleanup() }
+})
+
+test('real Life Map Auth callback rejects a replaced different-UID actor', () => {
+  const f = canonicalLifeMapActorFixture()
+  try {
+    const oldActor = f.actor
+    f.auth.currentUser = { uid: 'owner-B' }
+    f.notify(oldActor)
+    assert.deepEqual(f.values, [null])
+    f.notify(f.auth.currentUser)
+    assert.deepEqual(f.values, [null, 'owner-B'])
+  } finally { f.cleanup() }
+})
+
+test('real Life Map Auth callback rejects stale actor after same-UID rotation', () => {
+  const f = canonicalLifeMapActorFixture()
+  try {
+    const oldActor = f.actor
+    f.auth.currentUser = { uid: 'owner-A' }
+    f.notify(oldActor)
+    assert.deepEqual(f.values, [null])
+    f.notify(f.auth.currentUser)
+    assert.deepEqual(f.values, [null, 'owner-A'])
+  } finally { f.cleanup() }
+})
+
+test('real Life Map Auth callback revokes its private owner on sign-out', () => {
+  const f = canonicalLifeMapActorFixture()
+  try {
+    f.notify(f.actor)
+    f.auth.currentUser = null
+    f.notify(null)
+    assert.deepEqual(f.values, ['owner-A', null])
+  } finally { f.cleanup() }
+})
