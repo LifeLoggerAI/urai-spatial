@@ -13,7 +13,7 @@ import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
-import { advanceLifeMapFlight, lifeMapFlightLookTarget, type LifeMapFlightInput, type LifeMapFlightPose } from "./lifeMapFlight.mjs";
+import { advanceLifeMapFlight, lifeMapFlightLookTarget, lifeMapApproachWaypoints, type LifeMapFlightInput, type LifeMapFlightPose } from "./lifeMapFlight.mjs";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
@@ -40,25 +40,12 @@ function selectedStagePoint(node: LifeMapNode, portrait: boolean) {
 
 function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, departureFrom?: THREE.Vector3): CameraGoal {
   const target = selectedStagePoint(node, portrait);
-  const overview = departureFrom?.clone() ?? new THREE.Vector3(...OVERVIEW_POSITION);
-  const direction = overview.clone().sub(target);
-  if (direction.lengthSq() < 0.01) direction.set(0, 0.1, 1);
-  direction.normalize();
-  const arrival = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF);
-  arrival.y += 0.34;
-  if (phase === "departure") return { position: tuple(overview), target: tuple(target) };
-  if (phase === "travel") {
-    const travel = overview.clone().lerp(arrival, 0.5);
-    travel.x += (Math.sign(target.x) || 1) * 1.25;
-    travel.y += 1.2;
-    return { position: tuple(travel), target: tuple(target) };
-  }
-  if (phase === "approach") {
-    const approach = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF + 2.1);
-    approach.y += 0.7;
-    return { position: tuple(approach), target: tuple(target) };
-  }
-  return { position: tuple(arrival), target: tuple(target) };
+  const from = departureFrom?.toArray() ?? [...OVERVIEW_POSITION];
+  const waypoints = lifeMapApproachWaypoints(from, target.toArray(), SELECTED_MEMORY_STANDOFF);
+  const point = phase === "departure" ? waypoints.departure :
+    phase === "travel" ? waypoints.travel :
+    phase === "approach" ? waypoints.approach : waypoints.arrival;
+  return { position: [point[0], point[1], point[2]], target: [target.x, target.y, target.z] };
 }
 
 function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean; shellRef: RefObject<HTMLElement | null> }) {
