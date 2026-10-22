@@ -4,7 +4,7 @@ import {usePathname} from 'next/navigation'
 import {onAuthStateChanged,type User} from 'firebase/auth'
 import {getUraiAuth,firebasePublicEnvReady} from '@/lib/firebase/client'
 import {chalkIntent,chalkDiagnostic} from './chalkSpatialContract.mjs'
-import {readChalkEmulatorJobs,submitChalkEmulatorDiagnostic} from './chalkJobsEmulatorClient'
+import {readChalkEmulatorJobs,submitChalkEmulatorDiagnostic,signInChalkJobsLocalOperator,signOutChalkJobsLocalOperator} from './chalkJobsEmulatorClient'
 import {makeChalkEngineeringIntakeProposal} from './chalkEngineeringIntakeProposal.mjs'
 import type {ChalkEngineeringIntakeProposal} from './chalkEngineeringIntakeProposal.mjs'
 import {isChalkSessionLeaseCurrent} from './chalkSessionLease.mjs'
@@ -17,6 +17,7 @@ export default function ChalkPresenceRuntime(){
  const [status,setStatus]=useState('Engineering preview. No autonomous execution.'),[busy,setBusy]=useState(false)
  const [speechConsent,setSpeechConsent]=useState(false),[listening,setListening]=useState(false)
  const [report,setReport]=useState(''),[jobs,setJobs]=useState<Array<{jobId:string;status:string}>>([])
+ const [localEmail,setLocalEmail]=useState(''),[localPassword,setLocalPassword]=useState(''),[localSession,setLocalSession]=useState(false)
  const [pending,setPending]=useState<{proposal:ChalkEngineeringIntakeProposal;ownerUid:string;epoch:number;routeEpoch:number}|null>(null)
  const routeEpoch=useRef(0),routeRef=useRef(route)
  if(routeRef.current!==route){routeRef.current=route;routeEpoch.current++}
@@ -26,7 +27,7 @@ export default function ChalkPresenceRuntime(){
   let disposed=false;const auth=getUraiAuth()
   const unsubscribe=onAuthStateChanged(auth,async current=>{
    const epoch=++generation.current;recognition.current?.abort();recognition.current=null
-   setListening(false);setUser(null);setLines([]);setJobs([]);setReport('');setPending(null);setBusy(false);setInput('');setSpeechConsent(false)
+   setListening(false);setUser(null);setLines([]);setJobs([]);setReport('');setPending(null);setBusy(false);setInput('');setSpeechConsent(false);setLocalPassword('');setLocalEmail('');setLocalSession(false);void signOutChalkJobsLocalOperator().catch(()=>{})
    if(!current){setAccess('denied');return}
    setAccess('checking')
    try{const token=await current.getIdTokenResult(true);const c=token.claims as Record<string,unknown>
@@ -133,6 +134,14 @@ export default function ChalkPresenceRuntime(){
     <label style={{fontSize:12,display:'flex',gap:9}}><input type="checkbox" checked={speechConsent} onChange={e=>{setSpeechConsent(e.target.checked);if(!e.target.checked)stop()}}/>Allow this browser’s speech recognition for input</label>
     <div style={{display:'flex',flexWrap:'wrap',gap:8}}><button style={button} type="submit" disabled={!input.trim()||busy}>Send</button><button style={button} type="button" disabled={!speechConsent||busy} onClick={voice}>{listening?'Listening…':'Voice'}</button><button style={button} type="button" disabled={!listening} onClick={stop}>Stop</button></div>
    </form>
+   {process.env.NODE_ENV==='development' && process.env.NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR==='true' ? <section aria-label="Jobs emulator operator sign-in" style={{padding:8,border:'1px solid #738994',borderRadius:12}}>
+    <p>Separate Jobs emulator operator login — local test accounts only. Server permissions are still required.</p>
+    {!localSession?<form onSubmit={async e=>{e.preventDefault();const password=localPassword;setLocalPassword('');try{await signInChalkJobsLocalOperator(localEmail,password);setLocalSession(true);setStatus('Jobs emulator account signed in; server authorization still required.')}catch{setLocalSession(false);setStatus('Local Jobs sign-in unavailable or rejected.')}}} style={{display:'grid',gap:8}}>
+     <input aria-label="Local Jobs test email" autoComplete="off" value={localEmail} onChange={e=>setLocalEmail(e.target.value)} />
+     <input aria-label="Local Jobs test password" type="password" autoComplete="off" value={localPassword} onChange={e=>setLocalPassword(e.target.value)} />
+     <button type="submit" style={button} disabled={busy}>Sign into Jobs emulator</button>
+    </form>:<button type="button" style={button} onClick={async()=>{try{await signOutChalkJobsLocalOperator()}finally{setLocalSession(false);setLocalEmail('');setLocalPassword('');setJobs([]);setPending(null)}}}>Sign out of Jobs emulator</button>}
+   </section>:null}
    <p role="status" style={{fontSize:12}}>{status}</p>
    {jobs.length?<ul aria-label="Engineering job status">{jobs.map((j,i)=><li key={j.jobId||i}>{j.jobId}: {j.status}</li>)}</ul>:null}
    {pending?<section aria-label="Engineering diagnostic review" style={{padding:10,border:'1px solid #718997',borderRadius:12}}><p>Nonprivate scene diagnostic prepared for held engineering review. Nothing has been submitted.</p><p>{pending.proposal.problem}</p><div style={{display:'flex',gap:8}}><button type="button" style={button} disabled={busy} onClick={submitPending}>Submit held diagnostic (emulator only)</button><button type="button" style={button} disabled={busy} onClick={()=>setPending(null)}>Discard</button></div></section>:null}
