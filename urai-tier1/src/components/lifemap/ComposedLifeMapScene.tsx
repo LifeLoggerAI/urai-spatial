@@ -431,28 +431,11 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     setSelectedId(node.id);
     if (profile.reducedMotion) setPhase("arrival");
     else setPhase("departure");
-    const next = withIdentity(new URLSearchParams(), node.id);
-    next.set("node", node.id);
-    if (explicitDemoRequested) next.set("memoryId", node.id);
-    else if (node.authorizedMemory && node.memoryId) next.set("memoryId", node.memoryId);
-    else next.delete("memoryId");
-    // Route metadata is not access authority. Never carry an unrelated private
-    // manifest forward, even if a star ID happens to match an older memory ID.
-    if (!explicitDemoRequested) {
-      next.delete("manifestId");
-      if (node.authorizedMemory && node.replayManifestId) next.set("manifestId", node.replayManifestId);
-    }
-    // Forward only this already-selected owner's exact movie and plan pair.
-    // Neither route metadata nor this source-side flag grants Studio authority.
-    if (!explicitDemoRequested && node.authorizedMemory && !node.locked && node.memoryId && node.replayManifestId) {
-      forwardPrivateMovieRouteSelection(next, params, {
-        memoryId: node.memoryId, manifestId: node.replayManifestId,
-        authorizedOwner: true, demo: false,
-      });
-    }
-    if (node.eraId) next.set("era", node.eraId);
-    router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [explicitDemoRequested, params, profile.reducedMotion, router, withIdentity]);
+    // Do not rewrite the same-route URL during authored star travel.
+    // LifeMapAccessGate intentionally rechecks auth on every query change;
+    // changing it here would unmount this camera before its journey finishes.
+    // Focus and Replay construct fresh, owner-scoped destination URLs below.
+  }, [profile.reducedMotion]);
 
   const overview = useCallback(() => {
     const retainedId = selectedId || queryNode;
@@ -526,6 +509,9 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
 
   useEffect(() => {
     if (overviewRequested || overviewPending.current || !queryNode || !nodes.length) return;
+    // A deep-link query is only an initial/restored selection. Do not let that
+    // stale URL identity override a newer local star selection in flight.
+    if (localSelectionId.current && localSelectionId.current !== queryNode) return;
     const node = nodes.find((candidate) => candidate.id === queryNode);
     if (!node) return;
     if (localSelectionId.current === node.id) {
