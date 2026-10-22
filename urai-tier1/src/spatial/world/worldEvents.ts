@@ -103,13 +103,30 @@ function commitHardFallback(href: string) {
 }
 
 export function destinationSurfaceReady(destination: UraiWorldTravelRequest['destination']) {
-  if (destination === 'focus') return Boolean(document.querySelector('[data-testid="urai-final-focus-chamber"]'))
+  const selectedMemorySurfaceMatchesRoute = (surface: Element | null) => {
+    if (!surface) return false
+    if (typeof window === 'undefined') return true
+    const params = new URLSearchParams(window.location.search)
+    const mountedId = surface.getAttribute('data-memory-id')
+    // A neutral loading or denied-state surface is truthful; never require
+    // its private media to resolve just to acknowledge a mounted route.
+    if (!mountedId) return true
+    const requestedId = params.get('memoryId')
+    if (!requestedId) return false
+    const expectedId = params.get('demo') === '1' && !requestedId.startsWith('demo:')
+      ? `demo:${requestedId}` : requestedId
+    if (mountedId !== expectedId) return false
+    const requestedManifest = params.get('manifestId')
+    const mountedManifest = surface.getAttribute('data-manifest-id')
+    return !requestedManifest || !mountedManifest || requestedManifest === mountedManifest
+  }
+  if (destination === 'focus') return selectedMemorySurfaceMatchesRoute(document.querySelector('[data-testid="urai-final-focus-chamber"]'))
   if (destination === 'life-map') return Boolean(
     document.querySelector('[data-testid="urai-r3f-canonical-lifemap"]') ||
     document.querySelector('[data-testid="urai-life-map-signed-out-threshold"]') ||
     document.querySelector('[data-testid="urai-life-map-authored-fallback"]')
   )
-  if (destination === 'replay') return Boolean(document.querySelector('[data-testid="cinematic-replay-client"]'))
+  if (destination === 'replay') return selectedMemorySurfaceMatchesRoute(document.querySelector('[data-testid="cinematic-replay-client"]'))
   if (destination === 'passport') return Boolean(document.querySelector('main[data-route-owner="passport-ownership-vault"]'))
   return true
 }
