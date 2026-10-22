@@ -2,7 +2,6 @@
 import {useEffect,useRef,useState,type FormEvent,type CSSProperties} from 'react'
 import {usePathname} from 'next/navigation'
 import {onAuthStateChanged,type User} from 'firebase/auth'
-import {httpsCallable,getFunctions} from 'firebase/functions'
 import {getUraiAuth,firebasePublicEnvReady} from '@/lib/firebase/client'
 import {chalkIntent,chalkDiagnostic} from './chalkSpatialContract.mjs'
 type Line={speaker:string;text:string}
@@ -42,7 +41,9 @@ export default function ChalkPresenceRuntime(){
   const saved=user,epoch=generation.current;stop();setInput('');add('You',text);setBusy(true)
   try{const intent=chalkIntent(text)
    if(intent==='READ_JOBS'){
-    // Spatial and Jobs use distinct Firebase projects. No cross-project token exchange is approved.\n    // Stay fail-closed: do not call the Jobs function with a Spatial ID token.\n    add('Chalk','Engineering Jobs readback is unavailable until the protected cross-project identity bridge is accepted. No tasks were accessed.');\n    setStatus('Jobs integration not yet authorized.');\n   }else if(intent==='DIAGNOSTIC'){
+    add('Chalk','Engineering Jobs require two verified emulator sessions and a protected owner binding. No task was accessed.');
+    setStatus('Jobs readback is not connected to this production-disabled interface.');
+   }else if(intent==='DIAGNOSTIC'){
     const component=route==='/'?'home':route.slice(1)
     const sourceSha=process.env.NEXT_PUBLIC_URAI_BUILD_SHA||''
     // Never infer private selection from query strings, the scene DOM or model text.
