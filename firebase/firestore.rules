@@ -203,8 +203,9 @@ service cloud.firestore {
         allow write: if false;
       }
       match /aiLedger/{entryId} {
-        allow read: if isSelf(uid) || isAdmin();
-        allow write: if false;
+        // Read through the consent-gated callable; Admin SDK handles export/deletion.
+        // Direct SDK reads bypass the current memory-policy revision check.
+        allow read, write: if false;
       }
 
       match /lifeMovies/{movieId} {

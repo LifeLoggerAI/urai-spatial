@@ -30,9 +30,11 @@ test('Self-ledger rejects hidden reasoning and requires provider model version',
   assert.doesNotMatch(ledger, /chainOfThought:/)
 })
 
-test('Scenario and Self-Ledger user records are owner-readable but client-write denied', () => {
+test('Scenario owner reads and AI Ledger callable-only memory consent', () => {
   assert.match(rules, /match \/scenarios\/\{scenarioId\} \{[\s\S]*allow read: if isSelf\(uid\) \|\| isAdmin\(\);[\s\S]*allow write: if false;/)
-  assert.match(rules, /match \/aiLedger\/\{entryId\} \{[\s\S]*allow read: if isSelf\(uid\) \|\| isAdmin\(\);[\s\S]*allow write: if false;/)
+  const ledgerRule = rules.slice(rules.indexOf('match /aiLedger/{entryId} {')).split('\n      }')[0]
+  assert.match(ledgerRule, /allow read, write: if false;/)
+  assert.match(ledger, /authorizedLedgerMemory\(ownerId, owner, policy, fence, tombstone\)/)
 })
 
 test('Scenario receipts and Global Emotional Field working collections are server-only', () => {

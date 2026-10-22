@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import { createHash } from 'node:crypto'
+import { aiLedgerMemoryAuthorityDecision } from './aiLedgerMemoryAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 const db = admin.firestore()
@@ -13,6 +14,19 @@ function requireUid(context: functions.https.CallableContext) {
   return uid
 }
 function safeId(value: string) { return value.replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 90) }
+function authorizedLedgerMemory(
+  ownerId: string, owner: FirebaseFirestore.DocumentSnapshot,
+  policy: FirebaseFirestore.DocumentSnapshot, fence: FirebaseFirestore.DocumentSnapshot,
+  tombstone: FirebaseFirestore.DocumentSnapshot,
+) {
+  return aiLedgerMemoryAuthorityDecision({
+    uid: ownerId, ownerExists: owner.exists, ownerDeleted: owner.get('deleted'),
+    accountStatus: owner.get('accountStatus'), ownerPrivacyRevision: owner.get('privacyRevision'),
+    tombstoneExists: tombstone.exists, fenceExists: fence.exists,
+    pendingDeletions: fence.exists ? fence.get('pendingDeletions') : undefined,
+    policy: policy.data(),
+  }) === 'active'
+}
 function hash(value: unknown) { return createHash('sha256').update(JSON.stringify(value ?? null)).digest('hex') }
 
 export async function writeAILedgerEntry(ownerId: string, entry: Record<string, unknown>) {
@@ -27,20 +41,18 @@ export async function writeAILedgerEntry(ownerId: string, entry: Record<string, 
     // authority and the original event's Scenario before creating any ledger row.
     const scenarioId = typeof entry.scenarioId === 'string' ? entry.scenarioId : ''
     if (!/^scn_[A-Za-z0-9_-]{12,96}$/.test(scenarioId)) throw new Error('AI_LEDGER_SCENARIO_ID_INVALID')
-    const [owner, fence, tombstone, scenario, existing] = await Promise.all([
+    const [owner, policy, fence, tombstone, scenario, existing] = await Promise.all([
       tx.get(db.doc(`users/${ownerId}`)),
+      tx.get(db.doc(`users/${ownerId}/privacyPolicy/current`)),
       tx.get(db.doc(`users/${ownerId}/privacyRuntime/exportAuthority`)),
       tx.get(db.doc(`privacyDeletionTombstones/${ownerId}`)),
       tx.get(db.doc(`users/${ownerId}/scenarios/${scenarioId}`)),
       tx.get(entryRef),
     ])
-    if (!owner.exists || owner.get('deleted') === true
-      || ['deleting', 'deleted', 'disabled'].includes(String(owner.get('accountStatus') ?? ''))
-      || tombstone.exists || !scenario.exists || scenario.get('ownerId') !== ownerId
+    // Delayed triggers cannot recreate private Ledger entries after withdrawal.
+    if (!authorizedLedgerMemory(ownerId, owner, policy, fence, tombstone)
+      || !scenario.exists || scenario.get('ownerId') !== ownerId
       || scenario.get('status') === 'discarded') return
-    const pending = fence.exists ? fence.get('pendingDeletions') : {}
-    if (!pending || typeof pending !== 'object' || Array.isArray(pending)
-      || Object.values(pending as Record<string, unknown>).some(value => value === true)) return
     // The trigger is at-least-once. Duplicate deliveries must be idempotent.
     if (!existing.exists) tx.create(entryRef, { ...entry, createdAt: admin.firestore.FieldValue.serverTimestamp() })
   })
@@ -51,17 +63,14 @@ export const getAILedgerEntries = functions.https.onCall(async (data, context) =
   const ownerId = requireUid(context)
   const max = Math.max(1, Math.min(50, Number(data?.limit ?? 25)))
   return db.runTransaction(async tx => {
-    const [owner, fence, tombstone] = await Promise.all([
+    const [owner, policy, fence, tombstone] = await Promise.all([
       tx.get(db.doc(`users/${ownerId}`)),
+      tx.get(db.doc(`users/${ownerId}/privacyPolicy/current`)),
       tx.get(db.doc(`users/${ownerId}/privacyRuntime/exportAuthority`)),
       tx.get(db.doc(`privacyDeletionTombstones/${ownerId}`)),
     ])
-    const pending = fence.exists ? fence.get('pendingDeletions') : {}
-    if (!owner.exists || owner.get('deleted') === true
-      || ['deleting', 'deleted', 'disabled'].includes(String(owner.get('accountStatus') ?? ''))
-      || tombstone.exists || !pending || typeof pending !== 'object' || Array.isArray(pending)
-      || Object.values(pending as Record<string, unknown>).some(value => value === true)) {
-      throw new functions.https.HttpsError('permission-denied', 'Current owner authority is required.')
+    if (!authorizedLedgerMemory(ownerId, owner, policy, fence, tombstone)) {
+      throw new functions.https.HttpsError('permission-denied', 'Current owner and memory consent authority is required.')
     }
     const snapshot = await tx.get(db.collection(`users/${ownerId}/aiLedger`).orderBy('createdAt', 'desc').limit(max))
     return { entries: snapshot.docs.map(doc => doc.data()) }
