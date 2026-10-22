@@ -103,6 +103,12 @@ function commitHardFallback(href: string) {
 }
 
 export function destinationSurfaceReady(destination: UraiWorldTravelRequest['destination']) {
+  if (destination === 'focus') return Boolean(document.querySelector('[data-testid="urai-final-focus-chamber"]'))
+  if (destination === 'life-map') return Boolean(
+    document.querySelector('[data-testid="urai-r3f-canonical-lifemap"]') ||
+    document.querySelector('[data-testid="urai-life-map-signed-out-threshold"]') ||
+    document.querySelector('[data-testid="urai-life-map-authored-fallback"]')
+  )
   if (destination === 'replay') return Boolean(document.querySelector('[data-testid="cinematic-replay-client"]'))
   if (destination === 'passport') return Boolean(document.querySelector('main[data-route-owner="passport-ownership-vault"]'))
   return true
