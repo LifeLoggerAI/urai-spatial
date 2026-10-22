@@ -5,6 +5,7 @@ import {onAuthStateChanged,type User} from 'firebase/auth'
 import {httpsCallable,getFunctions} from 'firebase/functions'
 import {app,getUraiAuth,firebasePublicEnvReady} from '@/lib/firebase/client'
 import {chalkIntent,chalkDiagnostic} from './chalkSpatialContract.mjs'
+import {chalkReviewRequest,chalkReviewReceipt} from './chalkReviewBridge.mjs'
 type Line={speaker:string;text:string}
 export default function ChalkPresenceRuntime(){
  const route=usePathname()||'/'
@@ -13,14 +14,14 @@ export default function ChalkPresenceRuntime(){
  const [open,setOpen]=useState(false),[input,setInput]=useState(''),[lines,setLines]=useState<Line[]>([])
  const [status,setStatus]=useState('Engineering preview. No autonomous execution.'),[busy,setBusy]=useState(false)
  const [speechConsent,setSpeechConsent]=useState(false),[listening,setListening]=useState(false)
- const [report,setReport]=useState(''),[jobs,setJobs]=useState<Array<{jobId:string;status:string}>>([])
+ const [report,setReport]=useState(''),[reviewRequest,setReviewRequest]=useState<ReturnType<typeof chalkReviewRequest>|null>(null),[reviewId,setReviewId]=useState(''),[jobs,setJobs]=useState<Array<{jobId:string;status:string}>>([])
  const generation=useRef(0),recognition=useRef<{abort():void}|null>(null),closeRef=useRef<HTMLButtonElement>(null)
  const stop=()=>{recognition.current?.abort();recognition.current=null;setListening(false)}
  useEffect(()=>{if(!firebasePublicEnvReady){setAccess('unavailable');return}
   let disposed=false;const auth=getUraiAuth()
   const unsubscribe=onAuthStateChanged(auth,async current=>{
    const epoch=++generation.current;recognition.current?.abort();recognition.current=null
-   setListening(false);setUser(null);setLines([]);setJobs([]);setReport('');setBusy(false);setInput('');setSpeechConsent(false)
+   setListening(false);setUser(null);setLines([]);setJobs([]);setReport('');setReviewRequest(null);setReviewId('');setBusy(false);setInput('');setSpeechConsent(false)
    if(!current){setAccess('denied');return}
    setAccess('checking')
    try{const token=await current.getIdTokenResult(true);const c=token.claims as Record<string,unknown>
@@ -32,7 +33,7 @@ export default function ChalkPresenceRuntime(){
   },()=>{generation.current++;setAccess('denied');setUser(null)})
   return()=>{disposed=true;generation.current++;unsubscribe();recognition.current?.abort()}
  },[])
- useEffect(()=>{setReport('')},[route])
+ useEffect(()=>{setReport('');setReviewRequest(null);setReviewId('')},[route])
  useEffect(()=>{if(open)closeRef.current?.focus()},[open])
  if(!permitted)return null
  const active=(saved:User,epoch:number)=>generation.current===epoch&&getUraiAuth().currentUser===saved
@@ -64,10 +65,28 @@ export default function ChalkPresenceRuntime(){
     })
     if(!active(saved,epoch))return
     const diagnostic=chalkDiagnostic({route,component,sourceSha,actorUid:saved.uid,frames:deltas})
-    setReport(JSON.stringify(diagnostic,null,2))
+    setReport(JSON.stringify(diagnostic,null,2));setReviewRequest(chalkReviewRequest(diagnostic,crypto.randomUUID()));setReviewId('')
     add('Chalk','Local scene diagnostic captured. It is NOT a submitted engineering job; no private Star or source media was read.')
    }else add('Chalk','That engineering action is not connected or approved. No action was taken.')
   }catch{if(active(saved,epoch))add('Chalk','The protected capability or exact source identity is unavailable. No job or approval was changed.')}
+  finally{if(active(saved,epoch))setBusy(false)}
+ }
+ const reviewEnabled=process.env.NEXT_PUBLIC_URAI_CHALK_EMULATOR_REVIEW==='true' && process.env.NEXT_PUBLIC_URAI_CHALK_JOBS_EMULATOR==='true'
+ const saveReview=async()=>{
+  if(!reviewEnabled||!reviewRequest||busy||!user||access!=='permitted')return
+  const saved=user,epoch=generation.current;setBusy(true)
+  try{
+   const functions=getFunctions(app,'us-central1')
+   const submit=httpsCallable<typeof reviewRequest, {reviewId:string;requestId:string;sourceSha:string;state:string;result:string}>(functions,'submitChalkDiagnosticReview',{timeout:15000})
+   const detail=httpsCallable<{reviewId:string},{reviewId:string;requestId:string;sourceSha:string;state:string;component:string;route:string;digest:string}>(functions,'getChalkDiagnosticReview',{timeout:15000})
+   const submitted=(await submit(reviewRequest)).data
+   if(!active(saved,epoch))return
+   const checked=(await detail({reviewId:submitted.reviewId})).data
+   if(!active(saved,epoch))return
+   const receipt=chalkReviewReceipt(reviewRequest,submitted,checked)
+   setReviewId(receipt.reviewId);setReviewRequest(null)
+   add('Chalk','Source-bound review receipt saved and read back. No engineering job was queued or executed.')
+  }catch{if(active(saved,epoch))add('Chalk','Review receipt unavailable or unverified. No engineering task was created.')}
   finally{if(active(saved,epoch))setBusy(false)}
  }
  const voice=()=>{if(!speechConsent||!user||busy)return
@@ -98,7 +117,7 @@ export default function ChalkPresenceRuntime(){
    </form>
    <p role="status" style={{fontSize:12}}>{status}</p>
    {jobs.length?<ul aria-label="Engineering job status">{jobs.map((j,i)=><li key={j.jobId||i}>{j.jobId}: {j.status}</li>)}</ul>:null}
-   {report?<section><strong>Local diagnostic — NOT SUBMITTED</strong><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontSize:11}}>{report}</pre></section>:null}
+   {report?<section><strong>Local diagnostic — NOT AN ENGINEERING JOB</strong><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontSize:11}}>{report}</pre>{reviewEnabled&&reviewRequest?<button style={button} type="button" onClick={saveReview} disabled={busy}>Save review receipt (emulator only)</button>:null}{reviewId?<p role="status">Verified review receipt: {reviewId}. Review only; nothing queued.</p>:null}</section>:null}
    </>}
    <small>Source review and a deployed protected Jobs callable are required before real task readback. Never treat client diagnostics as server evidence.</small>
   </aside>}
