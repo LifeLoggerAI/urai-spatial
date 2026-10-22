@@ -38,3 +38,12 @@ test('truthful loading and authorization fallback can mount without a selected m
 test('neutral destination cannot mistake a stale mounted private memory for its own Focus screen',()=>{
  assert.equal(readiness({route:'/focus',surfaces:{[focus]:surface('old','manifest-old')}})('focus'),false)
 })
+
+test('requested private manifest cannot be satisfied by an absent mounted manifest',()=>{
+ assert.equal(readiness({surfaces:{[focus]:surface('new',null)}})('focus'),false)
+ assert.equal(readiness({route:'/replay?memoryId=new&manifestId=manifest-new',surfaces:{[replay]:surface('new',null)}})('replay'),false)
+})
+test('matching selected private manifest remains ready and neutral fallback remains available',()=>{
+ assert.equal(readiness({surfaces:{[focus]:surface('new','manifest-new')}})('focus'),true)
+ assert.equal(readiness({surfaces:{[focus]:{'data-memory-id':null}}})('focus'),true)
+})
