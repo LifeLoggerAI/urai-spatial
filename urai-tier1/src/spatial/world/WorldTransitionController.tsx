@@ -61,6 +61,8 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
     // Relationship hints from an old memory never scope a different selection.
     if ((key === 'thread' || key === 'personId' || key === 'placeId') && (neutralDestination || (selectedMemoryId && !sameMemory))) continue
+    // A privacy-mode hint from an old memory cannot describe a new star or a neutral realm.
+    if (key === 'privacyMode' && (!memoryDestination || !sameMemory)) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
     }
@@ -73,6 +75,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     target.searchParams.delete('movieId')
     target.searchParams.delete('chapterId')
     target.searchParams.delete('demo')
+    target.searchParams.delete('privacyMode')
   }
   if (neutralDestination) {
     target.searchParams.delete('thread')
@@ -87,7 +90,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (memoryDestination && context?.replayManifestId && selectedMemoryId) target.searchParams.set('manifestId', context.replayManifestId)
   if (memoryDestination && context?.movieId) target.searchParams.set('movieId', context.movieId)
   if (memoryDestination && context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
-  if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
+  if (memoryDestination && context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
   if (context?.originRealm) target.searchParams.set('originRealm', context.originRealm)
   if (context?.returnToken) target.searchParams.set('returnToken', context.returnToken)
   if (context?.reconstructionFidelity) target.searchParams.set('fidelity', context.reconstructionFidelity)
