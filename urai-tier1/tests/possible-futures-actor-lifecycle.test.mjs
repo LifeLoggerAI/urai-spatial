@@ -20,7 +20,7 @@ test('signed-out screen never contains stale Scenario branches', () => {
 test('post-request loading checks actor ownership and handles cleanup', () => {
   assert.match(source, /if \(!active \|\| !isOwnerCurrent\(\)\) return/)
   assert.match(source, /return \(\) => \{ active = false \}/)
-  assert.match(source, /\[existingScenarioId, actor\]/)
+  assert.match(source, /\[existingScenarioId, requestedBranch, actor\]/)
 })
 test('manual and generated branches cannot cross owner or accept malformed receipts', () => {
   assert.match(source, /SCENARIO_GENERATION_NOT_VERIFIED/)
@@ -28,4 +28,10 @@ test('manual and generated branches cannot cross owner or accept malformed recei
   assert.match(source, /SCENARIO_MANUAL_BRANCH_RECEIPT_INVALID/)
   assert.match(source, /loaded\.scenario\?\.ownerId !== actor\.uid/)
   assert.match(source, /const loaded = await getPossibleFutureClient\(created\.scenarioId\)/)
+})
+
+test('Scenario URL branch changes remain owner-bound and reload the current record', () => {
+  assert.match(source, /const requestedBranch = params\.get\('branch'\)/)
+  assert.match(source, /resolvePossibleFutureBranchIndex\(requestedBranch, ids, 0\)/)
+  assert.match(source, /\[existingScenarioId, requestedBranch, actor\]/)
 })

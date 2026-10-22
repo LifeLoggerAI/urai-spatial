@@ -271,7 +271,7 @@ function ActorBoundPossibleFuturesClient({ actor }: { actor: AIActorSnapshot }) 
       setBranch(0); setBranchesLoaded(true); setSetup('exploring')
       setMessage('Manual Scenario loaded. These branches came from your assumptions, not an AI prediction.')
     } catch (error) {
-      if (isOwnerCurrent()) { setSetup('error'); setMessage(error instanceof Error ? error.message : 'Manual Scenario failed safely.') }
+      if (isOwnerCurrent()) { setSetup('manual'); setMessage(error instanceof Error ? error.message : 'Manual Scenario was not confirmed. Retry the same operation or edit your branches.') }
     }
   }
 
