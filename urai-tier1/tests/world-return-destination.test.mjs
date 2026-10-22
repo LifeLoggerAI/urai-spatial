@@ -45,7 +45,7 @@ test('the Focus -> Life Map -> Home reverse journey has no automatic second hop'
   const lifeMapBridge = readFileSync(new URL('../src/app/life-map/LifeMapEscapeBridge.tsx', import.meta.url), 'utf8')
   assert.match(focusBridge, /router\.push\('\/life-map'\)/)
   assert.doesNotMatch(lifeMapBridge, /window\.setTimeout\(/)
-  assert.match(lifeMapBridge, /if \(event\.key !== 'Escape'\) return/)
+  assert.match(lifeMapBridge, /if \(!shouldHandleRealmEscape\(event\)\) return/)
 })
 
 test('Focus return does not arm a legacy automatic Home handoff', () => {
@@ -68,4 +68,10 @@ test('Memory World only declares rendered after scene mesh first-frame callback'
   assert.match(source, /onAfterRender=\{onFirstFrame\}/)
   assert.match(source, /firstFrameRecorded\.current = false; setFirstFrameRendered\(false\); setRendererState\('lost'\)/)
   assert.doesNotMatch(source, /data-memory-world-state=\{rendererState === 'ready' \? 'rendered'/)
+})
+
+test('Focus and Life Map share the realm-owned Escape guard', () => {
+  const focus = readFileSync(new URL('../src/app/focus/FocusEscapeBridge.tsx', import.meta.url), 'utf8')
+  const lifeMap = readFileSync(new URL('../src/app/life-map/LifeMapEscapeBridge.tsx', import.meta.url), 'utf8')
+  for (const source of [focus, lifeMap]) assert.match(source, /if \(!shouldHandleRealmEscape\(event\)\) return/)
 })
