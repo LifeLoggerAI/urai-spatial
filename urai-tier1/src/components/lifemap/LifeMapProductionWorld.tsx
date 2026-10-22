@@ -632,11 +632,21 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
   // clusters at a distance; a physical photosphere only appears after a
   // memory is selected. This removes the dashboard-like field of equal balls
   // while retaining semantic selection through the navigator and world event.
-  const overviewCluster = selected === null;
+  // Only the approached memory transforms; neighboring stars retain their
+  // distant cluster identity throughout the selected journey.
+  const overviewCluster = !active || phase === "departure" || phase === "travel";
   const chapter = chapterForNode(node, index);
   const semanticLabel = artifactFamilyLabel(node);
-  useFrame(({ clock }) => {
-    if (!root.current || reducedMotion) return;
+  useFrame(({ clock }, delta) => {
+    if (!root.current) return;
+    // A selection must not resize the authored star in a single render frame.
+    // Camera travel provides most of the apparent approach; the remaining
+    // stellar emphasis eases in without snapping the surrounding galaxy.
+    const targetScale = active ? 1.46 : 0.58 + importance * 0.22;
+    root.current.scale.setScalar(reducedMotion
+      ? targetScale
+      : THREE.MathUtils.damp(root.current.scale.x, targetScale, 3.4, Math.min(delta, 0.05)));
+    if (reducedMotion) return;
     root.current.rotation.y = Math.sin(clock.elapsedTime * 0.13 + index) * 0.08;
     root.current.position.y = node.position[1] + Math.sin(clock.elapsedTime * 0.28 + index * 0.7) * 0.16;
   });
@@ -645,7 +655,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       ref={root}
       position={node.position}
       visible={visible}
-      scale={active ? 1.46 : selected && !related ? 0.43 + importance * 0.13 : 0.58 + importance * 0.22}
+      scale={0.58 + importance * 0.22}
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
       userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
       onClick={(event) => {
