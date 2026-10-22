@@ -4,7 +4,7 @@ import { disclosedSampleStar, selectedMemoryFocusAction } from './canonical-brow
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
-import { allocateEphemeralPort, waitForOwnedHome, warmOwnedLifeMap } from './spatial-owned-server.mjs';
+import { allocateEphemeralPort, waitForOwnedHome, warmOwnedLifeMap, warmOwnedJourneyRealm } from './spatial-owned-server.mjs';
 import { assertVisibleSpatialScene } from './spatial-png-scene-proof.mjs';
 
 // The browser harness lives at the repo root, but Playwright is owned by the
@@ -442,12 +442,15 @@ async function run() {
   try {
     server = await startServer();
     await waitForOwnedHome(BASE_URL, server);
-    // Root-maintained --suite=all runs a cold development compiler. First
-    // compile original /life-map independently without counting it as browser
-    // journey success; retain the original per-interaction browser timeouts.
-    if (SUITE === 'all' && !USE_EXISTING) {
+    // An isolated --suite=navigation launch is just as cold as --suite=all.
+    // Precompile the public, context-free Life Map, Focus and Replay routes on
+    // this owned server before measuring clicks. Keep every browser assertion
+    // and per-interaction deadline: route preflight is NOT journey acceptance.
+    if ((SUITE === 'all' || SUITE === 'navigation') && !USE_EXISTING) {
       await warmOwnedLifeMap(BASE_URL, server);
-      report.checks.push({ name: 'Owned dev Life Map compile complete before real journey; not release acceptance', status: 'passed' });
+      await warmOwnedJourneyRealm(BASE_URL, server, '/focus');
+      await warmOwnedJourneyRealm(BASE_URL, server, '/replay');
+      report.checks.push({ name: 'Owned dev Life Map / Focus / Replay compile complete before real journey; not release acceptance', status: 'passed' });
     }
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });

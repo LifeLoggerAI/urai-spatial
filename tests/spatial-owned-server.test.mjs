@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createServer } from 'node:net'
-import { allocateEphemeralPort, ownedChildExited, waitForOwnedHome, warmOwnedLifeMap } from './spatial-owned-server.mjs'
+import { allocateEphemeralPort, ownedChildExited, waitForOwnedHome, warmOwnedLifeMap, warmOwnedJourneyRealm } from './spatial-owned-server.mjs'
 
 const ownedMarkup = '<html data-urai-domain="app" data-urai-surface="spatial"><body data-urai-home-spatial-shell="true"><main>Home</main></body></html>'
 const html = (status, body = ownedMarkup) => ({ status, headers: { get: () => 'text/html; charset=utf-8' }, text: async () => body })
@@ -105,4 +105,51 @@ test('cold Life Map preflight denies dead server and mid-request exit',async()=>
 })
 test('cold Life Map preflight surfaces compilation errors without false green',async()=>{
   await assert.rejects(warmOwnedLifeMap('http://127.0.0.1:32143',null,{fetchImpl:async()=>{throw Error('compiler exit')}}),/URAI_OWNED_LIFEMAP_WARMUP_NETWORK_FAILED: compiler exit/)
+})
+
+
+// These preflights pre-compile public, context-free routes only. They must
+// never count as a user's Focus/Replay entry or accept a foreign HTTP 200.
+for (const route of ['/focus', '/replay']) {
+  test('owned cold ' + route + ' compile preflight requires original HTTP 200 HTML', async () => {
+    const seen = []
+    const res = await warmOwnedJourneyRealm('http://127.0.0.1:32143', { exitCode:null, signalCode:null }, route, {
+      fetchImpl: async (url, options) => { seen.push({ url, options }); return html(200) },
+    })
+    assert.equal(res.status, 200)
+    assert.equal(new URL(seen[0].url).pathname, route)
+    assert.equal(seen[0].options.redirect, 'manual')
+    assert.equal(seen[0].options.signal instanceof AbortSignal, true)
+  })
+  test('owned cold ' + route + ' refuses foreign HTML, JSON and HTTP 404', async () => {
+    const bad = [html(404), { status:200, headers:{ get:()=> 'application/json' }, text:async()=> '{}' }, html(200, '<html><body>Other server</body></html>')]
+    for (const response of bad) {
+      await assert.rejects(warmOwnedJourneyRealm('http://127.0.0.1:32143', null, route, {
+        fetchImpl: async()=>response,
+      }), /WARMUP_HTTP_|NOT_ORIGINAL_DOCUMENT/)
+    }
+  })
+  test('owned cold ' + route + ' fails before and during server exit', async () => {
+    let called = false
+    await assert.rejects(warmOwnedJourneyRealm('http://127.0.0.1:32143', {exitCode:1,signalCode:null}, route, {
+      fetchImpl:async()=>{called=true;return html(200)},
+    }), /CHILD_EXITED_BEFORE_WARMUP/)
+    assert.equal(called,false)
+    const child={exitCode:null,signalCode:null}
+    await assert.rejects(warmOwnedJourneyRealm('http://127.0.0.1:32143', child, route, {
+      fetchImpl:async()=>{child.exitCode=1;return html(200)},
+    }), /CHILD_EXITED_DURING_WARMUP/)
+  })
+  test('owned cold ' + route + ' preserves compilation failures as failures', async () => {
+    await assert.rejects(warmOwnedJourneyRealm('http://127.0.0.1:32143',null,route,{
+      fetchImpl:async()=>{throw Error('compiler failed')},
+    }), /WARMUP_NETWORK_FAILED: compiler failed/)
+  })
+}
+test('journey preflight disallows memory query strings, unowned or unrelated routes', async () => {
+  for (const route of ['/home', '/life-map', '/focus?memoryId=private', '/replay#private', 'https://unrelated.test/replay', '/admin']) {
+    await assert.rejects(warmOwnedJourneyRealm('http://127.0.0.1:32143',null,route,{
+      fetchImpl:async()=>html(200),
+    }), /URAI_OWNED_JOURNEY_WARMUP_ROUTE_REJECTED/)
+  }
 })
