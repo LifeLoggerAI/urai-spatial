@@ -46,8 +46,8 @@ function clone(value) {
 // canary. It exercises the exported HTTP handler, transaction retries, durable
 // states shared by cold handler instances, and ambiguous commit acknowledgments.
 function storage() {
-  const state = { docs: new Map(), queue: Promise.resolve(), retryOnce: false, commitFailure: null, updateFailure: null, transactions: 0 }
-  const snapshot = (key, docs = state.docs) => ({ exists: docs.has(key), data: () => clone(docs.get(key)) })
+  const state = { docs: new Map(), queue: Promise.resolve(), retryOnce: false, commitFailure: null, updateFailure: null, transactions: 0, reservationWriteAttempts: 0 }
+  const snapshot = (key, docs = state.docs) => ({ exists: docs.has(key), data: () => clone(docs.get(key)), get: field => clone(docs.get(key))?.[field] })
   const apply = (key, value, merge, docs = state.docs) => {
     const prior = merge ? clone(docs.get(key) || {}) : {}
     for (const [field, item] of Object.entries(value)) prior[field] = item?.increment === undefined ? clone(item) : Number(prior[field] || 0) + item.increment
@@ -70,19 +70,24 @@ function storage() {
         const attempt = async () => {
           state.transactions++
           const working = new Map([...state.docs].map(([k, v]) => [k, clone(v)]))
+          let reservationWrite = false
+          const markWrite = ref => { if (ref.path.includes('/providerRequestReservations/')) reservationWrite = true }
           const result = await body({
             get: async (ref) => snapshot(ref.path, working),
-            create: (ref, value) => { if (working.has(ref.path)) throw new Error('create conflict'); apply(ref.path, value, false, working) },
-            set: (ref, value, options) => apply(ref.path, value, options?.merge, working),
+            create: (ref, value) => { if (working.has(ref.path)) throw new Error('create conflict'); markWrite(ref); apply(ref.path, value, false, working) },
+            set: (ref, value, options) => { markWrite(ref); apply(ref.path, value, options?.merge, working) },
           })
-          return { result, working }
+          if (reservationWrite) state.reservationWriteAttempts++
+          return { result, working, reservationWrite }
         }
-        if (state.retryOnce) { state.retryOnce = false; await attempt() }
-        const { result, working } = await attempt()
-        if (state.commitFailure === 'before') { state.commitFailure = null; throw new Error('synthetic uncommitted transaction') }
-        state.docs = working
-        if (state.commitFailure === 'after') { state.commitFailure = null; throw new Error('synthetic lost commit acknowledgement') }
-        return result
+        // Fault injection is bound to the reservation WRITE, not an earlier
+        // read-only owner-consent transaction. Never retry external dispatch.
+        let outcome = await attempt()
+        if (state.retryOnce && outcome.reservationWrite) { state.retryOnce = false; outcome = await attempt() }
+        if (outcome.reservationWrite && state.commitFailure === 'before') { state.commitFailure = null; throw new Error('synthetic uncommitted transaction') }
+        state.docs = outcome.working
+        if (outcome.reservationWrite && state.commitFailure === 'after') { state.commitFailure = null; throw new Error('synthetic lost commit acknowledgement') }
+        return outcome.result
       }
       const pending = state.queue.then(execute, execute)
       state.queue = pending.then(() => undefined, () => undefined)
@@ -106,6 +111,7 @@ function responseDouble({ loseDelivery = false } = {}) {
 function fixture({ store = storage(), env = {}, fetchHook, authHook, outputHook, shortenDeadlineMs, deadlineClock } = {}) {
   for (const uid of ['alice', 'bob']) {
     if (!store.state.docs.has(`users/${uid}/privacyPolicy/current`)) store.state.docs.set(`users/${uid}/privacyPolicy/current`, clone({ ...policy, ownerId: uid }))
+    if (!store.state.docs.has(`users/${uid}`)) store.state.docs.set(`users/${uid}`, {ownerId:uid,deleted:false,accountStatus:'active'})
   }
   const calls = []
   let authReads = 0
@@ -131,6 +137,8 @@ function fixture({ store = storage(), env = {}, fetchHook, authHook, outputHook,
   }
   const exports = loadSource('apps/functions/src/providerFunctions.ts', {
     './consentPolicyAuthority': loadSource('apps/functions/src/consentPolicyAuthority.ts', {}),
+    './providerOwnerAuthority': loadSource('apps/functions/src/providerOwnerAuthority.ts', {}),
+    './orbActivitySnapshotAuthority': loadSource('apps/functions/src/orbActivitySnapshotAuthority.ts', {}),
     '../../../packages/localization/src/contentLanguage': loadSource('packages/localization/src/contentLanguage.ts', {}),
     './protectedProviderSpend': {
       paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => fetch(url, init),
@@ -208,7 +216,7 @@ test('twelve concurrent same-intent HTTP requests admit exactly one moderation a
 test('storage transaction retry never repeats upstream work', async () => {
   const f = fixture(); f.store.state.retryOnce = true
   assert.equal((await f.run()).statusCode, 200)
-  assert.equal(f.store.state.transactions, 2); assert.equal(f.calls.length, 2)
+  assert.equal(f.store.state.reservationWriteAttempts, 2); assert.equal(f.calls.length, 2)
 })
 
 test('unknown provider outcome remains held across a cold handler restart', async () => {
