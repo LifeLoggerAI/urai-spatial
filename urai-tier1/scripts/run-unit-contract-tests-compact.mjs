@@ -162,6 +162,8 @@ const tests = [
   'tests/firebase-hosting-recovery-contract.test.mjs',
   'tests/home-cohesion-contract.test.mjs',
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
+  'tests/home-ground-cover-placement.test.mjs',
+  'tests/home-visual-study-evidence.test.mjs',
   'tests/home-sanctuary-geometry-behavior.test.mjs',
   'tests/home-living-orb-geometry.test.mjs',
   'tests/home-vegetation-instancing-behavior.test.mjs',

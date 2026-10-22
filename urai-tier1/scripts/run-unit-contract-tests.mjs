@@ -108,6 +108,8 @@ const focusedContractTests = [
   'tests/field-reconstruction-phase5-contract.test.mjs',
   'tests/home-cohesion-contract.test.mjs',
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
+  'tests/home-ground-cover-placement.test.mjs',
+  'tests/home-visual-study-evidence.test.mjs',
   'tests/lifemap-cinematic-contract.test.mjs',
   'tests/lifemap-scene-behavior.test.mjs',
   'tests/lifemap-exploration-origin-continuity.test.mjs',
