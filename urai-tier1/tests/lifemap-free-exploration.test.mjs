@@ -5,7 +5,11 @@ import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
 const ts = require('typescript')
 const source = readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
-const found = source.match(/type LifeMapFlightVector =[\s\S]*?\nfunction stepLifeMapFlight\([\s\S]*?\n\}\n/)
+// Git core.autocrlf may materialize tracked TSX with CRLF on Windows.
+// Normalize only the source text used for function extraction; keep behavior tests intact.
+const normalizeNewlines = value => value.replace(/\r\n?|\n/g, '\n')
+const flightContract = /type LifeMapFlightVector =[\s\S]*?\nfunction stepLifeMapFlight\([\s\S]*?\n\}\n/
+const found = normalizeNewlines(source).match(flightContract)
 assert.ok(found, 'Production Life Map flight model not found')
 const compiled = ts.transpileModule(found[0] + '\nexport { stepLifeMapFlight };', {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
@@ -15,6 +19,16 @@ new Function('module', 'exports', compiled)(module, module.exports)
 const step = module.exports.stepLifeMapFlight
 const zero = () => ({ x: 0, y: 0, z: 0 })
 const run = (keys, dt = 0.04, reduced = true) => step(zero(), zero(), new Set(keys), dt, reduced)
+
+
+test('flight source extraction remains valid across LF, CRLF and CR line endings', () => {
+  for (const newline of ['\n', '\r\n', '\r']) {
+    const materialized = source.replace(/\r\n?|\n/g, newline)
+    const extracted = normalizeNewlines(materialized).match(flightContract)
+    assert.ok(extracted, 'Flight source not found after line-ending conversion')
+    assert.equal(extracted[0], found[0])
+  }
+})
 
 test('WASD and Q/E move independently in bounded 3D space', () => {
   assert.ok(run(['KeyW']).offset.z < 0)
