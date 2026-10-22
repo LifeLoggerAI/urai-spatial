@@ -30,7 +30,7 @@ export function chalkReviewRequest(diagnostic, requestId) {
   return Object.freeze({requestId,diagnostic:safe});
 }
 
-export function chalkReviewReceipt(request, response, readback) {
+export async function chalkReviewReceipt(request, response, readback) {
   if (!record(request) || !record(request.diagnostic) || !record(response) || !record(readback)) deny('RECEIPT');
   const id=response.reviewId;
   if (typeof id !== 'string' || !REVIEW_ID.test(id) ||
@@ -42,5 +42,16 @@ export function chalkReviewReceipt(request, response, readback) {
       readback.component !== request.diagnostic.component ||
       readback.route !== request.diagnostic.route ||
       typeof readback.digest !== 'string' || !DIGEST.test(readback.digest)) deny('RECEIPT');
+  // The Jobs server stores SHA-256 of JSON.stringify(canonical diagnostic).
+  // A digest matching the regex is NOT evidence of the submitted diagnostic.
+  const subtle=globalThis.crypto?.subtle;
+  if (!subtle || typeof subtle.digest !== 'function') deny('CRYPTO_UNAVAILABLE');
+  let hash;
+  try {
+    const bytes = new TextEncoder().encode(JSON.stringify(request.diagnostic));
+    hash = await subtle.digest('SHA-256',bytes);
+  } catch { deny('CRYPTO_UNAVAILABLE'); }
+  const expected=Array.from(new Uint8Array(hash), b=>b.toString(16).padStart(2,'0')).join('');
+  if (readback.digest!==expected) deny('DIGEST_MISMATCH');
   return Object.freeze({reviewId:id,state:'REVIEW_ONLY_NOT_QUEUED',sourceSha:response.sourceSha});
 }
