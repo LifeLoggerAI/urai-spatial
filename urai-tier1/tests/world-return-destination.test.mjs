@@ -47,3 +47,16 @@ test('the Focus -> Life Map -> Home reverse journey has no automatic second hop'
   assert.doesNotMatch(lifeMapBridge, /window\.setTimeout\(/)
   assert.match(lifeMapBridge, /if \(event\.key !== 'Escape'\) return/)
 })
+
+test('Focus return does not arm a legacy automatic Home handoff', () => {
+  const focus = readFileSync(new URL('../src/app/focus/FocusEscapeBridge.tsx', import.meta.url), 'utf8')
+  assert.doesNotMatch(focus, /sessionStorage\.setItem\('urai-spatial-escape-stack-return-home'/)
+})
+
+test('unknown-location Memory World is visibly nonreconstructed, not a gray enclosed hallway', () => {
+  const runtime = readFileSync(new URL('../src/spatial/memory-world/MemoryWorldRuntime.tsx', import.meta.url), 'utf8')
+  assert.match(runtime, /if \(!preset\) \{/)
+  assert.match(runtime, /memory-world-unreconstructed-threshold/)
+  assert.match(runtime, /neutral-threshold-no-reconstruction/)
+  assert.match(runtime, /No verified location geometry is available/)
+})
