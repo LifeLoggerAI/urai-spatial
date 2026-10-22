@@ -106,7 +106,7 @@ function fixture(options = {}) {
   let service
   function load(filename) {
     const exports = {}
-    const code = ts.transpileModule(fs.readFileSync(`src/${filename}.ts`, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText
+    const code = ts.transpileModule(fs.readFileSync(require.resolve(`../src/${filename}.ts`), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText
     vm.runInNewContext(code, { exports, Buffer, process: { env }, console: { warn: value => stats.logs.push(String(value)), error: value => stats.logs.push(String(value)), log: value => stats.logs.push(String(value)) },
       require(name) {
         if (name === 'firebase-functions/v1') return functions
