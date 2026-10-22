@@ -90,3 +90,23 @@ test("deliberate camera drag cannot trigger memory-star selection", () => {
   assert.match(world, /if \(event\.delta > 6\) return/);
   assert.match(world, /event\.stopPropagation\(\);\s*onSelect\(node\)/);
 });
+
+test("inside-close-focus selection remains at current camera location", () => {
+  const start = [0, 0, 0.04], target = [0, 0, 0];
+  const journey = lifeMapApproachWaypoints(start, target);
+  for (const key of ["departure", "travel", "approach", "arrival"]) {
+    assert.deepEqual(journey[key], start);
+  }
+});
+
+test("hundreds of near and far selections never increase distance to memory star", () => {
+  const distance = (a, b) => Math.hypot(...a.map((v, i) => v - b[i]));
+  for (let i = 0; i < 2000; i++) {
+    const radius = (i % 200) / 20;
+    const start = [Math.sin(i) * radius, Math.cos(i) * radius, Math.sin(i * 0.17) * radius];
+    const target = [0, 0, 0];
+    const waypoints = lifeMapApproachWaypoints(start, target);
+    const d = ["departure", "travel", "approach", "arrival"].map(k => distance(waypoints[k], target));
+    assert.ok(d.every((v, j) => j === 0 || v <= d[j - 1] + 1e-8), `non-progressive approach: ${JSON.stringify(d)}`);
+  }
+});
