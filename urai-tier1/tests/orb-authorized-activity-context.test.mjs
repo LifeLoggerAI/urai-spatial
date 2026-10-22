@@ -43,3 +43,20 @@ test('server validates live memory consent, deletion and provenance', () => {
   assert.match(reader, /assertion.trim\(\).slice\(0, 280\)/)
   assert.doesNotMatch(reader, /workerDispatch|writeAILedgerEntry|paidSpatialFetch/)
 })
+
+test('revocation, deletion or correction closes private context before dispatch and delivery', () => {
+  assert.match(provider, /const assertActivitySnapshotCurrent = async \(\) =>/)
+  assert.match(provider, /JSON\.stringify\(current\) !== authorizedActivityData/)
+  assert.match(provider, /ACTIVITY_CONTEXT_CHANGED/)
+  assert.match(client, /ACTIVITY_CONTEXT_CHANGED/)
+  // After admission, before provider dispatch, after model generation, and
+  // after reservation settlement before any successful NDJSON output.
+  const checks = provider.match(/await assertActivitySnapshotCurrent\(\)/g) ?? []
+  assert.equal(checks.length, 4, 'every outbound/inbound privacy boundary must compare the exact snapshot')
+  const resultDelivery = provider.indexOf('Authentication changed before result delivery.')
+  const reservationSettled = provider.indexOf('reservationCompleted = true', resultDelivery)
+  const lastRecheck = provider.indexOf('await assertActivitySnapshotCurrent()', reservationSettled)
+  const firstResponseWrite = provider.indexOf('response.status(200)', reservationSettled)
+  assert.ok(resultDelivery >= 0 && reservationSettled > resultDelivery)
+  assert.ok(lastRecheck > reservationSettled && firstResponseWrite > lastRecheck)
+})
