@@ -2,7 +2,7 @@
 
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useSearchParams } from 'next/navigation'
 import * as THREE from 'three'
 import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
@@ -11,6 +11,7 @@ import { ScenarioCouncilPanel } from '@/spatial/scenario/ScenarioCouncilPanel'
 import PossibleFutureOutcomeReport from '@/spatial/scenario/PossibleFutureOutcomeReport'
 import { useWebGLAvailable } from '../HomeSpatialCanvas'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
+import { getAIActorSnapshot, getServerAIActorSnapshot, isCurrentAIActorSnapshot, subscribeAIActor, type AIActorSnapshot } from '@/lib/privacy/aiActorBoundary'
 
 const BRANCH_LABELS = ['Current path', 'Requested change', 'Alternative constraint'] as const
 type SetupState = 'question' | 'creating' | 'manual' | 'exploring' | 'error'
@@ -134,7 +135,16 @@ const panelStyle = { pointerEvents:'auto' as const, background:'rgba(8,13,16,.88
 const inputStyle = { width:'100%', minHeight:48, boxSizing:'border-box' as const, borderRadius:12, border:'1px solid rgba(255,255,255,.22)', background:'rgba(255,255,255,.055)', color:'inherit', padding:'12px 14px', font:'inherit' }
 
 export default function PossibleFuturesClient() {
+  const actor = useSyncExternalStore(subscribeAIActor, getAIActorSnapshot, getServerAIActorSnapshot)
+  const params = useSearchParams()
+  // Disposal of the entire private screen prevents a prior owner's
+  // Scenario and pending request results from surviving an account change.
+  return <ActorBoundPossibleFuturesClient key={`${actor.generation}:${params.get('scenario') ?? ''}`} actor={actor} />
+}
+
+function ActorBoundPossibleFuturesClient({ actor }: { actor: AIActorSnapshot }) {
   const params = useSearchParams(); const requestedBranch = Number(params.get('branch') ?? 0)
+  const isOwnerCurrent = () => Boolean(actor.uid && actor.actor && isCurrentAIActorSnapshot(actor))
   const webglAvailable = useWebGLAvailable()
   const [branch,setBranch] = useState(Number.isInteger(requestedBranch)&&requestedBranch>=0&&requestedBranch<BRANCH_LABELS.length?requestedBranch:0)
   const existingScenarioId = params.get('scenario')
@@ -150,11 +160,11 @@ export default function PossibleFuturesClient() {
   const horizon = params.get('horizon') ?? 'Exploratory horizon'
 
   useEffect(() => {
-    if (!existingScenarioId) return
+    if (!existingScenarioId || !isOwnerCurrent()) return
     let active = true
     setBranchesLoaded(false)
     void getPossibleFutureClient(existingScenarioId).then((result) => {
-      if (!active) return
+      if (!active || !isOwnerCurrent()) return
       const branchRecords = Array.isArray(result.branches) ? result.branches.slice(0, BRANCH_LABELS.length) : []
       const ids = branchRecords.map((entry) => String(entry.id ?? '')).filter(Boolean)
       const labels = branchRecords.map((entry, index) => String(entry.label ?? BRANCH_LABELS[index] ?? `Branch ${index + 1}`)).slice(0, ids.length)
@@ -177,20 +187,20 @@ export default function PossibleFuturesClient() {
       }
       setBranchesLoaded(true)
     }).catch(() => {
-      if (!active) return
+      if (!active || !isOwnerCurrent()) return
       setSetup('error')
       setBranchesLoaded(true)
       setMessage('This Scenario could not be reloaded. Its truth boundary remains closed.')
     })
     return () => { active = false }
-  }, [existingScenarioId])
+  }, [existingScenarioId, actor])
 
   const visibleBranchLabels = branchLabels.length
     ? branchLabels
     : branchesLoaded ? [] : ['Loading Scenario…']
 
   const createScenario = async () => {
-    if (!question.trim()) return
+    if (!isOwnerCurrent() || !question.trim()) return
     setSetup('creating'); setMessage('Building a governed Scenario basis…')
     try {
       const created = await createPossibleFutureClient({ question:question.trim(), originRealm:params.get('scenarioOrigin') ?? 'home', returnToken:`possible-futures-${Date.now()}`, worldRevision:'client-context-v1', sourceContext:{
@@ -198,20 +208,60 @@ export default function PossibleFuturesClient() {
         personId: params.get('personId') ?? undefined,
         placeId: params.get('placeId') ?? undefined,
       }, assumptionOnly:true, timeHorizon:{ amount:1, unit:'month' } })
+      if (!isOwnerCurrent()) return
       setScenarioId(created.scenarioId); setBasisRevision(created.basisRevision)
       const generation = await requestPossibleFutureGenerationClient({ scenarioId:created.scenarioId, expectedRevision:created.basisRevision })
-      if (generation.status === 'provider-unavailable') { setSetup('manual'); setMessage('AI generation is unavailable. Enter your own branch assumptions; UrAi will render them without pretending a model generated them.') }
-      else { setSetup('exploring'); setMessage('This is a possibility, not a prediction.') }
-    } catch (error) { setSetup('error'); setMessage(error instanceof Error ? error.message : 'Scenario creation failed safely.') }
+      if (!isOwnerCurrent()) return
+      if (generation.status === 'provider-unavailable') {
+        setSetup('manual')
+        setMessage('AI generation is unavailable. Enter your own branch assumptions; UrAi will render them without pretending a model generated them.')
+      } else if (generation.status === 'ready') {
+        // Never enter an empty Explore mode: verify the owner and actual stored branches.
+        const loaded = await getPossibleFutureClient(created.scenarioId)
+        if (!isOwnerCurrent()) return
+        const branchRecords = Array.isArray(loaded.branches) ? loaded.branches.slice(0, BRANCH_LABELS.length) : []
+        const ids = branchRecords.map(entry => String(entry.id ?? ''))
+        if (loaded.scenario?.ownerId !== actor.uid || !ids.length
+          || ids.some(id => !/^br_[A-Za-z0-9_-]{12,96}$/.test(id)))
+          throw new Error('SCENARIO_GENERATION_NOT_VERIFIED')
+        setBranchIds(ids)
+        setBranchLabels(branchRecords.map((entry,index) => String(entry.label ?? BRANCH_LABELS[index] ?? 'Branch ' + (index + 1))))
+        setBranch(0)
+        setBranchesLoaded(true)
+        setSetup('exploring')
+        setMessage('This is a possibility, not a prediction.')
+      } else throw new Error('SCENARIO_GENERATION_STATUS_UNRECOGNIZED')
+    } catch (error) {
+      if (isOwnerCurrent()) { setSetup('error'); setMessage(error instanceof Error ? error.message : 'Scenario creation failed safely.') }
+    }
   }
 
   const submitManual = async () => {
     const branches = manualSummaries.map((summary,index)=>({ label:BRANCH_LABELS[index], summary:summary.trim() })).filter((item)=>item.summary)
-    if (!branches.length || !scenarioId) return
+    if (!isOwnerCurrent() || !branches.length || !scenarioId) return
     setSetup('creating'); setMessage('Saving your Manual Scenario…')
-    try { const result = await submitManualScenarioBranchesClient({ scenarioId, expectedRevision:basisRevision, branches }); setBranchIds(result.branchIds); setBranchLabels(branches.map((item)=>item.label)); setBranch(0); setBranchesLoaded(true); setSetup('exploring'); setMessage('Manual Scenario loaded. These branches came from your assumptions, not an AI prediction.') }
-    catch (error) { setSetup('error'); setMessage(error instanceof Error ? error.message : 'Manual Scenario failed safely.') }
+    try {
+      const result = await submitManualScenarioBranchesClient({ scenarioId, expectedRevision:basisRevision, branches })
+      if (!isOwnerCurrent()) return
+      if (!Array.isArray(result.branchIds) || result.branchIds.length !== branches.length
+        || result.branchIds.some(id => !/^br_[A-Za-z0-9_-]{12,96}$/.test(id)))
+        throw new Error('SCENARIO_MANUAL_BRANCH_RECEIPT_INVALID')
+      setBranchIds(result.branchIds); setBranchLabels(branches.map((item)=>item.label))
+      setBranch(0); setBranchesLoaded(true); setSetup('exploring')
+      setMessage('Manual Scenario loaded. These branches came from your assumptions, not an AI prediction.')
+    } catch (error) {
+      if (isOwnerCurrent()) { setSetup('error'); setMessage(error instanceof Error ? error.message : 'Manual Scenario failed safely.') }
+    }
   }
+
+  if (!isOwnerCurrent()) return (
+    <main data-testid="urai-possible-futures" data-truth-mode="scenario" data-setup-state="signed-out"
+      style={{ position: 'fixed', inset: 0, zIndex: 3, background: '#080d10', color: '#eef4f2', padding: 24 }}>
+      <h1>Possible Futures</h1>
+      <p>Sign in to access private What-If scenarios. The previous owner's Scenario is not displayed.</p>
+      <button type="button" onClick={requestUraiWorldReturn} style={{ minHeight: 48, padding: '0 18px' }}>Return</button>
+    </main>
+  )
 
   return <main data-testid="urai-possible-futures" data-truth-mode="scenario" data-setup-state={setup} style={{ position:'fixed',zIndex:3,inset:0,background:'#080d10',color:'#eef4f2',overflow:'hidden' }}>
     <div aria-hidden="true" style={{ position:'absolute',inset:0 }}>
