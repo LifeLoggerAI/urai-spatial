@@ -1,12 +1,20 @@
 # URAI: manually submitted, source-pinned, no-deployment verification.
 # No GitHub Actions, Cloud Build GitHub connection, production credentials,
 # real family media, or Firebase deployment is needed.
-# Submit with: gcloud builds submit --no-source --config=cloudbuild.urai-verify.yaml \
-#   --project=urai-4dc1d --region=us-central1 \
-#   --substitutions=_SOURCE_BRANCH=repair/rfinal-convergence-candidate-20261020,_SOURCE_SHA=<40-char-git-sha>
+# Submission is billable; obtain founder approval AND independently inspect
+# project, runner service account IAM, network/metadata privileges and costs.
+# Do not copy a production-linked project ID from a historical example.
+# Example ONLY AFTER authorized nonproduction project + least-privilege service
+# account are independently confirmed:
+# gcloud builds submit --no-source --config=cloudbuild.urai-verify.yaml \
+#   --project=<APPROVED_NONPRODUCTION_PROJECT> --region=us-central1 \
+#   --service-account=<APPROVED_MINIMAL_NONPRODUCTION_SERVICE_ACCOUNT> \
+#   --substitutions=_SOURCE_BRANCH=repair/rfinal-convergence-candidate-20261020,_SOURCE_SHA=<EXACT_40_CHAR_GIT_SHA>
+# This file never proves that unsetting credential env vars revokes metadata/IAM.
+# This configuration MUST NOT be submitted until those controls are verified.
 substitutions:
   _SOURCE_BRANCH: 'repair/rfinal-convergence-candidate-20261020'
-  _SOURCE_SHA: '1c0757c4f305644c656e72b8f536c7c57f316068'
+  _SOURCE_SHA: 'EXPLICIT_PIN_REQUIRED'
 steps:
   - id: 'fetch-exact-source'
     name: 'gcr.io/cloud-builders/git'
@@ -84,6 +92,7 @@ steps:
         run_gate first-memory-preflight pnpm test:first-memory:emulator:preflight
         run_gate first-memory-emulator pnpm test:first-memory:emulator
         run_gate firestore-rules-emulator pnpm test:firestore-rules
+        run_gate functions-build pnpm --filter urai-functions build
         run_gate functions-tests pnpm --filter urai-functions test
         run_gate spatial-contract-tests pnpm --filter urai-tier1 test:unit
         run_gate spatial-types pnpm --filter urai-tier1 typecheck
