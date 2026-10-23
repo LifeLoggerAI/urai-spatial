@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import * as navigation from '../src/components/lifemap/lifeMapPhysicalStarAction.mjs';
-const { lifeMapPhysicalReplayAllowed, lifeMapPhysicalStarAction, lifeMapFocusAllowed } = navigation;
+const { lifeMapPhysicalReplayAllowed, lifeMapPhysicalStarAction, lifeMapFocusAllowed, lifeMapVisibleRelatedNodes } = navigation;
 
 const canonical = () => ({ id: 'star-1', authorizedMemory: true, locked: false, replayAvailable: true, memoryId: 'memory-1', replayManifestId: 'manifest-1' });
 test('first physical star click selects without replay', () => { assert.equal(lifeMapPhysicalStarAction('star-1', null, 'overview', true), 'select'); });
@@ -100,4 +100,26 @@ test('Focus and Replay fail closed without a node', () => {
     assert.equal(lifeMapFocusAllowed(null, mode), false);
     assert.equal(lifeMapPhysicalReplayAllowed(null, mode), false);
   }
+});
+
+
+test('related Memory Stars omit hidden nodes even when graph links reference them', () => {
+  const selected = { id: 'star-a', privacyLevel: 'private', connectedTo: ['star-b', 'sealed-star'] };
+  const candidates = [
+    selected,
+    { id: 'star-b', privacyLevel: 'private', connectedTo: [] },
+    { id: 'sealed-star', privacyLevel: 'hidden', connectedTo: ['star-a'] },
+    { id: 'unrelated', privacyLevel: 'shareable', connectedTo: [] },
+  ];
+  assert.deepEqual(lifeMapVisibleRelatedNodes(candidates, selected).map(n => n.id), ['star-b']);
+});
+
+test('related Memory Star filtering denies hidden selected nodes and preserves linked visible neighbors', () => {
+  const selected = { id: 'star-a', privacyLevel: 'private', connectedTo: [] };
+  const linked = { id: 'star-b', privacyLevel: 'shareable', connectedTo: ['star-a'] };
+  const hiddenSelected = { ...selected, privacyLevel: 'hidden' };
+  assert.deepEqual(lifeMapVisibleRelatedNodes([selected, linked], selected).map(n => n.id), ['star-b']);
+  assert.deepEqual(lifeMapVisibleRelatedNodes([hiddenSelected, linked], hiddenSelected), []);
+  assert.deepEqual(lifeMapVisibleRelatedNodes([linked], null), []);
+  assert.deepEqual(lifeMapVisibleRelatedNodes([linked], undefined), []);
 });

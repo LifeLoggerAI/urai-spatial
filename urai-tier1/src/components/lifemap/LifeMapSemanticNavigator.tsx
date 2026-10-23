@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { type LifeMapNode, type LifeMapNodeType } from './lifeMapData'
 import { requestLifeMapSelection } from './lifeMapSelection'
-import { lifeMapFocusAllowed, lifeMapPhysicalReplayAllowed } from './lifeMapPhysicalStarAction.mjs'
+import { lifeMapFocusAllowed, lifeMapPhysicalReplayAllowed, lifeMapVisibleRelatedNodes } from './lifeMapPhysicalStarAction.mjs'
 import { useLifeMapEvents } from './useLifeMapEvents'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
@@ -197,7 +197,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     }
   }, [closeNavigator, open, overview, step])
 
-  const related = selected ? nodes.filter((node) => selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)) : []
+  const related = lifeMapVisibleRelatedNodes(nodes, selected)
   const nodeDate = (node: LifeMapNode) => node.occurredAt && Number.isFinite(Date.parse(node.occurredAt))
     ? <time dateTime={node.occurredAt} {...locale.formatProps}>{locale.date(node.occurredAt, {dateStyle:'medium'})}</time>
     : <span dir="auto">{node.dateLabel}</span>

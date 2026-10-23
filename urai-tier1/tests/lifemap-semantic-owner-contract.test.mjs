@@ -121,5 +121,13 @@ test('selected semantic search result keeps accessible Focus actions while clear
   assert.match(navigator, /\{selected && open \? <aside className="life-map-semantic-inspector"/)
   assert.match(navigator, /\.life-map-semantic-inspector\{display:grid;left:12px/)
   assert.doesNotMatch(navigator, /\.life-map-semantic-inspector\{display:none/)
-  assert.match(navigator, /disabled=\{\(!explicitDemo && !selected\.authorizedMemory\) \|\| Boolean\(selected\.locked\)\}/)
+  assert.match(navigator, /disabled=\{!lifeMapFocusAllowed\(selected, sourceMode\)\}/)
+  assert.match(navigator, /disabled=\{!lifeMapPhysicalReplayAllowed\(selected, sourceMode\)\}/)
 })
+
+
+test('semantic related-star inspector uses privacy-filtered links rather than raw hidden nodes', () => {
+  assert.match(navigator, /const related = lifeMapVisibleRelatedNodes\(nodes, selected\)/);
+  assert.doesNotMatch(navigator, /const related = selected \? nodes\.filter/);
+  assert.match(navigator, /node\.privacyLevel !== 'hidden' && matchesSearch/);
+});
