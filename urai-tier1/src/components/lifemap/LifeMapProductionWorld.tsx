@@ -2,6 +2,7 @@
 
 import { Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
+import { lifeMapWorldStageTransform } from "./lifeMapStageContinuity.mjs";
 import { Suspense, createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import StellarCorona from "@/spatial/stellar/StellarCorona";
@@ -619,17 +620,18 @@ function ArtifactShape(props: ArtifactProps) {
   return <EverydayArtifact {...props} />;
 }
 
-function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect }: { node: LifeMapNode; index: number; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void }) {
+function MemoryArtifact({ node, index, selected, phase, reducedMotion, onStarClick }: { node: LifeMapNode; index: number; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean; onStarClick: (node: LifeMapNode) => void }) {
   const root = useRef<THREE.Group>(null);
   const active = selected?.id === node.id;
   const related = Boolean(selected && (selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)));
-  const visible = !selected || active || (related && phase !== "arrival");
+  // The authorized constellation stays discoverable when one star is approached.
+  const visible = true;
   const importance = artifactImportance(node);
   // The atlas owns the overview. Memory identity resolves into stellar
   // clusters at a distance; a physical photosphere only appears after a
   // memory is selected. This removes the dashboard-like field of equal balls
   // while retaining semantic selection through the navigator and world event.
-  const overviewCluster = selected === null;
+  const overviewCluster = !active || phase === "departure" || phase === "travel";
   const chapter = chapterForNode(node, index);
   const semanticLabel = artifactFamilyLabel(node);
   useFrame(({ clock }) => {
@@ -645,8 +647,18 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       scale={active ? 1.46 : 0.58 + importance * 0.22}
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
       userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
-      onClick={(event) => { event.stopPropagation(); onSelect(node); }}
+      onClick={(event) => {
+        if (event.delta > 6) return;
+        event.stopPropagation();
+        onStarClick(node);
+      }}
+      onPointerOver={() => { document.body.style.cursor = "pointer"; }}
+      onPointerOut={() => { document.body.style.cursor = ""; }}
     >
+      <mesh name={`life-map-star-hit-${node.id}`} userData={{ semanticRole: "memory-star-hit", nodeId: node.id }}>
+        <sphereGeometry args={[overviewCluster ? 1.42 : 1.06, 14, 10]} />
+        <meshBasicMaterial colorWrite={false} depthWrite={false} transparent opacity={0} />
+      </mesh>
       {overviewCluster ? <FieldParticles seed={index * 137 + node.id.length * 17} count={44} radius={2.25} depth={5.8} height={3.8} color={node.aura} opacity={0.42} size={0.052} /> : <ArtifactShape node={node} active={active} />}
       <Sparkles count={active ? 34 : overviewCluster ? 14 : 10} scale={active ? [3.4, 3.8, 3.4] : overviewCluster ? [3.8, 4.3, 5.1] : [1.8, 2.2, 1.8]} size={active ? 2.4 : overviewCluster ? 0.92 : 1.3} speed={reducedMotion ? 0 : 0.11} opacity={active ? 0.72 : overviewCluster ? 0.28 : 0.34} color={node.aura} />
       <pointLight color={node.aura} intensity={active ? 8 : overviewCluster ? 1.2 : 2.8} distance={active ? 15 : overviewCluster ? 5 : 7} decay={2} />
@@ -729,12 +741,12 @@ function SelectedMemoryArrival({ selected, phase, reducedMotion }: { selected: L
       userData={{
         scaleMode: "intimate",
         depthBand: "near",
-        semanticOwner: "life-map-intimate-memory-star",
+        semanticOwner: "life-map-selected-memory-atmosphere",
         runtimeAsset: MEMORY_STAR_MODEL,
       }}
       position={selected.position}
     >
-      <AuthoredMemoryStar aura={selected.aura} active scale={1.38} clip="MemoryStar_Focus" />
+      {/* The selected MemoryArtifact owns the only visible photosphere. */}
       <FieldParticles seed={996} count={160} radius={5.4} depth={8.2} height={7.6} color={selected.aura} opacity={0.42} size={0.065} />
       <Sparkles count={72} scale={[8.4, 7.2, 8.4]} size={2.15} speed={reducedMotion ? 0 : 0.07} opacity={0.34} color={ICE} />
       <pointLight color={selected.aura} intensity={9} distance={26} decay={2} />
@@ -822,19 +834,22 @@ function GalaxyDepth({ tier, reducedMotion }: { tier: SpatialQualityProfile["tie
   );
 }
 
-export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSelect, cameraRig, webglRecovery }: {
+export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSelect, onStarClick, cameraRig, webglRecovery }: {
   nodes: LifeMapNode[];
   selected: LifeMapNode | null;
   phase: LifeMapJourneyPhase;
   profile: SpatialQualityProfile;
   onSelect: (node: LifeMapNode) => void;
+  onStarClick: (node: LifeMapNode) => void;
   cameraRig: ReactNode;
   webglRecovery: ReactNode;
 }) {
   const { size } = useThree();
   const portrait = size.height > size.width;
-  const stageScale: Point3 = selected ? (portrait ? [0.92, 0.96, 0.92] : [1.12, 1.12, 1.08]) : portrait ? [0.54, 0.96, 0.78] : [1.12, 1.18, 1.08];
-  const stagePosition: Point3 = selected ? (portrait ? [0, -0.08, 0.9] : [0, -0.16, 0.62]) : portrait ? [0, -0.18, 1.1] : [0, 0.05, 0.9];
+  // Selecting a memory must move the camera, not the galaxy or neighboring stars.
+  const stage = lifeMapWorldStageTransform(portrait);
+  const stageScale: Point3 = stage.scale as Point3;
+  const stagePosition: Point3 = stage.position as Point3;
   const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;
 
   useEffect(() => {
@@ -877,7 +892,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
           <ForegroundObservatory selected={selected} />
           <OverviewLandmarks selected={selected} />
           <group name="life-map-memory-artifact-families">
-            {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}
+            {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onStarClick={onStarClick} />)}
           </group>
           <group name="life-map-selected-relationship-context" />
           <SelectedMemoryArrival selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
@@ -890,6 +905,45 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
         </group>
         <CinematicPostProcessing active={profile.postprocessing} reducedMotion={profile.reducedMotion} />
       </>
+    </LifeMapReducedMotionContext.Provider>
+  );
+}
+
+/** Reuse Life Map's authored stars and world-space volume in Focus.
+ * Only already consent-scoped neighboring nodes are passed in by Focus.
+ * The selected star is rendered separately by the existing photosphere.
+ */
+export function FocusLifeMapContext({ selected, neighbors, profile, onSelect }: {
+  selected: LifeMapNode | null;
+  neighbors: readonly LifeMapNode[];
+  profile: SpatialQualityProfile;
+  onSelect: (node: LifeMapNode) => void;
+}) {
+  if (!selected) return null;
+  const center: Point3 = [0, 0.35, -1.55];
+  const position: Point3 = [
+    center[0] - selected.position[0],
+    center[1] - selected.position[1],
+    center[2] - selected.position[2],
+  ];
+  return (
+    <LifeMapReducedMotionContext.Provider value={profile.reducedMotion}>
+      <group name="focus-shared-authored-galaxy" position={position}>
+        <GalaxyDepth tier={profile.tier === "high" ? "medium" : profile.tier} reducedMotion={profile.reducedMotion} />
+        {neighbors.map(node => (
+          <group key={node.id} name={`focus-neighbor-${node.id}`} position={node.position}>
+            <Suspense fallback={null}>
+              <AuthoredMemoryStar aura={node.aura} active={false} scale={0.62} />
+            </Suspense>
+            <mesh onClick={event => { event.stopPropagation(); onSelect(node); }}
+              onPointerOver={event => { event.stopPropagation(); document.body.style.cursor = "pointer"; }}
+              onPointerOut={event => { event.stopPropagation(); document.body.style.cursor = ""; }}>
+              <sphereGeometry args={[0.85, 24, 18]} />
+              <meshBasicMaterial color={node.aura} transparent opacity={0} depthWrite={false} colorWrite={false} />
+            </mesh>
+          </group>
+        ))}
+      </group>
     </LifeMapReducedMotionContext.Provider>
   );
 }

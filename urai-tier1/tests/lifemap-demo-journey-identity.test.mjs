@@ -14,6 +14,13 @@ import { canonicalLifeMapDemoNodes } from '../src/components/lifemap/canonicalLi
 import { DEMO_MEMORY_STAR_NODES } from '../src/spatial/memory/memoryStarSchema.ts'
 import { definitionForDestination } from '../src/spatial/world/destinationRegistry.ts'
 import { previousDestinationForReturn } from '../src/spatial/world/worldTypes.ts'
+import { isAuthorizedFocusNeighborReturn } from '../src/app/focus/focusNeighborContinuity.ts'
+// Bind the actual dependency-free runtime helpers to the isolated VM rather than
+// replacing privacy, motion, coordinate, or Escape behavior with invented mocks.
+import { shouldHandleRealmEscape } from '../src/spatial/world/realmEscapeEligibility.mjs'
+import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed } from '../src/components/lifemap/lifeMapPhysicalStarAction.mjs'
+import { lifeMapRotateFlightAxes, advanceLifeMapViewOrientation, lifeMapRotatedLookTarget } from '../src/components/lifemap/lifeMapFlightOrientation.mjs'
+import { lifeMapStagePoint } from '../src/components/lifemap/lifeMapStageContinuity.mjs'
 
 const source = fs.readFileSync(process.env.URAI_LIFEMAP_NAVIGATOR_SOURCE ?? 'src/components/lifemap/LifeMapSemanticNavigator.tsx', 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
@@ -36,6 +43,9 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
   browser.setTimeout = () => { throw Error('Reduced-motion component must avoid travel timers') }
   browser.clearTimeout = () => {}
   browser.history = { state:{}, replaceState(_state, _title, destination) { calls.push({kind:'identity', destination}); browser.location = new URL(destination, browser.location) } }
+  // VM components receive this document; the real pure realm predicate must
+  // evaluate the same document, including the Founder-owned Escape boundary.
+  const testDocument = {body:{style:{}},querySelector:selector=>selector==='[data-urai-adam-presence]'&&founderOpen?{}:null}
   const changed = (a,b) => !a || !b || a.length !== b.length || a.some((value,index) => !Object.is(value,b[index]))
   const react = {
     useState(initial) { const index=cursor++; slots[index] ??= {value:initial}; return [slots[index].value, next => {slots[index].value=typeof next==='function'?next(slots[index].value):next; dirty=true}] },
@@ -72,12 +82,16 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     '@/app/privacy-controls/consentModel':consentModel,
     '@/spatial/life-movie/privateLifeMovieRouteSelection':privateLifeMovieRouteSelection,
     './explicitDemoMemory':{buildNamedExplicitDemoMemory},
+    '@/spatial/world/realmEscapeEligibility.mjs':{shouldHandleRealmEscape:event=>shouldHandleRealmEscape(event,testDocument)},
+    './lifeMapPhysicalStarAction.mjs':{lifeMapPhysicalStarAction,lifeMapPhysicalReplayAllowed},
+    './lifeMapFlightOrientation.mjs':{lifeMapRotateFlightAxes,advanceLifeMapViewOrientation,lifeMapRotatedLookTarget},
+    './lifeMapStageContinuity.mjs':{lifeMapStagePoint},
   }
   const adamSlotModule = {exports:{}}
   vm.runInNewContext(adamSlotCompiled,{exports:adamSlotModule.exports,module:adamSlotModule,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]}},{filename:'actual-AdamLauncherSlot.tsx'})
   imports['@/spatial/adam/AdamLauncherSlot'] = adamSlotModule.exports
   const module = {exports:{}}
-  vm.runInNewContext(component==='memory'?selectedMemoryCompiled:component==='scene'?sceneCompiled:compiled,{exports:module.exports,module,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]},window:browser,document:{body:{style:{}},querySelector:selector=>selector==='[data-urai-adam-presence]'&&founderOpen?{}:null},URLSearchParams,HTMLElement:class {},Element:class {}},{filename:component==='memory'?'actual-useSelectedMemory.ts':component==='scene'?'actual-ComposedLifeMapScene.tsx':'actual-LifeMapSemanticNavigator.tsx'})
+  vm.runInNewContext(component==='memory'?selectedMemoryCompiled:component==='scene'?sceneCompiled:compiled,{exports:module.exports,module,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]},window:browser,document:testDocument,URLSearchParams,HTMLElement:class {},Element:class {}},{filename:component==='memory'?'actual-useSelectedMemory.ts':component==='scene'?'actual-ComposedLifeMapScene.tsx':'actual-LifeMapSemanticNavigator.tsx'})
   const render = () => {
     for (let pass=0;pass<12;pass++) {cursor=0;dirty=false;const tree=component==='memory'?module.exports.useSelectedMemory():module.exports.default({authenticatedUserId:'synthetic-owner'});const effects=queued;queued=[];effects.forEach(effect=>effect());if(!dirty)return tree}
     throw Error('Actual navigator hooks did not settle')
@@ -93,14 +107,30 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     if(component==='scene') {
       const world=descendants(render()).find(el=>el.type==='synthetic-production-world-boundary')
       const selected=memoryNodes.find(candidate=>candidate.id===id)
-      assert.ok(world);assert.ok(selected);world.props.onSelect(selected);render()
+      assert.ok(world);assert.ok(selected)
+      const locationBefore = browser.location.href
+      const callsBefore = calls.length
+      // Auth-gated Life Map scenes must NOT rewrite the same-route URL during
+      // physical star approach: doing so unmounts the traveling camera.
+      world.props.onSelect(selected)
+      const selectedTree = render()
+      assert.equal(browser.location.href,locationBefore,'star approach preserves current route')
+      assert.deepEqual(calls.slice(callsBefore),[],'no same-route identity/navigation during physical travel')
+      // Read the production-owned staged Focus URL, not the intentionally
+      // unchanged in-flight Life Map URL.
+      const focus = descendants(selectedTree).find(el=>el.props.className==='focus-threshold')
+      assert.ok(focus,'selected star exposes its authored Focus destination')
+      assert.equal(typeof focus.props['data-destination-href'],'string')
+      return new URL(focus.props['data-destination-href'],browser.location).searchParams
     } else {
       const result=descendants(open()).find(el=>el.props['data-life-map-node-id']===id);assert.ok(result);result.props.onClick({detail})
     }
     return browser.location.searchParams
   },destination(route) {
     const control=descendants(render()).find(el=>el.props.className===route+'-threshold')
-    assert.ok(control);control.props.onClick()
+    assert.ok(control)
+    assert.equal(control.props.disabled,false,route+' navigation cannot bypass a disabled memory threshold')
+    control.props.onClick()
     return new URL(calls.at(-1).destination,'http://localhost')
   },overview() {
     const control=descendants(render()).find(el=>el.props.className==='overview-return')
@@ -131,9 +161,20 @@ test('actual scene overview groups Founder with Return Home without changing its
   const f=fixture('?demo=1&overview=1',{component:'scene'})
   const group=descendants(f.render()).find(el=>el.type==='nav' && el.props['aria-label']==='Life Map overview controls')
   assert.ok(group)
-  const returnHome=descendants(group).find(el=>el.props['data-life-map-overview-home-return']==='true')
-  const founder=descendants(group).find(el=>typeof el.type==='function' && el.type.name==='AdamLauncherSlot')
-  assert.ok(returnHome);assert.ok(founder)
+  const unreadyReturnHome=descendants(group).find(el=>el.props['data-life-map-overview-home-return']==='true')
+  const unreadyFounder=descendants(group).find(el=>typeof el.type==='function' && el.type.name==='AdamLauncherSlot')
+  assert.ok(unreadyReturnHome,'Return Home remains available during WebGL recovery')
+  assert.equal(unreadyFounder,undefined,'ADAM stays unmounted until the real render-ready signal')
+  // Explicitly simulate the renderer's ready-frame proof through the real
+  // bridge callback; no fake unconditional "ready" default is supplied.
+  const bridge=descendants(f.render()).find(el=>typeof el.type==='function' && el.type.name==='WebGLRecoveryBridge')
+  assert.ok(bridge,'actual scene retains its renderer-recovery bridge')
+  bridge.props.onStateChange('ready')
+  const readyGroup=descendants(f.render()).find(el=>el.type==='nav' && el.props['aria-label']==='Life Map overview controls')
+  assert.ok(readyGroup)
+  const returnHome=descendants(readyGroup).find(el=>el.props['data-life-map-overview-home-return']==='true')
+  const founder=descendants(readyGroup).find(el=>typeof el.type==='function' && el.type.name==='AdamLauncherSlot')
+  assert.ok(returnHome);assert.ok(founder,'ADAM appears after render readiness')
   assert.equal(founder.props.name,'life-map-overview-controls')
   returnHome.props.onClick()
   assert.equal(f.calls.at(-1).kind,'destination')
@@ -216,10 +257,14 @@ for(const marker of ['','0','true','01']) test('canonical private scene does not
   const selected=f.select()
   assert.equal(selected.get('manifestId'),null);assert.equal(selected.get('demo'),null)
   for(const route of ['focus','replay']) {
-    const destination=f.destination(route)
-    assert.equal(destination.searchParams.get('manifestId'),null);assert.equal(destination.searchParams.get('demo'),null)
-    for(const flag of ['onboarding','firstRun']) assert.equal(destination.searchParams.get(flag),'1')
+    const control=descendants(f.render()).find(el=>el.props.className===route+'-threshold')
+    assert.ok(control)
+    assert.equal(control.props.disabled,true,'unverified private nodes cannot open '+route)
+    const staged=new URL(control.props['data-destination-href'],'http://localhost')
+    assert.equal(staged.searchParams.get('manifestId'),null);assert.equal(staged.searchParams.get('demo'),null)
+    for(const flag of ['onboarding','firstRun']) assert.equal(staged.searchParams.get(flag),'1')
   }
+  assert.equal(f.calls.filter(call=>call.kind==='destination').length,0,'disabled private thresholds cannot navigate')
 })
 
 test('canonical scene retains an existing manifest for the same private memory through destinations and Overview',()=>{
@@ -267,7 +312,16 @@ function execute(source,globals) {
   return module.exports
 }
 function replayDestination(memory,current) {
-  const href=execute('exports.href = ('+replayHrefCallback+')();',{memory,location:current.href,window:{location:current}}).href
+  // replayHref is the actual Focus production callback, extracted unchanged.
+  // Bind its actual authorization dependency, never a permissive node match.
+  // This Life Map roundtrip does not model a verified Focus-neighbor selection:
+  // null is deliberately fail-closed, not an invented authorized node.
+  const href=execute('exports.href = ('+replayHrefCallback+')();',{
+    memory, location:current.href, window:{location:current},
+    selectedNode:null,
+    isAuthorizedFocusNeighborReturn,
+    forwardPrivateMovieRouteSelection:privateLifeMovieRouteSelection.forwardPrivateMovieRouteSelection,
+  }).href
   return new URL(href,current)
 }
 function returnDestination(memory,destination,previousDestination,current) {
@@ -309,9 +363,27 @@ for(const sample of canonicalLifeMapDemoNodes.filter(sample=>!sample.locked)) te
     assert.equal(destination.searchParams.get('manifestId'),expectedManifest)
     assert.equal(destination.searchParams.get('demo'),'1')
   }
-  const restored=fixture(returnedLifeMap.search,{component:'scene',memoryNodes:canonicalLifeMapDemoNodes}).render()
-  assert.equal(restored.props['data-life-map-mode'],'selected');assert.equal(restored.props['data-life-map-phase'],'arrival')
-  const title=descendants(restored).find(element=>element.props.className==='life-map-title')
+  // Focus unwinds outward into the actual Life Map OVERVIEW. A stale URL
+  // node hint must not silently reopen its memory or bypass the overview.
+  // Memory identity remains in the authorized demo URL for explicit re-entry.
+  assert.equal(returnedLifeMap.searchParams.get('overview'),'1')
+  const restored=fixture(returnedLifeMap.search,{component:'scene',memoryNodes:canonicalLifeMapDemoNodes})
+  const overviewScene=restored.render()
+  assert.equal(overviewScene.props['data-life-map-mode'],'overview')
+  assert.equal(overviewScene.props['data-life-map-phase'],'overview')
+  const overviewTitle=descendants(overviewScene).find(element=>element.props.className==='life-map-title')
+  assert.equal(overviewTitle.props.children[1].props.children,'Your living universe')
+  // A deliberate second star selection, not URL hydration, restores the
+  // original disclosed sample and its one canonical replay manifest.
+  const reselected=restored.select(1,sample.id)
+  assert.equal(reselected.get('node'),sample.id)
+  assert.equal(reselected.get('memoryId'),sample.id)
+  assert.deepEqual(reselected.getAll('manifestId'),[expectedManifest])
+  assert.equal(reselected.get('demo'),'1')
+  const selectedScene=restored.render()
+  assert.equal(selectedScene.props['data-life-map-mode'],'selected')
+  assert.equal(selectedScene.props['data-life-map-phase'],'arrival')
+  const title=descendants(selectedScene).find(element=>element.props.className==='life-map-title')
   assert.equal(title.props.children[1].props.children,sample.title)
 })
 

@@ -207,3 +207,53 @@ for (const [name, fileName, functionName] of [
    assert.equal(u.searchParams.has('memoryId'),false)
  })
 }
+
+
+// RFINAL116: stale privacy-mode is UI route metadata, never owner/consent
+// authority. Do not inherit one memory's label on a different selection or Home.
+for (const [name, fileName, functionName] of [
+ ['transition controller', 'WorldTransitionController.tsx', 'buildTravelHref'],
+ ['hard fallback', 'worldEvents.ts', 'buildFallbackHref'],
+ ['persistent companion', 'PersistentWorldCompanion.tsx', 'buildCompanionTravelHref'],
+]) {
+ test(name + ': cross-memory Focus does not inherit a previous privacy-mode hint', () => {
+   const u = checkOriginalRoute(fileName, functionName,
+     '?memoryId=memory-A&manifestId=manifest-A&privacyMode=held-private',
+     { destination: 'focus', href: '/focus?memoryId=memory-B&manifestId=manifest-B' })
+   assert.equal(u.searchParams.get('memoryId'), 'memory-B')
+   assert.equal(u.searchParams.get('manifestId'), 'manifest-B')
+   assert.equal(u.searchParams.has('privacyMode'), false)
+ })
+ test(name + ': same-memory Focus may preserve its own privacy-mode hint', () => {
+   const u = checkOriginalRoute(fileName, functionName,
+     '?memoryId=memory-A&privacyMode=held-private',
+     { destination: 'focus', href: '/focus?memoryId=memory-A' })
+   assert.equal(u.searchParams.get('privacyMode'), 'held-private')
+ })
+ test(name + ': explicit new-memory privacy mode is allowed while old one stays excluded', () => {
+   const u = checkOriginalRoute(fileName, functionName,
+     '?memoryId=memory-A&privacyMode=held-private',
+     { destination: 'focus', href: '/focus?memoryId=memory-B',
+       context: { memoryId: 'memory-B', privacyMode: 'private' } })
+   assert.equal(u.searchParams.get('memoryId'), 'memory-B')
+   assert.equal(u.searchParams.get('privacyMode'), 'private')
+ })
+ test(name + ': Home and Ground refuse stale and explicit privacy-mode labels', () => {
+   for (const [destination, href] of [
+     ['home', '/home?privacyMode=held-private'],
+     ['infrastructure-hub', '/ground?privacyMode=held-private'],
+   ]) {
+     const u = checkOriginalRoute(fileName, functionName,
+       '?memoryId=memory-A&privacyMode=held-private',
+       { destination, href, context: { privacyMode: 'private' } })
+     assert.equal(u.searchParams.has('privacyMode'), false)
+     assert.equal(u.searchParams.has('memoryId'), false)
+   }
+ })
+ test(name + ': Life Map overview without selected memory drops stale privacy mode', () => {
+   const u = checkOriginalRoute(fileName, functionName,
+     '?memoryId=memory-A&privacyMode=held-private',
+     { destination: 'life-map', href: '/life-map?overview=1' })
+   assert.equal(u.searchParams.has('privacyMode'), false)
+ })
+}
