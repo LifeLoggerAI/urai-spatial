@@ -17,6 +17,8 @@ export function lifeMapPhysicalStarAction(clickedId: string | null | undefined, 
 export type LifeMapRelatedNode = {
   id: string;
   privacyLevel?: 'private' | 'hidden' | 'shareable';
+  privacy?: 'private' | 'hidden' | 'shareable';
   connectedTo?: readonly string[];
 };
 export function lifeMapVisibleRelatedNodes<T extends LifeMapRelatedNode>(nodes: readonly T[], selected: LifeMapRelatedNode | null | undefined): T[];
+export function lifeMapNodeIsHidden(node: { privacyLevel?: 'private' | 'hidden' | 'shareable'; privacy?: 'private' | 'hidden' | 'shareable' } | null | undefined): boolean;

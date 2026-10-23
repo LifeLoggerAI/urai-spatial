@@ -11,7 +11,7 @@
     {
       "pr": 1933,
       "label": "Life Map Focus Replay original continuity",
-      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "sourceHead": "9e29e2d5bc0b72a11f51ab8a93d01846be870956",
       "count": 74
     },
     {
@@ -168,16 +168,16 @@
     },
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.d.mts",
-      "blob": "fb53ca5d657e50808f1a9acdf8467da90b43a181",
+      "blob": "815f8fa6646ce4ccc10d08057c724e5e21b4b31a",
       "sourcePR": 1933,
-      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "sourceHead": "9e29e2d5bc0b72a11f51ab8a93d01846be870956",
       "change": "added"
     },
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs",
-      "blob": "70d6a38e56f213da4c1a7bfc82ea9e08be2e904c",
+      "blob": "2577369cfeb407fe135772edf82ca8153a3de94b",
       "sourcePR": 1933,
-      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "sourceHead": "9e29e2d5bc0b72a11f51ab8a93d01846be870956",
       "change": "added"
     },
     {
@@ -399,9 +399,9 @@
     },
     {
       "path": "urai-tier1/tests/lifemap-physical-star-action.test.mjs",
-      "blob": "2a803f126160df668d5f24651936fa5e9855c138",
+      "blob": "5799a1b8c284373ffab2c790f869fb638fe1e80c",
       "sourcePR": 1933,
-      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "sourceHead": "9e29e2d5bc0b72a11f51ab8a93d01846be870956",
       "change": "added"
     },
     {
@@ -630,9 +630,9 @@
     }
   ],
   "gates": {
-    "compositeSource": "CANDIDATE_PENDING_EXACT_TREE_CHECK",
+    "compositeSource": "PENDING_POST_COMMIT_TREE_VERIFICATION",
     "fullApplicationBuild": "NOT_EXECUTED",
-    "nativeContracts": "ISOLATED_PROVENANCE_4_CASES_ONLY",
+    "nativeContracts": "ISOLATED_MEMORY_STAR_BLOB_12_OF_12_PASS; FULL_SOURCE_TESTS_PENDING",
     "firebaseEmulator": "NOT_EXECUTED",
     "realHomeCC0WebGL": "NOT_EXECUTED",
     "authenticatedJourney": "NOT_EXECUTED",
