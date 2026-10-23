@@ -2,6 +2,8 @@
 // stay with the consent-filtered Life Map nodes and the destination server.
 export function lifeMapPhysicalReplayAllowed(node, sourceMode) {
   if (!node || typeof node.id !== 'string' || !node.id || node.locked || node.replayAvailable !== true) return false;
+  // Defense in depth: UI intent must not resurrect content hidden after a consent or privacy update.
+  if (node.privacyLevel === 'hidden' || node.privacy === 'hidden') return false;
   if (sourceMode === 'explicit-demo') return true;
   return sourceMode === 'private' && node.authorizedMemory === true &&
     typeof node.memoryId === 'string' && node.memoryId.trim().length > 0 &&

@@ -14,7 +14,7 @@ test('same selected star enters Replay only at authorized arrival', () => {
   assert.equal(lifeMapPhysicalStarAction(node.id, node.id, 'arrival', false), 'ignore');
 });
 test('a hidden, locked or unreplayable star cannot open private Replay', () => {
-  for (const variant of [{ locked: true }, { replayAvailable: false }, { id: '' }]) assert.equal(lifeMapPhysicalReplayAllowed({ ...canonical(), ...variant }, 'private'), false);
+  for (const variant of [{ locked: true }, { replayAvailable: false }, { id: '' }, { privacyLevel: 'hidden' }, { privacy: 'hidden' }]) assert.equal(lifeMapPhysicalReplayAllowed({ ...canonical(), ...variant }, 'private'), false);
 });
 test('private event metadata alone is never Replay authorization', () => {
   for (const variant of [{ authorizedMemory: false }, { authorizedMemory: undefined }, { memoryId: undefined }, { replayManifestId: undefined }, { replayManifestId: '  ' }]) assert.equal(lifeMapPhysicalReplayAllowed({ ...canonical(), ...variant }, 'private'), false);
@@ -46,4 +46,14 @@ test('selection and replay intent do not mutate source authority objects', () =>
   assert.equal(lifeMapPhysicalReplayAllowed(original, 'private'), true);
   assert.equal(lifeMapPhysicalStarAction(original.id, null, 'overview', true), 'select');
   assert.deepEqual(original, canonical());
+});
+
+test('hidden privacy blocks explicit-demo Replay and revokes already selected private star', () => {
+  const demo = { id: 'demo-1', replayAvailable: true, locked: false };
+  assert.equal(lifeMapPhysicalReplayAllowed({ ...demo, privacyLevel: 'hidden' }, 'explicit-demo'), false);
+  const node = canonical();
+  assert.equal(lifeMapPhysicalReplayAllowed(node, 'private'), true);
+  node.privacyLevel = 'hidden';
+  assert.equal(lifeMapPhysicalReplayAllowed(node, 'private'), false);
+  assert.equal(lifeMapPhysicalStarAction(node.id, node.id, 'arrival', lifeMapPhysicalReplayAllowed(node, 'private')), 'ignore');
 });
