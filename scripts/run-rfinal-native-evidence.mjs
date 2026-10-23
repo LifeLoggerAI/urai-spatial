@@ -15,6 +15,7 @@ import { once } from 'node:events'
 import { pathToFileURL } from 'node:url'
 import { resolveCandidate, assessCandidateCompletion, requireCommitSha } from './rfinal-source-authority.mjs'
 import { selectNativeEvidenceTarget } from './lib/native-evidence-target.mjs'
+import { ensureNativeGitAncestry } from './lib/native-git-ancestry.mjs'
 import { assessNativeHttpRoute } from './lib/native-http-route-acceptance.mjs'
 import { planNativeEvidenceStages, assertCombinedPreflightOutcome, nativeCombinedPreflightEnvironment } from './lib/native-combined-preflight.mjs'
 import { inspectVisualPng } from './visual-png-integrity.mjs'
@@ -541,10 +542,15 @@ async function main() {
     record('verified_source_identity','PASS',{head:actual,tree})
     // Reject a historical or unrelated change masquerading as an advanced PR.
     if (actual !== CONTROLLER.lastVerifiedSha) {
-      const ancestry=await command(['git','-C',source,'merge-base','--is-ancestor',
-        CONTROLLER.lastVerifiedSha,head],{cwd:source,log:path.join(evidence,'ancestry.log'),timeoutMinutes:5})
-      record('historical_known_head_ancestry',ancestry.exitCode===0?'PASS':'FAIL',ancestry)
-      if (ancestry.exitCode!==0) throw new Error('UNVERIFIED_BRANCH_ANCESTRY')
+      const history = await ensureNativeGitAncestry({
+        branch: target.branch, sourceHead: head,
+        trustedAncestor: CONTROLLER.lastVerifiedSha,
+        allowDeepen: !cfg.source,
+        runGit: async (args, name) => command(['git', '-C', source, ...args], {
+          cwd: source, log: path.join(evidence, name + '.log'), timeoutMinutes: 12,
+        }),
+      })
+      record('historical_known_head_ancestry','PASS',history)
     }
     const remoteCheck=await command(['git','ls-remote','--heads',CONTROLLER.repository,
       'refs/heads/'+target.branch],{cwd:homeDownloads,log:path.join(evidence,'remote_head_second.log'),timeoutMinutes:5})
