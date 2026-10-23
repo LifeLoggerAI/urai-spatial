@@ -645,6 +645,18 @@
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
       "expectedBlob": "8fb3cfec0edf48b7385b3974699095ad667a3002",
       "reason": "Combined R4 verification branch enabled with restricted branch reference validation; nonrelease only"
+    },
+    {
+      "path": "scripts/lib/ground-glb-source-anchors.mjs",
+      "originBlob": "9150100a757595a4fab4bc5a70e3d5f7ff15ab6e",
+      "expectedBlob": "af0a323c5ecc0588f598045a98e07aa8b46f5002",
+      "reason": "Exact reviewed Ground GLB validator mesh bounds and source-coordinate isolation hardening from #1934"
+    },
+    {
+      "path": "tests/ground-glb-source-anchors.test.mjs",
+      "originBlob": "2c11aaef2e8ddae76b6700e5fff3eeef249b774e",
+      "expectedBlob": "0009712a5c8b61ede7fb0a3ce9b38d65d3422fd1",
+      "reason": "Exact reviewed Ground GLB validator regression fixture extension from #1934"
     }
   ]
 }
