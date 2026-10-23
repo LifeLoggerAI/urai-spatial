@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { CANONICAL_HOME_SUCCESSOR, verifyCanonicalHomeRepairRetirement } from './lib/glb-normal-integrity.mjs'
+import { inspectGroundGlbAnchors } from './lib/ground-glb-source-anchors.mjs'
 
 const root = process.cwd()
 const modelRoot = path.join(root, 'urai-tier1/public/assets/urai/generated/models')
@@ -76,6 +77,11 @@ for (const [fileName, contract] of Object.entries(contracts)) {
   const jsonLength = payload.readUInt32LE(12)
   const json = JSON.parse(payload.subarray(20, 20 + jsonLength).toString('utf8').trim())
   const hash = crypto.createHash('sha256').update(payload).digest('hex')
+  if (fileName === 'ground-world-terrain-v1.glb') {
+    const modelSource = fs.readFileSync(path.join(root, 'urai-tier1/src/app/ground/GroundWorldModel.ts'), 'utf8')
+    const ground = inspectGroundGlbAnchors(json, modelSource)
+    for (const reason of ground.failures) errors.push('Ground source geometry: ' + reason)
+  }
   const nodes = new Set((json.nodes || []).map((node) => node.name))
   const clips = new Set((json.animations || []).map((clip) => clip.name))
   if (hash !== record.sha256) errors.push(`${fileName}: receipt hash mismatch`)
