@@ -7,6 +7,9 @@ export type LifeMapPhysicalStarNode = {
   authorizedMemory?: boolean;
   memoryId?: string;
   replayManifestId?: string;
+  privacyLevel?: 'private' | 'hidden' | 'shareable';
+  privacy?: 'private' | 'hidden' | 'shareable';
 };
+export function lifeMapFocusAllowed(node: LifeMapPhysicalStarNode | null | undefined, sourceMode: LifeMapPhysicalSourceMode): boolean;
 export function lifeMapPhysicalReplayAllowed(node: LifeMapPhysicalStarNode | null | undefined, sourceMode: LifeMapPhysicalSourceMode): boolean;
 export function lifeMapPhysicalStarAction(clickedId: string | null | undefined, selectedId: string | null | undefined, phase: string, replayAllowed: boolean): LifeMapPhysicalStarAction;

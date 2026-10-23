@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { lifeMapPhysicalReplayAllowed, lifeMapPhysicalStarAction } from '../src/components/lifemap/lifeMapPhysicalStarAction.mjs';
+import * as navigation from '../src/components/lifemap/lifeMapPhysicalStarAction.mjs';
+const { lifeMapPhysicalReplayAllowed, lifeMapPhysicalStarAction, lifeMapFocusAllowed } = navigation;
 
 const canonical = () => ({ id: 'star-1', authorizedMemory: true, locked: false, replayAvailable: true, memoryId: 'memory-1', replayManifestId: 'manifest-1' });
 test('first physical star click selects without replay', () => { assert.equal(lifeMapPhysicalStarAction('star-1', null, 'overview', true), 'select'); });
@@ -56,4 +57,47 @@ test('hidden privacy blocks explicit-demo Replay and revokes already selected pr
   node.privacyLevel = 'hidden';
   assert.equal(lifeMapPhysicalReplayAllowed(node, 'private'), false);
   assert.equal(lifeMapPhysicalStarAction(node.id, node.id, 'arrival', lifeMapPhysicalReplayAllowed(node, 'private')), 'ignore');
+});
+
+
+test('Focus uses the same authorized private-memory and disclosed-demo boundary as Replay', () => {
+  assert.equal(lifeMapFocusAllowed(canonical(), 'private'), true);
+  assert.equal(lifeMapFocusAllowed({ id: 'demo-1', locked: false, replayAvailable: false }, 'explicit-demo'), true);
+  assert.equal(lifeMapPhysicalReplayAllowed({ id: 'demo-1', locked: false, replayAvailable: false }, 'explicit-demo'), false);
+});
+test('Focus denies incomplete private memory grants or unsupported source modes', () => {
+  for (const variant of [ { authorizedMemory: false }, { authorizedMemory: undefined }, { memoryId: undefined }, { memoryId: '   ' }, { replayManifestId: undefined }, { replayManifestId: '  ' } ]) {
+    assert.equal(lifeMapFocusAllowed({ ...canonical(), ...variant }, 'private'), false);
+  }
+  for (const source of ['signed-out', 'error', 'unavailable', 'empty', 'other']) {
+    assert.equal(lifeMapFocusAllowed(canonical(), source), false);
+  }
+});
+test('Focus and Replay both deny hidden, locked, invalid-ID stars across private and disclosed demo', () => {
+  const variants = [{ locked: true }, { privacyLevel: 'hidden' }, { privacy: 'hidden' }, { id: '' }, { id: '   ' }];
+  for (const mode of ['private', 'explicit-demo']) {
+    for (const variant of variants) {
+      const value = { ...canonical(), ...variant };
+      assert.equal(lifeMapFocusAllowed(value, mode), false);
+      assert.equal(lifeMapPhysicalReplayAllowed(value, mode), false);
+    }
+  }
+});
+test('a revoked Focus memory loses navigation eligibility immediately', () => {
+  const granted = canonical();
+  assert.equal(lifeMapFocusAllowed(granted, 'private'), true);
+  granted.authorizedMemory = false;
+  assert.equal(lifeMapFocusAllowed(granted, 'private'), false);
+  assert.equal(lifeMapPhysicalReplayAllowed(granted, 'private'), false);
+});
+test('Focus selection cannot mutate frozen node authority', () => {
+  const immutable = Object.freeze(canonical());
+  assert.equal(lifeMapFocusAllowed(immutable, 'private'), true);
+  assert.deepEqual(immutable, canonical());
+});
+test('Focus and Replay fail closed without a node', () => {
+  for (const mode of ['private', 'explicit-demo', 'signed-out']) {
+    assert.equal(lifeMapFocusAllowed(null, mode), false);
+    assert.equal(lifeMapPhysicalReplayAllowed(null, mode), false);
+  }
 });
