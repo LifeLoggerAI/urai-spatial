@@ -18,6 +18,8 @@ function verify(c){
  assert.match(c,/serviceAccount: 'projects\/\$\{PROJECT_ID\}\/serviceAccounts\/\$\{_VERIFIER_SA_EMAIL\}'/)
  assert.match(c,/INVALID_VERIFIER_SA_EMAIL/)
  assert.match(c,/VERIFIER_NOT_PROJECT_LOCAL/)
+ assert.match(c,/PRODUCTION_PROJECT_FORBIDDEN/)
+ assert.match(c,/\$\$URAI_CLOUD_PROJECT" != "urai-4dc1d"/)
  assert.match(c,/\[\[ "\$\$URAI_SOURCE_SHA"/)
  assert.match(c,/\[\[ "\$\$URAI_VERIFIER_SA"/)
  assert.match(c,/@\$\$URAI_CLOUD_PROJECT\.iam\.gserviceaccount\.com/)
