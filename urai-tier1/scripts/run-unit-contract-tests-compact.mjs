@@ -6,6 +6,7 @@ const tests = [
   'tests/digital-human-founder-playback-gate.test.mjs',
   'tests/adam-founder-voice-playback-bridge.test.mjs',
   'tests/adam-founder-server-receipt-contract.test.mjs',
+  'tests/adam-founder-receipt-hostile-input.test.mjs',
   'tests/adam-founder-backend-receipt-boundary.test.mjs',
   'tests/council-selected-memory-navigation.test.mjs',
   'tests/council-memory-evidence-scoping.test.mjs',
