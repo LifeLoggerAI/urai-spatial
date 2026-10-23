@@ -89,27 +89,27 @@ steps:
         # gate writes a source-bound JSON line to Cloud Logging as well.
         # The local file alone is EPHEMERAL unless separately collected.
         receipt_path="/workspace/urai-spatial/.urai-cloudbuild-gates.ndjson"
-        : > "$receipt_path"
+        : > "$$receipt_path"
         failed=0
         run_gate() {
-          label="$1"
+          label="$$1"
           shift
-          echo "=== BEGIN $label ==="
+          echo "=== BEGIN $$label ==="
           result=0
-          if "$@"; then
-            echo "=== PASS $label ==="
+          if "$$@"; then
+            echo "=== PASS $$label ==="
             outcome="PASS"
           else
-            result="$?"
-            echo "=== FAIL $label exit=$result ==="
+            result="$$?"
+            echo "=== FAIL $$label exit=$$result ==="
             outcome="FAIL"
-            failed=$((failed + 1))
+            failed=$$((failed + 1))
           fi
           # Gate names and source SHA are validated literal inputs; the JSON is
           # intentionally one line per gate for dependable log extraction.
-          record="$(printf '{"schema":"urai-cloudbuild-gate-v1","sourceSHA":"%s","gate":"%s","outcome":"%s","exitCode":%s}' "$URAI_SOURCE_SHA" "$label" "$outcome" "$result")"
-          printf '%s\n' "$record" >> "$receipt_path"
-          printf 'URAI_GATE_JSON=%s\n' "$record"
+          record="$$(printf '{"schema":"urai-cloudbuild-gate-v1","sourceSHA":"%s","gate":"%s","outcome":"%s","exitCode":%s}' "$$URAI_SOURCE_SHA" "$$label" "$$outcome" "$$result")"
+          printf '%s\n' "$$record" >> "$$receipt_path"
+          printf 'URAI_GATE_JSON=%s\n' "$$record"
         }
         run_gate source-authority node --test tests/rfinal-source-authority.test.mjs
         run_gate first-memory-preflight pnpm test:first-memory:emulator:preflight
@@ -120,9 +120,9 @@ steps:
         run_gate spatial-contract-tests pnpm --filter urai-tier1 test:unit
         run_gate spatial-types pnpm --filter urai-tier1 typecheck
         run_gate spatial-build pnpm --filter urai-tier1 build
-        echo "URAI_GATE_RECEIPT_LOCAL_PATH=$receipt_path"
-        echo "URAI_GATE_RECEIPT_ROWS=$(wc -l < "$receipt_path")"
-        echo "URAI_VERIFICATION_FAILED_GATES=$failed"
+        echo "URAI_GATE_RECEIPT_LOCAL_PATH=$$receipt_path"
+        echo "URAI_GATE_RECEIPT_ROWS=$$(wc -l < "$$receipt_path")"
+        echo "URAI_VERIFICATION_FAILED_GATES=$$failed"
         echo 'No live Firebase operations, secrets, family media, merge, or deployment were requested.'
         if [[ "$$failed" -ne 0 ]]; then exit 1; fi
         echo 'URAI_PINNED_SOURCE_CI_PASS (not a production launch certificate)'
