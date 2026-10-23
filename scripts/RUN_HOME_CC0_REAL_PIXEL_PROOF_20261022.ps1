@@ -20,7 +20,7 @@ function Step([string]$label,[string[]]$args) {
 try {
   if((node -v) -notmatch '^v22\.') { Need 'NODE22_REQUIRED' }
   $gitRoot=(& git -C $root rev-parse --show-toplevel).Trim()
-  if($LASTEXITCODE -ne 0 -or $gitRoot -ne $root) { Need 'EXACT_REPO_ROOT_REQUIRED' }
+  if($LASTEXITCODE -ne 0 -or [IO.Path]::GetFullPath($gitRoot) -ne [IO.Path]::GetFullPath($root)) { Need 'EXACT_REPO_ROOT_REQUIRED' }
   $branch=(& git -C $root branch --show-current).Trim()
   $head=(& git -C $root rev-parse HEAD).Trim()
   if($LASTEXITCODE -ne 0 -or $branch -ne 'visual/home-cc0-photographic-review-proof-20261022') { Need 'VISUAL_BRANCH_REQUIRED' }
@@ -59,7 +59,7 @@ try {
   } finally { Pop-Location }
 } finally {
   if($server -and -not $server.HasExited) {
-    try { Stop-Process -Id $server.Id -Force -ErrorAction Stop } catch {}
+    try { & taskkill.exe /PID $server.Id /T /F 2>$null | Out-Null } catch { try { Stop-Process -Id $server.Id -Force -ErrorAction Stop } catch {} }
   }
   if($ownsStage) {
     Push-Location $root
