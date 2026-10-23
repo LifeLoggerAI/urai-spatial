@@ -180,18 +180,30 @@ async function runViewport(browser,item,origin,dir,manifest) {
     }
   }catch(e){report.browserError=String(e?.stack??e)}
   await ctx.close()
-  report.passed=Boolean(report.resource?.passed&&!report.browserError)
+  if (report.navigationError || errors.length) {
+    const reasons = [...(report.resource?.reasons ?? [])]
+    if (report.navigationError) reasons.push('ORIGINAL_HOME_NAVIGATION_FAILED')
+    if (errors.length) reasons.push('BROWSER_RUNTIME_ERRORS_AFTER_CAPTURE')
+    report.resource = { passed:false, reasons:[...new Set(reasons)] }
+  }
+  report.passed=Boolean(report.resource?.passed&&!report.browserError&&!report.navigationError)
   return report
 }
 export async function runHomeCC0BrowserProof(options) {
-  const manifest=JSON.parse(await readFile(manifestPath,'utf8'))
-  validateReviewManifest(manifest)
   const date=new Date().toISOString().replace(/[^0-9]/g,'').slice(0,14)
-  const folder=join(root,'artifacts','home-cc0-proof-'+date+'-'+process.pid)
+  // A fresh isolated clone has no artifacts/ directory. Create it before
+  // opening the evidence receipt, but do not overwrite an existing run.
+  const evidenceRoot=join(root,'artifacts')
+  await mkdir(evidenceRoot,{recursive:true})
+  const folder=join(evidenceRoot,'home-cc0-proof-'+date+'-'+process.pid)
   await mkdir(folder,{recursive:false})
   const git=(...args)=>{try{return execFileSync('git',['-C',root,...args],{encoding:'utf8'}).trim()}catch{return 'UNAVAILABLE'}}
-  const report={schema:'urai-home-cc0-real-browser-proof-v2',sourceHead:git('rev-parse','HEAD'),sourceBranch:git('branch','--show-current'),status:'BLOCKED_NO_ART_APPROVAL',releaseApproved:false,founderApproved:false,providerSpend:false,views:[]}
+  const report={schema:'urai-home-cc0-real-browser-proof-v2',recordedAt:new Date().toISOString(),sourceHead:git('rev-parse','HEAD'),sourceBranch:git('branch','--show-current'),status:'BLOCKED_NO_ART_APPROVAL',releaseApproved:false,founderApproved:false,providerSpend:false,views:[]}
   try {
+    // Manifest and staged asset failures MUST be caught and recorded in JSON;
+    // they are not reasons to abort without a useful receipt.
+    const manifest=JSON.parse(await readFile(manifestPath,'utf8'))
+    validateReviewManifest(manifest)
     report.staged=await validateStage(manifest)
     const {chromium}=createRequire(join(root,'urai-tier1/package.json'))('playwright')
     const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']})
