@@ -8,6 +8,7 @@ import { execFileSync } from 'node:child_process'
 import { readFile, readdir, lstat, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { inspectHomeScreenshotPng } from './home-cc0-png-evidence.mjs'
 
 export const HOME_CC0_EXPECTED = [
   'ground/color.jpg','ground/normal.jpg','ground/roughness.jpg',
@@ -147,8 +148,10 @@ async function runViewport(browser,item,origin,dir,manifest) {
     const assets=await Promise.all(pending)
     const before=await page.screenshot({path:join(dir,item.name+'.png'),timeout:45000}).catch(()=>null)
     report.home=home;report.assets=assets;report.errors=errors
-    report.screenshot=before?{name:item.name+'.png',bytes:before.length,sha256:hash(before)}:null
+    const pngEvidence=inspectHomeScreenshotPng(before,item.size.width,item.size.height)
+    report.screenshot=before?{name:item.name+'.png',bytes:before.length,sha256:hash(before),raster:pngEvidence}:null
     report.resource=evidenceGate(home,assets,errors,before)
+    if(!pngEvidence.passed) report.resource={passed:false,reasons:[...report.resource.reasons,'SCREENSHOT_RASTER_NOT_PROVEN:'+pngEvidence.reason]}
     if(item.name==='desktop'&&report.resource.passed) {
       const box=await page.locator('[data-home-primary-owner="asset-driven"] canvas').first().boundingBox()
       if(box) {
