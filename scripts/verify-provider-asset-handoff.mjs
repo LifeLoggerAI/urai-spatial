@@ -138,15 +138,29 @@ const routeOwnerChecks = [
   {
     routes: ['/ground'],
     files: [
+      'urai-tier1/src/app/ground/page.tsx',
       'urai-tier1/src/app/GroundSpatialWorldClean.tsx',
-      'urai-tier1/src/app/ground/GroundContinuityArchitecture.tsx',
-      'urai-tier1/src/app/ground/EmbodiedGroundScene.tsx',
+      'urai-tier1/src/app/GroundWorkforcePresences.tsx',
     ],
-    renderMode: 'procedural-spatial',
+    renderMode: 'authored-glb-provider-reference-spatial',
+    requiredByFile: {
+      'urai-tier1/src/app/ground/page.tsx': ['<GroundSpatialWorldClean />'],
+      'urai-tier1/src/app/GroundSpatialWorldClean.tsx': [
+        'useGLTF(GROUND_MODEL)',
+        '<primitive object={world} />',
+        '<GroundWorkforcePresences world={world} />',
+        'data-ground-runtime-owner="final-glb-infrastructure-world"',
+        'data-ground-workforce-art="provider-reference-pending-acceptance"',
+      ],
+      'urai-tier1/src/app/GroundWorkforcePresences.tsx': [
+        "visualStatus: 'provider-reference-pending-acceptance'",
+        "actionAuthority: 'none'",
+      ],
+    },
     required: [
-      'GroundContinuityArchitecture',
-      'EmbodiedGroundScene',
       'data-ground-visual-owner="shared-continuity-architecture"',
+      'data-ground-runtime-owner="final-glb-infrastructure-world"',
+      'data-ground-workforce-art="provider-reference-pending-acceptance"',
       'ground-continuity-architectural-shell',
       'ground-walkable-navigation-surface',
       'ground-enterable-threshold-',
