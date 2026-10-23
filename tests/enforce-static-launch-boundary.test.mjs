@@ -50,10 +50,21 @@ test('missing exported XR preview fails instead of accepting empty directory',()
 })
 test('unsafe symlink cannot escape export confinement',()=>{
   const root=fixture()
+  // A dedicated sibling under the Windows Temp folder is a valid junction
+  // target without requiring access to the protected Temp directory itself.
+  // Crucially it remains outside the export root, so link traversal would
+  // still be an actual confinement violation, not a synthetic fixture pass.
+  const outside=mkdtempSync(path.join(tmpdir(),'urai-xr-external-'))
+  const sentinel='EXTERNAL_CONTENT_MUST_NOT_BE_TOUCHED'
   try{
-    rmSync(path.join(root,'xr/index.html'))
-    rmSync(path.join(root,'xr'),{recursive:true})
-    symlinkSync(tmpdir(),path.join(root,'xr'))
+    writeFileSync(path.join(outside,'index.html'),sentinel)
+    rmSync(path.join(root,'xr'),{recursive:true,force:true})
+    symlinkSync(outside,path.join(root,'xr'), process.platform === 'win32' ? 'junction' : 'dir')
     assert.throws(()=>enforceStaticLaunchBoundary(root),/symlink/)
-  }finally{rmSync(root,{recursive:true,force:true})}
+    assert.equal(readFileSync(path.join(outside,'index.html'),'utf8'),sentinel)
+    assert.equal(existsSync(path.join(root,'static-launch-boundary.json')),false)
+  }finally{
+    rmSync(root,{recursive:true,force:true})
+    rmSync(outside,{recursive:true,force:true})
+  }
 })

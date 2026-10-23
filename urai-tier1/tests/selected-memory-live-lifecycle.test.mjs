@@ -108,7 +108,7 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
   }, { window: browser, URLSearchParams, process: { env: { NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'governed-bucket' } } })
   const render = () => driver.render(owner.useSelectedMemory)
   render()
-  const data = (uid = 'account-a', id = 'memory-one') => ({ ...contract.buildExplicitDemoMemory(id), ownerId: uid, demo: false })
+  const data = (uid = 'account-a', id = 'memory-one') => ({ ...contract.buildExplicitDemoMemory(id), ownerId: uid, consentState: 'authorized', demo: false })
   const snapshot = (value) => ({ exists: () => value !== null, data: () => value })
   let currentPolicy = null
   const seededPolicy = uid => ({ ...consentModel.defaultConsentPolicy(uid), revision: 1 })
@@ -143,6 +143,23 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
     unmount: () => driver.unmount(), authStopped: () => authStopped, listeners,
   }
 }
+
+
+test('live Focus/Replay excludes prepared or legacy records without explicit individual authorization', () => {
+  const h = harness()
+  assert.equal(h.signIn('account-a').status, 'loading')
+  for (const state of [undefined, null, 'granted', 'unknown', 'pending', 'revoked']) {
+    const record = h.data()
+    if (state === undefined) delete record.consentState
+    else record.consentState = state
+    const result = h.emit(0, record)
+    assert.equal(result.status, 'unauthorized', 'memory consent: ' + String(state))
+    assert.equal(result.memory, null)
+  }
+  const accepted = h.emit(0, h.data())
+  assert.equal(accepted.status, 'ready', 'explicit server-authorized source can still open')
+  assert.equal(accepted.memory.ownerId, 'account-a')
+})
 
 test('live private memory loads only from the authenticated owner path', () => {
   const h = harness()

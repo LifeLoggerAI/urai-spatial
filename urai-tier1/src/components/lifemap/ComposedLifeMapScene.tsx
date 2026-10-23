@@ -60,12 +60,92 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean):
   return { position: tuple(arrival), target: tuple(target) };
 }
 
+// Keyboard exploration is deliberately world-relative rather than head-locked:
+// it must not conflict with authored star-approach and Replay camera authority.
+type LifeMapFlightVector = { x: number; y: number; z: number };
+function stepLifeMapFlight(
+  offset: LifeMapFlightVector, velocity: LifeMapFlightVector,
+  held: ReadonlySet<string>, delta: number, reducedMotion: boolean,
+) {
+  const dt = Math.max(0, Math.min(0.05, Number.isFinite(delta) ? delta : 0));
+  const axis = (positive: string, negative: string) => Number(held.has(positive)) - Number(held.has(negative));
+  const input = { x: axis('KeyD', 'KeyA'), y: axis('KeyE', 'KeyQ'), z: axis('KeyS', 'KeyW') };
+  const magnitude = Math.hypot(input.x, input.y, input.z);
+  const speed = held.has('ShiftLeft') || held.has('ShiftRight') ? 9 : 5.5;
+  const smoothing = reducedMotion ? 1 : 1 - Math.exp(-12 * dt);
+  const clamp = (value: number, bound: number) => Math.max(-bound, Math.min(bound, value));
+  const nextVelocity = {
+    x: velocity.x + ((magnitude ? input.x / magnitude * speed : 0) - velocity.x) * smoothing,
+    y: velocity.y + ((magnitude ? input.y / magnitude * speed : 0) - velocity.y) * smoothing,
+    z: velocity.z + ((magnitude ? input.z / magnitude * speed : 0) - velocity.z) * smoothing,
+  };
+  return {
+    offset: {
+      x: clamp(offset.x + nextVelocity.x * dt, 28),
+      y: clamp(offset.y + nextVelocity.y * dt, 11),
+      z: clamp(offset.z + nextVelocity.z * dt, 28),
+    },
+    velocity: nextVelocity,
+  };
+}
+
 function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean; shellRef: RefObject<HTMLElement | null> }) {
   const { camera, size } = useThree();
   const initialized = useRef(false);
   const positionGoal = useRef(new THREE.Vector3());
   const targetGoal = useRef(new THREE.Vector3());
   const lookTarget = useRef(new THREE.Vector3(...OVERVIEW_TARGET));
+  const flightOffset = useRef(new THREE.Vector3());
+  const flightVelocity = useRef(new THREE.Vector3());
+  const heldFlightKeys = useRef(new Set<string>());
+  useEffect(() => {
+    // Selection, unloading and blur must never leave a motion key stuck.
+    heldFlightKeys.current.clear();
+    if (phase !== "overview") return;
+    const controls = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE']);
+    const keyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable
+        || target.closest('input,textarea,select,[role="textbox"],[role="dialog"],[data-urai-adam-presence]'))) {
+        release();
+        return;
+      }
+      if (document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"]')) {
+        release();
+        return;
+      }
+      if (event.code === 'KeyR') {
+        event.preventDefault();
+        flightOffset.current.set(0, 0, 0);
+        flightVelocity.current.set(0, 0, 0);
+        heldFlightKeys.current.clear();
+        return;
+      }
+      if (controls.has(event.code)) event.preventDefault();
+      if (controls.has(event.code) || event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
+        heldFlightKeys.current.add(event.code);
+      }
+    };
+    const keyUp = (event: KeyboardEvent) => { heldFlightKeys.current.delete(event.code); };
+    const release = () => { heldFlightKeys.current.clear(); flightVelocity.current.set(0, 0, 0); };
+    const focusIn = (event: FocusEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable
+        || target.closest('input,textarea,select,[role="textbox"],[role="dialog"],[data-urai-adam-presence]'))) release();
+    };
+    window.addEventListener('focusin', focusIn);
+    window.addEventListener('keydown', keyDown);
+    window.addEventListener('keyup', keyUp);
+    window.addEventListener('blur', release);
+    return () => {
+      window.removeEventListener('focusin', focusIn);
+      window.removeEventListener('keydown', keyDown);
+      window.removeEventListener('keyup', keyUp);
+      window.removeEventListener('blur', release);
+      release();
+    };
+  }, [phase]);
 
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
@@ -100,6 +180,27 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
 
   useFrame(({ pointer }, delta) => {
     const portrait = resolve();
+    if (phase === "overview") {
+      const focused = document.activeElement;
+      if ((focused instanceof HTMLElement && (focused.isContentEditable
+        || focused.closest('input,textarea,select,[role="textbox"],[role="dialog"],[data-urai-adam-presence]')))
+        || document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"]')) {
+        heldFlightKeys.current.clear();
+        flightVelocity.current.set(0, 0, 0);
+      }
+      const offset = flightOffset.current, velocity = flightVelocity.current;
+      const next = stepLifeMapFlight(
+        { x: offset.x, y: offset.y, z: offset.z },
+        { x: velocity.x, y: velocity.y, z: velocity.z },
+        heldFlightKeys.current, delta, reducedMotion,
+      );
+      offset.set(next.offset.x, next.offset.y, next.offset.z);
+      velocity.set(next.velocity.x, next.velocity.y, next.velocity.z);
+    }
+    // Preserve exploratory departure; authored star travel then takes over.
+    const flightWeight = phase === "overview" || phase === "departure" ? 1 : phase === "travel" ? 0.5 : 0;
+    positionGoal.current.addScaledVector(flightOffset.current, flightWeight);
+    targetGoal.current.addScaledVector(flightOffset.current, flightWeight);
     if (phase === "overview" && !reducedMotion) {
       positionGoal.current.x += pointer.x * (portrait ? 0.45 : 1.05);
       positionGoal.current.y += pointer.y * (portrait ? 0.24 : 0.42);
@@ -143,6 +244,11 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   useEffect(() => {
     const canvas = gl.domElement;
     let timer: number | null = null;
+    let frameProofObserver: MutationObserver | null = null;
+    const clearFrameProofObserver = () => {
+      frameProofObserver?.disconnect();
+      frameProofObserver = null;
+    };
     const clearRecoveryTimer = () => {
       if (timer === null) return;
       window.clearTimeout(timer);
@@ -151,21 +257,41 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
     const lost = (event: Event) => {
       event.preventDefault();
       clearRecoveryTimer();
+      clearFrameProofObserver();
       onStateChange("lost");
       timer = window.setTimeout(() => {
         timer = null;
         onStateChange("recovering");
       }, 250);
     };
-    const restored = () => {
+    const watchForWorldFrame = (invalidatePreviousProof: boolean) => {
       clearRecoveryTimer();
-      onStateChange("ready");
+      clearFrameProofObserver();
+      // Even a newly mounted canvas has not necessarily drawn the galaxy.
+      // Context restoration also needs a new frame, not old counters.
+      onStateChange("recovering");
+      const owner = canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+      if (!owner) return;
+      if (invalidatePreviousProof) owner.dataset.lifeMapRenderReady = "false";
+      const acceptFreshFrame = () => {
+        if (gl.getContext().isContextLost() || owner.dataset.lifeMapRenderReady !== "true") return;
+        clearFrameProofObserver();
+        onStateChange("ready");
+      };
+      frameProofObserver = new MutationObserver(acceptFreshFrame);
+      frameProofObserver.observe(owner, { attributes: true, attributeFilter: ["data-life-map-render-ready"] });
+      // On first mount, the source-owned proof may already have published.
+      // Recheck after subscribing to avoid missing that publication.
+      acceptFreshFrame();
     };
+    const restored = () => watchForWorldFrame(true);
     canvas.addEventListener("webglcontextlost", lost, false);
     canvas.addEventListener("webglcontextrestored", restored, false);
-    onStateChange("ready");
+    // A newly mounted canvas must not inherit a prior canvas's ready flag.
+    watchForWorldFrame(true);
     return () => {
       clearRecoveryTimer();
+      clearFrameProofObserver();
       canvas.removeEventListener("webglcontextlost", lost, false);
       canvas.removeEventListener("webglcontextrestored", restored, false);
     };
@@ -249,7 +375,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
   const [phase, setPhase] = useState<JourneyPhase>("overview");
-  const [webglState, setWebglState] = useState<WebGLState>("ready");
+  const [webglState, setWebglState] = useState<WebGLState>("recovering");
   const journeyToken = useRef(0);
   const shellRef = useRef<HTMLElement | null>(null);
   const localSelectionId = useRef<string | null>(null);
@@ -421,6 +547,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const thresholdsVisible = Boolean(selected);
   return <main
     ref={shellRef}
+    aria-label="URAI Life Map"
     className="life-map-root"
     style={{ position: "fixed", inset: 0, width: "100vw", height: "100svh", minWidth: "100vw", minHeight: "100svh", overflow: "hidden", opacity: 1, visibility: "visible", background: "#02050b" }}
     data-testid="urai-true-3d-life-map"
@@ -468,6 +595,13 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       </Suspense>
     </Canvas>
 
+    {phase === "overview" ? <p aria-label="Life Map keyboard exploration controls"
+      style={{ position: "absolute", zIndex: 15, bottom: "max(108px,calc(env(safe-area-inset-bottom) + 96px))",
+        left: 18, margin: 0, padding: "9px 12px", maxWidth: "min(345px,calc(100vw - 36px))",
+        borderRadius: 12, background: "rgba(2,8,16,.75)", color: "#ceeaf6", fontSize: 12,
+        pointerEvents: "none" }}>
+      Explore: W A S D move · Q E rise/fall · Shift faster · R recenter
+    </p> : null}
     <header className="life-map-title">
       <span>URAI · LIFE MAP</span>
       <strong>{selected ? selected.locked ? "Protected memory" : selected.title : "Your living universe"}</strong>

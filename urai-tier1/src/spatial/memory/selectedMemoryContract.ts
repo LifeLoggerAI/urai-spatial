@@ -209,12 +209,55 @@ export function buildExplicitDemoMemory(id: string): SelectedMemory {
   }
 }
 
-export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerId: string, id: string, trustedStorageBucket?: string | null): SelectedMemoryResult {
+export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerId: string, id: string, trustedStorageBucket?: string | null, currentPolicyRevision?: number): SelectedMemoryResult {
   if (raw.deleted === true) return { status: 'deleted', memory: null, message: 'This memory was deleted.' }
   if (raw.consentState === 'revoked') return { status: 'unauthorized', memory: null, message: 'Consent for this memory was revoked.' }
   if (raw.consentState === 'pending') return { status: 'unauthorized', memory: null, message: 'Consent for this memory is pending.' }
+  // Offline preflight cannot authorize source memory. Require the explicit
+  // server-owned grant before returning private details to Focus or Replay.
+  if (raw.consentState !== 'authorized') return { status: 'unauthorized', memory: null, message: 'This memory has not been authorized.' }
   const ownerId = stringValue(raw.ownerId ?? raw.userId)
   if (!ownerId || ownerId !== expectedOwnerId) return { status: 'unauthorized', memory: null, message: 'This memory is not available to this account.' }
+
+  // Prepared, owner-scoped sources enter Firestore hidden. C1 creation consent
+  // alone is not the separate authorization to reveal them in Focus or Replay.
+  // The protected server playback authority independently enforces this same
+  // activation under current C1 and the full deletion/consent fences.
+  const provenance = raw.sourceProvenance && typeof raw.sourceProvenance === 'object'
+    && !Array.isArray(raw.sourceProvenance) ? raw.sourceProvenance as Record<string, unknown> : {}
+  const isPreparedFirstMemory = Object.hasOwn(provenance, 'derivativeSha256')
+    || provenance.authenticity === 'source-derivative-not-generated-autobiography'
+    || Object.hasOwn(raw, 'firstPrivateMemoryConsent')
+  if (isPreparedFirstMemory) {
+    const confirmation = raw.firstPrivateMemoryConsent && typeof raw.firstPrivateMemoryConsent === 'object'
+      && !Array.isArray(raw.firstPrivateMemoryConsent) ? raw.firstPrivateMemoryConsent as Record<string, unknown> : {}
+    const activation = raw.firstPrivateMemoryActivation && typeof raw.firstPrivateMemoryActivation === 'object'
+      && !Array.isArray(raw.firstPrivateMemoryActivation) ? raw.firstPrivateMemoryActivation as Record<string, unknown> : {}
+    const matchingReceipts = Array.isArray(raw.sourceMedia) ? raw.sourceMedia.filter(item => item !== null
+      && typeof item === 'object' && !Array.isArray(item)
+      && (item as Record<string, unknown>).kind === 'audio'
+      && (item as Record<string, unknown>).mediaReceiptId === activation.mediaReceiptId) : []
+    const sha256 = /^[a-f0-9]{64}$/
+    if (raw.privacy !== 'private' || provenance.authenticity !== 'source-derivative-not-generated-autobiography'
+      || !sha256.test(String(provenance.derivativeSha256))
+      || confirmation.status !== 'explicit-owner-confirmation' || confirmation.ownerId !== ownerId
+      || confirmation.memoryId !== id || confirmation.derivativeSha256 !== provenance.derivativeSha256
+      || !sha256.test(String(confirmation.canonicalConsentReceiptHash))
+      || !Number.isSafeInteger(confirmation.consentRevision) || Number(confirmation.consentRevision) < 1
+      || activation.status !== 'explicit-owner-private-replay' || activation.ownerId !== ownerId
+      || activation.memoryId !== id || !sha256.test(String(activation.mediaReceiptId))
+      || activation.derivativeSha256 !== provenance.derivativeSha256
+      // Policy revision can advance after creation, but activation must be
+      // under the currently admitted policy epoch, never an older one.
+      || !Number.isSafeInteger(activation.consentRevision)
+      || Number(activation.consentRevision) < Number(confirmation.consentRevision)
+      || (currentPolicyRevision !== undefined && (
+        !Number.isSafeInteger(currentPolicyRevision) || Number(currentPolicyRevision) !== Number(activation.consentRevision)))
+      || activation.consentReceiptHash !== confirmation.canonicalConsentReceiptHash
+      || matchingReceipts.length !== 1) {
+      return { status: 'unauthorized', memory: null, message: 'Private memory activation has not been authorized.' }
+    }
+  }
 
   const title = stringValue(raw.title)
   const occurredAt = isoDateValue(raw.occurredAt)

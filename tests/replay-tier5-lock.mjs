@@ -2,13 +2,12 @@ import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
+import { allocateEphemeralPort, isUraiHomeDocument, waitForOwnedHome } from './spatial-owned-server.mjs';
 
 const REQUESTED_BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
 const SERVER_MODE = process.env.URAI_SPATIAL_SERVER_MODE === 'production' ? 'production' : 'development';
 const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/replay-tier5-lock';
-const REQUESTED_PORT = Number(new URL(REQUESTED_BASE_URL).port || 3000);
-const FALLBACK_PORT = Number(process.env.URAI_SPATIAL_TEST_PORT || REQUESTED_PORT + 1);
 const MEMORY_ID = 'demo:seed-memory-bloom';
 const MANIFEST_ID = 'seed-memory-bloom';
 
@@ -21,39 +20,47 @@ function baseUrlForPort(port) {
   return url.toString().replace(/\/$/, '');
 }
 
-async function serverResponds(url) {
+async function verifiedExistingUraiHome(baseUrl) {
   try {
-    const response = await fetch(url);
-    return response.ok || response.status < 500;
+    const response = await fetch(new URL('/home', baseUrl), {
+      redirect: 'manual', signal: AbortSignal.timeout(5000),
+    });
+    return response.status === 200
+      && /text\/html/i.test(response.headers.get('content-type') || '')
+      && isUraiHomeDocument(await response.text());
   } catch {
     return false;
   }
 }
 
-async function waitForServer(url, timeoutMs = 90000) {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    if (await serverResponds(url)) return;
-    await sleep(1000);
-  }
-  throw new Error(`Timed out waiting for ${url}`);
-}
-
 async function startServer() {
   if (USE_EXISTING) {
     if (SERVER_MODE === 'production') throw new Error('Production Replay proof must own the exact built server; existing-server reuse is forbidden.');
+    if (!await verifiedExistingUraiHome(REQUESTED_BASE_URL)) {
+      throw new Error('URAI_REPLAY_EXISTING_SERVER_NOT_ORIGINAL_HOME: ' + REQUESTED_BASE_URL);
+    }
     return { child: null, baseUrl: REQUESTED_BASE_URL.replace(/\/$/, '') };
   }
-  if (SERVER_MODE !== 'production' && (await serverResponds(REQUESTED_BASE_URL))) {
-    return { child: null, baseUrl: REQUESTED_BASE_URL.replace(/\/$/, '') };
+  // Never silently reuse a stale service on port 3000 or 3001. Own a fresh
+  // ephemeral listener unless an explicit test port was requested.
+  const forcedPort = process.env.URAI_SPATIAL_TEST_PORT;
+  const port = forcedPort ? Number(forcedPort) : await allocateEphemeralPort();
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) {
+    throw new Error('URAI_REPLAY_TEST_PORT_INVALID');
   }
-  const baseUrl = baseUrlForPort(FALLBACK_PORT);
+  const baseUrl = baseUrlForPort(port);
   const serverScript = SERVER_MODE === 'production' ? 'start' : 'dev';
-  const child = spawn('pnpm', ['--filter', 'urai-tier1', serverScript, '--port', String(FALLBACK_PORT)], {
+  // The original portable Node 22 toolchain has no ambient pnpm executable.
+  // Resolve the repository-pinned pnpm@10 through the same Node binary as all
+  // other native stages. This remains the real development/production server.
+  const child = spawn(process.execPath, [
+    'scripts/run-pnpm.mjs', '--filter', 'urai-tier1',
+    serverScript, '--hostname', '127.0.0.1', '--port', String(port),
+  ], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1' },
     stdio: 'inherit',
-    shell: process.platform === 'win32',
+    shell: false,
     detached: process.platform !== 'win32',
   });
   return { child, baseUrl };
@@ -251,7 +258,7 @@ async function run() {
   let page;
 
   try {
-    await waitForServer(server.baseUrl);
+    await waitForOwnedHome(server.baseUrl, server.child);
     browser = await chromium.launch();
     page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     page.on('console', (message) => {

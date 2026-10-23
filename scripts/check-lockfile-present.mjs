@@ -94,7 +94,8 @@ for (const dir of packageDirsFromWorkspace()) {
   if (!existsSync(packageJsonPath)) continue
   const pkg = readJson(packageJsonPath)
   const deps = collectPackageDeps(pkg)
-  const importerName = dir === '.' ? '.' : dir
+  // Lockfile importer names are slash-separated regardless of host OS.
+  const importerName = dir === '.' ? '.' : dir.replaceAll('\\', '/')
   const block = importerBlock(lockfile, importerName)
 
   if (!block) {

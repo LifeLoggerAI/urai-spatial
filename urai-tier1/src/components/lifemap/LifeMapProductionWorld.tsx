@@ -2,7 +2,7 @@
 
 import { Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { Suspense, createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import StellarCorona from "@/spatial/stellar/StellarCorona";
 import GalacticSpiralStructure from "./GalacticSpiralStructure";
@@ -83,11 +83,14 @@ function RenderProofRepublisher() {
     });
     const calls = gl.info.render.calls;
     const triangles = gl.info.render.triangles;
-    const ready = calls > 0 && objects > 20 && anchors >= 8;
+    // Ignore stale draw counters until the recovered WebGL context has rendered
+    // four fresh frames; geometry counters alone never establish visible pixels.
+    const ready = frames.current >= 4 && !gl.getContext().isContextLost()
+      && calls > 0 && triangles > 0 && objects > 20 && anchors >= 8;
     const signature = `${objects}:${anchors}:${calls}:${triangles}`;
     const element = resolveOwner();
     if (!element) return false;
-    if (lastSignature.current !== signature || invalidated.current) {
+    if (lastSignature.current !== signature || invalidated.current || element.dataset.lifeMapRenderReady !== (ready ? "true" : "false")) {
       lastSignature.current = signature;
       element.dataset.lifeMapRenderReady = ready ? "true" : "false";
       element.dataset.lifeMapVisibleObjects = String(objects);
@@ -165,7 +168,7 @@ function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Poin
   return (
     <mesh>
       <tubeGeometry args={[path, 72, width, 10, false]} />
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} transparent opacity={Math.min(opacity, 0.015)} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} transparent opacity={THREE.MathUtils.clamp(opacity, 0, 1)} depthWrite={false} blending={THREE.AdditiveBlending} />
     </mesh>
   );
 }
@@ -300,6 +303,35 @@ function EmotionalTerrain({ reducedMotion, selected }: { reducedMotion: boolean;
   );
 }
 
+/** The authored GLB is an invisible provenance/animation source. It must not
+ * suspend the visible stellar photosphere, galaxy or camera while loading.
+ * Its own Suspense boundary preserves the original authored model and clips.
+ */
+function AuthoredMemoryStarModel({ aura, active, clip }: {
+  aura: string;
+  active: boolean;
+  clip?: "MemoryStar_Idle" | "MemoryStar_Selected" | "MemoryStar_Focus";
+}) {
+  const reducedMotion = useContext(LifeMapReducedMotionContext);
+  const { scene, animations } = useGLTF(MEMORY_STAR_MODEL);
+  const root = useRef<THREE.Group>(null);
+  const model = useMemo(() => prepareAuthoredModel(scene, aura), [aura, scene]);
+  const { actions } = useAnimations(animations, root);
+
+  useEffect(() => {
+    const chosen = actions[clip || (active ? "MemoryStar_Selected" : "MemoryStar_Idle")] || actions.MemoryStar_Idle;
+    if (!chosen) return;
+    chosen.reset().play();
+    chosen.setEffectiveTimeScale(reducedMotion ? 0 : 1);
+    chosen.paused = reducedMotion;
+    if (reducedMotion) chosen.time = chosen.getClip().duration * (active ? 0.62 : 0.35);
+    else chosen.fadeIn(0.28);
+    return () => { chosen.fadeOut(0.18); chosen.stop(); };
+  }, [actions, active, clip, reducedMotion]);
+
+  return <group ref={root}><primitive object={model} visible={false} /></group>;
+}
+
 function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], clip }: {
   aura: string;
   active: boolean;
@@ -308,10 +340,7 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
   clip?: "MemoryStar_Idle" | "MemoryStar_Selected" | "MemoryStar_Focus";
 }) {
   const reducedMotion = useContext(LifeMapReducedMotionContext);
-  const { scene, animations } = useGLTF(MEMORY_STAR_MODEL);
   const root = useRef<THREE.Group>(null);
-  const model = useMemo(() => prepareAuthoredModel(scene, aura), [aura, scene]);
-  const { actions } = useAnimations(animations, root);
   const seed = useMemo(
     () => (aura + ":" + rotation.join(",")).split("").reduce((sum, char) => sum + char.charCodeAt(0), 0),
     [aura, rotation],
@@ -405,17 +434,6 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
 
   useEffect(() => () => photosphere.dispose(), [photosphere]);
 
-  useEffect(() => {
-    const chosen = actions[clip || (active ? "MemoryStar_Selected" : "MemoryStar_Idle")] || actions.MemoryStar_Idle;
-    if (!chosen) return;
-    chosen.reset().play();
-    chosen.setEffectiveTimeScale(reducedMotion ? 0 : 1);
-    chosen.paused = reducedMotion;
-    if (reducedMotion) chosen.time = chosen.getClip().duration * (active ? 0.62 : 0.35);
-    else chosen.fadeIn(0.28);
-    return () => { chosen.fadeOut(0.18); chosen.stop(); };
-  }, [actions, active, clip, reducedMotion]);
-
   useFrame(({ clock }) => {
     photosphere.uniforms.uTime.value = reducedMotion ? 0 : clock.elapsedTime;
     photosphere.uniforms.uActive.value = active ? 1 : 0;
@@ -434,7 +452,9 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         visualAuthority: "stellar-body-not-geology",
       }}
     >
-      <primitive object={model} visible={false} />
+      <Suspense fallback={null}>
+        <AuthoredMemoryStarModel aura={aura} active={active} clip={clip} />
+      </Suspense>
       <StellarCorona radius={0.38 * (active ? 1.12 : 1.08)} color={aura} reducedMotion={reducedMotion} intensity={active ? 1.15 : 0.8} />
       <mesh name="memory-star-photosphere" castShadow={false} scale={active ? 1.12 : 1.08}>
         <sphereGeometry args={[0.38, 72, 56]} />

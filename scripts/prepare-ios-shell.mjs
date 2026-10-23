@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { appleAppSiteAssociation } from './prepare-native-links.mjs'
+import { runPython3 } from './python3-runtime.mjs'
 
 export function validateIosFirebaseConfiguration(value, bundleId, projectNumber) {
   if (value?.PROJECT_ID !== 'urai-4dc1d') throw new Error('IOS_FIREBASE_PROJECT_MISMATCH')
@@ -17,7 +18,7 @@ export function validateIosFirebaseConfiguration(value, bundleId, projectNumber)
 }
 
 function parsePlist(text) {
-  const parsed = spawnSync('python3', ['-c', 'import json,plistlib,sys; print(json.dumps(plistlib.loads(sys.stdin.buffer.read())))'], { input: text, encoding: 'utf8' })
+  const parsed = runPython3( ['-c', 'import json,plistlib,sys; print(json.dumps(plistlib.loads(sys.stdin.buffer.read())))'], { input: text, encoding: 'utf8' })
   if (parsed.status !== 0) throw new Error('IOS_FIREBASE_PLIST_INVALID_PYTHON3_REQUIRED')
   return JSON.parse(parsed.stdout)
 }
@@ -42,7 +43,7 @@ export async function configureIosSource(projectDirectory, teamId, bundleId, nat
   // Preserve the generated Capacitor AppDelegate forwarding of URL and user
   // activity events, and explicitly keep ATS secure transport enabled.
   const infoPath = path.join(source, 'Info.plist')
-  const check = spawnSync('python3', ['-c', 'import plistlib,sys; p=sys.argv[1]; d=plistlib.load(open(p,"rb")); d["NSAppTransportSecurity"]={"NSAllowsArbitraryLoads":False}; scheme=sys.argv[2]; d.update({"CFBundleURLTypes":[{"CFBundleURLSchemes":[scheme]}]} if scheme else {}); plistlib.dump(d,open(p,"wb"))', infoPath, native.reversedClientId || ''], { encoding: 'utf8' })
+  const check = runPython3( ['-c', 'import plistlib,sys; p=sys.argv[1]; d=plistlib.load(open(p,"rb")); d["NSAppTransportSecurity"]={"NSAllowsArbitraryLoads":False}; scheme=sys.argv[2]; d.update({"CFBundleURLTypes":[{"CFBundleURLSchemes":[scheme]}]} if scheme else {}); plistlib.dump(d,open(p,"wb"))', infoPath, native.reversedClientId || ''], { encoding: 'utf8' })
   if (check.status !== 0) throw new Error('IOS_PLIST_CONFIGURATION_FAILED_PYTHON3_REQUIRED')
   const delegate = await fs.readFile(path.join(source, 'AppDelegate.swift'), 'utf8')
   let sceneDelegate = ''

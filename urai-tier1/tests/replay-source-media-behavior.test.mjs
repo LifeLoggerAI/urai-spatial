@@ -5,6 +5,7 @@ import test from 'node:test'
 import ts from 'typescript'
 import { Timestamp } from 'firebase/firestore'
 import * as ownedPlayback from '../src/spatial/memory/ownedMemoryMediaPlayback.ts'
+import * as ownerMediaFence from '../src/spatial/memory/replayOwnerMediaFence.ts'
 import { createReplayVideoSession, createReplayMediaSession } from '../src/app/replay/replayMediaSession.ts'
 import { replaySessionIdentity, replayVisualAdmission } from '../src/app/replay/replayVisualAdmission.ts'
 import { parseSelectedMemory, buildExplicitDemoMemory } from '../src/spatial/memory/selectedMemoryContract.ts'
@@ -558,6 +559,7 @@ async function mountC1Playback() {
   'firebase/functions':{httpsCallable:()=>async()=>({data:{...descriptor}})},
   '@/lib/firebase/client':{app:{},firebasePublicEnvReady:true,functions:{},getFirebaseDb:()=>({})},
   './selectedMemoryContract':{parseSelectedMemory},
+  './replayOwnerMediaFence':ownerMediaFence,
   './ownedMemoryMediaPlayback':{...ownedPlayback,fetchOwnedMemoryPlayback:async()=>new Blob(['synthetic'])}}
  const output={}
  const setTimer=(fn,ms)=>{const i=++tid;timers.set(i,{fn,ms});return i},clearTimer=i=>timers.delete(i)
@@ -602,6 +604,7 @@ async function staleReleaseScenario(source,phase,settlement="resolve"){
   if(id==='firebase/functions')return {httpsCallable:()=>()=>{callableCalls++;if(phase==='post-download-authority'&&callableCalls===2)postDownloadAuthorityEntered.resolve();return ((phase==='callable'&&callableCalls===1)||(phase==='post-download-authority'&&callableCalls===2))?pending.promise:Promise.resolve({data:descriptor});}};
   if(id==='@/lib/firebase/client')return {app:{},firebasePublicEnvReady:true,functions:{},getFirebaseDb:()=>({})};
   if(id==='./selectedMemoryContract')return {parseSelectedMemory:()=>({status:'ready',memory})};
+  if(id==='./replayOwnerMediaFence')return ownerMediaFence;
   if(id==='./ownedMemoryMediaPlayback')return transport;
   throw Error('unexpected import '+id);
  },{...timerEnv,navigator:{onLine:true},window:{addEventListener(){},removeEventListener(){}},process:{env:{NEXT_PUBLIC_FIREBASE_PROJECT_ID:'urai-4dc1d'}}});

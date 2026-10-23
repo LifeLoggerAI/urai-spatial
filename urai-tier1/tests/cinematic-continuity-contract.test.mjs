@@ -26,9 +26,11 @@ test('cinematic continuity is carried by canonical route owners, not a global Ti
 })
 
 test('Home and Life Map preserve atmospheric and reduced-motion continuity', () => {
-  assert.match(homeRuntime, /home-world-context/)
+  assert.match(homeRuntime, /data-home-context-owner="world-local-context-only"/)
   assert.match(homeRuntime, /prefers-reduced-motion:reduce/)
-  assert.match(lifeMap, /life-map__threshold-bloom/)
+  assert.match(lifeMap, /<LifeMapProductionWorld/)
+  const world = read('src/components/lifemap/LifeMapProductionWorld.tsx')
+  assert.match(world, /<fog attach="fog" args=\{\["#061020", 14, 88\]\}/)
   assert.match(lifeMap, /profile\.reducedMotion/)
   assert.match(lifeMap, /aria-label="URAI Life Map"/)
 })

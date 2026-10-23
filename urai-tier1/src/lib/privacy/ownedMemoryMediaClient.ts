@@ -1,8 +1,7 @@
 'use client'
 
-import { getAuth } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
-import { app, firebasePublicEnvReady, functions } from '@/lib/firebase/client'
+import { firebasePublicEnvReady, functions, getUraiAuth } from '@/lib/firebase/client'
 
 export const MEMORY_MEDIA_MAX_BYTES = 4 * 1024 * 1024
 export const MEMORY_MEDIA_TYPES = 'image/png,image/jpeg,image/webp,audio/mpeg,audio/wav,audio/ogg,video/mp4,video/webm'
@@ -13,11 +12,14 @@ type Lifecycle = { signal: AbortSignal; isCurrent: () => boolean }
 type FileSource = Pick<File, 'size' | 'type' | 'arrayBuffer'>
 function stopped(): never { throw new DOMException('File attachment stopped.', 'AbortError') }
 
-export async function attachOwnedMemoryFile(memory: Memory, file: FileSource, lifecycle: Lifecycle, suppliedOperationId?: string) {
-  const auth = getAuth(app), owner = auth.currentUser
-  if (!firebasePublicEnvReady || !owner || memory.demo || memory.privacy !== 'private' || memory.ownerId !== owner.uid
+export async function attachOwnedMemoryFile(memory: Memory, file: FileSource, lifecycle: Lifecycle, suppliedOperationId?: string, expectedPreparedSha256?: string) {
+  const auth = getUraiAuth(), owner = auth.currentUser
+  if (!firebasePublicEnvReady || !owner || memory.demo || (memory.privacy !== 'private' && memory.privacy !== 'hidden') || memory.ownerId !== owner.uid
     || !/^[A-Za-z0-9_-]{1,128}$/.test(memory.id)) throw new Error('PRIVATE_MEMORY_REQUIRED')
   if (!Number.isSafeInteger(file.size) || file.size < 1 || file.size > MEMORY_MEDIA_MAX_BYTES || !kinds[file.type]) throw new Error('FILE_TYPE_OR_SIZE_UNSUPPORTED')
+  // When admitting a prepared private source, the bytes must still match the
+  // offline source-fixity receipt. Normal user attachments remain unchanged.
+  if (expectedPreparedSha256 !== undefined && !/^[a-f0-9]{64}$/.test(expectedPreparedSha256)) throw new Error('PREPARED_MEDIA_FIXITY_INVALID')
   const operationId = suppliedOperationId ?? `memory-media-${crypto.randomUUID()}`
   if (!/^[A-Za-z0-9_-]{1,128}$/.test(operationId)) throw new Error('OPERATION_ID_INVALID')
   const current = () => !lifecycle.signal.aborted && lifecycle.isCurrent() && auth.currentUser === owner
@@ -42,6 +44,7 @@ export async function attachOwnedMemoryFile(memory: Memory, file: FileSource, li
   for (let offset = 0; offset < bytes.length; offset += 32768) { check(); binary += String.fromCharCode(...bytes.subarray(offset, offset + 32768)) }
   const base64 = btoa(binary); check()
   const checksum = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), v => v.toString(16).padStart(2, '0')).join(''); check()
+  if (expectedPreparedSha256 !== undefined && checksum !== expectedPreparedSha256) throw new Error('PREPARED_MEDIA_FIXITY_CHANGED')
   const last = await requireAuthority()
   if (last.consentRevision !== first.consentRevision || last.expiresAt !== first.expiresAt) throw new Error('MEMORY_MEDIA_AUTHORITY_CHANGED')
   const upload = httpsCallable<Record<string, unknown>, Record<string, unknown>>(functions, 'registerMemoryMedia')

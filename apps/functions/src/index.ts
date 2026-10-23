@@ -85,6 +85,7 @@ export { getGlobalEmotionalFieldSnapshot } from './globalEmotionalField'
 
 export { mapsElevationProvider } from './mapsElevation'
 export { resolveLifeModelPrivateInputs } from './lifeModelPrivateInputs'
-export { getMemoryMediaUploadAuthority, registerMemoryMedia, reconcileMemoryMediaUploads, getMemoryMediaPlaybackAuthority, streamMemoryMediaPlayback } from './memoryMedia'
+export { getMemoryMediaUploadAuthority, registerMemoryMedia, reconcileMemoryMediaUploads, getMemoryMediaPlaybackAuthority, streamMemoryMediaPlayback, activateFirstPrivateMemory } from './memoryMedia'
+export { createFirstPrivateMemory } from './createFirstPrivateMemory'
 export { reviewPrivateLifeModelCandidate } from './privateLifeModelReview'
 

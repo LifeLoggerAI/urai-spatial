@@ -4,6 +4,7 @@ const crypto = require('node:crypto')
 const admin = require('firebase-admin')
 const { createRequire } = require('node:module')
 const path = require('node:path')
+const { createDisposableEncodedMp4, inspectEncodedMp4 } = require('./memory-media-real-fixture.cjs')
 // Resolve the installed, production-client Firebase SDK without adding a dependency.
 const tier1Require = createRequire(path.resolve(__dirname, '../../../urai-tier1/package.json'))
 const { initializeApp, deleteApp } = tier1Require('firebase/app')
@@ -81,11 +82,14 @@ async function main() {
     enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } }
   const consent = { uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted',
     receiptHash: 'b'.repeat(64), expiresAt: new Date(Date.now() + 3_600_000).toISOString() }
-  // Fictional header-recognizable bytes test storage fixity, never movie quality.
-  const bytes = Buffer.alloc(131072); for (let i = 0; i < bytes.length; i++) bytes[i] = i % 251; bytes.write('ftyp', 4)
+  // Explicit opt-in preserves historical header-only coverage. The new
+  // real-format proof is disposable encoded media, not a personal recording.
+  const encodedFixture = process.env.URAI_EMULATOR_REAL_MP4 === '1' ? createDisposableEncodedMp4() : null
+  const bytes = encodedFixture ? encodedFixture.bytes : Buffer.alloc(131072)
+  if (!encodedFixture) { for (let i = 0; i < bytes.length; i++) bytes[i] = i % 251; bytes.write('ftyp', 4) }
   let receipt, proof, bucketPrivacyMetadataUnavailable = false
   try {
-    const batch = db.batch(); batch.set(db.doc(userPath), { accountStatus: 'active' }); batch.set(db.doc(memoryPath), { ownerId: uid, privacy: 'private', sourceMedia: [] })
+    const batch = db.batch(); batch.set(db.doc(userPath), { accountStatus: 'active' }); batch.set(db.doc(memoryPath), { ownerId: uid, consentState: 'authorized', privacy: 'private', sourceMedia: [] })
     batch.set(db.doc(policyPath), policy); batch.set(db.doc(consentPath), consent); await batch.commit()
     denied(await call('getMemoryMediaPlaybackAuthority', { memoryId, receiptId: 'c'.repeat(64) }), 'UNAUTHENTICATED', 'anonymous callable')
     const unsigned = await fetch(`${base}/streamMemoryMediaPlayback`, { signal: AbortSignal.timeout(10000) })
@@ -100,6 +104,11 @@ async function main() {
     const [metadata] = await file.getMetadata(), [storedBytes] = await file.download()
     assert.equal(metadata.generation, receipt.storageGeneration); assert.equal(metadata.metadata.ownerHash, sha(uid))
     assert.equal(metadata.metadata.memoryHash, sha(memoryId)); assert.equal(sha(storedBytes), receipt.sha256); assert.deepEqual(storedBytes, bytes)
+    if (encodedFixture) {
+      const decoded = inspectEncodedMp4(storedBytes)
+      assert.deepEqual(decoded, encodedFixture.receipt)
+      cases.push('actual encoded H264/AAC memory-media upload, storage fixity and full audio/video decode')
+    }
     cases.push('actual receipt-only upload and exact stored generation bytes')
     await proveNativeStorageRules(owner, foreign, receipt, bytes)
     // These isolated catalog rows are deliberately fictional approval-shaped
@@ -165,7 +174,10 @@ async function main() {
     denied(await authority(), 'UNAUTHENTICATED', 'revoked real emulator token')
     proof = { proof: 'PASS', project, sourceCommit: process.env.URAI_EXACT_HEAD || null,
       actualFunctionsLoaded: true, actualAuthLoaded: true, actualFirestoreLoaded: true, actualStorageLoaded: true,
-      actualReceiptAndStoredByteBinding: true, nativeStorageSdkRulesBoundaryChecked: true,
+      actualReceiptAndStoredByteBinding: true,
+      actualEncodedTestRecordingValidated: Boolean(encodedFixture),
+      actualEncodedTestRecordingReceipt: encodedFixture ? encodedFixture.receipt : null,
+      nativeStorageSdkRulesBoundaryChecked: true,
       directOwnerReadWriteAndPortableUrlDenied: true, foreignAndAnonymousDirectReadDenied: true,
       bucketPrivacyMetadataUnavailable, nativePositivePlaybackAccepted: false,
       actualCapturedEntryMemoryAuthority: true, capturedAuthorityCatalogFixturesOnly: true, capturedPrivateRuntimeAccepted: false,

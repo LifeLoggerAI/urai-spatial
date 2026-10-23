@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const root = process.cwd()
+const root = fileURLToPath(new URL('../../', import.meta.url))
 const app = join(root, 'urai-tier1')
 const page = readFileSync(join(app, 'src/app/location-map/page.tsx'), 'utf8')
 const scene = readFileSync(join(app, 'src/spatial/places/LocationMapScene.tsx'), 'utf8')

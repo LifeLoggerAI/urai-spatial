@@ -73,7 +73,10 @@ async function resolveAuthorizedScenarioEvidence(ownerId: string, value: unknown
 
   if (memoryId && memoryPolicy.modelContext === true && ['granted', 'limited'].includes(String(memoryPolicy.mode ?? ''))) {
     const memory = await transaction.get(db.doc(`users/${ownerId}/memories/${memoryId}`))
-    if (memory.exists) {
+    const memoryRow = memory.exists ? memory.data() : null
+    if (memoryRow && (memoryRow.ownerId ?? memoryRow.userId) === ownerId
+      && memoryRow.deleted !== true && memoryRow.demo !== true && memoryRow.synthetic !== true
+      && !['pending','revoked'].includes(String(memoryRow.consentState ?? ''))) {
       evidenceRefs.push({
         id: `evr_memory_${createHash('sha256').update(memoryId).digest('hex').slice(0, 24)}`,
         truthRecordId: `memory:${memoryId}`,
@@ -90,7 +93,10 @@ async function resolveAuthorizedScenarioEvidence(ownerId: string, value: unknown
     for (const [kind, entityId] of [['person', personId], ['place', placeId]] as const) {
       if (!entityId) continue
       const entity = await transaction.get(db.doc(`users/${ownerId}/lifeEntities/${entityId}`))
-      if (!entity.exists) continue
+      const entityRow = entity.exists ? entity.data() : null
+      if (!entityRow || entityRow.ownerId !== ownerId || entityRow.kind !== kind
+        || entityRow.revoked === true || entityRow.synthetic === true
+        || ['superseded','revoked'].includes(String(entityRow.status ?? ''))) continue
       evidenceRefs.push({
         id: `evr_${kind}_${createHash('sha256').update(entityId).digest('hex').slice(0, 24)}`,
         truthRecordId: `life-entity:${entityId}`,
@@ -162,51 +168,118 @@ export const generatePossibleFutureBranches = functions.https.onCall(async (data
   const op = operationId(data?.operationId)
   const scenarioId = ensureScenarioId(data?.scenarioId)
   const ref = scenarioRef(ownerId, scenarioId)
-  const [snapshot, basisSnapshot] = await Promise.all([ref.get(), ref.collection('basis').doc('current').get()])
-  if (!snapshot.exists || !basisSnapshot.exists) throw new functions.https.HttpsError('not-found', 'Scenario basis not found.')
-  const scenario = snapshot.data() ?? {}
-  if (Number(data?.expectedRevision) !== Number(scenario.basisRevision)) throw new functions.https.HttpsError('aborted', 'SCENARIO_BASIS_REVISION_CONFLICT')
-  const allowedEvidence = evidenceIdsFromBasis(basisSnapshot.data())
-  const manualBranches = Array.isArray(data?.manualBranches) ? data.manualBranches.slice(0, BRANCH_LIMIT) : []
+  // Do not silently truncate user-authored branches or treat malformed input
+  // as a request to enter the provider-unavailable fallback.
+  if (data?.manualBranches != null && !Array.isArray(data.manualBranches))
+    throw new functions.https.HttpsError('invalid-argument', 'Manual branches must be an array.')
+  const manualBranches = Array.isArray(data?.manualBranches) ? data.manualBranches : []
+  if (manualBranches.length > BRANCH_LIMIT)
+    throw new functions.https.HttpsError('invalid-argument', 'Too many manual branches.')
+
+  // The unconfigured provider remains intentionally unavailable. Even this
+  // negative/fallback path must not recreate a deleted or terminal Scenario.
   if (!manualBranches.length) {
     const receiptId = stableReceipt(ownerId, op, 'scenario-provider-unavailable')
-    await Promise.all([
-      ref.set({ status: 'awaiting-assumptions', updatedAt: fv.serverTimestamp() }, { merge: true }),
-      db.doc(`scenarioProviderReceipts/${receiptId}`).set({ receiptId, ownerId, scenarioId, operationId: op, providerState: scenarioProviderState, validationResult: 'provider-unavailable', retryCount: 0, createdAt: fv.serverTimestamp() }),
-    ])
+    const receiptRef = db.doc('scenarioProviderReceipts/' + receiptId)
+    await db.runTransaction(async (tx) => {
+      const scenarioSnapshot = await tx.get(ref)
+      const basisRef = ref.collection('basis').doc('current')
+      const basisSnapshot = await tx.get(basisRef)
+      if (!scenarioSnapshot.exists || !basisSnapshot.exists ||
+          scenarioSnapshot.data()?.ownerId !== ownerId || basisSnapshot.data()?.ownerId !== ownerId)
+        throw new functions.https.HttpsError('not-found', 'Scenario basis not found.')
+      const scenario = scenarioSnapshot.data() ?? {}
+      if (scenario.status === 'discarded')
+        throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+      if (scenario.status === 'saved')
+        throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_TERMINAL_STATE')
+      if (Number(data?.expectedRevision) !== Number(scenario.basisRevision))
+        throw new functions.https.HttpsError('aborted', 'SCENARIO_BASIS_REVISION_CONFLICT')
+      const existing = await tx.get(receiptRef)
+      if (!existing.exists) {
+        // A ready scenario must not lose its already accepted branches merely
+        // because no paid model provider is configured for a new request.
+        if (scenario.status === 'awaiting-assumptions')
+          tx.update(ref, { updatedAt: fv.serverTimestamp() })
+        tx.create(receiptRef, { receiptId, ownerId, scenarioId, operationId: op,
+          providerState: scenarioProviderState, validationResult: 'provider-unavailable',
+          retryCount: 0, createdAt: fv.serverTimestamp() })
+      }
+    })
     return { status: 'provider-unavailable', manualScenarioAvailable: true, retryCount: 0, receiptId }
   }
+
+  // Prepare stable, bounded branches outside the retryable Firestore callback.
+  // Only authoritative stored basis IDs may be attached to these scenarios.
   const branchIds: string[] = []
-  const batch = db.batch()
-  manualBranches.forEach((branch: unknown, index: number) => {
-    if (!branch || typeof branch !== 'object') throw new functions.https.HttpsError('invalid-argument', 'Manual branches must be objects.')
+  const branches = manualBranches.map((branch: unknown, index: number) => {
+    if (!branch || typeof branch !== 'object' || Array.isArray(branch))
+      throw new functions.https.HttpsError('invalid-argument', 'Manual branches must be objects.')
     const item = branch as Record<string, unknown>
-    const evidenceRefIds = asStringArray(item.evidenceRefIds)
-    for (const evidenceRefId of evidenceRefIds) {
-      if (!allowedEvidence.has(evidenceRefId)) throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_BRANCH_EVIDENCE_OUTSIDE_BASIS')
-    }
     const summary = String(item.summary ?? '').trim()
     if (!summary) throw new functions.https.HttpsError('invalid-argument', 'Manual branch summary is required.')
-    const branchId = opaque('br_')
-    branchIds.push(branchId)
-    batch.create(ref.collection('branches').doc(branchId), {
-      id: branchId, ownerId, scenarioId, truthKind: 'scenario', label: String(item.label ?? `Branch ${index + 1}`).slice(0, 80),
-      summary: summary.slice(0, 4000), assumptionIds: asStringArray(item.assumptionIds), evidenceRefIds,
-      uncertainty: asStringArray(item.uncertainty), source: 'manual-scenario', createdAt: fv.serverTimestamp(), updatedAt: fv.serverTimestamp(),
-    })
+    if (item.evidenceRefIds !== undefined && (!Array.isArray(item.evidenceRefIds) ||
+        item.evidenceRefIds.some((id: unknown) => typeof id !== 'string' || !id)))
+      throw new functions.https.HttpsError('invalid-argument', 'Evidence references must be valid IDs.')
+    const evidenceRefIds = asStringArray(item.evidenceRefIds)
+    const id = opaque('br_')
+    branchIds.push(id)
+    return { id, ownerId, scenarioId, truthKind: 'scenario',
+      label: String(item.label ?? 'Branch ' + (index + 1)).slice(0, 80),
+      summary: summary.slice(0, 4000), assumptionIds: asStringArray(item.assumptionIds),
+      evidenceRefIds, uncertainty: asStringArray(item.uncertainty), source: 'manual-scenario',
+      createdAt: fv.serverTimestamp(), updatedAt: fv.serverTimestamp() }
   })
-  batch.set(ref, { status: 'ready', branchIds, activeBranchId: branchIds[0], updatedAt: fv.serverTimestamp() }, { merge: true })
-  await batch.commit()
+  await db.runTransaction(async (tx) => {
+    const basisRef = ref.collection('basis').doc('current')
+    const [snapshot, basisSnapshot] = await Promise.all([tx.get(ref), tx.get(basisRef)])
+    if (!snapshot.exists || !basisSnapshot.exists ||
+        snapshot.data()?.ownerId !== ownerId || basisSnapshot.data()?.ownerId !== ownerId)
+      throw new functions.https.HttpsError('not-found', 'Scenario basis not found.')
+    const scenario = snapshot.data() ?? {}
+    if (scenario.status === 'discarded')
+      throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+    if (scenario.status === 'saved')
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_TERMINAL_STATE')
+    if (Number(data?.expectedRevision) !== Number(scenario.basisRevision))
+      throw new functions.https.HttpsError('aborted', 'SCENARIO_BASIS_REVISION_CONFLICT')
+    const allowedEvidence = evidenceIdsFromBasis(basisSnapshot.data())
+    for (const branch of branches) {
+      for (const evidenceRefId of branch.evidenceRefIds) {
+        if (!allowedEvidence.has(evidenceRefId))
+          throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_BRANCH_EVIDENCE_OUTSIDE_BASIS')
+      }
+    }
+    for (const branch of branches)
+      tx.create(ref.collection('branches').doc(branch.id), branch)
+    tx.update(ref, { status: 'ready', branchIds, activeBranchId: branchIds[0],
+      updatedAt: fv.serverTimestamp() })
+  })
   return { status: 'ready', branchIds, source: 'manual-scenario' }
 })
-
 export const getPossibleFuture = functions.https.onCall(async (data, context) => {
   const ownerId = uid(context)
   const scenarioId = ensureScenarioId(data?.scenarioId)
   const ref = scenarioRef(ownerId, scenarioId)
-  const [scenario, basis, branches] = await Promise.all([ref.get(), ref.collection('basis').doc('current').get(), ref.collection('branches').limit(BRANCH_LIMIT).get()])
-  if (!scenario.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
-  return { scenario: scenario.data(), basis: basis.exists ? basis.data() : null, branches: branches.docs.map((doc) => doc.data()) }
+  const scenario = await ref.get()
+  if (!scenario.exists || scenario.data()?.ownerId !== ownerId || scenario.data()?.status === 'discarded')
+    throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+  // Only the current scenario-owned branch IDs are eligible. A collection
+  // scan can surface abandoned branches from an interrupted or superseded run.
+  const branchIds = asStringArray(scenario.data()?.branchIds, BRANCH_LIMIT)
+  if (branchIds.some((id) => !safeContextId(id)))
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_ID_INVALID')
+  const [basis, branches] = await Promise.all([
+    ref.collection('basis').doc('current').get(),
+    Promise.all(branchIds.map((id) => ref.collection('branches').doc(id).get())),
+  ])
+  if (branches.some((doc) => !doc.exists || doc.data()?.ownerId !== ownerId))
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_MISSING')
+  return {
+    scenario: scenario.data(),
+    basis: basis.exists ? basis.data() : null,
+    branches: branches.map((doc) => doc.data()),
+  }
 })
 
 export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data, context) => {
@@ -217,18 +290,30 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
     throw new functions.https.HttpsError('invalid-argument', 'Invalid Scenario branch ID.')
   }
   const ref = scenarioRef(ownerId, scenarioId)
-  const [scenarioSnap, basisSnap, branchesSnap] = await Promise.all([
-    ref.get(),
-    ref.collection('basis').doc('current').get(),
-    ref.collection('branches').limit(BRANCH_LIMIT).get(),
-  ])
-  if (!scenarioSnap.exists || !basisSnap.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+  const scenarioSnap = await ref.get()
+  if (!scenarioSnap.exists || scenarioSnap.data()?.ownerId !== ownerId)
+    throw new functions.https.HttpsError('not-found', 'Scenario not found.')
   const scenario = scenarioSnap.data() ?? {}
+  // A discarded future is not eligible to reappear as an active Council scene.
+  if (scenario.status === 'discarded')
+    throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+  const branchIds = asStringArray(scenario.branchIds, BRANCH_LIMIT)
+  if (branchIds.some((id) => !safeContextId(id)))
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_ID_INVALID')
+  if (requestedBranchId && !branchIds.includes(requestedBranchId))
+    throw new functions.https.HttpsError('not-found', 'Scenario branch not found.')
+  const [basisSnap, branchSnapshots] = await Promise.all([
+    ref.collection('basis').doc('current').get(),
+    Promise.all(branchIds.map((id) => ref.collection('branches').doc(id).get())),
+  ])
+  if (!basisSnap.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+  if (branchSnapshots.some((doc) => !doc.exists || doc.data()?.ownerId !== ownerId))
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_MISSING')
   const activeBranchId = requestedBranchId || String(scenario.activeBranchId ?? '')
-  const branch = requestedBranchId
-    ? branchesSnap.docs.find((doc) => doc.id === requestedBranchId) ?? null
-    : branchesSnap.docs.find((doc) => doc.id === activeBranchId) ?? branchesSnap.docs[0] ?? null
-  if (requestedBranchId && !branch) throw new functions.https.HttpsError('not-found', 'Scenario branch not found.')
+  const activeIndex = branchIds.indexOf(activeBranchId)
+  if (branchIds.length && activeIndex < 0)
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_NOT_CURRENT')
+  const branch = activeIndex >= 0 ? branchSnapshots[activeIndex] : null
   const basis = basisSnap.data() ?? {}
   const evidenceRefs = Array.isArray(basis.evidenceRefs) ? basis.evidenceRefs : []
   const evidenceKinds = [...new Set(evidenceRefs.map((entry: unknown) =>
@@ -252,26 +337,67 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
 
 export const savePossibleFuture = functions.https.onCall(async (data, context) => {
   const ownerId = uid(context); operationId(data?.operationId); const scenarioId = ensureScenarioId(data?.scenarioId)
-  await scenarioRef(ownerId, scenarioId).set({ status: 'saved', updatedAt: fv.serverTimestamp() }, { merge: true })
+  const ref = scenarioRef(ownerId, scenarioId)
+  await db.runTransaction(async (tx) => {
+    const snapshot = await tx.get(ref)
+    const current = snapshot.exists ? snapshot.data() : null
+    if (!current || current.ownerId !== ownerId || current.status === 'discarded') {
+      throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+    }
+    tx.update(ref, { status: 'saved', updatedAt: fv.serverTimestamp() })
+  })
   return { scenarioId, status: 'saved' }
 })
 
 export const discardPossibleFuture = functions.https.onCall(async (data, context) => {
-  const ownerId = uid(context); operationId(data?.operationId); const scenarioId = ensureScenarioId(data?.scenarioId)
-  await scenarioRef(ownerId, scenarioId).set({ status: 'discarded', updatedAt: fv.serverTimestamp() }, { merge: true })
+  const ownerId = uid(context)
+  operationId(data?.operationId)
+  const scenarioId = ensureScenarioId(data?.scenarioId)
+  const ref = scenarioRef(ownerId, scenarioId)
+  await db.runTransaction(async (tx) => {
+    const snapshot = await tx.get(ref)
+    if (!snapshot.exists || snapshot.data()?.ownerId !== ownerId)
+      throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+    if (snapshot.data()?.status !== 'discarded')
+      tx.update(ref, { status: 'discarded', updatedAt: fv.serverTimestamp() })
+  })
   return { scenarioId, status: 'discarded' }
 })
-
 export const comparePossibleFutureBranches = functions.https.onCall(async (data, context) => {
-  const ownerId = uid(context); const op = operationId(data?.operationId); const scenarioId = ensureScenarioId(data?.scenarioId)
-  const branchIds = asStringArray(data?.branchIds, 3)
-  if (branchIds.length < 2) throw new functions.https.HttpsError('invalid-argument', 'At least two branches are required.')
+  const ownerId = uid(context)
+  const op = operationId(data?.operationId)
+  const scenarioId = ensureScenarioId(data?.scenarioId)
+  const requested = data?.branchIds
+  if (!Array.isArray(requested) || requested.length < 2 || requested.length > BRANCH_LIMIT ||
+      requested.some((id: unknown) => typeof id !== 'string' || !safeContextId(id)) ||
+      new Set(requested).size !== requested.length)
+    throw new functions.https.HttpsError('invalid-argument', 'Two or three distinct valid branch IDs are required.')
+  const branchIds = asStringArray(requested, BRANCH_LIMIT)
   const ref = scenarioRef(ownerId, scenarioId)
-  const docs = await Promise.all(branchIds.map((branchId) => ref.collection('branches').doc(branchId).get()))
-  if (docs.some((doc) => !doc.exists)) throw new functions.https.HttpsError('not-found', 'Branch not found.')
   const comparisonId = opaque('cmp_')
-  const comparison = { id: comparisonId, scenarioId, ownerId, branchIds, branches: docs.map((doc) => doc.data()), winner: null, operationId: op, createdAt: fv.serverTimestamp() }
-  await ref.collection('comparisons').doc(comparisonId).create(comparison)
+  const comparisonRef = ref.collection('comparisons').doc(comparisonId)
+  // Check active membership and write the comparison in ONE Firestore
+  // transaction. A concurrent discard/regeneration must trigger revalidation,
+  // never commit a stale or foreign-owner branch comparison.
+  await db.runTransaction(async (tx) => {
+    const scenarioSnap = await tx.get(ref)
+    const scenario = scenarioSnap.exists ? scenarioSnap.data() : null
+    if (!scenario || scenario.ownerId !== ownerId || scenario.status === 'discarded')
+      throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+    const activeIds = asStringArray(scenario.branchIds, BRANCH_LIMIT)
+    if (activeIds.some((id) => !safeContextId(id)))
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_ACTIVE_BRANCH_ID_INVALID')
+    if (branchIds.some((id) => !activeIds.includes(id)))
+      throw new functions.https.HttpsError('not-found', 'Branch not found.')
+    const docs = await Promise.all(branchIds.map((id) => tx.get(ref.collection('branches').doc(id))))
+    if (docs.some((doc) => !doc.exists || doc.data()?.ownerId !== ownerId))
+      throw new functions.https.HttpsError('not-found', 'Branch not found.')
+    tx.create(comparisonRef, {
+      id: comparisonId, scenarioId, ownerId, branchIds,
+      branches: docs.map((doc) => doc.data()), winner: null, operationId: op,
+      createdAt: fv.serverTimestamp(),
+    })
+  })
   return { comparisonId, branchIds, winner: null }
 })
 

@@ -168,8 +168,16 @@ test('missing files, path escapes and symlink escapes fail closed', () => withFi
   const external = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-life-external-test-'))
   try {
     fs.copyFileSync(path.join(data.directory, original), path.join(external, 'copy.json'))
-    fs.symlinkSync(path.join(external, 'copy.json'), path.join(data.directory, 'escape.json'))
-    ref.path = 'escape.json'; data.sign(); rejects(data, /outside evidence root/)
+    if (process.platform === 'win32') {
+      // A directory junction does not need Windows developer-mode file
+      // symlink privileges. Realpath must still deny external evidence bytes.
+      fs.symlinkSync(external, path.join(data.directory, 'escape-dir'), 'junction')
+      ref.path = 'escape-dir/copy.json'
+    } else {
+      fs.symlinkSync(path.join(external, 'copy.json'), path.join(data.directory, 'escape.json'))
+      ref.path = 'escape.json'
+    }
+    data.sign(); rejects(data, /outside evidence root/)
   } finally { fs.rmSync(external, { recursive: true, force: true }) }
 }))
 

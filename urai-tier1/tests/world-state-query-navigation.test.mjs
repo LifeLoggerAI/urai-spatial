@@ -115,7 +115,7 @@ test('same-path travel commit releases transition input instead of leaving the w
 test('the canonical world controller never aliases a visual node to memory authority', () => {
   const source = fs.readFileSync('src/spatial/world/WorldTransitionController.tsx', 'utf8')
   assert.match(source, /const sameMemory = Boolean\(selectedMemoryId && currentMemoryId && selectedMemoryId === currentMemoryId\)/)
-  assert.match(source, /if \(\(key === 'node' \|\| key === 'manifestId'\) && \(!memoryDestination \|\| !sameMemory\)\) continue/)
+  assert.match(source, /if \(\(key === 'node' \|\| key === 'manifestId' \|\| key === 'movieId' \|\| key === 'chapterId' \|\| key === 'demo'\) && \(!memoryDestination \|\| !sameMemory\)\) continue/)
   assert.match(source, /if \(!memoryDestination\) \{\s*target\.searchParams\.delete\('memoryId'\)/)
   assert.doesNotMatch(source, /target\.searchParams\.set\('memoryId', nodeId\)/)
   assert.doesNotMatch(source, /target\.searchParams\.set\('node', memoryId\)/)

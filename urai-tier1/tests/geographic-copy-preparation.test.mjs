@@ -46,7 +46,13 @@ test('private memory labels and coordinate precision remain original data throug
 
 test('all geographic review catalogs are complete but runtime and critical status copy remain English', () => {
   assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES], ['en'])
-  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length, 237)
+  // The union of original source catalogs grows as consent/localization copy
+  // gains new governed messages. Never pin an obsolete global magic count:
+  // require the geographic catalog to remain fully represented instead.
+  for (const id of Object.keys(URAI_GEOGRAPHIC_MESSAGES)) {
+    assert.equal(URAI_SOURCE_MESSAGES[id]?.id, id)
+    assert.equal(URAI_SOURCE_MESSAGES[id]?.source, URAI_GEOGRAPHIC_MESSAGES[id].source)
+  }
   const ids = Object.keys(URAI_GEOGRAPHIC_MESSAGES)
   for (const requested of URAI_LAUNCH_LOCALES) {
     assert.deepEqual(Object.keys(URAI_GEOGRAPHIC_CATALOGS[requested]), ids)

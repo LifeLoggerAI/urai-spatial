@@ -2,53 +2,31 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 import process from 'node:process'
+import { resolvePinnedPnpm } from './pnpm-bootstrap-resolver.mjs'
 
 const root = process.cwd()
 const args = process.argv.slice(2)
 
-function isExecutableFile(candidate) {
-  if (!candidate) {
-    return false
-  }
-
-  try {
-    const stat = fs.statSync(candidate)
-    return stat.isFile()
-  } catch {
-    return false
-  }
+const pnpm = resolvePinnedPnpm({ root, nodeExecutable: process.execPath, env: process.env })
+if (!pnpm) {
+  console.error('[URAI Spatial workspace] PINNED_PNPM_BOOTSTRAP_MISSING: pnpm@10.0.0 is unavailable through a local install, Corepack JS or npm JS.')
+  console.error('[URAI Spatial workspace] A portable Node 22 binary may omit Corepack. Run using npm/npx with an accessible npm-cli.js, or install the pinned package manager.')
+  process.exit(1)
 }
-
-function candidatePnpmEntrypoints() {
-  const candidates = []
-  const npmExecPath = process.env.npm_execpath
-
-  if (npmExecPath && /pnpm/i.test(npmExecPath) && isExecutableFile(npmExecPath)) {
-    candidates.push(npmExecPath)
-  }
-
-  candidates.push(path.join(root, 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'))
-  candidates.push(path.join(root, 'node_modules', '.pnpm', 'pnpm@10.0.0', 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'))
-
-  return candidates.filter(isExecutableFile)
-}
-
-function resolvePnpm() {
-  for (const entrypoint of candidatePnpmEntrypoints()) {
-    return { command: process.execPath, argsPrefix: [entrypoint], displayCommand: 'pnpm' }
-  }
-
-  return { command: 'corepack', argsPrefix: ['pnpm'], displayCommand: 'corepack pnpm' }
-}
-
-const pnpm = resolvePnpm()
 console.log(`[URAI Spatial workspace] $ ${pnpm.displayCommand} ${args.join(' ')}`)
+
+// pnpm's executable shims resolve `node` from PATH for Next/tsc and other
+// grandchildren. Calling this wrapper with portable Node 22 must not silently
+// hand those commands to an unrelated ambient Node installation.
+const childEnv = { ...process.env }
+const pathKey = Object.keys(childEnv).find(key => key.toLowerCase() === 'path') || 'PATH'
+childEnv[pathKey] = path.dirname(process.execPath) + path.delimiter + (childEnv[pathKey] || '')
 
 const child = spawn(pnpm.command, [...pnpm.argsPrefix, ...args], {
   stdio: 'inherit',
   shell: false,
   cwd: root,
-  env: process.env,
+  env: childEnv,
 })
 
 child.on('error', (error) => {

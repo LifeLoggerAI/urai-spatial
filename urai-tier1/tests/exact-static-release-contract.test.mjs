@@ -5,6 +5,8 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
+import { createServer } from 'node:net'
+import { resolvePython3 } from '../../scripts/python3-runtime.mjs'
 import { enforceStaticLaunchBoundary } from '../../scripts/enforce-static-launch-boundary.mjs'
 
 const normalize = (source) => source.replace(/\r\n?/g, '\n')
@@ -13,6 +15,36 @@ const tier1Root = path.resolve(testDir, '..')
 const repoRoot = path.resolve(tier1Root, '..')
 const readTier1 = (file) => normalize(readFileSync(path.join(tier1Root, file), 'utf8'))
 const readRepo = (file) => normalize(readFileSync(path.join(repoRoot, file), 'utf8'))
+
+async function findOwnedPreviewPort() {
+  const socket = createServer()
+  await new Promise((resolve, reject) => {
+    socket.once('error', reject)
+    socket.listen(0, '127.0.0.1', resolve)
+  })
+  const port = socket.address().port
+  await new Promise((resolve, reject) => socket.close(error => error ? reject(error) : resolve()))
+  return port
+}
+
+async function stopOwnedPreview(server) {
+  if (!server || server.exitCode !== null || server.signalCode !== null) return
+  await new Promise(resolve => {
+    let settled = false
+    let timer
+    const done = () => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      server.off('close', done)
+      resolve()
+    }
+    server.once('close', done)
+    timer = setTimeout(done, 2500)
+    try { server.kill('SIGTERM') } catch { done() }
+    if (server.exitCode !== null || server.signalCode !== null) done()
+  })
+}
 
 const hosting = JSON.parse(readRepo('firebase.static.json')).hosting
 const dynamicHosting = JSON.parse(readRepo('firebase.json')).hosting
@@ -186,7 +218,7 @@ test('both native static-build entry points enforce compiled conditional launch 
 
 test('actual local preview serves canonical 404s and retained navmesh bytes without directory listings', async () => {
   const output=mkdtempSync(path.join(os.tmpdir(),'urai-preview-status-'))
-  let server
+  let server, serverLaunchError
   try {
     mkdirSync(path.join(output,'api/system'),{recursive:true})
     mkdirSync(path.join(output,'xr/navmeshes'),{recursive:true})
@@ -197,11 +229,15 @@ test('actual local preview serves canonical 404s and retained navmesh bytes with
     mkdirSync(path.join(output,'spatial/ar-vr'),{recursive:true})
     writeFileSync(path.join(output,'spatial/ar-vr/index.html'),'<main data-xr-release-state="technical-preview" data-xr-immersive-authority="disabled">URAI AR / VR / XR entry chamber - Live WebXR headset sessions remain disabled</main>')
     writeFileSync(path.join(output,'xr/navmeshes/home-platform-v1.json'),'existing-navmesh')
-    server=spawn('python3',[path.join(repoRoot,'scripts/serve-static-preview.py'),'--directory',output,'--port','4179'],{stdio:'ignore'})
-    const base='http://127.0.0.1:4179'
+    const python = resolvePython3()
+    const port = await findOwnedPreviewPort()
+    server = spawn(python.command,[...python.prefix,path.join(repoRoot,'scripts/serve-static-preview.py'),'--directory',output,'--port',String(port)],{stdio:'ignore',windowsHide:true})
+    server.on('error', error => { serverLaunchError = error })
+    const base = `http://127.0.0.1:${port}`
     let ready=false
     for(let attempt=0;attempt<100;attempt++) {
-      try {if((await fetch(`${base}/home/`)).ok){ready=true;break}} catch {}
+      if(serverLaunchError || server.exitCode !== null || server.signalCode !== null) throw new Error('OWNED_PREVIEW_FAILED: ' + String(serverLaunchError || server.exitCode || server.signalCode))
+      try {if((await fetch(`${base}/home/`,{signal:AbortSignal.timeout(1500)})).ok){ready=true;break}} catch {}
       await new Promise(resolve=>setTimeout(resolve,20))
     }
     assert.equal(ready,true,'owned preview server must start')
@@ -231,10 +267,23 @@ test('actual local preview serves canonical 404s and retained navmesh bytes with
     assert.equal(await mesh.text(),'existing-navmesh')
     assert.match(await (await fetch(`${base}/home/`)).text(),/Existing Home/)
   } finally {
-    if(server&&!server.killed) {
-      server.kill('SIGTERM')
-      await new Promise(resolve=>{server.once('close',resolve);setTimeout(resolve,2000).unref()})
-    }
+    await stopOwnedPreview(server)
     rmSync(output,{recursive:true,force:true})
   }
+})
+
+test('already exited preview child closes without a pending cleanup promise', async () => {
+  const child = spawn(process.execPath, ['-e', 'process.exit(8)'], { stdio: 'ignore' })
+  await new Promise(resolve => child.once('close', resolve))
+  await stopOwnedPreview(child)
+  assert.equal(child.exitCode, 8)
+})
+
+test('failed preview executable does not strand cleanup', async () => {
+  const child = spawn(path.join(os.tmpdir(), 'not-installed-urai-preview-application'), [], { stdio: 'ignore' })
+  let spawnError
+  child.on('error', error => { spawnError = error })
+  await new Promise(resolve => child.once('close', resolve))
+  await stopOwnedPreview(child)
+  assert.equal(spawnError?.code, 'ENOENT')
 })

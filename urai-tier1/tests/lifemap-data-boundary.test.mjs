@@ -48,14 +48,16 @@ test('signed-out Life Map never auto-opens disclosed demo content', () => {
   assert.doesNotMatch(accessGate, /setTimeout\(onOpenDemo/)
   assert.doesNotMatch(accessGate, /USER_ID_KEY|urai:userId/)
   assert.doesNotMatch(accessGate, /localStorage\.getItem/)
-  assert.match(accessGate, /onAuthStateChanged\(auth/)
-  assert.match(accessGate, /user \? "private" : "signed-out"/)
+  assert.match(accessGate, /listen: \(onIdentity, onFailure\) => onAuthStateChanged\(getAuth\(app\), user => onIdentity\(user\?\.uid \?\? null\), onFailure\)/)
+  assert.match(accessGate, /setMode\(userId \? "private" : "signed-out"\)/)
   assert.match(accessGate, /current\.get\("demo"\) === "1"/)
   assert.match(accessGate, /onClick=\{onOpenDemo\}/)
 })
 
 test('private Life Map data is loaded only from the Firebase-authenticated UID threaded by the access gate', () => {
-  assert.match(accessGate, /setAuthenticatedUserId\(user\?\.uid \?\? null\)/)
+  assert.match(accessGate, /setAuthenticatedUserId\(userId\)/)
+  assert.match(accessGate, /return subscribeLifeMapAuth\(\{/)
+  assert.match(accessGate, /authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\}/)
   assert.match(accessGate, /authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\}/)
   assert.doesNotMatch(source, /urai:userId/)
 })
@@ -86,7 +88,9 @@ test('semantic Life Map fallback preserves the Focus and Replay journey without 
 
 test('persistent Life Map route transactions use Firebase auth rather than implicit browser identity', () => {
   assert.match(routeTransactionBridge, /onAuthStateChanged\(getAuth\(app\)/)
-  assert.match(routeTransactionBridge, /setAuthenticatedUserId\(user\?\.uid \?\? null\)/)
+  assert.match(routeTransactionBridge, /setIdentity\(\{ location, userId: user\?\.uid \?\? null \}\)/)
+  assert.match(routeTransactionBridge, /identity\.location === location \? identity\.userId : null/)
+  assert.match(routeTransactionBridge, /setIdentity\(\{ location, userId: null \}\)/)
   assert.match(routeTransactionBridge, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)/)
   assert.doesNotMatch(routeTransactionBridge, /localStorage\.getItem/)
 })
@@ -105,16 +109,26 @@ test('a changed Firebase actor never renders previously cached private Life Map 
   assert.match(source, /setErasOwner\('demo-user'\)/)
 })
 
-test('private Life Map joins only explicit owner-verified canonical memory documents', () => {
+test('private Life Map joins only currently consented, owner-verified canonical memories', () => {
   assert.match(source, /memoryId: sanitizeMemoryId\(typeof data\.memoryId === "string" \? data\.memoryId : null\)/)
   assert.match(source, /collection\(getFirebaseDb\(\), "users", resolvedUserId, "memories"\)/)
   assert.match(source, /parseSelectedMemory\(doc\.data\(\), resolvedUserId, doc\.id/)
-  assert.match(source, /if \(parsed\.status === 'ready'\) accepted\.set\(doc\.id, parsed\.memory\)/)
+  assert.match(source, /if \(parsed\.status === 'ready' && parsed\.memory\.privacy !== 'hidden'\) accepted\.set\(doc\.id, parsed\.memory\)/)
   assert.match(source, /const memoryId = sanitizeMemoryId\(node\.memoryId\)/)
-  assert.match(source, /memoryId && node\.type === "memory" \? currentMemories\.get\(memoryId\)/)
-  assert.match(source, /if \(!authoritative\) return \{ \.\.\.node, authorizedMemory: false,/)
+  assert.match(source, /memoryId && node\.type === "memory" \? visibleMemories\.get\(memoryId\)/)
+  // A deleted, revoked or missing canonical memory is never a spatial landmark:
+  // not even a redacted shell may reveal its former position or relationships.
+  assert.match(source, /if \(node\.privacyLevel === 'hidden'\) return \[\]/)
+  assert.match(source, /if \(node\.type === 'memory' && !authoritative\) return \[\]/)
+  assert.doesNotMatch(source, /if \(node\.type === 'memory' && !authoritative\) return \[\{/)
+  // Unlinked contextual signals carry neither a memory pointer nor Replay authority.
+  assert.match(source, /if \(!authoritative\) return \[\{ \.\.\.node, authorizedMemory: false,/)
+  assert.match(source, /memoryId: undefined, replayAvailable: false, replayManifestId: undefined/)
   assert.match(source, /id: node\.id, memoryId: authoritative\.id/)
-  assert.match(source, /locked: node\.type === "memory" \? true : Boolean\(node\.locked\)/)
-  assert.match(source, /replayAvailable: false, replayManifestId: undefined/)
   assert.match(source, /replayManifestId: authoritative\.replayManifest\.id/)
+  // Projecting a canonical memory without a separate event requires all
+  // consent-revision source streams to have been freshly verified.
+  assert.match(source, /nodesAuthority !== authorityKey \|\| erasAuthority !== authorityKey \|\| memoriesAuthority !== authorityKey\) return fromEvents/)
+  assert.match(source, /memory\.privacy === 'hidden' \|\| memory\.demo \|\| memory\.ownerId !== resolvedUserId/)
+  assert.match(source, /eventMemoryIds\.has\(memory\.id\)\) continue/)
 })

@@ -4,17 +4,31 @@ import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
-function readRegular(file, maximumBytes) {
-  const stat = fs.lstatSync(file)
-  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > maximumBytes) throw new Error('NATIVE_PROVENANCE_FILE_INVALID')
-  return fs.readFileSync(file)
+function readRegular(file, maximumBytes, directory) {
+  // Check every packaged path component, not only its last filename. A
+  // directory junction on Windows is a link even when the child is a file.
+  const root = path.resolve(directory)
+  const relative = path.relative(root, path.resolve(file))
+  if (!relative || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error('NATIVE_PROVENANCE_FILE_INVALID')
+  }
+  let current = root
+  let stat = fs.lstatSync(current)
+  if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('NATIVE_PROVENANCE_FILE_INVALID')
+  for (const component of relative.split(path.sep)) {
+    current = path.join(current, component)
+    stat = fs.lstatSync(current)
+    if (stat.isSymbolicLink()) throw new Error('NATIVE_PROVENANCE_FILE_INVALID')
+  }
+  if (!stat.isFile() || stat.size > maximumBytes) throw new Error('NATIVE_PROVENANCE_FILE_INVALID')
+  return fs.readFileSync(current)
 }
 
 export function prepareNativeStaticProvenance({ directory, sourceSha, platform, workflowRunId, verifyOnly = false }) {
   if (!/^[0-9a-f]{40}$/.test(sourceSha ?? '')) throw new Error('NATIVE_PROVENANCE_EXACT_SOURCE_REQUIRED')
   if (!['android', 'ios'].includes(platform) || !/^[1-9][0-9]*$/.test(String(workflowRunId ?? ''))) throw new Error('NATIVE_PROVENANCE_PLATFORM_RUN_REQUIRED')
-  const html = readRegular(path.join(directory, 'index.html'), 5 * 1024 * 1024)
-  const proof = readRegular(path.join(directory, 'api/system/deploy-proof'), 64 * 1024)
+  const html = readRegular(path.join(directory, 'index.html'), 5 * 1024 * 1024, directory)
+  const proof = readRegular(path.join(directory, 'api/system/deploy-proof'), 64 * 1024, directory)
   const readback = JSON.parse(proof)
   if (readback.repository !== 'LifeLoggerAI/urai-spatial' || readback.environment?.firebaseProject !== 'urai-4dc1d' || readback.deploymentFreshness?.commitSha !== sourceSha || readback.environment?.commitSha !== sourceSha || readback.deploymentFreshness?.commitShaKnown !== true) throw new Error('NATIVE_PROVENANCE_STATIC_READBACK_MISMATCH')
   const rootSha = /\bdata-deployed-sha=["']([0-9a-f]{40})["']/.exec(html.toString('utf8'))?.[1]
@@ -29,12 +43,16 @@ export function prepareNativeStaticProvenance({ directory, sourceSha, platform, 
   }
   const output = path.join(directory, 'native-build-fingerprint.json')
   if (verifyOnly) {
-    const retained = JSON.parse(readRegular(output, 64 * 1024))
+    const retained = JSON.parse(readRegular(output, 64 * 1024, directory))
     if (JSON.stringify(retained) !== JSON.stringify(receipt)) throw new Error('NATIVE_PROVENANCE_PACKAGED_FINGERPRINT_MISMATCH')
   } else {
-    if (fs.existsSync(output)) {
+    // existsSync() follows links, so a dangling output symlink looks absent.
+    // Inspect the directory entry itself before writing the fingerprint.
+    try {
       const stat = fs.lstatSync(output)
       if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('NATIVE_PROVENANCE_FILE_INVALID')
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error
     }
     fs.writeFileSync(output, `${JSON.stringify(receipt, null, 2)}\n`)
   }

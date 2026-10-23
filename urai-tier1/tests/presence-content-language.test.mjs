@@ -4,6 +4,7 @@ import test from 'node:test'
 import vm from 'node:vm'
 import { createHash } from 'node:crypto'
 import ts from 'typescript'
+import { founderVoiceIssuerReadiness } from '../../apps/functions/src/adamFounderVoiceReceiptContract.mjs'
 import { contentLanguage, URAI_CONTENT_LANGUAGES, URAI_CONTENT_LANGUAGE_TAGS } from '../../packages/localization/src/contentLanguage.ts'
 
 const sourceRoot = process.env.PRESENCE_LANGUAGE_SOURCE_ROOT
@@ -71,6 +72,9 @@ function providerFixture(lane, options = {}) {
       if (id === '../../../packages/localization/src/contentLanguage') return { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS }
       if (id === './protectedProviderSpend') return { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => providerTransport(url, init), assertSpatialPaidOutputCurrent: () => undefined, SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} }
       if (id === './consentPolicyAuthority') return policyModule.exports
+      // Inject the real fail-closed Founder-voice issuer contract, never an
+      // invented ready=true stub that could bypass consent/revocation checks.
+      if (id === './adamFounderVoiceReceiptContract.mjs') return { founderVoiceIssuerReadiness }
       if (id === './personPresenceAuthority') return {
         PersonPresenceAuthorityError,
         loadPersonPresenceAuthority: async () => {
@@ -328,4 +332,10 @@ test('server language changes retain accepted private Founder voice and simulate
   assert.match(person, /Generated dialogue is simulation and can never become historical testimony/)
   assert.match(person, /syntheticOutputMayBecomeHistoricalSource:false/)
   assert.match(person, /recheckSessionAuthority\(uid, sessionId, authority\.authorityDigest, request\)/)
+})
+
+test('locale provider fixture retains real Founder voice no-issuer denial', () => {
+  const gate = founderVoiceIssuerReadiness()
+  assert.equal(gate.ready, false)
+  assert.equal(gate.code, 'FOUNDER_PLAYBACK_AUTHORITY_NOT_READY')
 })

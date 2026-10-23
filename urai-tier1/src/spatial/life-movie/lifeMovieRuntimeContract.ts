@@ -39,10 +39,12 @@ export type LifeMovieRuntimeManifest = {
 }
 
 export type LifeMovieManifestResult =
-  | { status: 'ready'; manifest: LifeMovieRuntimeManifest; message: string }
+  | { status: 'ready' | 'draft'; manifest: LifeMovieRuntimeManifest; message: string }
   | { status: 'unavailable' | 'unauthorized' | 'corrupt'; manifest: null; message: string }
 
 const SAFE_TOKEN = /^[A-Za-z0-9._:-]{1,160}$/
+// Matches the canonical Functions manifest writer's bounded chapter count.
+const MAX_CHAPTERS = 64
 const TRUTH_CLASSES: readonly LifeMovieTruthClass[] = [
   'RECORDED_SOURCE_TRUTH',
   'ATTRIBUTED_FAMILY_RECOLLECTION',
@@ -75,7 +77,7 @@ function truthClass(value: unknown): LifeMovieTruthClass | null {
     : null
 }
 
-function internalMemoryHref(value: unknown) {
+function internalMemoryHref(value: unknown, memoryId: string, chapterId: string) {
   const raw = text(value)
   if (!raw || !raw.startsWith('/')) return null
   try {
@@ -91,6 +93,17 @@ function internalMemoryHref(value: unknown) {
       '/spatial/interpretive-world',
     ]
     if (!allowed.some((prefix) => parsed.pathname === prefix || parsed.pathname.startsWith(prefix + '/'))) return null
+    // Stored navigation must never redirect the selected chapter to another
+    // memory, even if an old manifest includes a misleading internal URL.
+    const memoryIds = parsed.searchParams.getAll('memoryId')
+    const chapterIds = parsed.searchParams.getAll('chapterId')
+    if (memoryIds.length && (memoryIds.length !== 1 || memoryIds[0] !== memoryId)) return null
+    if (chapterIds.length && (chapterIds.length !== 1 || chapterIds[0] !== chapterId)) return null
+    parsed.searchParams.set('memoryId', memoryId)
+    if (parsed.pathname === '/replay') {
+      parsed.searchParams.set('chapterId', chapterId)
+      parsed.searchParams.set('from', 'life-movie')
+    }
     return parsed.pathname + parsed.search + parsed.hash
   } catch {
     return null
@@ -121,6 +134,10 @@ function parseChapter(raw: unknown): LifeMovieRuntimeChapter | null {
     || confidence > 1
   ) return null
 
+  const replayEntry = internalMemoryHref(value.replayEntry, memoryId, id)
+  const replayExit = internalMemoryHref(value.replayExit, memoryId, id)
+  if ((value.replayEntry != null && !replayEntry) || (value.replayExit != null && !replayExit)) return null
+
   const provenanceRaw = value.provenance && typeof value.provenance === 'object'
     ? value.provenance as Record<string, unknown>
     : {}
@@ -138,8 +155,8 @@ function parseChapter(raw: unknown): LifeMovieRuntimeChapter | null {
     captionTrackId: safeToken(value.captionTrackId) ?? undefined,
     audioMixId: safeToken(value.audioMixId) ?? undefined,
     languageTracks: safeTokenArray(value.languageTracks),
-    replayEntry: internalMemoryHref(value.replayEntry) ?? undefined,
-    replayExit: internalMemoryHref(value.replayExit) ?? undefined,
+    replayEntry: replayEntry ?? undefined,
+    replayExit: replayExit ?? undefined,
     provenance: {
       sourceIds: safeTokenArray(provenanceRaw.sourceIds),
       storyNodeIds: safeTokenArray(provenanceRaw.storyNodeIds),
@@ -164,7 +181,8 @@ export function parseLifeMovieRuntimeManifest(
   const id = safeToken(raw.id)
   const version = raw.version
   const status = raw.status === 'ready' ? 'ready' : raw.status === 'draft' ? 'draft' : null
-  if (!id || typeof version !== 'number' || !Number.isSafeInteger(version) || version < 1 || !status || !Array.isArray(raw.chapters)) {
+  if (!id || typeof version !== 'number' || !Number.isSafeInteger(version) || version < 1 || !status
+    || !Array.isArray(raw.chapters) || raw.chapters.length < 1 || raw.chapters.length > MAX_CHAPTERS) {
     return { status: 'corrupt', manifest: null, message: 'Life Movie manifest is incomplete.' }
   }
 
@@ -188,18 +206,20 @@ export function parseLifeMovieRuntimeManifest(
   validChapters.sort((left, right) => left.order - right.order)
 
   return {
-    status: 'ready',
-    message: status === 'ready' ? 'Life Movie manifest ready.' : 'Life Movie draft manifest ready.',
+    status,
+    message: status === 'ready' ? 'Life Movie manifest ready.' : 'Life Movie draft manifest pending approval.',
     manifest: { id, version, ownerId, status, chapters: validChapters },
   }
 }
 
 export function lifeMovieReplayHref(chapter: LifeMovieRuntimeChapter) {
-  if (chapter.replayEntry) return chapter.replayEntry
+  const entry = internalMemoryHref(chapter.replayEntry, chapter.memoryId, chapter.id)
+  if (entry) return entry
   const params = new URLSearchParams({ memoryId: chapter.memoryId, from: 'life-movie', chapterId: chapter.id })
   return '/replay?' + params.toString()
 }
 
 export function lifeMovieReturnHref(chapter: LifeMovieRuntimeChapter) {
-  return chapter.replayExit ?? '/life-movie?memoryId=' + encodeURIComponent(chapter.memoryId)
+  const exit = internalMemoryHref(chapter.replayExit, chapter.memoryId, chapter.id)
+  return exit ?? '/life-movie?memoryId=' + encodeURIComponent(chapter.memoryId)
 }

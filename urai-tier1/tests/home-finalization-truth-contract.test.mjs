@@ -154,7 +154,13 @@ test('the immutable author rejects missing or altered inputs without generating 
   try {
     fs.mkdirSync(path.dirname(fixtureReceiptPath), { recursive: true })
     fs.mkdirSync(fixtureModels, { recursive: true })
-    for (const asset of receipt.assets) fs.symlinkSync(path.resolve(`public/assets/urai/generated/models/${asset.fileName}`), path.join(fixtureModels, asset.fileName))
+    // Copy independent immutable bytes: Windows may prohibit unprivileged file
+    // symlinks, and shared symlinks are not needed for negative receipt tests.
+    // Original authored files and actual hash/byte validation stay unchanged.
+    for (const asset of receipt.assets) fs.copyFileSync(
+      path.resolve(`public/assets/urai/generated/models/${asset.fileName}`),
+      path.join(fixtureModels, asset.fileName), fs.constants.COPYFILE_EXCL,
+    )
     const rejectReceipt = (candidate, expected) => {
       fs.writeFileSync(fixtureReceiptPath, JSON.stringify(candidate))
       const result = spawnSync(process.execPath, [authorPath], { cwd: fixtureRoot, encoding: 'utf8' })

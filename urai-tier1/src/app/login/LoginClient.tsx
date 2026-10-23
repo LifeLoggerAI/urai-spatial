@@ -10,17 +10,36 @@ import { NativeGoogleSignInUnavailable, performUraiGoogleSignIn, performUraiGoog
 
 type AuthState = 'checking' | 'signed-out' | 'working' | 'signed-in' | 'unavailable' | 'error'
 
+// A return hint cannot authorize memory access: it only resumes known routes.
+function safePrivateReturnTo(raw: string | null): string {
+  const routes = new Set([
+    '/home', '/ground', '/ascent', '/life-map', '/focus', '/replay',
+    '/life-movie', '/passport', '/privacy-controls', '/settings/privacy',
+    '/location-map', '/spatial/captured-reality', '/spatial/memory-world',
+  ])
+  if (!raw || raw.length > 512 || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return '/home'
+  try {
+    const location = new URL(raw, 'https://urai.invalid')
+    if (location.origin !== 'https://urai.invalid' || !routes.has(location.pathname)) return '/home'
+    return location.pathname + location.search
+  } catch {
+    return '/home'
+  }
+}
+
 export default function LoginClient() {
   const [user, setUser] = useState<User | null>(null)
   const [nativeIos, setNativeIos] = useState(false)
   const [testEmail, setTestEmail] = useState('')
   const [testPassword, setTestPassword] = useState('')
   const [foreignRead, setForeignRead] = useState('not-tested')
+  const [returnTo, setReturnTo] = useState('/home')
   const [testAuthErrorCode, setTestAuthErrorCode] = useState('not-attempted')
   const [state, setState] = useState<AuthState>(firebasePublicEnvReady ? 'checking' : 'unavailable')
   const [message, setMessage] = useState(firebasePublicEnvReady ? 'Checking account state...' : 'Private sign-in is unavailable because Firebase public configuration is not present.')
 
   useEffect(() => {
+    setReturnTo(safePrivateReturnTo(new URLSearchParams(window.location.search).get('returnTo')))
     setNativeIos(Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios')
     if (!firebasePublicEnvReady) return
     const auth = getUraiAuth()
@@ -142,7 +161,7 @@ export default function LoginClient() {
             {uraiJourneyEmulatorEnabled ? <output data-testid="urai-e2e-auth-uid">{user.uid}</output> : null}
             {uraiJourneyEmulatorEnabled ? <div><button type="button" onClick={() => void probeFictionalOwnerRead()} style={buttonSecondary} data-testid="urai-e2e-owner-read">Check fictional owner authorization</button><output data-testid="urai-e2e-owner-read-result">{foreignRead}</output></div> : null}
             <p style={{color:'#d9f5f8'}}>Signed in as <strong><bdi>{user.email ?? 'your private account'}</bdi></strong>.</p>
-            <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:24}}><Link href="/home" style={primary}>Open Home</Link><Link href="/passport" style={secondary}>Passport</Link><button type="button" onClick={() => void leave()} style={buttonSecondary}>Sign out</button></div>
+            <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:24}}><Link href={returnTo} style={primary}>{returnTo === '/home' ? 'Open Home' : 'Continue your journey'}</Link><Link href="/home" style={secondary}>Home</Link><Link href="/passport" style={secondary}>Passport</Link><button type="button" onClick={() => void leave()} style={buttonSecondary}>Sign out</button></div>
           </div>
         ) : (
           <div style={{marginTop:24,display:'flex',gap:10,flexWrap:'wrap'}}>

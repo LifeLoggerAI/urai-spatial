@@ -12,6 +12,8 @@ import { useReplayMemoryVisibility } from '@/spatial/memory/useReplayMemoryVisib
 import { createReplayMediaSession, initialReplayVideoSnapshot, type ReplayVideoSession } from '../replay/replayMediaSession'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { lifeMovieReplayHref, type LifeMovieRuntimeChapter } from '@/spatial/life-movie/lifeMovieRuntimeContract'
+import { currentLifeMovieMemories, type BoundLifeMovieMemories } from '@/spatial/life-movie/lifeMovieOwnerSequence'
+import { lifeMovieSignInHref } from '@/spatial/life-movie/lifeMovieRouteScope'
 import { useLifeMovieRuntimeManifest } from '@/spatial/life-movie/useLifeMovieRuntimeManifest'
 import { captionSegmentForMediaTime } from '@/spatial/life-movie/lifeMovieCaptionTimeline'
 import { revokeLifeMovieManifest, saveLifeMovieManifest } from '@/spatial/life-movie/lifeMovieManifestOperations'
@@ -46,7 +48,7 @@ export default function LifeMovieClient() {
   const runtimeManifest = useLifeMovieRuntimeManifest(identityReady ? requestedMovieId : null)
   const reducedMotion = useReducedMotion()
   const [user, setUser] = useState<User | null | undefined>(undefined)
-  const [memories, setMemories] = useState<SelectedMemory[]>([])
+  const [boundMemories, setBoundMemories] = useState<BoundLifeMovieMemories | null>(null)
   const [state, setState] = useState<MovieState>({ kind: 'auth-loading', message: 'Checking private identity…' })
   const [activeIndex, setActiveIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -89,7 +91,7 @@ export default function LifeMovieClient() {
     if (!identityReady || !user) return
     if (requestedMovieId && runtimeManifest.status === 'loading') return
     let cancelled = false
-    setMemories([])
+    setBoundMemories(null)
     setActiveIndex(0)
     setPlaying(false)
     setState({ kind: 'loading', message: 'Assembling your Life Movie from permitted memories…' })
@@ -125,7 +127,13 @@ export default function LifeMovieClient() {
           }
         }
 
-        setMemories(parsed)
+        setBoundMemories({
+          actor: user,
+          movieId: requestedMovieId,
+          selectedMemoryId: requestedMemoryId,
+          manifest: requestedMovieId && runtimeManifest.status === 'ready' ? runtimeManifest.manifest : null,
+          memories: parsed,
+        })
         if (requestedMovieId && requestedMemoryId) {
           const resumeIndex = parsed.findIndex((memory) => memory.id === requestedMemoryId)
           if (resumeIndex >= 0) setActiveIndex(resumeIndex)
@@ -144,6 +152,15 @@ export default function LifeMovieClient() {
     return () => { cancelled = true }
   }, [identityReady, requestedMemoryId, requestedMovieId, runtimeManifest, user])
 
+  // Read-time selection fencing also covers the render before React effects
+  // detach the preceding account or movie. Never expose an old sequence.
+  const admittedMemories = currentLifeMovieMemories(
+    boundMemories, user, firebasePublicEnvReady ? getAuth(app).currentUser : null,
+    requestedMovieId, requestedMemoryId,
+    requestedMovieId && runtimeManifest.status === 'ready' ? runtimeManifest.manifest : null,
+  )
+  const memories = admittedMemories ?? []
+  const sequenceRechecking = Boolean(user && !admittedMemories && state.kind === 'ready')
   const active = memories[activeIndex] ?? null
   const visibility = useReplayMemoryVisibility(active)
   const activeChapter = requestedMovieId && active && runtimeManifest.status === 'ready' && runtimeManifest.manifest
@@ -233,12 +250,12 @@ export default function LifeMovieClient() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [memories.length, togglePlayback])
 
-  if (!identityReady || user === undefined || state.kind === 'auth-loading' || state.kind === 'loading') {
-    return <main data-testid="life-movie-runtime" data-state={state.kind}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Your private sequence will open after identity and memory access are checked."><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-loading" as="div" /></MemoryExperienceState></main>
+  if (!identityReady || user === undefined || state.kind === 'auth-loading' || state.kind === 'loading' || sequenceRechecking) {
+    return <main data-testid="life-movie-runtime" data-state={sequenceRechecking ? 'loading' : state.kind}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={sequenceRechecking ? 'Rechecking private Life Movie authority…' : state.message} guidance="Your private sequence will open after identity and memory access are checked."><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-loading" as="div" /></MemoryExperienceState></main>
   }
 
   if (!user || state.kind === 'unauthenticated') {
-    return <main data-testid="life-movie-runtime" data-state="unauthenticated"><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Sign in to open a sequence of your own memories. No personal memory content is displayed here."><a href="/login?returnTo=%2Flife-movie">Continue securely</a><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-unavailable" as="div" /></MemoryExperienceState></main>
+    return <main data-testid="life-movie-runtime" data-state="unauthenticated"><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Sign in to open a sequence of your own memories. No personal memory content is displayed here."><a href={lifeMovieSignInHref(requestedMovieId, requestedMemoryId)}>Continue securely</a><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-unavailable" as="div" /></MemoryExperienceState></main>
   }
   if (active && visibility !== 'visible') {
     return <main data-testid="life-movie-runtime" data-state={visibility === 'loading' ? 'loading' : 'unavailable'}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message="This Replay memory is currently unavailable." guidance="Return to Life Map to choose an available memory. This sequence cannot display the unavailable chapter."><a href="/life-map">Return to Life Map</a></MemoryExperienceState></main>

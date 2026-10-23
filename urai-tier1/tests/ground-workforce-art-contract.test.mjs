@@ -1,50 +1,67 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import path from 'node:path'
 import test from 'node:test'
 
-const root = process.cwd()
-const groundPath = path.join(root, 'src/app/ground/page.tsx')
-const assetsPath = path.join(root, 'src/spatial/assets/uraiAssets.ts')
+const read = path => fs.readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+const route = read('src/app/ground/page.tsx')
+const world = read('src/app/GroundSpatialWorldClean.tsx')
+const workforce = read('src/app/GroundWorkforcePresences.tsx')
+const registry = read('src/spatial/assets/uraiAssets.ts')
+const manifest = JSON.parse(read('public/assets/urai/final/manifests/asset-factory-spatial-handoff.json'))
+const specialistIds = ['relationshipLiaison', 'operator', 'builder', 'protector', 'mirror', 'guide']
+const helperIds = ['receptionist', 'privacySteward', 'scheduleSteward', 'wellnessGuide', 'archivist']
+const providerAssets = new Map(manifest.assets.filter(asset => asset.canonicalPath?.startsWith('assets/urai/avatars/')).map(asset => [asset.canonicalPath, asset]))
 
-const ground = fs.readFileSync(groundPath, 'utf8')
-const assets = fs.readFileSync(assetsPath, 'utf8')
-
-test('Ground uses the canonical provider-final workforce asset registry', () => {
-  assert.match(ground, /import \{ avatarAssets \} from '@\/spatial\/assets\/uraiAssets'/)
-  assert.match(ground, /data-workforce-art="provider-final"/)
-  assert.match(ground, /background-image: var\(--helper-art\)/)
-  assert.match(ground, /background-image: var\(--specialist-art\)/)
+test('Ground uses the provider-provenance avatar registry inside canonical 3D infrastructure', () => {
+  assert.match(route, /<GroundSpatialWorldClean \/>/)
+  assert.match(world, /<GroundWorkforcePresences world=\{world\} \/>/)
+  assert.match(workforce, /avatarAssets, type ImageAsset/)
+  assert.match(world, /data-ground-workforce-art="provider-reference-pending-acceptance"/)
+  assert.match(workforce, /map=\{texture\} transparent alphaTest=\{0\.02\}/)
+  assert.match(workforce, /THREE\.SRGBColorSpace/)
+  assert.match(workforce, /visualStatus: 'provider-reference-pending-acceptance'/)
 })
 
-test('all six final specialist avatars are visible in the Ground council', () => {
-  for (const key of ['relationshipLiaison', 'operator', 'builder', 'protector', 'mirror', 'guide']) {
-    assert.match(ground, new RegExp(`avatarAssets\\.${key}\\.src`))
+test('all six Council specialists have distinct provider-rendered portrait sources and references', () => {
+  for (const id of specialistIds) {
+    assert.match(workforce, new RegExp("id: '" + id + "'[^\\n]+destinationId: 'council'[^\\n]+asset: avatarAssets\\." + id))
+    assert.match(registry, new RegExp(id + ": image\\(webp\\(\"/avatars/"))
   }
-
-  for (const file of [
-    'relationship-liaison.webp',
-    'operator.webp',
-    'builder.webp',
-    'protector.webp',
-    'mirror.webp',
-    'guide.webp',
-  ]) {
-    assert.match(assets, new RegExp(file.replace('.', '\\.')))
-  }
+  const council = [...workforce.matchAll(/category: 'specialist' \}/g)]
+  assert.equal(council.length, 6)
+  assert.equal(new Set(specialistIds).size, 6)
 })
 
-test('active floor helpers use real avatar art instead of generic CSS silhouettes', () => {
-  for (const key of ['receptionist', 'privacySteward', 'scheduleSteward', 'wellnessGuide', 'archivist']) {
-    assert.match(ground, new RegExp(`avatarAssets\\.${key}\\.src`))
+test('active floor helpers use real source-tracked artwork rather than generic CSS body silhouettes', () => {
+  for (const id of helperIds) {
+    assert.match(workforce, new RegExp("id: '" + id + "'[^\\n]+asset: avatarAssets\\." + id))
+    assert.match(registry, new RegExp(id + ": image\\(webp\\(\"/avatars/"))
   }
-  assert.doesNotMatch(ground, /\.helper i \{[^}]*background: linear-gradient/s)
+  const mapped = [...registry.matchAll(/([A-Za-z]+): image\(webp\("\/avatars\/([^"]+\.webp)"/g)]
+  const needed = new Set([...specialistIds, ...helperIds])
+  const artPaths = mapped.filter(entry => needed.has(entry[1])).map(entry => 'assets/urai/avatars/' + entry[2])
+  assert.equal(artPaths.length, 11)
+  assert.equal(new Set(artPaths).size, 11)
+  for (const artPath of artPaths) {
+    const asset = providerAssets.get(artPath)
+    assert.ok(asset, 'missing provider handoff: ' + artPath)
+    assert.equal(asset.status, 'ready')
+    assert.equal(asset.renderer, 'provider')
+    assert.equal(asset.alpha, true)
+    assert.match(asset.sha256, /^[a-f0-9]{64}$/)
+  }
+  assert.doesNotMatch(world, /uraiGroundHelperHead|uraiGroundHelperBody/)
 })
 
-test('Ground workforce remains mobile-safe and accessible', () => {
-  assert.match(ground, /aria-label="Specialist council present in Ground"/)
-  assert.match(ground, /aria-label=\{`\$\{specialist\.name\} private workforce avatar`\}/)
-  assert.match(ground, /@media \(max-width: 760px\)/)
-  assert.match(ground, /url\('\/assets\/urai\/ground\/ground-world-mobile\.webp'\)/)
-  assert.match(ground, /@media \(prefers-reduced-motion: reduce\)/)
+test('Ground workforce is keyboard-approachable, responsive and fail-closed during art failure', () => {
+  assert.match(world, /aria-label="Ground workforce presences"/)
+  assert.match(world, /aria-label=\{\x60Approach \$\{member\.label\} in Ground\x60\}/)
+  assert.match(world, /min-height:48px/)
+  assert.match(world, /@media\(max-width:760px\)/)
+  assert.match(world, /@media\(prefers-reduced-motion:reduce\)/)
+  assert.match(world, /focusDestination\(destination\)/)
+  assert.match(workforce, /getDerivedStateFromError/)
+  assert.match(workforce, /<GroundPortraitLoadBoundary key=\{member\.id\} roleId=\{member\.id\}>/)
+  assert.match(workforce, /<Suspense fallback=\{null\}>/)
+  assert.match(workforce, /actionAuthority: 'none'/)
 })

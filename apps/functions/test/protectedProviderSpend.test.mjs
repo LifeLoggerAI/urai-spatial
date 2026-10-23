@@ -8,6 +8,7 @@ import { isIP } from 'node:net'
 import { performance } from 'node:perf_hooks'
 import test from 'node:test'
 import vm from 'node:vm'
+import * as founderVoiceReceiptContract from '../src/adamFounderVoiceReceiptContract.mjs'
 import ts from 'typescript'
 
 const SOURCE = 'd'.repeat(40), GATEWAY = 'a'.repeat(40), UID = 'synthetic-owner'
@@ -441,6 +442,7 @@ function leafFixture(leaf, change = {}) {
     if (id === 'firebase-functions/v2/https') return { onRequest:(options,handler) => { assert.ok(options.secrets.includes(f.helper.SPATIAL_SPEND_WORKER_TOKENS_JSON)); return handler } }
     if (id === '../../../packages/localization/src/contentLanguage') return language
     if (id === './consentPolicyAuthority') return policyAuthority
+    if (id === './adamFounderVoiceReceiptContract.mjs') return founderVoiceReceiptContract
     if (id === './councilGraphEvidenceAuthority') return graphEvidenceAuthority
     if (id === './protectedProviderSpend') return { ...f.helper, paidSpatialFetch:f.paidFetch }
     if (id === './personPresenceAuthority') return { PersonPresenceAuthorityError, loadPersonPresenceAuthority:requireAuthority, requirePersonPresenceRenderBinding:async () => { await requireAuthority(); return { get:key => ({ provider:'elevenlabs',bindingHash:'e'.repeat(64),providerResourceId:'SYNTHETIC_VOICE',providerModelId:'synthetic-model' })[key] } } }
@@ -468,6 +470,40 @@ function leafFixture(leaf, change = {}) {
   return { ...f, invoke, privacy }
 }
 for (const leaf of leaves) {
+  // Current Founder voice cannot pass the real issuer gate. These tests assert
+  // fail-closed zero spend, not hypothetical successful private voice playback.
+  if (leaf[1] === 'adamFounderVoiceProvider') {
+    const assertNoPaidVoice = (f,result,code,error) => {
+      assert.equal(result.code,code)
+      assert.equal(result.json?.error,error)
+      assert.equal(f.providerCalls.length,0)
+      assert.equal(f.calls.filter(call => call.action === 'reserve').length,0)
+      assert.equal(result.chunks.join(''),'')
+    }
+    test('actual Founder voice absent issuer denies before paid admission',async()=>{
+      assert.equal(founderVoiceReceiptContract.founderVoiceIssuerReadiness().ready,false)
+      const f=leafFixture(leaf,{missingBinding:true})
+      assertNoPaidVoice(f,await f.invoke(),409,'FOUNDER_PLAYBACK_AUTHORITY_NOT_READY')
+    })
+    test('actual Founder voice even with synthetic paid binding cannot dispatch',async()=>{
+      const f=leafFixture(leaf)
+      assertNoPaidVoice(f,await f.invoke(),409,'FOUNDER_PLAYBACK_AUTHORITY_NOT_READY')
+    })
+    test('actual Founder voice invalid auth and absent consent never dispatch',async()=>{
+      const f=leafFixture(leaf,{authDenied:true}),authResult=await f.invoke()
+      assert.notEqual(authResult.code,200)
+      assert.equal(f.providerCalls.length,0)
+      assert.equal(f.calls.filter(call=>call.action==='reserve').length,0)
+      const g=leafFixture(leaf),consentResult=await g.invoke({aiProcessingConsent:false,externalProcessingConsent:false})
+      assertNoPaidVoice(g,consentResult,409,'FOUNDER_PLAYBACK_AUTHORITY_NOT_READY')
+    })
+    test('actual Founder voice disabled feature denies before paid price proof',async()=>{
+      const f=leafFixture(leaf,{preflight:reply=>{delete reply.envelope.protected_pricing}})
+      f.env.FOUNDER_VOICE_ENABLED='false'
+      assertNoPaidVoice(f,await f.invoke(),409,'FOUNDER_VOICE_NOT_READY')
+    })
+    continue
+  }
   test(`actual paid leaf ${leaf[1]} denies absent authentic admission before any external POST`, async () => {
     const f=leafFixture(leaf,{ missingBinding:true }); await f.invoke(); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.filter(x => x.action === 'reserve').length,0)
   })
