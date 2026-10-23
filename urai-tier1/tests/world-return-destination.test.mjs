@@ -12,7 +12,7 @@ test('Focus unwinds to Life Map after Replay and every other arrival', () => {
 })
 
 test('other realms preserve their previous destination and fallback boundary', () => {
-  for (const destination of URAI_DESTINATIONS.filter(value => value !== 'focus')) {
+  for (const destination of URAI_DESTINATIONS.filter(value => value !== 'focus' && value !== 'replay')) {
     for (const previousDestination of [undefined, ...URAI_DESTINATIONS]) {
       assert.equal(previousDestinationForReturn({ destination, previousDestination }), previousDestination)
     }
@@ -24,8 +24,85 @@ test('Replay Escape is handled by the local playback owner once, not by the glob
   const controller = readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx', import.meta.url), 'utf8')
   const replay = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
   const proof = readFileSync(new URL('../../tests/replay-tier5-lock.mjs', import.meta.url), 'utf8')
-  assert.match(controller, /currentWorld\.destination === 'replay' \|\| currentWorld\.destination === 'life-map'/)
-  assert.match(replay, /if \(event\.key === 'Escape'\) \{ pauseMemory\(\); event\.preventDefault\(\); unwind\(\); return \}/)
+  assert.match(controller, /currentWorld\.destination === 'replay' \|\| currentWorld\.destination === 'focus' \|\| currentWorld\.destination === 'life-map'/)
+  assert.match(replay, /if \(event\.key === 'Escape'\) \{[\s\S]*?if \(!shouldHandleRealmEscape\(event\)\) return[\s\S]*?unwind\(\)/)
   assert.match(proof, /cinematic-replay-client'\)\.waitFor\(\{ state: 'detached'/)
   assert.match(proof, /Escape completes one Replay return route transition/)
+})
+
+test('Replay always returns to Focus despite an unrelated stale prior destination', () => {
+  for (const previousDestination of [undefined, ...URAI_DESTINATIONS.filter(value => value !== 'life-movie')]) {
+    assert.equal(previousDestinationForReturn({ destination: 'replay', previousDestination }), 'focus')
+  }
+})
+
+test('Replay retains an explicit Life Movie nested return', () => {
+  assert.equal(previousDestinationForReturn({ destination: 'replay', previousDestination: 'life-movie' }), 'life-movie')
+})
+
+test('the Focus -> Life Map -> Home reverse journey has no automatic second hop', () => {
+  const focusBridge = readFileSync(new URL('../src/app/focus/FocusEscapeBridge.tsx', import.meta.url), 'utf8')
+  const lifeMapBridge = readFileSync(new URL('../src/app/life-map/LifeMapEscapeBridge.tsx', import.meta.url), 'utf8')
+  assert.match(focusBridge, /router\.push\('\/life-map'\)/)
+  assert.doesNotMatch(lifeMapBridge, /window\.setTimeout\(/)
+  assert.match(lifeMapBridge, /if \(!shouldHandleRealmEscape\(event\)\) return/)
+})
+
+test('Focus return does not arm a legacy automatic Home handoff', () => {
+  const focus = readFileSync(new URL('../src/app/focus/FocusEscapeBridge.tsx', import.meta.url), 'utf8')
+  assert.doesNotMatch(focus, /sessionStorage\.setItem\('urai-spatial-escape-stack-return-home'/)
+})
+
+test('unknown-location Memory World is visibly nonreconstructed, not a gray enclosed hallway', () => {
+  const runtime = readFileSync(new URL('../src/spatial/memory-world/MemoryWorldRuntime.tsx', import.meta.url), 'utf8')
+  assert.match(runtime, /if \(!preset\) \{/)
+  assert.match(runtime, /memory-world-unreconstructed-threshold/)
+  assert.match(runtime, /neutral-threshold-no-reconstruction/)
+  assert.match(runtime, /No verified location geometry is available/)
+})
+
+test('Memory World only declares rendered after scene mesh first-frame callback', () => {
+  const source = readFileSync(new URL('../src/spatial/memory-world/MemoryWorldRuntime.tsx', import.meta.url), 'utf8')
+  assert.match(source, /data-memory-world-first-frame=\{firstFrameRendered \? 'drawn' : 'pending'\}/)
+  assert.match(source, /firstFrameRendered \? 'rendered' : 'waiting-first-frame'/)
+  assert.match(source, /onAfterRender=\{onFirstFrame\}/)
+  assert.match(source, /firstFrameRecorded\.current = false; setFirstFrameRendered\(false\); setRendererState\('lost'\)/)
+  assert.doesNotMatch(source, /data-memory-world-state=\{rendererState === 'ready' \? 'rendered'/)
+})
+
+test('Focus and Life Map share the realm-owned Escape guard', () => {
+  const focus = readFileSync(new URL('../src/app/focus/FocusEscapeBridge.tsx', import.meta.url), 'utf8')
+  const lifeMap = readFileSync(new URL('../src/app/life-map/LifeMapEscapeBridge.tsx', import.meta.url), 'utf8')
+  for (const source of [focus, lifeMap]) assert.match(source, /if \(!shouldHandleRealmEscape\(event\)\) return/)
+})
+
+test('Focus does not silently rewrite an unselected route using a stale session manifest', () => {
+  const focus = readFileSync(new URL('../src/app/focus/FocusEscapeBridge.tsx', import.meta.url), 'utf8')
+  assert.doesNotMatch(focus, /window\.history\.replaceState|PopStateEvent|router\.replace\(target\)/)
+  assert.doesNotMatch(focus, /setTimeout\(/)
+  assert.doesNotMatch(focus, /urai-replay-return-manifest-id/)
+})
+
+test('Life Map authored loading Escape explicitly goes Home, never through stale global previous destination', () => {
+ const canonical = readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
+ assert.match(canonical, /if \(event\.defaultPrevented \|\| event\.key !== "Escape"/)
+ assert.match(canonical, /router\.push\("\/home"\)/)
+ assert.doesNotMatch(canonical, /requestUraiWorldReturn/)
+})
+
+test('mounted Focus owns Escape with no duplicate global controller return', () => {
+  const controller = readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx', import.meta.url), 'utf8')
+  const focus = readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
+  assert.match(controller, /currentWorld\.destination === 'focus' \|\| currentWorld\.destination === 'life-map'/)
+  assert.match(focus, /if \(!shouldHandleRealmEscape\(event\)\) return/)
+  assert.match(focus, /window\.addEventListener\('keydown', onEscape\)/)
+})
+
+test('Focus Unwind lands Life Map overview so the next Escape goes Home', () => {
+  const controller = readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx', import.meta.url), 'utf8')
+  const scene = readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+  assert.match(controller, /currentWorld\.destination === 'focus' && destination === 'life-map'/)
+  assert.match(controller, /\?overview=1/)
+  assert.match(scene, /const overviewRequested = params\.get\("overview"\) === "1"/)
+  assert.match(scene, /if \(selectedId\) overview\(\); else returnHome\(\)/)
 })

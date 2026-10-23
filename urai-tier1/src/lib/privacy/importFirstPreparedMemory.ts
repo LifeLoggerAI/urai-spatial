@@ -29,15 +29,19 @@ export async function importFirstPreparedMemory(packet: unknown, file: FirstFile
   check()
   if (explicitOwnerConfirmation !== true) throw new Error('FIRST_MEMORY_EXPLICIT_OWNER_CONFIRMATION_REQUIRED')
   const p = row(packet), m = row(p.memory), provenance = row(m.sourceProvenance), upload = row(p.upload)
-  const request = row(upload.request), id = request.memoryId, sha = provenance.derivativeSha256
+  const request = row(upload.request), sha = provenance.derivativeSha256
+  // Narrow the offline packet's unknown ID before it crosses the typed private
+  // upload boundary. Invalid values still fail closed with the same error.
+  const id = typeof request.memoryId === 'string' ? request.memoryId : invalid()
+  const operationId = typeof request.operationId === 'string' ? request.operationId : invalid()
   if (p.schemaVersion !== 'urai-first-private-memory-preflight-v1' || p.status !== 'PREPARED_NOT_IMPORTED_NOT_PLAYBACK_PROVEN'
-    || typeof id !== 'string' || !ID.test(id) || m.ownerId !== owner.uid
+    || !ID.test(id) || m.ownerId !== owner.uid
     || p.firestorePath !== `users/${owner.uid}/memories/${id}`
     || m.privacy !== 'hidden' || m.deleted !== false || !Array.isArray(m.sourceMedia) || m.sourceMedia.length !== 0
     || typeof sha !== 'string' || !SHA.test(sha) || upload.sha256 !== sha
     || upload.fileByteLength !== provenance.derivativeByteLength || upload.request === undefined
     || upload.initialVisibility !== 'hidden' || upload.offlinePreparationGrantsConsent !== false
-    || typeof request.operationId !== 'string' || !ID.test(request.operationId)
+    || !ID.test(operationId)
     || request.kind !== 'audio' || request.contentType !== provenance.derivedContentType
     || (file.type !== 'audio/ogg' && file.type !== 'audio/mpeg') || file.type !== request.contentType
     || !Number.isSafeInteger(file.size) || file.size < 1 || file.size > MEMORY_MEDIA_MAX_BYTES
@@ -92,7 +96,7 @@ export async function importFirstPreparedMemory(packet: unknown, file: FirstFile
   // The record is deliberately left for later owner-authorized recovery.
   try {
     const receipt = await attachOwnedMemoryFile({ id, ownerId: owner.uid, privacy: 'hidden' }, file,
-      lifecycle, request.operationId, sha)
+      lifecycle, operationId, sha)
     check()
     if (receipt.memoryId !== id || typeof receipt.receiptId !== 'string' || !SHA.test(receipt.receiptId))
       throw new Error('FIRST_MEMORY_UPLOAD_RECEIPT_INVALID')

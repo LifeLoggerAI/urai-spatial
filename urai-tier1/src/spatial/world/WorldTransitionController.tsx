@@ -246,7 +246,14 @@ export function WorldTransitionController() {
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
-      href: definition.href,
+      // Unwind from Focus returns to the Life Map *overview*. Retaining the
+      // authorized memory identity in buildTravelHref is safe, but leaving a
+      // star selected would consume the next Escape clearing that selection
+      // instead of making the requested Life Map -> Home return.
+      // A fresh Life Map selection still owns its normal Escape-to-overview.
+      href: currentWorld.destination === 'focus' && destination === 'life-map'
+        ? `${definition.href}?overview=1`
+        : definition.href,
       entryPortal: currentWorld.entryPortal ?? definition.entryPortal,
       cameraCheckpoint: destination === 'home' ? 'home-threshold' : definition.cameraCheckpoint,
       context: {
@@ -281,7 +288,7 @@ export function WorldTransitionController() {
       // URAI_WORLD_RETURN_EVENT. Handling the same key here as well can issue
       // two reverse travels against the same transition state and leave the
       // client URL on Replay while the Focus surface is already changing.
-      if (currentWorld.destination === 'replay' || currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map' || currentWorld.destination === 'privacy-controls') return
+      if (currentWorld.destination === 'replay' || currentWorld.destination === 'focus' || currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map' || currentWorld.destination === 'privacy-controls') return
       event.preventDefault()
       reverseTravel()
     }
