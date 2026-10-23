@@ -16,6 +16,8 @@ import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
 import { shouldHandleRealmEscape } from "@/spatial/world/realmEscapeEligibility.mjs";
 import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapRotateFlightAxes, advanceLifeMapViewOrientation, lifeMapRotatedLookTarget } from "./lifeMapFlightOrientation.mjs";
+import { lifeMapApplyPointerLook } from "./lifeMapPointerLook.mjs";
+import { installLifeMapPointerInteraction } from "./lifeMapPointerInteraction.mjs";
 import { lifeMapStagePoint } from "./lifeMapStageContinuity.mjs";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
@@ -153,6 +155,21 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
       release();
     };
   }, [phase]);
+
+  // Pointer drag belongs to the overview camera; physical star clicks and
+  // consent-gated Replay remain owned by LifeMapProductionWorld.
+  const { gl } = useThree();
+  useEffect(() => {
+    if (phase !== "overview") return;
+    return installLifeMapPointerInteraction({
+      canvas: gl.domElement,
+      hostWindow: window,
+      blocked: () => Boolean(document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"],[data-urai-adam-presence]')),
+      onLook: (dx, dy) => {
+        flightOrientation.current = lifeMapApplyPointerLook(flightOrientation.current, dx, dy);
+      },
+    });
+  }, [gl, phase]);
 
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
@@ -626,7 +643,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
         left: 18, margin: 0, padding: "9px 12px", maxWidth: "min(345px,calc(100vw - 36px))",
         borderRadius: 12, background: "rgba(2,8,16,.75)", color: "#ceeaf6", fontSize: 12,
         pointerEvents: "none" }}>
-      Explore: W A S D move · Q E rise/fall · arrows look · Shift faster · R recenter
+      Explore: W A S D move · Q E rise/fall · arrows or drag look · Shift faster · R recenter
     </p> : null}
     <header className="life-map-title">
       <span>URAI · LIFE MAP</span>
