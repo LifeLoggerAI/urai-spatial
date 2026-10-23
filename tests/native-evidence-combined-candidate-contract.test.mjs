@@ -32,3 +32,9 @@ test('Windows checkout and full native journey stages stay intact',()=>{
     assert.ok(source.includes(marker),marker)
   assert.doesNotMatch(source,/shell:\s*true/)
 })
+
+test('runtime probes the same eight routes the final acceptance audit requires',()=>{
+  assert.match(source,/for \(const route of REQUIRED_HTTP_ROUTES\) \{/)
+  assert.match(source,/const httpAudit = assessHttpRoutes\(checks\)/)
+  assert.doesNotMatch(source,/for \(const route of \['\/', '\/life-map', '\/focus', '\/replay', '\/login', '\/privacy'\]\)/)
+})
