@@ -37,10 +37,22 @@ try {
  if($actual -ne $head) { throw 'ISOLATED_HEAD_DRIFT' }
  $changes=@(& git -C $Destination status --porcelain --untracked-files=normal)
  if($changes.Count -ne 0) { throw 'ISOLATED_WORKTREE_NOT_CLEAN' }
+ $manifest=Join-Path $Destination 'pnpm-lock.yaml'
+ if(-not (Test-Path -LiteralPath $manifest)) { throw 'LOCKFILE_NOT_PRESENT_IN_ISOLATED_SOURCE' }
  if(-not (Test-Path -LiteralPath (Join-Path $Destination 'urai-tier1/node_modules/next'))) {
-  Write-Host 'URAI_VISUAL_RUNTIME_DEPENDENCIES_MISSING: install exact locked pnpm dependencies in this isolated worktree before browser proof.'
-  throw 'ISOLATED_RUNTIME_DEPENDENCIES_MISSING'
+  Push-Location $Destination
+  try {
+   & node 'scripts/check-install-disk-space.mjs'
+   if($LASTEXITCODE -ne 0) { throw 'DISK_BUDGET_BLOCKED_DEPENDENCY_INSTALL' }
+   & corepack pnpm install --frozen-lockfile --ignore-scripts
+   if($LASTEXITCODE -ne 0) { throw 'LOCKED_ISOLATED_INSTALL_FAILED' }
+  } finally { Pop-Location }
  }
+ Push-Location $Destination
+ try {
+  & node 'urai-tier1/scripts/require-runtime-deps.mjs'
+  if($LASTEXITCODE -ne 0) { throw 'ISOLATED_RUNTIME_DEPENDENCIES_INCOMPLETE' }
+ } finally { Pop-Location }
  $env:URAI_HOME_CC0_NONPRODUCTION_BOOTSTRAP='isolated-exact-head'
  try {
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $runner -ExpectedHead $head -Port $Port
