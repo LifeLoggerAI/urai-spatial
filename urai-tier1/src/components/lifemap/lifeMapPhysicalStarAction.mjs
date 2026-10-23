@@ -5,7 +5,7 @@
 export function lifeMapFocusAllowed(node, sourceMode) {
   if (!node || typeof node.id !== 'string' || !node.id.trim() || node.locked) return false;
   // Do not restore a revoked or hidden star from stale UI metadata.
-  if (node.privacyLevel === 'hidden' || node.privacy === 'hidden') return false;
+  if (lifeMapNodeIsHidden(node)) return false;
   if (sourceMode === 'explicit-demo') return true;
   return sourceMode === 'private' && node.authorizedMemory === true &&
     typeof node.memoryId === 'string' && node.memoryId.trim().length > 0 &&
@@ -24,12 +24,17 @@ export function lifeMapPhysicalStarAction(clickedId, selectedId, phase, replayAl
 }
 
 
+// Centralized legacy/current privacy filter for every interaction surface.
+export function lifeMapNodeIsHidden(node) {
+  return Boolean(node && (node.privacyLevel === 'hidden' || node.privacy === 'hidden'));
+}
+
 // Graph links are navigation hints, never permission to disclose hidden nodes.
 // This shared filter is also applied to the semantic inspector's related links.
 export function lifeMapVisibleRelatedNodes(nodes, selected) {
-  if (!selected || typeof selected.id !== 'string' || !selected.id || selected.privacyLevel === 'hidden') return [];
+  if (!selected || typeof selected.id !== 'string' || !selected.id || lifeMapNodeIsHidden(selected)) return [];
   if (!Array.isArray(nodes)) return [];
-  return nodes.filter(node => node && node.id !== selected.id && node.privacyLevel !== 'hidden' &&
+  return nodes.filter(node => node && node.id !== selected.id && !lifeMapNodeIsHidden(node) &&
     ((Array.isArray(selected.connectedTo) && selected.connectedTo.includes(node.id)) ||
       (Array.isArray(node.connectedTo) && node.connectedTo.includes(selected.id))));
 }

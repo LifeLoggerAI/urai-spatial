@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import * as navigation from '../src/components/lifemap/lifeMapPhysicalStarAction.mjs';
-const { lifeMapPhysicalReplayAllowed, lifeMapPhysicalStarAction, lifeMapFocusAllowed, lifeMapVisibleRelatedNodes } = navigation;
+const { lifeMapPhysicalReplayAllowed, lifeMapPhysicalStarAction, lifeMapFocusAllowed, lifeMapVisibleRelatedNodes, lifeMapNodeIsHidden } = navigation;
 
 const canonical = () => ({ id: 'star-1', authorizedMemory: true, locked: false, replayAvailable: true, memoryId: 'memory-1', replayManifestId: 'manifest-1' });
 test('first physical star click selects without replay', () => { assert.equal(lifeMapPhysicalStarAction('star-1', null, 'overview', true), 'select'); });
@@ -122,4 +122,27 @@ test('related Memory Star filtering denies hidden selected nodes and preserves l
   assert.deepEqual(lifeMapVisibleRelatedNodes([hiddenSelected, linked], hiddenSelected), []);
   assert.deepEqual(lifeMapVisibleRelatedNodes([linked], null), []);
   assert.deepEqual(lifeMapVisibleRelatedNodes([linked], undefined), []);
+});
+
+
+test('related-star results reject legacy hidden privacy alias', () => {
+  const chosen = Object.freeze({ id: 'root', privacyLevel: 'private', connectedTo: Object.freeze(['normal', 'secret']) });
+  const normal = Object.freeze({ id: 'normal', privacyLevel: 'shareable', connectedTo: Object.freeze([]) });
+  const secret = Object.freeze({ id: 'secret', privacy: 'hidden', connectedTo: Object.freeze(['root']) });
+  assert.deepEqual(lifeMapVisibleRelatedNodes([chosen, normal, secret], chosen).map(x => x.id), ['normal']);
+});
+
+test('selected star with legacy hidden privacy alias discloses no related paths', () => {
+  const hidden = Object.freeze({ id: 'sealed', privacy: 'hidden', connectedTo: Object.freeze(['neighbor']) });
+  const neighbor = Object.freeze({ id: 'neighbor', privacyLevel: 'private', connectedTo: Object.freeze(['sealed']) });
+  assert.deepEqual(lifeMapVisibleRelatedNodes([hidden, neighbor], hidden), []);
+});
+
+test('shared privacy predicate recognizes either hidden alias consistently', () => {
+  assert.equal(lifeMapNodeIsHidden({ id: 'a', privacyLevel: 'hidden' }), true);
+  assert.equal(lifeMapNodeIsHidden({ id: 'a', privacy: 'hidden' }), true);
+  assert.equal(lifeMapNodeIsHidden({ id: 'a', privacyLevel: 'private', privacy: 'hidden' }), true);
+  assert.equal(lifeMapNodeIsHidden({ id: 'a', privacyLevel: 'shareable' }), false);
+  assert.equal(lifeMapNodeIsHidden(null), false);
+  assert.equal(lifeMapNodeIsHidden(undefined), false);
 });
