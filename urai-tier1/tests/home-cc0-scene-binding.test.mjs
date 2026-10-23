@@ -8,11 +8,11 @@ const photo = (surface) => ({
  userData: { uraiCC0ReviewSurface: surface }, map: texture(), normalMap: texture(), roughnessMap: texture(),
  onBeforeCompile() {}, customProgramCacheKey() { return 'urai-home-cc0-photo-macro-v1' },
 })
-const mesh = material => ({ isMesh: true, visible: true, geometry: {}, material })
+const mesh = material => ({ isMesh: true, visible: true, geometry: { attributes: { position: { count: 6 } } }, material })
 function fixture() {
  const meshes = [mesh(photo('ground')), ...Array.from({length: 3}, () => mesh(photo('path')))]
  return { meshes, traverse(fn) { meshes.forEach(fn) }, getObjectByName(name) {
-   return name === 'home-cc0-shrub03-review' ? { traverse(fn) { fn(mesh({map: texture()})) } } : null
+   return name === 'home-cc0-shrub03-review' ? { visible: true, traverse(fn) { fn(mesh({map: texture()})) } } : null
  } }
 }
 test('one photographic ground and three real paths plus shrub are required', () => {
@@ -43,4 +43,23 @@ test('actual active Home renderer owns development-only evidence and source surf
  assert.match(retained,/uraiCC0ReviewSurface: 'ground'/)
  assert.match(runtime,/auditHomeCC0Scene\(scene\)/)
  assert.match(renderer,/NODE_ENV === 'development'/)
+})
+
+test('incomplete and hidden geometry must not claim photographic scene proof', () => {
+ const scene = fixture()
+ scene.meshes[0].geometry = {}
+ assert.equal(auditHomeCC0Scene(scene).sceneBound, false)
+ scene.meshes[0].geometry = { attributes: { position: { count: 2 } } }
+ assert.equal(auditHomeCC0Scene(scene).sceneBound, false)
+ scene.meshes[0].geometry = { attributes: { position: { count: 6 } } }
+ scene.meshes[0].parent = { visible: false }
+ assert.equal(auditHomeCC0Scene(scene).sceneBound, false)
+ scene.meshes[0].parent = null
+ const previous = scene.getObjectByName.bind(scene)
+ scene.getObjectByName = (name) => {
+   const shrub = previous(name)
+   if (shrub) shrub.visible = false
+   return shrub
+ }
+ assert.equal(auditHomeCC0Scene(scene).sceneBound, false)
 })
