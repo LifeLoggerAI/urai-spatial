@@ -9,11 +9,11 @@
 # gcloud builds submit --no-source --config=cloudbuild.urai-verify.yaml \
 #   --project=<APPROVED_NONPRODUCTION_PROJECT> --region=us-central1 \
 #   --service-account=<APPROVED_MINIMAL_NONPRODUCTION_SERVICE_ACCOUNT> \
-#   --substitutions=_SOURCE_BRANCH=repair/rfinal-convergence-candidate-20261020,_SOURCE_SHA=<EXACT_40_CHAR_GIT_SHA>,_VERIFIER_SA_EMAIL=<APPROVED_PROJECT_LOCAL_VERIFIER_EMAIL>
+#   --substitutions=_SOURCE_BRANCH=verify/r4-three-lane-convergence-20261023,_SOURCE_SHA=<EXACT_40_CHAR_GIT_SHA>,_VERIFIER_SA_EMAIL=<APPROVED_PROJECT_LOCAL_VERIFIER_EMAIL>
 # This file never proves that unsetting credential env vars revokes metadata/IAM.
 # This configuration MUST NOT be submitted until those controls are verified.
 substitutions:
-  _SOURCE_BRANCH: 'repair/rfinal-convergence-candidate-20261020'
+  _SOURCE_BRANCH: 'verify/r4-three-lane-convergence-20261023'
   _SOURCE_SHA: 'EXPLICIT_PIN_REQUIRED'
   _VERIFIER_SA_EMAIL: 'EXPLICIT_NONPRODUCTION_VERIFIER_REQUIRED'
 # Runtime code and dependency installers can request Google metadata tokens.
@@ -33,7 +33,7 @@ steps:
       - '-ceu'
       - |
         # Never evaluate substitutions as shell commands.
-        [[ "$$URAI_SOURCE_BRANCH" =~ ^(repair|ci)/[a-zA-Z0-9._/-]+$$ ]] || { echo 'INVALID_SOURCE_BRANCH'; exit 2; }
+        [[ "$$URAI_SOURCE_BRANCH" =~ ^(repair|ci|verify)/[a-zA-Z0-9][a-zA-Z0-9._-]*(/[a-zA-Z0-9][a-zA-Z0-9._-]*)*$$ && "$$URAI_SOURCE_BRANCH" != *..* ]] || { echo 'INVALID_SOURCE_BRANCH'; exit 2; }
         [[ "$$URAI_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'INVALID_SOURCE_SHA'; exit 2; }
         [[ "$$URAI_VERIFIER_SA" =~ ^[a-z][a-z0-9-]{3,27}@[a-z][a-z0-9-]*\.iam\.gserviceaccount\.com$ ]] || { echo 'INVALID_VERIFIER_SA_EMAIL'; exit 2; }
         [[ "$$URAI_VERIFIER_SA" == *"@$$URAI_CLOUD_PROJECT.iam.gserviceaccount.com" ]] || { echo 'VERIFIER_NOT_PROJECT_LOCAL'; exit 2; }
