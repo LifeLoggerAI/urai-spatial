@@ -25,6 +25,7 @@ import { showHomeThresholdLabel } from './HomeThresholdVisibility'
 import { HomeCC0ReviewMaterial } from './HomeCC0ReviewMaterial'
 import { HomeCC0ReviewShrubs } from './HomeCC0ReviewShrubs'
 import { HomeCC0ReviewRetainedGround } from './HomeCC0ReviewRetainedGround'
+import { HomeCC0RuntimeEvidence } from './HomeCC0RuntimeEvidence'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 
 const HOME_PROVIDER_ENVIRONMENT = '/assets/urai/home/home-threshold-main.webp'
@@ -1001,6 +1002,7 @@ function Scene(props: { previewW13V3: boolean; nearby: Nearby; input: MovementIn
     <EmbodiedPresence root={props.avatar} />
     <HomeSkyInteraction groundDescent={props.groundDescent} onAscent={props.onLifeMap} />
     <Thresholds onGround={props.onGround} onLifeMap={props.onLifeMap} nearby={props.nearby} />
+    {HOME_CC0_DEV_REVIEW && !props.previewW13V3 ? <HomeCC0RuntimeEvidence yaw={props.yaw} pitch={props.pitch} /> : null}
     <PlayerRig previewW13V3={props.previewW13V3} orbAnchor={orbAnchor} input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.onNearby} groundDescent={props.groundDescent} reducedMotion={props.reducedMotion} onGroundComplete={props.onGroundComplete} onTransitionSequence={props.onTransitionSequence} />
     <SceneReady key={props.previewW13V3 ? 'w13-v3' : 'canonical'} previewW13V3={props.previewW13V3} onReady={props.onReady} />
   </>

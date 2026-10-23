@@ -4,6 +4,7 @@
 // references on unmount. No production art admission or source GLB mutation.
 import { useEffect } from 'react'
 import * as THREE from 'three'
+import { applyHomeCC0MacroVariation, homeCC0MacroProgramKey } from './HomeCC0PhotoMacroVariation.mjs'
 import { useHomeCC0ReviewMaps } from './HomeCC0ReviewMaterial'
 
 export function HomeCC0ReviewRetainedGround({ scene }: { scene: THREE.Object3D }) {
@@ -18,6 +19,9 @@ export function HomeCC0ReviewRetainedGround({ scene }: { scene: THREE.Object3D }
         normalScale: new THREE.Vector2(.65, .65),
         roughnessMap: maps.roughness, roughness: 1, metalness: 0,
         envMapIntensity: .28, side: THREE.FrontSide,
+        userData: { uraiCC0ReviewSurface: 'ground' },
+        onBeforeCompile: applyHomeCC0MacroVariation,
+        customProgramCacheKey: homeCC0MacroProgramKey,
       })
       object.material = current
       changed.push({ mesh: object, previous, current })
