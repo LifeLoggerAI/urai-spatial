@@ -36,7 +36,8 @@ steps:
         [[ "$$URAI_SOURCE_BRANCH" =~ ^(repair|ci)/[a-zA-Z0-9._/-]+$$ ]] || { echo 'INVALID_SOURCE_BRANCH'; exit 2; }
         [[ "$$URAI_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'INVALID_SOURCE_SHA'; exit 2; }
         [[ "$$URAI_VERIFIER_SA" =~ ^[a-z][a-z0-9-]{3,27}@[a-z][a-z0-9-]*\.iam\.gserviceaccount\.com$ ]] || { echo 'INVALID_VERIFIER_SA_EMAIL'; exit 2; }
-        [[ "$$URAI_VERIFIER_SA" == *"@$$URAI_CLOUD_PROJECT.iam.gserviceaccount.com" ]] || { echo 'VERIFIER_NOT_PROJECT_LOCAL'; exit 2; }
+        [[ "$URAI_VERIFIER_SA" == *"@$URAI_CLOUD_PROJECT.iam.gserviceaccount.com" ]] || { echo 'VERIFIER_NOT_PROJECT_LOCAL'; exit 2; }
+        [[ "$URAI_CLOUD_PROJECT" != "urai-4dc1d" ]] || { echo 'PRODUCTION_PROJECT_FORBIDDEN'; exit 2; }
         export GIT_TERMINAL_PROMPT=0
         git clone --depth=1 --single-branch --branch "$$URAI_SOURCE_BRANCH" https://github.com/LifeLoggerAI/urai-spatial.git /workspace/urai-spatial
         head="$$(git -C /workspace/urai-spatial rev-parse HEAD)"
