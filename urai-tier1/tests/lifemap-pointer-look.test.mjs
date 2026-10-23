@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { lifeMapApplyPointerLook } from '../src/components/lifemap/lifeMapPointerLook.mjs';
+import { lifeMapApplyPointerLook, lifeMapPointerDragStep, LIFE_MAP_POINTER_DRAG_THRESHOLD_PX } from '../src/components/lifemap/lifeMapPointerLook.mjs';
 
 test('rightward drag turns camera right, downward drag looks down', () => {
   assert.deepEqual(lifeMapApplyPointerLook({yaw: 0, pitch: 0}, 25, 10), {yaw: 0.1, pitch: -0.03});
@@ -34,4 +34,38 @@ test('invalid numeric inputs fail closed', () => {
 test('upward drag and leftward drag use the inverse directions', () => {
   const a = lifeMapApplyPointerLook({yaw: 0, pitch: 0}, -20, -30);
   assert.ok(a.yaw < 0 && a.pitch > 0);
+});
+
+const start = Object.freeze({ startX: 200, startY: 100, lastX: 200, lastY: 100, dragging: false });
+
+test('taps and subthreshold wiggles do not rotate the view', () => {
+  assert.deepEqual(lifeMapPointerDragStep(start, 205, 102), {dragging:false,deltaX:0,deltaY:0});
+  assert.deepEqual(lifeMapPointerDragStep(start, 200, 100), {dragging:false,deltaX:0,deltaY:0});
+  assert.equal(LIFE_MAP_POINTER_DRAG_THRESHOLD_PX, 8);
+});
+test('crossing drag threshold is continuous without an eight-pixel camera jump', () => {
+  assert.deepEqual(lifeMapPointerDragStep(start, 208, 100), {dragging:true,deltaX:0,deltaY:0});
+  assert.deepEqual(lifeMapPointerDragStep(start, 210, 100), {dragging:true,deltaX:2,deltaY:0});
+  const d = lifeMapPointerDragStep(start, 206, 108);
+  assert.equal(d.dragging, true);
+  assert.ok(Math.abs(Math.hypot(d.deltaX,d.deltaY) - 2) < 1e-12);
+});
+test('subsequent drag frames apply only incremental displacement', () => {
+  const active = { ...start, lastX: 210, lastY: 100, dragging: true };
+  assert.deepEqual(lifeMapPointerDragStep(active, 215, 97), {dragging:true,deltaX:5,deltaY:-3});
+});
+test('gesture coordinates remain immutable', () => {
+  lifeMapPointerDragStep(start, 218, 108);
+  assert.deepEqual(start, {startX:200,startY:100,lastX:200,lastY:100,dragging:false});
+});
+test('invalid gesture values fail closed', () => {
+  for (const bad of [NaN, Infinity, -Infinity]) {
+    assert.throws(() => lifeMapPointerDragStep(start, bad, 100), /LIFE_MAP_NONFINITE_POINTER_DRAG/);
+    assert.throws(() => lifeMapPointerDragStep({...start, lastX:bad}, 210, 100), /LIFE_MAP_NONFINITE_POINTER_DRAG/);
+  }
+  assert.throws(() => lifeMapPointerDragStep(null, 210, 100), /LIFE_MAP_NONFINITE_POINTER_DRAG/);
+  assert.throws(() => lifeMapPointerDragStep({...start, dragging:'no'}, 210, 100), /LIFE_MAP_NONFINITE_POINTER_DRAG/);
+});
+test('existing physical star R3F 6px tap guard is stricter than drag threshold', () => {
+  assert.ok(6 < LIFE_MAP_POINTER_DRAG_THRESHOLD_PX);
 });
