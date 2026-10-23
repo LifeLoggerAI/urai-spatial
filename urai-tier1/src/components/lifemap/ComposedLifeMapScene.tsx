@@ -14,7 +14,7 @@ import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProdu
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
 import { shouldHandleRealmEscape } from "@/spatial/world/realmEscapeEligibility.mjs";
-import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed } from "./lifeMapPhysicalStarAction.mjs";
+import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed, lifeMapFocusAllowed } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapRotateFlightAxes, advanceLifeMapViewOrientation, lifeMapRotatedLookTarget } from "./lifeMapFlightOrientation.mjs";
 import { lifeMapApplyPointerLook } from "./lifeMapPointerLook.mjs";
 import { installLifeMapPointerInteraction } from "./lifeMapPointerInteraction.mjs";
@@ -494,6 +494,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
 
   const destinationHref = useCallback((route: "focus" | "replay") => {
     if (!selected) return "/life-map";
+    if (!(route === "focus" ? lifeMapFocusAllowed(selected, sourceMode) : lifeMapPhysicalReplayAllowed(selected, sourceMode))) return "/life-map";
     const next = withIdentity(new URLSearchParams(), selected.id);
     next.set("node", selected.id);
     if (explicitDemoRequested) next.set("memoryId", selected.id);
@@ -526,7 +527,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       }
     }
     return `/${route}?${next.toString()}`;
-  }, [explicitDemoRequested, params, phase, selected, withIdentity]);
+  }, [explicitDemoRequested, params, phase, selected, sourceMode, withIdentity]);
 
   const activateWorldStar = useCallback((node: LifeMapNode) => {
     const action = lifeMapPhysicalStarAction(node.id, selectedId, phase,
@@ -657,10 +658,10 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     </div>
 
     {thresholdsVisible ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}>
-      <button className="focus-threshold" data-destination-href={destinationHref("focus")} disabled={(!explicitDemoRequested && !selected!.authorizedMemory) || Boolean(selected!.locked)} onClick={() => router.push(destinationHref("focus"))}>
+      <button className="focus-threshold" data-destination-href={destinationHref("focus")} disabled={!lifeMapFocusAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref("focus"))}>
         <span>Inspect</span><strong>Enter Focus</strong>
       </button>
-      <button className="replay-threshold" data-destination-href={destinationHref("replay")} disabled={!selected!.replayAvailable || selected!.locked || (!explicitDemoRequested && !selected!.authorizedMemory)} onClick={() => router.push(destinationHref("replay"))}>
+      <button className="replay-threshold" data-destination-href={destinationHref("replay")} disabled={!lifeMapPhysicalReplayAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref("replay"))}>
         <span>Cross threshold</span><strong>Replay</strong>
       </button>
       <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
