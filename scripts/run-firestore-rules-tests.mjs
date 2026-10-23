@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { createRequire } from 'node:module'
 import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path'
+import { assessFirestoreJava } from './lib/firestore-java-runtime.mjs'
 
 const require = createRequire(import.meta.url)
 const run = (executable, args, options = {}) => spawnSync(executable, args, {
@@ -20,16 +21,20 @@ if (explicitJava && (!isAbsolute(explicitJava) || !existsSync(explicitJava))) {
   throw new Error('FIRESTORE_TEST_JAVA_EXECUTABLE_INVALID')
 }
 const javaExecutable = explicitJava || (process.platform === 'win32' ? 'java.exe' : 'java')
-const javaCheck = spawnSync(javaExecutable, ['-version'], { stdio: 'ignore', shell: false })
-// Only a missing Java executable (ENOENT) permits the static fallback.
-// An installed but broken Java runtime, or a permission/spawn error, must
-// remain a hard failure regardless of whether the Java path was explicit.
-const javaMissing = !explicitJava && javaCheck.error?.code === 'ENOENT'
-if (!javaMissing && (javaCheck.error || javaCheck.status !== 0)) {
-  throw new Error('FIRESTORE_TEST_JAVA_SPAWN_FAILED:' + (javaCheck.error?.code || String(javaCheck.status)))
-}
+const javaCheck = spawnSync(javaExecutable, ['-version'], { encoding: 'utf8', shell: false })
+const assessment = assessFirestoreJava({
+  status: javaCheck.status,
+  errorCode: javaCheck.error?.code,
+  stdout: javaCheck.stdout,
+  stderr: javaCheck.stderr,
+  explicit: Boolean(explicitJava),
+  strict: process.env.URAI_FIRESTORE_EMULATOR_REQUIRED === '1'
+    || /^(1|true)$/i.test(process.env.CI || ''),
+})
+if (assessment.kind === 'blocked') throw new Error(assessment.reason)
+const javaMissing = assessment.kind === 'missing'
 
-if (javaCheck.status === 0) {
+if (!javaMissing) {
   // Windows command shells split the single emulators:exec script argument,
   // forwarding --test to Firebase instead of Node. Invoke the pinned JS CLI
   // via Node with explicit argv and without a command shell.
