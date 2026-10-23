@@ -15,7 +15,7 @@ const DEMO_MANIFEST_ID = "replay-recovery-thread";
 type LifeMapAccessMode = "checking" | "signed-out" | "private" | "explicit-demo";
 
 function isEditableTarget(target: EventTarget | null) {
-  return target instanceof HTMLElement && (target.closest('[data-urai-adam-presence]') || target.isContentEditable || target.matches('input,textarea,select,[role="textbox"]'));
+  return target instanceof HTMLElement && (target.closest('[data-urai-adam-presence],[data-urai-chalk-presence]') || target.isContentEditable || target.matches('input,textarea,select,button,[role="textbox"]'));
 }
 
 function LifeMapLoading({ label = "Opening your memory universe" }: { label?: string }) {
