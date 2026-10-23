@@ -658,5 +658,33 @@
       "expectedBlob": "0009712a5c8b61ede7fb0a3ce9b38d65d3422fd1",
       "reason": "Exact reviewed Ground GLB validator regression fixture extension from #1934"
     }
-  ]
+  ],
+  "additionalAdmittedDonor": {
+    "pr": 1932,
+    "head": "4b9c519f4ddfba1889280738c9007d2a4d3a653e",
+    "baseCandidate": "79ca2499ba7315c0b3168426384adfb6052e8633",
+    "releaseApproved": false,
+    "sourceClaims": [
+      {
+        "path": "package.json",
+        "blob": "2fb031597bb75a8a4ce3bf0e3f8ee63fcebab68a"
+      },
+      {
+        "path": "scripts/lib/firestore-java-runtime.mjs",
+        "blob": "4857e72cbef520990bade224a026e708433e7f70"
+      },
+      {
+        "path": "scripts/run-firestore-rules-tests.mjs",
+        "blob": "8fdfccce7287dd9ff56a536082be4f348b06b961"
+      },
+      {
+        "path": "tests/firestore-java-runtime.test.mjs",
+        "blob": "0e63ffd35e64b1d7871a24b2b15a426d5632012e"
+      },
+      {
+        "path": "tests/firestore-rules-execution-authority.test.mjs",
+        "blob": "03ef2bb54b22fd91a760d05fd64b1493762b750f"
+      }
+    ]
+  }
 }
