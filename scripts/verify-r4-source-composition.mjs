@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Exact Git tree check of the 80 donor source blobs in R4's isolated candidate.
+// Exact Git tree check of the 85 donor source blobs in R4's isolated candidate.
 // Checks source identity, not correctness, media admission or launch readiness.
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -7,7 +7,7 @@ import { resolve, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const shaPattern = /^[a-f0-9]{40}$/
-const donorCounts = new Map([[1933, 73], [1934, 4], [1887, 3]])
+const donorCounts = new Map([[1933, 74], [1934, 8], [1887, 3]])
 const overridePaths = new Set(['cloudbuild.urai-verify.yaml'])
 const validPath = p => typeof p === 'string' && p.length > 0 && p.length <= 500 &&
   !p.startsWith('/') && !p.includes('\\') && !p.includes('\0') &&
@@ -24,7 +24,7 @@ export function inspectR4SourceComposition(manifest, entries, head, expectedHead
   if (manifest?.baseline?.head !== '65be933692398c01d1f9218c5f917843e52ac3f5')
     fail('BASELINE_IDENTITY_CHANGED')
   if (!Array.isArray(manifest.sourceDonors) || manifest.sourceDonors.length !== 3 ||
-      !Array.isArray(manifest.sourceClaims) || manifest.sourceClaims.length !== 80) fail('DONOR_SOURCE_COUNT_CHANGED')
+      !Array.isArray(manifest.sourceClaims) || manifest.sourceClaims.length !== 85) fail('DONOR_SOURCE_COUNT_CHANGED')
   const donors = new Map()
   for (const donor of manifest.sourceDonors) {
     if (!donorCounts.has(donor.pr) || donors.has(donor.pr) ||

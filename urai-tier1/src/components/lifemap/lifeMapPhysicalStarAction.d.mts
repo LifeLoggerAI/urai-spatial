@@ -13,3 +13,10 @@ export type LifeMapPhysicalStarNode = {
 export function lifeMapFocusAllowed(node: LifeMapPhysicalStarNode | null | undefined, sourceMode: LifeMapPhysicalSourceMode): boolean;
 export function lifeMapPhysicalReplayAllowed(node: LifeMapPhysicalStarNode | null | undefined, sourceMode: LifeMapPhysicalSourceMode): boolean;
 export function lifeMapPhysicalStarAction(clickedId: string | null | undefined, selectedId: string | null | undefined, phase: string, replayAllowed: boolean): LifeMapPhysicalStarAction;
+
+export type LifeMapRelatedNode = {
+  id: string;
+  privacyLevel?: 'private' | 'hidden' | 'shareable';
+  connectedTo?: readonly string[];
+};
+export function lifeMapVisibleRelatedNodes<T extends LifeMapRelatedNode>(nodes: readonly T[], selected: LifeMapRelatedNode | null | undefined): T[];
