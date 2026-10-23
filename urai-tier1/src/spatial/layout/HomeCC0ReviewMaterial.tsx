@@ -4,6 +4,7 @@
 import { useEffect, useMemo } from 'react'
 import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
+import { applyHomeCC0MacroVariation, homeCC0MacroProgramKey } from './HomeCC0PhotoMacroVariation.mjs'
 
 type Surface = 'ground' | 'path'
 export function useHomeCC0ReviewMaps(surface: Surface) {
@@ -35,5 +36,5 @@ export function HomeCC0ReviewMaterial({ surface }: { surface: Surface }) {
   return <meshStandardMaterial color="#ffffff" map={maps.diffuse}
     normalMap={maps.normal} normalScale={new THREE.Vector2(.65, .65)}
     roughnessMap={maps.roughness} roughness={1} metalness={0}
-    envMapIntensity={.28} />
+    envMapIntensity={.28} onBeforeCompile={applyHomeCC0MacroVariation} customProgramCacheKey={homeCC0MacroProgramKey} />
 }
