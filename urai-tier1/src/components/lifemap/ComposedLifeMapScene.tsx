@@ -16,6 +16,7 @@ import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
 import { shouldHandleRealmEscape } from "@/spatial/world/realmEscapeEligibility.mjs";
 import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapRotateFlightAxes, advanceLifeMapViewOrientation, lifeMapRotatedLookTarget } from "./lifeMapFlightOrientation.mjs";
+import { lifeMapApplyPointerLook } from "./lifeMapPointerLook.mjs";
 import { lifeMapStagePoint } from "./lifeMapStageContinuity.mjs";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
@@ -153,6 +154,57 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
       release();
     };
   }, [phase]);
+
+  // Drag on the actual WebGL canvas to look around while exploring. The
+  // existing world-space star click handler remains authoritative.
+  const { gl } = useThree();
+  useEffect(() => {
+    if (phase !== "overview") return;
+    const canvas = gl.domElement;
+    const previousTouchAction = canvas.style.touchAction;
+    canvas.style.touchAction = "none";
+    let active: { id: number; startX: number; startY: number; lastX: number; lastY: number; dragging: boolean } | null = null;
+    const blocked = () => Boolean(document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"],[data-urai-adam-presence]'));
+    const release = () => { active = null; };
+    const pointerDown = (event: PointerEvent) => {
+      if (active || event.isPrimary === false || (event.pointerType === "mouse" && event.button !== 0) || blocked()) return;
+      active = { id: event.pointerId, startX: event.clientX, startY: event.clientY, lastX: event.clientX, lastY: event.clientY, dragging: false };
+      try { canvas.setPointerCapture(event.pointerId); } catch { /* capture can be declined */ }
+    };
+    const pointerMove = (event: PointerEvent) => {
+      if (!active || active.id !== event.pointerId) return;
+      if (blocked()) { release(); return; }
+      if (!active.dragging && Math.hypot(event.clientX - active.startX, event.clientY - active.startY) < 8) return;
+      const dx = event.clientX - active.lastX;
+      const dy = event.clientY - active.lastY;
+      active.lastX = event.clientX;
+      active.lastY = event.clientY;
+      active.dragging = true;
+      flightOrientation.current = lifeMapApplyPointerLook(flightOrientation.current, dx, dy);
+      if (event.cancelable) event.preventDefault();
+    };
+    const pointerEnd = (event: PointerEvent) => { if (active?.id === event.pointerId) release(); };
+    canvas.addEventListener("pointerdown", pointerDown);
+    canvas.addEventListener("pointermove", pointerMove);
+    canvas.addEventListener("pointerup", pointerEnd);
+    canvas.addEventListener("pointercancel", pointerEnd);
+    canvas.addEventListener("lostpointercapture", pointerEnd);
+    window.addEventListener("pointerup", pointerEnd);
+    window.addEventListener("pointercancel", pointerEnd);
+    window.addEventListener("blur", release);
+    return () => {
+      canvas.removeEventListener("pointerdown", pointerDown);
+      canvas.removeEventListener("pointermove", pointerMove);
+      canvas.removeEventListener("pointerup", pointerEnd);
+      canvas.removeEventListener("pointercancel", pointerEnd);
+      canvas.removeEventListener("lostpointercapture", pointerEnd);
+      window.removeEventListener("pointerup", pointerEnd);
+      window.removeEventListener("pointercancel", pointerEnd);
+      window.removeEventListener("blur", release);
+      canvas.style.touchAction = previousTouchAction;
+      release();
+    };
+  }, [gl, phase]);
 
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
@@ -626,7 +678,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
         left: 18, margin: 0, padding: "9px 12px", maxWidth: "min(345px,calc(100vw - 36px))",
         borderRadius: 12, background: "rgba(2,8,16,.75)", color: "#ceeaf6", fontSize: 12,
         pointerEvents: "none" }}>
-      Explore: W A S D move · Q E rise/fall · arrows look · Shift faster · R recenter
+      Explore: W A S D move · Q E rise/fall · arrows or drag look · Shift faster · R recenter
     </p> : null}
     <header className="life-map-title">
       <span>URAI · LIFE MAP</span>
