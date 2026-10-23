@@ -14,6 +14,10 @@ function verify(c){
  assert.match(c,/run_gate spatial-types pnpm --filter urai-tier1 typecheck/)
  assert.match(c,/run_gate spatial-build pnpm --filter urai-tier1 build/)
  assert.match(c,/if \[\[ "\$\$failed" -ne 0 \]\]; then exit 1; fi/)
+ assert.match(c,/_VERIFIER_SA_EMAIL:\s*'EXPLICIT_NONPRODUCTION_VERIFIER_REQUIRED'/)
+ assert.match(c,/serviceAccount: 'projects\/\$\{PROJECT_ID\}\/serviceAccounts\/\$\{_VERIFIER_SA_EMAIL\}'/)
+ assert.match(c,/INVALID_VERIFIER_SA_EMAIL/)
+ assert.match(c,/VERIFIER_NOT_PROJECT_LOCAL/)
  assert.match(c,/APPROVED_NONPRODUCTION_PROJECT/)
  assert.match(c,/APPROVED_MINIMAL_NONPRODUCTION_SERVICE_ACCOUNT/)
  assert.doesNotMatch(c,/--project=urai-4dc1d/)
@@ -26,4 +30,5 @@ test('historical implicit source pin is rejected',()=>{
 test('production project example and dropped Functions build are rejected',()=>{
  assert.throws(()=>verify(source().replace('--project=<APPROVED_NONPRODUCTION_PROJECT>','--project=urai-4dc1d')))
  assert.throws(()=>verify(source().replace('run_gate functions-build pnpm --filter urai-functions build','echo skip')))
+ assert.throws(()=>verify(source().replace("serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/${_VERIFIER_SA_EMAIL}'", '# implicit default credentials')))
 })
