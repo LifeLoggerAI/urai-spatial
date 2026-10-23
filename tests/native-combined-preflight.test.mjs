@@ -38,3 +38,10 @@ test('duplicate stages and invalid base plans rejected',()=>{
  assert.throws(()=>planNativeEvidenceStages([]),/INVALID_BASE_NATIVE_STAGES/)
  assert.throws(()=>planNativeEvidenceStages([{}]),/INVALID_BASE_NATIVE_STAGES/)
 })
+
+test('combined native contract stage executes preflight, redirect and original runner regressions',()=>{
+ const stage=planNativeEvidenceStages(base,true).find(x=>x.id==='combined_runner_contracts')
+ for(const name of ['tests/native-combined-preflight.test.mjs','tests/native-http-route-acceptance.test.mjs','tests/rfinal-native-evidence-runner.test.mjs'])
+   assert.ok(stage.command.includes(name),'missing native regression: '+name)
+ assert.equal(stage.requiresInstall,false)
+})
