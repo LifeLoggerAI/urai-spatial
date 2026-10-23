@@ -16,7 +16,8 @@ import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
 import { shouldHandleRealmEscape } from "@/spatial/world/realmEscapeEligibility.mjs";
 import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapRotateFlightAxes, advanceLifeMapViewOrientation, lifeMapRotatedLookTarget } from "./lifeMapFlightOrientation.mjs";
-import { lifeMapApplyPointerLook, lifeMapPointerDragStep } from "./lifeMapPointerLook.mjs";
+import { lifeMapApplyPointerLook } from "./lifeMapPointerLook.mjs";
+import { installLifeMapPointerInteraction } from "./lifeMapPointerInteraction.mjs";
 import { lifeMapStagePoint } from "./lifeMapStageContinuity.mjs";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
@@ -155,67 +156,19 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     };
   }, [phase]);
 
-  // Drag on the actual WebGL canvas to look around while exploring. The
-  // existing world-space star click handler remains authoritative.
+  // Pointer drag belongs to the overview camera; physical star clicks and
+  // consent-gated Replay remain owned by LifeMapProductionWorld.
   const { gl } = useThree();
   useEffect(() => {
     if (phase !== "overview") return;
-    const canvas = gl.domElement;
-    const previousTouchAction = canvas.style.touchAction;
-    canvas.style.touchAction = "none";
-    let active: { id: number; startX: number; startY: number; lastX: number; lastY: number; dragging: boolean } | null = null;
-    const blocked = () => Boolean(document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"],[data-urai-adam-presence]'));
-    const release = () => {
-      const pointerId = active?.id;
-      active = null;
-      // Phase changes, focus loss and secondary touches must not leave
-      // the canvas holding a stale pointer capture.
-      if (pointerId !== undefined) {
-        try { if (canvas.hasPointerCapture(pointerId)) canvas.releasePointerCapture(pointerId); }
-        catch { /* pointer capture may already have ended */ }
-      }
-    };
-    const pointerDown = (event: PointerEvent) => {
-      if (active && active.id !== event.pointerId) { release(); return; }
-      if (event.isPrimary === false) { release(); return; }
-      if (active || (event.pointerType === "mouse" && event.button !== 0) || blocked()) return;
-      active = { id: event.pointerId, startX: event.clientX, startY: event.clientY, lastX: event.clientX, lastY: event.clientY, dragging: false };
-      try { canvas.setPointerCapture(event.pointerId); } catch { /* capture can be declined */ }
-    };
-    const pointerMove = (event: PointerEvent) => {
-      if (!active || active.id !== event.pointerId) return;
-      if (blocked()) { release(); return; }
-      const step = lifeMapPointerDragStep(active, event.clientX, event.clientY);
-      if (!step.dragging) return;
-      active.lastX = event.clientX;
-      active.lastY = event.clientY;
-      active.dragging = true;
-      if (step.deltaX !== 0 || step.deltaY !== 0) {
-        flightOrientation.current = lifeMapApplyPointerLook(flightOrientation.current, step.deltaX, step.deltaY);
-      }
-      if (event.cancelable) event.preventDefault();
-    };
-    const pointerEnd = (event: PointerEvent) => { if (active?.id === event.pointerId) release(); };
-    canvas.addEventListener("pointerdown", pointerDown);
-    canvas.addEventListener("pointermove", pointerMove);
-    canvas.addEventListener("pointerup", pointerEnd);
-    canvas.addEventListener("pointercancel", pointerEnd);
-    canvas.addEventListener("lostpointercapture", pointerEnd);
-    window.addEventListener("pointerup", pointerEnd);
-    window.addEventListener("pointercancel", pointerEnd);
-    window.addEventListener("blur", release);
-    return () => {
-      canvas.removeEventListener("pointerdown", pointerDown);
-      canvas.removeEventListener("pointermove", pointerMove);
-      canvas.removeEventListener("pointerup", pointerEnd);
-      canvas.removeEventListener("pointercancel", pointerEnd);
-      canvas.removeEventListener("lostpointercapture", pointerEnd);
-      window.removeEventListener("pointerup", pointerEnd);
-      window.removeEventListener("pointercancel", pointerEnd);
-      window.removeEventListener("blur", release);
-      canvas.style.touchAction = previousTouchAction;
-      release();
-    };
+    return installLifeMapPointerInteraction({
+      canvas: gl.domElement,
+      hostWindow: window,
+      blocked: () => Boolean(document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"],[data-urai-adam-presence]')),
+      onLook: (dx, dy) => {
+        flightOrientation.current = lifeMapApplyPointerLook(flightOrientation.current, dx, dy);
+      },
+    });
   }, [gl, phase]);
 
   const resolve = useCallback(() => {
