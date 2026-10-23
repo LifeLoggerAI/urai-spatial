@@ -36,6 +36,6 @@ test('production project example and dropped Functions build are rejected',()=>{
  assert.throws(()=>verify(source().replace('--project=<APPROVED_NONPRODUCTION_PROJECT>','--project=urai-4dc1d')))
  assert.throws(()=>verify(source().replace('run_gate functions-build pnpm --filter urai-functions build','echo skip')))
  assert.throws(()=>verify(source().replace("serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/${_VERIFIER_SA_EMAIL}'", '# implicit default credentials')))
- assert.throws(()=>verify(source().replace('"$URAI_SOURCE_SHA"','"$URAI_SOURCE_SHA"')))
- assert.throws(()=>verify(source().replace('"$URAI_VERIFIER_SA"','"$URAI_VERIFIER_SA"')))
+ assert.throws(()=>verify(source().replace('"$$URAI_SOURCE_SHA"','"$URAI_SOURCE_SHA"')))
+ assert.throws(()=>verify(source().replace('"$$URAI_VERIFIER_SA"','"$URAI_VERIFIER_SA"')))
 })
