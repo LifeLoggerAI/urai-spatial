@@ -9,6 +9,7 @@ const requiredFocusedTests = [
   'tests/home-cc0-photo-macro.test.mjs',
   'tests/home-cc0-browser-art-proof.test.mjs',
   'tests/home-cc0-png-evidence.test.mjs',
+  'tests/home-cc0-windows-runner-integrity.test.mjs',
   'tests/home-cc0-scene-binding.test.mjs',
   'tests/lifemap-founder-harness-contract.test.mjs',
   'tests/lifemap-context-readiness-fence.test.mjs',
