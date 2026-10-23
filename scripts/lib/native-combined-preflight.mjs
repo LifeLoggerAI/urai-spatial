@@ -6,7 +6,7 @@ export const COMBINED_REQUIRED_PREFLIGHT = Object.freeze([
   Object.freeze({ id: 'combined_semantic_privacy', command: ['node', '--test', 'tests/r4-semantic-privacy-surface.test.mjs', 'tests/r4-lifemap-event-privacy-wiring.test.mjs', 'urai-tier1/tests/lifemap-event-privacy.test.mjs'], requiresInstall: false }),
   Object.freeze({ id: 'combined_firestore_java', command: ['node', '--test', 'tests/firestore-java-runtime.test.mjs', 'tests/firestore-rules-execution-authority.test.mjs'], requiresInstall: false }),
   Object.freeze({ id: 'combined_ground_contracts', command: ['node', '--test', 'tests/ground-glb-source-anchors.test.mjs', 'tests/ground-active-workforce-verify.test.mjs', 'tests/ground-provider-active-owner-contract.test.mjs'], requiresInstall: false }),
-  Object.freeze({ id: 'combined_runner_contracts', command: ['node', '--test', 'tests/native-evidence-target.test.mjs', 'tests/native-evidence-combined-candidate-contract.test.mjs', 'tests/native-combined-preflight.test.mjs', 'tests/native-http-route-acceptance.test.mjs', 'tests/rfinal-native-evidence-runner.test.mjs'], requiresInstall: false }),
+  Object.freeze({ id: 'combined_runner_contracts', command: ['node', '--test', 'tests/native-evidence-target.test.mjs', 'tests/native-evidence-combined-candidate-contract.test.mjs', 'tests/native-combined-preflight.test.mjs', 'tests/native-http-route-acceptance.test.mjs', 'tests/native-git-ancestry.test.mjs', 'tests/rfinal-native-evidence-runner.test.mjs'], requiresInstall: false }),
 ])
 const required = new Set(COMBINED_REQUIRED_PREFLIGHT.map(stage => stage.id))
 export function planNativeEvidenceStages(baseStages, combined = false) {
