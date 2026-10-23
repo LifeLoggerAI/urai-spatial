@@ -608,7 +608,7 @@
     {
       "path": "cloudbuild.urai-verify.yaml",
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
-      "expectedBlob": "5d3266ab1925fe48182f7fc617271752b8b3b951",
+      "expectedBlob": "8fb3cfec0edf48b7385b3974699095ad667a3002",
       "reason": "Combined R4 verification branch enabled with restricted branch reference validation; nonrelease only"
     }
   ]
