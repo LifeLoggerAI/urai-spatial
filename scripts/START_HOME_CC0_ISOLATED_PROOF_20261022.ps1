@@ -37,6 +37,10 @@ try {
  if($actual -ne $head) { throw 'ISOLATED_HEAD_DRIFT' }
  $changes=@(& git -C $Destination status --porcelain --untracked-files=normal)
  if($changes.Count -ne 0) { throw 'ISOLATED_WORKTREE_NOT_CLEAN' }
+ if(-not (Test-Path -LiteralPath (Join-Path $Destination 'urai-tier1/node_modules/next'))) {
+  Write-Host 'URAI_VISUAL_RUNTIME_DEPENDENCIES_MISSING: install exact locked pnpm dependencies in this isolated worktree before browser proof.'
+  throw 'ISOLATED_RUNTIME_DEPENDENCIES_MISSING'
+ }
  $env:URAI_HOME_CC0_NONPRODUCTION_BOOTSTRAP='isolated-exact-head'
  try {
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $runner -ExpectedHead $head -Port $Port
