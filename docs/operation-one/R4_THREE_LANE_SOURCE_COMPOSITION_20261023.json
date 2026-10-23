@@ -658,6 +658,46 @@
       "originBlob": "0197b7fd0c8eaebac1166403ee32c10181ab9cd3",
       "expectedBlob": "a885812f25c32cd4f0dcf72a96e3364531dda96b",
       "reason": "Combined-only Firestore event normalization blocks legacy hidden memories before constellation projection"
+    },
+    {
+      "path": "scripts/lib/ground-glb-source-anchors.mjs",
+      "originBlob": "9150100a757595a4fab4bc5a70e3d5f7ff15ab6e",
+      "expectedBlob": "af0a323c5ecc0588f598045a98e07aa8b46f5002",
+      "reason": "Exact reviewed Ground GLB validator mesh bounds and source-coordinate isolation hardening from #1934"
+    },
+    {
+      "path": "tests/ground-glb-source-anchors.test.mjs",
+      "originBlob": "2c11aaef2e8ddae76b6700e5fff3eeef249b774e",
+      "expectedBlob": "0009712a5c8b61ede7fb0a3ce9b38d65d3422fd1",
+      "reason": "Exact reviewed Ground GLB validator regression fixture extension from #1934"
     }
-  ]
+  ],
+  "additionalAdmittedDonor": {
+    "pr": 1932,
+    "head": "4b9c519f4ddfba1889280738c9007d2a4d3a653e",
+    "baseCandidate": "79ca2499ba7315c0b3168426384adfb6052e8633",
+    "releaseApproved": false,
+    "sourceClaims": [
+      {
+        "path": "package.json",
+        "blob": "2fb031597bb75a8a4ce3bf0e3f8ee63fcebab68a"
+      },
+      {
+        "path": "scripts/lib/firestore-java-runtime.mjs",
+        "blob": "4857e72cbef520990bade224a026e708433e7f70"
+      },
+      {
+        "path": "scripts/run-firestore-rules-tests.mjs",
+        "blob": "8fdfccce7287dd9ff56a536082be4f348b06b961"
+      },
+      {
+        "path": "tests/firestore-java-runtime.test.mjs",
+        "blob": "0e63ffd35e64b1d7871a24b2b15a426d5632012e"
+      },
+      {
+        "path": "tests/firestore-rules-execution-authority.test.mjs",
+        "blob": "03ef2bb54b22fd91a760d05fd64b1493762b750f"
+      }
+    ]
+  }
 }

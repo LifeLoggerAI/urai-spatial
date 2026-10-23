@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { inspectGroundGlbAnchors, EXPECTED_GROUND_DESTINATIONS } from '../scripts/lib/ground-glb-source-anchors.mjs'
 function fixture(){
- const nodes=[{name:'ground-world-root',children:[]},{name:'ground-sacred-black-glass',mesh:0}]
+ const nodes=[{name:'ground-world-root',children:[1]},{name:'ground-sacred-black-glass',mesh:0}]
  const entries=[]
  for(const [i,id] of EXPECTED_GROUND_DESTINATIONS.entries()){
    const xyz=[i*0.5,i*0.2,-3-i*2],n=nodes.length
@@ -27,3 +27,13 @@ test('missing signal rune denied',()=>denied(a=>a.doc.nodes.find(n=>n.name==='re
 test('model coordinate drift denied',()=>denied(a=>a.doc.nodes.find(n=>n.name==='ground-destination-council').translation[0]++, 'GROUND_GLB_DESTINATION_COORDINATES_DRIFT:council'))
 test('source coordinate drift denied',()=>denied(a=>a.source=a.source.replace('position: [4, 1.6, -19]','position: [14, 1.6, -19]'),'GROUND_GLB_DESTINATION_COORDINATES_DRIFT:consent'))
 test('source destination identity removal denied',()=>denied(a=>a.source=a.source.replace('id: "focus"','id: "deleted"'),'GROUND_GLB_SOURCE_DESTINATION_SET_CHANGED'))
+test('mesh index outside the GLB mesh table is denied',()=>denied(a=>a.doc.nodes.find(n=>n.name==='council-monumental-chamber').mesh=999,'GROUND_GLB_CHAMBER_GEOMETRY_MISSING:council'))
+test('negative signal mesh index is denied',()=>denied(a=>a.doc.nodes.find(n=>n.name==='archive-signal-rune').mesh=-1,'GROUND_GLB_CHAMBER_SIGNAL_MISSING:archive'))
+test('negative terrain mesh index is denied',()=>denied(a=>a.doc.nodes[1].mesh=-1,'GROUND_GLB_TERRAIN_GEOMETRY_MISSING'))
+test('terrain disconnected from live root is denied',()=>denied(a=>a.doc.nodes[0].children=a.doc.nodes[0].children.filter(n=>n!==1),'GROUND_GLB_TERRAIN_GEOMETRY_MISSING'))
+test('missing position cannot borrow the next destination position',()=>denied(a=>{
+  const council=a.doc.nodes.find(n=>n.name==='ground-destination-council')
+  const logistics=a.doc.nodes.find(n=>n.name==='ground-destination-logistics')
+  council.translation=[...logistics.translation]
+  a.source=a.source.replace('id: "council",\nposition: [1, 0.4, -7]', 'id: "council",')
+},'GROUND_GLB_DESTINATION_COORDINATES_DRIFT:council'))

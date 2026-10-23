@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const shaPattern = /^[a-f0-9]{40}$/
 const donorCounts = new Map([[1933, 74], [1934, 8], [1887, 3]])
-const overridePaths = new Set(['cloudbuild.urai-verify.yaml', 'urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx', 'urai-tier1/src/components/lifemap/useLifeMapEvents.ts'])
+const overridePaths = new Set(['cloudbuild.urai-verify.yaml','urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx','urai-tier1/src/components/lifemap/useLifeMapEvents.ts','scripts/lib/ground-glb-source-anchors.mjs','tests/ground-glb-source-anchors.test.mjs'])
 const validPath = p => typeof p === 'string' && p.length > 0 && p.length <= 500 &&
   !p.startsWith('/') && !p.includes('\\') && !p.includes('\0') &&
   p.split('/').every(part => part !== '' && part !== '.' && part !== '..' && part !== '.git')
@@ -59,8 +59,33 @@ export function inspectR4SourceComposition(manifest, entries, head, expectedHead
   }
   for (const [pr, count] of donorCounts) if (counts.get(pr) !== count) fail('DONOR_PATH_COUNT_MISMATCH:' + pr)
   for (const path of overrides.keys()) if (!usedOverrides.has(path)) fail('UNUSED_SOURCE_OVERRIDE:' + path)
+  const extra = manifest.additionalAdmittedDonor
+  if (extra === undefined) fail('FIRESTORE_DONOR_MISSING')
+  if (extra !== undefined) {
+    if (extra.pr !== 1932 || extra.head !== '4b9c519f4ddfba1889280738c9007d2a4d3a653e' ||
+        extra.baseCandidate !== '79ca2499ba7315c0b3168426384adfb6052e8633' ||
+        extra.releaseApproved !== false || !Array.isArray(extra.sourceClaims) ||
+        extra.sourceClaims.length !== 5) fail('FIRESTORE_DONOR_AUTHORITY_INVALID')
+    const expectedExtra = new Map([
+      ['package.json','2fb031597bb75a8a4ce3bf0e3f8ee63fcebab68a'],
+      ['scripts/lib/firestore-java-runtime.mjs','4857e72cbef520990bade224a026e708433e7f70'],
+      ['scripts/run-firestore-rules-tests.mjs','8fdfccce7287dd9ff56a536082be4f348b06b961'],
+      ['tests/firestore-java-runtime.test.mjs','0e63ffd35e64b1d7871a24b2b15a426d5632012e'],
+      ['tests/firestore-rules-execution-authority.test.mjs','03ef2bb54b22fd91a760d05fd64b1493762b750f'],
+    ])
+    const uniqueExtra = new Set()
+    for (const claim of extra.sourceClaims) {
+      if (claimed.has(claim.path)) fail('FIRESTORE_DONOR_PATH_COLLIDES:' + claim.path)
+      if (!expectedExtra.has(claim.path) || uniqueExtra.has(claim.path) ||
+          claim.blob !== expectedExtra.get(claim.path)) fail('FIRESTORE_DONOR_CLAIM_INVALID')
+      uniqueExtra.add(claim.path)
+      const actual = entries.get(claim.path)
+      if (!actual || actual.type !== 'blob' || !['100644','100755'].includes(actual.mode) ||
+          actual.sha !== claim.blob) fail('FIRESTORE_DONOR_BLOB_MISMATCH:' + claim.path)
+    }
+  }
   return {schema:'urai-r4-source-tree-check-v1',status:'PASS_SOURCE_IDENTITY_ONLY_NO_RELEASE',
-    head,donorPathsVerified:claimed.size,overridesVerified:usedOverrides.size,
+    head,donorPathsVerified:claimed.size,additionalDonorPathsVerified:5,totalDonorPathsVerified:claimed.size+5,overridesVerified:usedOverrides.size,
     releaseApproved:false,fullBuildVerified:false,browserVerified:false,privateDataAuthorized:false}
 }
 
