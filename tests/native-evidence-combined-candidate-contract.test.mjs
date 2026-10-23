@@ -38,3 +38,9 @@ test('runtime probes the same eight routes the final acceptance audit requires',
   assert.match(source,/const httpAudit = assessHttpRoutes\(checks\)/)
   assert.doesNotMatch(source,/for \(const route of \['\/', '\/life-map', '\/focus', '\/replay', '\/login', '\/privacy'\]\)/)
 })
+
+test('combined source, privacy and Ground preflights execute before dependency install',()=>{
+ assert.match(source,/for \(const item of planNativeEvidenceStages\(STAGES, cfg\.combined\)\)/)
+ assert.match(source,/nativeCombinedPreflightEnvironment\(\{combined:cfg\.combined,stageId:item\.id,pinnedSha:head\}\)/)
+ assert.match(source,/assertCombinedPreflightOutcome\(\{combined:cfg\.combined,stageId:item\.id,outcome\}\)/)
+})
