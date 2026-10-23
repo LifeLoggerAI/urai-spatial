@@ -19,6 +19,7 @@ export function HomeCC0ReviewRetainedGround({ scene }: { scene: THREE.Object3D }
         normalScale: new THREE.Vector2(.65, .65),
         roughnessMap: maps.roughness, roughness: 1, metalness: 0,
         envMapIntensity: .28, side: THREE.FrontSide,
+        userData: { uraiCC0ReviewSurface: 'ground' },
         onBeforeCompile: applyHomeCC0MacroVariation,
         customProgramCacheKey: homeCC0MacroProgramKey,
       })
