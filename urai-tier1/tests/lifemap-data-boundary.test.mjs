@@ -78,7 +78,7 @@ test('semantic Life Map fallback preserves the Focus and Replay journey without 
   assert.match(semanticNavigator, /destinationHref\('focus', selected\)/)
   assert.match(semanticNavigator, /destinationHref\('replay', selected\)/)
   assert.match(semanticNavigator, /next\.set\('from', 'life-map-semantic'\)/)
-  assert.match(semanticNavigator, /disabled=\{!selected\.replayAvailable \|\| selected\.locked \|\| \(!explicitDemo && !selected\.authorizedMemory\)\}/)
+  assert.match(semanticNavigator, /disabled=\{!lifeMapPhysicalReplayAllowed\(selected, sourceMode\)\}/)
   assert.match(semanticNavigator, /locale.text\('lifeMap.enterFocus'\)/)
   const messages = fs.readFileSync(new URL('../src/lib/i18n/journeyMessages.ts', import.meta.url), 'utf8')
   assert.match(messages, /'lifeMap.enterFocus':\s*\{\s*id:'lifeMap.enterFocus',\s*source:"Enter Focus"/)
@@ -132,3 +132,12 @@ test('private Life Map joins only currently consented, owner-verified canonical 
   assert.match(source, /memory\.privacy === 'hidden' \|\| memory\.demo \|\| memory\.ownerId !== resolvedUserId/)
   assert.match(source, /eventMemoryIds\.has\(memory\.id\)\) continue/)
 })
+
+
+test('visible Life Map projection denies both current and legacy hidden privacy, including demo and keyboard paths', () => {
+  assert.match(source, /privacyLevel: lifeMapEventPrivacyLevel\(data\)/);
+  assert.match(source, /const visibleNodes = lifeMapFilterVisibleNodes\(/);
+  assert.match(semanticNavigator, /const candidates = visibleNodes.length \? visibleNodes : lifeMapFilterVisibleNodes\(nodes\)/);
+  assert.match(semanticNavigator, /const selected = nodes.find\(\(node\) => node.id === selectedId && !lifeMapNodeIsHidden\(node\)\)/);
+  assert.match(semanticNavigator, /if \(lifeMapNodeIsHidden\(node\) \|\| node.locked\) return/);
+});

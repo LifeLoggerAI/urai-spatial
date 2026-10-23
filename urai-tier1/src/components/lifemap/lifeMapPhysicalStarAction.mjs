@@ -38,3 +38,16 @@ export function lifeMapVisibleRelatedNodes(nodes, selected) {
     ((Array.isArray(selected.connectedTo) && selected.connectedTo.includes(node.id)) ||
       (Array.isArray(node.connectedTo) && node.connectedTo.includes(selected.id))));
 }
+
+// Treat either current or legacy hidden metadata as a veto. Legacy values may
+// appear while older Firestore event documents are migrated.
+export function lifeMapEventPrivacyLevel(raw) {
+  if (lifeMapNodeIsHidden(raw)) return 'hidden';
+  return raw && raw.privacyLevel === 'shareable' ? 'shareable' : 'private';
+}
+
+// Hiding an event must exclude it from search, keyboard selection and world
+// rendering, not merely disable the Replay button after disclosure.
+export function lifeMapFilterVisibleNodes(nodes) {
+  return Array.isArray(nodes) ? nodes.filter(node => node && !lifeMapNodeIsHidden(node)) : [];
+}

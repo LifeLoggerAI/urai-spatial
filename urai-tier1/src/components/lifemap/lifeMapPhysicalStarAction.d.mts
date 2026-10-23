@@ -21,4 +21,6 @@ export type LifeMapRelatedNode = {
   connectedTo?: readonly string[];
 };
 export function lifeMapVisibleRelatedNodes<T extends LifeMapRelatedNode>(nodes: readonly T[], selected: LifeMapRelatedNode | null | undefined): T[];
-export function lifeMapNodeIsHidden(node: { privacyLevel?: 'private' | 'hidden' | 'shareable'; privacy?: 'private' | 'hidden' | 'shareable' } | null | undefined): boolean;
+export function lifeMapNodeIsHidden(node: { privacyLevel?: unknown; privacy?: unknown } | null | undefined): boolean;
+export function lifeMapEventPrivacyLevel(node: { privacyLevel?: string; privacy?: string } | null | undefined): 'hidden' | 'private' | 'shareable';
+export function lifeMapFilterVisibleNodes<T extends { privacyLevel?: string; privacy?: string }>(nodes: readonly T[] | null | undefined): T[];

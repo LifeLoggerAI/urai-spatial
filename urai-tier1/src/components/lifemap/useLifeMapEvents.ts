@@ -6,6 +6,7 @@ import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from "@/sp
 import { isConsentPolicy } from "@/app/privacy-controls/consentModel";
 import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
+import { lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapDisplayPosition } from "./lifeMapLayout";
 import {
   lifeMapEras,
@@ -77,7 +78,7 @@ function normalizeEvent(id: string, data: DocumentData, ownerId = ""): LifeMapEv
     replayAvailable: Boolean(data.replayAvailable),
     locked: Boolean(data.locked),
     connectedTo: asStringArray(data.connectedTo),
-    privacyLevel: data.privacyLevel === "hidden" || data.privacyLevel === "shareable" ? data.privacyLevel : "private",
+    privacyLevel: lifeMapEventPrivacyLevel(data),
     narratorHint: typeof data.narratorHint === "string" ? data.narratorHint : undefined,
     tags: Array.isArray(data.tags) ? asStringArray(data.tags) : undefined,
   };
@@ -134,7 +135,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const currentOwner = explicitDemo ? 'demo-user' : resolvedUserId;
   const currentNodes = nodesOwner === currentOwner ? nodes : [];
   const currentMemories = memoriesOwner === currentOwner ? canonicalMemories : new Map<string, SelectedMemory>();
-  const visibleNodes = explicitDemo || (authorityKey !== null && nodesAuthority === authorityKey) ? currentNodes : [];
+  const visibleNodes = lifeMapFilterVisibleNodes(explicitDemo || (authorityKey !== null && nodesAuthority === authorityKey) ? currentNodes : []);
   const visibleMemories = authorityKey !== null && memoriesAuthority === authorityKey ? currentMemories : new Map<string, SelectedMemory>();
   const resolvedNodes = useMemo(() => {
     if (explicitDemo) return visibleNodes;

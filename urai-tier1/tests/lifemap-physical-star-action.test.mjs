@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import * as navigation from '../src/components/lifemap/lifeMapPhysicalStarAction.mjs';
-const { lifeMapPhysicalReplayAllowed, lifeMapPhysicalStarAction, lifeMapFocusAllowed, lifeMapVisibleRelatedNodes, lifeMapNodeIsHidden } = navigation;
+const { lifeMapPhysicalReplayAllowed, lifeMapPhysicalStarAction, lifeMapFocusAllowed, lifeMapVisibleRelatedNodes, lifeMapNodeIsHidden, lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes } = navigation;
 
 const canonical = () => ({ id: 'star-1', authorizedMemory: true, locked: false, replayAvailable: true, memoryId: 'memory-1', replayManifestId: 'manifest-1' });
 test('first physical star click selects without replay', () => { assert.equal(lifeMapPhysicalStarAction('star-1', null, 'overview', true), 'select'); });
@@ -145,4 +145,38 @@ test('shared privacy predicate recognizes either hidden alias consistently', () 
   assert.equal(lifeMapNodeIsHidden({ id: 'a', privacyLevel: 'shareable' }), false);
   assert.equal(lifeMapNodeIsHidden(null), false);
   assert.equal(lifeMapNodeIsHidden(undefined), false);
+});
+
+
+test('legacy hidden event privacy vetoes any incompatible current sharing label', () => {
+  assert.equal(lifeMapEventPrivacyLevel({ privacyLevel: 'shareable', privacy: 'hidden' }), 'hidden');
+  assert.equal(lifeMapEventPrivacyLevel({ privacyLevel: 'private', privacy: 'hidden' }), 'hidden');
+  assert.equal(lifeMapEventPrivacyLevel({ privacyLevel: 'hidden', privacy: 'shareable' }), 'hidden');
+});
+
+test('raw event privacy defaults private and never promotes legacy shareable', () => {
+  assert.equal(lifeMapEventPrivacyLevel({ privacyLevel: 'shareable' }), 'shareable');
+  assert.equal(lifeMapEventPrivacyLevel({ privacy: 'shareable' }), 'private');
+  assert.equal(lifeMapEventPrivacyLevel({ privacyLevel: 'private', privacy: 'shareable' }), 'private');
+  assert.equal(lifeMapEventPrivacyLevel(null), 'private');
+  assert.equal(lifeMapEventPrivacyLevel(undefined), 'private');
+});
+
+test('semantic and world node projection excludes either hidden alias', () => {
+  const original = Object.freeze([
+    Object.freeze({ id: 'visible', privacyLevel: 'private' }),
+    Object.freeze({ id: 'hidden-current', privacyLevel: 'hidden' }),
+    Object.freeze({ id: 'hidden-legacy', privacy: 'hidden' }),
+    Object.freeze({ id: 'visible-demo', privacyLevel: 'shareable' }),
+  ]);
+  assert.deepEqual(lifeMapFilterVisibleNodes(original).map(node => node.id), ['visible', 'visible-demo']);
+  assert.equal(original.length, 4);
+  assert.deepEqual(lifeMapFilterVisibleNodes(null), []);
+});
+
+test('revoking a visible node removes it from all candidate projections', () => {
+  const node = { id: 'one', privacyLevel: 'private' };
+  assert.equal(lifeMapFilterVisibleNodes([node]).length, 1);
+  node.privacy = 'hidden';
+  assert.deepEqual(lifeMapFilterVisibleNodes([node]), []);
 });
