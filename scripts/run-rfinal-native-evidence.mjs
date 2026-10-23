@@ -15,6 +15,7 @@ import { once } from 'node:events'
 import { pathToFileURL } from 'node:url'
 import { resolveCandidate, assessCandidateCompletion, requireCommitSha } from './rfinal-source-authority.mjs'
 import { selectNativeEvidenceTarget } from './lib/native-evidence-target.mjs'
+import { planNativeEvidenceStages, assertCombinedPreflightOutcome, nativeCombinedPreflightEnvironment } from './lib/native-combined-preflight.mjs'
 import { inspectVisualPng } from './visual-png-integrity.mjs'
 import { isOwnedVisualEvidencePath } from './rfinal-visual-evidence-paths.mjs'
 import { isUraiHomeDocument } from '../tests/spatial-owned-server.mjs'
@@ -588,12 +589,12 @@ async function main() {
     record('pinned_committed_byte_identity',byteReport.passed?'PASS':'FAIL',{mismatches:byteReport.mismatches})
     if (!byteReport.passed) throw new Error('PINNED_SOURCE_BYTES_MISMATCH')
     let installPassed=false, buildPassed=false
-    for (const item of STAGES) {
+    for (const item of planNativeEvidenceStages(STAGES, cfg.combined)) {
       if (item.requiresInstall && !installPassed) {
         record(item.id,'NOT_RUN',{reason:'Frozen installation did not pass; no substitute green'})
         continue
       }
-      const r=await command(item.command,{cwd:source,log:path.join(evidence,item.id+'.log'),
+      const r=await command(item.command,{cwd:source,env:nativeCombinedPreflightEnvironment({combined:cfg.combined,stageId:item.id,pinnedSha:head}),log:path.join(evidence,item.id+'.log'),
         timeoutMinutes: item.id==='production_build'?85:item.id==='frozen_install'?65:55})
       // Preserve the actual Firebase emulator diagnosis in the evidence bundle.
       // The synthetic demo-project tests can fail after Firestore starts; without
@@ -618,6 +619,7 @@ async function main() {
         qualification='Root suite skipped browser E2E despite exit zero'
       }
       record(item.id,outcome,{...r,command:formatCommand(item.command),qualification})
+      assertCombinedPreflightOutcome({combined:cfg.combined,stageId:item.id,outcome})
       if(item.id==='frozen_install')installPassed=outcome==='PASS'
       if(item.id==='production_build')buildPassed=outcome==='PASS'
     }
