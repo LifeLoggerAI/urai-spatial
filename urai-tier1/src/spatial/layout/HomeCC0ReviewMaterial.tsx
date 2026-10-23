@@ -36,5 +36,5 @@ export function HomeCC0ReviewMaterial({ surface }: { surface: Surface }) {
   return <meshStandardMaterial color="#ffffff" map={maps.diffuse}
     normalMap={maps.normal} normalScale={new THREE.Vector2(.65, .65)}
     roughnessMap={maps.roughness} roughness={1} metalness={0}
-    envMapIntensity={.28} onBeforeCompile={applyHomeCC0MacroVariation} customProgramCacheKey={homeCC0MacroProgramKey} />
+    envMapIntensity={.28} userData={{ uraiCC0ReviewSurface: surface }} onBeforeCompile={applyHomeCC0MacroVariation} customProgramCacheKey={homeCC0MacroProgramKey} />
 }
