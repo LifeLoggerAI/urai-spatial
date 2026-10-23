@@ -37,15 +37,15 @@ function selectedStagePoint(node: LifeMapNode, portrait: boolean) {
   return new THREE.Vector3(...node.position).multiply(scale).add(position);
 }
 
-function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean): CameraGoal {
+function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, origin?: THREE.Vector3): CameraGoal {
   const target = selectedStagePoint(node, portrait);
-  const overview = new THREE.Vector3(...OVERVIEW_POSITION);
+  const overview = origin?.clone() ?? new THREE.Vector3(...OVERVIEW_POSITION);
   const direction = overview.clone().sub(target);
   if (direction.lengthSq() < 0.01) direction.set(0, 0.1, 1);
   direction.normalize();
   const arrival = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF);
   arrival.y += 0.34;
-  if (phase === "departure") return { position: OVERVIEW_POSITION, target: tuple(target) };
+  if (phase === "departure") return { position: tuple(overview), target: tuple(target) };
   if (phase === "travel") {
     const travel = overview.clone().lerp(arrival, 0.5);
     travel.x += (Math.sign(target.x) || 1) * 1.25;
@@ -98,6 +98,9 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
   const flightOffset = useRef(new THREE.Vector3());
   const flightVelocity = useRef(new THREE.Vector3());
   const heldFlightKeys = useRef(new Set<string>());
+  const departureOrigin = useRef<THREE.Vector3 | null>(null);
+  const departureNodeId = useRef<string | null>(null);
+  const previousCameraPhase = useRef<JourneyPhase>("overview");
   useEffect(() => {
     // Selection, unloading and blur must never leave a motion key stuck.
     heldFlightKeys.current.clear();
@@ -149,14 +152,14 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
 
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
-    const goal = selected ? goalForNode(selected, phase, portrait) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
+    const goal = selected ? goalForNode(selected, phase, portrait, departureOrigin.current ?? undefined) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
     positionGoal.current.set(...goal.position);
     targetGoal.current.set(...goal.target);
     if (portrait) {
       if (phase === "overview") {
         positionGoal.current.set(0, 2.15, 16.6);
         targetGoal.current.set(0, 0.2, -4.6);
-      } else {
+      } else if (!(phase === "departure" && departureOrigin.current)) {
         const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.34);
         positionGoal.current.copy(targetGoal.current).add(offset);
         positionGoal.current.y += 0.42;
@@ -179,6 +182,19 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
   }, [camera, phase, resolve]);
 
   useFrame(({ pointer }, delta) => {
+    // Capture before resolving this frame's camera goal, never one effect later.
+    // The first departure frame must originate at the camera's explored pose.
+    if (phase === "overview") {
+      departureOrigin.current = null;
+      departureNodeId.current = null;
+    } else if (phase === "departure" && selected &&
+      (departureNodeId.current !== selected.id || previousCameraPhase.current !== "departure")) {
+      // Re-selecting the same star after arrival is a new journey, not a
+      // continuation of its old departure camera pose.
+      departureOrigin.current = camera.position.clone();
+      departureNodeId.current = selected.id;
+    }
+    previousCameraPhase.current = phase;
     const portrait = resolve();
     if (phase === "overview") {
       const focused = document.activeElement;
@@ -197,8 +213,9 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
       offset.set(next.offset.x, next.offset.y, next.offset.z);
       velocity.set(next.velocity.x, next.velocity.y, next.velocity.z);
     }
-    // Preserve exploratory departure; authored star travel then takes over.
-    const flightWeight = phase === "overview" || phase === "departure" ? 1 : phase === "travel" ? 0.5 : 0;
+    // The actual departure camera already includes exploration displacement;
+    // adding flight offset again would pull star travel away from its origin.
+    const flightWeight = phase === "overview" ? 1 : 0;
     positionGoal.current.addScaledVector(flightOffset.current, flightWeight);
     targetGoal.current.addScaledVector(flightOffset.current, flightWeight);
     if (phase === "overview" && !reducedMotion) {
@@ -414,28 +431,11 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     setSelectedId(node.id);
     if (profile.reducedMotion) setPhase("arrival");
     else setPhase("departure");
-    const next = withIdentity(new URLSearchParams(), node.id);
-    next.set("node", node.id);
-    if (explicitDemoRequested) next.set("memoryId", node.id);
-    else if (node.authorizedMemory && node.memoryId) next.set("memoryId", node.memoryId);
-    else next.delete("memoryId");
-    // Route metadata is not access authority. Never carry an unrelated private
-    // manifest forward, even if a star ID happens to match an older memory ID.
-    if (!explicitDemoRequested) {
-      next.delete("manifestId");
-      if (node.authorizedMemory && node.replayManifestId) next.set("manifestId", node.replayManifestId);
-    }
-    // Forward only this already-selected owner's exact movie and plan pair.
-    // Neither route metadata nor this source-side flag grants Studio authority.
-    if (!explicitDemoRequested && node.authorizedMemory && !node.locked && node.memoryId && node.replayManifestId) {
-      forwardPrivateMovieRouteSelection(next, params, {
-        memoryId: node.memoryId, manifestId: node.replayManifestId,
-        authorizedOwner: true, demo: false,
-      });
-    }
-    if (node.eraId) next.set("era", node.eraId);
-    router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [explicitDemoRequested, params, profile.reducedMotion, router, withIdentity]);
+    // Do not rewrite the same-route URL during authored star travel.
+    // LifeMapAccessGate intentionally rechecks auth on every query change;
+    // changing it here would unmount this camera before its journey finishes.
+    // Focus and Replay construct fresh, owner-scoped destination URLs below.
+  }, [profile.reducedMotion]);
 
   const overview = useCallback(() => {
     const retainedId = selectedId || queryNode;
@@ -509,6 +509,9 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
 
   useEffect(() => {
     if (overviewRequested || overviewPending.current || !queryNode || !nodes.length) return;
+    // A deep-link query is only an initial/restored selection. Do not let that
+    // stale URL identity override a newer local star selection in flight.
+    if (localSelectionId.current && localSelectionId.current !== queryNode) return;
     const node = nodes.find((candidate) => candidate.id === queryNode);
     if (!node) return;
     if (localSelectionId.current === node.id) {
