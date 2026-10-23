@@ -4,6 +4,7 @@ import fs from 'node:fs'
 const focusedContractTests = [
   'tests/home-cc0-photo-macro.test.mjs',
   'tests/home-cc0-browser-art-proof.test.mjs',
+  'tests/home-cc0-png-evidence.test.mjs',
   'tests/home-cc0-scene-binding.test.mjs',
   'tests/stripe-session-authority.test.mjs',
   'tests/owned-memory-media-client.test.mjs',
