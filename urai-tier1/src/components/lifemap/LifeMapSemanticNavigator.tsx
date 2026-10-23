@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { type LifeMapNode, type LifeMapNodeType } from './lifeMapData'
 import { requestLifeMapSelection } from './lifeMapSelection'
-import { lifeMapFocusAllowed, lifeMapPhysicalReplayAllowed, lifeMapVisibleRelatedNodes } from './lifeMapPhysicalStarAction.mjs'
+import { lifeMapFocusAllowed, lifeMapPhysicalReplayAllowed, lifeMapVisibleRelatedNodes, lifeMapNodeIsHidden } from './lifeMapPhysicalStarAction.mjs'
 import { useLifeMapEvents } from './useLifeMapEvents'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
@@ -43,7 +43,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   const [open, setOpen] = useState(false)
   const [portalReady, setPortalReady] = useState(false)
   const selectedId = overviewRequested ? null : params.get('node') || params.get('memoryId')
-  const selected = nodes.find((node) => node.id === selectedId && node.privacyLevel !== 'hidden') || null
+  const selected = nodes.find((node) => node.id === selectedId && !lifeMapNodeIsHidden(node)) || null
   const searchRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const inspectorHeadingRef = useRef<HTMLHeadingElement>(null)
@@ -57,7 +57,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   const {requested:requestedLocale,preview:previewLocale}=locale.preference
   const searchLocale=locale.locale
   const visibleNodes = useMemo(
-    () => nodes.filter((node) => node.privacyLevel !== 'hidden' && matchesSearch(node, search,localizedMessage({requested:requestedLocale,preview:previewLocale},LIFE_MAP_TYPE_MESSAGES[node.type]).text,searchLocale) && (typeFilter === 'all' || node.type === typeFilter) && (eraFilter === 'all' || node.eraId === eraFilter)),
+    () => nodes.filter((node) => !lifeMapNodeIsHidden(node) && matchesSearch(node, search,localizedMessage({requested:requestedLocale,preview:previewLocale},LIFE_MAP_TYPE_MESSAGES[node.type]).text,searchLocale) && (typeFilter === 'all' || node.type === typeFilter) && (eraFilter === 'all' || node.eraId === eraFilter)),
     [eraFilter, nodes, search, typeFilter, requestedLocale, previewLocale, searchLocale],
   )
 
@@ -70,7 +70,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   }, [])
 
   const selectNode = useCallback((node: LifeMapNode, source: 'semantic' | 'keyboard' | 'pointer' = 'semantic', keepInspectorOpen = false) => {
-    if (node.privacyLevel === 'hidden' || node.locked) return
+    if (lifeMapNodeIsHidden(node) || node.locked) return
     // Selecting a search result must leave its Enter Focus and Replay actions
     // available to keyboard and mobile users. Global stepping still closes
     // search so it cannot intercept the next world-navigation arrow key.
@@ -133,7 +133,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   }, [commitBrowserIdentity, router, withIdentity])
 
   const step = useCallback((direction: number) => {
-    const candidates = visibleNodes.length ? visibleNodes : nodes
+    const candidates = (visibleNodes.length ? visibleNodes : nodes).filter(node => !lifeMapNodeIsHidden(node) && !node.locked)
     if (!candidates.length) return
 
     // Browser identity is committed synchronously before the spatial selection transition.

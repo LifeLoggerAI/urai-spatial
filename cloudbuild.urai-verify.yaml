@@ -113,6 +113,7 @@ steps:
         }
         run_gate r4-source-provenance node scripts/verify-r4-source-composition.mjs
         run_gate r4-provenance-contract node --test tests/verify-r4-source-composition.test.mjs
+        run_gate r4-semantic-privacy node --test tests/r4-semantic-privacy-surface.test.mjs
         run_gate ground-active-workforce node --test tests/ground-active-workforce-verify.test.mjs
         run_gate ground-active-owner node --test tests/ground-provider-active-owner-contract.test.mjs
         run_gate r4-branch-authority node --test tests/r4-composite-cloudbuild-branch.test.mjs
