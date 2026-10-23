@@ -603,5 +603,13 @@
     "authenticatedJourney": "NOT_EXECUTED",
     "realDevices": "NOT_EXECUTED",
     "independentReviews": "OPEN"
-  }
+  },
+  "sourceOverrides": [
+    {
+      "path": "cloudbuild.urai-verify.yaml",
+      "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
+      "expectedBlob": "5d3266ab1925fe48182f7fc617271752b8b3b951",
+      "reason": "Combined R4 verification branch enabled with restricted branch reference validation; nonrelease only"
+    }
+  ]
 }
