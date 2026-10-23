@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { homeNavigationSourceFailures } from './lib/home-navigation-source-authority.mjs'
+import { inspectGroundActiveWorkforce } from './lib/ground-active-workforce-verify.mjs'
 
 const root = process.cwd()
 const assetRoot = path.join(root, 'urai-tier1', 'public', 'assets', 'urai')
@@ -138,15 +139,29 @@ const routeOwnerChecks = [
   {
     routes: ['/ground'],
     files: [
+      'urai-tier1/src/app/ground/page.tsx',
       'urai-tier1/src/app/GroundSpatialWorldClean.tsx',
-      'urai-tier1/src/app/ground/GroundContinuityArchitecture.tsx',
-      'urai-tier1/src/app/ground/EmbodiedGroundScene.tsx',
+      'urai-tier1/src/app/GroundWorkforcePresences.tsx',
     ],
-    renderMode: 'procedural-spatial',
+    renderMode: 'authored-glb-provider-reference-spatial',
+    requiredByFile: {
+      'urai-tier1/src/app/ground/page.tsx': ['<GroundSpatialWorldClean />'],
+      'urai-tier1/src/app/GroundSpatialWorldClean.tsx': [
+        'useGLTF(GROUND_MODEL)',
+        '<primitive object={world} />',
+        '<GroundWorkforcePresences world={world} />',
+        'data-ground-runtime-owner="final-glb-infrastructure-world"',
+        'data-ground-workforce-art="provider-reference-pending-acceptance"',
+      ],
+      'urai-tier1/src/app/GroundWorkforcePresences.tsx': [
+        "visualStatus: 'provider-reference-pending-acceptance'",
+        "actionAuthority: 'none'",
+      ],
+    },
     required: [
-      'GroundContinuityArchitecture',
-      'EmbodiedGroundScene',
       'data-ground-visual-owner="shared-continuity-architecture"',
+      'data-ground-runtime-owner="final-glb-infrastructure-world"',
+      'data-ground-workforce-art="provider-reference-pending-acceptance"',
       'ground-continuity-architectural-shell',
       'ground-walkable-navigation-surface',
       'ground-enterable-threshold-',
@@ -385,6 +400,18 @@ const routeOwners = routeOwnerChecks.map((check) => {
   return { ...check, active: ownerFailures.length === 0, failures: ownerFailures }
 })
 
+// Source-level Ground gate. This cannot substitute for GPU renders, actual
+// GLB geometry, provider hash verification or independent human art admission.
+const liveGround = inspectGroundActiveWorkforce({
+  route: readFileSync(path.join(root, 'urai-tier1/src/app/ground/page.tsx'), 'utf8'),
+  world: readFileSync(path.join(root, 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'), 'utf8'),
+  workforce: readFileSync(path.join(root, 'urai-tier1/src/app/GroundWorkforcePresences.tsx'), 'utf8'),
+  destinations: readFileSync(path.join(root, 'urai-tier1/src/app/ground/GroundWorldModel.ts'), 'utf8'),
+  registry,
+  manifest: handoff,
+})
+for (const reason of liveGround.failures) failures.push('active Ground workforce: ' + reason)
+
 const report = {
   ok: failures.length === 0,
   schemaVersion: 'urai-provider-asset-verification-5',
@@ -401,6 +428,7 @@ const report = {
   routeOwnersRequired: routeOwners.length,
   routeOwnersVerified: routeOwners.filter((owner) => owner.active).length,
   routeOwners,
+  liveGround,
   failures,
   records,
 }
