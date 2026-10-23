@@ -111,6 +111,12 @@ steps:
           printf '%s\n' "$$record" >> "$$receipt_path"
           printf 'URAI_GATE_JSON=%s\n' "$$record"
         }
+        run_gate r4-source-provenance node scripts/verify-r4-source-composition.mjs
+        run_gate r4-provenance-contract node --test tests/verify-r4-source-composition.test.mjs
+        run_gate ground-active-workforce node --test tests/ground-active-workforce-verify.test.mjs
+        run_gate ground-active-owner node --test tests/ground-provider-active-owner-contract.test.mjs
+        run_gate r4-branch-authority node --test tests/r4-composite-cloudbuild-branch.test.mjs
+        run_gate cloudbuild-shell-contract node --test tests/cloudbuild-shell-execution.test.mjs tests/cloudbuild-urai-source-pin-contract.test.mjs
         run_gate source-authority node --test tests/rfinal-source-authority.test.mjs
         run_gate first-memory-preflight pnpm test:first-memory:emulator:preflight
         run_gate first-memory-emulator pnpm test:first-memory:emulator
