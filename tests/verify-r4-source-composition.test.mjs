@@ -12,3 +12,27 @@ test('85 donor blobs prove identity but not release',()=>{const f=fixture();cons
 test('tampered and missing blobs fail closed',()=>{const f=fixture(),p=f.manifest.sourceClaims[0].path;f.entries.set(p,{mode:'100644',type:'blob',sha:h('e')});assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/SOURCE_BLOB_MISMATCH/);f.entries.delete(p);assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/MISSING_REGULAR_BLOB/)})
 test('pinned Cloud Build adjustment only',()=>{const f=fixture(),c=f.manifest.sourceClaims[84];f.entries.delete(c.path);c.path='cloudbuild.urai-verify.yaml';f.entries.set(c.path,{mode:'100644',type:'blob',sha:h('e')});f.manifest.sourceOverrides=[{path:c.path,originBlob:h('d'),expectedBlob:h('e'),reason:'Specific review-only Cloud Build branch adjustment'}];assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).overridesVerified,1);f.manifest.sourceOverrides[0].path='src/1887/file1.js';assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/SOURCE_OVERRIDE_INVALID/)})
 test('invalid authority or duplicate name denied',()=>{const f=fixture();f.manifest.releaseApproved=true;assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')));f.manifest.releaseApproved=false;f.manifest.sourceClaims[1].path=f.manifest.sourceClaims[0].path;assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')));assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f'),h('a')),/EXPECTED_HEAD_MISMATCH/)})
+
+test('five exact Firestore Java21 donor blobs are admitted but cannot claim release', () => {
+  const f=fixture()
+  const claims=[
+    ['package.json','2fb031597bb75a8a4ce3bf0e3f8ee63fcebab68a'],
+    ['scripts/lib/firestore-java-runtime.mjs','4857e72cbef520990bade224a026e708433e7f70'],
+    ['scripts/run-firestore-rules-tests.mjs','8fdfccce7287dd9ff56a536082be4f348b06b961'],
+    ['tests/firestore-java-runtime.test.mjs','0e63ffd35e64b1d7871a24b2b15a426d5632012e'],
+    ['tests/firestore-rules-execution-authority.test.mjs','03ef2bb54b22fd91a760d05fd64b1493762b750f'],
+  ].map(([path,blob])=>({path,blob}))
+  f.manifest.additionalAdmittedDonor={
+    pr:1932,head:'4b9c519f4ddfba1889280738c9007d2a4d3a653e',
+    baseCandidate:'79ca2499ba7315c0b3168426384adfb6052e8633',
+    releaseApproved:false,sourceClaims:claims,
+  }
+  for (const c of claims) f.entries.set(c.path,{mode:'100644',type:'blob',sha:c.blob})
+  const result=inspectR4SourceComposition(f.manifest,f.entries,h('f'))
+  assert.equal(result.releaseApproved,false)
+  f.entries.set(claims[0].path,{mode:'100644',type:'blob',sha:h('a')})
+  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/FIRESTORE_DONOR_BLOB_MISMATCH/)
+  f.entries.set(claims[0].path,{mode:'100644',type:'blob',sha:claims[0].blob})
+  f.manifest.additionalAdmittedDonor.releaseApproved=true
+  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/FIRESTORE_DONOR_AUTHORITY_INVALID/)
+})
