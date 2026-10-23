@@ -8,6 +8,17 @@ function loadedTexture(texture) {
   const height = Number(image.naturalHeight || image.videoHeight || image.height || 0)
   return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0
 }
+function visibleHierarchy(object) {
+  for (let parent = object; parent; parent = parent.parent) {
+    if (parent.visible === false) return false
+  }
+  return true
+}
+function realMeshGeometry(object) {
+  const geometry = object?.geometry
+  const position = geometry?.getAttribute?.('position') ?? geometry?.attributes?.position
+  return Boolean(object?.isMesh && position && Number.isSafeInteger(position.count) && position.count >= 3)
+}
 function linkedPhotographicMaterial(material) {
   return Boolean(
     material?.userData?.uraiCC0ReviewSurface &&
@@ -26,7 +37,7 @@ export function auditHomeCC0Scene(scene) {
   }
   let incompletePhotoMeshes = 0
   scene.traverse((object) => {
-    if (!object?.isMesh || object.visible === false || !object.geometry) return
+    if (!realMeshGeometry(object) || !visibleHierarchy(object)) return
     for (const material of (Array.isArray(object.material) ? object.material : [object.material])) {
       const surface = material?.userData?.uraiCC0ReviewSurface
       if (surface !== 'ground' && surface !== 'path') continue
@@ -37,7 +48,7 @@ export function auditHomeCC0Scene(scene) {
   })
   const shrubs = scene.getObjectByName('home-cc0-shrub03-review')
   if (shrubs?.traverse) shrubs.traverse((object) => {
-    if (object?.isMesh && object.geometry && object.visible !== false &&
+    if (realMeshGeometry(object) && visibleHierarchy(object) && visibleHierarchy(shrubs) &&
       (Array.isArray(object.material) ? object.material : [object.material]).some(material => loadedTexture(material?.map))) {
       stats.shrubMeshes += 1
     }
