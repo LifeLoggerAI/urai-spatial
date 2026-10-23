@@ -637,13 +637,14 @@
     "realHomeCC0WebGL": "NOT_EXECUTED",
     "authenticatedJourney": "NOT_EXECUTED",
     "realDevices": "NOT_EXECUTED",
-    "independentReviews": "OPEN"
+    "independentReviews": "OPEN",
+    "eventLegacyPrivacy": "NATIVE_NORMALIZER_4_PASS; FULL_SOURCE_NOT_EXECUTED"
   },
   "sourceOverrides": [
     {
       "path": "cloudbuild.urai-verify.yaml",
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
-      "expectedBlob": "e2e5deaf633a2a9eaca7b57f39dcfec05b7f852e",
+      "expectedBlob": "28daed999c6b7245795fe7eea7c8502a743f70ac",
       "reason": "Combined R4 verification branch enabled with restricted branch reference validation; nonrelease only"
     },
     {
@@ -651,6 +652,12 @@
       "originBlob": "85a486f80b73e1eaf266df7fd2549827763c63e6",
       "expectedBlob": "69da9fc1e4815161bde47386f0df7d0901ec3eb7",
       "reason": "Combined-branch-only semantic privacy alias consistency repair across search, inspector, keyboard and pointer"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/useLifeMapEvents.ts",
+      "originBlob": "0197b7fd0c8eaebac1166403ee32c10181ab9cd3",
+      "expectedBlob": "a885812f25c32cd4f0dcf72a96e3364531dda96b",
+      "reason": "Combined-only Firestore event normalization blocks legacy hidden memories before constellation projection"
     }
   ]
 }

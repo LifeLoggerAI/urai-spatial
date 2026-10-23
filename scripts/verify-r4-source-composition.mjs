@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const shaPattern = /^[a-f0-9]{40}$/
 const donorCounts = new Map([[1933, 74], [1934, 8], [1887, 3]])
-const overridePaths = new Set(['cloudbuild.urai-verify.yaml', 'urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx'])
+const overridePaths = new Set(['cloudbuild.urai-verify.yaml', 'urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx', 'urai-tier1/src/components/lifemap/useLifeMapEvents.ts'])
 const validPath = p => typeof p === 'string' && p.length > 0 && p.length <= 500 &&
   !p.startsWith('/') && !p.includes('\\') && !p.includes('\0') &&
   p.split('/').every(part => part !== '' && part !== '.' && part !== '..' && part !== '.git')

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { collection, doc, limit, onSnapshot, orderBy, query, type DocumentData } from "firebase/firestore";
 import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from "@/spatial/memory/selectedMemoryContract";
 import { isConsentPolicy } from "@/app/privacy-controls/consentModel";
+import { normalizeLifeMapEventPrivacy } from "./lifeMapEventPrivacy.mjs";
+import { lifeMapNodeIsHidden } from "./lifeMapPhysicalStarAction.mjs";
 import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
 import { lifeMapDisplayPosition } from "./lifeMapLayout";
@@ -77,7 +79,7 @@ function normalizeEvent(id: string, data: DocumentData, ownerId = ""): LifeMapEv
     replayAvailable: Boolean(data.replayAvailable),
     locked: Boolean(data.locked),
     connectedTo: asStringArray(data.connectedTo),
-    privacyLevel: data.privacyLevel === "hidden" || data.privacyLevel === "shareable" ? data.privacyLevel : "private",
+    privacyLevel: normalizeLifeMapEventPrivacy(data),
     narratorHint: typeof data.narratorHint === "string" ? data.narratorHint : undefined,
     tags: Array.isArray(data.tags) ? asStringArray(data.tags) : undefined,
   };
@@ -141,7 +143,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     const fromEvents: LifeMapNode[] = visibleNodes.flatMap((node): LifeMapNode[] => {
       // A hidden event is not a visible landmark even if an older client
       // retained its coordinates, metadata or connections in a snapshot.
-      if (node.privacyLevel === 'hidden') return [];
+      if (lifeMapNodeIsHidden(node)) return [];
       const memoryId = sanitizeMemoryId(node.memoryId);
       const authoritative = memoryId && node.type === "memory" ? visibleMemories.get(memoryId) : undefined;
       // A revoked/deleted/absent canonical memory must leave NO event-backed
