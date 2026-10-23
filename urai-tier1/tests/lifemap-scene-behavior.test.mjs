@@ -93,7 +93,15 @@ test('Production artifacts are differentiated by meaning rather than generic bub
   for (const component of ['VisualArtifact', 'AudioArtifact', 'RelationshipArtifact', 'PlaceArtifact', 'EmotionArtifact', 'PatternArtifact', 'AchievementArtifact', 'GoalArtifact', 'EverydayArtifact', 'ArchiveArtifact', 'ProtectedArtifact']) {
     assert.match(world, new RegExp(`function ${component}`))
   }
-  assert.doesNotMatch(world.slice(world.indexOf('function MemoryArtifact'), world.indexOf('function SemanticPath')), /sphereGeometry/)
+  const artifact = world.slice(world.indexOf('function MemoryArtifact'), world.indexOf('function SemanticPath'))
+  // One raycast surface is intentional: it is fully invisible, writes neither
+  // color nor depth, and must never become a duplicate visible Memory Star.
+  const hit = artifact.match(/<mesh name=\{`life-map-star-hit-\$\{node\.id\}`\}[\s\S]*?<\/mesh>/)
+  assert.ok(hit, 'physical Memory Star needs one semantic hit surface')
+  assert.equal((artifact.match(/<sphereGeometry/g) || []).length, 1, 'no second sphere geometry or generic bubble')
+  assert.match(hit[0], /<meshBasicMaterial colorWrite=\{false\} depthWrite=\{false\} transparent opacity=\{0\} \/>/)
+  assert.match(hit[0], /<sphereGeometry args=\{\[overviewCluster \? 1\.42 : 1\.06, 14, 10\]\} \/>/)
+  assert.doesNotMatch(artifact.replace(hit[0], ''), /sphereGeometry/, 'no visible bubble geometry outside hit surface')
   assert.match(world, /name={`life-map-artifact-\${resolveArtifactFamily\(node\)}-\${node\.id}`}/)
   assert.match(world, /scale={active \? 1\.46 : 0\.58 \+ importance \* 0\.22}/)
   assert.match(world, /artifactFamilyLabel\(node\)/)
@@ -112,8 +120,16 @@ test('Relationships use curved semantic path classes, living pulses, and privacy
 })
 
 test('Selection Focus Replay Overview and Escape preserve artifact identity', () => {
-  assert.ok(source.includes('next.set("memoryId", node.id)'))
-  assert.ok(source.includes('next.set("node", node.id)'))
+  const start = source.indexOf('const selectNode = useCallback(')
+  const end = source.indexOf('const overview = useCallback(', start)
+  assert.ok(start >= 0 && end > start, 'canonical in-world selection boundary missing')
+  const selection = source.slice(start, end)
+  assert.ok(selection.includes('setSelectedId(node.id)'))
+  assert.ok(selection.includes('setPhase("departure")'))
+  assert.doesNotMatch(selection, /router\.(?:replace|push)\(/, 'selection must not remount the scene mid-flight')
+  assert.ok(source.includes('next.set("node", selected.id)'))
+  assert.ok(source.includes('if (explicitDemoRequested) next.set("memoryId", selected.id)'))
+  assert.ok(source.includes('else if (selected.authorizedMemory && selected.memoryId) next.set("memoryId", selected.memoryId)'))
   assert.ok(source.includes('next.set("returnNode", selected.id)'))
   assert.ok(source.includes('next.set("artifactFamily", resolveArtifactFamily(selected))'))
   assert.ok(source.includes('router.push(destinationHref("focus"))'))
@@ -208,7 +224,15 @@ test('WebGL context loss preserves truthful semantic recovery', () => {
   assert.ok(source.includes('Your selected memory, privacy state, and return position remain preserved.'))
   assert.ok(source.includes('Open semantic overview'))
   assert.ok(canonical.includes('data-testid="urai-life-map-authored-fallback"'))
-  assert.ok(canonical.includes('requestUraiWorldReturn()'))
+  // In an authored loading/recovery threshold there may be no trustworthy
+  // prior world destination. Escape must match the visible Home action.
+  const loadingStart = canonical.indexOf('function LifeMapLoading(')
+  const loadingEnd = canonical.indexOf('function SignedOutLifeMap(', loadingStart)
+  assert.ok(loadingStart >= 0 && loadingEnd > loadingStart)
+  const loading = canonical.slice(loadingStart, loadingEnd)
+  assert.ok(loading.includes('shouldHandleRealmEscape(event)'))
+  assert.ok(loading.includes('router.push("/home")'))
+  assert.doesNotMatch(loading, /requestUraiWorldReturn\(/)
 })
 
 

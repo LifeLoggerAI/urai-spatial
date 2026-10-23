@@ -447,16 +447,14 @@ async function playbackObject(uid: string, r: MediaReceipt, requireCurrent: () =
   // Storage emulator does not attest cloud bucket IAM. Missing/unsupported
   // metadata stays fail-closed; callers receive a specific evidence error,
   // never a synthetic success or a bypass of production bucket security.
-  // An overloaded callback signature makes ReturnType<typeof bucket.getMetadata> void.
-  // Model only the two fail-closed IAM fields read by this authority.
-  let bucketMetadata: {
-    iamConfiguration?: {
-      uniformBucketLevelAccess?: { enabled?: boolean }
-      publicAccessPrevention?: string
+  const bucketMetadata = await (async () => {
+    try {
+      const [metadata] = await bucket.getMetadata()
+      return metadata
+    } catch {
+      return fail('MEMORY_MEDIA_BUCKET_IAM_UNVERIFIABLE')
     }
-  }
-  try { [bucketMetadata] = await bucket.getMetadata() }
-  catch { fail('MEMORY_MEDIA_BUCKET_IAM_UNVERIFIABLE') }
+  })()
   await requireCurrent()
   if (bucketMetadata.iamConfiguration?.uniformBucketLevelAccess?.enabled !== true
     || bucketMetadata.iamConfiguration?.publicAccessPrevention !== 'enforced') fail('MEMORY_MEDIA_PRIVATE_BUCKET_REQUIRED')

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { type LifeMapNode, type LifeMapNodeType } from './lifeMapData'
 import { requestLifeMapSelection } from './lifeMapSelection'
+import { lifeMapFocusAllowed, lifeMapPhysicalReplayAllowed, lifeMapVisibleRelatedNodes, lifeMapNodeIsHidden } from './lifeMapPhysicalStarAction.mjs'
 import { useLifeMapEvents } from './useLifeMapEvents'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
@@ -42,7 +43,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   const [open, setOpen] = useState(false)
   const [portalReady, setPortalReady] = useState(false)
   const selectedId = overviewRequested ? null : params.get('node') || params.get('memoryId')
-  const selected = nodes.find((node) => node.id === selectedId) || null
+  const selected = nodes.find((node) => node.id === selectedId && !lifeMapNodeIsHidden(node)) || null
   const searchRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const inspectorHeadingRef = useRef<HTMLHeadingElement>(null)
@@ -56,7 +57,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   const {requested:requestedLocale,preview:previewLocale}=locale.preference
   const searchLocale=locale.locale
   const visibleNodes = useMemo(
-    () => nodes.filter((node) => matchesSearch(node, search,localizedMessage({requested:requestedLocale,preview:previewLocale},LIFE_MAP_TYPE_MESSAGES[node.type]).text,searchLocale) && (typeFilter === 'all' || node.type === typeFilter) && (eraFilter === 'all' || node.eraId === eraFilter)),
+    () => nodes.filter((node) => !lifeMapNodeIsHidden(node) && matchesSearch(node, search,localizedMessage({requested:requestedLocale,preview:previewLocale},LIFE_MAP_TYPE_MESSAGES[node.type]).text,searchLocale) && (typeFilter === 'all' || node.type === typeFilter) && (eraFilter === 'all' || node.eraId === eraFilter)),
     [eraFilter, nodes, search, typeFilter, requestedLocale, previewLocale, searchLocale],
   )
 
@@ -69,6 +70,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   }, [])
 
   const selectNode = useCallback((node: LifeMapNode, source: 'semantic' | 'keyboard' | 'pointer' = 'semantic', keepInspectorOpen = false) => {
+    if (lifeMapNodeIsHidden(node) || node.locked) return
     // Selecting a search result must leave its Enter Focus and Replay actions
     // available to keyboard and mobile users. Global stepping still closes
     // search so it cannot intercept the next world-navigation arrow key.
@@ -102,6 +104,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   }, [closeNavigator, commitBrowserIdentity, explicitDemo, router, withIdentity])
 
   const destinationHref = useCallback((route: 'focus' | 'replay', node: LifeMapNode) => {
+    if (!(route === 'focus' ? lifeMapFocusAllowed(node, sourceMode) : lifeMapPhysicalReplayAllowed(node, sourceMode))) return '/life-map'
     const next = withIdentity(new URLSearchParams(), node.id)
     next.set('node', node.id)
     if (explicitDemo) next.set('memoryId', node.id)
@@ -114,7 +117,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     next.set('returnNode', node.id)
     next.set('from', 'life-map-semantic')
     return `/${route}?${next.toString()}`
-  }, [withIdentity, explicitDemo])
+  }, [withIdentity, explicitDemo, sourceMode])
 
   const overview = useCallback(() => {
     setOpen(false)
@@ -130,7 +133,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   }, [commitBrowserIdentity, router, withIdentity])
 
   const step = useCallback((direction: number) => {
-    const candidates = visibleNodes.length ? visibleNodes : nodes
+    const candidates = (visibleNodes.length ? visibleNodes : nodes).filter(node => !lifeMapNodeIsHidden(node) && !node.locked)
     if (!candidates.length) return
 
     // Browser identity is committed synchronously before the spatial selection transition.
@@ -194,7 +197,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     }
   }, [closeNavigator, open, overview, step])
 
-  const related = selected ? nodes.filter((node) => selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)) : []
+  const related = lifeMapVisibleRelatedNodes(nodes, selected)
   const nodeDate = (node: LifeMapNode) => node.occurredAt && Number.isFinite(Date.parse(node.occurredAt))
     ? <time dateTime={node.occurredAt} {...locale.formatProps}>{locale.date(node.occurredAt, {dateStyle:'medium'})}</time>
     : <span dir="auto">{node.dateLabel}</span>
@@ -236,8 +239,8 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
       <h2 ref={inspectorHeadingRef} tabIndex={-1} dir="auto">{selected.title}</h2>
       <p dir="auto">{selected.summary}</p>
       <nav className="semantic-thresholds" aria-labelledby="semantic-thresholds-label"><span id="semantic-thresholds-label" className="sr-only" {...locale.props('lifeMap.destinations')}>{locale.text('lifeMap.destinations')}</span>
-        <button type="button" disabled={(!explicitDemo && !selected.authorizedMemory) || Boolean(selected.locked)} onClick={() => router.push(destinationHref('focus', selected))} {...locale.props('lifeMap.enterFocus')}>{locale.text('lifeMap.enterFocus')}</button>
-        <button type="button" disabled={!selected.replayAvailable || selected.locked || (!explicitDemo && !selected.authorizedMemory)} onClick={() => router.push(destinationHref('replay', selected))} {...locale.props('nav.replay')}>{locale.text('nav.replay')}</button>
+        <button type="button" disabled={!lifeMapFocusAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref('focus', selected))} {...locale.props('lifeMap.enterFocus')}>{locale.text('lifeMap.enterFocus')}</button>
+        <button type="button" disabled={!lifeMapPhysicalReplayAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref('replay', selected))} {...locale.props('nav.replay')}>{locale.text('nav.replay')}</button>
         <button type="button" onClick={overview} {...locale.props('common.overview')}>{locale.text('common.overview')}</button>
       </nav>
       {related.length ? <div className="related-paths"><strong {...locale.props('lifeMap.connected')}>{locale.text('lifeMap.connected')}</strong>{related.slice(0, 4).map((node) => <button key={node.id} type="button" onClick={() => selectNode(node, 'semantic', true)} dir="auto">{node.title}</button>)}</div> : null}

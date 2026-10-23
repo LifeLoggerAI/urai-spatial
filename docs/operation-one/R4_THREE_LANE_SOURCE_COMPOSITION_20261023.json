@@ -1,0 +1,663 @@
+{
+  "schema": "urai-r4-source-composition-v1",
+  "classification": "NONPRODUCTION_UNVERIFIED_DRAFT_NO_RELEASE",
+  "repo": "LifeLoggerAI/urai-spatial",
+  "baseline": {
+    "pr": 1867,
+    "head": "65be933692398c01d1f9218c5f917843e52ac3f5",
+    "tree": "b717fbca787eed851a0482a3ff803265bba18e3b"
+  },
+  "sourceDonors": [
+    {
+      "pr": 1933,
+      "label": "Life Map Focus Replay original continuity",
+      "sourceHead": "9e29e2d5bc0b72a11f51ab8a93d01846be870956",
+      "count": 74
+    },
+    {
+      "pr": 1934,
+      "label": "Ground active provider verification",
+      "sourceHead": "4e07a214c56a38057b610c2b7f338df830771378",
+      "count": 8
+    },
+    {
+      "pr": 1887,
+      "label": "Cloud Build exact source native preflight",
+      "sourceHead": "288f5e2e38dc74218005422d1551593542c75dbd",
+      "count": 3
+    }
+  ],
+  "method": "Git tree identity overlay of all changed paths from three isolated PR file lists against exact R-FINAL tree. Disjoint paths only. Worker branches unchanged.",
+  "originalProduct": "UrAi",
+  "releaseApproved": false,
+  "privateMediaAdmitted": false,
+  "founderVisualApproved": false,
+  "sourceClaims": [
+    {
+      "path": "apps/functions/src/memoryMedia.ts",
+      "blob": "7ac0222ce84f572c5576b29300cf4655a4929cd0",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "apps/functions/test/firstPrivateMemoryPlaybackBoundary.test.js",
+      "blob": "41db8d6475ad254f264900a010a8696d2bb41ee2",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "apps/functions/test/lifeModelPrivateInputs.test.js",
+      "blob": "bacb1866350f24e70984cd343418cb03cf6595d4",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "apps/functions/test/memoryMediaPlayback.test.js",
+      "blob": "76af558fbea53362a55e7af8991543de20c0aab1",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "apps/functions/test/privacy-export-download.test.js",
+      "blob": "9b5055069a96cef20f974431097bb64a4975cc64",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "apps/functions/test/private-consent-admission.test.js",
+      "blob": "6fa58801af14eea488d7fa2d539edc2ef60789e8",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "docs/operation-one/R10_ACCEPTANCE_SOURCE_INDEX_2026-10-22.json",
+      "blob": "4fc44b77b16f9e061ffa9ce4637bf4de9542e342",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/scripts/run-unit-contract-tests-compact.mjs",
+      "blob": "42c14ff21e3102d017d515aac73dbef4ba2b741d",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/scripts/run-unit-contract-tests.mjs",
+      "blob": "8188d6641a91174700e3e13e894e7f42aa8cb14f",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/app/focus/FocusChamberClient.tsx",
+      "blob": "75fa8ce5ad283bbc94ea8cf3bd06308e575759e5",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/app/focus/FocusEscapeBridge.tsx",
+      "blob": "6f8a83517a1df80717d248194db6b7f6487879d3",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/app/focus/focusNeighborContinuity.ts",
+      "blob": "2336a98aa91dd43911bfc18622d6ac43cb050d62",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/app/life-map/LifeMapEscapeBridge.tsx",
+      "blob": "f93f241df6b33ca059fa53305f7b11a8430949ee",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/app/replay/CinematicReplayClient.tsx",
+      "blob": "a5733ada15bdaf77d20cc88801e717bbf04f29e9",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx",
+      "blob": "2a9a0369ee27f1e050e0b59720cbc4f47124d6ad",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/LifeMapProductionWorld.tsx",
+      "blob": "403d9c1ba5fd09e5e1ebb1797b6b375e4c281037",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
+      "blob": "85a486f80b73e1eaf266df7fd2549827763c63e6",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapFlightOrientation.d.mts",
+      "blob": "35ce87ed1004fadd0a1bf0273754214975a9a89e",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapFlightOrientation.mjs",
+      "blob": "42dc9396e3946c864aabe8baaa0d76b91b154dd3",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.d.mts",
+      "blob": "815f8fa6646ce4ccc10d08057c724e5e21b4b31a",
+      "sourcePR": 1933,
+      "sourceHead": "9e29e2d5bc0b72a11f51ab8a93d01846be870956",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs",
+      "blob": "2577369cfeb407fe135772edf82ca8153a3de94b",
+      "sourcePR": 1933,
+      "sourceHead": "9e29e2d5bc0b72a11f51ab8a93d01846be870956",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapPointerInteraction.d.mts",
+      "blob": "6694c1a089b3c546f54224d184b5adf3b0350199",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapPointerInteraction.mjs",
+      "blob": "254201432f5fc713e859656368630896242aa218",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapPointerLook.d.mts",
+      "blob": "68df8b3fae0be613eeeb28f26eae6a4f6b421d55",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapPointerLook.mjs",
+      "blob": "0eb26a1b6802852048bf0fd693b60f57dfded95d",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapStageContinuity.d.mts",
+      "blob": "c10ca89bbb1520edebff3bc10ab45c17d00318ba",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapStageContinuity.mjs",
+      "blob": "6c065ac3e504fdae15743172d608dd95b3374bfe",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/lib/privacy/importFirstPreparedMemory.ts",
+      "blob": "41bb0ee46be96fb28dc0c47297ea6519656792cd",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/spatial/layout/HomeSanctuaryGroundCover.tsx",
+      "blob": "900195849718b5f5fd02da65fdd524ca5b24abbd",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx",
+      "blob": "c6748ec59d2324e88896e5e4a4a4e161a749e7f7",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/spatial/layout/homeVisualStudyEvidence.mjs",
+      "blob": "d016cc0b8c3c718436128ac04a1619c32042713f",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx",
+      "blob": "52b094c067d4159f2404fe0b857fcccb11e953f7",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/spatial/lifemap/lifeMapAuthGate.ts",
+      "blob": "859688d191cf50811328cf1a1b942573b62649a6",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/spatial/world/PersistentWorldCompanion.tsx",
+      "blob": "e3df39d75fccc633c71163c9389e115a1c29daf3",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/spatial/world/WorldTransitionController.tsx",
+      "blob": "a23764ba094bcff7220d6c8b48448a2ac9cd7e04",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/spatial/world/realmEscapeEligibility.mjs",
+      "blob": "2018995ee3437bd99e6813f9525a8b087b592963",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/spatial/world/replayHorizonEscape.mjs",
+      "blob": "1d5baeb576151ef47768718f606217046e9000c3",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/src/spatial/world/worldEvents.ts",
+      "blob": "117386371c2c28ae3e5414e968709ed5f4f5304e",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/src/spatial/world/worldTypes.ts",
+      "blob": "3c582adb90a8bc1b1c4ce0d334eff2f4bbc4075f",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/focus-neighbor-continuity.test.mjs",
+      "blob": "0b0b559c9c130e485525e9ec1b01ded60a3d5eed",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/focus-replay-projected-star-contract.test.mjs",
+      "blob": "9516db8bab0bc158669d4f02f85fabc931b4811c",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/home-ground-cover-placement.test.mjs",
+      "blob": "bcfcd49ae510dead2b18aa9a0db0bdc9eac7b9aa",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/home-threshold-label-proximity.test.mjs",
+      "blob": "78499d4452124de6285754b67643ef31208f1cc2",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/home-visual-study-evidence.test.mjs",
+      "blob": "ea3b3836d8f3d06ce44b6ce47bbb59245bbbb1a7",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/life-map-auth-hydration.test.mjs",
+      "blob": "9cb933a80cd05dc7ecbab4b9225431dda308c34b",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-aaa-composition-contract.test.mjs",
+      "blob": "cfff0551b12bfea7df769e9d72f7a15ce1ec0dac",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-cinematic-contract.test.mjs",
+      "blob": "69e9ecf1a214cf70f31ff1fb369e5737eaf5c572",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-demo-journey-identity.test.mjs",
+      "blob": "8927636458dae266a8c0d25bac5fd7ab443728c1",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-exploration-origin-continuity.test.mjs",
+      "blob": "7fb8730c5bf94437879c944b7be31cfcafe39328",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-flight-key-guard.test.mjs",
+      "blob": "b2c26c13a9c9e0a399a69316071b005a5a28083b",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-flight-orientation.test.mjs",
+      "blob": "7856105c420b97b50929577c71e9666c0001a8b8",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-free-exploration.test.mjs",
+      "blob": "72b887b6f3601571c9b0a6a817c0e34b05df83b4",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-physical-star-action.test.mjs",
+      "blob": "5799a1b8c284373ffab2c790f869fb638fe1e80c",
+      "sourcePR": 1933,
+      "sourceHead": "9e29e2d5bc0b72a11f51ab8a93d01846be870956",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-pointer-interaction.test.mjs",
+      "blob": "d8a68fc1976541fce0323f99dddea2251b7bd495",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-pointer-look.test.mjs",
+      "blob": "b215a470529ec14c061b63fb9f4887d2358e2561",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-review-repair-contract.test.mjs",
+      "blob": "a447df540e768d61a1279080de0ad62fef438ffa",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-scene-behavior.test.mjs",
+      "blob": "abcae0fe8dd0c33e7df6f6f44c2d58f1f56fcbd6",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-selection-camera-continuity.test.mjs",
+      "blob": "d2c16e848c32dedb34f7a91deebae23e172e8f2e",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-semantic-owner-contract.test.mjs",
+      "blob": "156a5380552eda94cf5d82a30760914f7102774a",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-signed-out-navigation-behavior.test.mjs",
+      "blob": "f189756f510e61e3df8f940526806734ea4f5dc5",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-stage-continuity-math.test.mjs",
+      "blob": "595a193a61f982c531890561f26484328d80b490",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/lifemap-stage-continuity-source.test.mjs",
+      "blob": "2ddded73a5ba6f420dc62a9ae1f3a8b088758e5b",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/pages-404-export-authority.test.mjs",
+      "blob": "ce30ad64d476f86878f78a6443c100731e17d109",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/realm-escape-eligibility.test.mjs",
+      "blob": "2faee128497600ba2250979c02be4a41e9ccffec",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/replay-horizon-escape.test.mjs",
+      "blob": "3a3599ecb9d3174a54a58b127d4b115f108f1d6a",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/rfinal104-replay-return-convergence.test.mjs",
+      "blob": "7ecba500416cd0aa89424a977c10a6b41f4e5b3f",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/unit-runner-coverage.test.mjs",
+      "blob": "7514ca1d8b8b97b5440836bb887584711527f81c",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/world-destination-surface-readiness.test.mjs",
+      "blob": "91890df752f63c2565d591fb8e8095ae94932db1",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/world-neutral-route-privacy.test.mjs",
+      "blob": "fd6dd300b33a66005898208ad4070003d3d59e9f",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/world-return-destination.test.mjs",
+      "blob": "50ef75c1595a2b40393250e6cb6f61f2cb885417",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/world-return-identity-isolation.test.mjs",
+      "blob": "6e71dfbca2bca336a8243d91a8a40739e57e12ff",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/world-route-identity-readiness.test.mjs",
+      "blob": "14152ec0f73e882c35e2100ad275b5b4f91738b7",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "urai-tier1/tests/world-transition-watchdog-lifecycle.test.mjs",
+      "blob": "5a748b7ccb132d7e8d04038dfd803b2bfece9321",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "modified"
+    },
+    {
+      "path": "urai-tier1/tests/world-travel-fallback-generation.test.mjs",
+      "blob": "04733cf7546633405dc7259e3ff80915c527c788",
+      "sourcePR": 1933,
+      "sourceHead": "2f941b70a0f23f07ed22fe6b1ba83368749fd56c",
+      "change": "added"
+    },
+    {
+      "path": "operations/assets/verification-receipts/ground-workforce-binary-integrity-20261023.json",
+      "blob": "ff315fcbdbc1f6a9c26509aeb106269bdcf702c0",
+      "sourcePR": 1934,
+      "sourceHead": "4e07a214c56a38057b610c2b7f338df830771378",
+      "change": "added"
+    },
+    {
+      "path": "scripts/lib/ground-active-workforce-verify.mjs",
+      "blob": "c2e8866c44ec0180cf6a4989e2a1ae0d38baeae3",
+      "sourcePR": 1934,
+      "sourceHead": "4e07a214c56a38057b610c2b7f338df830771378",
+      "change": "added"
+    },
+    {
+      "path": "scripts/lib/ground-glb-source-anchors.mjs",
+      "blob": "9150100a757595a4fab4bc5a70e3d5f7ff15ab6e",
+      "sourcePR": 1934,
+      "sourceHead": "4e07a214c56a38057b610c2b7f338df830771378",
+      "change": "added"
+    },
+    {
+      "path": "scripts/verify-final-glb-pack.mjs",
+      "blob": "dd14a9b8f474b97a39212ac4b291c656f6caf326",
+      "sourcePR": 1934,
+      "sourceHead": "4e07a214c56a38057b610c2b7f338df830771378",
+      "change": "modified"
+    },
+    {
+      "path": "scripts/verify-provider-asset-handoff.mjs",
+      "blob": "692ad9ee2596d347ac40a045b415fde486df580c",
+      "sourcePR": 1934,
+      "sourceHead": "4e07a214c56a38057b610c2b7f338df830771378",
+      "change": "modified"
+    },
+    {
+      "path": "tests/ground-active-workforce-verify.test.mjs",
+      "blob": "925ce8dd76cebda53188a7fc0e203562f334ce65",
+      "sourcePR": 1934,
+      "sourceHead": "4e07a214c56a38057b610c2b7f338df830771378",
+      "change": "added"
+    },
+    {
+      "path": "tests/ground-glb-source-anchors.test.mjs",
+      "blob": "2c11aaef2e8ddae76b6700e5fff3eeef249b774e",
+      "sourcePR": 1934,
+      "sourceHead": "4e07a214c56a38057b610c2b7f338df830771378",
+      "change": "added"
+    },
+    {
+      "path": "tests/ground-provider-active-owner-contract.test.mjs",
+      "blob": "20934ee266ce5971e2d979fbb4e736b5a5f5bb76",
+      "sourcePR": 1934,
+      "sourceHead": "4e07a214c56a38057b610c2b7f338df830771378",
+      "change": "added"
+    },
+    {
+      "path": "cloudbuild.urai-verify.yaml",
+      "blob": "c140159f264f19c986bc2bdb28645b49293509fa",
+      "sourcePR": 1887,
+      "sourceHead": "288f5e2e38dc74218005422d1551593542c75dbd",
+      "change": "added"
+    },
+    {
+      "path": "tests/cloudbuild-shell-execution.test.mjs",
+      "blob": "c0125c3d7f02400d3c690ec3de437e7182acc95c",
+      "sourcePR": 1887,
+      "sourceHead": "288f5e2e38dc74218005422d1551593542c75dbd",
+      "change": "added"
+    },
+    {
+      "path": "tests/cloudbuild-urai-source-pin-contract.test.mjs",
+      "blob": "d9c8a4883644c5bc15e32fc97b68507a6f57f06a",
+      "sourcePR": 1887,
+      "sourceHead": "288f5e2e38dc74218005422d1551593542c75dbd",
+      "change": "added"
+    }
+  ],
+  "gates": {
+    "compositeSource": "PENDING_POST_COMMIT_TREE_VERIFICATION",
+    "fullApplicationBuild": "NOT_EXECUTED",
+    "nativeContracts": "ISOLATED_MEMORY_STAR_BLOB_12_OF_12_PASS; FULL_SOURCE_TESTS_PENDING",
+    "firebaseEmulator": "NOT_EXECUTED",
+    "realHomeCC0WebGL": "NOT_EXECUTED",
+    "authenticatedJourney": "NOT_EXECUTED",
+    "realDevices": "NOT_EXECUTED",
+    "independentReviews": "OPEN",
+    "eventLegacyPrivacy": "NATIVE_NORMALIZER_4_PASS; FULL_SOURCE_NOT_EXECUTED"
+  },
+  "sourceOverrides": [
+    {
+      "path": "cloudbuild.urai-verify.yaml",
+      "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
+      "expectedBlob": "28daed999c6b7245795fe7eea7c8502a743f70ac",
+      "reason": "Combined R4 verification branch enabled with restricted branch reference validation; nonrelease only"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
+      "originBlob": "85a486f80b73e1eaf266df7fd2549827763c63e6",
+      "expectedBlob": "69da9fc1e4815161bde47386f0df7d0901ec3eb7",
+      "reason": "Combined-branch-only semantic privacy alias consistency repair across search, inspector, keyboard and pointer"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/useLifeMapEvents.ts",
+      "originBlob": "0197b7fd0c8eaebac1166403ee32c10181ab9cd3",
+      "expectedBlob": "a885812f25c32cd4f0dcf72a96e3364531dda96b",
+      "reason": "Combined-only Firestore event normalization blocks legacy hidden memories before constellation projection"
+    }
+  ]
+}

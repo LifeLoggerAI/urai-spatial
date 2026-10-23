@@ -52,7 +52,15 @@ export type UraiWorldState = {
 // Focus is the outward step between Replay and Life Map. Returning from Replay
 // must not make Focus's next outward action re-enter Replay indefinitely.
 export function previousDestinationForReturn(world: Pick<UraiWorldState, 'destination' | 'previousDestination'>): UraiDestination | undefined {
-  return world.destination === 'focus' ? 'life-map' : world.previousDestination
+  // Replay always unwinds to its selected star in Focus. The route-state
+  // previousDestination may be Home after a direct-link reload or a return
+  // from the separate Memory World route; it is not reliable journey authority.
+  // The genuine Life Movie -> Replay handoff remains a separate nested return.
+  if (world.destination === 'replay') {
+    return world.previousDestination === 'life-movie' ? 'life-movie' : 'focus'
+  }
+  if (world.destination === 'focus') return 'life-map'
+  return world.previousDestination
 }
 
 export type UraiWorldContextPatch = Partial<

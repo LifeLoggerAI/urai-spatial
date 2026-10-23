@@ -106,7 +106,7 @@ function fixture(options = {}) {
   let service
   function load(filename) {
     const exports = {}
-    const code = ts.transpileModule(fs.readFileSync(`src/${filename}.ts`, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText
+    const code = ts.transpileModule(fs.readFileSync(require.resolve(`../src/${filename}.ts`), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText
     vm.runInNewContext(code, { exports, Buffer, process: { env }, console: { warn: value => stats.logs.push(String(value)), error: value => stats.logs.push(String(value)), log: value => stats.logs.push(String(value)) },
       require(name) {
         if (name === 'firebase-functions/v1') return functions
@@ -117,6 +117,7 @@ function fixture(options = {}) {
         if (name === './consentPolicyAuthority') return load('consentPolicyAuthority')
         if (name === './memoryMedia') return load('memoryMedia')
         if (name === './memoryMediaProjectBoundary') return load('memoryMediaProjectBoundary')
+        if (name === './privatePreparedMediaAuthority') return load('privatePreparedMediaAuthority')
         if (name === './personPresenceAuthority') return load('personPresenceAuthority')
         if (name === 'node:crypto' || name === 'node:stream/promises') return require(name)
         throw new Error(`Unexpected private-input dependency: ${name}`)
