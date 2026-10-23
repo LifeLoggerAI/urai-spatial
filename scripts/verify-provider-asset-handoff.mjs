@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { homeNavigationSourceFailures } from './lib/home-navigation-source-authority.mjs'
+import { inspectGroundActiveWorkforce } from './lib/ground-active-workforce-verify.mjs'
 
 const root = process.cwd()
 const assetRoot = path.join(root, 'urai-tier1', 'public', 'assets', 'urai')
@@ -399,6 +400,18 @@ const routeOwners = routeOwnerChecks.map((check) => {
   return { ...check, active: ownerFailures.length === 0, failures: ownerFailures }
 })
 
+// Source-level Ground gate. This cannot substitute for GPU renders, actual
+// GLB geometry, provider hash verification or independent human art admission.
+const liveGround = inspectGroundActiveWorkforce({
+  route: readFileSync(path.join(root, 'urai-tier1/src/app/ground/page.tsx'), 'utf8'),
+  world: readFileSync(path.join(root, 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'), 'utf8'),
+  workforce: readFileSync(path.join(root, 'urai-tier1/src/app/GroundWorkforcePresences.tsx'), 'utf8'),
+  destinations: readFileSync(path.join(root, 'urai-tier1/src/app/ground/GroundWorldModel.ts'), 'utf8'),
+  registry,
+  manifest: handoff,
+})
+for (const reason of liveGround.failures) failures.push('active Ground workforce: ' + reason)
+
 const report = {
   ok: failures.length === 0,
   schemaVersion: 'urai-provider-asset-verification-5',
@@ -415,6 +428,7 @@ const report = {
   routeOwnersRequired: routeOwners.length,
   routeOwnersVerified: routeOwners.filter((owner) => owner.active).length,
   routeOwners,
+  liveGround,
   failures,
   records,
 }
