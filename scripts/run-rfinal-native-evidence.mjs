@@ -385,7 +385,7 @@ async function runtimeSmoke(source, outDir) {
     if (!ready) return { passed: false,
       blocker: launchError || 'ORIGINAL_URAI_HOME_NOT_READY: ' + lastResponse,
       checks, browserChecks }
-    for (const route of ['/', '/life-map', '/focus', '/replay', '/login', '/privacy']) {
+    for (const route of REQUIRED_HTTP_ROUTES) {
       try {
         const reply = await fetch(target + route, { signal: AbortSignal.timeout(12000), redirect: 'manual' })
         checks.push({ path: route, status: reply.status, redirect: reply.headers.get('location') || null })
