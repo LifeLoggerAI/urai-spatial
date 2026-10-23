@@ -15,6 +15,7 @@ import { once } from 'node:events'
 import { pathToFileURL } from 'node:url'
 import { resolveCandidate, assessCandidateCompletion, requireCommitSha } from './rfinal-source-authority.mjs'
 import { selectNativeEvidenceTarget } from './lib/native-evidence-target.mjs'
+import { assessNativeHttpRoute } from './lib/native-http-route-acceptance.mjs'
 import { planNativeEvidenceStages, assertCombinedPreflightOutcome, nativeCombinedPreflightEnvironment } from './lib/native-combined-preflight.mjs'
 import { inspectVisualPng } from './visual-png-integrity.mjs'
 import { isOwnedVisualEvidencePath } from './rfinal-visual-evidence-paths.mjs'
@@ -116,12 +117,16 @@ export function assessHttpRoutes(checks) {
   for (const route of REQUIRED_HTTP_ROUTES) {
     const result = checks.find(check => check.path === route)
     const status = result?.status
-    if (!Number.isInteger(status)) { failures.push({path:route,reason:result?.error||'ROUTE_NOT_TESTED'});continue }
-    if (status >= 200 && status < 400) continue
-    if (PROTECTED_HTTP_ROUTES.has(route) && (status === 401 || status === 403)) {
-      authorizedDenials.push({path:route,status});continue
+    const verdict = assessNativeHttpRoute({
+      path: route, status, redirect: result?.redirect, error: result?.error,
+      protectedRoute: PROTECTED_HTTP_ROUTES.has(route),
+      requestedUrl: result?.requestedUrl,
+    })
+    if (verdict.allowed) {
+      if (verdict.kind !== 'SUCCESS') authorizedDenials.push({path:route,status,reason:verdict.kind})
+      continue
     }
-    failures.push({path:route,status,reason:'UNEXPECTED_HTTP_STATUS'})
+    failures.push({path:route,status,reason:verdict.reason})
   }
   return {passed:failures.length===0,failures,authorizedDenials}
 }
@@ -389,7 +394,7 @@ async function runtimeSmoke(source, outDir) {
     for (const route of REQUIRED_HTTP_ROUTES) {
       try {
         const reply = await fetch(target + route, { signal: AbortSignal.timeout(12000), redirect: 'manual' })
-        checks.push({ path: route, status: reply.status, redirect: reply.headers.get('location') || null })
+        checks.push({ path: route, status: reply.status, redirect: reply.headers.get('location') || null, requestedUrl: target + route })
       } catch (e) { checks.push({ path: route, error: String(e) }) }
     }
     const browserEnv = {
