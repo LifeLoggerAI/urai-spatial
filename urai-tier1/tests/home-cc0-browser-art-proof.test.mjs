@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readFileSync } from 'node:fs'
 import { HOME_CC0_EXPECTED, parseReviewArgs, validateReviewManifest, authorizedResource, evidenceGate, movementGate } from '../../scripts/home-cc0-browser-art-proof.mjs'
+const requireSource = () => readFileSync(new URL('../../scripts/home-cc0-browser-art-proof.mjs',import.meta.url),'utf8')
 const m={schema:'urai-home-polyhaven-cc0-dev-review-1',classification:'NONPRODUCTION_CANDIDATE_UNAPPROVED',license:'CC0-1.0',releaseApproved:false,reviewApproved:false,files:HOME_CC0_EXPECTED.map(path=>({path,bytes:123,md5:'a'.repeat(32),url:'https://dl.polyhaven.org/file/ph-assets/dummy'}))}
 test('strict review-only invocation and bounded localhost port',()=>{
  assert.equal(parseReviewArgs(['--acknowledge-nonproduction']).port,3107)
@@ -34,4 +36,21 @@ test('camera and player changes require changed real screenshot bytes',()=>{
  assert.equal(movementGate(a,b,p,q,'walk'),true)
  assert.equal(movementGate(a,b,p,p,'yaw'),false)
  assert.equal(movementGate(a,a,p,q,'yaw'),false)
+})
+
+test('original proof runner records asset/manifest and browser failures in a new evidence folder',()=>{
+ const fs=requireSource()
+ assert.match(fs,/await mkdir\(evidenceRoot,\{recursive:true\}\)/)
+ assert.match(fs,/const manifest=JSON\.parse\(await readFile\(manifestPath,'utf8'\)\)/)
+ assert.ok(fs.indexOf("const manifest=JSON.parse")>fs.indexOf("  try {\n    // Manifest"))
+ assert.match(fs,/report\.error=String\(e\?\.stack\?\?e\)/)
+ assert.match(fs,/await writeFile\(report\.receipt,JSON\.stringify\(report,null,2\)\)/)
+ assert.match(fs,/ORIGINAL_HOME_NAVIGATION_FAILED/)
+})
+test('isolated Windows runner refuses foreign Git origins and occupied preview ports',()=>{
+ const src=readFileSync(new URL('../../scripts/RUN_HOME_CC0_REAL_PIXEL_PROOF_20261022.ps1',import.meta.url),'utf8')
+ assert.match(src,/CANONICAL_GITHUB_ORIGIN_REQUIRED/)
+ assert.match(src,/PORT_IN_USE_REFUSE_FOREIGN_SERVER/)
+ assert.match(src,/\& node @NodeArgs/)
+ assert.match(src,/REVIEW_STAGE_ALREADY_EXISTS_NO_OVERWRITE/)
 })
