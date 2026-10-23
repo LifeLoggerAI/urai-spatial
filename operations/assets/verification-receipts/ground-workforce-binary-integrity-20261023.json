@@ -1,0 +1,145 @@
+{
+  "schema": "urai.ground-workforce.binary-integrity.v1",
+  "date": "2026-10-23",
+  "pinnedRepository": "LifeLoggerAI/urai-spatial",
+  "pinnedSourceSHA": "65be933692398c01d1f9218c5f917843e52ac3f5",
+  "manifestGitBlob": "22a2ca1494d3d6f659123102fd84bfc969e9a2a5",
+  "method": "Fetched exact-source GitHub WebP bytes in base64; independently SHA-256 hashed all bytes, parsed RIFF and VP8X/VP8L headers, checked alpha, dimensions and byte counts against source-pinned provider manifest",
+  "result": {
+    "sha256Pass": 11,
+    "dimensionsPass": 11,
+    "alphaPass": 11,
+    "total": 11,
+    "totalBytes": 3188536
+  },
+  "scope": {
+    "binaryIntegrity": "VERIFIED",
+    "artisticReview": "PENDING",
+    "licensedRights": "PENDING",
+    "rendered3D": "NOT_VERIFIED",
+    "releaseAuthorized": false
+  },
+  "assets": [
+    {
+      "role": "receptionist",
+      "canonicalPath": "assets/urai/avatars/receptionist.webp",
+      "gitBlob": "d95134e6e3fd7e074da0735ebb71081503eb7410",
+      "sha256": "86de23636cfdd3743b5502d796314f8beb1b2fd743908b8cdbe40bc4d9426a8e",
+      "bytes": 214632,
+      "width": 1024,
+      "height": 1536,
+      "webpFormat": "VP8X",
+      "hasAlpha": true
+    },
+    {
+      "role": "privacySteward",
+      "canonicalPath": "assets/urai/avatars/privacy-steward.webp",
+      "gitBlob": "ae63082cbc3147f6edd3a455a3251cdf9169e159",
+      "sha256": "5b8fa0990aa77311638a5d7c1c12e46cdbf83f684554f43b64befbbfa43002c0",
+      "bytes": 201704,
+      "width": 1024,
+      "height": 1536,
+      "webpFormat": "VP8X",
+      "hasAlpha": true
+    },
+    {
+      "role": "scheduleSteward",
+      "canonicalPath": "assets/urai/avatars/schedule-steward.webp",
+      "gitBlob": "9cfd5a75dc7c2fdf532d0ae87f5e18377e129031",
+      "sha256": "adb5333b9340ca1e24fd231ece4e4fa3ac3074ee48e3c72ce4747f321669c1cd",
+      "bytes": 206948,
+      "width": 683,
+      "height": 1024,
+      "webpFormat": "VP8L",
+      "hasAlpha": true
+    },
+    {
+      "role": "wellnessGuide",
+      "canonicalPath": "assets/urai/avatars/wellness-guide.webp",
+      "gitBlob": "545524c8666e58c6252e483fae03cf82c8a12641",
+      "sha256": "3d281ac7b82ac4c45aa882816feeae669c8b6d1739817df417a789fd5e77935f",
+      "bytes": 365590,
+      "width": 683,
+      "height": 1024,
+      "webpFormat": "VP8L",
+      "hasAlpha": true
+    },
+    {
+      "role": "archivist",
+      "canonicalPath": "assets/urai/avatars/archivist.webp",
+      "gitBlob": "0eeeefb924295da0a07da9027efd4a74a13c3ce7",
+      "sha256": "cd5bad6cc9d7dc9d3b36b4d9070fc6be584da48c61e840029a33a6546d4d99e9",
+      "bytes": 288678,
+      "width": 683,
+      "height": 1024,
+      "webpFormat": "VP8L",
+      "hasAlpha": true
+    },
+    {
+      "role": "relationshipLiaison",
+      "canonicalPath": "assets/urai/avatars/relationship-liaison.webp",
+      "gitBlob": "9dfb246eebd2b273584b0ab2ce99922b903ea18f",
+      "sha256": "a54f4cc0b7c9e491c4cc5c82072d3a9924bf4fcf296c65dc463dda7ff13789c0",
+      "bytes": 290442,
+      "width": 683,
+      "height": 1024,
+      "webpFormat": "VP8L",
+      "hasAlpha": true
+    },
+    {
+      "role": "operator",
+      "canonicalPath": "assets/urai/avatars/operator.webp",
+      "gitBlob": "4193c8be4f8cee36b874bdf98da3ebad7ccd76c7",
+      "sha256": "dd4e36c6cd4f1aa8211235dbd3bc9ba783ab85f93d9c8ac5ad282f3ace50f794",
+      "bytes": 197554,
+      "width": 683,
+      "height": 1024,
+      "webpFormat": "VP8L",
+      "hasAlpha": true
+    },
+    {
+      "role": "builder",
+      "canonicalPath": "assets/urai/avatars/builder.webp",
+      "gitBlob": "05b281bf68b0e3f8bb442943fe1555ff4c6feb5f",
+      "sha256": "2501c310c019343ec910969d9d9ebc0fcc65a31854272c83aa7576de89fdaba6",
+      "bytes": 239376,
+      "width": 683,
+      "height": 1024,
+      "webpFormat": "VP8L",
+      "hasAlpha": true
+    },
+    {
+      "role": "protector",
+      "canonicalPath": "assets/urai/avatars/protector.webp",
+      "gitBlob": "525f9c55aeb274f8692346c0a372baa715601573",
+      "sha256": "1b6d2ab70055b643eacf2c7dde197620643dba7e86da5a7fdf9e1c5ead1b5548",
+      "bytes": 405606,
+      "width": 683,
+      "height": 1024,
+      "webpFormat": "VP8L",
+      "hasAlpha": true
+    },
+    {
+      "role": "mirror",
+      "canonicalPath": "assets/urai/avatars/mirror.webp",
+      "gitBlob": "02757390ccf6a68e638382317c0c9f0439ecf054",
+      "sha256": "7fd5c2efb9965bbb17053c78997d3467240406ca84134d62c05c4631781ba7e8",
+      "bytes": 471508,
+      "width": 683,
+      "height": 1024,
+      "webpFormat": "VP8L",
+      "hasAlpha": true
+    },
+    {
+      "role": "guide",
+      "canonicalPath": "assets/urai/avatars/guide.webp",
+      "gitBlob": "1f26c5476d94fba3382d5551a9f4f98a044e2fb5",
+      "sha256": "bdb05c0edbbfe491e9d227ef84e2515c61e5c5e667248b9aa0e269eb93ef34b5",
+      "bytes": 306498,
+      "width": 683,
+      "height": 1024,
+      "webpFormat": "VP8L",
+      "hasAlpha": true
+    }
+  ]
+}
