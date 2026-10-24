@@ -9,11 +9,11 @@
 # gcloud builds submit --no-source --config=cloudbuild.urai-verify.yaml \
 #   --project=<APPROVED_NONPRODUCTION_PROJECT> --region=us-central1 \
 #   --service-account=<APPROVED_MINIMAL_NONPRODUCTION_SERVICE_ACCOUNT> \
-#   --substitutions=_SOURCE_BRANCH=verify/r4-three-lane-convergence-20261023,_SOURCE_SHA=<EXACT_40_CHAR_GIT_SHA>,_VERIFIER_SA_EMAIL=<APPROVED_PROJECT_LOCAL_VERIFIER_EMAIL>
+#   --substitutions=_SOURCE_BRANCH=verify/r4-firestore-java21-admission-20261023,_SOURCE_SHA=<EXACT_40_CHAR_GIT_SHA>,_VERIFIER_SA_EMAIL=<APPROVED_PROJECT_LOCAL_VERIFIER_EMAIL>
 # This file never proves that unsetting credential env vars revokes metadata/IAM.
 # This configuration MUST NOT be submitted until those controls are verified.
 substitutions:
-  _SOURCE_BRANCH: 'verify/r4-three-lane-convergence-20261023'
+  _SOURCE_BRANCH: 'verify/r4-firestore-java21-admission-20261023'
   _SOURCE_SHA: 'EXPLICIT_PIN_REQUIRED'
   _VERIFIER_SA_EMAIL: 'EXPLICIT_NONPRODUCTION_VERIFIER_REQUIRED'
 # Runtime code and dependency installers can request Google metadata tokens.
@@ -111,6 +111,8 @@ steps:
           printf '%s\n' "$$record" >> "$$receipt_path"
           printf 'URAI_GATE_JSON=%s\n' "$$record"
         }
+        run_gate r4-firestore-java21-authority node --test tests/firestore-java-runtime.test.mjs tests/firestore-rules-execution-authority.test.mjs
+        run_gate combined-native-runner-contract node --test tests/native-evidence-target.test.mjs tests/native-evidence-combined-candidate-contract.test.mjs tests/native-combined-preflight.test.mjs tests/native-http-route-acceptance.test.mjs tests/native-git-ancestry.test.mjs
         run_gate r4-source-provenance node scripts/verify-r4-source-composition.mjs
         run_gate r4-provenance-contract node --test tests/verify-r4-source-composition.test.mjs
         run_gate r4-semantic-privacy node --test tests/r4-semantic-privacy-surface.test.mjs
