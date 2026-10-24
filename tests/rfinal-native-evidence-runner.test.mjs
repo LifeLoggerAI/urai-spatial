@@ -80,10 +80,22 @@ test('native execution environment strips paid-provider credentials but keeps PA
   assert.equal(result.removedKeys.length,3)
 })
 
-function httpCases(overrides={}) {return REQUIRED_HTTP_ROUTES.map(path=>({path,status:overrides[path]??200}))}
+function httpCases(overrides={}) {return REQUIRED_HTTP_ROUTES.map(path=>({path,status:overrides[path]??200,contentType:'text/html; charset=utf-8'}))}
 test('all canonical production HTTP routes must be covered',()=>{
   assert.equal(assessHttpRoutes(httpCases()).passed,true)
   assert.equal(assessHttpRoutes(httpCases().filter(x=>x.path!=='/replay')).passed,false)
+})
+test('HTTP page fixtures prove actual HTML, not status 200 alone',()=>{
+  const healthy=httpCases()
+  assert.equal(assessHttpRoutes(healthy).passed,true)
+  const missing=healthy.map(check=>check.path==='/support'?{...check,contentType:null}:check)
+  const wrong=healthy.map(check=>check.path==='/privacy-policy'?{...check,contentType:'application/json'}:check)
+  const empty=healthy.map(check=>check.path==='/login'?{...check,status:204}:check)
+  for(const checks of [missing,wrong,empty]) {
+    const result=assessHttpRoutes(checks)
+    assert.equal(result.passed,false)
+    assert.ok(result.failures.some(f=>f.reason==='RENDERED_HTML_200_REQUIRED'))
+  }
 })
 test('Home 200 cannot hide broken Replay, privacy or login',()=>{
   for(const path of ['/replay','/privacy','/login']){
