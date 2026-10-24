@@ -644,20 +644,94 @@
     {
       "path": "cloudbuild.urai-verify.yaml",
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
-      "expectedBlob": "28daed999c6b7245795fe7eea7c8502a743f70ac",
-      "reason": "Combined R4 verification branch enabled with restricted branch reference validation; nonrelease only"
+      "expectedBlob": "df82e1cd1ba0dfcaeaac7b214a1b1385795f90c3",
+      "reason": "Unified nonproduction 21-gate Cloud Build verifier runs complete maintained native evidence runner tests at the exact source branch"
     },
     {
       "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
       "originBlob": "85a486f80b73e1eaf266df7fd2549827763c63e6",
-      "expectedBlob": "69da9fc1e4815161bde47386f0df7d0901ec3eb7",
-      "reason": "Combined-branch-only semantic privacy alias consistency repair across search, inspector, keyboard and pointer"
+      "expectedBlob": "e6f3356594b763c49a7df479fa17c17d699379f0",
+      "reason": "Unified semantic inspector denies locked direct URLs, and search results identify locked nodes as disabled with no activation"
     },
     {
+      "path": "scripts/lib/ground-glb-source-anchors.mjs",
+      "originBlob": "9150100a757595a4fab4bc5a70e3d5f7ff15ab6e",
+      "expectedBlob": "85980a105142dff0397fd798b3745d55fb1a21fc",
+      "reason": "R4 Ground drawable-triangle geometry, vertex/accessor and buffer-view bounds; exact donor PR #1938 source, nonrelease"
+    },
+    {
+      "path": "tests/ground-glb-source-anchors.test.mjs",
+      "originBlob": "2c11aaef2e8ddae76b6700e5fff3eeef249b774e",
+      "expectedBlob": "ce09a655fd158003937af6172f38210ed07b9806",
+      "reason": "R4 Ground maintained regression suite from exact donor PR #1938; nonrelease"
+    },
+    {
+      "path": "tests/cloudbuild-shell-execution.test.mjs",
+      "originBlob": "c0125c3d7f02400d3c690ec3de437e7182acc95c",
+      "expectedBlob": "fd039197296baf9dd0587a8d3bdbae14ab42a1ca",
+      "reason": "Unified source-only Cloud Build shell contract now uses the exact reviewed nonproduction verifier branch"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs",
+      "originBlob": "2577369cfeb407fe135772edf82ca8153a3de94b",
+      "expectedBlob": "3d866b1bc66a395c23e94233d1a65316a869c9b2",
+      "reason": "Unified physical/semantic selection now fails closed for locked, hidden, invalid star identity before rendering selected-world details"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx",
+      "originBlob": "2a9a0369ee27f1e050e0b59720cbc4f47124d6ad",
+      "expectedBlob": "ae9bb40aaef1d27a693a12435dbf8fbe7f7ed8c5",
+      "reason": "World pointer, custom event, and direct URL restore all enforce shared selectable-node guard before revealing selected-memory context"
+    }
+  ],
+  "additionalAdmittedDonor": {
+    "pr": 1932,
+    "head": "4b9c519f4ddfba1889280738c9007d2a4d3a653e",
+    "baseCandidate": "79ca2499ba7315c0b3168426384adfb6052e8633",
+    "releaseApproved": false,
+    "sourceClaims": [
+      {
+        "path": "package.json",
+        "blob": "2fb031597bb75a8a4ce3bf0e3f8ee63fcebab68a"
+      },
+      {
+        "path": "scripts/lib/firestore-java-runtime.mjs",
+        "blob": "4857e72cbef520990bade224a026e708433e7f70"
+      },
+      {
+        "path": "scripts/run-firestore-rules-tests.mjs",
+        "blob": "8fdfccce7287dd9ff56a536082be4f348b06b961"
+      },
+      {
+        "path": "tests/firestore-java-runtime.test.mjs",
+        "blob": "0e63ffd35e64b1d7871a24b2b15a426d5632012e"
+      },
+      {
+        "path": "tests/firestore-rules-execution-authority.test.mjs",
+        "blob": "03ef2bb54b22fd91a760d05fd64b1493762b750f"
+      }
+    ]
+  },
+  "candidateSourceClaims": [
+    {
       "path": "urai-tier1/src/components/lifemap/useLifeMapEvents.ts",
-      "originBlob": "0197b7fd0c8eaebac1166403ee32c10181ab9cd3",
-      "expectedBlob": "a885812f25c32cd4f0dcf72a96e3364531dda96b",
-      "reason": "Combined-only Firestore event normalization blocks legacy hidden memories before constellation projection"
+      "blob": "b54024164039f6ba3bb1fabdac42e1c63c5f01e6",
+      "reason": "Owner-scoped Firestore event and era normalization blocks explicit mismatched userId before Life Map projection"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx",
+      "blob": "a6fefdd2e75448f9869202cf740726168c11caa3",
+      "reason": "Canonical software WebGL navigation uses authored URL route and scoped overview identity"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs",
+      "blob": "9947d8086bb4777bd0de2eaf151ed3a36dbb5fd1",
+      "reason": "Exact authored Focus/Replay route identity rejects duplicate private-memory keys and normalized path substitutions"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs",
+      "blob": "f4708011daae7f222076d697cfc200272c118f2e",
+      "reason": "Shared privacy and owner-scope normalization for user-specific Life Map streams"
     }
   ]
 }

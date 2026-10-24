@@ -80,10 +80,30 @@ test('native execution environment strips paid-provider credentials but keeps PA
   assert.equal(result.removedKeys.length,3)
 })
 
-function httpCases(overrides={}) {return REQUIRED_HTTP_ROUTES.map(path=>({path,status:overrides[path]??200}))}
+function httpCases(overrides={}) {return REQUIRED_HTTP_ROUTES.map(path=>({path,status:overrides[path]??200,contentType:'text/html; charset=utf-8',htmlDocumentValid:true}))}
 test('all canonical production HTTP routes must be covered',()=>{
   assert.equal(assessHttpRoutes(httpCases()).passed,true)
   assert.equal(assessHttpRoutes(httpCases().filter(x=>x.path!=='/replay')).passed,false)
+})
+test('HTTP page fixtures prove actual HTML, not status 200 alone',()=>{
+  const healthy=httpCases()
+  assert.equal(assessHttpRoutes(healthy).passed,true)
+  const missing=healthy.map(check=>check.path==='/support'?{...check,contentType:null}:check)
+  const wrong=healthy.map(check=>check.path==='/privacy-policy'?{...check,contentType:'application/json'}:check)
+  const empty=healthy.map(check=>check.path==='/login'?{...check,status:204}:check)
+  for(const checks of [missing,wrong,empty]) {
+    const result=assessHttpRoutes(checks)
+    assert.equal(result.passed,false)
+    assert.ok(result.failures.some(f=>f.reason==='RENDERED_HTML_200_REQUIRED'))
+  }
+})
+test('every HTTP 200 route requires document-body proof',()=>{
+  const healthy=httpCases()
+  assert.equal(assessHttpRoutes(healthy).passed,true)
+  const invalid=healthy.map(x=>x.path==='/support'?{...x,htmlDocumentValid:false}:x)
+  const result=assessHttpRoutes(invalid)
+  assert.equal(result.passed,false)
+  assert.ok(result.failures.some(x=>x.path==='/support' && x.reason==='RENDERED_HTML_DOCUMENT_REQUIRED'))
 })
 test('Home 200 cannot hide broken Replay, privacy or login',()=>{
   for(const path of ['/replay','/privacy','/login']){
@@ -414,6 +434,18 @@ test('R-FINAL validates all real encoded PNG captures and preserves evidence-onl
     ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4)
     ihdr[8] = 8; ihdr[9] = 6
     const rows = Buffer.alloc((width * 4 + 1) * height)
+    // A valid screenshot must have nonuniform decoded pixels. All-zero
+    // content is intentionally rejected by the stricter visual gate.
+    for (let y = 0; y < height; y++) {
+      const row = y * (width * 4 + 1);
+      for (let x = 0; x < width; x++) {
+        const offset = row + 1 + x * 4;
+        rows[offset] = x % 256;
+        rows[offset + 1] = y % 256;
+        rows[offset + 2] = (x ^ y) % 256;
+        rows[offset + 3] = 255;
+      }
+    }
     const png = Buffer.concat([
       Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
       pngChunk('IHDR', ihdr),

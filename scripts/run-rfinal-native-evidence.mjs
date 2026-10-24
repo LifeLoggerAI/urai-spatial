@@ -14,6 +14,10 @@ import process from 'node:process'
 import { once } from 'node:events'
 import { pathToFileURL } from 'node:url'
 import { resolveCandidate, assessCandidateCompletion, requireCommitSha } from './rfinal-source-authority.mjs'
+import { selectNativeEvidenceTarget } from './lib/native-evidence-target.mjs'
+import { ensureNativeGitAncestry } from './lib/native-git-ancestry.mjs'
+import { assessNativeHttpRoute, isNativeHtmlDocument } from './lib/native-http-route-acceptance.mjs'
+import { planNativeEvidenceStages, assertCombinedPreflightOutcome, nativeCombinedPreflightEnvironment } from './lib/native-combined-preflight.mjs'
 import { inspectVisualPng } from './visual-png-integrity.mjs'
 import { isOwnedVisualEvidencePath } from './rfinal-visual-evidence-paths.mjs'
 import { isUraiHomeDocument } from '../tests/spatial-owned-server.mjs'
@@ -114,12 +118,18 @@ export function assessHttpRoutes(checks) {
   for (const route of REQUIRED_HTTP_ROUTES) {
     const result = checks.find(check => check.path === route)
     const status = result?.status
-    if (!Number.isInteger(status)) { failures.push({path:route,reason:result?.error||'ROUTE_NOT_TESTED'});continue }
-    if (status >= 200 && status < 400) continue
-    if (PROTECTED_HTTP_ROUTES.has(route) && (status === 401 || status === 403)) {
-      authorizedDenials.push({path:route,status});continue
+    const verdict = assessNativeHttpRoute({
+      path: route, status, redirect: result?.redirect, error: result?.error,
+      protectedRoute: PROTECTED_HTTP_ROUTES.has(route),
+      requestedUrl: result?.requestedUrl,
+      contentType: result?.contentType,
+      htmlDocumentValid: result?.htmlDocumentValid,
+    })
+    if (verdict.allowed) {
+      if (verdict.kind !== 'SUCCESS') authorizedDenials.push({path:route,status,reason:verdict.kind})
+      continue
     }
-    failures.push({path:route,status,reason:'UNEXPECTED_HTTP_STATUS'})
+    failures.push({path:route,status,reason:verdict.reason})
   }
   return {passed:failures.length===0,failures,authorizedDenials}
 }
@@ -236,10 +246,11 @@ export function formatCommand(argv) {
 }
 
 function options(argv) {
-  const parsed = { source: null, evidence: null, pinnedSha: null, selftest: false, help: false }
+  const parsed = { source: null, evidence: null, pinnedSha: null, combined: false, selftest: false, help: false }
   for (let i = 0; i < argv.length; ++i) {
     const arg = argv[i]
     if (arg === '--help') parsed.help = true
+    else if (arg === '--combined-candidate') parsed.combined = true
     else if (arg === '--selftest') parsed.selftest = true
     else if (arg === '--pinned-sha') {
       if (!argv[i + 1]) throw new Error('Missing value for --pinned-sha')
@@ -383,10 +394,14 @@ async function runtimeSmoke(source, outDir) {
     if (!ready) return { passed: false,
       blocker: launchError || 'ORIGINAL_URAI_HOME_NOT_READY: ' + lastResponse,
       checks, browserChecks }
-    for (const route of ['/', '/life-map', '/focus', '/replay', '/login', '/privacy']) {
+    for (const route of REQUIRED_HTTP_ROUTES) {
       try {
         const reply = await fetch(target + route, { signal: AbortSignal.timeout(12000), redirect: 'manual' })
-        checks.push({ path: route, status: reply.status, redirect: reply.headers.get('location') || null })
+        // Do not certify blank/mislabeled 200 responses as rendered UrAi pages.
+        // Inspect locally without writing sensitive response HTML into receipts.
+        const htmlDocumentValid = reply.status === 200
+          ? isNativeHtmlDocument(await reply.text()) : false
+        checks.push({ path: route, status: reply.status, redirect: reply.headers.get('location') || null, requestedUrl: target + route, contentType: reply.headers.get('content-type') || null, htmlDocumentValid })
       } catch (e) { checks.push({ path: route, error: String(e) }) }
     }
     const browserEnv = {
@@ -422,8 +437,9 @@ async function runtimeSmoke(source, outDir) {
 
 async function main() {
   const cfg = options(process.argv.slice(2))
+  const target = selectNativeEvidenceTarget({ combined: cfg.combined, pinnedSha: cfg.pinnedSha, defaultBranch: CONTROLLER.branch })
   if (cfg.help || cfg.selftest) {
-    console.log('URAI R-FINAL native evidence runner. Options: --source <isolated checkout> --evidence-dir <new directory> --pinned-sha <40-char git SHA> --help --selftest')
+    console.log('URAI R-FINAL native evidence runner. Options: --source <isolated checkout> --evidence-dir <new directory> --pinned-sha <40-char git SHA> --combined-candidate --help --selftest')
     console.log('Never runs against ' + CONTROLLER.protectedBaseline)
     if (cfg.selftest) {
       assert.equal(parseRemoteHead(CONTROLLER.lastVerifiedSha + '\trefs/heads/' + CONTROLLER.branch), CONTROLLER.lastVerifiedSha)
@@ -437,7 +453,7 @@ async function main() {
   if (!process.version.startsWith('v22.')) throw new Error('NODE_22_REQUIRED: found ' + process.version)
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
   const homeDownloads = path.join(os.homedir(), 'Downloads')
-  const runRoot = path.join(homeDownloads, 'URAI_RFINAL_NATIVE_' + stamp)
+  const runRoot = path.join(homeDownloads, (cfg.combined ? 'URAI_RFINAL_NATIVE_COMBINED_' : 'URAI_RFINAL_NATIVE_') + stamp)
   const evidence = cfg.evidence || path.join(runRoot, 'evidence')
   const source = cfg.source || path.join(runRoot, 'source')
   refuseProtectedOverlap(source)
@@ -452,7 +468,7 @@ async function main() {
   const receipt = {schema: 'URAI_RFINAL_NATIVE_V1',startedAt:new Date().toISOString(),
     releaseAuthority: 'NO_DEPLOYMENT_NO_MERGE_NO_BILLING_NO_PRIVATE_MEDIA',
     platform: process.platform, node: process.version, knownPriorHead: CONTROLLER.lastVerifiedSha,
-    origin: CONTROLLER.repository, branch: CONTROLLER.branch, source,
+    origin: CONTROLLER.repository, branch: target.branch, targetMode: target.sourceMode, source,
     gitHead: null, tree: null, results: [], byteIntegrity: null,
     requestedPinnedSha: cfg.pinnedSha, verificationMode: cfg.pinnedSha ? 'PINNED_CANDIDATE' : 'LIVE_BRANCH',
     liveHeadAtStart: null, liveHeadAtFinish: null,
@@ -468,9 +484,9 @@ async function main() {
   saveReceipt(receiptPath, receipt)
   try {
     const gitRemote = await command(['git','ls-remote','--heads',CONTROLLER.repository,
-      'refs/heads/' + CONTROLLER.branch], {cwd:homeDownloads,log:path.join(evidence,'remote_head.log'),timeoutMinutes:5})
+      'refs/heads/' + target.branch], {cwd:homeDownloads,log:path.join(evidence,'remote_head.log'),timeoutMinutes:5})
     if (gitRemote.exitCode !== 0) throw new Error('REMOTE_GIT_ACCESS_BLOCKED: see ' + gitRemote.logPath)
-    const remoteAtStart = parseRemoteHead(readFileSync(gitRemote.logPath, 'utf8'))
+    const remoteAtStart = parseRemoteHead(readFileSync(gitRemote.logPath, 'utf8'), target.branch)
     const chosen = resolveCandidate({remoteHead: remoteAtStart,pinnedSha:cfg.pinnedSha})
     const head = chosen.sourceHead
     receipt.gitHead = head
@@ -478,12 +494,30 @@ async function main() {
     record('remote_head','PASS',{head:remoteAtStart,chosenSourceHead:head,mode:chosen.mode})
     if (!cfg.source) {
       const clone = await command(['git','-c','core.autocrlf=false','-c','core.longpaths=true',
-        'clone','--filter=blob:none','--depth=200','--single-branch','--branch',CONTROLLER.branch,
+        'clone','--filter=blob:none','--depth=200','--single-branch','--branch',target.branch,
         '--no-checkout',CONTROLLER.repository,source], {cwd:homeDownloads,log:path.join(evidence,'clone.log'),timeoutMinutes:60})
       record('isolated_clone',clone.exitCode===0?'PASS':'FAIL',clone)
       if (clone.exitCode !== 0) throw new Error('EXACT_SOURCE_CLONE_FAILED')
       await shortGit(['-C',source,'config','core.autocrlf','false'],source,evidence,'config_autocrlf')
       await shortGit(['-C',source,'config','core.longpaths','true'],source,evidence,'config_longpaths')
+      // Pinned runs can target commits older than the 200-commit shallow clone.
+      // Verify that the pinned commit actually belongs to the branch and
+      // recover its tree BEFORE sparse audit or detached checkout. Fetching is
+      // allowed only inside this newly created disposable checkout, never
+      // in an existing source/worktree supplied by another worker.
+      if (cfg.pinnedSha && head !== remoteAtStart) {
+        const pinnedHistory = await ensureNativeGitAncestry({
+          branch: target.branch, sourceHead: remoteAtStart, trustedAncestor: head,
+          allowDeepen: true,
+          runGit: async (args, name) => {
+            const result = await command(['git', '-C', source, ...args], {
+              cwd: source, log: path.join(evidence, 'pinned_' + name + '.log'), timeoutMinutes: 12,
+            })
+            return { ...result, output: readFileSync(result.logPath, 'utf8').trim() }
+          },
+        })
+        record('pinned_checkout_history_verified', 'PASS', pinnedHistory)
+      }
       // Configure the reviewed historical exclusions BEFORE Git tries to write
       // Windows-illegal filenames. --no-cone keeps the rest of the original
       // repository and all eight production GLBs included.
@@ -532,15 +566,24 @@ async function main() {
     record('verified_source_identity','PASS',{head:actual,tree})
     // Reject a historical or unrelated change masquerading as an advanced PR.
     if (actual !== CONTROLLER.lastVerifiedSha) {
-      const ancestry=await command(['git','-C',source,'merge-base','--is-ancestor',
-        CONTROLLER.lastVerifiedSha,head],{cwd:source,log:path.join(evidence,'ancestry.log'),timeoutMinutes:5})
-      record('historical_known_head_ancestry',ancestry.exitCode===0?'PASS':'FAIL',ancestry)
-      if (ancestry.exitCode!==0) throw new Error('UNVERIFIED_BRANCH_ANCESTRY')
+      const history = await ensureNativeGitAncestry({
+        branch: target.branch, sourceHead: head,
+        trustedAncestor: CONTROLLER.lastVerifiedSha,
+        allowDeepen: !cfg.source,
+        runGit: async (args, name) => {
+          const result = await command(['git', '-C', source, ...args], {
+            cwd: source, log: path.join(evidence, name + '.log'), timeoutMinutes: 12,
+          })
+          // Only log-backed Git output establishes shallow/missing-object state.
+          return { ...result, output: readFileSync(result.logPath, 'utf8').trim() }
+        },
+      })
+      record('historical_known_head_ancestry','PASS',history)
     }
     const remoteCheck=await command(['git','ls-remote','--heads',CONTROLLER.repository,
-      'refs/heads/'+CONTROLLER.branch],{cwd:homeDownloads,log:path.join(evidence,'remote_head_second.log'),timeoutMinutes:5})
+      'refs/heads/'+target.branch],{cwd:homeDownloads,log:path.join(evidence,'remote_head_second.log'),timeoutMinutes:5})
     if (remoteCheck.exitCode!==0) throw new Error('SECOND_REMOTE_GIT_ACCESS_BLOCKED: see '+remoteCheck.logPath)
-    const secondLiveHead = parseRemoteHead(readFileSync(remoteCheck.logPath,'utf8'))
+    const secondLiveHead = parseRemoteHead(readFileSync(remoteCheck.logPath,'utf8'),target.branch)
     if (!cfg.pinnedSha && secondLiveHead !== head)
       throw new Error('CONCURRENT_PR_HEAD_CHANGED: safe abort; previous workspace retained')
     // Do not test ancestry against an un-fetched newer ref: the isolated
@@ -585,12 +628,12 @@ async function main() {
     record('pinned_committed_byte_identity',byteReport.passed?'PASS':'FAIL',{mismatches:byteReport.mismatches})
     if (!byteReport.passed) throw new Error('PINNED_SOURCE_BYTES_MISMATCH')
     let installPassed=false, buildPassed=false
-    for (const item of STAGES) {
+    for (const item of planNativeEvidenceStages(STAGES, cfg.combined)) {
       if (item.requiresInstall && !installPassed) {
         record(item.id,'NOT_RUN',{reason:'Frozen installation did not pass; no substitute green'})
         continue
       }
-      const r=await command(item.command,{cwd:source,log:path.join(evidence,item.id+'.log'),
+      const r=await command(item.command,{cwd:source,env:nativeCombinedPreflightEnvironment({combined:cfg.combined,stageId:item.id,pinnedSha:head}),log:path.join(evidence,item.id+'.log'),
         timeoutMinutes: item.id==='production_build'?85:item.id==='frozen_install'?65:55})
       // Preserve the actual Firebase emulator diagnosis in the evidence bundle.
       // The synthetic demo-project tests can fail after Firestore starts; without
@@ -615,6 +658,7 @@ async function main() {
         qualification='Root suite skipped browser E2E despite exit zero'
       }
       record(item.id,outcome,{...r,command:formatCommand(item.command),qualification})
+      assertCombinedPreflightOutcome({combined:cfg.combined,stageId:item.id,outcome})
       if(item.id==='frozen_install')installPassed=outcome==='PASS'
       if(item.id==='production_build')buildPassed=outcome==='PASS'
     }
@@ -642,10 +686,10 @@ async function main() {
       r.id!=='actual_production_http_runtime' && r.id!=='remote_head' && r.id!=='remote_head_unchanged').every(r=>r.outcome==='PASS') &&
       receipt.results.some(r=>r.id==='actual_production_http_runtime' && r.outcome==='PASS')
     const lastRemote=await command(['git','ls-remote','--heads',CONTROLLER.repository,
-      'refs/heads/'+CONTROLLER.branch],{cwd:homeDownloads,
+      'refs/heads/'+target.branch],{cwd:homeDownloads,
         log:path.join(evidence,'remote_head_finish.log'),timeoutMinutes:5})
     if(lastRemote.exitCode===0){
-      try{receipt.liveHeadAtFinish=parseRemoteHead(readFileSync(lastRemote.logPath,'utf8'))}
+      try{receipt.liveHeadAtFinish=parseRemoteHead(readFileSync(lastRemote.logPath,'utf8'),target.branch)}
       catch{receipt.liveHeadAtFinish=null}
     }
     const authority=assessCandidateCompletion({sourceHead:head,liveHeadAtStart:remoteAtStart,
@@ -661,6 +705,12 @@ async function main() {
     // artistry, XR and human acceptance are independent gates.
     receipt.privateBetaReady=false
     receipt.globalLaunchReady=false
+    if (cfg.combined) {
+      receipt.currentReleaseHeadVerified=false
+      receipt.fullCurrentHeadGreen=false
+      receipt.combinedDraftOnly=true
+      saveReceipt(receiptPath,receipt)
+    }
   } catch(error) {
     record('execution_stop','BLOCKED',{error:String(error)})
   } finally {
