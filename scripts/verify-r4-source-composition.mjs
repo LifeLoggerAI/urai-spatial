@@ -58,6 +58,21 @@ export function inspectR4SourceComposition(manifest, entries, head, expectedHead
     if (override) usedOverrides.add(claim.path)
   }
   for (const [pr, count] of donorCounts) if (counts.get(pr) !== count) fail('DONOR_PATH_COUNT_MISMATCH:' + pr)
+  // Life Map legacy-hidden event normalization is an independently reviewed
+  // combined-only change, not a source-donor claim. Require its exact Git blob,
+  // and never generalize this exception to unreviewed files.
+  const independentPath = 'urai-tier1/src/components/lifemap/useLifeMapEvents.ts'
+  const independent = overrides.get(independentPath)
+  if (independent && !claimed.has(independentPath)) {
+    if (independent.originBlob !== '0197b7fd0c8eaebac1166403ee32c10181ab9cd3' ||
+        independent.expectedBlob !== 'a885812f25c32cd4f0dcf72a96e3364531dda96b')
+      fail('INDEPENDENT_PRIVACY_OVERRIDE_PIN_INVALID')
+    const actual = entries.get(independentPath)
+    if (!actual || actual.type !== 'blob' || !['100644','100755'].includes(actual.mode) ||
+        actual.sha !== independent.expectedBlob)
+      fail('INDEPENDENT_PRIVACY_OVERRIDE_BLOB_MISMATCH')
+    usedOverrides.add(independentPath)
+  }
   for (const path of overrides.keys()) if (!usedOverrides.has(path)) fail('UNUSED_SOURCE_OVERRIDE:' + path)
   const extra = manifest.additionalAdmittedDonor
   if (extra === undefined) fail('FIRESTORE_DONOR_MISSING')
