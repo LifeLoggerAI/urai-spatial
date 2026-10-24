@@ -1,0 +1,3150 @@
+{
+  "schema": "urai-operation-one-r10-source-trace-v1",
+  "origin": "Native R10 Google Sheet, read-only; source data and formal acceptance preserved in the original workbook",
+  "observedDate": "2026-10-22",
+  "releaseDecision": "NO_GO",
+  "sourceOfTruth": {
+    "spreadsheetId": "16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM",
+    "url": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit",
+    "sheetIds": {
+      "criteria": 2000001016,
+      "deliverables": 2000001017,
+      "founder": 653080715,
+      "gates": 129401606,
+      "conflicts": 2000001007
+    },
+    "doNotEditOriginalWorkbook": true
+  },
+  "originalCounts": {
+    "deliverables": 45,
+    "criteria": 267,
+    "founderTasks": 30,
+    "criteriaApplicable": 262,
+    "criteriaConditionalIos": 5,
+    "deliverablesApplicable": 44,
+    "deliverablesConditionalIos": 1,
+    "formallyAcceptedDeliverables": 0,
+    "formallyAcceptedCriteria": 0
+  },
+  "backendEvidence": {
+    "candidateCommit": "2c9768cb2e0e45c46ba497c99a919f430f56d07a",
+    "functionsSourceTree": "9c265279288facccde039724540eec4dd2311cce",
+    "functionsTestTree": "65fda977af5b6ca94c0f16fc28d2fcb181e6d586",
+    "type": "Windows Node22.23.3 content-equivalent full maintained Functions suite",
+    "tests": 1774,
+    "pass": 1774,
+    "fail": 0,
+    "releaseCert": false,
+    "source": "Founder-provided native R121 console transcript; raw receipt not yet attached to this branch"
+  },
+  "acceptanceSemantics": "Original OPEN/CONDITIONAL values are preserved verbatim; no formal criterion is marked completed by the Functions receipt. Independent reviewer and actual product acceptance are separate.",
+  "deliverables": [
+    {
+      "id": "core-journey",
+      "originalTitle": "Canonical Home→Ascent→LifeMap→Focus→Replay→unwind return with preserved selection/state",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 5,
+      "sourceOwner": "Lane 1 convergence",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A2"
+    },
+    {
+      "id": "life-graph",
+      "originalTitle": "Real source provenance→claims/conflicts/corrections→entities/time/causal graph→PersonWorld→SceneTruth",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 5,
+      "sourceOwner": "Lane 2 intelligence + Lane 4 producers",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A3"
+    },
+    {
+      "id": "person-world-consistency",
+      "originalTitle": "Same evidence-constrained temporal person/place/object authority across Replay,LifeMovie,CapturedReality,realtime",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 3,
+      "sourceOwner": "Lane 2 intelligence + Lane 4 media + Lane 1 consumer",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A4"
+    },
+    {
+      "id": "captured-reality",
+      "originalTitle": "Accepted private bounded reconstructed place with measured scale and distinct navigation",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 6,
+      "sourceOwner": "Lane 4 Captured Reality + Lane 5 device",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A5"
+    },
+    {
+      "id": "generic-worlds",
+      "originalTitle": "Required generic families and reused kits accepted and bound to real consumers",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 6,
+      "sourceOwner": "Lane 3 assets/world factory",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A6"
+    },
+    {
+      "id": "life-movie-base",
+      "originalTitle": "Private ordinary-source movie independently create/render/save/export MP4,SRT,JSON",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 6,
+      "sourceOwner": "Lane 4 Studio+Jobs",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A7"
+    },
+    {
+      "id": "life-movie-longform",
+      "originalTitle": "Long-form durable segmentation,assembly,resume,cancel,playback,download and deletion",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 5,
+      "sourceOwner": "Lane 4 Studio+Jobs",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A8"
+    },
+    {
+      "id": "family-identity",
+      "originalTitle": "Source-supported person likeness,age,era,voice,clothing,place,objects and uncertainty labels",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 5,
+      "sourceOwner": "Lane 4 media + authorized family reviewers",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A9"
+    },
+    {
+      "id": "council",
+      "originalTitle": "Six required Council identities,interaction,voice and rights governed by accepted states",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 6,
+      "sourceOwner": "Lane 2 intelligence + Lane 3 characters + Lane 1",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A10"
+    },
+    {
+      "id": "shadow",
+      "originalTitle": "Embodied Shadow interaction with consent,reduced-stimulation and preserved truth",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 6,
+      "sourceOwner": "Lane 1 + intelligence + assets",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A11"
+    },
+    {
+      "id": "possible-futures",
+      "originalTitle": "Counterfactual scenarios clearly separated from historical source evidence",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 4,
+      "sourceOwner": "Lane 2 intelligence + Lane 1",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A12"
+    },
+    {
+      "id": "adam-presence",
+      "originalTitle": "Evidence-grounded founder presence with reviewed likeness/voice,streaming and text fallback",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 7,
+      "sourceOwner": "Lane 2 intelligence + Lane 1 + character/voice owners",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A13"
+    },
+    {
+      "id": "multimodel-ai",
+      "originalTitle": "Governed model routing,failover,bounds,cost metering and truthful provider readiness",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 5,
+      "sourceOwner": "Lane 2 intelligence + Lane 7 providers",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A14"
+    },
+    {
+      "id": "passive-workers",
+      "originalTitle": "Consent-controlled voice/ambient/face/motion/GPS/stillness signals and durable jobs",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 5,
+      "sourceOwner": "Lane 2 intelligence + Lane 5 native + Lane 7 providers",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A15"
+    },
+    {
+      "id": "consent-revocation",
+      "originalTitle": "Permanent current-owner/purpose fences invalidate graph,media,reconstruction and realtime derivatives",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 4,
+      "sourceOwner": "Lane 6 privacy + Lane 2 + Lane 4",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A16"
+    },
+    {
+      "id": "export-deletion",
+      "originalTitle": "Complete private export and retryable bounded physical deletion without cross-owner damage",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 5,
+      "sourceOwner": "Lane 6 privacy + producer owners",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A17"
+    },
+    {
+      "id": "security",
+      "originalTitle": "Current dependency,auth,tenant,protected-source and deployment identity checks",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 3,
+      "sourceOwner": "Lane 6 security + repository owners",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A18"
+    },
+    {
+      "id": "accessibility",
+      "originalTitle": "Keyboard,touch,captions,TTS,haptics,directional audio and meaningful calmer modes",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 5,
+      "sourceOwner": "Lane 6 accessibility + Lane 5 device",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A19"
+    },
+    {
+      "id": "performance",
+      "originalTitle": "Per-device content/runtime/network/memory/thermal budgets measured on representative accepted content",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 3,
+      "sourceOwner": "Lane 5 native/XR + Lane 3 asset owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A20"
+    },
+    {
+      "id": "android",
+      "originalTitle": "Exact-candidate signed com.urailabs.urai build with auth,links,permissions and Play evidence",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 5,
+      "sourceOwner": "Lane 5 native/store",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A21"
+    },
+    {
+      "id": "ios",
+      "originalTitle": "Launch-scoped native iOS auth,links,permissions,privacy manifest,signing/TestFlight",
+      "scope": "EXCLUDED_CURRENT_RELEASE_RETAINED_VISION",
+      "formalAcceptance": "CONDITIONAL_NOT_CURRENT_RELEASE_GATE",
+      "criteria": 5,
+      "sourceOwner": "Lane 5 native/store",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A22"
+    },
+    {
+      "id": "xr",
+      "originalTitle": "AR/VR/XR controls,scale,comfort,locomotion,recenter,spatial audio and physical performance",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 5,
+      "sourceOwner": "Lane 5 XR + Lane 3 worlds",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A23"
+    },
+    {
+      "id": "localization",
+      "originalTitle": "Governed 20+ language release with complete consumer routes,sensitive text,captions,TTS,RTL",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 6,
+      "sourceOwner": "Lane 6 localization + native-language reviewers",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A24"
+    },
+    {
+      "id": "production-operations",
+      "originalTitle": "Exact approved deployed identities,domains,authenticated journeys,monitoring,restore and rollback",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 5,
+      "sourceOwner": "Lane 1 convergence + Lane 7 providers + Lane 8 evidence",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A25"
+    },
+    {
+      "id": "estate-integration",
+      "originalTitle": "Canonical cross-site links,auth,privacy,metrics,support and absence of legacy authority confusion",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 5,
+      "sourceOwner": "Lane 8 coordinator + property owners",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A26"
+    },
+    {
+      "id": "estate-urai-spatial",
+      "originalTitle": "Complete standalone urai-spatial at urai.app for consumer",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Lane 1",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A27"
+    },
+    {
+      "id": "estate-urai-labs-llc",
+      "originalTitle": "Complete standalone urai-labs-llc at urailabs.com for public-company",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Labs owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A28"
+    },
+    {
+      "id": "estate-urai-ip-holdings",
+      "originalTitle": "Complete standalone urai-ip-holdings at uraiipholdings.com for public-and-gated-ip",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "IP Holdings owner; missing source must be resolved",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A29"
+    },
+    {
+      "id": "estate-urai-privacy",
+      "originalTitle": "Complete standalone urai-privacy at uraiprivacy.com for public-trust-and-private-controls",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Lane 6",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A30"
+    },
+    {
+      "id": "estate-urai-studio",
+      "originalTitle": "Complete standalone urai-studio at uraistudio.com for public-services-and-private-production",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Lane 4",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A31"
+    },
+    {
+      "id": "estate-urai-content",
+      "originalTitle": "Complete standalone urai-content at uraicontent.com for public-media-and-review",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Content owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A32"
+    },
+    {
+      "id": "estate-urai-marketing",
+      "originalTitle": "Complete standalone urai-marketing at uraimarketing.com for public-funnel-and-gated-operator",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Marketing owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A33"
+    },
+    {
+      "id": "estate-urai-analytics",
+      "originalTitle": "Complete standalone urai-analytics at uraianalytics.com for public-demo-and-private-observatory",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Analytics owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A34"
+    },
+    {
+      "id": "estate-urai-communications",
+      "originalTitle": "Complete standalone urai-communications at uraicommunications.com for consent-aware-messaging",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Lane 7",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A35"
+    },
+    {
+      "id": "estate-urai-jobs",
+      "originalTitle": "Complete standalone urai-jobs at uraijobs.com for career-product-and-private-workers",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Jobs owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A36"
+    },
+    {
+      "id": "estate-urai-foundation",
+      "originalTitle": "Complete standalone urai-foundation at uraifoundation.org for public-benefit",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Foundation owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A37"
+    },
+    {
+      "id": "estate-urai-storytime",
+      "originalTitle": "Complete standalone urai-storytime at uraistorytime.com for private-family-and-guardian-sharing",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Storytime owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A38"
+    },
+    {
+      "id": "estate-b2bportal",
+      "originalTitle": "Complete standalone B2Bportal at uraib2bportal.com for tenant-partner-portal",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "B2B owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A39"
+    },
+    {
+      "id": "estate-urai-investors",
+      "originalTitle": "Complete standalone urai-investors at uraiinvestors.com for public-thesis-and-private-data-room",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Investors owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A40"
+    },
+    {
+      "id": "estate-asset-factory",
+      "originalTitle": "Complete standalone asset-factory at uraiassetfactory.com for gated-forge",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Lane 3",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A41"
+    },
+    {
+      "id": "estate-urai-admin",
+      "originalTitle": "Complete standalone urai-admin at uraiadmin.com for private-no-index-control",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Admin owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A42"
+    },
+    {
+      "id": "estate-urai-staging",
+      "originalTitle": "Complete standalone urai-staging at uraistaging.com for private-no-index-preview",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 8,
+      "sourceOwner": "Staging owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A43"
+    },
+    {
+      "id": "estate-urai",
+      "originalTitle": "Certified legacy containment; no alternate production aliases,credentials,deploy authority or ambiguous public claims",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 2,
+      "sourceOwner": "Legacy containment owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A44"
+    },
+    {
+      "id": "estate-urai-dev",
+      "originalTitle": "Certified legacy containment; no alternate production aliases,credentials,deploy authority or ambiguous public claims",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 2,
+      "sourceOwner": "Legacy containment owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A45"
+    },
+    {
+      "id": "estate-uraiprod",
+      "originalTitle": "Certified legacy containment; no alternate production aliases,credentials,deploy authority or ambiguous public claims",
+      "scope": "ADOPTED_ESTATE_OBLIGATION",
+      "formalAcceptance": "OPEN",
+      "criteria": 2,
+      "sourceOwner": "Legacy containment owner",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001017&range=A46"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "core-journey-1",
+      "requirementId": "core-journey",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A2"
+    },
+    {
+      "id": "core-journey-2",
+      "requirementId": "core-journey",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A3"
+    },
+    {
+      "id": "core-journey-3",
+      "requirementId": "core-journey",
+      "kind": "VISUAL",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A4"
+    },
+    {
+      "id": "core-journey-4",
+      "requirementId": "core-journey",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A5"
+    },
+    {
+      "id": "core-journey-5",
+      "requirementId": "core-journey",
+      "kind": "PERFORMANCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A6"
+    },
+    {
+      "id": "life-graph-1",
+      "requirementId": "life-graph",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A7"
+    },
+    {
+      "id": "life-graph-2",
+      "requirementId": "life-graph",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A8"
+    },
+    {
+      "id": "life-graph-3",
+      "requirementId": "life-graph",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A9"
+    },
+    {
+      "id": "life-graph-4",
+      "requirementId": "life-graph",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A10"
+    },
+    {
+      "id": "life-graph-5",
+      "requirementId": "life-graph",
+      "kind": "HUMAN_TRUTH",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A11"
+    },
+    {
+      "id": "person-world-consistency-1",
+      "requirementId": "person-world-consistency",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A12"
+    },
+    {
+      "id": "person-world-consistency-2",
+      "requirementId": "person-world-consistency",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A13"
+    },
+    {
+      "id": "person-world-consistency-3",
+      "requirementId": "person-world-consistency",
+      "kind": "HUMAN_TRUTH",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A14"
+    },
+    {
+      "id": "captured-reality-1",
+      "requirementId": "captured-reality",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A15"
+    },
+    {
+      "id": "captured-reality-2",
+      "requirementId": "captured-reality",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A16"
+    },
+    {
+      "id": "captured-reality-3",
+      "requirementId": "captured-reality",
+      "kind": "VISUAL",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A17"
+    },
+    {
+      "id": "captured-reality-4",
+      "requirementId": "captured-reality",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A18"
+    },
+    {
+      "id": "captured-reality-5",
+      "requirementId": "captured-reality",
+      "kind": "DEVICE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A19"
+    },
+    {
+      "id": "captured-reality-6",
+      "requirementId": "captured-reality",
+      "kind": "NAVIGATION",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A20"
+    },
+    {
+      "id": "generic-worlds-1",
+      "requirementId": "generic-worlds",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A21"
+    },
+    {
+      "id": "generic-worlds-2",
+      "requirementId": "generic-worlds",
+      "kind": "ASSET_FIXITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A22"
+    },
+    {
+      "id": "generic-worlds-3",
+      "requirementId": "generic-worlds",
+      "kind": "VISUAL",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A23"
+    },
+    {
+      "id": "generic-worlds-4",
+      "requirementId": "generic-worlds",
+      "kind": "PERFORMANCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A24"
+    },
+    {
+      "id": "generic-worlds-5",
+      "requirementId": "generic-worlds",
+      "kind": "NAVIGATION",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A25"
+    },
+    {
+      "id": "generic-worlds-6",
+      "requirementId": "generic-worlds",
+      "kind": "DEVICE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A26"
+    },
+    {
+      "id": "life-movie-base-1",
+      "requirementId": "life-movie-base",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A27"
+    },
+    {
+      "id": "life-movie-base-2",
+      "requirementId": "life-movie-base",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A28"
+    },
+    {
+      "id": "life-movie-base-3",
+      "requirementId": "life-movie-base",
+      "kind": "MEDIA",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A29"
+    },
+    {
+      "id": "life-movie-base-4",
+      "requirementId": "life-movie-base",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A30"
+    },
+    {
+      "id": "life-movie-base-5",
+      "requirementId": "life-movie-base",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A31"
+    },
+    {
+      "id": "life-movie-base-6",
+      "requirementId": "life-movie-base",
+      "kind": "VISUAL",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A32"
+    },
+    {
+      "id": "life-movie-longform-1",
+      "requirementId": "life-movie-longform",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A33"
+    },
+    {
+      "id": "life-movie-longform-2",
+      "requirementId": "life-movie-longform",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A34"
+    },
+    {
+      "id": "life-movie-longform-3",
+      "requirementId": "life-movie-longform",
+      "kind": "MEDIA",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A35"
+    },
+    {
+      "id": "life-movie-longform-4",
+      "requirementId": "life-movie-longform",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A36"
+    },
+    {
+      "id": "life-movie-longform-5",
+      "requirementId": "life-movie-longform",
+      "kind": "PERFORMANCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A37"
+    },
+    {
+      "id": "family-identity-1",
+      "requirementId": "family-identity",
+      "kind": "HUMAN_TRUTH",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A38"
+    },
+    {
+      "id": "family-identity-2",
+      "requirementId": "family-identity",
+      "kind": "IDENTITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A39"
+    },
+    {
+      "id": "family-identity-3",
+      "requirementId": "family-identity",
+      "kind": "VOICE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A40"
+    },
+    {
+      "id": "family-identity-4",
+      "requirementId": "family-identity",
+      "kind": "MEDIA",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A41"
+    },
+    {
+      "id": "family-identity-5",
+      "requirementId": "family-identity",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A42"
+    },
+    {
+      "id": "council-1",
+      "requirementId": "council",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A43"
+    },
+    {
+      "id": "council-2",
+      "requirementId": "council",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A44"
+    },
+    {
+      "id": "council-3",
+      "requirementId": "council",
+      "kind": "IDENTITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A45"
+    },
+    {
+      "id": "council-4",
+      "requirementId": "council",
+      "kind": "VOICE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A46"
+    },
+    {
+      "id": "council-5",
+      "requirementId": "council",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A47"
+    },
+    {
+      "id": "council-6",
+      "requirementId": "council",
+      "kind": "VISUAL",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A48"
+    },
+    {
+      "id": "shadow-1",
+      "requirementId": "shadow",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A49"
+    },
+    {
+      "id": "shadow-2",
+      "requirementId": "shadow",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A50"
+    },
+    {
+      "id": "shadow-3",
+      "requirementId": "shadow",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A51"
+    },
+    {
+      "id": "shadow-4",
+      "requirementId": "shadow",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A52"
+    },
+    {
+      "id": "shadow-5",
+      "requirementId": "shadow",
+      "kind": "VISUAL",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A53"
+    },
+    {
+      "id": "shadow-6",
+      "requirementId": "shadow",
+      "kind": "HUMAN_TRUTH",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A54"
+    },
+    {
+      "id": "possible-futures-1",
+      "requirementId": "possible-futures",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A55"
+    },
+    {
+      "id": "possible-futures-2",
+      "requirementId": "possible-futures",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A56"
+    },
+    {
+      "id": "possible-futures-3",
+      "requirementId": "possible-futures",
+      "kind": "HUMAN_TRUTH",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A57"
+    },
+    {
+      "id": "possible-futures-4",
+      "requirementId": "possible-futures",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A58"
+    },
+    {
+      "id": "adam-presence-1",
+      "requirementId": "adam-presence",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A59"
+    },
+    {
+      "id": "adam-presence-2",
+      "requirementId": "adam-presence",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A60"
+    },
+    {
+      "id": "adam-presence-3",
+      "requirementId": "adam-presence",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A61"
+    },
+    {
+      "id": "adam-presence-4",
+      "requirementId": "adam-presence",
+      "kind": "IDENTITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A62"
+    },
+    {
+      "id": "adam-presence-5",
+      "requirementId": "adam-presence",
+      "kind": "VOICE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A63"
+    },
+    {
+      "id": "adam-presence-6",
+      "requirementId": "adam-presence",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A64"
+    },
+    {
+      "id": "adam-presence-7",
+      "requirementId": "adam-presence",
+      "kind": "DEVICE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A65"
+    },
+    {
+      "id": "multimodel-ai-1",
+      "requirementId": "multimodel-ai",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A66"
+    },
+    {
+      "id": "multimodel-ai-2",
+      "requirementId": "multimodel-ai",
+      "kind": "PROVIDER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A67"
+    },
+    {
+      "id": "multimodel-ai-3",
+      "requirementId": "multimodel-ai",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A68"
+    },
+    {
+      "id": "multimodel-ai-4",
+      "requirementId": "multimodel-ai",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A69"
+    },
+    {
+      "id": "multimodel-ai-5",
+      "requirementId": "multimodel-ai",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A70"
+    },
+    {
+      "id": "passive-workers-1",
+      "requirementId": "passive-workers",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A71"
+    },
+    {
+      "id": "passive-workers-2",
+      "requirementId": "passive-workers",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A72"
+    },
+    {
+      "id": "passive-workers-3",
+      "requirementId": "passive-workers",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A73"
+    },
+    {
+      "id": "passive-workers-4",
+      "requirementId": "passive-workers",
+      "kind": "DEVICE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A74"
+    },
+    {
+      "id": "passive-workers-5",
+      "requirementId": "passive-workers",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A75"
+    },
+    {
+      "id": "consent-revocation-1",
+      "requirementId": "consent-revocation",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A76"
+    },
+    {
+      "id": "consent-revocation-2",
+      "requirementId": "consent-revocation",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A77"
+    },
+    {
+      "id": "consent-revocation-3",
+      "requirementId": "consent-revocation",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A78"
+    },
+    {
+      "id": "consent-revocation-4",
+      "requirementId": "consent-revocation",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A79"
+    },
+    {
+      "id": "export-deletion-1",
+      "requirementId": "export-deletion",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A80"
+    },
+    {
+      "id": "export-deletion-2",
+      "requirementId": "export-deletion",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A81"
+    },
+    {
+      "id": "export-deletion-3",
+      "requirementId": "export-deletion",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A82"
+    },
+    {
+      "id": "export-deletion-4",
+      "requirementId": "export-deletion",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A83"
+    },
+    {
+      "id": "export-deletion-5",
+      "requirementId": "export-deletion",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A84"
+    },
+    {
+      "id": "security-1",
+      "requirementId": "security",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A85"
+    },
+    {
+      "id": "security-2",
+      "requirementId": "security",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A86"
+    },
+    {
+      "id": "security-3",
+      "requirementId": "security",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A87"
+    },
+    {
+      "id": "accessibility-1",
+      "requirementId": "accessibility",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A88"
+    },
+    {
+      "id": "accessibility-2",
+      "requirementId": "accessibility",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A89"
+    },
+    {
+      "id": "accessibility-3",
+      "requirementId": "accessibility",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A90"
+    },
+    {
+      "id": "accessibility-4",
+      "requirementId": "accessibility",
+      "kind": "DEVICE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A91"
+    },
+    {
+      "id": "accessibility-5",
+      "requirementId": "accessibility",
+      "kind": "HUMAN_ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A92"
+    },
+    {
+      "id": "performance-1",
+      "requirementId": "performance",
+      "kind": "PERFORMANCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A93"
+    },
+    {
+      "id": "performance-2",
+      "requirementId": "performance",
+      "kind": "DEVICE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A94"
+    },
+    {
+      "id": "performance-3",
+      "requirementId": "performance",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A95"
+    },
+    {
+      "id": "android-1",
+      "requirementId": "android",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A96"
+    },
+    {
+      "id": "android-2",
+      "requirementId": "android",
+      "kind": "DEVICE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A97"
+    },
+    {
+      "id": "android-3",
+      "requirementId": "android",
+      "kind": "SIGNING",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A98"
+    },
+    {
+      "id": "android-4",
+      "requirementId": "android",
+      "kind": "STORE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A99"
+    },
+    {
+      "id": "android-5",
+      "requirementId": "android",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A100"
+    },
+    {
+      "id": "ios-1",
+      "requirementId": "ios",
+      "kind": "SOURCE",
+      "applicability": "CONDITIONAL_APPLE_ADMISSION",
+      "formalAcceptance": "NOT_APPLICABLE_CURRENT_RELEASE_RETAINED",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A101"
+    },
+    {
+      "id": "ios-2",
+      "requirementId": "ios",
+      "kind": "DEVICE",
+      "applicability": "CONDITIONAL_APPLE_ADMISSION",
+      "formalAcceptance": "NOT_APPLICABLE_CURRENT_RELEASE_RETAINED",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A102"
+    },
+    {
+      "id": "ios-3",
+      "requirementId": "ios",
+      "kind": "SIGNING",
+      "applicability": "CONDITIONAL_APPLE_ADMISSION",
+      "formalAcceptance": "NOT_APPLICABLE_CURRENT_RELEASE_RETAINED",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A103"
+    },
+    {
+      "id": "ios-4",
+      "requirementId": "ios",
+      "kind": "STORE",
+      "applicability": "CONDITIONAL_APPLE_ADMISSION",
+      "formalAcceptance": "NOT_APPLICABLE_CURRENT_RELEASE_RETAINED",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A104"
+    },
+    {
+      "id": "ios-5",
+      "requirementId": "ios",
+      "kind": "PRIVACY",
+      "applicability": "CONDITIONAL_APPLE_ADMISSION",
+      "formalAcceptance": "NOT_APPLICABLE_CURRENT_RELEASE_RETAINED",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A105"
+    },
+    {
+      "id": "xr-1",
+      "requirementId": "xr",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A106"
+    },
+    {
+      "id": "xr-2",
+      "requirementId": "xr",
+      "kind": "DEVICE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A107"
+    },
+    {
+      "id": "xr-3",
+      "requirementId": "xr",
+      "kind": "NAVIGATION",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A108"
+    },
+    {
+      "id": "xr-4",
+      "requirementId": "xr",
+      "kind": "PERFORMANCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A109"
+    },
+    {
+      "id": "xr-5",
+      "requirementId": "xr",
+      "kind": "HUMAN_ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A110"
+    },
+    {
+      "id": "localization-1",
+      "requirementId": "localization",
+      "kind": "SOURCE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A111"
+    },
+    {
+      "id": "localization-2",
+      "requirementId": "localization",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A112"
+    },
+    {
+      "id": "localization-3",
+      "requirementId": "localization",
+      "kind": "LOCALIZATION",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A113"
+    },
+    {
+      "id": "localization-4",
+      "requirementId": "localization",
+      "kind": "HUMAN_LANGUAGE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A114"
+    },
+    {
+      "id": "localization-5",
+      "requirementId": "localization",
+      "kind": "DEVICE",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A115"
+    },
+    {
+      "id": "localization-6",
+      "requirementId": "localization",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A116"
+    },
+    {
+      "id": "production-operations-1",
+      "requirementId": "production-operations",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A117"
+    },
+    {
+      "id": "production-operations-2",
+      "requirementId": "production-operations",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A118"
+    },
+    {
+      "id": "production-operations-3",
+      "requirementId": "production-operations",
+      "kind": "PRODUCTION",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A119"
+    },
+    {
+      "id": "production-operations-4",
+      "requirementId": "production-operations",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A120"
+    },
+    {
+      "id": "production-operations-5",
+      "requirementId": "production-operations",
+      "kind": "PROVIDER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A121"
+    },
+    {
+      "id": "estate-integration-1",
+      "requirementId": "estate-integration",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A122"
+    },
+    {
+      "id": "estate-integration-2",
+      "requirementId": "estate-integration",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A123"
+    },
+    {
+      "id": "estate-integration-3",
+      "requirementId": "estate-integration",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A124"
+    },
+    {
+      "id": "estate-integration-4",
+      "requirementId": "estate-integration",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A125"
+    },
+    {
+      "id": "estate-integration-5",
+      "requirementId": "estate-integration",
+      "kind": "PRODUCTION",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A126"
+    },
+    {
+      "id": "estate-urai-spatial-routes",
+      "requirementId": "estate-urai-spatial",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A127"
+    },
+    {
+      "id": "estate-urai-spatial-data-auth",
+      "requirementId": "estate-urai-spatial",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A128"
+    },
+    {
+      "id": "estate-urai-spatial-privacy-trust",
+      "requirementId": "estate-urai-spatial",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A129"
+    },
+    {
+      "id": "estate-urai-spatial-security",
+      "requirementId": "estate-urai-spatial",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A130"
+    },
+    {
+      "id": "estate-urai-spatial-accessibility",
+      "requirementId": "estate-urai-spatial",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A131"
+    },
+    {
+      "id": "estate-urai-spatial-deployment",
+      "requirementId": "estate-urai-spatial",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A132"
+    },
+    {
+      "id": "estate-urai-spatial-operations",
+      "requirementId": "estate-urai-spatial",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A133"
+    },
+    {
+      "id": "estate-urai-spatial-owner-lock",
+      "requirementId": "estate-urai-spatial",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A134"
+    },
+    {
+      "id": "estate-urai-labs-llc-routes",
+      "requirementId": "estate-urai-labs-llc",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A135"
+    },
+    {
+      "id": "estate-urai-labs-llc-data-auth",
+      "requirementId": "estate-urai-labs-llc",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A136"
+    },
+    {
+      "id": "estate-urai-labs-llc-privacy-trust",
+      "requirementId": "estate-urai-labs-llc",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A137"
+    },
+    {
+      "id": "estate-urai-labs-llc-security",
+      "requirementId": "estate-urai-labs-llc",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A138"
+    },
+    {
+      "id": "estate-urai-labs-llc-accessibility",
+      "requirementId": "estate-urai-labs-llc",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A139"
+    },
+    {
+      "id": "estate-urai-labs-llc-deployment",
+      "requirementId": "estate-urai-labs-llc",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A140"
+    },
+    {
+      "id": "estate-urai-labs-llc-operations",
+      "requirementId": "estate-urai-labs-llc",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A141"
+    },
+    {
+      "id": "estate-urai-labs-llc-owner-lock",
+      "requirementId": "estate-urai-labs-llc",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A142"
+    },
+    {
+      "id": "estate-urai-ip-holdings-routes",
+      "requirementId": "estate-urai-ip-holdings",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A143"
+    },
+    {
+      "id": "estate-urai-ip-holdings-data-auth",
+      "requirementId": "estate-urai-ip-holdings",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A144"
+    },
+    {
+      "id": "estate-urai-ip-holdings-privacy-trust",
+      "requirementId": "estate-urai-ip-holdings",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A145"
+    },
+    {
+      "id": "estate-urai-ip-holdings-security",
+      "requirementId": "estate-urai-ip-holdings",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A146"
+    },
+    {
+      "id": "estate-urai-ip-holdings-accessibility",
+      "requirementId": "estate-urai-ip-holdings",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A147"
+    },
+    {
+      "id": "estate-urai-ip-holdings-deployment",
+      "requirementId": "estate-urai-ip-holdings",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A148"
+    },
+    {
+      "id": "estate-urai-ip-holdings-operations",
+      "requirementId": "estate-urai-ip-holdings",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A149"
+    },
+    {
+      "id": "estate-urai-ip-holdings-owner-lock",
+      "requirementId": "estate-urai-ip-holdings",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A150"
+    },
+    {
+      "id": "estate-urai-privacy-routes",
+      "requirementId": "estate-urai-privacy",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A151"
+    },
+    {
+      "id": "estate-urai-privacy-data-auth",
+      "requirementId": "estate-urai-privacy",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A152"
+    },
+    {
+      "id": "estate-urai-privacy-privacy-trust",
+      "requirementId": "estate-urai-privacy",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A153"
+    },
+    {
+      "id": "estate-urai-privacy-security",
+      "requirementId": "estate-urai-privacy",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A154"
+    },
+    {
+      "id": "estate-urai-privacy-accessibility",
+      "requirementId": "estate-urai-privacy",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A155"
+    },
+    {
+      "id": "estate-urai-privacy-deployment",
+      "requirementId": "estate-urai-privacy",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A156"
+    },
+    {
+      "id": "estate-urai-privacy-operations",
+      "requirementId": "estate-urai-privacy",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A157"
+    },
+    {
+      "id": "estate-urai-privacy-owner-lock",
+      "requirementId": "estate-urai-privacy",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A158"
+    },
+    {
+      "id": "estate-urai-studio-routes",
+      "requirementId": "estate-urai-studio",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A159"
+    },
+    {
+      "id": "estate-urai-studio-data-auth",
+      "requirementId": "estate-urai-studio",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A160"
+    },
+    {
+      "id": "estate-urai-studio-privacy-trust",
+      "requirementId": "estate-urai-studio",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A161"
+    },
+    {
+      "id": "estate-urai-studio-security",
+      "requirementId": "estate-urai-studio",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A162"
+    },
+    {
+      "id": "estate-urai-studio-accessibility",
+      "requirementId": "estate-urai-studio",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A163"
+    },
+    {
+      "id": "estate-urai-studio-deployment",
+      "requirementId": "estate-urai-studio",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A164"
+    },
+    {
+      "id": "estate-urai-studio-operations",
+      "requirementId": "estate-urai-studio",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A165"
+    },
+    {
+      "id": "estate-urai-studio-owner-lock",
+      "requirementId": "estate-urai-studio",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A166"
+    },
+    {
+      "id": "estate-urai-content-routes",
+      "requirementId": "estate-urai-content",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A167"
+    },
+    {
+      "id": "estate-urai-content-data-auth",
+      "requirementId": "estate-urai-content",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A168"
+    },
+    {
+      "id": "estate-urai-content-privacy-trust",
+      "requirementId": "estate-urai-content",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A169"
+    },
+    {
+      "id": "estate-urai-content-security",
+      "requirementId": "estate-urai-content",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A170"
+    },
+    {
+      "id": "estate-urai-content-accessibility",
+      "requirementId": "estate-urai-content",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A171"
+    },
+    {
+      "id": "estate-urai-content-deployment",
+      "requirementId": "estate-urai-content",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A172"
+    },
+    {
+      "id": "estate-urai-content-operations",
+      "requirementId": "estate-urai-content",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A173"
+    },
+    {
+      "id": "estate-urai-content-owner-lock",
+      "requirementId": "estate-urai-content",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A174"
+    },
+    {
+      "id": "estate-urai-marketing-routes",
+      "requirementId": "estate-urai-marketing",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A175"
+    },
+    {
+      "id": "estate-urai-marketing-data-auth",
+      "requirementId": "estate-urai-marketing",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A176"
+    },
+    {
+      "id": "estate-urai-marketing-privacy-trust",
+      "requirementId": "estate-urai-marketing",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A177"
+    },
+    {
+      "id": "estate-urai-marketing-security",
+      "requirementId": "estate-urai-marketing",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A178"
+    },
+    {
+      "id": "estate-urai-marketing-accessibility",
+      "requirementId": "estate-urai-marketing",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A179"
+    },
+    {
+      "id": "estate-urai-marketing-deployment",
+      "requirementId": "estate-urai-marketing",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A180"
+    },
+    {
+      "id": "estate-urai-marketing-operations",
+      "requirementId": "estate-urai-marketing",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A181"
+    },
+    {
+      "id": "estate-urai-marketing-owner-lock",
+      "requirementId": "estate-urai-marketing",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A182"
+    },
+    {
+      "id": "estate-urai-analytics-routes",
+      "requirementId": "estate-urai-analytics",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A183"
+    },
+    {
+      "id": "estate-urai-analytics-data-auth",
+      "requirementId": "estate-urai-analytics",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A184"
+    },
+    {
+      "id": "estate-urai-analytics-privacy-trust",
+      "requirementId": "estate-urai-analytics",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A185"
+    },
+    {
+      "id": "estate-urai-analytics-security",
+      "requirementId": "estate-urai-analytics",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A186"
+    },
+    {
+      "id": "estate-urai-analytics-accessibility",
+      "requirementId": "estate-urai-analytics",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A187"
+    },
+    {
+      "id": "estate-urai-analytics-deployment",
+      "requirementId": "estate-urai-analytics",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A188"
+    },
+    {
+      "id": "estate-urai-analytics-operations",
+      "requirementId": "estate-urai-analytics",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A189"
+    },
+    {
+      "id": "estate-urai-analytics-owner-lock",
+      "requirementId": "estate-urai-analytics",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A190"
+    },
+    {
+      "id": "estate-urai-communications-routes",
+      "requirementId": "estate-urai-communications",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A191"
+    },
+    {
+      "id": "estate-urai-communications-data-auth",
+      "requirementId": "estate-urai-communications",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A192"
+    },
+    {
+      "id": "estate-urai-communications-privacy-trust",
+      "requirementId": "estate-urai-communications",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A193"
+    },
+    {
+      "id": "estate-urai-communications-security",
+      "requirementId": "estate-urai-communications",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A194"
+    },
+    {
+      "id": "estate-urai-communications-accessibility",
+      "requirementId": "estate-urai-communications",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A195"
+    },
+    {
+      "id": "estate-urai-communications-deployment",
+      "requirementId": "estate-urai-communications",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A196"
+    },
+    {
+      "id": "estate-urai-communications-operations",
+      "requirementId": "estate-urai-communications",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A197"
+    },
+    {
+      "id": "estate-urai-communications-owner-lock",
+      "requirementId": "estate-urai-communications",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A198"
+    },
+    {
+      "id": "estate-urai-jobs-routes",
+      "requirementId": "estate-urai-jobs",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A199"
+    },
+    {
+      "id": "estate-urai-jobs-data-auth",
+      "requirementId": "estate-urai-jobs",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A200"
+    },
+    {
+      "id": "estate-urai-jobs-privacy-trust",
+      "requirementId": "estate-urai-jobs",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A201"
+    },
+    {
+      "id": "estate-urai-jobs-security",
+      "requirementId": "estate-urai-jobs",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A202"
+    },
+    {
+      "id": "estate-urai-jobs-accessibility",
+      "requirementId": "estate-urai-jobs",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A203"
+    },
+    {
+      "id": "estate-urai-jobs-deployment",
+      "requirementId": "estate-urai-jobs",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A204"
+    },
+    {
+      "id": "estate-urai-jobs-operations",
+      "requirementId": "estate-urai-jobs",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A205"
+    },
+    {
+      "id": "estate-urai-jobs-owner-lock",
+      "requirementId": "estate-urai-jobs",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A206"
+    },
+    {
+      "id": "estate-urai-foundation-routes",
+      "requirementId": "estate-urai-foundation",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A207"
+    },
+    {
+      "id": "estate-urai-foundation-data-auth",
+      "requirementId": "estate-urai-foundation",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A208"
+    },
+    {
+      "id": "estate-urai-foundation-privacy-trust",
+      "requirementId": "estate-urai-foundation",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A209"
+    },
+    {
+      "id": "estate-urai-foundation-security",
+      "requirementId": "estate-urai-foundation",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A210"
+    },
+    {
+      "id": "estate-urai-foundation-accessibility",
+      "requirementId": "estate-urai-foundation",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A211"
+    },
+    {
+      "id": "estate-urai-foundation-deployment",
+      "requirementId": "estate-urai-foundation",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A212"
+    },
+    {
+      "id": "estate-urai-foundation-operations",
+      "requirementId": "estate-urai-foundation",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A213"
+    },
+    {
+      "id": "estate-urai-foundation-owner-lock",
+      "requirementId": "estate-urai-foundation",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A214"
+    },
+    {
+      "id": "estate-urai-storytime-routes",
+      "requirementId": "estate-urai-storytime",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A215"
+    },
+    {
+      "id": "estate-urai-storytime-data-auth",
+      "requirementId": "estate-urai-storytime",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A216"
+    },
+    {
+      "id": "estate-urai-storytime-privacy-trust",
+      "requirementId": "estate-urai-storytime",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A217"
+    },
+    {
+      "id": "estate-urai-storytime-security",
+      "requirementId": "estate-urai-storytime",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A218"
+    },
+    {
+      "id": "estate-urai-storytime-accessibility",
+      "requirementId": "estate-urai-storytime",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A219"
+    },
+    {
+      "id": "estate-urai-storytime-deployment",
+      "requirementId": "estate-urai-storytime",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A220"
+    },
+    {
+      "id": "estate-urai-storytime-operations",
+      "requirementId": "estate-urai-storytime",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A221"
+    },
+    {
+      "id": "estate-urai-storytime-owner-lock",
+      "requirementId": "estate-urai-storytime",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A222"
+    },
+    {
+      "id": "estate-b2bportal-routes",
+      "requirementId": "estate-b2bportal",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A223"
+    },
+    {
+      "id": "estate-b2bportal-data-auth",
+      "requirementId": "estate-b2bportal",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A224"
+    },
+    {
+      "id": "estate-b2bportal-privacy-trust",
+      "requirementId": "estate-b2bportal",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A225"
+    },
+    {
+      "id": "estate-b2bportal-security",
+      "requirementId": "estate-b2bportal",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A226"
+    },
+    {
+      "id": "estate-b2bportal-accessibility",
+      "requirementId": "estate-b2bportal",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A227"
+    },
+    {
+      "id": "estate-b2bportal-deployment",
+      "requirementId": "estate-b2bportal",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A228"
+    },
+    {
+      "id": "estate-b2bportal-operations",
+      "requirementId": "estate-b2bportal",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A229"
+    },
+    {
+      "id": "estate-b2bportal-owner-lock",
+      "requirementId": "estate-b2bportal",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A230"
+    },
+    {
+      "id": "estate-urai-investors-routes",
+      "requirementId": "estate-urai-investors",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A231"
+    },
+    {
+      "id": "estate-urai-investors-data-auth",
+      "requirementId": "estate-urai-investors",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A232"
+    },
+    {
+      "id": "estate-urai-investors-privacy-trust",
+      "requirementId": "estate-urai-investors",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A233"
+    },
+    {
+      "id": "estate-urai-investors-security",
+      "requirementId": "estate-urai-investors",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A234"
+    },
+    {
+      "id": "estate-urai-investors-accessibility",
+      "requirementId": "estate-urai-investors",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A235"
+    },
+    {
+      "id": "estate-urai-investors-deployment",
+      "requirementId": "estate-urai-investors",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A236"
+    },
+    {
+      "id": "estate-urai-investors-operations",
+      "requirementId": "estate-urai-investors",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A237"
+    },
+    {
+      "id": "estate-urai-investors-owner-lock",
+      "requirementId": "estate-urai-investors",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A238"
+    },
+    {
+      "id": "estate-asset-factory-routes",
+      "requirementId": "estate-asset-factory",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A239"
+    },
+    {
+      "id": "estate-asset-factory-data-auth",
+      "requirementId": "estate-asset-factory",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A240"
+    },
+    {
+      "id": "estate-asset-factory-privacy-trust",
+      "requirementId": "estate-asset-factory",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A241"
+    },
+    {
+      "id": "estate-asset-factory-security",
+      "requirementId": "estate-asset-factory",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A242"
+    },
+    {
+      "id": "estate-asset-factory-accessibility",
+      "requirementId": "estate-asset-factory",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A243"
+    },
+    {
+      "id": "estate-asset-factory-deployment",
+      "requirementId": "estate-asset-factory",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A244"
+    },
+    {
+      "id": "estate-asset-factory-operations",
+      "requirementId": "estate-asset-factory",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A245"
+    },
+    {
+      "id": "estate-asset-factory-owner-lock",
+      "requirementId": "estate-asset-factory",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A246"
+    },
+    {
+      "id": "estate-urai-admin-routes",
+      "requirementId": "estate-urai-admin",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A247"
+    },
+    {
+      "id": "estate-urai-admin-data-auth",
+      "requirementId": "estate-urai-admin",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A248"
+    },
+    {
+      "id": "estate-urai-admin-privacy-trust",
+      "requirementId": "estate-urai-admin",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A249"
+    },
+    {
+      "id": "estate-urai-admin-security",
+      "requirementId": "estate-urai-admin",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A250"
+    },
+    {
+      "id": "estate-urai-admin-accessibility",
+      "requirementId": "estate-urai-admin",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A251"
+    },
+    {
+      "id": "estate-urai-admin-deployment",
+      "requirementId": "estate-urai-admin",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A252"
+    },
+    {
+      "id": "estate-urai-admin-operations",
+      "requirementId": "estate-urai-admin",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A253"
+    },
+    {
+      "id": "estate-urai-admin-owner-lock",
+      "requirementId": "estate-urai-admin",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A254"
+    },
+    {
+      "id": "estate-urai-staging-routes",
+      "requirementId": "estate-urai-staging",
+      "kind": "BROWSER",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A255"
+    },
+    {
+      "id": "estate-urai-staging-data-auth",
+      "requirementId": "estate-urai-staging",
+      "kind": "PRIVATE_E2E",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A256"
+    },
+    {
+      "id": "estate-urai-staging-privacy-trust",
+      "requirementId": "estate-urai-staging",
+      "kind": "PRIVACY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A257"
+    },
+    {
+      "id": "estate-urai-staging-security",
+      "requirementId": "estate-urai-staging",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A258"
+    },
+    {
+      "id": "estate-urai-staging-accessibility",
+      "requirementId": "estate-urai-staging",
+      "kind": "ACCESSIBILITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A259"
+    },
+    {
+      "id": "estate-urai-staging-deployment",
+      "requirementId": "estate-urai-staging",
+      "kind": "DEPLOYMENT",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A260"
+    },
+    {
+      "id": "estate-urai-staging-operations",
+      "requirementId": "estate-urai-staging",
+      "kind": "RECOVERY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A261"
+    },
+    {
+      "id": "estate-urai-staging-owner-lock",
+      "requirementId": "estate-urai-staging",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A262"
+    },
+    {
+      "id": "estate-urai-containment",
+      "requirementId": "estate-urai",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A263"
+    },
+    {
+      "id": "estate-urai-terminal-role",
+      "requirementId": "estate-urai",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A264"
+    },
+    {
+      "id": "estate-urai-dev-containment",
+      "requirementId": "estate-urai-dev",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A265"
+    },
+    {
+      "id": "estate-urai-dev-terminal-role",
+      "requirementId": "estate-urai-dev",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A266"
+    },
+    {
+      "id": "estate-uraiprod-containment",
+      "requirementId": "estate-uraiprod",
+      "kind": "SECURITY",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A267"
+    },
+    {
+      "id": "estate-uraiprod-terminal-role",
+      "requirementId": "estate-uraiprod",
+      "kind": "INDEPENDENT_REVIEW",
+      "applicability": "APPLICABLE_TO_ADOPTED_ESTATE",
+      "formalAcceptance": "OPEN",
+      "exactOriginalAcceptance": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001016&range=A268"
+    }
+  ],
+  "founderTasks": [
+    {
+      "id": "FV-01",
+      "lane": "00 Authority and continuity",
+      "priority": "P0",
+      "originalRequirement": "production-operations",
+      "originalWork": "Preserve exactly Spatial #1636, Studio #159, Jobs #170 and Staging #109 plus all original 45/267 criteria. Never fork a second release controller.",
+      "originalStatus": "READ-ONLY VERIFIED",
+      "nextAction": "Refresh owner SHAs before every source or review change.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-spatial/pull/1636",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A2"
+    },
+    {
+      "id": "FV-02",
+      "lane": "00 Account continuity",
+      "priority": "P0",
+      "originalRequirement": "production-operations",
+      "originalWork": "Restore LifeLoggerAI GitHub billing, canceled metered access, Actions minutes/storage, plan state and actual hosted runner eligibility.",
+      "originalStatus": "ADMIN ACTION REQUIRED",
+      "nextAction": "Visit GitHub organization billing, resolve funding only with founder approval; retain redacted proof.",
+      "originalSource": "https://github.com/settings/billing",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A3"
+    },
+    {
+      "id": "FV-03",
+      "lane": "00 Account continuity",
+      "priority": "P0",
+      "originalRequirement": "security",
+      "originalWork": "Explain 22 failed no-step Digital Human jobs and two failed no-step Staging maintenance jobs; rerun on same SHA only once Actions account actually works.",
+      "originalStatus": "CI EXECUTION BLOCKED",
+      "nextAction": "Check Actions runner allocation, policy/usage and actual job logs; rerun scoped checks after recovery.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-spatial/pull/1850",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A4"
+    },
+    {
+      "id": "FV-04",
+      "lane": "00 Cloud survival",
+      "priority": "P0",
+      "originalRequirement": "production-operations",
+      "originalWork": "Verify native Google Cloud billing and project attachments, Firebase Auth/Functions/Storage continuity, quotas and warning banners.",
+      "originalStatus": "PROVIDER READ NEEDED",
+      "nextAction": "Review current billing status for canonical production and nonproduction resources; escalate any spend separately.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-labs-llc/issues/48",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A5"
+    },
+    {
+      "id": "FV-05",
+      "lane": "00 Domain & mail survival",
+      "priority": "P0",
+      "originalRequirement": "production-operations",
+      "originalWork": "Verify Workspace billing, urailabs.com renewal, DNS/TLS/SSL, role inboxes, MX/SPF/DKIM/DMARC, access recovery and backups.",
+      "originalStatus": "ADMIN ACCOUNT READ NEEDED",
+      "nextAction": "Check registrar and Workspace dashboards and actual email identity/security; no silent purchase.",
+      "originalSource": "https://docs.google.com/document/d/1qQd7uTnBjiPbeabJH7RrnjVVAJnpBFM3vLMUj7TrY60/edit",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A6"
+    },
+    {
+      "id": "FV-06",
+      "lane": "00 Finance continuity",
+      "priority": "P0",
+      "originalRequirement": "production-operations",
+      "originalWork": "Reconcile Mercury closure, actual outgoing payment method dependencies, vendors/autopays and banking continuity without assuming historical $48k is available.",
+      "originalStatus": "FINANCE OWNER NEEDED",
+      "nextAction": "Audit original banking/vendor notices and assign safe payment alternatives personally.",
+      "originalSource": "https://docs.google.com/document/d/1qQd7uTnBjiPbeabJH7RrnjVVAJnpBFM3vLMUj7TrY60/edit",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A7"
+    },
+    {
+      "id": "FV-07",
+      "lane": "00 Credential repair",
+      "priority": "P0",
+      "originalRequirement": "estate-urai-staging",
+      "originalWork": "Repair private Communications read-only source validation failing historical HTTP401 on protected Staging; prove current exact private main SHA.",
+      "originalStatus": "ADMIN SECRET ROTATION NEEDED",
+      "nextAction": "Inspect existing environment secret principal/expiry; reissue only necessary read scope.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-staging/issues/100",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A8"
+    },
+    {
+      "id": "FV-08",
+      "lane": "00 Source pin correction",
+      "priority": "P0",
+      "originalRequirement": "estate-urai-staging",
+      "originalWork": "Validate existing Staging PR #114 four-file scheduled source-pin update without superseding original #109.",
+      "originalStatus": "CURRENT CI FAILED IN SECONDS",
+      "nextAction": "Recover native runners; inspect executed errors and existing current source; no blind merging.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-staging/pull/114",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A9"
+    },
+    {
+      "id": "FV-09",
+      "lane": "00 Independent reviewer",
+      "priority": "P0",
+      "originalRequirement": "production-operations",
+      "originalWork": "Name legitimate external technical/art/security reviewers, verify native eligible permissions; distinguish LimberNutz0 from LimberNutz.",
+      "originalStatus": "NO ELIGIBLE APPROVAL",
+      "nextAction": "Verify reviewer identity and required least-privilege access before formal review request.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-staging/pull/109",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A10"
+    },
+    {
+      "id": "FV-10",
+      "lane": "01 Authorized cloud survey",
+      "priority": "P0",
+      "originalRequirement": "production-operations",
+      "originalWork": "Perform already-approved founder Decision A read-only Firebase/GCP inventory of EXISTING NONPRODUCTION projects, storage policies/UBLA/PAP, principal identity, WIF, Cloud Run, PubSub.",
+      "originalStatus": "A APPROVED; EXECUTION NOT DONE",
+      "nextAction": "Connect official Firebase read access as authorized project user; run metadata-only survey.",
+      "originalSource": "https://docs.google.com/document/d/1-Mg8rSpArlbW76wAEtAfpkkmUk4hRC1T_GUmW8pKVrE/edit",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A11"
+    },
+    {
+      "id": "FV-11",
+      "lane": "01 Cloud B decision",
+      "priority": "P0",
+      "originalRequirement": "production-operations",
+      "originalWork": "From real A inventory design one isolated nonproduction private-media target with project, buckets, IAM, limits, costs and rollback.",
+      "originalStatus": "B NOT APPROVED",
+      "nextAction": "Prepare concrete B decision; do not provision.",
+      "originalSource": "https://docs.google.com/document/d/1-Mg8rSpArlbW76wAEtAfpkkmUk4hRC1T_GUmW8pKVrE/edit",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A12"
+    },
+    {
+      "id": "FV-12",
+      "lane": "01 Cloud C decision",
+      "priority": "P0",
+      "originalRequirement": "life-movie-longform",
+      "originalWork": "Prepare exact C authorization for one protected positive J9 with real Spatial/Studio auth, Jobs, three MP4 and SRT and private owner.",
+      "originalStatus": "C NOT APPROVED",
+      "nextAction": "Do not change empty source allowlists or execute protected cloud.",
+      "originalSource": "https://docs.google.com/document/d/1-Mg8rSpArlbW76wAEtAfpkkmUk4hRC1T_GUmW8pKVrE/edit",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A13"
+    },
+    {
+      "id": "FV-13",
+      "lane": "02 Genuine private J9",
+      "priority": "P0",
+      "originalRequirement": "life-movie-base",
+      "originalWork": "Verify protected private bucket controls UBLA/PAP, two Firebase identities and original app Focus->Replay->Focus through all 3 videos/subtitles.",
+      "originalStatus": "SYNTHETIC PASS; J9 REAL OPEN",
+      "nextAction": "Execute only following separately authorized B/C.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-spatial/pull/1636",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A14"
+    },
+    {
+      "id": "FV-14",
+      "lane": "02 Private lifecycle",
+      "priority": "P0",
+      "originalRequirement": "consent-revocation",
+      "originalWork": "Test actual actor/session token invalidation, revoked consent, upload cancellation, signed-in foreign owner and delete/export retries.",
+      "originalStatus": "REAL PROVIDER ACCEPTANCE OPEN",
+      "nextAction": "Build negative suite now with synthetic identities; later C only.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-privacy/pull/160",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A15"
+    },
+    {
+      "id": "FV-15",
+      "lane": "02 Public route parity",
+      "priority": "P0",
+      "originalRequirement": "core-journey",
+      "originalWork": "Repair urai.app login/signup/support 404 and privacy route demo mismatch on original Spatial owner; verify served SHA.",
+      "originalStatus": "PUBLIC BROKEN ROUTES VERIFIED",
+      "nextAction": "Work through original PR source, no direct production deploy.",
+      "originalSource": "https://urai.app/login",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A16"
+    },
+    {
+      "id": "FV-16",
+      "lane": "03 Asset inventory",
+      "priority": "P0",
+      "originalRequirement": "generic-worlds",
+      "originalWork": "Inspect every one of 26 launch-critical assets in canonical manifest for accepted rights, bespoke models/splats/PBR, LOD and real hero proof.",
+      "originalStatus": "26 FINAL ART REVIEWS PENDING",
+      "nextAction": "Populate detailed visual QA sheet per route and asset.",
+      "originalSource": "https://github.com/LifeLoggerAI/asset-factory/issues/327",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A17"
+    },
+    {
+      "id": "FV-17",
+      "lane": "03 World001 calibration",
+      "priority": "P0",
+      "originalRequirement": "captured-reality",
+      "originalWork": "Resolve measured 4.694px median and 340.717px p90 failed independent holdout, camera intrinsics, source identity, scale and retest.",
+      "originalStatus": "HOLDOUT FAILED",
+      "nextAction": "Diagnose and repair source; no paid Gaussian training.",
+      "originalSource": "https://docs.google.com/document/d/1KiaD1nMATB1aI8rqHhVGq_7bK6g-rltk2untyuVgxKY/edit",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A18"
+    },
+    {
+      "id": "FV-18",
+      "lane": "03 Visual Gold Master",
+      "priority": "P0",
+      "originalRequirement": "core-journey",
+      "originalWork": "Finish open-sky/no-canopy Home, inhabited Ground, stellar Life Map, Focus, inside-memory Replay, Mirror, Privacy, Passport, Emotional Atlas and Council.",
+      "originalStatus": "TECHNICAL VISUAL TESTS PASS; ART OPEN",
+      "nextAction": "Use exact screenshot checklist tab; prioritize hero and worst perceptual gaps.",
+      "originalSource": "https://github.com/LifeLoggerAI/asset-factory/issues/326",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A19"
+    },
+    {
+      "id": "FV-19",
+      "lane": "04 Real Founder voice",
+      "priority": "P0",
+      "originalRequirement": "adam-presence",
+      "originalWork": "Verify private real Founder voice model, enrolled canonical protected voice ID, heldout fidelity, pronunciation, interruption and kill switch.",
+      "originalStatus": "REAL FOUNDER VOICE UNVERIFIED",
+      "nextAction": "Prepare consent + provider readback; no stock narrator substitution.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-spatial/issues/1529",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A20"
+    },
+    {
+      "id": "FV-20",
+      "lane": "04 Real Founder digital human",
+      "priority": "P0",
+      "originalRequirement": "adam-presence",
+      "originalWork": "Finish actual Founder approved facial likeness, textured head, body/rig, hair/eyes, speaking morph/viseme and React/WebXR encounter.",
+      "originalStatus": "ANONYMOUS MORPH ONLY; 22 CI FAILED",
+      "nextAction": "Get browser runner proof then admitted person-specific commissioned assets.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-spatial/pull/1850",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A21"
+    },
+    {
+      "id": "FV-21",
+      "lane": "04 Council six humans",
+      "priority": "P0",
+      "originalRequirement": "council",
+      "originalWork": "Produce six real visually distinct reviewed Council figures with skeletal animations, facial expressions, speech and spatial awareness.",
+      "originalStatus": "CURRENT BODY NOT PROMOTABLE",
+      "nextAction": "Complete material/rig/face clothing/motion and human signoff.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-spatial/pull/1850",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A22"
+    },
+    {
+      "id": "FV-22",
+      "lane": "04 Life Graph and World model",
+      "priority": "P0",
+      "originalRequirement": "life-graph",
+      "originalWork": "Prove genuine source->transcript->time entities/relations->Life Causal Graph->PersonWorld->SceneTruth->correct/revoke across every consumer.",
+      "originalStatus": "E2E OPEN",
+      "nextAction": "Run one real authorized truth roundtrip and independent cross-consumer check.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-spatial/issues/1542",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A23"
+    },
+    {
+      "id": "FV-23",
+      "lane": "05 First genuine Family Life Movie",
+      "priority": "P0",
+      "originalRequirement": "family-identity",
+      "originalWork": "Reconcile 830 original family files, verify consent and era truth, create fully actual private Life Movie with original audio/subtitles/edits.",
+      "originalStatus": "PRIVATE SOURCE HASHED; NO ACCEPTED FILM",
+      "nextAction": "Stage human-reviewed scene packets and private asset selection; no family upload before consent.",
+      "originalSource": "https://github.com/LifeLoggerAI/UrAiProd/pull/143",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A24"
+    },
+    {
+      "id": "FV-24",
+      "lane": "05 Long-form Cinema/Storytime",
+      "priority": "P1",
+      "originalRequirement": "life-movie-longform",
+      "originalWork": "Complete longform resume/cancel/split/assemble/render/save, rights-cleared soundtrack, accurate captions and safe private sharing.",
+      "originalStatus": "SOURCE WORKFLOWS GREEN; FINAL OPEN",
+      "nextAction": "Finish actual positive protected and original React end-to-end.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-studio/pull/159",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A25"
+    },
+    {
+      "id": "FV-25",
+      "lane": "06 Physical device matrix",
+      "priority": "P0",
+      "originalRequirement": "performance",
+      "originalWork": "Inspect real Android, desktop, supported iPhone/iPad, Quest, reduced motion, NVDA/VoiceOver/TalkBack, FPS/thermal and auth journeys.",
+      "originalStatus": "NOT HUMAN/HARDWARE CERTIFIED",
+      "nextAction": "Run signed current devices; preserve current iOS excluded gates but work on full vision.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-spatial/issues/1531",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A26"
+    },
+    {
+      "id": "FV-26",
+      "lane": "06 21+ languages",
+      "priority": "P0",
+      "originalRequirement": "localization",
+      "originalWork": "Select 21 distinct languages, translate all user-facing auth/privacy/media/billing/support, native qualified review and RTL/IME device tests.",
+      "originalStatus": "EN ONLY NATIVE REVIEWED",
+      "nextAction": "Recruit native reviewers and ship full translation packages; never count locale variants as separate languages.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-spatial/issues/1849",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A27"
+    },
+    {
+      "id": "FV-27",
+      "lane": "06 Enterprise estate",
+      "priority": "P0",
+      "originalRequirement": "estate-integration",
+      "originalWork": "Accept all mapped standalone company properties, legacy isolation, site links, private tenancy, identity, email, support, billing, observability and domains.",
+      "originalStatus": "ALL FULL ESTATE ACCEPTANCE OPEN",
+      "nextAction": "Use 45 original deliverable rows and per-repo PR CI as source only; test real estate.",
+      "originalSource": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A28"
+    },
+    {
+      "id": "FV-28",
+      "lane": "06 Legal/financial release",
+      "priority": "P0",
+      "originalRequirement": "estate-urai-ip-holdings",
+      "originalWork": "Complete Labs/Holdings current state status and signed IP chain/licenses, Foundation SOS/tax/governance, TEST entitlements and commercial support.",
+      "originalStatus": "PREPARED / EXECUTION LEGAL OPEN",
+      "nextAction": "Review legal instruments with qualified parties, preserve Stripe LIVE disabled.",
+      "originalSource": "https://docs.google.com/document/d/1jV2RUcVjTwejAhcF9MB0QiwXsiQEBTW1OK-T4ti9BRo/edit",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A29"
+    },
+    {
+      "id": "FV-29",
+      "lane": "07 Independent finish",
+      "priority": "P0",
+      "originalRequirement": "security",
+      "originalWork": "Freeze exact complete source, machines and artifacts; invite eligible independent multi-discipline team to review final visuals, films, devices, privacy, infra and legal.",
+      "originalStatus": "NO-GO / ZERO FULL ACCEPTED",
+      "nextAction": "Package source-bound cross-repo browser/cloud/physical/rights proof, remedy defects and recheck.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-spatial/pull/1636",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A30"
+    },
+    {
+      "id": "FV-30",
+      "lane": "07 Push-button release",
+      "priority": "P0",
+      "originalRequirement": "production-operations",
+      "originalWork": "One founder-authorized protected canary->deploy, exact served SHA parity, original complete journey/J9, external smoke, rollback drill and monitoring.",
+      "originalStatus": "GLOBAL NO-GO",
+      "nextAction": "Prepare exact runbook and stop; execute only on separate explicit founder release GO.",
+      "originalSource": "https://github.com/LifeLoggerAI/urai-spatial/pull/1636",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=653080715&range=A31"
+    }
+  ],
+  "releaseGates": [
+    {
+      "id": "G-00",
+      "name": "Scope preservation",
+      "originalStatus": "VERIFIED SOURCE ONLY",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A2"
+    },
+    {
+      "id": "G-01",
+      "name": "GitHub billing and Actions",
+      "originalStatus": "BLOCKED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A3"
+    },
+    {
+      "id": "G-02",
+      "name": "Cloud/Workspace/domain continuity",
+      "originalStatus": "BLOCKED - LIVE OWNER READ",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A4"
+    },
+    {
+      "id": "G-03",
+      "name": "Communications protected source ref",
+      "originalStatus": "BLOCKED - SECRET ADMIN",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A5"
+    },
+    {
+      "id": "G-04",
+      "name": "Firebase cloud Decision A",
+      "originalStatus": "APPROVED; UNEXECUTED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A6"
+    },
+    {
+      "id": "G-05",
+      "name": "Firebase cloud Decision B",
+      "originalStatus": "NOT APPROVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A7"
+    },
+    {
+      "id": "G-06",
+      "name": "Protected positive J9 Decision C",
+      "originalStatus": "NOT APPROVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A8"
+    },
+    {
+      "id": "G-07",
+      "name": "Real private media positive",
+      "originalStatus": "J9_INCOMPLETE",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A9"
+    },
+    {
+      "id": "G-08",
+      "name": "Final visual+audio+assets",
+      "originalStatus": "NOT ACCEPTED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A10"
+    },
+    {
+      "id": "G-09",
+      "name": "Captured Reality geometry",
+      "originalStatus": "FAILED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A11"
+    },
+    {
+      "id": "G-10",
+      "name": "Adam+Council identity",
+      "originalStatus": "NOT CERTIFIED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A12"
+    },
+    {
+      "id": "G-11",
+      "name": "Life Graph+real family film",
+      "originalStatus": "NOT CERTIFIED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A13"
+    },
+    {
+      "id": "G-12",
+      "name": "Real hardware, native languages",
+      "originalStatus": "NOT CERTIFIED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A14"
+    },
+    {
+      "id": "G-13",
+      "name": "Every site, privacy & legal operations",
+      "originalStatus": "OPEN",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A15"
+    },
+    {
+      "id": "G-14",
+      "name": "Independent source and real experience review",
+      "originalStatus": "NO APPROVED REVIEW",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A16"
+    },
+    {
+      "id": "G-15",
+      "name": "Freeze and founder push button",
+      "originalStatus": "GLOBAL NO-GO",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=129401606&range=A17"
+    }
+  ],
+  "authorityConflicts": [
+    {
+      "id": "AUTH-01",
+      "topic": "Candidate / branch authority",
+      "originalStatus": "REOPENED — SUPERSEDED SOURCE",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A2"
+    },
+    {
+      "id": "AUTH-02",
+      "topic": "CI timing lag",
+      "originalStatus": "RECONCILED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A3"
+    },
+    {
+      "id": "AUTH-03",
+      "topic": "Full vision / fallback demo",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A4"
+    },
+    {
+      "id": "AUTH-04",
+      "topic": "iOS",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A5"
+    },
+    {
+      "id": "AUTH-05",
+      "topic": "SendGrid",
+      "originalStatus": "RECONCILED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A6"
+    },
+    {
+      "id": "AUTH-06",
+      "topic": "Institutional labels",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A7"
+    },
+    {
+      "id": "AUTH-07",
+      "topic": "Asset/world labels",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A8"
+    },
+    {
+      "id": "AUTH-08",
+      "topic": "Languages",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A9"
+    },
+    {
+      "id": "AUTH-09",
+      "topic": "Foundation",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A10"
+    },
+    {
+      "id": "AUTH-10",
+      "topic": "Provider scope",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A11"
+    },
+    {
+      "id": "AUTH-11",
+      "topic": "Acceptance criteria",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A12"
+    },
+    {
+      "id": "AUTH-12",
+      "topic": "Wide audit export",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A13"
+    },
+    {
+      "id": "AUTH-13",
+      "topic": "R3 recovery granularity",
+      "originalStatus": "RECOVERED IN R4",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A14"
+    },
+    {
+      "id": "AUTH-14",
+      "topic": "Domain expiry and issuer authority",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A15"
+    },
+    {
+      "id": "AUTH-15",
+      "topic": "Life Movies historical candidate authority",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A16"
+    },
+    {
+      "id": "AUTH-16",
+      "topic": "Manifest vs current owner",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A17"
+    },
+    {
+      "id": "AUTH-17",
+      "topic": "Descriptions vs native head",
+      "originalStatus": "UNRESOLVED — REOPENED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A18"
+    },
+    {
+      "id": "AUTH-18",
+      "topic": "Jobs envelope vs protected owner",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A19"
+    },
+    {
+      "id": "AUTH-19",
+      "topic": "Estate completion vs first launch",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A20"
+    },
+    {
+      "id": "AUTH-20",
+      "topic": "NDA draft vs executed-link column",
+      "originalStatus": "UNRESOLVED",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A21"
+    },
+    {
+      "id": "AUTH-21",
+      "topic": "Launch-mandatory XR vs hard-disabled original release source",
+      "originalStatus": "UNRESOLVED — WAVE189 XR ROUTE SOURCE DEFECT REPRODUCED; 4/4 PATCH PROPOSAL UNPUBLISHED; DEVICE/RELEASE OPEN",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A22"
+    },
+    {
+      "id": "AUTH-22",
+      "topic": "Autonomous contextual nudges vs incomplete explicit acceptance trace",
+      "originalStatus": "UNRESOLVED — WAVE187 HARDENED LOCAL 15/15 SYNTHETIC; SOURCE UNPUBLISHED; REAL FIREBASE / NUDGE ACCEPTANCE OPEN",
+      "source": "https://docs.google.com/spreadsheets/d/16QedpEdHmpIdJpQ98EWibWoeTdUbycFzJXk8ICSMNiM/edit#gid=2000001007&range=A23"
+    }
+  ]
+}

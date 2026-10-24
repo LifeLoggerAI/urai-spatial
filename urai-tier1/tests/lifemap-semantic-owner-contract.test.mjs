@@ -45,7 +45,7 @@ test('mounted 3D artifacts retain independent pointer activation ownership', () 
   assert.match(world, /name=\{`life-map-artifact-\$\{resolveArtifactFamily\(node\)\}-\$\{node\.id\}`\}/)
   assert.match(world, /userData=\{\{ artifactFamily: resolveArtifactFamily\(node\), importance: importance\.toFixed\(2\), semanticLabel, chapterId: chapter\.id, runtimeAsset: MEMORY_STAR_MODEL \}\}/)
   assert.doesNotMatch(world, /data-artifact-family=/)
-  assert.match(world, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
+  assert.match(world, /onClick=\{\(event\) => \{\s*if \(event\.delta > 6\) return;\s*event\.stopPropagation\(\);\s*onStarClick\(node\);\s*\}\}/)
   assert.match(world, /if \(node\) onSelect\(node\)/)
 })
 
@@ -121,5 +121,21 @@ test('selected semantic search result keeps accessible Focus actions while clear
   assert.match(navigator, /\{selected && open \? <aside className="life-map-semantic-inspector"/)
   assert.match(navigator, /\.life-map-semantic-inspector\{display:grid;left:12px/)
   assert.doesNotMatch(navigator, /\.life-map-semantic-inspector\{display:none/)
-  assert.match(navigator, /disabled=\{\(!explicitDemo && !selected\.authorizedMemory\) \|\| Boolean\(selected\.locked\)\}/)
+  assert.match(navigator, /disabled=\{!lifeMapFocusAllowed\(selected, sourceMode\)\}/)
+  assert.match(navigator, /disabled=\{!lifeMapPhysicalReplayAllowed\(selected, sourceMode\)\}/)
+})
+
+
+test('semantic related-star inspector uses privacy-filtered links rather than raw hidden nodes', () => {
+  assert.match(navigator, /const related = lifeMapVisibleRelatedNodes\(nodes, selected\)/);
+  assert.doesNotMatch(navigator, /const related = selected \? nodes\.filter/);
+  assert.match(navigator, /lifeMapFilterVisibleNodes\(nodes\)\.filter\(lifeMapNodeSelectable\)\.filter\(\(node\) => matchesSearch\(node,/)
+  assert.match(navigator, /\(visibleNodes\.length \? visibleNodes : lifeMapFilterVisibleNodes\(nodes\)\)\.filter\(lifeMapNodeSelectable\)/);
+});
+
+test('semantic search results never enumerate a locked or hidden private context star', () => {
+  assert.match(navigator, /lifeMapFilterVisibleNodes\(nodes\)\.filter\(lifeMapNodeSelectable\)\.filter\(\(node\) => matchesSearch\(node,/)
+  assert.match(navigator, /visibleNodes\.map\(\(node\) => <li key=\{node\.id\}/)
+  assert.doesNotMatch(navigator, /lifeMapFilterVisibleNodes\(nodes\)\.filter\(\(node\) => matchesSearch\(node,/)
+  assert.match(navigator, /\.filter\(lifeMapNodeSelectable\)/)
 })

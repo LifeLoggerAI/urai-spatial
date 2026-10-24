@@ -27,7 +27,7 @@ test('sample memories require only the explicit demo-user contract', () => {
 })
 
 test('empty and failed private snapshots never substitute seed memories', () => {
-  assert.match(source, /setNodes\(snapshot\.docs\.map/)
+  assert.match(source, /setNodes\(projection\.items as LifeMapNode\[\]\)/)
   assert.doesNotMatch(source, /setNodes\([^)]*lifeMapNodes/)
   assert.match(source, /setNodes\(\[\]\)/)
   assert.match(source, /setEras\(\[\]\)/)
@@ -39,8 +39,8 @@ test('empty and failed private snapshots never substitute seed memories', () => 
 test('normalized documents inherit the authenticated owner rather than a fake identity', () => {
   assert.match(source, /function normalizeEvent\(id: string, data: DocumentData, ownerId = ""\)/)
   assert.match(source, /userId: typeof data\.userId === "string" \? data\.userId : ownerId/)
-  assert.match(source, /normalizeEvent\(doc\.id, doc\.data\(\), resolvedUserId\)/)
-  assert.match(source, /normalizeEra\(doc\.id, doc\.data\(\), resolvedUserId\)/)
+  assert.match(source, /mapLifeMapEventToNode\(normalizeEvent\(id, data, resolvedUserId\)\)/)
+  assert.match(source, /normalizeEra\(id, data, resolvedUserId\)/)
 })
 
 
@@ -48,7 +48,7 @@ test('signed-out Life Map never auto-opens disclosed demo content', () => {
   assert.doesNotMatch(accessGate, /setTimeout\(onOpenDemo/)
   assert.doesNotMatch(accessGate, /USER_ID_KEY|urai:userId/)
   assert.doesNotMatch(accessGate, /localStorage\.getItem/)
-  assert.match(accessGate, /listen: \(onIdentity, onFailure\) => onAuthStateChanged\(getAuth\(app\), user => onIdentity\(user\?\.uid \?\? null\), onFailure\)/)
+  assert.match(accessGate, /listen: \(onIdentity, onFailure\) => \{[\s\S]*const auth = getUraiAuth\(\);[\s\S]*return onAuthStateChanged\(auth, user =>[\s\S]*onIdentity\(user && auth\.currentUser === user \? user\.uid : null\), onFailure\);/)
   assert.match(accessGate, /setMode\(userId \? "private" : "signed-out"\)/)
   assert.match(accessGate, /current\.get\("demo"\) === "1"/)
   assert.match(accessGate, /onClick=\{onOpenDemo\}/)
@@ -78,7 +78,7 @@ test('semantic Life Map fallback preserves the Focus and Replay journey without 
   assert.match(semanticNavigator, /destinationHref\('focus', selected\)/)
   assert.match(semanticNavigator, /destinationHref\('replay', selected\)/)
   assert.match(semanticNavigator, /next\.set\('from', 'life-map-semantic'\)/)
-  assert.match(semanticNavigator, /disabled=\{!selected\.replayAvailable \|\| selected\.locked \|\| \(!explicitDemo && !selected\.authorizedMemory\)\}/)
+  assert.match(semanticNavigator, /disabled=\{!lifeMapPhysicalReplayAllowed\(selected, sourceMode\)\}/)
   assert.match(semanticNavigator, /locale.text\('lifeMap.enterFocus'\)/)
   const messages = fs.readFileSync(new URL('../src/lib/i18n/journeyMessages.ts', import.meta.url), 'utf8')
   assert.match(messages, /'lifeMap.enterFocus':\s*\{\s*id:'lifeMap.enterFocus',\s*source:"Enter Focus"/)
@@ -131,4 +131,70 @@ test('private Life Map joins only currently consented, owner-verified canonical 
   assert.match(source, /nodesAuthority !== authorityKey \|\| erasAuthority !== authorityKey \|\| memoriesAuthority !== authorityKey\) return fromEvents/)
   assert.match(source, /memory\.privacy === 'hidden' \|\| memory\.demo \|\| memory\.ownerId !== resolvedUserId/)
   assert.match(source, /eventMemoryIds\.has\(memory\.id\)\) continue/)
+})
+
+
+test('visible Life Map projection denies both current and legacy hidden privacy, including demo and keyboard paths', () => {
+  assert.match(source, /privacyLevel: lifeMapEventPrivacyLevel\(data\)/);
+  assert.match(source, /const visibleNodes = lifeMapFilterVisibleNodes\(/);
+  assert.match(semanticNavigator, /const candidates = \(visibleNodes\.length \? visibleNodes : lifeMapFilterVisibleNodes\(nodes\)\)\.filter\(lifeMapNodeSelectable\)/);
+  assert.match(semanticNavigator, /const selected = nodes.find\(\(node\) => node.id === selectedId && !lifeMapNodeIsHidden\(node\) && !node\.locked\)/);
+  assert.match(semanticNavigator, /if \(lifeMapNodeIsHidden\(node\) \|\| node.locked\) return/);
+});
+
+test('canonical fallback requires a complete unordered owner event query, including undated legacy hidden events', () => {
+  assert.match(source, /const coverageQuery = query\(collection\(getFirebaseDb\(\), "users", owner, "lifeMapEvents"\), limit\(240\)\)/)
+  assert.match(source, /lifeMapEventCoverageComplete\(snapshot\.docs\.length, snapshot\.metadata\.fromCache\)/)
+  assert.match(source, /unorderedEventCoverage\.authority !== authorityKey \|\| !unorderedEventCoverage\.complete/)
+  assert.match(source, /const hiddenEventMemoryIds = new Set\(lifeMapHiddenEventMemoryIds\(currentNodes\)\)/)
+  assert.match(source, /for \(const id of unorderedEventCoverage\.hiddenIds\) hiddenEventMemoryIds\.add\(id\)/)
+})
+
+
+test('owner-bound snapshot admission discards foreign event and era metadata and denies incomplete coverage', () => {
+  assert.match(source, /import \{ projectLifeMapOwnerSnapshot, lifeMapServerConfirmed \} from "\.\/lifeMapEventPrivacy\.mjs"/)
+  assert.match(source, /const ownersValid = projection\.items\.length === snapshot\.docs\.length/)
+  assert.match(source, /setEventSnapshotComplete\(ownersValid && snapshot\.docs\.length < 240 && lifeMapServerConfirmed\(snapshot\.metadata\)\)/)
+  assert.match(source, /setNodes\(projection\.items as LifeMapNode\[\]\)/)
+  assert.match(source, /setEras\(projection\.items as LifeMapEra\[\]\)/)
+  assert.match(source, /if \(!projection\.ok \|\| projection\.items\.length !== snapshot\.docs\.length\)/)
+  assert.match(source, /setEventsError\("Private Life Map events could not be verified\."\)/)
+  assert.match(source, /setErasError\("Private Life Map eras could not be verified\."\)/)
+})
+
+test('software renderer Focus and Replay actions use authored semantic routes, not English label parsing', () => {
+  const scene = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+  assert.match(scene, /data-life-map-threshold-route="focus"/)
+  assert.match(scene, /data-life-map-threshold-route="replay"/)
+  assert.match(scene, /data-life-map-overview-action="true"/)
+  assert.match(routeBoundary, /lifeMapSoftwareRouteDestination\(route, button\.dataset\.destinationHref, window\.location\.origin\)/)
+  assert.match(routeBoundary, /button\[data-life-map-overview-action="true"\]/)
+  assert.doesNotMatch(routeBoundary, /label\.includes\('Enter Focus'\)/)
+  assert.doesNotMatch(routeBoundary, /overviewActionLabels/)
+})
+
+test('all three Firestore snapshot paths use all-or-nothing owner projection before state admission', () => {
+  const call = /const projection = projectLifeMapOwnerSnapshot\(snapshot\.docs, (?:resolvedUserId|owner),/g;
+  assert.equal((source.match(call) || []).length, 3);
+  assert.match(source, /if \(!projection\.ok\) \{\s*setNodes\(\[\]\);\s*setEventSnapshotComplete\(false\);/)
+  assert.match(source, /if \(!projection\.ok \|\| projection\.items\.length !== snapshot\.docs\.length\) \{\s*setUnorderedEventCoverage\(null\);/)
+  assert.match(source, /if \(!projection\.ok\) \{\s*setEras\(\[\]\);/)
+  assert.doesNotMatch(source, /setNodes\(snapshot\.docs\.map/)
+  assert.doesNotMatch(source, /setEras\(snapshot\.docs\.map/)
+})
+
+test('semantic fallback never discloses locked titles or summaries in its search result list', () => {
+  assert.match(semanticNavigator, /lifeMapFilterVisibleNodes\(nodes\)\.filter\(lifeMapNodeSelectable\)\.filter\(\(node\) => matchesSearch\(node,/)
+  assert.match(semanticNavigator, /visibleNodes\.map\(\(node\) => <li key=\{node\.id\}/)
+})
+
+test('private Life Map subscriptions require server-confirmed and committed snapshots, including metadata changes', () => {
+  assert.match(source,/import \{ projectLifeMapOwnerSnapshot, lifeMapServerConfirmed \} from "\.\/lifeMapEventPrivacy\.mjs"/)
+  assert.match(source,/privacyPolicy', 'current'\), \{ includeMetadataChanges: true \}, snapshot/)
+  assert.match(source,/onSnapshot\(eventsQuery, \{ includeMetadataChanges: true \}, \(snapshot\) =>/)
+  assert.match(source,/onSnapshot\(erasQuery, \{ includeMetadataChanges: true \}, \(snapshot\) =>/)
+  assert.match(source,/query\(collection\(getFirebaseDb\(\), "users", resolvedUserId, "memories"\), limit\(240\)\),\s*\{ includeMetadataChanges: true \}, snapshot/)
+  assert.match(source,/if \(!lifeMapServerConfirmed\(snapshot\.metadata\)\) \{ setNodes\(\[\]\); setEventSnapshotComplete\(false\); setNodesAuthority\(null\); setEventsLoading\(true\); return; \}/)
+  assert.match(source,/if \(!lifeMapServerConfirmed\(snapshot\.metadata\)\) \{ setCanonicalMemories\(new Map\(\)\); setMemoriesAuthority\(null\); setMemoriesLoading\(true\); return; \}/)
+  assert.match(source,/complete: lifeMapEventCoverageComplete\(snapshot\.docs\.length, snapshot\.metadata\.fromCache\) && lifeMapServerConfirmed\(snapshot\.metadata\)/)
 })

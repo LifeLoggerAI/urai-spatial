@@ -179,3 +179,31 @@ test('real Life Map Auth callback revokes its private owner on sign-out', () => 
     assert.deepEqual(f.values, ['owner-A', null])
   } finally { f.cleanup() }
 })
+
+test('terminal Firebase listener error cannot revive a stale private owner', () => {
+  const clock = fakeClock(), results = [];
+  let onIdentity, onError;
+  const stop = subscribeLifeMapAuth({
+    listen: (identity, error) => { onIdentity = identity; onError = error; return () => {}; },
+    onResolved: value => results.push(value), ...clock,
+  });
+  onIdentity('owner-A');
+  onError();
+  onIdentity('owner-A');
+  assert.deepEqual(results, ['owner-A', null]);
+  stop();
+});
+
+test('initial listener error blocks a late owner and repeated error notifications', () => {
+  const clock = fakeClock(), results = [];
+  let onIdentity, onError;
+  const stop = subscribeLifeMapAuth({
+    listen: (identity, error) => { onIdentity = identity; onError = error; return () => {}; },
+    onResolved: value => results.push(value), ...clock,
+  });
+  onError();
+  onIdentity('owner-B');
+  onError();
+  assert.deepEqual(results, [null]);
+  stop();
+});
