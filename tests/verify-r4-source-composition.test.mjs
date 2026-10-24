@@ -11,14 +11,14 @@ function oldFixture(){
 function fixture(){
   const f=oldFixture()
   f.manifest.candidateSourceClaims=[{
-    path:'urai-tier1/src/components/lifemap/useLifeMapEvents.ts', blob:'f2619410f05f92d96a9824451089e2023a62c57e',
+    path:'urai-tier1/src/components/lifemap/useLifeMapEvents.ts', blob:'b54024164039f6ba3bb1fabdac42e1c63c5f01e6',
     reason:'Candidate-owned hidden memory event normalization stays pinned',
   }]
-  f.entries.set('urai-tier1/src/components/lifemap/useLifeMapEvents.ts',{mode:'100644',type:'blob',sha:'f2619410f05f92d96a9824451089e2023a62c57e'})
+  f.entries.set('urai-tier1/src/components/lifemap/useLifeMapEvents.ts',{mode:'100644',type:'blob',sha:'b54024164039f6ba3bb1fabdac42e1c63c5f01e6'})
   for(const [path,blob] of [
     ['urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx','a6fefdd2e75448f9869202cf740726168c11caa3'],
     ['urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs','9947d8086bb4777bd0de2eaf151ed3a36dbb5fd1'],
-    ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs','0943053fdf773df484be9ba2cddc32ec6023ac2c']]) {
+    ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs','f4708011daae7f222076d697cfc200272c118f2e']]) {
     f.manifest.candidateSourceClaims.push({path,blob,reason:'Candidate-owned software route boundary is byte pinned'})
     f.entries.set(path,{mode:'100644',type:'blob',sha:blob})
   }

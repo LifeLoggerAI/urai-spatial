@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { collection, doc, limit, onSnapshot, orderBy, query, type DocumentData } from "firebase/firestore";
 import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from "@/spatial/memory/selectedMemoryContract";
 import { isConsentPolicy } from "@/app/privacy-controls/consentModel";
-import { normalizeLifeMapEventPrivacy, lifeMapOwnerDocumentAllowed } from "./lifeMapEventPrivacy.mjs";
+import { normalizeLifeMapEventPrivacy, lifeMapOwnerDocumentAllowed, projectLifeMapOwnerSnapshot } from "./lifeMapEventPrivacy.mjs";
 import { lifeMapNodeIsHidden } from "./lifeMapPhysicalStarAction.mjs";
 import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
@@ -266,11 +266,17 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       const eventsQuery = query(collection(getFirebaseDb(), "users", resolvedUserId, "lifeMapEvents"), orderBy("occurredAt", "desc"), limit(240));
       const unsubscribe = onSnapshot(eventsQuery, (snapshot) => {
         if (cancelled) return;
-        setNodes(snapshot.docs.flatMap((item) => {
-          const data = item.data();
-          return lifeMapOwnerDocumentAllowed(data, resolvedUserId)
-            ? [mapLifeMapEventToNode(normalizeEvent(item.id, data, resolvedUserId))] : [];
-        }));
+        const projection = projectLifeMapOwnerSnapshot(snapshot.docs, resolvedUserId,
+          (id, data) => mapLifeMapEventToNode(normalizeEvent(id, data, resolvedUserId)));
+        if (!projection.ok) {
+          setNodes([]);
+          setNodesOwner(resolvedUserId);
+          setNodesAuthority(authorityKey);
+          setEventsLoading(false);
+          setEventsError("Private Life Map events could not be verified.");
+          return;
+        }
+        setNodes(projection.items);
         setNodesOwner(resolvedUserId);
         setNodesAuthority(authorityKey);
         setEventsLoading(false);
@@ -320,11 +326,17 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       const erasQuery = query(collection(getFirebaseDb(), "users", resolvedUserId, "lifeMapEras"), limit(80));
       const unsubscribe = onSnapshot(erasQuery, (snapshot) => {
         if (cancelled) return;
-        setEras(snapshot.docs.flatMap((item) => {
-          const data = item.data();
-          return lifeMapOwnerDocumentAllowed(data, resolvedUserId)
-            ? [normalizeEra(item.id, data, resolvedUserId)] : [];
-        }));
+        const projection = projectLifeMapOwnerSnapshot(snapshot.docs, resolvedUserId,
+          (id, data) => normalizeEra(id, data, resolvedUserId));
+        if (!projection.ok) {
+          setEras([]);
+          setErasOwner(resolvedUserId);
+          setErasAuthority(authorityKey);
+          setErasLoading(false);
+          setErasError("Private Life Map eras could not be verified.");
+          return;
+        }
+        setEras(projection.items);
         setErasOwner(resolvedUserId);
         setErasAuthority(authorityKey);
         setErasLoading(false);

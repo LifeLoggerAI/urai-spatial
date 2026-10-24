@@ -715,7 +715,7 @@
   "candidateSourceClaims": [
     {
       "path": "urai-tier1/src/components/lifemap/useLifeMapEvents.ts",
-      "blob": "f2619410f05f92d96a9824451089e2023a62c57e",
+      "blob": "b54024164039f6ba3bb1fabdac42e1c63c5f01e6",
       "reason": "Owner-scoped Firestore event and era normalization blocks explicit mismatched userId before Life Map projection"
     },
     {
@@ -730,7 +730,7 @@
     },
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs",
-      "blob": "0943053fdf773df484be9ba2cddc32ec6023ac2c",
+      "blob": "f4708011daae7f222076d697cfc200272c118f2e",
       "reason": "Shared privacy and owner-scope normalization for user-specific Life Map streams"
     }
   ]
