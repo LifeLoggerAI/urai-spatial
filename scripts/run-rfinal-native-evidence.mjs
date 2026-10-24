@@ -495,6 +495,24 @@ async function main() {
       if (clone.exitCode !== 0) throw new Error('EXACT_SOURCE_CLONE_FAILED')
       await shortGit(['-C',source,'config','core.autocrlf','false'],source,evidence,'config_autocrlf')
       await shortGit(['-C',source,'config','core.longpaths','true'],source,evidence,'config_longpaths')
+      // Pinned runs can target commits older than the 200-commit shallow clone.
+      // Verify that the pinned commit actually belongs to the branch and
+      // recover its tree BEFORE sparse audit or detached checkout. Fetching is
+      // allowed only inside this newly created disposable checkout, never
+      // in an existing source/worktree supplied by another worker.
+      if (cfg.pinnedSha && head !== remoteAtStart) {
+        const pinnedHistory = await ensureNativeGitAncestry({
+          branch: target.branch, sourceHead: remoteAtStart, trustedAncestor: head,
+          allowDeepen: true,
+          runGit: async (args, name) => {
+            const result = await command(['git', '-C', source, ...args], {
+              cwd: source, log: path.join(evidence, 'pinned_' + name + '.log'), timeoutMinutes: 12,
+            })
+            return { ...result, output: readFileSync(result.logPath, 'utf8').trim() }
+          },
+        })
+        record('pinned_checkout_history_verified', 'PASS', pinnedHistory)
+      }
       // Configure the reviewed historical exclusions BEFORE Git tries to write
       // Windows-illegal filenames. --no-cone keeps the rest of the original
       // repository and all eight production GLBs included.

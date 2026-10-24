@@ -183,6 +183,8 @@ test('real shallow clone returns 128 for missing ancestor and recovers with boun
     const tip = git(origin,['rev-parse','HEAD']).stdout.trim()
     assert.equal(git(dir,['clone','-q','--depth=2','--single-branch','--branch',branch,
       pathToFileURL(origin).href,checkout]).status,0)
+    const treeBefore = git(checkout,['ls-tree','-rz','--name-only',ancestor])
+    assert.equal(treeBefore.status,128,'unpinned old tree is not available in the shallow clone')
     const failed = git(checkout,['merge-base','--is-ancestor',ancestor,tip])
     assert.equal(failed.status,128)
     assert.match(failed.stderr,/not a valid commit name/i)
@@ -200,5 +202,6 @@ test('real shallow clone returns 128 for missing ancestor and recovers with boun
     assert.equal(done.deepenAttempts,1)
     assert.equal(fetches,1)
     assert.equal(git(checkout,['merge-base','--is-ancestor',ancestor,tip]).status,0)
+    assert.equal(git(checkout,['ls-tree','-rz','--name-only',ancestor]).status,0,'recovered old tree must be readable')
   } finally {rmSync(dir,{recursive:true,force:true})}
 })
