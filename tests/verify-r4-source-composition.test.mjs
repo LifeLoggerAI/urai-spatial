@@ -150,3 +150,17 @@ test('shared event privacy owner helper is candidate-owned and immutable',()=>{
  f.entries.set(path,{mode:'100644',type:'blob',sha:h('a')})
  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_BLOB_MISMATCH/)
 })
+
+test('PR1933 admits exactly the independently verified historical immediate parent',()=>{
+ const f=fixture()
+ const claim=f.manifest.sourceClaims.find(c=>c.sourcePR===1933)
+ assert.ok(claim)
+ claim.sourceHead='2f941b70a0f23f07ed22fe6b1ba83368749fd56c'
+ // Fixture declares synthetic donor heads; align only the exact real 1933 head.
+ f.manifest.sourceDonors.find(d=>d.pr===1933).sourceHead='9e29e2d5bc0b72a11f51ab8a93d01846be870956'
+ for(const c of f.manifest.sourceClaims.filter(c=>c.sourcePR===1933&&c!==claim))
+  c.sourceHead='9e29e2d5bc0b72a11f51ab8a93d01846be870956'
+ assert.doesNotThrow(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')))
+ claim.sourceHead=h('a')
+ assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/SOURCE_CLAIM_INVALID/)
+})
