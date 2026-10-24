@@ -1,0 +1,60 @@
+import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import test from 'node:test'
+import { inspectGroundGlbAnchors } from '../scripts/lib/ground-glb-source-anchors.mjs'
+
+// Read the original committed Ground asset, not a fabricated Node fixture.
+// This proof is structural and byte-provenanced; never a rendering/art certificate.
+const modelUrl = new URL('../urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb', import.meta.url)
+const sourceUrl = new URL('../urai-tier1/src/app/ground/GroundWorldModel.ts', import.meta.url)
+const receiptUrl = new URL('../operations/assets/generated-receipts/urai-final-glb-pack-v1.json', import.meta.url)
+
+export function parseGroundGlbBinary(binary) {
+  assert.ok(Buffer.isBuffer(binary) && binary.length >= 28, 'GROUND_GLB_BINARY_TOO_SMALL')
+  assert.equal(binary.readUInt32LE(0), 0x46546c67, 'GROUND_GLB_BAD_MAGIC')
+  assert.equal(binary.readUInt32LE(4), 2, 'GROUND_GLB_BAD_VERSION')
+  assert.equal(binary.readUInt32LE(8), binary.length, 'GROUND_GLB_BAD_TOTAL_SIZE')
+  const jsonLength = binary.readUInt32LE(12)
+  assert.ok(jsonLength > 0 && jsonLength % 4 === 0 && jsonLength <= binary.length - 28, 'GROUND_GLB_JSON_BOUNDS_INVALID')
+  assert.equal(binary.readUInt32LE(16), 0x4e4f534a, 'GROUND_GLB_JSON_CHUNK_MISSING')
+  const binHeader = 20 + jsonLength
+  assert.ok(binHeader + 8 <= binary.length, 'GROUND_GLB_BIN_HEADER_MISSING')
+  const binLength = binary.readUInt32LE(binHeader)
+  assert.equal(binary.readUInt32LE(binHeader + 4), 0x004e4942, 'GROUND_GLB_BIN_CHUNK_MISSING')
+  assert.equal(binHeader + 8 + binLength, binary.length, 'GROUND_GLB_BIN_LENGTH_INVALID')
+  const document = JSON.parse(binary.subarray(20, binHeader).toString('utf8').trim())
+  assert.equal(document?.asset?.version, '2.0', 'GROUND_GLB_DOCUMENT_VERSION_INVALID')
+  assert.ok(Array.isArray(document.buffers) && document.buffers.length === 1, 'GROUND_GLB_BUFFER_COUNT_INVALID')
+  assert.ok(Number.isSafeInteger(document.buffers[0].byteLength) &&
+    document.buffers[0].byteLength > 0 && document.buffers[0].byteLength <= binLength,
+  'GROUND_GLB_BUFFER_BYTES_INVALID')
+  return document
+}
+
+test('real committed Ground GLB bytes, receipt, destinations and geometry agree; no launch authority', () => {
+  const bytes = readFileSync(modelUrl)
+  const document = parseGroundGlbBinary(bytes)
+  const manifest = JSON.parse(readFileSync(receiptUrl, 'utf8'))
+  const receipts = manifest.assets?.filter(x => x.fileName === 'ground-world-terrain-v1.glb') ?? []
+  assert.equal(receipts.length, 1, 'GROUND_GLB_RECEIPT_MISSING_OR_DUPLICATE')
+  assert.equal(bytes.length, receipts[0].bytes, 'GROUND_GLB_RECEIPT_SIZE_MISMATCH')
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), receipts[0].sha256,
+    'GROUND_GLB_RECEIPT_HASH_MISMATCH')
+  const verdict = inspectGroundGlbAnchors(document, readFileSync(sourceUrl, 'utf8'))
+  assert.deepEqual(verdict.failures, [], 'GROUND_GLB_SOURCE_STRUCTURE_MISMATCH')
+  assert.equal(verdict.ok, true)
+  assert.equal(verdict.anchorMatches, 12)
+  assert.equal(verdict.renderedProof, false)
+  assert.equal(verdict.artApproved, false)
+  assert.equal(verdict.releaseAuthorized, false)
+})
+
+test('malformed binary header and absent BIN payload fail closed', () => {
+  const sample = Buffer.alloc(28)
+  assert.throws(() => parseGroundGlbBinary(sample), /GROUND_GLB_BAD_MAGIC/)
+  sample.writeUInt32LE(0x46546c67, 0)
+  sample.writeUInt32LE(2, 4)
+  sample.writeUInt32LE(sample.length, 8)
+  assert.throws(() => parseGroundGlbBinary(sample), /GROUND_GLB_JSON_BOUNDS_INVALID/)
+})

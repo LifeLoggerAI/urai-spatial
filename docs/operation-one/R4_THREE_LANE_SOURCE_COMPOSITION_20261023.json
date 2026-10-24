@@ -662,13 +662,13 @@
     {
       "path": "scripts/lib/ground-glb-source-anchors.mjs",
       "originBlob": "9150100a757595a4fab4bc5a70e3d5f7ff15ab6e",
-      "expectedBlob": "af0a323c5ecc0588f598045a98e07aa8b46f5002",
-      "reason": "Exact reviewed Ground GLB validator mesh bounds and source-coordinate isolation hardening from #1934"
+      "expectedBlob": "85980a105142dff0397fd798b3745d55fb1a21fc",
+      "reason": "R4 isolated Ground geometry verifier now validates drawable primitives, accessors and GLB buffer bounds; Node22 30-case focused proof only"
     },
     {
       "path": "tests/ground-glb-source-anchors.test.mjs",
       "originBlob": "2c11aaef2e8ddae76b6700e5fff3eeef249b774e",
-      "expectedBlob": "0009712a5c8b61ede7fb0a3ce9b38d65d3422fd1",
+      "expectedBlob": "ce09a655fd158003937af6172f38210ed07b9806",
       "reason": "Exact reviewed Ground GLB validator regression fixture extension from #1934"
     }
   ],

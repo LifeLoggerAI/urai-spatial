@@ -245,11 +245,15 @@ export function formatCommand(argv) {
 }
 
 function options(argv) {
-  const parsed = { source: null, evidence: null, pinnedSha: null, combined: false, selftest: false, help: false }
+  const parsed = { source: null, evidence: null, pinnedSha: null, combined: false, combinedBranch: null, selftest: false, help: false }
   for (let i = 0; i < argv.length; ++i) {
     const arg = argv[i]
     if (arg === '--help') parsed.help = true
     else if (arg === '--combined-candidate') parsed.combined = true
+    else if (arg === '--combined-branch') {
+      if (!argv[i + 1] || argv[i + 1].startsWith('--')) throw new Error('Missing value for --combined-branch')
+      parsed.combinedBranch = argv[++i]
+    }
     else if (arg === '--selftest') parsed.selftest = true
     else if (arg === '--pinned-sha') {
       if (!argv[i + 1]) throw new Error('Missing value for --pinned-sha')
@@ -432,9 +436,9 @@ async function runtimeSmoke(source, outDir) {
 
 async function main() {
   const cfg = options(process.argv.slice(2))
-  const target = selectNativeEvidenceTarget({ combined: cfg.combined, pinnedSha: cfg.pinnedSha, defaultBranch: CONTROLLER.branch })
+  const target = selectNativeEvidenceTarget({ combined: cfg.combined, pinnedSha: cfg.pinnedSha, defaultBranch: CONTROLLER.branch, combinedBranch: cfg.combinedBranch })
   if (cfg.help || cfg.selftest) {
-    console.log('URAI R-FINAL native evidence runner. Options: --source <isolated checkout> --evidence-dir <new directory> --pinned-sha <40-char git SHA> --combined-candidate --help --selftest')
+    console.log('URAI R-FINAL native evidence runner. Options: --source <isolated checkout> --evidence-dir <new directory> --pinned-sha <40-char git SHA> --combined-candidate --combined-branch <reviewed draft branch> --help --selftest')
     console.log('Never runs against ' + CONTROLLER.protectedBaseline)
     if (cfg.selftest) {
       assert.equal(parseRemoteHead(CONTROLLER.lastVerifiedSha + '\trefs/heads/' + CONTROLLER.branch), CONTROLLER.lastVerifiedSha)
