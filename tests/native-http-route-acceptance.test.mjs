@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { assessNativeHttpRoute } from '../scripts/lib/native-http-route-acceptance.mjs';
+import { assessNativeHttpRoute, isNativeHtmlDocument } from '../scripts/lib/native-http-route-acceptance.mjs';
 const base = 'http://127.0.0.1:3210';
-const route = (path, status, redirect, protectedRoute = false, contentType = 'text/html; charset=utf-8') =>
-  assessNativeHttpRoute({path, status, redirect, protectedRoute, contentType, requestedUrl:base+path});
+const route = (path, status, redirect, protectedRoute = false, contentType = 'text/html; charset=utf-8', htmlDocumentValid = true) =>
+  assessNativeHttpRoute({path, status, redirect, protectedRoute, contentType, htmlDocumentValid, requestedUrl:base+path});
 
 test('actual public HTML 200 is healthy, but empty 204 is not a rendered page', () => {
   assert.deepEqual(route('/support',200), {allowed:true,kind:'SUCCESS'});
@@ -59,6 +59,8 @@ test('native runner calls the classifier in the real HTTP audit',()=>{
   assert.match(source,/requestedUrl: target \+ route/);
   assert.match(source,/contentType: reply\.headers\.get\('content-type'\) \|\| null/);
   assert.match(source,/contentType: result\?\.contentType/);
+  assert.match(source,/htmlDocumentValid: result\?\.htmlDocumentValid/);
+  assert.match(source,/isNativeHtmlDocument\(await reply\.text\(\)\)/);
 });
 test('HTTP 200 without HTML does not qualify any page route',()=>{
   for (const kind of [null,'application/json','text/plain','image/png','text/htmlish'])
@@ -72,4 +74,20 @@ test('partial/accepted responses are not rendered pages',()=>{
 test('a protected page still needs HTML when it actually returns 200',()=>{
   assert.deepEqual(route('/life-map',200,null,true,'text/html'),{allowed:true,kind:'SUCCESS'});
   assert.equal(route('/replay',200,null,true,'application/json').allowed,false);
+});
+
+test('actual HTML document must be observed; Content-Type alone is insufficient',()=>{
+  const markup='<!DOCTYPE html><html lang="en"><head><title>URAI</title></head><body><main>Private world</main></body></html>';
+  assert.equal(isNativeHtmlDocument(markup),true);
+  assert.deepEqual(route('/support',200,null,false,'text/html',false),{allowed:false,reason:'RENDERED_HTML_DOCUMENT_REQUIRED'});
+  assert.deepEqual(assessNativeHttpRoute({path:'/support',status:200,contentType:'text/html'}),{allowed:false,reason:'RENDERED_HTML_DOCUMENT_REQUIRED'});
+});
+test('empty, incomplete or mislabeled body is not a rendered HTML document',()=>{
+  for(const body of ['',null,'{"ok":true}','<html><body></body></html>',
+    '<!DOCTYPE html><html><main>Missing body</main></html>'])
+    assert.equal(isNativeHtmlDocument(body),false);
+});
+test('signed-out protected denials do not require a page body',()=>{
+  assert.deepEqual(route('/life-map',401,null,true,'text/html',false),{allowed:true,kind:'AUTHORIZED_DENIAL'});
+  assert.deepEqual(route('/focus',302,'/login',true,'text/html',false),{allowed:true,kind:'AUTHORIZED_LOGIN_REDIRECT'});
 });

@@ -16,7 +16,7 @@ import { pathToFileURL } from 'node:url'
 import { resolveCandidate, assessCandidateCompletion, requireCommitSha } from './rfinal-source-authority.mjs'
 import { selectNativeEvidenceTarget } from './lib/native-evidence-target.mjs'
 import { ensureNativeGitAncestry } from './lib/native-git-ancestry.mjs'
-import { assessNativeHttpRoute } from './lib/native-http-route-acceptance.mjs'
+import { assessNativeHttpRoute, isNativeHtmlDocument } from './lib/native-http-route-acceptance.mjs'
 import { planNativeEvidenceStages, assertCombinedPreflightOutcome, nativeCombinedPreflightEnvironment } from './lib/native-combined-preflight.mjs'
 import { inspectVisualPng } from './visual-png-integrity.mjs'
 import { isOwnedVisualEvidencePath } from './rfinal-visual-evidence-paths.mjs'
@@ -123,6 +123,7 @@ export function assessHttpRoutes(checks) {
       protectedRoute: PROTECTED_HTTP_ROUTES.has(route),
       requestedUrl: result?.requestedUrl,
       contentType: result?.contentType,
+      htmlDocumentValid: result?.htmlDocumentValid,
     })
     if (verdict.allowed) {
       if (verdict.kind !== 'SUCCESS') authorizedDenials.push({path:route,status,reason:verdict.kind})
@@ -396,7 +397,11 @@ async function runtimeSmoke(source, outDir) {
     for (const route of REQUIRED_HTTP_ROUTES) {
       try {
         const reply = await fetch(target + route, { signal: AbortSignal.timeout(12000), redirect: 'manual' })
-        checks.push({ path: route, status: reply.status, redirect: reply.headers.get('location') || null, requestedUrl: target + route, contentType: reply.headers.get('content-type') || null })
+        // Do not certify blank/mislabeled 200 responses as rendered UrAi pages.
+        // Inspect locally without writing sensitive response HTML into receipts.
+        const htmlDocumentValid = reply.status === 200
+          ? isNativeHtmlDocument(await reply.text()) : false
+        checks.push({ path: route, status: reply.status, redirect: reply.headers.get('location') || null, requestedUrl: target + route, contentType: reply.headers.get('content-type') || null, htmlDocumentValid })
       } catch (e) { checks.push({ path: route, error: String(e) }) }
     }
     const browserEnv = {
@@ -495,6 +500,24 @@ async function main() {
       if (clone.exitCode !== 0) throw new Error('EXACT_SOURCE_CLONE_FAILED')
       await shortGit(['-C',source,'config','core.autocrlf','false'],source,evidence,'config_autocrlf')
       await shortGit(['-C',source,'config','core.longpaths','true'],source,evidence,'config_longpaths')
+      // Pinned runs can target commits older than the 200-commit shallow clone.
+      // Verify that the pinned commit actually belongs to the branch and
+      // recover its tree BEFORE sparse audit or detached checkout. Fetching is
+      // allowed only inside this newly created disposable checkout, never
+      // in an existing source/worktree supplied by another worker.
+      if (cfg.pinnedSha && head !== remoteAtStart) {
+        const pinnedHistory = await ensureNativeGitAncestry({
+          branch: target.branch, sourceHead: remoteAtStart, trustedAncestor: head,
+          allowDeepen: true,
+          runGit: async (args, name) => {
+            const result = await command(['git', '-C', source, ...args], {
+              cwd: source, log: path.join(evidence, 'pinned_' + name + '.log'), timeoutMinutes: 12,
+            })
+            return { ...result, output: readFileSync(result.logPath, 'utf8').trim() }
+          },
+        })
+        record('pinned_checkout_history_verified', 'PASS', pinnedHistory)
+      }
       // Configure the reviewed historical exclusions BEFORE Git tries to write
       // Windows-illegal filenames. --no-cone keeps the rest of the original
       // repository and all eight production GLBs included.
