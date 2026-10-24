@@ -88,3 +88,21 @@ test('updated semantic privacy path remains a specifically authorized override',
   f.manifest.sourceOverrides[0].expectedBlob=h('a')
   assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/SOURCE_BLOB_MISMATCH/)
 })
+
+test('independent combined Life Map privacy override has exact reviewed blob and cannot be forged',()=>{
+  const f=fixture()
+  const path='urai-tier1/src/components/lifemap/useLifeMapEvents.ts'
+  const originBlob='0197b7fd0c8eaebac1166403ee32c10181ab9cd3'
+  const expectedBlob='a885812f25c32cd4f0dcf72a96e3364531dda96b'
+  f.manifest.sourceOverrides=[{path,originBlob,expectedBlob,reason:'Exact independently reviewed hidden-memory normalizer, nonrelease'}]
+  f.entries.set(path,{mode:'100644',type:'blob',sha:expectedBlob})
+  assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).overridesVerified,1)
+  f.entries.set(path,{mode:'100644',type:'blob',sha:h('e')})
+  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/INDEPENDENT_PRIVACY_OVERRIDE_BLOB_MISMATCH/)
+  f.entries.set(path,{mode:'100644',type:'blob',sha:expectedBlob})
+  f.manifest.sourceOverrides[0].expectedBlob=h('e')
+  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/INDEPENDENT_PRIVACY_OVERRIDE_PIN_INVALID/)
+  f.manifest.sourceOverrides[0].expectedBlob=expectedBlob
+  f.manifest.sourceOverrides[0].path='unreviewed/other.ts'
+  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/SOURCE_OVERRIDE_INVALID/)
+})
