@@ -89,9 +89,10 @@ export function inspectR4SourceComposition(manifest, entries, head, expectedHead
   const candidateSources = manifest.candidateSourceClaims
   const requiredCandidate = new Map([
     ['urai-tier1/src/components/lifemap/useLifeMapEvents.ts',
-      'a885812f25c32cd4f0dcf72a96e3364531dda96b'],
+      'f2619410f05f92d96a9824451089e2023a62c57e'],
     ['urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx', 'a6fefdd2e75448f9869202cf740726168c11caa3'],
     ['urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs', 'c44979a5924e6d83ca1f00b65db17f7378951a0c'],
+    ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs', '0943053fdf773df484be9ba2cddc32ec6023ac2c'],
   ])
   if (!Array.isArray(candidateSources) ||
       candidateSources.length !== requiredCandidate.size) fail('CANDIDATE_SOURCE_CLAIMS_INVALID')

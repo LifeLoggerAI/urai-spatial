@@ -715,8 +715,8 @@
   "candidateSourceClaims": [
     {
       "path": "urai-tier1/src/components/lifemap/useLifeMapEvents.ts",
-      "blob": "a885812f25c32cd4f0dcf72a96e3364531dda96b",
-      "reason": "Candidate-owned Firestore event normalization and hidden-memory privacy projection boundary"
+      "blob": "f2619410f05f92d96a9824451089e2023a62c57e",
+      "reason": "Owner-scoped Firestore event and era normalization blocks explicit mismatched userId before Life Map projection"
     },
     {
       "path": "urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx",
@@ -727,6 +727,11 @@
       "path": "urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs",
       "blob": "c44979a5924e6d83ca1f00b65db17f7378951a0c",
       "reason": "Route verifier validates exact action, origin and memory/manifest identifiers"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs",
+      "blob": "0943053fdf773df484be9ba2cddc32ec6023ac2c",
+      "reason": "Shared privacy and owner-scope normalization for user-specific Life Map streams"
     }
   ]
 }
