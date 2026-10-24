@@ -46,3 +46,22 @@ test('long and escaped memory identifiers cannot be substituted',()=>{
   assert.equal(resolve('focus','/focus?memoryId='+('x'.repeat(121))+'&manifestId=m',origin),null)
   assert.equal(resolve('replay','/replay?memoryId=%3Cscript%3E&manifestId=m',origin),null)
 })
+test('duplicate memory or manifest identities cannot create client/server parsing ambiguity',()=>{
+  const invalid = [
+    '/focus?memoryId=one&memoryId=two&manifestId=manifest',
+    '/focus?memoryId=one&manifestId=manifest&manifestId=other',
+    '/focus?memoryId=one&manifestId=manifest&memoryId=one',
+    '/replay?memoryId=one&manifestId=manifest&manifestId=manifest',
+  ]
+  for (const href of invalid) {
+    assert.equal(resolve(href.startsWith('/replay')?'replay':'focus',href,origin),null,href)
+  }
+})
+test('source URL must name its authored route without dot segments or percent-normalization',()=>{
+  for(const href of [
+    '/%2e/focus?memoryId=m&manifestId=x',
+    '/parent/../focus?memoryId=m&manifestId=x',
+    '/./focus?memoryId=m&manifestId=x',
+    '/replay/../focus?memoryId=m&manifestId=x',
+  ]) assert.equal(resolve('focus',href,origin),null,href)
+})
