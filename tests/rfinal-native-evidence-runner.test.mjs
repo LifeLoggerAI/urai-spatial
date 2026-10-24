@@ -80,7 +80,7 @@ test('native execution environment strips paid-provider credentials but keeps PA
   assert.equal(result.removedKeys.length,3)
 })
 
-function httpCases(overrides={}) {return REQUIRED_HTTP_ROUTES.map(path=>({path,status:overrides[path]??200,contentType:'text/html; charset=utf-8'}))}
+function httpCases(overrides={}) {return REQUIRED_HTTP_ROUTES.map(path=>({path,status:overrides[path]??200,contentType:'text/html; charset=utf-8',htmlDocumentValid:true}))}
 test('all canonical production HTTP routes must be covered',()=>{
   assert.equal(assessHttpRoutes(httpCases()).passed,true)
   assert.equal(assessHttpRoutes(httpCases().filter(x=>x.path!=='/replay')).passed,false)
@@ -96,6 +96,14 @@ test('HTTP page fixtures prove actual HTML, not status 200 alone',()=>{
     assert.equal(result.passed,false)
     assert.ok(result.failures.some(f=>f.reason==='RENDERED_HTML_200_REQUIRED'))
   }
+})
+test('every HTTP 200 route requires document-body proof',()=>{
+  const healthy=httpCases()
+  assert.equal(assessHttpRoutes(healthy).passed,true)
+  const invalid=healthy.map(x=>x.path==='/support'?{...x,htmlDocumentValid:false}:x)
+  const result=assessHttpRoutes(invalid)
+  assert.equal(result.passed,false)
+  assert.ok(result.failures.some(x=>x.path==='/support' && x.reason==='RENDERED_HTML_DOCUMENT_REQUIRED'))
 })
 test('Home 200 cannot hide broken Replay, privacy or login',()=>{
   for(const path of ['/replay','/privacy','/login']){
