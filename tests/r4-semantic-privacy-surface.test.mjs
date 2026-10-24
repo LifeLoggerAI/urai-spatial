@@ -34,9 +34,9 @@ test('canonical Life Map software route does not parse English labels',()=>{
 
 test('3D pointer, selection event and direct route all deny locked and hidden memories',()=>{
  const scene=readFileSync(new URL('../urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx',import.meta.url),'utf8')
- assert.match(scene,/nodes\\.find\\(\\(node\\) => node\\.id === selectedId && lifeMapNodeSelectable\\(node\\)\\)/)
- assert.match(scene,/const selectNode = useCallback\\(\\(node: LifeMapNode\\) => \\{\\s*if \\(!lifeMapNodeSelectable\\(node\\)\\) return;/)
- assert.match(scene,/nodes\\.find\\(\\(candidate\\) => candidate\\.id === queryNode && lifeMapNodeSelectable\\(candidate\\)\\)/)
+ assert.match(scene,/nodes\.find\(\(node\) => node\.id === selectedId && lifeMapNodeSelectable\(node\)\)/)
+ assert.match(scene,/const selectNode = useCallback\(\(node: LifeMapNode\) => \{\s*if \(!lifeMapNodeSelectable\(node\)\) return;/)
+ assert.match(scene,/nodes\.find\(\(candidate\) => candidate\.id === queryNode && lifeMapNodeSelectable\(candidate\)\)/)
  const valid={id:'owner-memory',privacyLevel:'private',locked:false}
  assert.equal(lifeMapNodeSelectable(valid),true)
  for(const denied of [{...valid,locked:true},{...valid,privacy:'hidden'}, {...valid,privacyLevel:'hidden'}, {...valid,id:' '}, {...valid,id:''},null])
