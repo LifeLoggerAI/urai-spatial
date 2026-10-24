@@ -2,9 +2,9 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
-import { COMBINED_CANDIDATE_BRANCH, selectNativeEvidenceTarget } from '../scripts/lib/native-evidence-target.mjs'
+import { COMBINED_GROUND_REVIEW_BRANCH, selectNativeEvidenceTarget } from '../scripts/lib/native-evidence-target.mjs'
 const source = readFileSync(new URL('../cloudbuild.urai-verify.yaml', import.meta.url), 'utf8')
-const pinnedBranch = 'verify/r4-firestore-java21-admission-20261023'
+const pinnedBranch = 'verify/r4-ground-glb-drawable-geometry-20261023'
 function firstStep(yaml) {
   const lines = yaml.split(/\r?\n/)
   const idx = lines.findIndex(x => x === '      - |')
@@ -45,7 +45,7 @@ test('real verifier accepts only verified branch namespace and valid nonproducti
     assert.equal(result.status,0,`${branch}: ${result.stdout} ${result.stderr}`)
     assert.match(result.stdout,/PREFLIGHT_COMPLETE/)
   }
-  for (const branch of ['main','refs/heads/main','verify/../../evil','verify/branch;echo HACKED','repair/test-case','ci/review-test','verify/r4-ground-glb-drawable-geometry-20261023','verify/r4-three-lane-convergence-20261023']) {
+  for (const branch of ['main','refs/heads/main','verify/../../evil','verify/branch;echo HACKED','repair/test-case','ci/review-test','verify/r4-firestore-java21-admission-20261023']) {
     const result = preflight({URAI_SOURCE_BRANCH:branch})
     assert.notEqual(result.status,0,branch)
     assert.match(result.stdout,/(INVALID_SOURCE_BRANCH|WRONG_COMBINED_SOURCE_BRANCH)/)
@@ -56,10 +56,10 @@ test('real verifier accepts only verified branch namespace and valid nonproducti
   assert.match(prod.stdout,/PRODUCTION_PROJECT_FORBIDDEN/)
 })
 
-test('Cloud Build and Windows native verifier agree on exact unified source',()=>{
-  assert.equal(pinnedBranch,COMBINED_CANDIDATE_BRANCH)
+test('Cloud Build and Windows native verifier agree on exact Ground integration draft',()=>{
+  assert.equal(pinnedBranch,COMBINED_GROUND_REVIEW_BRANCH)
   const native = selectNativeEvidenceTarget({defaultBranch:'repair/rfinal-convergence-candidate-20261020',
-    combined:true,pinnedSha:'b'.repeat(40)})
+    combined:true,pinnedSha:'b'.repeat(40),combinedBranch:COMBINED_GROUND_REVIEW_BRANCH})
   assert.equal(native.branch,pinnedBranch)
   assert.equal(native.releaseAuthorized,false)
   assert.match(source,/WRONG_COMBINED_SOURCE_BRANCH/)
