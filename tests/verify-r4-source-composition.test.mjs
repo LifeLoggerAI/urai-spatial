@@ -10,6 +10,11 @@ function oldFixture(){
 }
 function fixture(){
   const f=oldFixture()
+  const lifeMap = f.manifest.sourceDonors.find(x=>x.pr===1933)
+  lifeMap.sourceHead='9e29e2d5bc0b72a11f51ab8a93d01846be870956'
+  const lifeMapClaims=f.manifest.sourceClaims.filter(x=>x.sourcePR===1933)
+  lifeMapClaims.slice(0,71).forEach(x=>x.sourceHead='2f941b70a0f23f07ed22fe6b1ba83368749fd56c')
+  lifeMapClaims.slice(71).forEach(x=>x.sourceHead=lifeMap.sourceHead)
   f.manifest.candidateSourceClaims=[{
     path:'urai-tier1/src/components/lifemap/useLifeMapEvents.ts', blob:'a885812f25c32cd4f0dcf72a96e3364531dda96b',
     reason:'Candidate-owned hidden memory event normalization stays pinned',
@@ -138,4 +143,14 @@ test('candidate software route helper cannot be silently substituted',()=>{
  const path='urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs'
  f.entries.set(path,{mode:'100644',type:'blob',sha:h('a')})
  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_BLOB_MISMATCH/)
+})
+
+test('Life Map reviewed revisions cannot be substituted or assigned false authorship',()=>{
+ const f=fixture()
+ assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).donorPathsVerified,85)
+ const claims=f.manifest.sourceClaims.filter(c=>c.sourcePR===1933)
+ claims[0].sourceHead=h('a')
+ assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/SOURCE_CLAIM_INVALID/)
+ claims[0].sourceHead='9e29e2d5bc0b72a11f51ab8a93d01846be870956'
+ assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/LIFE_MAP_REVIEWED_REVISION_COUNT_CHANGED/)
 })

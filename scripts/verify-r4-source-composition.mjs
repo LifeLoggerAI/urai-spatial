@@ -8,6 +8,11 @@ import { fileURLToPath } from 'node:url'
 
 const shaPattern = /^[a-f0-9]{40}$/
 const donorCounts = new Map([[1933, 74], [1934, 8], [1887, 3]])
+// The first 71 Life Map source blobs were frozen at this reviewed ancestor.
+// The final three were authored at the donor head. Never accept arbitrary
+// historical revisions or claim that all 74 were authored in one commit.
+const LIFE_MAP_REVIEWED_ANCESTOR = '2f941b70a0f23f07ed22fe6b1ba83368749fd56c'
+const LIFE_MAP_REVIEWED_HEAD = '9e29e2d5bc0b72a11f51ab8a93d01846be870956'
 const overridePaths = new Set(['cloudbuild.urai-verify.yaml','urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx','urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx','urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs','tests/cloudbuild-shell-execution.test.mjs','scripts/lib/ground-glb-source-anchors.mjs','tests/ground-glb-source-anchors.test.mjs'])
 const validPath = p => typeof p === 'string' && p.length > 0 && p.length <= 500 &&
   !p.startsWith('/') && !p.includes('\\') && !p.includes('\0') &&
@@ -44,7 +49,9 @@ export function inspectR4SourceComposition(manifest, entries, head, expectedHead
   const claimed = new Set(), usedOverrides = new Set(), counts = new Map()
   for (const claim of manifest.sourceClaims) {
     if (!validPath(claim.path) || claimed.has(claim.path) || !shaPattern.test(claim.blob) ||
-        !donors.has(claim.sourcePR) || claim.sourceHead !== donors.get(claim.sourcePR) ||
+        !donors.has(claim.sourcePR) || (claim.sourcePR === 1933 ?
+          ![LIFE_MAP_REVIEWED_ANCESTOR,LIFE_MAP_REVIEWED_HEAD].includes(claim.sourceHead) ||
+          donors.get(1933) !== LIFE_MAP_REVIEWED_HEAD : claim.sourceHead !== donors.get(claim.sourcePR)) ||
         !['added','modified'].includes(claim.change)) fail('SOURCE_CLAIM_INVALID')
     claimed.add(claim.path)
     counts.set(claim.sourcePR, (counts.get(claim.sourcePR) ?? 0) + 1)
@@ -58,6 +65,12 @@ export function inspectR4SourceComposition(manifest, entries, head, expectedHead
     if (override) usedOverrides.add(claim.path)
   }
   for (const [pr, count] of donorCounts) if (counts.get(pr) !== count) fail('DONOR_PATH_COUNT_MISMATCH:' + pr)
+  const lifeMapHeadCounts = new Map([[LIFE_MAP_REVIEWED_ANCESTOR,0],[LIFE_MAP_REVIEWED_HEAD,0]])
+  for (const claim of manifest.sourceClaims) if (claim.sourcePR === 1933)
+    lifeMapHeadCounts.set(claim.sourceHead,(lifeMapHeadCounts.get(claim.sourceHead) ?? 0)+1)
+  if (lifeMapHeadCounts.get(LIFE_MAP_REVIEWED_ANCESTOR) !== 71 ||
+      lifeMapHeadCounts.get(LIFE_MAP_REVIEWED_HEAD) !== 3)
+    fail('LIFE_MAP_REVIEWED_REVISION_COUNT_CHANGED')
   for (const path of overrides.keys()) if (!usedOverrides.has(path)) fail('UNUSED_SOURCE_OVERRIDE:' + path)
   const extra = manifest.additionalAdmittedDonor
   if (extra === undefined) fail('FIRESTORE_DONOR_MISSING')
