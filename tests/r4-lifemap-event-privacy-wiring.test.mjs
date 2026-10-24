@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 const events = readFileSync(new URL('../urai-tier1/src/components/lifemap/useLifeMapEvents.ts', import.meta.url), 'utf8')
 
 test('Firestore events normalize legacy hidden privacy before mapping to a star', () => {
-  assert.match(events, /import \{ normalizeLifeMapEventPrivacy, lifeMapOwnerDocumentAllowed \} from "\.\/lifeMapEventPrivacy\.mjs"/)
+  assert.match(events, /import \{ normalizeLifeMapEventPrivacy \} from "\.\/lifeMapEventPrivacy\.mjs"/)
   assert.match(events, /privacyLevel: normalizeLifeMapEventPrivacy\(data\)/)
   assert.doesNotMatch(events, /privacyLevel: data\.privacyLevel === "hidden"/)
 })

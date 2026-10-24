@@ -57,7 +57,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   const {requested:requestedLocale,preview:previewLocale}=locale.preference
   const searchLocale=locale.locale
   const visibleNodes = useMemo(
-    () => nodes.filter((node) => !lifeMapNodeIsHidden(node) && matchesSearch(node, search,localizedMessage({requested:requestedLocale,preview:previewLocale},LIFE_MAP_TYPE_MESSAGES[node.type]).text,searchLocale) && (typeFilter === 'all' || node.type === typeFilter) && (eraFilter === 'all' || node.eraId === eraFilter)),
+    () => nodes.filter((node) => !lifeMapNodeIsHidden(node) && !node.locked && matchesSearch(node, search,localizedMessage({requested:requestedLocale,preview:previewLocale},LIFE_MAP_TYPE_MESSAGES[node.type]).text,searchLocale) && (typeFilter === 'all' || node.type === typeFilter) && (eraFilter === 'all' || node.eraId === eraFilter)),
     [eraFilter, nodes, search, typeFilter, requestedLocale, previewLocale, searchLocale],
   )
 

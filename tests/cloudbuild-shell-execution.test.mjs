@@ -24,7 +24,7 @@ function extractScripts(source) {
 function bash(code, env={}) {
   return spawnSync('bash',['-ceu',code],{
     encoding:'utf8', timeout: 4000,
-    env: {...process.env, URAI_SOURCE_BRANCH:'verify/r4-firestore-java21-admission-20261023',
+    env: {...process.env, URAI_SOURCE_BRANCH:'verify/r4-exact-self-source-cloudbuild-20261023',
       URAI_SOURCE_SHA:'a'.repeat(40), URAI_VERIFIER_SA:'urai-verifier@urai-qa-123.iam.gserviceaccount.com',
       URAI_CLOUD_PROJECT:'urai-qa-123', ...env},
   })

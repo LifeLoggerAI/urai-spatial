@@ -644,14 +644,14 @@
     {
       "path": "cloudbuild.urai-verify.yaml",
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
-      "expectedBlob": "df82e1cd1ba0dfcaeaac7b214a1b1385795f90c3",
-      "reason": "Unified nonproduction 21-gate Cloud Build verifier runs complete maintained native evidence runner tests at the exact source branch"
+      "expectedBlob": "9fa5178141be37d47d64e2fe0b7dba33fcb7ec2e",
+      "reason": "Self-branch verifier with 21 gates and exact source pin, nonrelease"
     },
     {
       "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
       "originBlob": "85a486f80b73e1eaf266df7fd2549827763c63e6",
-      "expectedBlob": "e6f3356594b763c49a7df479fa17c17d699379f0",
-      "reason": "Unified semantic inspector denies locked direct URLs, and search results identify locked nodes as disabled with no activation"
+      "expectedBlob": "0d8ca50ea561def3426797edf2821f0097e84cbe",
+      "reason": "Locked memories excluded from semantic results, counts, direct navigation and inspector"
     },
     {
       "path": "scripts/lib/ground-glb-source-anchors.mjs",
@@ -668,20 +668,20 @@
     {
       "path": "tests/cloudbuild-shell-execution.test.mjs",
       "originBlob": "c0125c3d7f02400d3c690ec3de437e7182acc95c",
-      "expectedBlob": "fd039197296baf9dd0587a8d3bdbae14ab42a1ca",
-      "reason": "Unified source-only Cloud Build shell contract now uses the exact reviewed nonproduction verifier branch"
+      "expectedBlob": "f18e13ce99791cc85d555105156cc89335ada8c9",
+      "reason": "Corrected synthetic Cloud Build shell test bounded before maintained application gates"
     },
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs",
       "originBlob": "2577369cfeb407fe135772edf82ca8153a3de94b",
       "expectedBlob": "3d866b1bc66a395c23e94233d1a65316a869c9b2",
-      "reason": "Unified physical/semantic selection now fails closed for locked, hidden, invalid star identity before rendering selected-world details"
+      "reason": "Unified locked and hidden memory selection safeguards in physical and semantic navigation"
     },
     {
       "path": "urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx",
       "originBlob": "2a9a0369ee27f1e050e0b59720cbc4f47124d6ad",
       "expectedBlob": "ae9bb40aaef1d27a693a12435dbf8fbe7f7ed8c5",
-      "reason": "World pointer, custom event, and direct URL restore all enforce shared selectable-node guard before revealing selected-memory context"
+      "reason": "3D pointer, restored URL and semantic selection deny locked and hidden memory disclosure"
     }
   ],
   "additionalAdmittedDonor": {
@@ -726,12 +726,17 @@
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs",
       "blob": "9947d8086bb4777bd0de2eaf151ed3a36dbb5fd1",
-      "reason": "Exact authored Focus/Replay route identity rejects duplicate private-memory keys and normalized path substitutions"
+      "reason": "Route verifier validates exact action, origin and memory/manifest identifiers"
     },
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs",
       "blob": "0943053fdf773df484be9ba2cddc32ec6023ac2c",
       "reason": "Shared privacy and owner-scope normalization for user-specific Life Map streams"
+    },
+    {
+      "path": "tests/r4-semantic-privacy-surface.test.mjs",
+      "blob": "400741b2ffd435c0ce8488cdd2e6296d89762d92",
+      "reason": "Merged locked-search, owner-guarded selection and 3D path maintained privacy regression"
     }
   ]
 }

@@ -1,6 +1,6 @@
 // Source routing for the existing UrAi native verifier. The combined target is
 // never an implicit release authority or permission to access production.
-export const COMBINED_CANDIDATE_BRANCH = 'verify/r4-firestore-java21-admission-20261023'
+export const COMBINED_CANDIDATE_BRANCH = 'verify/r4-exact-self-source-cloudbuild-20261023'
 const SHA = /^[a-f0-9]{40}$/
 export function selectNativeEvidenceTarget({ combined = false, pinnedSha = null, defaultBranch }) {
   if (typeof defaultBranch !== 'string' || defaultBranch !== 'repair/rfinal-convergence-candidate-20261020') {
