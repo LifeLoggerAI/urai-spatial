@@ -154,7 +154,7 @@ test('canonical fallback requires a complete unordered owner event query, includ
 test('owner-bound snapshot admission discards foreign event and era metadata and denies incomplete coverage', () => {
   assert.match(source, /import \{ projectLifeMapOwnerSnapshot \} from "\.\/lifeMapEventPrivacy\.mjs"/)
   assert.match(source, /const ownersValid = projection\.items\.length === snapshot\.docs\.length/)
-  assert.match(source, /setEventSnapshotComplete\(ownersValid && snapshot\.docs\.length < 240 && snapshot\.metadata\.fromCache === false\)/)
+  assert.match(source, /setEventSnapshotComplete\(ownersValid && snapshot\.docs\.length < 240 && lifeMapServerConfirmed\(snapshot\.metadata\)\)/)
   assert.match(source, /setNodes\(projection\.items as LifeMapNode\[\]\)/)
   assert.match(source, /setEras\(projection\.items as LifeMapEra\[\]\)/)
   assert.match(source, /if \(!projection\.ok \|\| projection\.items\.length !== snapshot\.docs\.length\)/)
@@ -186,4 +186,15 @@ test('all three Firestore snapshot paths use all-or-nothing owner projection bef
 test('semantic fallback never discloses locked titles or summaries in its search result list', () => {
   assert.match(semanticNavigator, /lifeMapFilterVisibleNodes\(nodes\)\.filter\(lifeMapNodeSelectable\)\.filter\(\(node\) => matchesSearch\(node,/)
   assert.match(semanticNavigator, /visibleNodes\.map\(\(node\) => <li key=\{node\.id\}/)
+})
+
+test('private Life Map subscriptions require server-confirmed and committed snapshots, including metadata changes', () => {
+  assert.match(source,/import \{ projectLifeMapOwnerSnapshot, lifeMapServerConfirmed \} from "\.\/lifeMapEventPrivacy\.mjs"/)
+  assert.match(source,/privacyPolicy', 'current'\), \{ includeMetadataChanges: true \}, snapshot/)
+  assert.match(source,/onSnapshot\(eventsQuery, \{ includeMetadataChanges: true \}, \(snapshot\) =>/)
+  assert.match(source,/onSnapshot\(erasQuery, \{ includeMetadataChanges: true \}, \(snapshot\) =>/)
+  assert.match(source,/query\(collection\(getFirebaseDb\(\), "users", resolvedUserId, "memories"\), limit\(240\)\),\s*\{ includeMetadataChanges: true \}, snapshot/)
+  assert.match(source,/if \(!lifeMapServerConfirmed\(snapshot\.metadata\)\) \{ setNodes\(\[\]\); setEventSnapshotComplete\(false\); setNodesAuthority\(null\); setEventsLoading\(true\); return; \}/)
+  assert.match(source,/if \(!lifeMapServerConfirmed\(snapshot\.metadata\)\) \{ setCanonicalMemories\(new Map\(\)\); setMemoriesAuthority\(null\); setMemoriesLoading\(true\); return; \}/)
+  assert.match(source,/complete: lifeMapEventCoverageComplete\(snapshot\.docs\.length, snapshot\.metadata\.fromCache\) && lifeMapServerConfirmed\(snapshot\.metadata\)/)
 })

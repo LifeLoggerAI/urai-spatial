@@ -8,7 +8,7 @@ import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
 import { lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes, lifeMapHiddenEventMemoryIds, lifeMapEventCoverageComplete, lifeMapCoveredEventMemoryVisible } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapDisplayPosition } from "./lifeMapLayout";
-import { projectLifeMapOwnerSnapshot } from "./lifeMapEventPrivacy.mjs";
+import { projectLifeMapOwnerSnapshot, lifeMapServerConfirmed } from "./lifeMapEventPrivacy.mjs";
 import {
   lifeMapEras,
   mapLifeMapEventToNode,
@@ -234,8 +234,9 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     };
     publish(false, false);
     try {
-      const unsubscribe = onSnapshot(doc(getFirebaseDb(), 'users', owner, 'privacyPolicy', 'current'), snapshot => {
+      const unsubscribe = onSnapshot(doc(getFirebaseDb(), 'users', owner, 'privacyPolicy', 'current'), { includeMetadataChanges: true }, snapshot => {
         if (cancelled) return;
+        if (!lifeMapServerConfirmed(snapshot.metadata)) { publish(false, false); return; }
         const raw = snapshot.exists() ? snapshot.data() : null;
         if (!isConsentPolicy(raw, owner)) { deniedRevision = Math.max(deniedRevision ?? -1, revision); publish(false); return; }
         if (raw.revision < revision) { deniedRevision = revision; publish(false); return; }
@@ -293,6 +294,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       const eventsQuery = query(collection(getFirebaseDb(), "users", resolvedUserId, "lifeMapEvents"), orderBy("occurredAt", "desc"), limit(240));
       const unsubscribe = onSnapshot(eventsQuery, { includeMetadataChanges: true }, (snapshot) => {
         if (cancelled) return;
+        if (!lifeMapServerConfirmed(snapshot.metadata)) { setNodes([]); setEventSnapshotComplete(false); setNodesAuthority(null); setEventsLoading(true); return; }
         // Commit the whole server projection together: malformed docs, mapper
         // throws or changed identities cannot leave partially visible memories.
         const projection = projectLifeMapOwnerSnapshot(snapshot.docs, resolvedUserId,
@@ -310,7 +312,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         // the snapshot as COMPLETE evidence for canonical fallback stars.
         const ownersValid = projection.items.length === snapshot.docs.length;
         setNodes(projection.items as LifeMapNode[]);
-        setEventSnapshotComplete(ownersValid && snapshot.docs.length < 240 && snapshot.metadata.fromCache === false);
+        setEventSnapshotComplete(ownersValid && snapshot.docs.length < 240 && lifeMapServerConfirmed(snapshot.metadata));
         setNodesOwner(resolvedUserId);
         setNodesAuthority(authorityKey);
         setEventsLoading(false);
@@ -363,7 +365,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
           }
           setUnorderedEventCoverage({
             owner, authority,
-            complete: lifeMapEventCoverageComplete(snapshot.docs.length, snapshot.metadata.fromCache),
+            complete: lifeMapEventCoverageComplete(snapshot.docs.length, snapshot.metadata.fromCache) && lifeMapServerConfirmed(snapshot.metadata),
             hiddenIds: lifeMapHiddenEventMemoryIds(projection.items),
           });
         } catch {
@@ -401,8 +403,9 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     setErasLoading(true);
     try {
       const erasQuery = query(collection(getFirebaseDb(), "users", resolvedUserId, "lifeMapEras"), limit(80));
-      const unsubscribe = onSnapshot(erasQuery, (snapshot) => {
+      const unsubscribe = onSnapshot(erasQuery, { includeMetadataChanges: true }, (snapshot) => {
         if (cancelled) return;
+        if (!lifeMapServerConfirmed(snapshot.metadata)) { setEras([]); setErasAuthority(null); setErasLoading(true); return; }
         const projection = projectLifeMapOwnerSnapshot(snapshot.docs, resolvedUserId,
           (id, data) => normalizeEra(id, data, resolvedUserId));
         if (!projection.ok) {
@@ -470,8 +473,9 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     try {
       const unsub = onSnapshot(
         query(collection(getFirebaseDb(), "users", resolvedUserId, "memories"), limit(240)),
-        snapshot => {
+        { includeMetadataChanges: true }, snapshot => {
           if (cancelled) return;
+          if (!lifeMapServerConfirmed(snapshot.metadata)) { setCanonicalMemories(new Map()); setMemoriesAuthority(null); setMemoriesLoading(true); return; }
           try {
             const accepted = new Map<string, SelectedMemory>();
             for (const doc of snapshot.docs) {

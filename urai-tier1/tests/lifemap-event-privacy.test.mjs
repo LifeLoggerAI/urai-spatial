@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizeLifeMapEventPrivacy, lifeMapOwnerDocumentAllowed, projectLifeMapOwnerSnapshot } from '../src/components/lifemap/lifeMapEventPrivacy.mjs';
+import { normalizeLifeMapEventPrivacy, lifeMapOwnerDocumentAllowed, projectLifeMapOwnerSnapshot, lifeMapServerConfirmed } from '../src/components/lifemap/lifeMapEventPrivacy.mjs';
 
 const cases = [
   [{ privacyLevel: 'hidden' }, 'hidden'],
@@ -78,4 +78,10 @@ test('explicit foreign owners are excluded and cannot count as complete event co
   const projection=projectLifeMapOwnerSnapshot(docs,owner,id=>({id}))
   assert.deepEqual(projection,{ok:true,items:[{id:'owned'}]})
   assert.notEqual(projection.items.length,docs.length)
+})
+
+test('cached or pending Firestore snapshots cannot authorize private Life Map content',()=>{
+  assert.equal(lifeMapServerConfirmed({fromCache:false,hasPendingWrites:false}),true)
+  for(const metadata of [{fromCache:true,hasPendingWrites:false},{fromCache:false,hasPendingWrites:true},{fromCache:true,hasPendingWrites:true},null,{},undefined,{fromCache:false}])
+    assert.equal(lifeMapServerConfirmed(metadata),false)
 })

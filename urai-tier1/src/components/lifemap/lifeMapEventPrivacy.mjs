@@ -48,3 +48,15 @@ export function projectLifeMapOwnerSnapshot(docs, expectedOwner, projector) {
     return { ok: false, items: [] };
   }
 }
+
+// Firestore initially emits cache-only or locally pending snapshots before the
+// backend has confirmed both fresh data and completed writes. Neither is safe
+// authorization to reveal a private memory or consent-protected constellation.
+export function lifeMapServerConfirmed(metadata) {
+  try {
+    return Boolean(metadata && typeof metadata === 'object' &&
+      metadata.fromCache === false && metadata.hasPendingWrites === false);
+  } catch {
+    return false;
+  }
+}
