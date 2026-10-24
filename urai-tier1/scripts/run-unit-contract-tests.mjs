@@ -43,6 +43,7 @@ const focusedContractTests = [
   'tests/lifemap-webgl-restoration-proof.test.mjs',
   'tests/lifemap-data-boundary.test.mjs',
   'tests/lifemap-semantic-owner-contract.test.mjs',
+  'tests/lifemap-software-threshold-handoff.test.mjs',
   'tests/lifemap-stage-continuity-math.test.mjs',
   'tests/lifemap-flight-orientation.test.mjs',
   'tests/lifemap-physical-star-action.test.mjs',

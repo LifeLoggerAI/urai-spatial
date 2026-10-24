@@ -28,6 +28,8 @@ function verify(input) {
   assert.match(input, /run_gate lifemap-hidden-event-privacy node --test [^\n]*urai-tier1\/tests\/lifemap-hidden-canonical-fallback\.test\.mjs/)
   assert.match(input, /run_gate lifemap-hidden-event-privacy node --test [^\n]*urai-tier1\/tests\/lifemap-event-coverage\.test\.mjs/)
   assert.match(input, /run_gate lifemap-hidden-event-privacy node --test [^\n]*urai-tier1\/tests\/lifemap-event-privacy\.test\.mjs/)
+  assert.match(input, /run_gate lifemap-software-route node --test tests\/life-map-software-route-intent\.test\.mjs/)
+  assert.match(input, /run_gate lifemap-software-handoff pnpm --dir urai-tier1 exec node --import tsx --test tests\/lifemap-software-threshold-handoff\.test\.mjs/)
   assert.doesNotMatch(input, /\bfirebase deploy\b/)
 }
 

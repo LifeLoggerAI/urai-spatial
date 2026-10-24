@@ -113,6 +113,8 @@ steps:
         }
         run_gate source-integrity node scripts/check-source-integrity.mjs
         run_gate lifemap-data-boundary node --test urai-tier1/tests/lifemap-data-boundary.test.mjs
+        run_gate lifemap-software-route node --test tests/life-map-software-route-intent.test.mjs
+        run_gate lifemap-software-handoff pnpm --dir urai-tier1 exec node --import tsx --test tests/lifemap-software-threshold-handoff.test.mjs
         run_gate lifemap-semantic-privacy pnpm --dir urai-tier1 exec node --import tsx --test tests/lifemap-semantic-owner-contract.test.mjs tests/lifemap-signed-out-navigation-behavior.test.mjs
         run_gate lifemap-hidden-event-privacy node --test urai-tier1/tests/lifemap-physical-star-action.test.mjs urai-tier1/tests/lifemap-hidden-canonical-fallback.test.mjs urai-tier1/tests/lifemap-event-coverage.test.mjs urai-tier1/tests/lifemap-event-privacy.test.mjs
         run_gate ground-glb-source-anchors node --test tests/ground-glb-source-anchors.test.mjs

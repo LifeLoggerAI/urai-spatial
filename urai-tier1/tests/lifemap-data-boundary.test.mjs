@@ -138,7 +138,7 @@ test('visible Life Map projection denies both current and legacy hidden privacy,
   assert.match(source, /privacyLevel: lifeMapEventPrivacyLevel\(data\)/);
   assert.match(source, /const visibleNodes = lifeMapFilterVisibleNodes\(/);
   assert.match(semanticNavigator, /const candidates = visibleNodes.length \? visibleNodes : lifeMapFilterVisibleNodes\(nodes\)/);
-  assert.match(semanticNavigator, /const selected = nodes.find\(\(node\) => node.id === selectedId && !lifeMapNodeIsHidden\(node\)\)/);
+  assert.match(semanticNavigator, /const selected = nodes.find\(\(node\) => node.id === selectedId && !lifeMapNodeIsHidden\(node\) && !node\.locked\)/);
   assert.match(semanticNavigator, /if \(lifeMapNodeIsHidden\(node\) \|\| node.locked\) return/);
 });
 
@@ -158,4 +158,15 @@ test('owner-bound snapshot admission discards foreign event and era metadata and
   assert.match(source, /setNodes\(snapshot\.docs\.map\(\(doc\) => lifeMapOwnerDocumentAllowed/)
   assert.match(source, /setEras\(snapshot\.docs\.map\(\(doc\) => lifeMapOwnerDocumentAllowed/)
   assert.match(source, /if \(!snapshot\.docs\.every\(doc => lifeMapOwnerDocumentAllowed\(doc\.data\(\), owner\)\)\)/)
+})
+
+test('software renderer Focus and Replay actions use authored semantic routes, not English label parsing', () => {
+  const scene = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+  assert.match(scene, /data-life-map-threshold-route="focus"/)
+  assert.match(scene, /data-life-map-threshold-route="replay"/)
+  assert.match(scene, /data-life-map-overview-action="true"/)
+  assert.match(routeBoundary, /lifeMapSoftwareRouteDestination\(route, button\.dataset\.destinationHref, window\.location\.origin\)/)
+  assert.match(routeBoundary, /button\[data-life-map-overview-action="true"\]/)
+  assert.doesNotMatch(routeBoundary, /label\.includes\('Enter Focus'\)/)
+  assert.doesNotMatch(routeBoundary, /overviewActionLabels/)
 })
