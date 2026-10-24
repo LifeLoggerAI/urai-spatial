@@ -113,7 +113,7 @@ steps:
           printf 'URAI_GATE_JSON=%s\n' "$$record"
         }
         run_gate r4-firestore-java21-authority node --test tests/firestore-java-runtime.test.mjs tests/firestore-rules-execution-authority.test.mjs
-        run_gate combined-native-runner-contract node --test tests/native-evidence-target.test.mjs tests/native-evidence-combined-candidate-contract.test.mjs tests/native-combined-preflight.test.mjs tests/native-http-route-acceptance.test.mjs tests/native-git-ancestry.test.mjs
+        run_gate combined-native-runner-contract node --test tests/native-evidence-target.test.mjs tests/native-evidence-combined-candidate-contract.test.mjs tests/native-combined-preflight.test.mjs tests/native-http-route-acceptance.test.mjs tests/native-git-ancestry.test.mjs tests/rfinal-native-evidence-runner.test.mjs
         run_gate r4-source-provenance node scripts/verify-r4-source-composition.mjs
         run_gate r4-provenance-contract node --test tests/verify-r4-source-composition.test.mjs
         run_gate r4-semantic-privacy node --test tests/r4-semantic-privacy-surface.test.mjs

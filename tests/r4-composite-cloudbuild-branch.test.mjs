@@ -34,6 +34,7 @@ test('composite verifier defaults to R4 branch but requires an independently sup
 test('Cloud Build checks the exact Java21 donor and native evidence contracts before accepting its overall gate',()=>{
   assert.match(source,/run_gate r4-firestore-java21-authority node --test tests\/firestore-java-runtime\.test\.mjs tests\/firestore-rules-execution-authority\.test\.mjs/)
   assert.match(source,/run_gate combined-native-runner-contract node --test tests\/native-evidence-target\.test\.mjs/)
+  assert.match(source,/run_gate combined-native-runner-contract [^\n]*tests\/rfinal-native-evidence-runner\.test\.mjs/)
   assert.match(source,/run_gate r4-source-provenance node scripts\/verify-r4-source-composition\.mjs/)
   assert.ok(source.indexOf('run_gate r4-firestore-java21-authority')<source.indexOf('run_gate r4-source-provenance'))
 })
