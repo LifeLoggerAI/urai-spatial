@@ -48,7 +48,7 @@ test('signed-out Life Map never auto-opens disclosed demo content', () => {
   assert.doesNotMatch(accessGate, /setTimeout\(onOpenDemo/)
   assert.doesNotMatch(accessGate, /USER_ID_KEY|urai:userId/)
   assert.doesNotMatch(accessGate, /localStorage\.getItem/)
-  assert.match(accessGate, /listen: \(onIdentity, onFailure\) => onAuthStateChanged\(getAuth\(app\), user => onIdentity\(user\?\.uid \?\? null\), onFailure\)/)
+  assert.match(accessGate, /listen: \(onIdentity, onFailure\) => \{[\s\S]*const auth = getUraiAuth\(\);[\s\S]*return onAuthStateChanged\(auth, user =>[\s\S]*onIdentity\(user && auth\.currentUser === user \? user\.uid : null\), onFailure\);/)
   assert.match(accessGate, /setMode\(userId \? "private" : "signed-out"\)/)
   assert.match(accessGate, /current\.get\("demo"\) === "1"/)
   assert.match(accessGate, /onClick=\{onOpenDemo\}/)
@@ -137,7 +137,7 @@ test('private Life Map joins only currently consented, owner-verified canonical 
 test('visible Life Map projection denies both current and legacy hidden privacy, including demo and keyboard paths', () => {
   assert.match(source, /privacyLevel: lifeMapEventPrivacyLevel\(data\)/);
   assert.match(source, /const visibleNodes = lifeMapFilterVisibleNodes\(/);
-  assert.match(semanticNavigator, /const candidates = visibleNodes.length \? visibleNodes : lifeMapFilterVisibleNodes\(nodes\)/);
+  assert.match(semanticNavigator, /const candidates = \(visibleNodes\.length \? visibleNodes : lifeMapFilterVisibleNodes\(nodes\)\)\.filter\(lifeMapNodeSelectable\)/);
   assert.match(semanticNavigator, /const selected = nodes.find\(\(node\) => node.id === selectedId && !lifeMapNodeIsHidden\(node\) && !node\.locked\)/);
   assert.match(semanticNavigator, /if \(lifeMapNodeIsHidden\(node\) \|\| node.locked\) return/);
 });
