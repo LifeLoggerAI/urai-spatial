@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { lifeMapHiddenEventMemoryIds, lifeMapEventCoverageComplete } from '../src/components/lifemap/lifeMapPhysicalStarAction.mjs';
+import { lifeMapHiddenEventMemoryIds, lifeMapEventCoverageComplete, lifeMapCoveredEventMemoryVisible } from '../src/components/lifemap/lifeMapPhysicalStarAction.mjs';
 const memory = (memoryId, privacyLevel = 'private', extras = {}) => ({id: 'event:' + memoryId, type:'memory', memoryId, privacyLevel, ...extras});
 const fallback = ({recentEvents=[], unorderedEvents=[], orderedCount=0, unorderedCount=0, orderedCache=false, unorderedCache=false, ownerMatch=true}, memoryIds=[]) => {
   if(!ownerMatch || !lifeMapEventCoverageComplete(orderedCount,orderedCache) || !lifeMapEventCoverageComplete(unorderedCount,unorderedCache))return [];
@@ -39,3 +39,9 @@ test('incomplete or malformed privacy input is never mistaken for complete evide
   assert.deepEqual([...lifeMapHiddenEventMemoryIds(null)],[]);
   for(const input of [null,undefined,'false',0])assert.equal(lifeMapEventCoverageComplete(0,input),false);
 });
+
+test('event-backed memory awaits complete coverage',()=>{const n=memory('ready');assert.equal(lifeMapCoveredEventMemoryVisible(n,false,new Set()),false);assert.equal(lifeMapCoveredEventMemoryVisible(n,true,new Set()),true)})
+test('hidden undated event vetoes another visible event with same memory ID',()=>{const hidden=lifeMapHiddenEventMemoryIds([memory('secret','shareable',{privacy:'hidden'})]);assert.equal(lifeMapCoveredEventMemoryVisible(memory('secret'),true,hidden),false)})
+test('malformed identity or missing veto evidence cannot authorize a star',()=>{for(const id of ['', ' ',null,undefined,3])assert.equal(lifeMapCoveredEventMemoryVisible(memory(id),true,new Set()),false);assert.equal(lifeMapCoveredEventMemoryVisible(memory('good'),true,null),false)})
+test('contextual signals remain while hidden metadata vetoes every event type',()=>{const season={id:'s',type:'season',privacyLevel:'private'};assert.equal(lifeMapCoveredEventMemoryVisible(season,false,null),true);assert.equal(lifeMapCoveredEventMemoryVisible({...season,privacy:'hidden'},true,new Set()),false)})
+test('production Life Map event projection checks coverage before rendering memory stars',async()=>{const {readFileSync}=await import('node:fs');const source=readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts',import.meta.url),'utf8');assert.match(source,/if \(!lifeMapCoveredEventMemoryVisible\(node, eventCoverageCurrent, eventHiddenIds\)\) return \[\];/);assert.match(source,/unorderedEventCoverage\.authority === authorityKey && unorderedEventCoverage\.complete/);assert.match(source,/for \(const id of unorderedEventCoverage\.hiddenIds\) eventHiddenIds\.add\(id\)/)})

@@ -30,3 +30,6 @@ export type LifeMapHiddenEventReference = { type?: string; memoryId?: string; pr
 export function lifeMapHiddenEventMemoryIds(nodes: readonly LifeMapHiddenEventReference[] | null | undefined): ReadonlySet<string>;
 
 export function lifeMapEventCoverageComplete(docCount: number, fromCache: unknown, limitCount?: number): boolean;
+
+export type LifeMapCoveredEventNode = { type?: string; memoryId?: string | null; privacyLevel?: string; privacy?: string };
+export function lifeMapCoveredEventMemoryVisible(node: LifeMapCoveredEventNode | null | undefined, coverageComplete: unknown, hiddenMemoryIds: ReadonlySet<string> | null | undefined): boolean;

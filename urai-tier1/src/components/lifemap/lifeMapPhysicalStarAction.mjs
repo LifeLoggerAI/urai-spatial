@@ -75,3 +75,16 @@ export function lifeMapEventCoverageComplete(docCount, fromCache, limitCount = 2
     Number.isSafeInteger(limitCount) && limitCount > 0 &&
     docCount < limitCount && fromCache === false;
 }
+
+// Event-backed stars need the same complete privacy coverage as canonical
+// fallback stars. An older hidden event can share a canonical memory ID with a
+// currently visible event, and the date-ordered query may omit that older event.
+// Contextual non-memory signals can remain visible while coverage catches up.
+// This is only a rendering veto; it cannot authorize Focus or Replay access.
+export function lifeMapCoveredEventMemoryVisible(node, coverageComplete, hiddenMemoryIds) {
+  if (!node || lifeMapNodeIsHidden(node)) return false;
+  if (node.type !== 'memory') return true;
+  if (coverageComplete !== true || !hiddenMemoryIds || typeof hiddenMemoryIds.has !== 'function') return false;
+  const id = typeof node.memoryId === 'string' ? node.memoryId.trim() : '';
+  return id.length > 0 && !hiddenMemoryIds.has(id);
+}

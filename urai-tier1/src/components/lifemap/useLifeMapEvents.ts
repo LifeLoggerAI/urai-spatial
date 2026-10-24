@@ -6,7 +6,7 @@ import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from "@/sp
 import { isConsentPolicy } from "@/app/privacy-controls/consentModel";
 import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
-import { lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes, lifeMapHiddenEventMemoryIds, lifeMapEventCoverageComplete } from "./lifeMapPhysicalStarAction.mjs";
+import { lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes, lifeMapHiddenEventMemoryIds, lifeMapEventCoverageComplete, lifeMapCoveredEventMemoryVisible } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapDisplayPosition } from "./lifeMapLayout";
 import {
   lifeMapEras,
@@ -148,10 +148,18 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   } | null>(null);
   const resolvedNodes = useMemo(() => {
     if (explicitDemo) return visibleNodes;
+    const eventCoverageCurrent = eventsSnapshotComplete && authorityKey !== null &&
+      unorderedEventCoverage?.owner === resolvedUserId &&
+      unorderedEventCoverage.authority === authorityKey && unorderedEventCoverage.complete;
+    const eventHiddenIds = new Set(lifeMapHiddenEventMemoryIds(currentNodes));
+    if (eventCoverageCurrent && unorderedEventCoverage) {
+      for (const id of unorderedEventCoverage.hiddenIds) eventHiddenIds.add(id);
+    }
     const fromEvents: LifeMapNode[] = visibleNodes.flatMap((node): LifeMapNode[] => {
       // A hidden event is not a visible landmark even if an older client
       // retained its coordinates, metadata or connections in a snapshot.
       if (node.privacyLevel === 'hidden') return [];
+      if (!lifeMapCoveredEventMemoryVisible(node, eventCoverageCurrent, eventHiddenIds)) return [];
       const memoryId = sanitizeMemoryId(node.memoryId);
       const authoritative = memoryId && node.type === "memory" ? visibleMemories.get(memoryId) : undefined;
       // A revoked/deleted/absent canonical memory must leave NO event-backed
