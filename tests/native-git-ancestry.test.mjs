@@ -1,10 +1,23 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { ensureNativeGitAncestry } from '../scripts/lib/native-git-ancestry.mjs'
 const root = '18bd6f3dfc9363f3764fa8011a67072b35902741'
 const source = 'ff38ab444015011c7f86de8f2ee645cf4037a650'
 const branch = 'verify/r4-firestore-java21-admission-20261023'
-const args = (extra = {}) => ({ branch, sourceHead: source, trustedAncestor: root, ...extra })
+const args = (extra = {}) => ({ branch, sourceHead: source, trustedAncestor: root,
+  ...extra,
+  runGit: typeof extra.runGit === 'function' ? async (argv, name) => {
+    // Preserve existing simulated ancestry probes; real-git regressions below
+    // exercise the actual shallow-object and repository-mode transitions.
+    if (argv[0] === 'rev-parse') return { exitCode: 0, output: 'true' }
+    if (argv[0] === 'cat-file') return { exitCode: 0 }
+    return extra.runGit(argv, name)
+  } : extra.runGit,
+})
 
 test('complete ancestry does not fetch or mutate source', async () => {
   const calls = []
@@ -103,4 +116,88 @@ test('timed out or spawn-error ancestry probes never deepen', async () => {
     }})),/NATIVE_HISTORY_ANCESTRY_COMMAND_FAILED/)
     assert.equal(fetches,0)
   }
+})
+
+test('a full repository with a missing ancestor never fetches', async () => {
+  let fetches = 0
+  await assert.rejects(ensureNativeGitAncestry({
+    branch, sourceHead: source, trustedAncestor: root, allowDeepen: true,
+    runGit: async argv => {
+      if (argv[0] === 'rev-parse') return {exitCode:0,output:'false'}
+      if (argv[0] === 'cat-file' && argv[2] === root+'^{commit}')
+        return {exitCode:128,output:'fatal: Not a valid object name '+root+'^{commit}'}
+      if (argv[0] === 'fetch') fetches++
+      return {exitCode:0}
+    },
+  }),/NATIVE_HISTORY_TRUSTED_ANCESTOR_UNREADABLE/)
+  assert.equal(fetches,0)
+})
+
+test('unexpected shallow Git failure is not interpreted as missing history', async () => {
+  for (const failure of ['fatal: loose object is corrupt', 'fatal: Permission denied']) {
+    let fetches = 0
+    await assert.rejects(ensureNativeGitAncestry({
+      branch, sourceHead: source, trustedAncestor: root, allowDeepen: true,
+      runGit: async argv => {
+        if (argv[0] === 'rev-parse') return {exitCode:0,output:'true'}
+        if (argv[0] === 'cat-file' && argv[2] === root+'^{commit}')
+          return {exitCode:128,output:failure}
+        if (argv[0] === 'fetch') fetches++
+        return {exitCode:0}
+      },
+    }),/NATIVE_HISTORY_TRUSTED_ANCESTOR_UNREADABLE/)
+    assert.equal(fetches,0)
+  }
+})
+
+test('unverified repository shallow state fails before any fetch', async () => {
+  let fetches = 0
+  await assert.rejects(ensureNativeGitAncestry({
+    branch, sourceHead: source, trustedAncestor: root, allowDeepen:true,
+    runGit:async argv => {
+      if (argv[0]==='fetch') fetches++
+      return {exitCode:0,output:'not-a-shallow-state'}
+    }
+  }),/NATIVE_HISTORY_SHALLOW_STATE_UNVERIFIED/)
+  assert.equal(fetches,0)
+})
+
+test('real shallow clone returns 128 for missing ancestor and recovers with bounded deepen', async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(),'urai-git-ancestry-'))
+  const origin = path.join(dir,'origin'), checkout = path.join(dir,'checkout')
+  const git = (cwd, argv) => spawnSync('git', argv, {cwd, encoding:'utf8', timeout:20000})
+  try {
+    mkdirSync(origin)
+    assert.equal(git(origin,['init','-q','-b',branch]).status,0)
+    assert.equal(git(origin,['config','user.name','UrAi Fixture']).status,0)
+    assert.equal(git(origin,['config','user.email','fixture@urai.invalid']).status,0)
+    writeFileSync(path.join(origin,'file.txt'),'root\\n')
+    assert.equal(git(origin,['add','file.txt']).status,0)
+    assert.equal(git(origin,['commit','-qm','root']).status,0)
+    const ancestor = git(origin,['rev-parse','HEAD']).stdout.trim()
+    for(let i=1;i<=8;i++) {
+      writeFileSync(path.join(origin,'file.txt'),String(i)+'\\n')
+      assert.equal(git(origin,['commit','-qam','commit-'+i]).status,0)
+    }
+    const tip = git(origin,['rev-parse','HEAD']).stdout.trim()
+    assert.equal(git(dir,['clone','-q','--depth=2','--single-branch','--branch',branch,
+      'file://'+origin,checkout]).status,0)
+    const failed = git(checkout,['merge-base','--is-ancestor',ancestor,tip])
+    assert.equal(failed.status,128)
+    assert.match(failed.stderr,/not a valid commit name/i)
+    let fetches = 0
+    const done = await ensureNativeGitAncestry({
+      branch,sourceHead:tip,trustedAncestor:ancestor,allowDeepen:true,
+      runGit:async argv => {
+        const p = git(checkout,argv)
+        if(argv[0]==='fetch')fetches++
+        return {exitCode:p.status,output:(p.stdout+p.stderr).trim(),
+          timedOut:Boolean(p.error),spawnError:p.error?.message}
+      },
+    })
+    assert.equal(done.verified,true)
+    assert.equal(done.deepenAttempts,1)
+    assert.equal(fetches,1)
+    assert.equal(git(checkout,['merge-base','--is-ancestor',ancestor,tip]).status,0)
+  } finally {rmSync(dir,{recursive:true,force:true})}
 })

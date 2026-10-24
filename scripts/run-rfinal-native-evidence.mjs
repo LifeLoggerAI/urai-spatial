@@ -546,9 +546,13 @@ async function main() {
         branch: target.branch, sourceHead: head,
         trustedAncestor: CONTROLLER.lastVerifiedSha,
         allowDeepen: !cfg.source,
-        runGit: async (args, name) => command(['git', '-C', source, ...args], {
-          cwd: source, log: path.join(evidence, name + '.log'), timeoutMinutes: 12,
-        }),
+        runGit: async (args, name) => {
+          const result = await command(['git', '-C', source, ...args], {
+            cwd: source, log: path.join(evidence, name + '.log'), timeoutMinutes: 12,
+          })
+          // Only log-backed Git output establishes shallow/missing-object state.
+          return { ...result, output: readFileSync(result.logPath, 'utf8').trim() }
+        },
       })
       record('historical_known_head_ancestry','PASS',history)
     }
