@@ -725,8 +725,8 @@
     },
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs",
-      "blob": "c44979a5924e6d83ca1f00b65db17f7378951a0c",
-      "reason": "Route verifier validates exact action, origin and memory/manifest identifiers"
+      "blob": "9947d8086bb4777bd0de2eaf151ed3a36dbb5fd1",
+      "reason": "Reject duplicate memory and manifest identity and noncanonical software route path before handoff"
     }
   ]
 }
