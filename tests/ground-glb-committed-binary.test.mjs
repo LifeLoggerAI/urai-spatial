@@ -68,15 +68,63 @@ export function inspectGroundIndexPayload(document, binary) {
         accessorOffset + (accessor.count - 1) * stride + width <= view.byteLength &&
         (viewOffset + accessorOffset) % width === 0,
       'GROUND_GLB_INDEX_VIEW_BOUNDS_INVALID')
+      // Read the actual POSITION payload, not just the min/max metadata.
+      // Ground's authored GLB uses uncompressed FLOAT VEC3 positions.
+      const positionView = document.bufferViews?.[vertices.bufferView]
+      const pOffset = positionView?.byteOffset ?? 0
+      const aOffset = vertices.byteOffset ?? 0
+      const pStride = positionView?.byteStride ?? 12
+      assert.ok(vertices.componentType === 5126 && vertices.sparse === undefined &&
+        accessor.sparse === undefined && positionView?.buffer === 0 &&
+        Number.isSafeInteger(pOffset) && pOffset >= 0 && pOffset % 4 === 0 &&
+        Number.isSafeInteger(aOffset) && aOffset >= 0 && aOffset % 4 === 0 &&
+        Number.isSafeInteger(pStride) && pStride >= 12 && pStride % 4 === 0 &&
+        Number.isSafeInteger(positionView.byteLength) && positionView.byteLength > 0 &&
+        pOffset + positionView.byteLength <= binLength &&
+        aOffset + (vertices.count - 1) * pStride + 12 <= positionView.byteLength,
+      'GROUND_GLB_POSITION_VIEW_BOUNDS_INVALID')
+      const coordinates = new Float64Array(vertices.count * 3)
+      const pMin = [Infinity, Infinity, Infinity], pMax = [-Infinity, -Infinity, -Infinity]
+      const pBase = binOffset + pOffset + aOffset
+      for (let vertex = 0; vertex < vertices.count; vertex++) {
+        const at = pBase + vertex * pStride
+        for (let axis = 0; axis < 3; axis++) {
+          const value = binary.readFloatLE(at + axis * 4)
+          assert.ok(Number.isFinite(value), 'GROUND_GLB_POSITION_NOT_FINITE')
+          coordinates[vertex * 3 + axis] = value
+          pMin[axis] = Math.min(pMin[axis], value)
+          pMax[axis] = Math.max(pMax[axis], value)
+        }
+      }
+      if (vertices.min !== undefined || vertices.max !== undefined) {
+        assert.deepEqual(vertices.min, pMin, 'GROUND_GLB_POSITION_EXTREMA_MISMATCH')
+        assert.deepEqual(vertices.max, pMax, 'GROUND_GLB_POSITION_EXTREMA_MISMATCH')
+      }
       let smallest = Infinity, largest = -Infinity
+      const indexValues = new Uint32Array(accessor.count)
       const base = binOffset + viewOffset + accessorOffset
       for (let i=0; i<accessor.count; i++) {
         const at = base + i * stride
         const value = width === 4 ? binary.readUInt32LE(at) :
           width === 2 ? binary.readUInt16LE(at) : binary.readUInt8(at)
         assert.ok(value < vertices.count, 'GROUND_GLB_INDEX_OUT_OF_RANGE')
+        indexValues[i] = value
         if (value < smallest) smallest = value
         if (value > largest) largest = value
+      }
+      // A legal index range alone does not prove drawable triangles.
+      // Reject zero-area faces while preserving all genuine source geometry.
+      for (let i=0; i<indexValues.length; i+=3) {
+        const a = indexValues[i] * 3, b = indexValues[i+1] * 3, c = indexValues[i+2] * 3
+        const abx = coordinates[b]-coordinates[a]
+        const aby = coordinates[b+1]-coordinates[a+1]
+        const abz = coordinates[b+2]-coordinates[a+2]
+        const acx = coordinates[c]-coordinates[a]
+        const acy = coordinates[c+1]-coordinates[a+1]
+        const acz = coordinates[c+2]-coordinates[a+2]
+        const cx = aby*acz-abz*acy, cy = abz*acx-abx*acz, cz = abx*acy-aby*acx
+        const areaSquared = cx*cx + cy*cy + cz*cz
+        assert.ok(Number.isFinite(areaSquared) && areaSquared > 0, 'GROUND_GLB_TRIANGLE_DEGENERATE')
       }
       if (accessor.min !== undefined || accessor.max !== undefined) {
         assert.deepEqual(accessor.min, [smallest], 'GROUND_GLB_INDEX_EXTREMA_MISMATCH')
@@ -146,4 +194,40 @@ test('index byte view outside embedded BIN payload fails closed',()=>{
   const a = doc.accessors[doc.meshes[0].primitives[0].indices]
   doc.bufferViews[a.bufferView].byteOffset = bytes.length
   assert.throws(()=>inspectGroundIndexPayload(doc, bytes), /GROUND_GLB_INDEX_VIEW_BOUNDS_INVALID/)
+})
+
+test('actual POSITION bytes fail closed on NaN/Inf even when index metadata agrees',()=>{
+  const bytes = Buffer.from(readFileSync(modelUrl))
+  const doc = parseGroundGlbBinary(bytes)
+  const a = doc.accessors[doc.meshes[0].primitives[0].attributes.POSITION]
+  const v = doc.bufferViews[a.bufferView]
+  const at = 28 + bytes.readUInt32LE(12) + (v.byteOffset??0) + (a.byteOffset??0)
+  bytes.writeFloatLE(Number.NaN, at)
+  assert.throws(()=>inspectGroundIndexPayload(doc, bytes),/GROUND_GLB_POSITION_NOT_FINITE/)
+})
+
+test('actual valid-range but duplicate triangle indices are rejected',()=>{
+  const bytes = Buffer.from(readFileSync(modelUrl))
+  const doc = parseGroundGlbBinary(bytes)
+  const a = doc.accessors[doc.meshes[0].primitives[0].indices]
+  const v = doc.bufferViews[a.bufferView]
+  const at = 28 + bytes.readUInt32LE(12) + (v.byteOffset??0) + (a.byteOffset??0)
+  const size = ({5121:1,5123:2,5125:4})[a.componentType]
+  const first = size===4 ? bytes.readUInt32LE(at) : size===2 ? bytes.readUInt16LE(at) : bytes.readUInt8(at)
+  if(size===4)bytes.writeUInt32LE(first,at+size)
+  else if(size===2)bytes.writeUInt16LE(first,at+size)
+  else bytes.writeUInt8(first,at+size)
+  assert.throws(()=>inspectGroundIndexPayload(doc, bytes),/GROUND_GLB_TRIANGLE_DEGENERATE/)
+})
+
+test('lying position extrema and POSITION BIN overrun fail closed',()=>{
+  const bytes = readFileSync(modelUrl)
+  const doc = parseGroundGlbBinary(bytes)
+  const a = doc.accessors[doc.meshes[0].primitives[0].attributes.POSITION]
+  const oldMax = a.max
+  a.max = [99999,99999,99999]
+  assert.throws(()=>inspectGroundIndexPayload(doc,bytes),/GROUND_GLB_POSITION_EXTREMA_MISMATCH/)
+  a.max = oldMax
+  doc.bufferViews[a.bufferView].byteOffset = bytes.length
+  assert.throws(()=>inspectGroundIndexPayload(doc,bytes),/GROUND_GLB_POSITION_VIEW_BOUNDS_INVALID/)
 })
