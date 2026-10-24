@@ -27,7 +27,7 @@ test('sample memories require only the explicit demo-user contract', () => {
 })
 
 test('empty and failed private snapshots never substitute seed memories', () => {
-  assert.match(source, /setNodes\(snapshot\.docs\.map/)
+  assert.match(source, /setNodes\(projection\.items as LifeMapNode\[\]\)/)
   assert.doesNotMatch(source, /setNodes\([^)]*lifeMapNodes/)
   assert.match(source, /setNodes\(\[\]\)/)
   assert.match(source, /setEras\(\[\]\)/)
@@ -39,8 +39,8 @@ test('empty and failed private snapshots never substitute seed memories', () => 
 test('normalized documents inherit the authenticated owner rather than a fake identity', () => {
   assert.match(source, /function normalizeEvent\(id: string, data: DocumentData, ownerId = ""\)/)
   assert.match(source, /userId: typeof data\.userId === "string" \? data\.userId : ownerId/)
-  assert.match(source, /normalizeEvent\(doc\.id, doc\.data\(\), resolvedUserId\)/)
-  assert.match(source, /normalizeEra\(doc\.id, doc\.data\(\), resolvedUserId\)/)
+  assert.match(source, /mapLifeMapEventToNode\(normalizeEvent\(id, data, resolvedUserId\)\)/)
+  assert.match(source, /normalizeEra\(id, data, resolvedUserId\)/)
 })
 
 
@@ -152,12 +152,14 @@ test('canonical fallback requires a complete unordered owner event query, includ
 
 
 test('owner-bound snapshot admission discards foreign event and era metadata and denies incomplete coverage', () => {
-  assert.match(source, /import \{ lifeMapOwnerDocumentAllowed \} from "\.\/lifeMapEventPrivacy\.mjs"/)
-  assert.match(source, /const ownersValid = snapshot\.docs\.every\(\(doc\) => lifeMapOwnerDocumentAllowed\(doc\.data\(\), resolvedUserId\)\)/)
+  assert.match(source, /import \{ projectLifeMapOwnerSnapshot \} from "\.\/lifeMapEventPrivacy\.mjs"/)
+  assert.match(source, /const ownersValid = projection\.items\.length === snapshot\.docs\.length/)
   assert.match(source, /setEventSnapshotComplete\(ownersValid && snapshot\.docs\.length < 240 && snapshot\.metadata\.fromCache === false\)/)
-  assert.match(source, /setNodes\(snapshot\.docs\.map\(\(doc\) => lifeMapOwnerDocumentAllowed/)
-  assert.match(source, /setEras\(snapshot\.docs\.map\(\(doc\) => lifeMapOwnerDocumentAllowed/)
-  assert.match(source, /if \(!snapshot\.docs\.every\(doc => lifeMapOwnerDocumentAllowed\(doc\.data\(\), owner\)\)\)/)
+  assert.match(source, /setNodes\(projection\.items as LifeMapNode\[\]\)/)
+  assert.match(source, /setEras\(projection\.items as LifeMapEra\[\]\)/)
+  assert.match(source, /if \(!projection\.ok \|\| projection\.items\.length !== snapshot\.docs\.length\)/)
+  assert.match(source, /setEventsError\("Private Life Map events could not be verified\."\)/)
+  assert.match(source, /setErasError\("Private Life Map eras could not be verified\."\)/)
 })
 
 test('software renderer Focus and Replay actions use authored semantic routes, not English label parsing', () => {
@@ -169,4 +171,14 @@ test('software renderer Focus and Replay actions use authored semantic routes, n
   assert.match(routeBoundary, /button\[data-life-map-overview-action="true"\]/)
   assert.doesNotMatch(routeBoundary, /label\.includes\('Enter Focus'\)/)
   assert.doesNotMatch(routeBoundary, /overviewActionLabels/)
+})
+
+test('all three Firestore snapshot paths use all-or-nothing owner projection before state admission', () => {
+  const call = /const projection = projectLifeMapOwnerSnapshot\(snapshot\.docs, (?:resolvedUserId|owner),/g;
+  assert.equal((source.match(call) || []).length, 3);
+  assert.match(source, /if \(!projection\.ok\) \{\s*setNodes\(\[\]\);\s*setEventSnapshotComplete\(false\);/)
+  assert.match(source, /if \(!projection\.ok \|\| projection\.items\.length !== snapshot\.docs\.length\) \{\s*setUnorderedEventCoverage\(null\);/)
+  assert.match(source, /if \(!projection\.ok\) \{\s*setEras\(\[\]\);/)
+  assert.doesNotMatch(source, /setNodes\(snapshot\.docs\.map/)
+  assert.doesNotMatch(source, /setEras\(snapshot\.docs\.map/)
 })
