@@ -7,6 +7,10 @@ export function lifeMapSoftwareRouteDestination(action, href, origin) {
   if (action !== 'focus' && action !== 'replay') return null
   if (typeof href !== 'string' || !href.startsWith('/') || href.startsWith('//') ||
       typeof origin !== 'string' || !origin) return null
+  // Check the authored route before URL normalizes dot segments and encoded
+  // path elements. A canonical destination must not be obtained by rewriting.
+  const boundary = href.search(/[?#]/)
+  if ((boundary < 0 ? href : href.slice(0, boundary)) !== '/' + action) return null
   try {
     const base = new URL(origin)
     if ((base.protocol !== 'http:' && base.protocol !== 'https:') ||
@@ -14,6 +18,10 @@ export function lifeMapSoftwareRouteDestination(action, href, origin) {
     const destination = new URL(href, base)
     if (destination.origin !== base.origin || destination.pathname !== '/' + action ||
         destination.hash) return null
+    // Different consumers may resolve duplicate keys differently. Never
+    // pass ambiguous private-memory identity across the WebGL route boundary.
+    if (destination.searchParams.getAll('memoryId').length !== 1 ||
+        destination.searchParams.getAll('manifestId').length !== 1) return null
     const memoryId = destination.searchParams.get('memoryId')
     const manifestId = destination.searchParams.get('manifestId')
     if (!MEMORY_TOKEN.test(memoryId ?? '') || !MEMORY_TOKEN.test(manifestId ?? '')) return null

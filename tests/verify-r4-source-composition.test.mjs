@@ -17,7 +17,7 @@ function fixture(){
   f.entries.set('urai-tier1/src/components/lifemap/useLifeMapEvents.ts',{mode:'100644',type:'blob',sha:'f2619410f05f92d96a9824451089e2023a62c57e'})
   for(const [path,blob] of [
     ['urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx','a6fefdd2e75448f9869202cf740726168c11caa3'],
-    ['urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs','c44979a5924e6d83ca1f00b65db17f7378951a0c'],
+    ['urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs','9947d8086bb4777bd0de2eaf151ed3a36dbb5fd1'],
     ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs','0943053fdf773df484be9ba2cddc32ec6023ac2c']]) {
     f.manifest.candidateSourceClaims.push({path,blob,reason:'Candidate-owned software route boundary is byte pinned'})
     f.entries.set(path,{mode:'100644',type:'blob',sha:blob})
