@@ -29,12 +29,20 @@ export function lifeMapNodeIsHidden(node) {
   return Boolean(node && (node.privacyLevel === 'hidden' || node.privacy === 'hidden'));
 }
 
+// The world, semantic inspector, route restoration and keyboard navigation
+// share one selection authority. Locked context may render without becoming a
+// selected private memory or revealing related graph metadata.
+export function lifeMapNodeSelectable(node) {
+  return Boolean(node && typeof node.id === 'string' && node.id.trim() &&
+    !node.locked && !lifeMapNodeIsHidden(node));
+}
+
 // Graph links are navigation hints, never permission to disclose hidden nodes.
 // This shared filter is also applied to the semantic inspector's related links.
 export function lifeMapVisibleRelatedNodes(nodes, selected) {
-  if (!selected || typeof selected.id !== 'string' || !selected.id || lifeMapNodeIsHidden(selected)) return [];
+  if (!lifeMapNodeSelectable(selected)) return [];
   if (!Array.isArray(nodes)) return [];
-  return nodes.filter(node => node && node.id !== selected.id && !lifeMapNodeIsHidden(node) &&
+  return nodes.filter(node => lifeMapNodeSelectable(node) && node.id !== selected.id &&
     ((Array.isArray(selected.connectedTo) && selected.connectedTo.includes(node.id)) ||
       (Array.isArray(node.connectedTo) && node.connectedTo.includes(selected.id))));
 }

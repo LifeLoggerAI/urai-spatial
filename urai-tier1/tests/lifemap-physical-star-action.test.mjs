@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import * as navigation from '../src/components/lifemap/lifeMapPhysicalStarAction.mjs';
-const { lifeMapPhysicalReplayAllowed, lifeMapPhysicalStarAction, lifeMapFocusAllowed, lifeMapVisibleRelatedNodes, lifeMapNodeIsHidden, lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes } = navigation;
+const { lifeMapPhysicalReplayAllowed, lifeMapPhysicalStarAction, lifeMapFocusAllowed, lifeMapVisibleRelatedNodes, lifeMapNodeIsHidden, lifeMapNodeSelectable, lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes } = navigation;
 
 const canonical = () => ({ id: 'star-1', authorizedMemory: true, locked: false, replayAvailable: true, memoryId: 'memory-1', replayManifestId: 'manifest-1' });
 test('first physical star click selects without replay', () => { assert.equal(lifeMapPhysicalStarAction('star-1', null, 'overview', true), 'select'); });
@@ -180,3 +180,27 @@ test('revoking a visible node removes it from all candidate projections', () => 
   node.privacy = 'hidden';
   assert.deepEqual(lifeMapFilterVisibleNodes([node]), []);
 });
+
+test('locked and hidden context never becomes selected memory or exposes related graph nodes', () => {
+  const visible = Object.freeze({ id:'owner-star', locked:false, privacyLevel:'private', connectedTo:['locked','open'] })
+  const locked = Object.freeze({ id:'locked', locked:true, title:'private context' })
+  const open = Object.freeze({ id:'open', locked:false })
+  assert.equal(lifeMapNodeSelectable(visible), true)
+  for (const node of [locked, {...visible, privacyLevel:'hidden'}, {...visible, privacy:'hidden'}, {...visible, id:' '}, null]) {
+    assert.equal(lifeMapNodeSelectable(node), false)
+  }
+  assert.deepEqual(lifeMapVisibleRelatedNodes([locked,open], visible).map(node=>node.id), ['open'])
+  assert.deepEqual(lifeMapVisibleRelatedNodes([visible], locked), [])
+})
+test('actual world and semantic paths gate direct route, pointer, inspector, and keyboard selection', async () => {
+  const { readFileSync } = await import('node:fs')
+  const scene = readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url),'utf8')
+  const navigator = readFileSync(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url),'utf8')
+  assert.match(scene,/nodes\.find\(\(node\) => node\.id === selectedId && lifeMapNodeSelectable\(node\)\)/)
+  assert.match(scene,/const selectNode = useCallback\(\(node: LifeMapNode\) => \{\s*if \(!lifeMapNodeSelectable\(node\)\) return;/)
+  assert.match(scene,/nodes\.find\(\(candidate\) => candidate\.id === queryNode && lifeMapNodeSelectable\(candidate\)\)/)
+  assert.match(scene,/const retainedNode = nodes\.find\(\(node\) => node\.id === retainedId && lifeMapNodeSelectable\(node\)\)/)
+  assert.match(navigator,/const selected = nodes\.find\(\(node\) => node\.id === selectedId && !lifeMapNodeIsHidden\(node\) && !node\.locked\)/)
+  assert.match(navigator,/\(visibleNodes\.length \? visibleNodes : lifeMapFilterVisibleNodes\(nodes\)\)\.filter\(lifeMapNodeSelectable\)/)
+  assert.match(navigator,/const retained = nodes\.find\(\(node\) => node\.id === selectedQueryId && lifeMapNodeSelectable\(node\)\)/)
+})

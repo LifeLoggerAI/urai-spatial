@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { type LifeMapNode, type LifeMapNodeType } from './lifeMapData'
 import { requestLifeMapSelection } from './lifeMapSelection'
-import { lifeMapFocusAllowed, lifeMapPhysicalReplayAllowed, lifeMapVisibleRelatedNodes, lifeMapFilterVisibleNodes, lifeMapNodeIsHidden } from './lifeMapPhysicalStarAction.mjs'
+import { lifeMapFocusAllowed, lifeMapPhysicalReplayAllowed, lifeMapVisibleRelatedNodes, lifeMapFilterVisibleNodes, lifeMapNodeIsHidden, lifeMapNodeSelectable } from './lifeMapPhysicalStarAction.mjs'
 import { useLifeMapEvents } from './useLifeMapEvents'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
@@ -43,7 +43,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   const [open, setOpen] = useState(false)
   const [portalReady, setPortalReady] = useState(false)
   const selectedId = overviewRequested ? null : params.get('node') || params.get('memoryId')
-  const selected = nodes.find((node) => node.id === selectedId && !lifeMapNodeIsHidden(node)) || null
+  const selected = nodes.find((node) => node.id === selectedId && !lifeMapNodeIsHidden(node) && !node.locked) || null
   const searchRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const inspectorHeadingRef = useRef<HTMLHeadingElement>(null)
@@ -121,19 +121,28 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
 
   const overview = useCallback(() => {
     setOpen(false)
-    const next = withIdentity(new URLSearchParams())
     const current = new URLSearchParams(window.location.search)
-    const memoryId = current.get('memoryId')
-    const node = current.get('node')
-    if (memoryId) next.set('memoryId', memoryId)
-    if (node) next.set('node', node)
+    const selectedQueryId = current.get('node') || current.get('memoryId')
+    const retained = nodes.find((node) => node.id === selectedQueryId && lifeMapNodeSelectable(node))
+    const next = withIdentity(new URLSearchParams(), retained?.id)
+    // Never retain a revoked or locked selection (or its manifest) merely
+    // because an older URL carried that identity into the semantic navigator.
+    if (retained) {
+      next.set('node', retained.id)
+      if (explicitDemo) next.set('memoryId', retained.id)
+      else if (retained.authorizedMemory && retained.memoryId) next.set('memoryId', retained.memoryId)
+      if (!explicitDemo) {
+        next.delete('manifestId')
+        if (retained.authorizedMemory && retained.replayManifestId) next.set('manifestId', retained.replayManifestId)
+      }
+    } else next.delete('manifestId')
     next.set('overview', '1')
     commitBrowserIdentity(next)
     router.replace(`/life-map?${next.toString()}`, { scroll: false })
-  }, [commitBrowserIdentity, router, withIdentity])
+  }, [commitBrowserIdentity, explicitDemo, nodes, router, withIdentity])
 
   const step = useCallback((direction: number) => {
-    const candidates = visibleNodes.length ? visibleNodes : lifeMapFilterVisibleNodes(nodes)
+    const candidates = (visibleNodes.length ? visibleNodes : lifeMapFilterVisibleNodes(nodes)).filter(lifeMapNodeSelectable)
     if (!candidates.length) return
 
     // Browser identity is committed synchronously before the spatial selection transition.

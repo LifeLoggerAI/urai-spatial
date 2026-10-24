@@ -16,10 +16,12 @@ export function lifeMapPhysicalStarAction(clickedId: string | null | undefined, 
 
 export type LifeMapRelatedNode = {
   id: string;
+  locked?: boolean;
   privacyLevel?: 'private' | 'hidden' | 'shareable';
   privacy?: 'private' | 'hidden' | 'shareable';
   connectedTo?: readonly string[];
 };
+export function lifeMapNodeSelectable(node: LifeMapRelatedNode | null | undefined): boolean;
 export function lifeMapVisibleRelatedNodes<T extends LifeMapRelatedNode>(nodes: readonly T[], selected: LifeMapRelatedNode | null | undefined): T[];
 export function lifeMapNodeIsHidden(node: { privacyLevel?: unknown; privacy?: unknown } | null | undefined): boolean;
 export function lifeMapEventPrivacyLevel(node: { privacyLevel?: string; privacy?: string } | null | undefined): 'hidden' | 'private' | 'shareable';
