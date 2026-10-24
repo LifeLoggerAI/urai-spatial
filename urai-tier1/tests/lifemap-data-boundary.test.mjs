@@ -182,3 +182,8 @@ test('all three Firestore snapshot paths use all-or-nothing owner projection bef
   assert.doesNotMatch(source, /setNodes\(snapshot\.docs\.map/)
   assert.doesNotMatch(source, /setEras\(snapshot\.docs\.map/)
 })
+
+test('semantic fallback never discloses locked titles or summaries in its search result list', () => {
+  assert.match(semanticNavigator, /lifeMapFilterVisibleNodes\(nodes\)\.filter\(lifeMapNodeSelectable\)\.filter\(\(node\) => matchesSearch\(node,/)
+  assert.match(semanticNavigator, /visibleNodes\.map\(\(node\) => <li key=\{node\.id\}/)
+})

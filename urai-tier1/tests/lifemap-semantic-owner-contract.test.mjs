@@ -129,6 +129,13 @@ test('selected semantic search result keeps accessible Focus actions while clear
 test('semantic related-star inspector uses privacy-filtered links rather than raw hidden nodes', () => {
   assert.match(navigator, /const related = lifeMapVisibleRelatedNodes\(nodes, selected\)/);
   assert.doesNotMatch(navigator, /const related = selected \? nodes\.filter/);
-  assert.match(navigator, /lifeMapFilterVisibleNodes\(nodes\)\.filter\(\(node\) => matchesSearch\(node,/)
+  assert.match(navigator, /lifeMapFilterVisibleNodes\(nodes\)\.filter\(lifeMapNodeSelectable\)\.filter\(\(node\) => matchesSearch\(node,/)
   assert.match(navigator, /\(visibleNodes\.length \? visibleNodes : lifeMapFilterVisibleNodes\(nodes\)\)\.filter\(lifeMapNodeSelectable\)/);
 });
+
+test('semantic search results never enumerate a locked or hidden private context star', () => {
+  assert.match(navigator, /lifeMapFilterVisibleNodes\(nodes\)\.filter\(lifeMapNodeSelectable\)\.filter\(\(node\) => matchesSearch\(node,/)
+  assert.match(navigator, /visibleNodes\.map\(\(node\) => <li key=\{node\.id\}/)
+  assert.doesNotMatch(navigator, /lifeMapFilterVisibleNodes\(nodes\)\.filter\(\(node\) => matchesSearch\(node,/)
+  assert.match(navigator, /\.filter\(lifeMapNodeSelectable\)/)
+})
