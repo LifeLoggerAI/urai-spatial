@@ -48,6 +48,7 @@ const focusedContractTests = [
   'tests/lifemap-physical-star-action.test.mjs',
   'tests/lifemap-hidden-canonical-fallback.test.mjs',
   'tests/lifemap-event-coverage.test.mjs',
+  'tests/lifemap-event-privacy.test.mjs',
   'tests/lifemap-stage-continuity-source.test.mjs',
   'tests/lifemap-founder-harness-contract.test.mjs',
   'tests/lifemap-quiet-reset-identity-contract.test.mjs',

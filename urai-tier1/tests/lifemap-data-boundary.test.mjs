@@ -149,3 +149,13 @@ test('canonical fallback requires a complete unordered owner event query, includ
   assert.match(source, /const hiddenEventMemoryIds = new Set\(lifeMapHiddenEventMemoryIds\(currentNodes\)\)/)
   assert.match(source, /for \(const id of unorderedEventCoverage\.hiddenIds\) hiddenEventMemoryIds\.add\(id\)/)
 })
+
+
+test('owner-bound snapshot admission discards foreign event and era metadata and denies incomplete coverage', () => {
+  assert.match(source, /import \{ lifeMapOwnerDocumentAllowed \} from "\.\/lifeMapEventPrivacy\.mjs"/)
+  assert.match(source, /const ownersValid = snapshot\.docs\.every\(\(doc\) => lifeMapOwnerDocumentAllowed\(doc\.data\(\), resolvedUserId\)\)/)
+  assert.match(source, /setEventSnapshotComplete\(ownersValid && snapshot\.docs\.length < 240 && snapshot\.metadata\.fromCache === false\)/)
+  assert.match(source, /setNodes\(snapshot\.docs\.map\(\(doc\) => lifeMapOwnerDocumentAllowed/)
+  assert.match(source, /setEras\(snapshot\.docs\.map\(\(doc\) => lifeMapOwnerDocumentAllowed/)
+  assert.match(source, /if \(!snapshot\.docs\.every\(doc => lifeMapOwnerDocumentAllowed\(doc\.data\(\), owner\)\)\)/)
+})

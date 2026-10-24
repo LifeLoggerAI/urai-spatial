@@ -27,6 +27,7 @@ function verify(input) {
     'main source-pinned verifier must exercise the loader regression')
   assert.match(input, /run_gate lifemap-hidden-event-privacy node --test [^\n]*urai-tier1\/tests\/lifemap-hidden-canonical-fallback\.test\.mjs/)
   assert.match(input, /run_gate lifemap-hidden-event-privacy node --test [^\n]*urai-tier1\/tests\/lifemap-event-coverage\.test\.mjs/)
+  assert.match(input, /run_gate lifemap-hidden-event-privacy node --test [^\n]*urai-tier1\/tests\/lifemap-event-privacy\.test\.mjs/)
   assert.doesNotMatch(input, /\bfirebase deploy\b/)
 }
 

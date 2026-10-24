@@ -8,6 +8,7 @@ import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
 import { lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes, lifeMapHiddenEventMemoryIds, lifeMapEventCoverageComplete, lifeMapCoveredEventMemoryVisible } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapDisplayPosition } from "./lifeMapLayout";
+import { lifeMapOwnerDocumentAllowed } from "./lifeMapEventPrivacy.mjs";
 import {
   lifeMapEras,
   mapLifeMapEventToNode,
@@ -292,8 +293,15 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       const eventsQuery = query(collection(getFirebaseDb(), "users", resolvedUserId, "lifeMapEvents"), orderBy("occurredAt", "desc"), limit(240));
       const unsubscribe = onSnapshot(eventsQuery, { includeMetadataChanges: true }, (snapshot) => {
         if (cancelled) return;
-        setNodes(snapshot.docs.map((doc) => mapLifeMapEventToNode(normalizeEvent(doc.id, doc.data(), resolvedUserId))));
-        setEventSnapshotComplete(snapshot.docs.length < 240 && snapshot.metadata.fromCache === false);
+        // A legacy document can omit userId; an explicitly conflicting userId
+        // must not disclose someone else's event metadata or graph identity.
+        const ownersValid = snapshot.docs.every((doc) => lifeMapOwnerDocumentAllowed(doc.data(), resolvedUserId));
+        setNodes(snapshot.docs.map((doc) => lifeMapOwnerDocumentAllowed(doc.data(), resolvedUserId)
+          ? mapLifeMapEventToNode(normalizeEvent(doc.id, doc.data(), resolvedUserId)) : null)
+          .filter((node): node is LifeMapNode => node !== null));
+        // A malformed/foreign explicit owner also invalidates event coverage
+        // and therefore cannot authorize canonical Memory Star fallback.
+        setEventSnapshotComplete(ownersValid && snapshot.docs.length < 240 && snapshot.metadata.fromCache === false);
         setNodesOwner(resolvedUserId);
         setNodesAuthority(authorityKey);
         setEventsLoading(false);
@@ -335,6 +343,10 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       const unsubscribe = onSnapshot(coverageQuery, { includeMetadataChanges: true }, snapshot => {
         if (cancelled) return;
         try {
+          if (!snapshot.docs.every(doc => lifeMapOwnerDocumentAllowed(doc.data(), owner))) {
+            setUnorderedEventCoverage(null);
+            return;
+          }
           const normalized = snapshot.docs.map(doc => normalizeEvent(doc.id, doc.data(), owner));
           setUnorderedEventCoverage({
             owner, authority,
@@ -378,7 +390,9 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       const erasQuery = query(collection(getFirebaseDb(), "users", resolvedUserId, "lifeMapEras"), limit(80));
       const unsubscribe = onSnapshot(erasQuery, (snapshot) => {
         if (cancelled) return;
-        setEras(snapshot.docs.map((doc) => normalizeEra(doc.id, doc.data(), resolvedUserId)));
+        setEras(snapshot.docs.map((doc) => lifeMapOwnerDocumentAllowed(doc.data(), resolvedUserId)
+          ? normalizeEra(doc.id, doc.data(), resolvedUserId) : null)
+          .filter((era): era is LifeMapEra => era !== null));
         setErasOwner(resolvedUserId);
         setErasAuthority(authorityKey);
         setErasLoading(false);
