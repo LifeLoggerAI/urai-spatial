@@ -644,8 +644,8 @@
     {
       "path": "cloudbuild.urai-verify.yaml",
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
-      "expectedBlob": "28daed999c6b7245795fe7eea7c8502a743f70ac",
-      "reason": "Combined R4 verification branch enabled with restricted branch reference validation; nonrelease only"
+      "expectedBlob": "8265d1a6711f2a9118b0dd59d803c34756669caf",
+      "reason": "Combined Java21 source-verifier branch pin and mandatory native regression proof gates; no release authority"
     },
     {
       "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
