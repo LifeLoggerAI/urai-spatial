@@ -80,7 +80,7 @@ test('native execution environment strips paid-provider credentials but keeps PA
   assert.equal(result.removedKeys.length,3)
 })
 
-function httpCases(overrides={}) {return REQUIRED_HTTP_ROUTES.map(path=>({path,status:overrides[path]??200}))}
+function httpCases(overrides={}) {return REQUIRED_HTTP_ROUTES.map(path=>({path,status:overrides[path]??200,contentType:'text/html; charset=utf-8'}))}
 test('all canonical production HTTP routes must be covered',()=>{
   assert.equal(assessHttpRoutes(httpCases()).passed,true)
   assert.equal(assessHttpRoutes(httpCases().filter(x=>x.path!=='/replay')).passed,false)
