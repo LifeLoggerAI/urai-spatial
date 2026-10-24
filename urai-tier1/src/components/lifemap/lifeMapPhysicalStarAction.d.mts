@@ -22,3 +22,5 @@ export type LifeMapRelatedNode = {
 };
 export function lifeMapVisibleRelatedNodes<T extends LifeMapRelatedNode>(nodes: readonly T[], selected: LifeMapRelatedNode | null | undefined): T[];
 export function lifeMapNodeIsHidden(node: { privacyLevel?: 'private' | 'hidden' | 'shareable'; privacy?: 'private' | 'hidden' | 'shareable' } | null | undefined): boolean;
+
+export function lifeMapNodeSelectable(node: (LifeMapRelatedNode & {locked?:boolean}) | null | undefined): boolean;
