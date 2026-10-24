@@ -40,6 +40,7 @@ async function expectSingleActiveFocus(page: Page) {
 
 test.describe('Replay source ownership and accessible transport', () => {
   test('missing private selection cannot inherit demonstration art or a playing receipt', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 })
     const demoAssetRequests: string[] = []
     page.on('request', (request) => {
       if (/replay-memory-film|replay-cinematic-stage/.test(request.url())) demoAssetRequests.push(request.url())
@@ -52,6 +53,22 @@ test.describe('Replay source ownership and accessible transport', () => {
     await expect(replay.locator('canvas, img, video')).toHaveCount(0)
     await expect(replay).not.toHaveAttribute('data-canonical-asset', /.+/)
     await expect(replay.getByRole('button', { name: 'Choose a memory', exact: true })).toBeEnabled()
+    const chooseMemory = replay.getByRole('button', { name: 'Choose a memory', exact: true })
+    const founder = page.locator('[data-urai-adam-launcher]')
+    await expect(founder).toHaveAttribute('data-adam-launcher-placement', 'inline-slot')
+    await expect(founder).toBeVisible()
+    const [chooseBounds, founderBounds] = await Promise.all([chooseMemory.boundingBox(), founder.boundingBox()])
+    expect(chooseBounds).not.toBeNull()
+    expect(founderBounds).not.toBeNull()
+    const controlsAreSeparate = founderBounds!.x + founderBounds!.width <= chooseBounds!.x
+      || founderBounds!.x >= chooseBounds!.x + chooseBounds!.width
+      || founderBounds!.y + founderBounds!.height <= chooseBounds!.y
+      || founderBounds!.y >= chooseBounds!.y + chooseBounds!.height
+    expect(controlsAreSeparate, 'Founder launcher must not cover the memory selection action').toBe(true)
+    expect(founderBounds!.x).toBeGreaterThanOrEqual(0)
+    expect(founderBounds!.x + founderBounds!.width).toBeLessThanOrEqual(320)
+    expect(founderBounds!.width).toBeGreaterThanOrEqual(48)
+    expect(founderBounds!.height).toBeGreaterThanOrEqual(48)
     await expect(page.locator('[data-replay-phase="replay_playing"], [data-playing="true"]')).toHaveCount(0)
     expect(demoAssetRequests).toEqual([])
   })
