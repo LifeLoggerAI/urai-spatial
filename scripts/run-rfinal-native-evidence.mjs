@@ -15,7 +15,7 @@ import { once } from 'node:events'
 import { pathToFileURL } from 'node:url'
 import { resolveCandidate, assessCandidateCompletion, requireCommitSha } from './rfinal-source-authority.mjs'
 import { selectNativeTarget, assertUnifiedHeadCurrent, planUnifiedStages, assertUnifiedPreflightOutcome } from './lib/unified-native-target.mjs'
-import { assessNativeHttpRoute } from './lib/native-http-route-acceptance.mjs'
+import { assessNativeHttpRoute, isNativeHtmlDocument } from './lib/native-http-route-acceptance.mjs'
 import { inspectVisualPng } from './visual-png-integrity.mjs'
 import { isOwnedVisualEvidencePath } from './rfinal-visual-evidence-paths.mjs'
 import { isUraiHomeDocument } from '../tests/spatial-owned-server.mjs'
@@ -120,6 +120,7 @@ export function assessHttpRoutes(checks) {
       protectedRoute: PROTECTED_HTTP_ROUTES.has(route),
       requestedUrl: result?.requestedUrl,
       contentType: result?.contentType,
+      htmlDocumentValid: result?.htmlDocumentValid,
     })
     if (verdict.allowed) {
       if (verdict.kind !== 'SUCCESS') authorizedDenials.push({path:route,status:result?.status,reason:verdict.kind})
@@ -393,7 +394,12 @@ async function runtimeSmoke(source, outDir) {
     for (const route of REQUIRED_HTTP_ROUTES) {
       try {
         const reply = await fetch(target + route, { signal: AbortSignal.timeout(12000), redirect: 'manual' })
-        checks.push({ path: route, status: reply.status, redirect: reply.headers.get('location') || null, requestedUrl: target + route, contentType: reply.headers.get('content-type') || null })
+        const contentType = reply.headers.get('content-type') || null
+        const htmlDocumentValid = reply.status === 200 && /^text\/html(?:\s*;|\s*$)/i.test(String(contentType || '').trim())
+          ? isNativeHtmlDocument(await reply.text()) : false
+        // Only store boolean HTML admission evidence; never preserve response
+        // bodies that might contain private user data in a verification receipt.
+        checks.push({ path: route, status: reply.status, redirect: reply.headers.get('location') || null, requestedUrl: target + route, contentType, htmlDocumentValid })
       } catch (e) { checks.push({ path: route, error: String(e) }) }
     }
     const browserEnv = {

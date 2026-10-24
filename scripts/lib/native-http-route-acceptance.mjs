@@ -2,8 +2,17 @@
 const SAFE_REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const SYNTHETIC_ORIGIN = 'http://127.0.0.1';
 
+// A Next.js page response has an HTML document, not just an HTML header.
+// Only an admission boolean crosses into receipts; never persist response text.
+export function isNativeHtmlDocument(body) {
+  return typeof body === 'string' && body.length >= 80 &&
+    /<!doctype\s+html\s*>/i.test(body) && /<html(?:\s|>)/i.test(body) &&
+    /<body(?:\s|>)/i.test(body);
+}
+
 export function assessNativeHttpRoute({ path, status, redirect = null, error = null,
-  protectedRoute = false, requestedUrl = null, contentType = null } = {}) {
+  protectedRoute = false, requestedUrl = null, contentType = null,
+  htmlDocumentValid = false } = {}) {
   if (!Number.isInteger(status)) {
     return { allowed: false, reason: String(error || 'ROUTE_NOT_TESTED') };
   }
@@ -12,6 +21,9 @@ export function assessNativeHttpRoute({ path, status, redirect = null, error = n
   if (status >= 200 && status < 300) {
     if (status !== 200 || !/^text\/html(?:\s*;|\s*$)/i.test(String(contentType || '').trim())) {
       return { allowed: false, reason: 'RENDERED_HTML_200_REQUIRED' };
+    }
+    if (htmlDocumentValid !== true) {
+      return { allowed: false, reason: 'RENDERED_HTML_DOCUMENT_REQUIRED' };
     }
     return { allowed: true, kind: 'SUCCESS' };
   }

@@ -80,7 +80,14 @@ test('native execution environment strips paid-provider credentials but keeps PA
   assert.equal(result.removedKeys.length,3)
 })
 
-function httpCases(overrides={}) {return REQUIRED_HTTP_ROUTES.map(path=>({path,status:overrides[path]??200,contentType:'text/html; charset=utf-8'}))}
+function httpCases(overrides={}) {return REQUIRED_HTTP_ROUTES.map(path=>({path,status:overrides[path]??200,contentType:'text/html; charset=utf-8',htmlDocumentValid:true}))}
+test('HTML response header does not establish a rendered page without document bytes',()=>{
+ const candidates=httpCases().map(check=>check.path==='/support'?{...check,htmlDocumentValid:false}:check)
+ const result=assessHttpRoutes(candidates)
+ assert.equal(result.passed,false)
+ assert.ok(result.failures.some(f=>f.path==='/support'&&f.reason==='RENDERED_HTML_DOCUMENT_REQUIRED'))
+})
+
 test('all canonical production HTTP routes must be covered',()=>{
   assert.equal(assessHttpRoutes(httpCases()).passed,true)
   assert.equal(assessHttpRoutes(httpCases().filter(x=>x.path!=='/replay')).passed,false)
