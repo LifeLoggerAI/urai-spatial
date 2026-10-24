@@ -4,6 +4,7 @@ const SHA = /^[a-f0-9]{40}$/
 const BRANCHES = new Set([
   'repair/rfinal-convergence-candidate-20261020',
   'verify/r4-firestore-java21-admission-20261023',
+  'verify/r4-ground-glb-drawable-geometry-20261023',
 ])
 const MAX_DEEPENS = 4
 const DEEPEN_BY = 256
