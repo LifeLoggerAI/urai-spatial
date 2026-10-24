@@ -45,3 +45,14 @@ test('hidden undated event vetoes another visible event with same memory ID',()=
 test('malformed identity or missing veto evidence cannot authorize a star',()=>{for(const id of ['', ' ',null,undefined,3])assert.equal(lifeMapCoveredEventMemoryVisible(memory(id),true,new Set()),false);assert.equal(lifeMapCoveredEventMemoryVisible(memory('good'),true,null),false)})
 test('contextual signals remain while hidden metadata vetoes every event type',()=>{const season={id:'s',type:'season',privacyLevel:'private'};assert.equal(lifeMapCoveredEventMemoryVisible(season,false,null),true);assert.equal(lifeMapCoveredEventMemoryVisible({...season,privacy:'hidden'},true,new Set()),false)})
 test('production Life Map event projection checks coverage before rendering memory stars',async()=>{const {readFileSync}=await import('node:fs');const source=readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts',import.meta.url),'utf8');assert.match(source,/if \(!lifeMapCoveredEventMemoryVisible\(node, eventCoverageCurrent, eventHiddenIds\)\) return \[\];/);assert.match(source,/unorderedEventCoverage\.authority === authorityKey && unorderedEventCoverage\.complete/);assert.match(source,/for \(const id of unorderedEventCoverage\.hiddenIds\) eventHiddenIds\.add\(id\)/)})
+
+test('events, unordered coverage and eras project snapshots atomically',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const source=readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts',import.meta.url),'utf8');
+ assert.match(source,/import \{ lifeMapOwnerDocumentAllowed, projectLifeMapOwnerSnapshot \} from "\.\/lifeMapEventPrivacy\.mjs"/);
+ assert.equal((source.match(/projectLifeMapOwnerSnapshot\(snapshot\.docs,/g)||[]).length,3);
+ assert.match(source,/setNodes\(projection\.items\)/);
+ assert.match(source,/hiddenIds: lifeMapHiddenEventMemoryIds\(projection\.items\)/);
+ assert.match(source,/setEras\(projection\.items\)/);
+ for(const clause of ['setNodes([]);','setEventSnapshotComplete(false);','setEventsError("Private Life Map events could not be verified.");','setEras([]);','setErasError("Private Life Map eras could not be verified.");']) assert.ok(source.includes(clause),clause);
+})
