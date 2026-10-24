@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url'
 import { ensureNativeGitAncestry } from '../scripts/lib/native-git-ancestry.mjs'
 const root = '18bd6f3dfc9363f3764fa8011a67072b35902741'
 const source = 'ff38ab444015011c7f86de8f2ee645cf4037a650'
-const branch = 'verify/r4-firestore-java21-admission-20261023'
+const branch = 'verify/r4-exact-self-source-cloudbuild-20261023'
 const args = (extra = {}) => ({ branch, sourceHead: source, trustedAncestor: root,
   ...extra,
   runGit: typeof extra.runGit === 'function' ? async (argv, name) => {
