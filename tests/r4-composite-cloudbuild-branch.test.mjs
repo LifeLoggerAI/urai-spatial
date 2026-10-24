@@ -25,7 +25,8 @@ function preflight(env) {
   })
 }
 test('composite verifier defaults to R4 branch but requires an independently supplied SHA',()=>{
-  assert.match(source,/_SOURCE_BRANCH:\s*'verify\/r4-three-lane-convergence-20261023'/)
+  assert.match(source,/_SOURCE_BRANCH:\s*'verify\/r4-firestore-java21-admission-20261023'/)
+  assert.doesNotMatch(source,/_SOURCE_BRANCH:\s*'verify\/r4-three-lane-convergence-20261023'/)
   assert.match(source,/_SOURCE_SHA:\s*'EXPLICIT_PIN_REQUIRED'/)
   assert.doesNotMatch(source,/_SOURCE_SHA:\s*'[0-9a-f]{40}'/)
 })
