@@ -658,13 +658,13 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     </div>
 
     {thresholdsVisible ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}>
-      <button className="focus-threshold" data-destination-href={destinationHref("focus")} disabled={!lifeMapFocusAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref("focus"))}>
+      <button className="focus-threshold" data-life-map-threshold-route="focus" data-destination-href={destinationHref("focus")} disabled={!lifeMapFocusAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref("focus"))}>
         <span>Inspect</span><strong>Enter Focus</strong>
       </button>
-      <button className="replay-threshold" data-destination-href={destinationHref("replay")} disabled={!lifeMapPhysicalReplayAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref("replay"))}>
+      <button className="replay-threshold" data-life-map-threshold-route="replay" data-destination-href={destinationHref("replay")} disabled={!lifeMapPhysicalReplayAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref("replay"))}>
         <span>Cross threshold</span><strong>Replay</strong>
       </button>
-      <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
+      <button className="overview-return" data-life-map-overview-action="true" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
     </nav> : null}
 
     {!thresholdsVisible && sourceMode !== "signed-out" ? <nav className="life-map-overview-controls" aria-label="Life Map overview controls">
@@ -675,7 +675,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     {recovery ? <section className="life-map-recovery" role="status" aria-live="assertive">
       <h2>{webglState === "lost" ? "Visual field paused safely" : "Restoring visual field"}</h2>
       <p>Your selected memory, privacy state, and return position remain preserved.</p>
-      <button onClick={overview}>Open semantic overview</button>
+      <button data-life-map-overview-action="true" onClick={overview}>Open semantic overview</button>
       <button onClick={returnHome}>Return Home</button>
     </section> : null}
 

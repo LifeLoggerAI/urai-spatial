@@ -21,3 +21,13 @@ test('locked event cannot become an inspector deep link or clickable search cont
  assert.deepEqual(lifeMapVisibleRelatedNodes(nodes,nodes[1]),[])
  assert.equal(lifeMapFocusAllowed(nodes[1],'explicit-demo'),false)
 })
+
+test('canonical Life Map software route does not parse English labels',()=>{
+ const scene=readFileSync(new URL('../urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx',import.meta.url),'utf8')
+ const boundary=readFileSync(new URL('../urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx',import.meta.url),'utf8')
+ for(const action of ['focus','replay']) assert.ok(scene.includes('data-life-map-threshold-route="'+action+'"'))
+ assert.match(boundary,/lifeMapSoftwareRouteDestination\(/)
+ assert.doesNotMatch(boundary,/label\.includes\('Enter Focus'\)/)
+ assert.doesNotMatch(boundary,/overviewActionLabels/)
+ assert.ok(scene.includes('data-life-map-overview-action="true"'))
+})

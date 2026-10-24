@@ -15,6 +15,12 @@ function fixture(){
     reason:'Candidate-owned hidden memory event normalization stays pinned',
   }]
   f.entries.set('urai-tier1/src/components/lifemap/useLifeMapEvents.ts',{mode:'100644',type:'blob',sha:'a885812f25c32cd4f0dcf72a96e3364531dda96b'})
+  for(const [path,blob] of [
+    ['urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx','a6fefdd2e75448f9869202cf740726168c11caa3'],
+    ['urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs','c44979a5924e6d83ca1f00b65db17f7378951a0c']]) {
+    f.manifest.candidateSourceClaims.push({path,blob,reason:'Candidate-owned software route boundary is byte pinned'})
+    f.entries.set(path,{mode:'100644',type:'blob',sha:blob})
+  }
   const claims=[
   {
     "path": "package.json",
@@ -96,7 +102,7 @@ test('updated semantic privacy path remains a specifically authorized override',
 
 test('candidate-owned privacy source has mandatory independent exact blob authority',()=>{
   const f=fixture()
-  assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).candidateSourcePathsVerified,1)
+  assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).candidateSourcePathsVerified,3)
   const path='urai-tier1/src/components/lifemap/useLifeMapEvents.ts'
   f.entries.set(path,{mode:'100644',type:'blob',sha:h('a')})
   assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_BLOB_MISMATCH/)
@@ -125,4 +131,11 @@ test('Cloud Build shell contract override pins changed source without falsifying
   assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).overridesVerified,1)
   f.manifest.sourceOverrides[0].expectedBlob=h('a')
   assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/SOURCE_BLOB_MISMATCH/)
+})
+
+test('candidate software route helper cannot be silently substituted',()=>{
+ const f=fixture()
+ const path='urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs'
+ f.entries.set(path,{mode:'100644',type:'blob',sha:h('a')})
+ assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_BLOB_MISMATCH/)
 })

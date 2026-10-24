@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const shaPattern = /^[a-f0-9]{40}$/
 const donorCounts = new Map([[1933, 74], [1934, 8], [1887, 3]])
-const overridePaths = new Set(['cloudbuild.urai-verify.yaml','urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx','urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs','tests/cloudbuild-shell-execution.test.mjs','scripts/lib/ground-glb-source-anchors.mjs','tests/ground-glb-source-anchors.test.mjs'])
+const overridePaths = new Set(['cloudbuild.urai-verify.yaml','urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx','urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx','urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs','tests/cloudbuild-shell-execution.test.mjs','scripts/lib/ground-glb-source-anchors.mjs','tests/ground-glb-source-anchors.test.mjs'])
 const validPath = p => typeof p === 'string' && p.length > 0 && p.length <= 500 &&
   !p.startsWith('/') && !p.includes('\\') && !p.includes('\0') &&
   p.split('/').every(part => part !== '' && part !== '.' && part !== '..' && part !== '.git')
@@ -90,6 +90,8 @@ export function inspectR4SourceComposition(manifest, entries, head, expectedHead
   const requiredCandidate = new Map([
     ['urai-tier1/src/components/lifemap/useLifeMapEvents.ts',
       'a885812f25c32cd4f0dcf72a96e3364531dda96b'],
+    ['urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx', 'a6fefdd2e75448f9869202cf740726168c11caa3'],
+    ['urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs', 'c44979a5924e6d83ca1f00b65db17f7378951a0c'],
   ])
   if (!Array.isArray(candidateSources) ||
       candidateSources.length !== requiredCandidate.size) fail('CANDIDATE_SOURCE_CLAIMS_INVALID')

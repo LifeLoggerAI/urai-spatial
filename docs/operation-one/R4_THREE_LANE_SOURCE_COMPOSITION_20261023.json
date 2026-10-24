@@ -676,6 +676,12 @@
       "originBlob": "2577369cfeb407fe135772edf82ca8153a3de94b",
       "expectedBlob": "c620c93d41bdbe1d3264e8fc3a64abe4d1717d44",
       "reason": "Locked related-link targets and locked originating selections fail closed in shared actual Life Map selection helper"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx",
+      "originBlob": "2a9a0369ee27f1e050e0b59720cbc4f47124d6ad",
+      "expectedBlob": "70d819ed00b0b1bdf298e5e6eb81a9bccfd5c39e",
+      "reason": "Combined Life Map scene uses explicit semantic route identities independent of locale"
     }
   ],
   "additionalAdmittedDonor": {
@@ -711,6 +717,16 @@
       "path": "urai-tier1/src/components/lifemap/useLifeMapEvents.ts",
       "blob": "a885812f25c32cd4f0dcf72a96e3364531dda96b",
       "reason": "Candidate-owned Firestore event normalization and hidden-memory privacy projection boundary"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx",
+      "blob": "a6fefdd2e75448f9869202cf740726168c11caa3",
+      "reason": "Canonical software WebGL navigation uses authored URL route and scoped overview identity"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs",
+      "blob": "c44979a5924e6d83ca1f00b65db17f7378951a0c",
+      "reason": "Route verifier validates exact action, origin and memory/manifest identifiers"
     }
   ]
 }

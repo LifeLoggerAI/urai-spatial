@@ -53,3 +53,8 @@ test('combined Ground gate exercises the committed GLB binary, verified receipt 
  assert.equal(stage.requiresInstall,false)
  assert.ok(planNativeEvidenceStages(base,true).indexOf(stage)<planNativeEvidenceStages(base,true).findIndex(x=>x.id==='frozen_install'))
 })
+
+test('localized software route intent regression is preflight scheduled',()=>{
+ const stage=COMBINED_REQUIRED_PREFLIGHT.find(s=>s.id==='combined_semantic_privacy')
+ assert.ok(stage.command.includes('tests/life-map-software-route-intent.test.mjs'))
+})
