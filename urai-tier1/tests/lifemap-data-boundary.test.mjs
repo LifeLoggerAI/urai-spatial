@@ -152,7 +152,7 @@ test('canonical fallback requires a complete unordered owner event query, includ
 
 
 test('owner-bound snapshot admission discards foreign event and era metadata and denies incomplete coverage', () => {
-  assert.match(source, /import \{ projectLifeMapOwnerSnapshot \} from "\.\/lifeMapEventPrivacy\.mjs"/)
+  assert.match(source, /import \{ projectLifeMapOwnerSnapshot, lifeMapServerConfirmed \} from "\.\/lifeMapEventPrivacy\.mjs"/)
   assert.match(source, /const ownersValid = projection\.items\.length === snapshot\.docs\.length/)
   assert.match(source, /setEventSnapshotComplete\(ownersValid && snapshot\.docs\.length < 240 && lifeMapServerConfirmed\(snapshot\.metadata\)\)/)
   assert.match(source, /setNodes\(projection\.items as LifeMapNode\[\]\)/)
