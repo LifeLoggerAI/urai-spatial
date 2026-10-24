@@ -7,7 +7,55 @@ export function inspectGroundGlbAnchors(document, source) {
   const failures=[], fail=msg=>failures.push(msg)
   const nodes=Array.isArray(document?.nodes)?document.nodes:[]
   const meshes=Array.isArray(document?.meshes)?document.meshes:[]
-  const validMesh=node=>Number.isInteger(node?.mesh)&&node.mesh>=0&&node.mesh<meshes.length
+  const accessors=Array.isArray(document?.accessors)?document.accessors:[]
+  const bufferViews=Array.isArray(document?.bufferViews)?document.bufferViews:[]
+  const buffers=Array.isArray(document?.buffers)?document.buffers:[]
+  // A mesh table index alone is not drawable geometry. Validate real triangle
+  // primitives and bounded accessor/view references in the authored Ground GLB.
+  // This is structural evidence only, not GPU decode, art approval or release.
+  const validView=index=>{
+    if(!Number.isInteger(index)||index<0||index>=bufferViews.length)return false
+    const view=bufferViews[index]
+    if(!Number.isInteger(view?.buffer)||view.buffer<0||view.buffer>=buffers.length)return false
+    const buffer=buffers[view.buffer]
+    const offset=view?.byteOffset??0
+    return Number.isSafeInteger(view?.byteLength)&&view.byteLength>0&&
+      Number.isSafeInteger(offset)&&offset>=0&&
+      Number.isSafeInteger(buffer?.byteLength)&&buffer.byteLength>0&&
+      offset<=buffer.byteLength-view.byteLength
+  }
+  const validAccessor=(index,type,minCount)=>{
+    if(!Number.isInteger(index)||index<0||index>=accessors.length)return false
+    const a=accessors[index]
+    const components=type==='VEC3'?[5120,5121,5122,5123,5126]:[5121,5123,5125]
+    if(a?.type!==type||!components.includes(a.componentType)||
+       !Number.isSafeInteger(a.count)||a.count<minCount||
+       !Number.isSafeInteger(a.byteOffset??0)||(a.byteOffset??0)<0||
+       !validView(a.bufferView))return false
+    const view=bufferViews[a.bufferView]
+    const size=({5120:1,5121:1,5122:2,5123:2,5125:4,5126:4})[a.componentType]*(type==='VEC3'?3:1)
+    const stride=view.byteStride??size
+    const remaining=view.byteLength-(a.byteOffset??0)-size
+    return Number.isSafeInteger(stride)&&stride>=size&&remaining>=0&&
+      a.count<=1+Math.floor(remaining/stride)
+  }
+  const validPrimitive=p=>{
+    if(!p||((p.mode??4)!==4)||!validAccessor(p.attributes?.POSITION,'VEC3',3))return false
+    const vertexCount=accessors[p.attributes.POSITION].count
+    if(p.indices===undefined)return vertexCount%3===0
+    if(!validAccessor(p.indices,'SCALAR',3))return false
+    const indices=accessors[p.indices]
+    return indices.count%3===0&&
+      (!Array.isArray(indices.min)||
+        (indices.min.length===1&&Number.isInteger(indices.min[0])&&indices.min[0]>=0))&&
+      (!Array.isArray(indices.max)||
+        (indices.max.length===1&&Number.isInteger(indices.max[0])&&indices.max[0]>=0&&indices.max[0]<vertexCount))
+  }
+  const validMesh=node=>{
+    if(!Number.isInteger(node?.mesh)||node.mesh<0||node.mesh>=meshes.length)return false
+    const primitives=meshes[node.mesh]?.primitives
+    return Array.isArray(primitives)&&primitives.length>0&&primitives.every(validPrimitive)
+  }
   const named=name=>nodes.map((value,index)=>({value,index})).filter(x=>x.value?.name===name)
   const root=named('ground-world-root')
   if(root.length!==1)fail('GROUND_GLB_ROOT_NOT_UNIQUE')
