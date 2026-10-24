@@ -670,6 +670,12 @@
       "originBlob": "2c11aaef2e8ddae76b6700e5fff3eeef249b774e",
       "expectedBlob": "ce09a655fd158003937af6172f38210ed07b9806",
       "reason": "R4 Ground maintained regression suite from exact donor PR #1938; nonrelease"
+    },
+    {
+      "path": "tests/cloudbuild-shell-execution.test.mjs",
+      "originBlob": "c0125c3d7f02400d3c690ec3de437e7182acc95c",
+      "expectedBlob": "f18e13ce99791cc85d555105156cc89335ada8c9",
+      "reason": "Maintained Cloud Build synthetic gate receipt test isolates its runner from the 21 real native verification stages; reviewed exact blob"
     }
   ],
   "additionalAdmittedDonor": {
