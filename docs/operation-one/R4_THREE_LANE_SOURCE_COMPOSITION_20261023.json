@@ -654,12 +654,6 @@
       "reason": "Combined-branch-only semantic privacy alias consistency repair across search, inspector, keyboard and pointer"
     },
     {
-      "path": "urai-tier1/src/components/lifemap/useLifeMapEvents.ts",
-      "originBlob": "0197b7fd0c8eaebac1166403ee32c10181ab9cd3",
-      "expectedBlob": "a885812f25c32cd4f0dcf72a96e3364531dda96b",
-      "reason": "Combined-only Firestore event normalization blocks legacy hidden memories before constellation projection"
-    },
-    {
       "path": "scripts/lib/ground-glb-source-anchors.mjs",
       "originBlob": "9150100a757595a4fab4bc5a70e3d5f7ff15ab6e",
       "expectedBlob": "85980a105142dff0397fd798b3745d55fb1a21fc",
@@ -670,6 +664,12 @@
       "originBlob": "2c11aaef2e8ddae76b6700e5fff3eeef249b774e",
       "expectedBlob": "ce09a655fd158003937af6172f38210ed07b9806",
       "reason": "R4 Ground maintained regression suite from exact donor PR #1938; nonrelease"
+    },
+    {
+      "path": "tests/cloudbuild-shell-execution.test.mjs",
+      "originBlob": "c0125c3d7f02400d3c690ec3de437e7182acc95c",
+      "expectedBlob": "fd039197296baf9dd0587a8d3bdbae14ab42a1ca",
+      "reason": "Unified source-only Cloud Build shell contract now uses the exact reviewed nonproduction verifier branch"
     }
   ],
   "additionalAdmittedDonor": {
@@ -699,5 +699,12 @@
         "blob": "03ef2bb54b22fd91a760d05fd64b1493762b750f"
       }
     ]
-  }
+  },
+  "candidateSourceClaims": [
+    {
+      "path": "urai-tier1/src/components/lifemap/useLifeMapEvents.ts",
+      "blob": "a885812f25c32cd4f0dcf72a96e3364531dda96b",
+      "reason": "Candidate-owned Firestore event normalization and hidden-memory privacy projection boundary"
+    }
+  ]
 }

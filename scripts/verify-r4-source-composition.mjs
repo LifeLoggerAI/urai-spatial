@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const shaPattern = /^[a-f0-9]{40}$/
 const donorCounts = new Map([[1933, 74], [1934, 8], [1887, 3]])
-const overridePaths = new Set(['cloudbuild.urai-verify.yaml','urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx','urai-tier1/src/components/lifemap/useLifeMapEvents.ts','scripts/lib/ground-glb-source-anchors.mjs','tests/ground-glb-source-anchors.test.mjs'])
+const overridePaths = new Set(['cloudbuild.urai-verify.yaml','urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx','tests/cloudbuild-shell-execution.test.mjs','scripts/lib/ground-glb-source-anchors.mjs','tests/ground-glb-source-anchors.test.mjs'])
 const validPath = p => typeof p === 'string' && p.length > 0 && p.length <= 500 &&
   !p.startsWith('/') && !p.includes('\\') && !p.includes('\0') &&
   p.split('/').every(part => part !== '' && part !== '.' && part !== '..' && part !== '.git')
@@ -84,8 +84,33 @@ export function inspectR4SourceComposition(manifest, entries, head, expectedHead
           actual.sha !== claim.blob) fail('FIRESTORE_DONOR_BLOB_MISMATCH:' + claim.path)
     }
   }
+  // Candidate-owned privacy source is not one of the 85 donor paths. Pin it
+  // independently; an unattached donor override must never authorize it.
+  const candidateSources = manifest.candidateSourceClaims
+  const requiredCandidate = new Map([
+    ['urai-tier1/src/components/lifemap/useLifeMapEvents.ts',
+      'a885812f25c32cd4f0dcf72a96e3364531dda96b'],
+  ])
+  if (!Array.isArray(candidateSources) ||
+      candidateSources.length !== requiredCandidate.size) fail('CANDIDATE_SOURCE_CLAIMS_INVALID')
+  const seenCandidate = new Set()
+  for (const claim of candidateSources) {
+    if (!validPath(claim?.path) || seenCandidate.has(claim.path) ||
+        claimed.has(claim.path) || !requiredCandidate.has(claim.path) ||
+        claim.blob !== requiredCandidate.get(claim.path) ||
+        typeof claim.reason !== 'string' || claim.reason.trim().length < 12) {
+      fail('CANDIDATE_SOURCE_CLAIM_INVALID')
+    }
+    seenCandidate.add(claim.path)
+    const actual = entries.get(claim.path)
+    if (!actual || actual.type !== 'blob' ||
+        !['100644','100755'].includes(actual.mode) || actual.sha !== claim.blob) {
+      fail('CANDIDATE_SOURCE_BLOB_MISMATCH:' + claim.path)
+    }
+  }
   return {schema:'urai-r4-source-tree-check-v1',status:'PASS_SOURCE_IDENTITY_ONLY_NO_RELEASE',
     head,donorPathsVerified:claimed.size,additionalDonorPathsVerified:5,totalDonorPathsVerified:claimed.size+5,overridesVerified:usedOverrides.size,
+    candidateSourcePathsVerified:seenCandidate.size,totalSourcePathsVerified:claimed.size+5+seenCandidate.size,
     releaseApproved:false,fullBuildVerified:false,browserVerified:false,privateDataAuthorized:false}
 }
 
