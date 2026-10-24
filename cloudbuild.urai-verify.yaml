@@ -113,13 +113,13 @@ steps:
         }
         run_gate source-integrity node scripts/check-source-integrity.mjs
         run_gate lifemap-data-boundary node --test urai-tier1/tests/lifemap-data-boundary.test.mjs
-        run_gate lifemap-semantic-privacy node --test urai-tier1/tests/lifemap-semantic-owner-contract.test.mjs urai-tier1/tests/lifemap-signed-out-navigation-behavior.test.mjs
+        run_gate lifemap-semantic-privacy pnpm --dir urai-tier1 exec node --import tsx --test tests/lifemap-semantic-owner-contract.test.mjs tests/lifemap-signed-out-navigation-behavior.test.mjs
         run_gate lifemap-hidden-event-privacy node --test urai-tier1/tests/lifemap-physical-star-action.test.mjs
         run_gate ground-glb-source-anchors node --test tests/ground-glb-source-anchors.test.mjs
         run_gate ground-active-workforce node --test tests/ground-active-workforce-verify.test.mjs
         run_gate ground-active-owner node --test tests/ground-provider-active-owner-contract.test.mjs
         run_gate unified-branch-authority node --test tests/unified-cloudbuild-branch.test.mjs
-        run_gate cloudbuild-shell-contract node --test tests/cloudbuild-shell-execution.test.mjs tests/cloudbuild-urai-source-pin-contract.test.mjs
+        run_gate cloudbuild-shell-contract node --test tests/cloudbuild-shell-execution.test.mjs tests/cloudbuild-urai-source-pin-contract.test.mjs tests/cloudbuild-lifemap-loader-contract.test.mjs
         run_gate source-authority node --test tests/rfinal-source-authority.test.mjs
         run_gate firestore-java-contract node --test tests/firestore-java-runtime.test.mjs tests/firestore-rules-execution-authority.test.mjs
         run_gate first-memory-preflight pnpm test:first-memory:emulator:preflight
