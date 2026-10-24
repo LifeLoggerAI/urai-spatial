@@ -28,6 +28,6 @@ test('real production hook vetoes hidden events and requires complete server sna
  assert.match(source,/const hiddenEventMemoryIds = new Set\(lifeMapHiddenEventMemoryIds\(currentNodes\)\);/)
  assert.match(source,/hiddenEventMemoryIds\.has\(memory\.id\)/)
  assert.match(source,/if \(!eventsSnapshotComplete\) return fromEvents;/)
- assert.match(source,/setEventSnapshotComplete\(snapshot\.docs\.length < 240 && snapshot\.metadata\.fromCache === false\)/)
+ assert.match(source,/setEventSnapshotComplete\(ownersValid && snapshot\.docs\.length < 240 && lifeMapServerConfirmed\(snapshot\.metadata\)\)/)
  assert.match(source,/onSnapshot\(eventsQuery, \{ includeMetadataChanges: true \}, \(snapshot\) => \{/)
 })

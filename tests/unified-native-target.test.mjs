@@ -30,7 +30,7 @@ test('dependency-free source/privacy gates run before installation; TS runtime g
  assert.equal(semantic, install+1)
  assert.ok(stages.slice(0,install).every(s=>s.requiresInstall===false))
  assert.ok(stages.find(s=>s.id==='unified_lifemap_privacy').command.every(s=>!s.includes('lifemap-semantic-owner-contract.test.mjs')))
- assert.deepEqual(stages[semantic].command,['corepack','pnpm','--dir','urai-tier1','exec','node','--import','tsx','--test','tests/lifemap-semantic-owner-contract.test.mjs'])
+ assert.deepEqual(stages[semantic].command,['corepack','pnpm','--dir','urai-tier1','exec','node','--import','tsx','--test','tests/lifemap-semantic-owner-contract.test.mjs','tests/lifemap-software-threshold-handoff.test.mjs'])
  assert.equal(stages[semantic].requiresInstall,true)
  assert.deepEqual(planUnifiedStages(base),base)
 })
