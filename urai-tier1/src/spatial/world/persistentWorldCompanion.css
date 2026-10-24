@@ -321,6 +321,10 @@
 }
 
 @media (max-width: 560px) {
+  .urai-world-runtime[data-world-destination='privacy-controls'] .consentHeader {
+    padding-right: max(112px, calc(env(safe-area-inset-right, 0px) + 112px)) !important;
+  }
+
   .urai-world-companion__orb { width: 56px; height: 56px; }
   .urai-world-companion__menu { border-radius: 20px; }
   .urai-world-companion__menu nav { justify-content: flex-start; }
@@ -342,5 +346,34 @@
   .urai-world-companion *::after {
     animation: none !important;
     transition-duration: 1ms !important;
+  }
+}
+
+/* Keep the closed travel control at the edge of mobile and tablet layouts. The
+ * hidden menu must not size the companion and center the Orb over consent controls. */
+@media (max-width: 1100px) {
+  .urai-world-runtime[data-world-destination='privacy-controls'] .urai-world-companion {
+    position: absolute !important;
+    left: auto !important;
+    right: max(18px, env(safe-area-inset-right)) !important;
+    top: max(18px, env(safe-area-inset-top)) !important;
+    bottom: auto !important;
+    width: 64px !important;
+    justify-items: end !important;
+    transform: none !important;
+  }
+
+  .urai-world-runtime[data-world-destination='privacy-controls'] .urai-world-companion__menu {
+    position: absolute !important;
+    right: 0 !important;
+    top: calc(100% + 10px) !important;
+    bottom: auto !important;
+  }
+}
+
+@media (max-width: 340px), (max-width: 700px) and (max-height: 600px) {
+  .urai-world-runtime[data-world-destination='privacy-controls'] .consentRealmNav {
+    grid-template-columns: minmax(0,1fr) !important;
+    margin-right: max(100px, calc(env(safe-area-inset-right, 0px) + 84px)) !important;
   }
 }
