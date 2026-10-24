@@ -32,9 +32,9 @@ export function lifeMapNodeIsHidden(node) {
 // Graph links are navigation hints, never permission to disclose hidden nodes.
 // This shared filter is also applied to the semantic inspector's related links.
 export function lifeMapVisibleRelatedNodes(nodes, selected) {
-  if (!selected || typeof selected.id !== 'string' || !selected.id || lifeMapNodeIsHidden(selected)) return [];
+  if (!selected || typeof selected.id !== 'string' || !selected.id || selected.locked || lifeMapNodeIsHidden(selected)) return [];
   if (!Array.isArray(nodes)) return [];
-  return nodes.filter(node => node && node.id !== selected.id && !lifeMapNodeIsHidden(node) &&
+  return nodes.filter(node => node && node.id !== selected.id && !node.locked && !lifeMapNodeIsHidden(node) &&
     ((Array.isArray(selected.connectedTo) && selected.connectedTo.includes(node.id)) ||
       (Array.isArray(node.connectedTo) && node.connectedTo.includes(selected.id))));
 }

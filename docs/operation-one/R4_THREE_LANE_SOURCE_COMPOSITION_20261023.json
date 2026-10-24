@@ -650,8 +650,8 @@
     {
       "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
       "originBlob": "85a486f80b73e1eaf266df7fd2549827763c63e6",
-      "expectedBlob": "69da9fc1e4815161bde47386f0df7d0901ec3eb7",
-      "reason": "Combined-branch-only semantic privacy alias consistency repair across search, inspector, keyboard and pointer"
+      "expectedBlob": "e6f3356594b763c49a7df479fa17c17d699379f0",
+      "reason": "Unified semantic inspector denies locked direct URLs, and search results identify locked nodes as disabled with no activation"
     },
     {
       "path": "scripts/lib/ground-glb-source-anchors.mjs",
@@ -670,6 +670,12 @@
       "originBlob": "c0125c3d7f02400d3c690ec3de437e7182acc95c",
       "expectedBlob": "fd039197296baf9dd0587a8d3bdbae14ab42a1ca",
       "reason": "Unified source-only Cloud Build shell contract now uses the exact reviewed nonproduction verifier branch"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs",
+      "originBlob": "2577369cfeb407fe135772edf82ca8153a3de94b",
+      "expectedBlob": "c620c93d41bdbe1d3264e8fc3a64abe4d1717d44",
+      "reason": "Locked related-link targets and locked originating selections fail closed in shared actual Life Map selection helper"
     }
   ],
   "additionalAdmittedDonor": {
