@@ -674,14 +674,14 @@
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs",
       "originBlob": "2577369cfeb407fe135772edf82ca8153a3de94b",
-      "expectedBlob": "c620c93d41bdbe1d3264e8fc3a64abe4d1717d44",
-      "reason": "Locked related-link targets and locked originating selections fail closed in shared actual Life Map selection helper"
+      "expectedBlob": "3d866b1bc66a395c23e94233d1a65316a869c9b2",
+      "reason": "Unified physical/semantic selection now fails closed for locked, hidden, invalid star identity before rendering selected-world details"
     },
     {
       "path": "urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx",
       "originBlob": "2a9a0369ee27f1e050e0b59720cbc4f47124d6ad",
-      "expectedBlob": "70d819ed00b0b1bdf298e5e6eb81a9bccfd5c39e",
-      "reason": "Combined Life Map scene uses explicit semantic route identities independent of locale"
+      "expectedBlob": "ae9bb40aaef1d27a693a12435dbf8fbe7f7ed8c5",
+      "reason": "World pointer, custom event, and direct URL restore all enforce shared selectable-node guard before revealing selected-memory context"
     }
   ],
   "additionalAdmittedDonor": {
