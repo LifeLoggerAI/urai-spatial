@@ -45,3 +45,11 @@ test('combined native contract stage executes preflight, redirect and original r
    assert.ok(stage.command.includes(name),'missing native regression: '+name)
  assert.equal(stage.requiresInstall,false)
 })
+
+test('combined Ground gate exercises the committed GLB binary, verified receipt and drawable model',()=>{
+ const stage=planNativeEvidenceStages(base,true).find(x=>x.id==='combined_ground_contracts')
+ assert.ok(stage.command.includes('tests/ground-glb-source-anchors.test.mjs'))
+ assert.ok(stage.command.includes('tests/ground-glb-committed-binary.test.mjs'))
+ assert.equal(stage.requiresInstall,false)
+ assert.ok(planNativeEvidenceStages(base,true).indexOf(stage)<planNativeEvidenceStages(base,true).findIndex(x=>x.id==='frozen_install'))
+})
