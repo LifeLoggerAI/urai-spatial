@@ -9,8 +9,8 @@ import ComposedLifeMapScene from './ComposedLifeMapScene'
 import LifeMapSemanticNavigator from './LifeMapSemanticNavigator'
 import { LIFE_MAP_SELECTION_EVENT, type LifeMapSelectionDetail } from './lifeMapSelection'
 import { sanitizeMemoryId } from '@/spatial/memory/selectedMemoryContract'
+import { lifeMapSoftwareRouteDestination } from './lifeMapSoftwareRouteIntent.mjs'
 
-const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 const MIN_DIRECT_ROUTE_RENDER_ANCHORS = 8
 
 function appendCurrentArrivalCamera(destination: URL, root: HTMLElement) {
@@ -62,18 +62,14 @@ export default function LifeMapRouteBoundary({ authenticatedUserId }: { authenti
       const root = button.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
       if (root?.dataset.softwareRenderer !== 'true') return
 
-      const label = button.textContent?.trim() || ''
-      const route = label.includes('Enter Focus') ? 'focus' : label.includes('Replay') ? 'replay' : null
-      if (!route) return
-
-      // Use the scene's resolved destination for both hardware and software
-      // rendering. Rebuilding from the browser URL loses the default manifest
-      // when the user entered the disclosed sample through /life-map?demo=1.
-      const href = button.dataset.destinationHref
-      if (!href) return
-      const destination = new URL(href, window.location.origin)
-      if (destination.origin !== window.location.origin || destination.pathname !== `/${route}`) return
-      if (!destination.searchParams.get('memoryId') || !destination.searchParams.get('manifestId')) return
+      // The authored action is a stable identity: translated button labels are
+      // presentation, never navigation authority. The helper checks both the
+      // action/route match and the exact same-origin memory/manifest IDs.
+      const route = button.dataset.lifeMapThresholdRoute
+      const destination = lifeMapSoftwareRouteDestination(
+        route, button.dataset.destinationHref, window.location.origin,
+      )
+      if (!destination) return
 
       // CameraRig updates the scene dataset between React renders. This capture
       // handler bypasses the scene's fresh onClick, so sample its own root now.
@@ -90,9 +86,9 @@ export default function LifeMapRouteBoundary({ authenticatedUserId }: { authenti
     const primeOverview = (event: MouseEvent) => {
       const target = event.target
       if (!(target instanceof Element)) return
-      const button = target.closest('button')
-      const label = button?.textContent?.trim() || ''
-      if (!button || !overviewActionLabels.has(label)) return
+      const button = target.closest<HTMLButtonElement>('button[data-life-map-overview-action="true"]')
+      // Do not intercept unrelated page buttons that happen to say "Overview".
+      if (!button || button.disabled || !button.closest('.life-map-root')) return
       primeOverviewIdentity()
     }
 

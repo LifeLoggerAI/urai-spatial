@@ -12,3 +12,10 @@ test('private constellation filtering uses the same hidden-node predicate', () =
   assert.match(events, /import \{ lifeMapNodeIsHidden \} from "\.\/lifeMapPhysicalStarAction\.mjs"/)
   assert.match(events, /if \(lifeMapNodeIsHidden\(node\)\) return \[\]/)
 })
+
+test('both Firestore event and era snapshots reject explicit foreign owner metadata', () => {
+  assert.match(events, /import \{ normalizeLifeMapEventPrivacy, lifeMapOwnerDocumentAllowed \} from "\.\/lifeMapEventPrivacy\.mjs"/)
+  assert.match(events, /setNodes\(snapshot\.docs\.flatMap\(/)
+  assert.match(events, /setEras\(snapshot\.docs\.flatMap\(/)
+  assert.equal((events.match(/lifeMapOwnerDocumentAllowed\(data, resolvedUserId\)/g) || []).length, 2)
+})

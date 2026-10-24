@@ -10,6 +10,18 @@ function oldFixture(){
 }
 function fixture(){
   const f=oldFixture()
+  f.manifest.candidateSourceClaims=[{
+    path:'urai-tier1/src/components/lifemap/useLifeMapEvents.ts', blob:'f2619410f05f92d96a9824451089e2023a62c57e',
+    reason:'Candidate-owned hidden memory event normalization stays pinned',
+  }]
+  f.entries.set('urai-tier1/src/components/lifemap/useLifeMapEvents.ts',{mode:'100644',type:'blob',sha:'f2619410f05f92d96a9824451089e2023a62c57e'})
+  for(const [path,blob] of [
+    ['urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx','a6fefdd2e75448f9869202cf740726168c11caa3'],
+    ['urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs','9947d8086bb4777bd0de2eaf151ed3a36dbb5fd1'],
+    ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs','0943053fdf773df484be9ba2cddc32ec6023ac2c']]) {
+    f.manifest.candidateSourceClaims.push({path,blob,reason:'Candidate-owned software route boundary is byte pinned'})
+    f.entries.set(path,{mode:'100644',type:'blob',sha:blob})
+  }
   const claims=[
   {
     "path": "package.json",
@@ -89,20 +101,50 @@ test('updated semantic privacy path remains a specifically authorized override',
   assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/SOURCE_BLOB_MISMATCH/)
 })
 
-test('independent combined Life Map privacy override has exact reviewed blob and cannot be forged',()=>{
+test('candidate-owned privacy source has mandatory independent exact blob authority',()=>{
   const f=fixture()
+  assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).candidateSourcePathsVerified,4)
   const path='urai-tier1/src/components/lifemap/useLifeMapEvents.ts'
-  const originBlob='0197b7fd0c8eaebac1166403ee32c10181ab9cd3'
-  const expectedBlob='a885812f25c32cd4f0dcf72a96e3364531dda96b'
-  f.manifest.sourceOverrides=[{path,originBlob,expectedBlob,reason:'Exact independently reviewed hidden-memory normalizer, nonrelease'}]
-  f.entries.set(path,{mode:'100644',type:'blob',sha:expectedBlob})
-  assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).overridesVerified,1)
-  f.entries.set(path,{mode:'100644',type:'blob',sha:h('e')})
-  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/INDEPENDENT_PRIVACY_OVERRIDE_BLOB_MISMATCH/)
-  f.entries.set(path,{mode:'100644',type:'blob',sha:expectedBlob})
-  f.manifest.sourceOverrides[0].expectedBlob=h('e')
-  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/INDEPENDENT_PRIVACY_OVERRIDE_PIN_INVALID/)
-  f.manifest.sourceOverrides[0].expectedBlob=expectedBlob
-  f.manifest.sourceOverrides[0].path='unreviewed/other.ts'
+  f.entries.set(path,{mode:'100644',type:'blob',sha:h('a')})
+  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_BLOB_MISMATCH/)
+  f.entries.delete(path)
+  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_BLOB_MISMATCH/)
+})
+
+test('unclaimed donor overrides cannot substitute for candidate source ownership',()=>{
+  const f=fixture()
+  delete f.manifest.candidateSourceClaims
+  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_CLAIMS_INVALID/)
+  f.manifest.candidateSourceClaims=[{path:'urai-tier1/src/components/lifemap/useLifeMapEvents.ts',blob:h('a'),reason:'Forged source claim'}]
+  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_CLAIM_INVALID/)
+  f.manifest.sourceOverrides=[{path:'urai-tier1/src/components/lifemap/useLifeMapEvents.ts',originBlob:h('d'),expectedBlob:'a885812f25c32cd4f0dcf72a96e3364531dda96b',reason:'Orphaned privacy donor override'}]
   assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/SOURCE_OVERRIDE_INVALID/)
+})
+
+test('Cloud Build shell contract override pins changed source without falsifying donor identity',()=>{
+  const f=fixture()
+  const old=f.manifest.sourceClaims.find(x=>x.sourcePR===1887)
+  f.entries.delete(old.path)
+  old.path='tests/cloudbuild-shell-execution.test.mjs'
+  f.entries.set(old.path,{mode:'100644',type:'blob',sha:h('e')})
+  f.manifest.sourceOverrides=[{path:old.path,originBlob:h('d'),expectedBlob:h('e'),
+    reason:'Unified Cloud Build tests must preserve exact committed source'}]
+  assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).overridesVerified,1)
+  f.manifest.sourceOverrides[0].expectedBlob=h('a')
+  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/SOURCE_BLOB_MISMATCH/)
+})
+
+test('candidate software route helper cannot be silently substituted',()=>{
+ const f=fixture()
+ const path='urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs'
+ f.entries.set(path,{mode:'100644',type:'blob',sha:h('a')})
+ assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_BLOB_MISMATCH/)
+})
+
+test('shared event privacy owner helper is candidate-owned and immutable',()=>{
+ const f=fixture()
+ const path='urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs'
+ assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).candidateSourcePathsVerified,4)
+ f.entries.set(path,{mode:'100644',type:'blob',sha:h('a')})
+ assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_BLOB_MISMATCH/)
 })

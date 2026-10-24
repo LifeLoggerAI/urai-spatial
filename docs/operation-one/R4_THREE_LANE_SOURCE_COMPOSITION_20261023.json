@@ -645,13 +645,13 @@
       "path": "cloudbuild.urai-verify.yaml",
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
       "expectedBlob": "9fa5178141be37d47d64e2fe0b7dba33fcb7ec2e",
-      "reason": "Current combined verifier source, 21 maintained nonrelease gates, committed Ground binary and Java 21; no release authority"
+      "reason": "Self-branch verifier with 21 gates and exact source pin, nonrelease"
     },
     {
-      "path": "urai-tier1/src/components/lifemap/useLifeMapEvents.ts",
-      "originBlob": "0197b7fd0c8eaebac1166403ee32c10181ab9cd3",
-      "expectedBlob": "a885812f25c32cd4f0dcf72a96e3364531dda96b",
-      "reason": "Combined-only Firestore event normalization blocks legacy hidden memories before constellation projection"
+      "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
+      "originBlob": "85a486f80b73e1eaf266df7fd2549827763c63e6",
+      "expectedBlob": "0d8ca50ea561def3426797edf2821f0097e84cbe",
+      "reason": "Locked memories excluded from semantic results, counts, direct navigation and inspector"
     },
     {
       "path": "scripts/lib/ground-glb-source-anchors.mjs",
@@ -669,13 +669,7 @@
       "path": "tests/cloudbuild-shell-execution.test.mjs",
       "originBlob": "c0125c3d7f02400d3c690ec3de437e7182acc95c",
       "expectedBlob": "f18e13ce99791cc85d555105156cc89335ada8c9",
-      "reason": "Maintained Cloud Build synthetic gate receipt test isolates its runner from the 21 real native verification stages; reviewed exact blob"
-    },
-    {
-      "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
-      "originBlob": "85a486f80b73e1eaf266df7fd2549827763c63e6",
-      "expectedBlob": "0d8ca50ea561def3426797edf2821f0097e84cbe",
-      "reason": "Fail-closed locked-memory search and result-count metadata, inspector, and Focus navigation"
+      "reason": "Corrected synthetic Cloud Build shell test bounded before maintained application gates"
     },
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs",
@@ -684,10 +678,10 @@
       "reason": "Locked related-link targets and locked originating selections fail closed in shared actual Life Map selection helper"
     },
     {
-      "path": "tests/r4-semantic-privacy-surface.test.mjs",
-      "originBlob": "2da2fcde77cba7064b754a867ca177d09223ce84",
-      "expectedBlob": "4da1a401065f8966dab9222a7594ee45449e3d8b",
-      "reason": "Maintained native Life Map semantic regression: locked result metadata is not disclosed"
+      "path": "urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx",
+      "originBlob": "2a9a0369ee27f1e050e0b59720cbc4f47124d6ad",
+      "expectedBlob": "70d819ed00b0b1bdf298e5e6eb81a9bccfd5c39e",
+      "reason": "Combined Life Map scene uses explicit semantic route identities independent of locale"
     }
   ],
   "additionalAdmittedDonor": {
@@ -717,5 +711,32 @@
         "blob": "03ef2bb54b22fd91a760d05fd64b1493762b750f"
       }
     ]
-  }
+  },
+  "candidateSourceClaims": [
+    {
+      "path": "urai-tier1/src/components/lifemap/useLifeMapEvents.ts",
+      "blob": "f2619410f05f92d96a9824451089e2023a62c57e",
+      "reason": "Owner-scoped Firestore event and era normalization blocks explicit mismatched userId before Life Map projection"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx",
+      "blob": "a6fefdd2e75448f9869202cf740726168c11caa3",
+      "reason": "Canonical software WebGL navigation uses authored URL route and scoped overview identity"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs",
+      "blob": "9947d8086bb4777bd0de2eaf151ed3a36dbb5fd1",
+      "reason": "Route verifier validates exact action, origin and memory/manifest identifiers"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs",
+      "blob": "0943053fdf773df484be9ba2cddc32ec6023ac2c",
+      "reason": "Shared privacy and owner-scope normalization for user-specific Life Map streams"
+    },
+    {
+      "path": "tests/r4-semantic-privacy-surface.test.mjs",
+      "blob": "4da1a401065f8966dab9222a7594ee45449e3d8b",
+      "reason": "Maintained locked-search semantic privacy regression exact candidate blob"
+    }
+  ]
 }
