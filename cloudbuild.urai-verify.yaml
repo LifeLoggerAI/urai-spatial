@@ -32,9 +32,9 @@ steps:
     args:
       - '-ceu'
       - |
-        # Never evaluate substitutions as shell commands.
-        [[ "$URAI_SOURCE_BRANCH" =~ ^(repair|ci|verify)/[a-zA-Z0-9][a-zA-Z0-9._-]*(/[a-zA-Z0-9][a-zA-Z0-9._-]*)*$ && "$URAI_SOURCE_BRANCH" != *..* ]] || { echo 'INVALID_SOURCE_BRANCH'; exit 2; }
-        [[ "$URAI_SOURCE_BRANCH" == 'verify/r4-exact-self-source-cloudbuild-20261023' ]] || { echo 'WRONG_COMBINED_SOURCE_BRANCH'; exit 2; }
+        # Never evaluate substitutions as shell commands; doubled dollars are Cloud Build escapes.
+        [[ "$$URAI_SOURCE_BRANCH" =~ ^(repair|ci|verify)/[a-zA-Z0-9][a-zA-Z0-9._-]*(/[a-zA-Z0-9][a-zA-Z0-9._-]*)*$ && "$$URAI_SOURCE_BRANCH" != *..* ]] || { echo 'INVALID_SOURCE_BRANCH'; exit 2; }
+        [[ "$$URAI_SOURCE_BRANCH" == 'verify/r4-exact-self-source-cloudbuild-20261023' ]] || { echo 'WRONG_COMBINED_SOURCE_BRANCH'; exit 2; }
         [[ "$$URAI_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'INVALID_SOURCE_SHA'; exit 2; }
         [[ "$$URAI_VERIFIER_SA" =~ ^[a-z][a-z0-9-]{3,27}@[a-z][a-z0-9-]*\.iam\.gserviceaccount\.com$ ]] || { echo 'INVALID_VERIFIER_SA_EMAIL'; exit 2; }
         [[ "$$URAI_VERIFIER_SA" == *"@$$URAI_CLOUD_PROJECT.iam.gserviceaccount.com" ]] || { echo 'VERIFIER_NOT_PROJECT_LOCAL'; exit 2; }
