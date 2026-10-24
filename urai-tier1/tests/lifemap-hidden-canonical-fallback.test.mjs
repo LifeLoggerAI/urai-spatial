@@ -25,7 +25,7 @@ test('malformed and frozen input fails closed without mutation',()=>{
 })
 test('real production hook vetoes hidden events and requires complete server snapshot before canonical projection',()=>{
  const source=readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts',import.meta.url),'utf8')
- assert.match(source,/const hiddenEventMemoryIds = lifeMapHiddenEventMemoryIds\(currentNodes\);/)
+ assert.match(source,/const hiddenEventMemoryIds = new Set\(lifeMapHiddenEventMemoryIds\(currentNodes\)\);/)
  assert.match(source,/hiddenEventMemoryIds\.has\(memory\.id\)/)
  assert.match(source,/if \(!eventsSnapshotComplete\) return fromEvents;/)
  assert.match(source,/setEventSnapshotComplete\(snapshot\.docs\.length < 240 && snapshot\.metadata\.fromCache === false\)/)
