@@ -644,8 +644,8 @@
     {
       "path": "cloudbuild.urai-verify.yaml",
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
-      "expectedBlob": "28daed999c6b7245795fe7eea7c8502a743f70ac",
-      "reason": "Combined R4 verification branch enabled with restricted branch reference validation; nonrelease only"
+      "expectedBlob": "e983820f8c49a617cc117e96482d8fedfb43bc58",
+      "reason": "Exact self-source restricted Cloud Build and native draft, 21 gates including committed Ground binary; nonproduction only"
     },
     {
       "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
@@ -663,13 +663,13 @@
       "path": "scripts/lib/ground-glb-source-anchors.mjs",
       "originBlob": "9150100a757595a4fab4bc5a70e3d5f7ff15ab6e",
       "expectedBlob": "85980a105142dff0397fd798b3745d55fb1a21fc",
-      "reason": "R4 Ground drawable-triangle geometry, vertex/accessor and buffer-view bounds; exact donor PR #1938 source, nonrelease"
+      "reason": "R4 isolated Ground geometry verifier now validates drawable primitives, accessors and GLB buffer bounds; Node22 30-case focused proof only"
     },
     {
       "path": "tests/ground-glb-source-anchors.test.mjs",
       "originBlob": "2c11aaef2e8ddae76b6700e5fff3eeef249b774e",
       "expectedBlob": "ce09a655fd158003937af6172f38210ed07b9806",
-      "reason": "R4 Ground maintained regression suite from exact donor PR #1938; nonrelease"
+      "reason": "Exact reviewed Ground GLB validator regression fixture extension from #1934"
     }
   ],
   "additionalAdmittedDonor": {
