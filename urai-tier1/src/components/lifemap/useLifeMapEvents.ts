@@ -6,7 +6,7 @@ import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from "@/sp
 import { isConsentPolicy } from "@/app/privacy-controls/consentModel";
 import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
-import { lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes } from "./lifeMapPhysicalStarAction.mjs";
+import { lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes, lifeMapHiddenEventMemoryIds } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapDisplayPosition } from "./lifeMapLayout";
 import {
   lifeMapEras,
@@ -137,6 +137,9 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const currentMemories = memoriesOwner === currentOwner ? canonicalMemories : new Map<string, SelectedMemory>();
   const visibleNodes = lifeMapFilterVisibleNodes(explicitDemo || (authorityKey !== null && nodesAuthority === authorityKey) ? currentNodes : []);
   const visibleMemories = authorityKey !== null && memoriesAuthority === authorityKey ? currentMemories : new Map<string, SelectedMemory>();
+  // A limited/cached event query cannot prove that no older hidden event exists.
+  // Never create fallback stars until a complete server-confirmed event snapshot.
+  const [eventsSnapshotComplete, setEventSnapshotComplete] = useState(false);
   const resolvedNodes = useMemo(() => {
     if (explicitDemo) return visibleNodes;
     const fromEvents: LifeMapNode[] = visibleNodes.flatMap((node): LifeMapNode[] => {
@@ -166,6 +169,8 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     // Memory Star once all three private streams are current for this consent revision.
     // This projects stored evidence; it does not invent graph links or claims.
     if (authorityKey === null || nodesAuthority !== authorityKey || erasAuthority !== authorityKey || memoriesAuthority !== authorityKey) return fromEvents;
+    if (!eventsSnapshotComplete) return fromEvents;
+    const hiddenEventMemoryIds = lifeMapHiddenEventMemoryIds(currentNodes);
     const eventMemoryIds = new Set(visibleNodes.filter(node => node.type === 'memory')
       .map(node => sanitizeMemoryId(node.memoryId)).filter((id): id is string => Boolean(id)));
     const usedNodeIds = new Set(fromEvents.map(node => node.id));
@@ -173,7 +178,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       if (fromEvents.length >= 240) break;
       if (memory.privacy === 'hidden' || memory.demo || memory.ownerId !== resolvedUserId
         || !memory.star || !Array.isArray(memory.star.position)
-        || eventMemoryIds.has(memory.id)) continue;
+        || hiddenEventMemoryIds.has(memory.id) || eventMemoryIds.has(memory.id)) continue;
       const id = `canonical-memory:${memory.id}`;
       if (usedNodeIds.has(id)) continue;
       fromEvents.push({
@@ -189,7 +194,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       usedNodeIds.add(id);
     }
     return fromEvents;
-  }, [visibleNodes, visibleMemories, explicitDemo, authorityKey, nodesAuthority, erasAuthority, memoriesAuthority, resolvedUserId]);
+  }, [visibleNodes, visibleMemories, currentNodes, explicitDemo, authorityKey, nodesAuthority, erasAuthority, memoriesAuthority, eventsSnapshotComplete, resolvedUserId]);
   const currentEras = erasOwner === currentOwner ? eras : [];
   const visibleEras = explicitDemo || (authorityKey !== null && erasAuthority === authorityKey) ? currentEras : [];
   const [eventsLoading, setEventsLoading] = useState(!explicitDemo);
@@ -236,6 +241,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     let cancelled = false;
     if (explicitDemo) {
       setNodes(positionedDemoNodes);
+      setEventSnapshotComplete(false);
       setNodesOwner('demo-user');
       setEventsLoading(false);
       setEventsError(null);
@@ -243,6 +249,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     }
     if (!resolvedUserId) {
       setNodes([]);
+      setEventSnapshotComplete(false);
       setNodesOwner(null);
       setEventsLoading(false);
       setEventsError("Sign in to open your private Life Map.");
@@ -250,6 +257,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     }
     if (!firebasePublicEnvReady) {
       setNodes([]);
+      setEventSnapshotComplete(false);
       setNodesOwner(resolvedUserId);
       setEventsLoading(false);
       setEventsError("Your private Life Map is temporarily unavailable.");
@@ -257,15 +265,18 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     }
     if (!authorityKey) {
       setNodes([]); setNodesOwner(resolvedUserId); setNodesAuthority(null);
+      setEventSnapshotComplete(false);
       setEventsLoading(false); setEventsError(null);
       return () => { cancelled = true; };
     }
     setEventsLoading(true);
+    setEventSnapshotComplete(false);
     try {
       const eventsQuery = query(collection(getFirebaseDb(), "users", resolvedUserId, "lifeMapEvents"), orderBy("occurredAt", "desc"), limit(240));
-      const unsubscribe = onSnapshot(eventsQuery, (snapshot) => {
+      const unsubscribe = onSnapshot(eventsQuery, { includeMetadataChanges: true }, (snapshot) => {
         if (cancelled) return;
         setNodes(snapshot.docs.map((doc) => mapLifeMapEventToNode(normalizeEvent(doc.id, doc.data(), resolvedUserId))));
+        setEventSnapshotComplete(snapshot.docs.length < 240 && snapshot.metadata.fromCache === false);
         setNodesOwner(resolvedUserId);
         setNodesAuthority(authorityKey);
         setEventsLoading(false);
@@ -273,6 +284,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       }, (snapshotError) => {
         if (cancelled) return;
         setNodes([]);
+        setEventSnapshotComplete(false);
         setNodesOwner(resolvedUserId);
         setNodesAuthority(authorityKey);
         setEventsLoading(false);
@@ -281,6 +293,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       return () => { cancelled = true; unsubscribe(); };
     } catch (caught) {
       setNodes([]);
+      setEventSnapshotComplete(false);
       setNodesOwner(resolvedUserId);
       setNodesAuthority(authorityKey);
       setEventsLoading(false);

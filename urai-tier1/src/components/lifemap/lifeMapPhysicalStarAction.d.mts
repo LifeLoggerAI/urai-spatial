@@ -24,3 +24,7 @@ export function lifeMapVisibleRelatedNodes<T extends LifeMapRelatedNode>(nodes: 
 export function lifeMapNodeIsHidden(node: { privacyLevel?: unknown; privacy?: unknown } | null | undefined): boolean;
 export function lifeMapEventPrivacyLevel(node: { privacyLevel?: string; privacy?: string } | null | undefined): 'hidden' | 'private' | 'shareable';
 export function lifeMapFilterVisibleNodes<T extends { privacyLevel?: string; privacy?: string }>(nodes: readonly T[] | null | undefined): T[];
+
+// Owner-scoped hidden event metadata vetoes canonical fallback materialization.
+export type LifeMapHiddenEventReference = { type?: string; memoryId?: string; privacyLevel?: string; privacy?: string } | null | undefined;
+export function lifeMapHiddenEventMemoryIds(nodes: readonly LifeMapHiddenEventReference[] | null | undefined): ReadonlySet<string>;

@@ -51,3 +51,18 @@ export function lifeMapEventPrivacyLevel(raw) {
 export function lifeMapFilterVisibleNodes(nodes) {
   return Array.isArray(nodes) ? nodes.filter(node => node && !lifeMapNodeIsHidden(node)) : [];
 }
+
+// An event-hidden memory must not reappear through the canonical-memory fallback.
+// Preserve the veto from owner-scoped raw event nodes before visible-node filtering
+// discards the hidden event. This is not authorization to read canonical memories.
+export function lifeMapHiddenEventMemoryIds(nodes) {
+  const hidden = new Set();
+  if (!Array.isArray(nodes)) return hidden;
+  for (const node of nodes) {
+    if (!node || node.type !== 'memory' || !lifeMapNodeIsHidden(node)) continue;
+    if (typeof node.memoryId !== 'string') continue;
+    const id = node.memoryId.trim();
+    if (id) hidden.add(id);
+  }
+  return hidden;
+}
