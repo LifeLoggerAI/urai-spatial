@@ -3,7 +3,7 @@ import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 const source = readFileSync(new URL('../cloudbuild.urai-verify.yaml', import.meta.url), 'utf8')
-const pinnedBranch = 'verify/r4-three-lane-convergence-20261023'
+const pinnedBranch = 'verify/r4-exact-self-source-cloudbuild-20261023'
 function firstStep(yaml) {
   const lines = yaml.split(/\r?\n/)
   const idx = lines.findIndex(x => x === '      - |')
@@ -25,20 +25,28 @@ function preflight(env) {
   })
 }
 test('composite verifier defaults to R4 branch but requires an independently supplied SHA',()=>{
-  assert.match(source,/_SOURCE_BRANCH:\s*'verify\/r4-three-lane-convergence-20261023'/)
+  assert.match(source,/_SOURCE_BRANCH:\s*'verify\/r4-firestore-java21-admission-20261023'/)
+  assert.doesNotMatch(source,/_SOURCE_BRANCH:\s*'verify\/r4-three-lane-convergence-20261023'/)
   assert.match(source,/_SOURCE_SHA:\s*'EXPLICIT_PIN_REQUIRED'/)
   assert.doesNotMatch(source,/_SOURCE_SHA:\s*'[0-9a-f]{40}'/)
 })
+test('Cloud Build checks the exact Java21 donor and native evidence contracts before accepting its overall gate',()=>{
+  assert.match(source,/run_gate r4-firestore-java21-authority node --test tests\/firestore-java-runtime\.test\.mjs tests\/firestore-rules-execution-authority\.test\.mjs/)
+  assert.match(source,/run_gate combined-native-runner-contract node --test tests\/native-evidence-target\.test\.mjs/)
+  assert.match(source,/run_gate r4-source-provenance node scripts\/verify-r4-source-composition\.mjs/)
+  assert.ok(source.indexOf('run_gate r4-firestore-java21-authority')<source.indexOf('run_gate r4-source-provenance'))
+})
+
 test('real verifier accepts only verified branch namespace and valid nonproduction identity',()=>{
-  for (const branch of [pinnedBranch,'repair/test-case','ci/review-test']) {
+  for (const branch of [pinnedBranch]) {
     const result = preflight({URAI_SOURCE_BRANCH:branch})
     assert.equal(result.status,0,`${branch}: ${result.stdout} ${result.stderr}`)
     assert.match(result.stdout,/PREFLIGHT_COMPLETE/)
   }
-  for (const branch of ['main','refs/heads/main','verify/../../evil','verify/branch;echo HACKED']) {
+  for (const branch of ['main','refs/heads/main','verify/../../evil','verify/branch;echo HACKED','repair/test-case','ci/review-test','verify/r4-firestore-java21-admission-20261023']) {
     const result = preflight({URAI_SOURCE_BRANCH:branch})
     assert.notEqual(result.status,0,branch)
-    assert.match(result.stdout,/INVALID_SOURCE_BRANCH/)
+    assert.match(result.stdout,/(INVALID_SOURCE_BRANCH|WRONG_COMBINED_SOURCE_BRANCH)/)
     assert.doesNotMatch(result.stdout,/PREFLIGHT_COMPLETE/)
   }
   const prod = preflight({URAI_CLOUD_PROJECT:'urai-4dc1d', URAI_VERIFIER_SA:'urai-verifier@urai-4dc1d.iam.gserviceaccount.com'})
