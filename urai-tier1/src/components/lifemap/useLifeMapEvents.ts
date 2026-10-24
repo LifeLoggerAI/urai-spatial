@@ -8,7 +8,7 @@ import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
 import { lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes, lifeMapHiddenEventMemoryIds, lifeMapEventCoverageComplete, lifeMapCoveredEventMemoryVisible } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapDisplayPosition } from "./lifeMapLayout";
-import { lifeMapOwnerDocumentAllowed } from "./lifeMapEventPrivacy.mjs";
+import { lifeMapOwnerDocumentAllowed, projectLifeMapOwnerSnapshot } from "./lifeMapEventPrivacy.mjs";
 import {
   lifeMapEras,
   mapLifeMapEventToNode,
@@ -295,10 +295,19 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         if (cancelled) return;
         // A legacy document can omit userId; an explicitly conflicting userId
         // must not disclose someone else's event metadata or graph identity.
-        const ownersValid = snapshot.docs.every((doc) => lifeMapOwnerDocumentAllowed(doc.data(), resolvedUserId));
-        setNodes(snapshot.docs.map((doc) => lifeMapOwnerDocumentAllowed(doc.data(), resolvedUserId)
-          ? mapLifeMapEventToNode(normalizeEvent(doc.id, doc.data(), resolvedUserId)) : null)
-          .filter((node): node is LifeMapNode => node !== null));
+        const projection = projectLifeMapOwnerSnapshot(snapshot.docs, resolvedUserId,
+          (id, data) => mapLifeMapEventToNode(normalizeEvent(id, data, resolvedUserId)));
+        if (!projection.ok) {
+          setNodes([]);
+          setEventSnapshotComplete(false);
+          setNodesOwner(resolvedUserId);
+          setNodesAuthority(authorityKey);
+          setEventsLoading(false);
+          setEventsError("Private Life Map events could not be verified.");
+          return;
+        }
+        const ownersValid = projection.items.length === snapshot.docs.length;
+        setNodes(projection.items);
         // A malformed/foreign explicit owner also invalidates event coverage
         // and therefore cannot authorize canonical Memory Star fallback.
         setEventSnapshotComplete(ownersValid && snapshot.docs.length < 240 && snapshot.metadata.fromCache === false);
@@ -343,15 +352,16 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       const unsubscribe = onSnapshot(coverageQuery, { includeMetadataChanges: true }, snapshot => {
         if (cancelled) return;
         try {
-          if (!snapshot.docs.every(doc => lifeMapOwnerDocumentAllowed(doc.data(), owner))) {
+          const projection = projectLifeMapOwnerSnapshot(snapshot.docs, owner,
+            (id, data) => normalizeEvent(id, data, owner));
+          if (!projection.ok || projection.items.length !== snapshot.docs.length) {
             setUnorderedEventCoverage(null);
             return;
           }
-          const normalized = snapshot.docs.map(doc => normalizeEvent(doc.id, doc.data(), owner));
           setUnorderedEventCoverage({
             owner, authority,
             complete: lifeMapEventCoverageComplete(snapshot.docs.length, snapshot.metadata.fromCache),
-            hiddenIds: lifeMapHiddenEventMemoryIds(normalized),
+            hiddenIds: lifeMapHiddenEventMemoryIds(projection.items),
           });
         } catch {
           setUnorderedEventCoverage(null);
@@ -390,9 +400,17 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       const erasQuery = query(collection(getFirebaseDb(), "users", resolvedUserId, "lifeMapEras"), limit(80));
       const unsubscribe = onSnapshot(erasQuery, (snapshot) => {
         if (cancelled) return;
-        setEras(snapshot.docs.map((doc) => lifeMapOwnerDocumentAllowed(doc.data(), resolvedUserId)
-          ? normalizeEra(doc.id, doc.data(), resolvedUserId) : null)
-          .filter((era): era is LifeMapEra => era !== null));
+        const projection = projectLifeMapOwnerSnapshot(snapshot.docs, resolvedUserId,
+          (id, data) => normalizeEra(id, data, resolvedUserId));
+        if (!projection.ok) {
+          setEras([]);
+          setErasOwner(resolvedUserId);
+          setErasAuthority(authorityKey);
+          setErasLoading(false);
+          setErasError("Private Life Map eras could not be verified.");
+          return;
+        }
+        setEras(projection.items);
         setErasOwner(resolvedUserId);
         setErasAuthority(authorityKey);
         setErasLoading(false);
