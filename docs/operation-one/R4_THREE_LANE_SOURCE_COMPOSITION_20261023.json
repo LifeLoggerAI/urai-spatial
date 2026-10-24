@@ -644,8 +644,8 @@
     {
       "path": "cloudbuild.urai-verify.yaml",
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
-      "expectedBlob": "28daed999c6b7245795fe7eea7c8502a743f70ac",
-      "reason": "Combined R4 verification branch enabled with restricted branch reference validation; nonrelease only"
+      "expectedBlob": "e983820f8c49a617cc117e96482d8fedfb43bc58",
+      "reason": "Exact self-source restricted Cloud Build and native draft, 21 gates including committed Ground binary; nonproduction only"
     },
     {
       "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
