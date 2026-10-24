@@ -16,7 +16,7 @@ export function assertUnifiedHeadCurrent({ unified = false, pinnedSha = null, re
 }
 export const UNIFIED_REQUIRED_PREFLIGHT = Object.freeze([
   Object.freeze({ id: 'unified_source_authority', command: ['node','--test','tests/unified-native-target.test.mjs','tests/rfinal-source-authority.test.mjs'], requiresInstall: false }),
-  Object.freeze({ id: 'unified_lifemap_privacy', command: ['node','--test','urai-tier1/tests/lifemap-data-boundary.test.mjs','urai-tier1/tests/lifemap-physical-star-action.test.mjs','urai-tier1/tests/lifemap-hidden-canonical-fallback.test.mjs'], requiresInstall: false }),
+  Object.freeze({ id: 'unified_lifemap_privacy', command: ['node','--test','urai-tier1/tests/lifemap-data-boundary.test.mjs','urai-tier1/tests/lifemap-physical-star-action.test.mjs','urai-tier1/tests/lifemap-hidden-canonical-fallback.test.mjs','urai-tier1/tests/lifemap-event-coverage.test.mjs'], requiresInstall: false }),
   Object.freeze({ id: 'unified_ground_geometry', command: ['node','--test','tests/ground-glb-source-anchors.test.mjs','tests/ground-glb-committed-binary.test.mjs','tests/ground-active-workforce-verify.test.mjs','tests/ground-provider-active-owner-contract.test.mjs'], requiresInstall: false }),
   Object.freeze({ id: 'unified_firestore_java', command: ['node','--test','tests/firestore-java-runtime.test.mjs','tests/firestore-rules-execution-authority.test.mjs'], requiresInstall: false }),
   Object.freeze({ id: 'unified_http_routes', command: ['node','--test','tests/native-http-behavior.test.mjs','tests/rfinal-native-evidence-runner.test.mjs'], requiresInstall: false })

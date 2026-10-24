@@ -66,3 +66,12 @@ export function lifeMapHiddenEventMemoryIds(nodes) {
   }
   return hidden;
 }
+
+// A date-ordered query cannot prove that every event exists: Firestore omits
+// documents missing the ordering field. Only an *unordered*, server-confirmed,
+// below-limit owner query can prove complete event coverage for a fallback star.
+export function lifeMapEventCoverageComplete(docCount, fromCache, limitCount = 240) {
+  return Number.isSafeInteger(docCount) && docCount >= 0 &&
+    Number.isSafeInteger(limitCount) && limitCount > 0 &&
+    docCount < limitCount && fromCache === false;
+}

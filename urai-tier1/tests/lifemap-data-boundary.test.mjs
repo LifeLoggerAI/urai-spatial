@@ -141,3 +141,11 @@ test('visible Life Map projection denies both current and legacy hidden privacy,
   assert.match(semanticNavigator, /const selected = nodes.find\(\(node\) => node.id === selectedId && !lifeMapNodeIsHidden\(node\)\)/);
   assert.match(semanticNavigator, /if \(lifeMapNodeIsHidden\(node\) \|\| node.locked\) return/);
 });
+
+test('canonical fallback requires a complete unordered owner event query, including undated legacy hidden events', () => {
+  assert.match(source, /const coverageQuery = query\(collection\(getFirebaseDb\(\), "users", owner, "lifeMapEvents"\), limit\(240\)\)/)
+  assert.match(source, /lifeMapEventCoverageComplete\(snapshot\.docs\.length, snapshot\.metadata\.fromCache\)/)
+  assert.match(source, /unorderedEventCoverage\.authority !== authorityKey \|\| !unorderedEventCoverage\.complete/)
+  assert.match(source, /const hiddenEventMemoryIds = new Set\(lifeMapHiddenEventMemoryIds\(currentNodes\)\)/)
+  assert.match(source, /for \(const id of unorderedEventCoverage\.hiddenIds\) hiddenEventMemoryIds\.add\(id\)/)
+})

@@ -6,7 +6,7 @@ import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from "@/sp
 import { isConsentPolicy } from "@/app/privacy-controls/consentModel";
 import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
-import { lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes, lifeMapHiddenEventMemoryIds } from "./lifeMapPhysicalStarAction.mjs";
+import { lifeMapEventPrivacyLevel, lifeMapFilterVisibleNodes, lifeMapHiddenEventMemoryIds, lifeMapEventCoverageComplete } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapDisplayPosition } from "./lifeMapLayout";
 import {
   lifeMapEras,
@@ -140,6 +140,12 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   // A limited/cached event query cannot prove that no older hidden event exists.
   // Never create fallback stars until a complete server-confirmed event snapshot.
   const [eventsSnapshotComplete, setEventSnapshotComplete] = useState(false);
+  // Unlike the ordered display query, this owner-scoped audit includes legacy
+  // documents without occurredAt. The second source is a privacy VETO, never
+  // a permission to render records or bypass the canonical memory contract.
+  const [unorderedEventCoverage, setUnorderedEventCoverage] = useState<{
+    owner: string; authority: string; complete: boolean; hiddenIds: ReadonlySet<string>;
+  } | null>(null);
   const resolvedNodes = useMemo(() => {
     if (explicitDemo) return visibleNodes;
     const fromEvents: LifeMapNode[] = visibleNodes.flatMap((node): LifeMapNode[] => {
@@ -170,7 +176,10 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     // This projects stored evidence; it does not invent graph links or claims.
     if (authorityKey === null || nodesAuthority !== authorityKey || erasAuthority !== authorityKey || memoriesAuthority !== authorityKey) return fromEvents;
     if (!eventsSnapshotComplete) return fromEvents;
-    const hiddenEventMemoryIds = lifeMapHiddenEventMemoryIds(currentNodes);
+    if (!unorderedEventCoverage || unorderedEventCoverage.owner !== resolvedUserId
+      || unorderedEventCoverage.authority !== authorityKey || !unorderedEventCoverage.complete) return fromEvents;
+    const hiddenEventMemoryIds = new Set(lifeMapHiddenEventMemoryIds(currentNodes));
+    for (const id of unorderedEventCoverage.hiddenIds) hiddenEventMemoryIds.add(id);
     const eventMemoryIds = new Set(visibleNodes.filter(node => node.type === 'memory')
       .map(node => sanitizeMemoryId(node.memoryId)).filter((id): id is string => Boolean(id)));
     const usedNodeIds = new Set(fromEvents.map(node => node.id));
@@ -194,7 +203,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       usedNodeIds.add(id);
     }
     return fromEvents;
-  }, [visibleNodes, visibleMemories, currentNodes, explicitDemo, authorityKey, nodesAuthority, erasAuthority, memoriesAuthority, eventsSnapshotComplete, resolvedUserId]);
+  }, [visibleNodes, visibleMemories, currentNodes, explicitDemo, authorityKey, nodesAuthority, erasAuthority, memoriesAuthority, eventsSnapshotComplete, unorderedEventCoverage, resolvedUserId]);
   const currentEras = erasOwner === currentOwner ? eras : [];
   const visibleEras = explicitDemo || (authorityKey !== null && erasAuthority === authorityKey) ? currentEras : [];
   const [eventsLoading, setEventsLoading] = useState(!explicitDemo);
@@ -298,6 +307,39 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       setNodesAuthority(authorityKey);
       setEventsLoading(false);
       setEventsError(caught instanceof Error ? caught.message : "Life Map events could not be loaded.");
+      return () => { cancelled = true; };
+    }
+  }, [explicitDemo, resolvedUserId, authorityKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setUnorderedEventCoverage(null);
+    if (explicitDemo || !resolvedUserId || !firebasePublicEnvReady || !authorityKey) {
+      return () => { cancelled = true; };
+    }
+    const owner = resolvedUserId, authority = authorityKey;
+    try {
+      // The recent-events query orders by occurredAt, which excludes legacy
+      // documents missing that field. This complementary unordered query
+      // proves whether ALL owner events, including hidden legacy ones, were
+      // observed. At a 240-document cap or on cached/error data, fail closed.
+      const coverageQuery = query(collection(getFirebaseDb(), "users", owner, "lifeMapEvents"), limit(240));
+      const unsubscribe = onSnapshot(coverageQuery, { includeMetadataChanges: true }, snapshot => {
+        if (cancelled) return;
+        try {
+          const normalized = snapshot.docs.map(doc => normalizeEvent(doc.id, doc.data(), owner));
+          setUnorderedEventCoverage({
+            owner, authority,
+            complete: lifeMapEventCoverageComplete(snapshot.docs.length, snapshot.metadata.fromCache),
+            hiddenIds: lifeMapHiddenEventMemoryIds(normalized),
+          });
+        } catch {
+          setUnorderedEventCoverage(null);
+        }
+      }, () => { if (!cancelled) setUnorderedEventCoverage(null); });
+      return () => { cancelled = true; unsubscribe(); };
+    } catch {
+      setUnorderedEventCoverage(null);
       return () => { cancelled = true; };
     }
   }, [explicitDemo, resolvedUserId, authorityKey]);
