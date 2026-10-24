@@ -648,12 +648,6 @@
       "reason": "Current combined verifier source, 21 maintained nonrelease gates, committed Ground binary and Java 21; no release authority"
     },
     {
-      "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
-      "originBlob": "85a486f80b73e1eaf266df7fd2549827763c63e6",
-      "expectedBlob": "69da9fc1e4815161bde47386f0df7d0901ec3eb7",
-      "reason": "Combined-branch-only semantic privacy alias consistency repair across search, inspector, keyboard and pointer"
-    },
-    {
       "path": "urai-tier1/src/components/lifemap/useLifeMapEvents.ts",
       "originBlob": "0197b7fd0c8eaebac1166403ee32c10181ab9cd3",
       "expectedBlob": "a885812f25c32cd4f0dcf72a96e3364531dda96b",
@@ -676,6 +670,18 @@
       "originBlob": "c0125c3d7f02400d3c690ec3de437e7182acc95c",
       "expectedBlob": "f18e13ce99791cc85d555105156cc89335ada8c9",
       "reason": "Maintained Cloud Build synthetic gate receipt test isolates its runner from the 21 real native verification stages; reviewed exact blob"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
+      "originBlob": "85a486f80b73e1eaf266df7fd2549827763c63e6",
+      "expectedBlob": "e6f3356594b763c49a7df479fa17c17d699379f0",
+      "reason": "Unified semantic inspector denies locked direct URLs, and search results identify locked nodes as disabled with no activation"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs",
+      "originBlob": "2577369cfeb407fe135772edf82ca8153a3de94b",
+      "expectedBlob": "c620c93d41bdbe1d3264e8fc3a64abe4d1717d44",
+      "reason": "Locked related-link targets and locked originating selections fail closed in shared actual Life Map selection helper"
     }
   ],
   "additionalAdmittedDonor": {
