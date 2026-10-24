@@ -60,9 +60,12 @@ test('source + verifier preflight accepts only pinned, local nonproduction ident
 })
 test('real Cloud Build gate runner emits correct JSON for pass AND failure',()=>{
   const start=scripts[1].indexOf('receipt_path=')
-  const end=scripts[1].indexOf('run_gate source-authority',start)
+  // Isolate only the shell runner definition. New verification stages must not
+  // be executed by this synthetic two-receipt test: they are tested separately.
+  const end=scripts[1].indexOf('\nrun_gate ',start)
   assert.ok(start>=0&&end>start)
   let body=scripts[1].slice(start,end)
+  assert.doesNotMatch(body,/^run_gate\s+/m,'Fixture must not execute real verification gates')
   body=body.split('receipt_path="/workspace/urai-spatial/.urai-cloudbuild-gates.ndjson"').join('receipt_path="$URAI_TEST_RECEIPT"')
   const dir=mkdtempSync(join(tmpdir(),'urai-cloudbuild-proof-'))
   const receipt=join(dir,'gate.ndjson')
