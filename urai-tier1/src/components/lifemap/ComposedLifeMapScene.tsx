@@ -14,7 +14,7 @@ import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProdu
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
 import { shouldHandleRealmEscape } from "@/spatial/world/realmEscapeEligibility.mjs";
-import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed, lifeMapFocusAllowed } from "./lifeMapPhysicalStarAction.mjs";
+import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed, lifeMapFocusAllowed, lifeMapNodeSelectable } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapRotateFlightAxes, advanceLifeMapViewOrientation, lifeMapRotatedLookTarget } from "./lifeMapFlightOrientation.mjs";
 import { lifeMapApplyPointerLook } from "./lifeMapPointerLook.mjs";
 import { installLifeMapPointerInteraction } from "./lifeMapPointerInteraction.mjs";
@@ -428,7 +428,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const localSelectionId = useRef<string | null>(null);
   const overviewPending = useRef(overviewRequested);
   const restoredRoutePending = useRef(Boolean(!overviewRequested && queryNode));
-  const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
+  const selected = useMemo(() => nodes.find((node) => node.id === selectedId && lifeMapNodeSelectable(node)) || null, [nodes, selectedId]);
 
   const withIdentity = useCallback((next: URLSearchParams, memoryId?: string) => withLifeMapSelectionIdentity(params, next, memoryId), [params]);
 
@@ -454,6 +454,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   }, [phase, profile.reducedMotion, selected]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
+    if (!lifeMapNodeSelectable(node)) return;
     restoredRoutePending.current = false;
     overviewPending.current = false;
     localSelectionId.current = node.id;
@@ -552,7 +553,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     // A deep-link query is only an initial/restored selection. Do not let that
     // stale URL identity override a newer local star selection in flight.
     if (localSelectionId.current && localSelectionId.current !== queryNode) return;
-    const node = nodes.find((candidate) => candidate.id === queryNode);
+    const node = nodes.find((candidate) => candidate.id === queryNode && lifeMapNodeSelectable(candidate));
     if (!node) return;
     if (localSelectionId.current === node.id) {
       // Same-route URL synchronization for a locally initiated selection must not

@@ -674,14 +674,14 @@
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs",
       "originBlob": "2577369cfeb407fe135772edf82ca8153a3de94b",
-      "expectedBlob": "c620c93d41bdbe1d3264e8fc3a64abe4d1717d44",
-      "reason": "Locked related-link targets and locked originating selections fail closed in shared actual Life Map selection helper"
+      "expectedBlob": "3d866b1bc66a395c23e94233d1a65316a869c9b2",
+      "reason": "Unified locked and hidden memory selection safeguards in physical and semantic navigation"
     },
     {
       "path": "urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx",
       "originBlob": "2a9a0369ee27f1e050e0b59720cbc4f47124d6ad",
-      "expectedBlob": "70d819ed00b0b1bdf298e5e6eb81a9bccfd5c39e",
-      "reason": "Combined Life Map scene uses explicit semantic route identities independent of locale"
+      "expectedBlob": "ae9bb40aaef1d27a693a12435dbf8fbe7f7ed8c5",
+      "reason": "3D pointer, restored URL and semantic selection deny locked and hidden memory disclosure"
     }
   ],
   "additionalAdmittedDonor": {
@@ -735,8 +735,8 @@
     },
     {
       "path": "tests/r4-semantic-privacy-surface.test.mjs",
-      "blob": "4da1a401065f8966dab9222a7594ee45449e3d8b",
-      "reason": "Maintained locked-search semantic privacy regression exact candidate blob"
+      "blob": "400741b2ffd435c0ce8488cdd2e6296d89762d92",
+      "reason": "Merged locked-search, owner-guarded selection and 3D path maintained privacy regression"
     }
   ]
 }
