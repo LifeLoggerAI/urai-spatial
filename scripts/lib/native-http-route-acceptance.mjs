@@ -3,11 +3,16 @@ const SAFE_REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const SYNTHETIC_ORIGIN = 'http://127.0.0.1';
 
 export function assessNativeHttpRoute({ path, status, redirect = null, error = null,
-  protectedRoute = false, requestedUrl = null } = {}) {
+  protectedRoute = false, requestedUrl = null, contentType = null } = {}) {
   if (!Number.isInteger(status)) {
     return { allowed: false, reason: String(error || 'ROUTE_NOT_TESTED') };
   }
+  // These are page routes. A 204, 206, JSON or text response cannot prove
+  // that the original UrAi page actually rendered. Browser acceptance is separate.
   if (status >= 200 && status < 300) {
+    if (status !== 200 || !/^text\/html(?:\s*;|\s*$)/i.test(String(contentType || '').trim())) {
+      return { allowed: false, reason: 'RENDERED_HTML_200_REQUIRED' };
+    }
     return { allowed: true, kind: 'SUCCESS' };
   }
   if (protectedRoute && (status === 401 || status === 403)) {

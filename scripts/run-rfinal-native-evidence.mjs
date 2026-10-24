@@ -122,6 +122,7 @@ export function assessHttpRoutes(checks) {
       path: route, status, redirect: result?.redirect, error: result?.error,
       protectedRoute: PROTECTED_HTTP_ROUTES.has(route),
       requestedUrl: result?.requestedUrl,
+      contentType: result?.contentType,
     })
     if (verdict.allowed) {
       if (verdict.kind !== 'SUCCESS') authorizedDenials.push({path:route,status,reason:verdict.kind})
@@ -395,7 +396,7 @@ async function runtimeSmoke(source, outDir) {
     for (const route of REQUIRED_HTTP_ROUTES) {
       try {
         const reply = await fetch(target + route, { signal: AbortSignal.timeout(12000), redirect: 'manual' })
-        checks.push({ path: route, status: reply.status, redirect: reply.headers.get('location') || null, requestedUrl: target + route })
+        checks.push({ path: route, status: reply.status, redirect: reply.headers.get('location') || null, requestedUrl: target + route, contentType: reply.headers.get('content-type') || null })
       } catch (e) { checks.push({ path: route, error: String(e) }) }
     }
     const browserEnv = {

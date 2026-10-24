@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { ensureNativeGitAncestry } from '../scripts/lib/native-git-ancestry.mjs'
 const root = '18bd6f3dfc9363f3764fa8011a67072b35902741'
 const source = 'ff38ab444015011c7f86de8f2ee645cf4037a650'
@@ -181,7 +182,7 @@ test('real shallow clone returns 128 for missing ancestor and recovers with boun
     }
     const tip = git(origin,['rev-parse','HEAD']).stdout.trim()
     assert.equal(git(dir,['clone','-q','--depth=2','--single-branch','--branch',branch,
-      'file://'+origin,checkout]).status,0)
+      pathToFileURL(origin).href,checkout]).status,0)
     const failed = git(checkout,['merge-base','--is-ancestor',ancestor,tip])
     assert.equal(failed.status,128)
     assert.match(failed.stderr,/not a valid commit name/i)
