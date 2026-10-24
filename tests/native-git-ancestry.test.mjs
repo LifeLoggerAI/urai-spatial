@@ -59,7 +59,7 @@ test('failing or timed-out ancestry probes do not count as passing', async () =>
   const calls=[]
   await assert.rejects(ensureNativeGitAncestry(args({runGit:async argv=>{
     calls.push(argv);return {exitCode:0,timedOut:true}
-  }})),/NATIVE_HISTORY_MISSING_IN_EXISTING_CHECKOUT_NO_FETCH/)
+  }})),/NATIVE_HISTORY_ANCESTRY_COMMAND_FAILED/)
   assert.equal(calls.length,1)
 })
 test('unknown branches, invalid SHAs and missing command authority rejected', async () => {
