@@ -31,7 +31,7 @@ test('old pinned branch commits are verified before sparse tree audit',()=>{
   assert.match(pinned,/pinned_checkout_history_verified/)
   assert.match(pinned,/output: readFileSync\(result\.logPath, 'utf8'\)\.trim\(\)/)
   assert.match(source,/if \(!cfg\.source\) \{/)
-  assert.doesNotMatch(source.slice(source.indexOf('const actual = await shortGit'),audit),/allowDeepen: true/)
+  assert.doesNotMatch(source.slice(source.indexOf('const actual = await shortGit'),block),/allowDeepen: true/)
 })
 test('combined evidence cannot become current release GO',()=>{
   assert.match(source,/receipt\.currentReleaseHeadVerified=false/)

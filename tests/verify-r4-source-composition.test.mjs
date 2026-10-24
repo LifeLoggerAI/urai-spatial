@@ -115,8 +115,10 @@ test('unclaimed donor overrides cannot substitute for candidate source ownership
   const f=fixture()
   delete f.manifest.candidateSourceClaims
   assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_CLAIMS_INVALID/)
-  f.manifest.candidateSourceClaims=[{path:'urai-tier1/src/components/lifemap/useLifeMapEvents.ts',blob:h('a'),reason:'Forged source claim'}]
+  f.manifest.candidateSourceClaims=fixture().manifest.candidateSourceClaims.map(claim=>({...claim}))
+  f.manifest.candidateSourceClaims[0].blob=h('a')
   assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_CLAIM_INVALID/)
+  f.manifest.candidateSourceClaims=fixture().manifest.candidateSourceClaims
   f.manifest.sourceOverrides=[{path:'urai-tier1/src/components/lifemap/useLifeMapEvents.ts',originBlob:h('d'),expectedBlob:'a885812f25c32cd4f0dcf72a96e3364531dda96b',reason:'Orphaned privacy donor override'}]
   assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/SOURCE_OVERRIDE_INVALID/)
 })

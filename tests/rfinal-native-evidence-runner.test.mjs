@@ -434,6 +434,18 @@ test('R-FINAL validates all real encoded PNG captures and preserves evidence-onl
     ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4)
     ihdr[8] = 8; ihdr[9] = 6
     const rows = Buffer.alloc((width * 4 + 1) * height)
+    // A valid screenshot must have nonuniform decoded pixels. All-zero
+    // content is intentionally rejected by the stricter visual gate.
+    for (let y = 0; y < height; y++) {
+      const row = y * (width * 4 + 1);
+      for (let x = 0; x < width; x++) {
+        const offset = row + 1 + x * 4;
+        rows[offset] = x % 256;
+        rows[offset + 1] = y % 256;
+        rows[offset + 2] = (x ^ y) % 256;
+        rows[offset + 3] = 255;
+      }
+    }
     const png = Buffer.concat([
       Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
       pngChunk('IHDR', ihdr),
