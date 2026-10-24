@@ -599,6 +599,8 @@ async function main() {
     for (const item of planUnifiedStages(STAGES, cfg.unifiedCandidate)) {
       if (item.requiresInstall && !installPassed) {
         record(item.id,'NOT_RUN',{reason:'Frozen installation did not pass; no substitute green'})
+        // A required post-install privacy check must never be silently skipped.
+        assertUnifiedPreflightOutcome({ unified: cfg.unifiedCandidate, stageId: item.id, outcome: 'NOT_RUN' })
         continue
       }
       const r=await command(item.command,{cwd:source,log:path.join(evidence,item.id+'.log'),
