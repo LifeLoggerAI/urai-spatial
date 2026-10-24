@@ -644,8 +644,8 @@
     {
       "path": "cloudbuild.urai-verify.yaml",
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
-      "expectedBlob": "8d74c533da9fd0bc4096402264c44cbc6fde7632",
-      "reason": "Source-pinned current review branch with valid escaped Cloud Build shell variables and native validation gates; nonrelease"
+      "expectedBlob": "9fa5178141be37d47d64e2fe0b7dba33fcb7ec2e",
+      "reason": "Current combined verifier source, 21 maintained nonrelease gates, committed Ground binary and Java 21; no release authority"
     },
     {
       "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
@@ -662,14 +662,14 @@
     {
       "path": "scripts/lib/ground-glb-source-anchors.mjs",
       "originBlob": "9150100a757595a4fab4bc5a70e3d5f7ff15ab6e",
-      "expectedBlob": "af0a323c5ecc0588f598045a98e07aa8b46f5002",
-      "reason": "Exact reviewed Ground GLB validator mesh bounds and source-coordinate isolation hardening from #1934"
+      "expectedBlob": "85980a105142dff0397fd798b3745d55fb1a21fc",
+      "reason": "R4 Ground drawable-triangle geometry, vertex/accessor and buffer-view bounds; exact donor PR #1938 source, nonrelease"
     },
     {
       "path": "tests/ground-glb-source-anchors.test.mjs",
       "originBlob": "2c11aaef2e8ddae76b6700e5fff3eeef249b774e",
-      "expectedBlob": "0009712a5c8b61ede7fb0a3ce9b38d65d3422fd1",
-      "reason": "Exact reviewed Ground GLB validator regression fixture extension from #1934"
+      "expectedBlob": "ce09a655fd158003937af6172f38210ed07b9806",
+      "reason": "R4 Ground maintained regression suite from exact donor PR #1938; nonrelease"
     }
   ],
   "additionalAdmittedDonor": {
