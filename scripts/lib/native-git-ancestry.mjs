@@ -23,6 +23,11 @@ export async function ensureNativeGitAncestry({ branch, sourceHead, trustedAnces
       return Object.freeze({ verified: true, sourceHead, trustedAncestor,
         deepenAttempts: attempt, bounded: true, releaseAuthorized: false })
     }
+    // Exit 1 means not-an-ancestor; 128 and other statuses signal Git failure.
+    // Do not hide a broken repository or unresolved object as shallow history.
+    if (proof?.exitCode !== 1 || proof.timedOut === true || proof.spawnError) {
+      throw new Error('NATIVE_HISTORY_ANCESTRY_COMMAND_FAILED')
+    }
     // Never fetch/deepen history in an existing checkout supplied by another worker.
     if (!allowDeepen) throw new Error('NATIVE_HISTORY_MISSING_IN_EXISTING_CHECKOUT_NO_FETCH')
     if (attempt === MAX_DEEPENS) {
