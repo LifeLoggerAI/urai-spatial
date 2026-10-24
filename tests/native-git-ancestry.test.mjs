@@ -80,3 +80,27 @@ test('historical default branch is supported without combined-mode authorization
   }))
   assert.equal(result.verified,true)
 })
+
+test('Git corruption or missing objects are not mistaken for shallow ancestry', async () => {
+  for (const broken of [2, 128, null]) {
+    let fetches=0
+    await assert.rejects(ensureNativeGitAncestry(args({
+      allowDeepen:true,
+      runGit:async argv=>{
+        if(argv[0]==='fetch'){fetches++;return {exitCode:0}}
+        return {exitCode:broken}
+      },
+    })), /NATIVE_HISTORY_ANCESTRY_COMMAND_FAILED/)
+    assert.equal(fetches,0)
+  }
+})
+test('timed out or spawn-error ancestry probes never deepen', async () => {
+  for(const outcome of [{exitCode:1,timedOut:true},{exitCode:1,spawnError:'EPERM'}]) {
+    let fetches=0
+    await assert.rejects(ensureNativeGitAncestry(args({allowDeepen:true,runGit:async argv=>{
+      if(argv[0]==='fetch')fetches++
+      return outcome
+    }})),/NATIVE_HISTORY_ANCESTRY_COMMAND_FAILED/)
+    assert.equal(fetches,0)
+  }
+})
