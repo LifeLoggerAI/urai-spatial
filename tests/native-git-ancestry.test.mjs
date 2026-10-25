@@ -205,3 +205,11 @@ test('real shallow clone returns 128 for missing ancestor and recovers with boun
     assert.equal(git(checkout,['ls-tree','-rz','--name-only',ancestor]).status,0,'recovered old tree must be readable')
   } finally {rmSync(dir,{recursive:true,force:true})}
 })
+test('review-only Ground child is allowlisted for exact ancestor verification without release authority',async()=>{
+ const result=await ensureNativeGitAncestry(args({
+  branch:'verify/r4-ground-glb-drawable-geometry-20261023',
+  runGit:async()=>({exitCode:0}),
+ }))
+ assert.equal(result.verified,true)
+ assert.equal(result.releaseAuthorized,false)
+})

@@ -644,8 +644,8 @@
     {
       "path": "cloudbuild.urai-verify.yaml",
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
-      "expectedBlob": "df82e1cd1ba0dfcaeaac7b214a1b1385795f90c3",
-      "reason": "Unified nonproduction 21-gate Cloud Build verifier runs complete maintained native evidence runner tests at the exact source branch"
+      "expectedBlob": "e4eafdfb5ba9574eb56ccc8aa4485a501eca0cb9",
+      "reason": "Nonproduction Ground child verifies exact reviewed source branch with all original privacy, TypeScript, and native proof gates."
     },
     {
       "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
@@ -668,8 +668,8 @@
     {
       "path": "tests/cloudbuild-shell-execution.test.mjs",
       "originBlob": "c0125c3d7f02400d3c690ec3de437e7182acc95c",
-      "expectedBlob": "fd039197296baf9dd0587a8d3bdbae14ab42a1ca",
-      "reason": "Unified source-only Cloud Build shell contract now uses the exact reviewed nonproduction verifier branch"
+      "expectedBlob": "f2088c28c8c1804003570a43ff8224997cf3988a",
+      "reason": "Nonproduction Ground child verifies exact reviewed source branch with all original privacy, TypeScript, and native proof gates."
     },
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs",
