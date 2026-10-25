@@ -206,7 +206,12 @@ async function runNavigationStack(page, stage, report) {
   const scene = page.getByTestId('urai-true-3d-life-map');
   await expectVisible(scene, 'returned Life Map', 40000);
   await expectAttr(scene, 'data-life-map-source', 'explicit-demo', 30000);
-  await page.locator('.life-map-thresholds .overview-return').click();
+  const mode = await scene.getAttribute('data-life-map-mode');
+  if (mode === 'selected') {
+    await page.locator('.life-map-thresholds .overview-return').click();
+  } else if (mode !== 'overview') {
+    throw new Error('Unexpected Life Map return mode: ' + mode);
+  }
   await expectAttr(scene, 'data-life-map-mode', 'overview', 30000);
   await page.locator('.life-map-overview-controls .overview-home-return').click();
   await page.waitForURL(/\/home(?:\/|\?|$)/, { timeout: 40000 });
