@@ -682,6 +682,12 @@
       "originBlob": "2a9a0369ee27f1e050e0b59720cbc4f47124d6ad",
       "expectedBlob": "ae9bb40aaef1d27a693a12435dbf8fbe7f7ed8c5",
       "reason": "World pointer, custom event, and direct URL restore all enforce shared selectable-node guard before revealing selected-memory context"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.d.mts",
+      "originBlob": "815f8fa6646ce4ccc10d08057c724e5e21b4b31a",
+      "expectedBlob": "78844280b5cb5211e14b0d4db02ee51821d1a207",
+      "reason": "Exact TypeScript declaration for selected Life Map lock-protected helper"
     }
   ],
   "additionalAdmittedDonor": {
@@ -732,6 +738,16 @@
       "path": "urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs",
       "blob": "f4708011daae7f222076d697cfc200272c118f2e",
       "reason": "Shared privacy and owner-scope normalization for user-specific Life Map streams"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapEventPrivacy.d.mts",
+      "blob": "4b25379576a0adb48c150220d582b4dc621d003b",
+      "reason": "Exact TypeScript owner and atomic Firestore projection declaration"
+    },
+    {
+      "path": "urai-tier1/src/spatial/layout/HomeCC0ReviewRetainedGround.tsx",
+      "blob": "0e777c2fcdfc44537d365311c45c86a0d4a8ee0d",
+      "reason": "Correct Three.js material construction while retaining shader variation"
     }
   ]
 }

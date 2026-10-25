@@ -18,7 +18,9 @@ function fixture(){
   for(const [path,blob] of [
     ['urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx','a6fefdd2e75448f9869202cf740726168c11caa3'],
     ['urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs','9947d8086bb4777bd0de2eaf151ed3a36dbb5fd1'],
-    ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs','f4708011daae7f222076d697cfc200272c118f2e']]) {
+    ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs','f4708011daae7f222076d697cfc200272c118f2e'],
+    ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.d.mts','4b25379576a0adb48c150220d582b4dc621d003b'],
+    ['urai-tier1/src/spatial/layout/HomeCC0ReviewRetainedGround.tsx','0e777c2fcdfc44537d365311c45c86a0d4a8ee0d']]) {
     f.manifest.candidateSourceClaims.push({path,blob,reason:'Candidate-owned software route boundary is byte pinned'})
     f.entries.set(path,{mode:'100644',type:'blob',sha:blob})
   }
@@ -103,7 +105,7 @@ test('updated semantic privacy path remains a specifically authorized override',
 
 test('candidate-owned privacy source has mandatory independent exact blob authority',()=>{
   const f=fixture()
-  assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).candidateSourcePathsVerified,4)
+  assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).candidateSourcePathsVerified,6)
   const path='urai-tier1/src/components/lifemap/useLifeMapEvents.ts'
   f.entries.set(path,{mode:'100644',type:'blob',sha:h('a')})
   assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_BLOB_MISMATCH/)
@@ -146,7 +148,7 @@ test('candidate software route helper cannot be silently substituted',()=>{
 test('shared event privacy owner helper is candidate-owned and immutable',()=>{
  const f=fixture()
  const path='urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs'
- assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).candidateSourcePathsVerified,4)
+ assert.equal(inspectR4SourceComposition(f.manifest,f.entries,h('f')).candidateSourcePathsVerified,6)
  f.entries.set(path,{mode:'100644',type:'blob',sha:h('a')})
  assert.throws(()=>inspectR4SourceComposition(f.manifest,f.entries,h('f')),/CANDIDATE_SOURCE_BLOB_MISMATCH/)
 })

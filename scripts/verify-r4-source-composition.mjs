@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const shaPattern = /^[a-f0-9]{40}$/
 const donorCounts = new Map([[1933, 74], [1934, 8], [1887, 3]])
-const overridePaths = new Set(['cloudbuild.urai-verify.yaml','urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx','urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx','urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs','tests/cloudbuild-shell-execution.test.mjs','scripts/lib/ground-glb-source-anchors.mjs','tests/ground-glb-source-anchors.test.mjs'])
+const overridePaths = new Set(['cloudbuild.urai-verify.yaml','urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx','urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx','urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs','tests/cloudbuild-shell-execution.test.mjs','scripts/lib/ground-glb-source-anchors.mjs','tests/ground-glb-source-anchors.test.mjs','urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.d.mts'])
 const validPath = p => typeof p === 'string' && p.length > 0 && p.length <= 500 &&
   !p.startsWith('/') && !p.includes('\\') && !p.includes('\0') &&
   p.split('/').every(part => part !== '' && part !== '.' && part !== '..' && part !== '.git')
@@ -96,6 +96,8 @@ export function inspectR4SourceComposition(manifest, entries, head, expectedHead
     ['urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx', 'a6fefdd2e75448f9869202cf740726168c11caa3'],
     ['urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs', '9947d8086bb4777bd0de2eaf151ed3a36dbb5fd1'],
     ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs', 'f4708011daae7f222076d697cfc200272c118f2e'],
+    ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.d.mts','4b25379576a0adb48c150220d582b4dc621d003b'],
+    ['urai-tier1/src/spatial/layout/HomeCC0ReviewRetainedGround.tsx','0e777c2fcdfc44537d365311c45c86a0d4a8ee0d'],
   ])
   if (!Array.isArray(candidateSources) ||
       candidateSources.length !== requiredCandidate.size) fail('CANDIDATE_SOURCE_CLAIMS_INVALID')
