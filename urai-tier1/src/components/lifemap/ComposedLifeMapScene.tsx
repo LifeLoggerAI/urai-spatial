@@ -14,7 +14,7 @@ import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProdu
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
 import { shouldHandleRealmEscape } from "@/spatial/world/realmEscapeEligibility.mjs";
-import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed, lifeMapFocusAllowed } from "./lifeMapPhysicalStarAction.mjs";
+import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed, lifeMapFocusAllowed, lifeMapNodeSelectable } from "./lifeMapPhysicalStarAction.mjs";
 import { lifeMapRotateFlightAxes, advanceLifeMapViewOrientation, lifeMapRotatedLookTarget } from "./lifeMapFlightOrientation.mjs";
 import { lifeMapApplyPointerLook } from "./lifeMapPointerLook.mjs";
 import { installLifeMapPointerInteraction } from "./lifeMapPointerInteraction.mjs";
@@ -428,7 +428,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const localSelectionId = useRef<string | null>(null);
   const overviewPending = useRef(overviewRequested);
   const restoredRoutePending = useRef(Boolean(!overviewRequested && queryNode));
-  const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
+  const selected = useMemo(() => nodes.find((node) => node.id === selectedId && lifeMapNodeSelectable(node)) || null, [nodes, selectedId]);
 
   const withIdentity = useCallback((next: URLSearchParams, memoryId?: string) => withLifeMapSelectionIdentity(params, next, memoryId), [params]);
 
@@ -454,6 +454,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   }, [phase, profile.reducedMotion, selected]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
+    if (!lifeMapNodeSelectable(node)) return;
     restoredRoutePending.current = false;
     overviewPending.current = false;
     localSelectionId.current = node.id;
@@ -552,7 +553,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     // A deep-link query is only an initial/restored selection. Do not let that
     // stale URL identity override a newer local star selection in flight.
     if (localSelectionId.current && localSelectionId.current !== queryNode) return;
-    const node = nodes.find((candidate) => candidate.id === queryNode);
+    const node = nodes.find((candidate) => candidate.id === queryNode && lifeMapNodeSelectable(candidate));
     if (!node) return;
     if (localSelectionId.current === node.id) {
       // Same-route URL synchronization for a locally initiated selection must not
@@ -658,13 +659,13 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     </div>
 
     {thresholdsVisible ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}>
-      <button className="focus-threshold" data-destination-href={destinationHref("focus")} disabled={!lifeMapFocusAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref("focus"))}>
+      <button className="focus-threshold" data-life-map-threshold-route="focus" data-destination-href={destinationHref("focus")} disabled={!lifeMapFocusAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref("focus"))}>
         <span>Inspect</span><strong>Enter Focus</strong>
       </button>
-      <button className="replay-threshold" data-destination-href={destinationHref("replay")} disabled={!lifeMapPhysicalReplayAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref("replay"))}>
+      <button className="replay-threshold" data-life-map-threshold-route="replay" data-destination-href={destinationHref("replay")} disabled={!lifeMapPhysicalReplayAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref("replay"))}>
         <span>Cross threshold</span><strong>Replay</strong>
       </button>
-      <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
+      <button className="overview-return" data-life-map-overview-action="true" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
     </nav> : null}
 
     {!thresholdsVisible && sourceMode !== "signed-out" ? <nav className="life-map-overview-controls" aria-label="Life Map overview controls">
@@ -675,7 +676,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     {recovery ? <section className="life-map-recovery" role="status" aria-live="assertive">
       <h2>{webglState === "lost" ? "Visual field paused safely" : "Restoring visual field"}</h2>
       <p>Your selected memory, privacy state, and return position remain preserved.</p>
-      <button onClick={overview}>Open semantic overview</button>
+      <button data-life-map-overview-action="true" onClick={overview}>Open semantic overview</button>
       <button onClick={returnHome}>Return Home</button>
     </section> : null}
 
