@@ -515,7 +515,10 @@ async function proveMapFocusReplayReturn(page,uid){
  await focus.locator('nav.focusControls button.unwind').click({timeout:15000})
  await routeIsPage(page,'/life-map')
  await map.waitFor({state:'visible',timeout:90000})
- await map.getByRole('button',{name:'Return to Life Map overview'}).click({timeout:15000})
+ const resumedMode=await map.getAttribute('data-life-map-phase')
+ if (resumedMode !== 'overview') {
+  await map.getByRole('button',{name:'Return to Life Map overview'}).click({timeout:15000})
+ }
  await page.waitForFunction(()=>document.querySelector('[data-testid="urai-true-3d-life-map"]')?.dataset.lifeMapPhase==='overview',
    null,{timeout:30000})
  await map.locator('button[data-life-map-overview-home-return="true"]').click({timeout:15000})
@@ -650,7 +653,7 @@ async function provePrivacyAfterJourney(page,accounts,db,policy){
  // A fresh route after withdrawal alone would not establish live revocation.
  const ownerMemoryBefore=(await db.doc('users/'+accounts[0].uid+
   '/memories/fictional-memory-a').get()).data()
- assert.equal(ownerMemoryBefore?.consentState,'granted',
+ assert.equal(ownerMemoryBefore?.consentState,'authorized',
   'Mounted withdrawal proof requires originally authorized unchanged source')
  const mountedFocus=await page.context().newPage()
  const mountedReplay=await page.context().newPage()
@@ -1069,7 +1072,7 @@ try{
  disposableDocs.push('users/fictional-urai-a/memories/fictional-memory-a')
  await db.doc('users/fictional-urai-a/memories/fictional-memory-a').set({
   ownerId:'fictional-urai-a',title:'Fictional Lake',occurredAt:'1988-08-01T12:00:00.000Z',
-  summary:'Fictional emulator data only',emotionalState:'calm',deleted:false,demo:false,consentState:'granted',privacy:'private',
+  summary:'Fictional emulator data only',emotionalState:'calm',deleted:false,demo:false,consentState:'authorized',privacy:'private',
   sourceMedia:[],star:{id:'fictional-star-a',position:[0,0,-4],scale:1},replayManifest:{id:'fictional-manifest-a',version:1,durationMs:10000,segments:['memory','emotion','pattern','return'].map((id,i)=>({id,label:id,caption:'Fictional',narratorLine:'Fictional',startsAtMs:i*2500,durationMs:2500}))}
  })
  const domain=()=>({mode:'limited',retentionDays:365,precise:false,replayVisible:true,lifeMapVisible:true,modelContext:false,sharingEnabled:false,automationEnabled:false,likenessEnabled:false})
