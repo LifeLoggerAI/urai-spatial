@@ -98,6 +98,7 @@ export function inspectR4SourceComposition(manifest, entries, head, expectedHead
     ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs', 'f4708011daae7f222076d697cfc200272c118f2e'],
     ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.d.mts','4b25379576a0adb48c150220d582b4dc621d003b'],
     ['urai-tier1/src/spatial/layout/HomeCC0ReviewRetainedGround.tsx','0e777c2fcdfc44537d365311c45c86a0d4a8ee0d'],
+    ['tests/r4-semantic-privacy-surface.test.mjs','400741b2ffd435c0ce8488cdd2e6296d89762d92'],
   ])
   if (!Array.isArray(candidateSources) ||
       candidateSources.length !== requiredCandidate.size) fail('CANDIDATE_SOURCE_CLAIMS_INVALID')
