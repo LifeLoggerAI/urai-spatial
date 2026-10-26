@@ -645,13 +645,13 @@
       "path": "cloudbuild.urai-verify.yaml",
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
       "expectedBlob": "9fa5178141be37d47d64e2fe0b7dba33fcb7ec2e",
-      "reason": "Self-branch verifier with 21 gates and exact source pin, nonrelease"
+      "reason": "Reviewed unified Cloud Build source-locked nonproduction native verification gates"
     },
     {
       "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
       "originBlob": "85a486f80b73e1eaf266df7fd2549827763c63e6",
       "expectedBlob": "0d8ca50ea561def3426797edf2821f0097e84cbe",
-      "reason": "Locked memories excluded from semantic results, counts, direct navigation and inspector"
+      "reason": "Hide locked or hidden metadata from semantic search, result counts and inspector selection"
     },
     {
       "path": "scripts/lib/ground-glb-source-anchors.mjs",
@@ -669,19 +669,25 @@
       "path": "tests/cloudbuild-shell-execution.test.mjs",
       "originBlob": "c0125c3d7f02400d3c690ec3de437e7182acc95c",
       "expectedBlob": "f18e13ce99791cc85d555105156cc89335ada8c9",
-      "reason": "Corrected synthetic Cloud Build shell test bounded before maintained application gates"
+      "reason": "Synthetic receipt tests must not accidentally execute real integration gates"
     },
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs",
       "originBlob": "2577369cfeb407fe135772edf82ca8153a3de94b",
       "expectedBlob": "3d866b1bc66a395c23e94233d1a65316a869c9b2",
-      "reason": "Unified locked and hidden memory selection safeguards in physical and semantic navigation"
+      "reason": "Unified physical/semantic selection now fails closed for locked, hidden, invalid star identity before rendering selected-world details"
     },
     {
       "path": "urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx",
       "originBlob": "2a9a0369ee27f1e050e0b59720cbc4f47124d6ad",
       "expectedBlob": "ae9bb40aaef1d27a693a12435dbf8fbe7f7ed8c5",
-      "reason": "3D pointer, restored URL and semantic selection deny locked and hidden memory disclosure"
+      "reason": "World pointer, custom event, and direct URL restore all enforce shared selectable-node guard before revealing selected-memory context"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.d.mts",
+      "originBlob": "815f8fa6646ce4ccc10d08057c724e5e21b4b31a",
+      "expectedBlob": "78844280b5cb5211e14b0d4db02ee51821d1a207",
+      "reason": "Exact TypeScript declaration for selected Life Map lock-protected helper"
     }
   ],
   "additionalAdmittedDonor": {
@@ -715,7 +721,7 @@
   "candidateSourceClaims": [
     {
       "path": "urai-tier1/src/components/lifemap/useLifeMapEvents.ts",
-      "blob": "f2619410f05f92d96a9824451089e2023a62c57e",
+      "blob": "b54024164039f6ba3bb1fabdac42e1c63c5f01e6",
       "reason": "Owner-scoped Firestore event and era normalization blocks explicit mismatched userId before Life Map projection"
     },
     {
@@ -726,17 +732,27 @@
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs",
       "blob": "9947d8086bb4777bd0de2eaf151ed3a36dbb5fd1",
-      "reason": "Route verifier validates exact action, origin and memory/manifest identifiers"
+      "reason": "Exact authored Focus/Replay route identity rejects duplicate private-memory keys and normalized path substitutions"
     },
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs",
-      "blob": "0943053fdf773df484be9ba2cddc32ec6023ac2c",
+      "blob": "f4708011daae7f222076d697cfc200272c118f2e",
       "reason": "Shared privacy and owner-scope normalization for user-specific Life Map streams"
+    },
+    {
+      "path": "urai-tier1/src/components/lifemap/lifeMapEventPrivacy.d.mts",
+      "blob": "4b25379576a0adb48c150220d582b4dc621d003b",
+      "reason": "Exact TypeScript owner and atomic Firestore projection declaration"
+    },
+    {
+      "path": "urai-tier1/src/spatial/layout/HomeCC0ReviewRetainedGround.tsx",
+      "blob": "0e777c2fcdfc44537d365311c45c86a0d4a8ee0d",
+      "reason": "Correct Three.js material construction while retaining shader variation"
     },
     {
       "path": "tests/r4-semantic-privacy-surface.test.mjs",
       "blob": "400741b2ffd435c0ce8488cdd2e6296d89762d92",
-      "reason": "Merged locked-search, owner-guarded selection and 3D path maintained privacy regression"
+      "reason": "Maintained locked-memory search and selected-world privacy regression exact source"
     }
   ]
 }

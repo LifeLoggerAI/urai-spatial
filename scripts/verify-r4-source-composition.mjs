@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const shaPattern = /^[a-f0-9]{40}$/
 const donorCounts = new Map([[1933, 74], [1934, 8], [1887, 3]])
-const overridePaths = new Set(['cloudbuild.urai-verify.yaml','urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx','urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx','urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs','tests/cloudbuild-shell-execution.test.mjs','scripts/lib/ground-glb-source-anchors.mjs','tests/ground-glb-source-anchors.test.mjs'])
+const overridePaths = new Set(['cloudbuild.urai-verify.yaml','urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx','urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx','urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs','tests/cloudbuild-shell-execution.test.mjs','scripts/lib/ground-glb-source-anchors.mjs','tests/ground-glb-source-anchors.test.mjs','urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.d.mts'])
 const validPath = p => typeof p === 'string' && p.length > 0 && p.length <= 500 &&
   !p.startsWith('/') && !p.includes('\\') && !p.includes('\0') &&
   p.split('/').every(part => part !== '' && part !== '.' && part !== '..' && part !== '.git')
@@ -44,9 +44,8 @@ export function inspectR4SourceComposition(manifest, entries, head, expectedHead
   const claimed = new Set(), usedOverrides = new Set(), counts = new Map()
   for (const claim of manifest.sourceClaims) {
     if (!validPath(claim.path) || claimed.has(claim.path) || !shaPattern.test(claim.blob) ||
-        !donors.has(claim.sourcePR) ||
-        (claim.sourceHead !== donors.get(claim.sourcePR) &&
-         !(claim.sourcePR === 1933 &&
+        !donors.has(claim.sourcePR) || !(claim.sourceHead === donors.get(claim.sourcePR) ||
+          (claim.sourcePR === 1933 &&
            claim.sourceHead === '2f941b70a0f23f07ed22fe6b1ba83368749fd56c' &&
            donors.get(1933) === '9e29e2d5bc0b72a11f51ab8a93d01846be870956')) ||
         !['added','modified'].includes(claim.change)) fail('SOURCE_CLAIM_INVALID')
@@ -93,11 +92,13 @@ export function inspectR4SourceComposition(manifest, entries, head, expectedHead
   const candidateSources = manifest.candidateSourceClaims
   const requiredCandidate = new Map([
     ['urai-tier1/src/components/lifemap/useLifeMapEvents.ts',
-      'f2619410f05f92d96a9824451089e2023a62c57e'],
+      'b54024164039f6ba3bb1fabdac42e1c63c5f01e6'],
     ['urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx', 'a6fefdd2e75448f9869202cf740726168c11caa3'],
     ['urai-tier1/src/components/lifemap/lifeMapSoftwareRouteIntent.mjs', '9947d8086bb4777bd0de2eaf151ed3a36dbb5fd1'],
-    ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs', '0943053fdf773df484be9ba2cddc32ec6023ac2c'],
-    ['tests/r4-semantic-privacy-surface.test.mjs', '400741b2ffd435c0ce8488cdd2e6296d89762d92'],
+    ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.mjs', 'f4708011daae7f222076d697cfc200272c118f2e'],
+    ['urai-tier1/src/components/lifemap/lifeMapEventPrivacy.d.mts','4b25379576a0adb48c150220d582b4dc621d003b'],
+    ['urai-tier1/src/spatial/layout/HomeCC0ReviewRetainedGround.tsx','0e777c2fcdfc44537d365311c45c86a0d4a8ee0d'],
+    ['tests/r4-semantic-privacy-surface.test.mjs','400741b2ffd435c0ce8488cdd2e6296d89762d92'],
   ])
   if (!Array.isArray(candidateSources) ||
       candidateSources.length !== requiredCandidate.size) fail('CANDIDATE_SOURCE_CLAIMS_INVALID')

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizeLifeMapEventPrivacy, lifeMapOwnerDocumentAllowed } from '../src/components/lifemap/lifeMapEventPrivacy.mjs';
+import { normalizeLifeMapEventPrivacy, lifeMapOwnerDocumentAllowed, projectLifeMapOwnerSnapshot } from '../src/components/lifemap/lifeMapEventPrivacy.mjs';
 
 const cases = [
   [{ privacyLevel: 'hidden' }, 'hidden'],
@@ -63,4 +63,26 @@ test('missing authenticated identity and malformed data are never admitted',()=>
 test('hidden privacy cannot be escalated by owner admission',()=>{
   const doc={userId:owner,privacy:'hidden',privacyLevel:'shareable'}
   assert.equal(lifeMapOwnerDocumentAllowed(doc,owner),true)
+})
+
+const snapshot=(id,data)=>({id,data:()=>data})
+test('snapshot projects owned and legacy records, never foreign records',()=>{
+ assert.deepEqual(projectLifeMapOwnerSnapshot([snapshot('a',{userId:owner}),snapshot('foreign',{userId:'x'}),snapshot('b',{})],owner,(id)=>({id})),{ok:true,items:[{id:'a'},{id:'b'}]})
+})
+test('malformed snapshot discards all records atomically',()=>{
+ assert.deepEqual(projectLifeMapOwnerSnapshot([snapshot('a',{}),{id:'b',data:()=>{throw Error('bad')}}],owner,id=>({id})),{ok:false,items:[]})
+})
+test('failed normalization cannot disclose prior private data',()=>{
+ assert.deepEqual(projectLifeMapOwnerSnapshot([snapshot('a',{}),snapshot('b',{})],owner,id=>{if(id==='b')throw Error('invalid');return {id}}),{ok:false,items:[]})
+})
+test('projected identity mismatch fails closed',()=>{
+ assert.deepEqual(projectLifeMapOwnerSnapshot([snapshot('a',{})],owner,()=>({id:'b'})),{ok:false,items:[]})
+})
+test('snapshot requires a real owner and valid document collection',()=>{
+ assert.deepEqual(projectLifeMapOwnerSnapshot(null,owner,()=>({id:'a'})),{ok:false,items:[]})
+ assert.deepEqual(projectLifeMapOwnerSnapshot([snapshot('a',{})],'demo-user',()=>({id:'a'})),{ok:false,items:[]})
+})
+test('hidden aliases remain private in projected records',()=>{
+ const doc={privacy:'hidden',privacyLevel:'shareable'}
+ assert.deepEqual(projectLifeMapOwnerSnapshot([snapshot('a',doc)],owner,(id,d)=>({id,privacy:normalizeLifeMapEventPrivacy(d)})),{ok:true,items:[{id:'a',privacy:'hidden'}]})
 })

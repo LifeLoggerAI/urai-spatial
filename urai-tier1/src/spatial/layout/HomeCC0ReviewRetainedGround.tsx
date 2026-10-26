@@ -20,9 +20,9 @@ export function HomeCC0ReviewRetainedGround({ scene }: { scene: THREE.Object3D }
         roughnessMap: maps.roughness, roughness: 1, metalness: 0,
         envMapIntensity: .28, side: THREE.FrontSide,
         userData: { uraiCC0ReviewSurface: 'ground' },
-        onBeforeCompile: applyHomeCC0MacroVariation,
-        customProgramCacheKey: homeCC0MacroProgramKey,
       })
+      current.onBeforeCompile = applyHomeCC0MacroVariation
+      current.customProgramCacheKey = homeCC0MacroProgramKey
       object.material = current
       changed.push({ mesh: object, previous, current })
     })
