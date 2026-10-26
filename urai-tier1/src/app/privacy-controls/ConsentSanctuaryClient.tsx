@@ -411,7 +411,12 @@ export default function ConsentSanctuaryClient() {
       else requestUraiWorldTravel({ destination: 'passport', href: '/passport' })
     }
     window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    const sanctuary = document.querySelector<HTMLElement>('main[data-route-owner="consent-sanctuary"]')
+    sanctuary?.setAttribute('data-privacy-keyboard-ready', 'true')
+    return () => {
+      sanctuary?.removeAttribute('data-privacy-keyboard-ready')
+      window.removeEventListener('keydown', onKeyDown)
+    }
   }, [pending, showAudit, phase, world.previousDestination])
 
   useEffect(() => { if (pending) requestAnimationFrame(() => confirmRef.current?.focus()) }, [pending])

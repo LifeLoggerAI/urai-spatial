@@ -36,7 +36,14 @@ export function subscribeLifeMapAuth({
     cancel(timeout);
     onResolved(userId);
   };
-  const fail = () => { cancel(timeout); deny(); };
+  // Listener errors are terminal. A late callback from that failed listener
+  // must never revive private access; a new subscription is required.
+  const fail = () => {
+    if (!active) return;
+    cancel(timeout);
+    deny();
+    active = false;
+  };
   try {
     unsubscribe = listen(resolve, fail);
   } catch {

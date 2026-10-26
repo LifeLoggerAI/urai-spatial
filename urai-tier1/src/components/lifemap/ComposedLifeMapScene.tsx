@@ -13,6 +13,12 @@ import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
+import { shouldHandleRealmEscape } from "@/spatial/world/realmEscapeEligibility.mjs";
+import { lifeMapPhysicalStarAction, lifeMapPhysicalReplayAllowed, lifeMapFocusAllowed, lifeMapNodeSelectable } from "./lifeMapPhysicalStarAction.mjs";
+import { lifeMapRotateFlightAxes, advanceLifeMapViewOrientation, lifeMapRotatedLookTarget } from "./lifeMapFlightOrientation.mjs";
+import { lifeMapApplyPointerLook } from "./lifeMapPointerLook.mjs";
+import { installLifeMapPointerInteraction } from "./lifeMapPointerInteraction.mjs";
+import { lifeMapStagePoint } from "./lifeMapStageContinuity.mjs";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
@@ -32,20 +38,18 @@ function tuple(vector: THREE.Vector3): [number, number, number] {
 }
 
 function selectedStagePoint(node: LifeMapNode, portrait: boolean) {
-  const scale = portrait ? new THREE.Vector3(0.92, 0.96, 0.92) : new THREE.Vector3(1.12, 1.12, 1.08);
-  const position = portrait ? new THREE.Vector3(0, -0.08, 0.9) : new THREE.Vector3(0, -0.16, 0.62);
-  return new THREE.Vector3(...node.position).multiply(scale).add(position);
+  return new THREE.Vector3(...lifeMapStagePoint(node.position, portrait));
 }
 
-function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean): CameraGoal {
+function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, origin?: THREE.Vector3): CameraGoal {
   const target = selectedStagePoint(node, portrait);
-  const overview = new THREE.Vector3(...OVERVIEW_POSITION);
+  const overview = origin?.clone() ?? new THREE.Vector3(...OVERVIEW_POSITION);
   const direction = overview.clone().sub(target);
   if (direction.lengthSq() < 0.01) direction.set(0, 0.1, 1);
   direction.normalize();
   const arrival = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF);
   arrival.y += 0.34;
-  if (phase === "departure") return { position: OVERVIEW_POSITION, target: tuple(target) };
+  if (phase === "departure") return { position: tuple(overview), target: tuple(target) };
   if (phase === "travel") {
     const travel = overview.clone().lerp(arrival, 0.5);
     travel.x += (Math.sign(target.x) || 1) * 1.25;
@@ -65,11 +69,11 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean):
 type LifeMapFlightVector = { x: number; y: number; z: number };
 function stepLifeMapFlight(
   offset: LifeMapFlightVector, velocity: LifeMapFlightVector,
-  held: ReadonlySet<string>, delta: number, reducedMotion: boolean,
+  held: ReadonlySet<string>, delta: number, reducedMotion: boolean, yaw = 0,
 ) {
   const dt = Math.max(0, Math.min(0.05, Number.isFinite(delta) ? delta : 0));
   const axis = (positive: string, negative: string) => Number(held.has(positive)) - Number(held.has(negative));
-  const input = { x: axis('KeyD', 'KeyA'), y: axis('KeyE', 'KeyQ'), z: axis('KeyS', 'KeyW') };
+  const input = lifeMapRotateFlightAxes({ x: axis('KeyD', 'KeyA'), y: axis('KeyE', 'KeyQ'), z: axis('KeyS', 'KeyW') }, yaw);
   const magnitude = Math.hypot(input.x, input.y, input.z);
   const speed = held.has('ShiftLeft') || held.has('ShiftRight') ? 9 : 5.5;
   const smoothing = reducedMotion ? 1 : 1 - Math.exp(-12 * dt);
@@ -98,11 +102,15 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
   const flightOffset = useRef(new THREE.Vector3());
   const flightVelocity = useRef(new THREE.Vector3());
   const heldFlightKeys = useRef(new Set<string>());
+  const flightOrientation = useRef({ yaw: 0, pitch: 0 });
+  const departureOrigin = useRef<THREE.Vector3 | null>(null);
+  const departureNodeId = useRef<string | null>(null);
+  const previousCameraPhase = useRef<JourneyPhase>("overview");
   useEffect(() => {
     // Selection, unloading and blur must never leave a motion key stuck.
     heldFlightKeys.current.clear();
     if (phase !== "overview") return;
-    const controls = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE']);
+    const controls = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
     const keyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
       const target = event.target;
@@ -118,6 +126,7 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
       if (event.code === 'KeyR') {
         event.preventDefault();
         flightOffset.current.set(0, 0, 0);
+        flightOrientation.current = { yaw: 0, pitch: 0 };
         flightVelocity.current.set(0, 0, 0);
         heldFlightKeys.current.clear();
         return;
@@ -147,16 +156,31 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
     };
   }, [phase]);
 
+  // Pointer drag belongs to the overview camera; physical star clicks and
+  // consent-gated Replay remain owned by LifeMapProductionWorld.
+  const { gl } = useThree();
+  useEffect(() => {
+    if (phase !== "overview") return;
+    return installLifeMapPointerInteraction({
+      canvas: gl.domElement,
+      hostWindow: window,
+      blocked: () => Boolean(document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"],[data-urai-adam-presence]')),
+      onLook: (dx, dy) => {
+        flightOrientation.current = lifeMapApplyPointerLook(flightOrientation.current, dx, dy);
+      },
+    });
+  }, [gl, phase]);
+
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
-    const goal = selected ? goalForNode(selected, phase, portrait) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
+    const goal = selected ? goalForNode(selected, phase, portrait, departureOrigin.current ?? undefined) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
     positionGoal.current.set(...goal.position);
     targetGoal.current.set(...goal.target);
     if (portrait) {
       if (phase === "overview") {
         positionGoal.current.set(0, 2.15, 16.6);
         targetGoal.current.set(0, 0.2, -4.6);
-      } else {
+      } else if (!(phase === "departure" && departureOrigin.current)) {
         const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.34);
         positionGoal.current.copy(targetGoal.current).add(offset);
         positionGoal.current.y += 0.42;
@@ -179,6 +203,19 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
   }, [camera, phase, resolve]);
 
   useFrame(({ pointer }, delta) => {
+    // Capture before resolving this frame's camera goal, never one effect later.
+    // The first departure frame must originate at the camera's explored pose.
+    if (phase === "overview") {
+      departureOrigin.current = null;
+      departureNodeId.current = null;
+    } else if (phase === "departure" && selected &&
+      (departureNodeId.current !== selected.id || previousCameraPhase.current !== "departure")) {
+      // Re-selecting the same star after arrival is a new journey, not a
+      // continuation of its old departure camera pose.
+      departureOrigin.current = camera.position.clone();
+      departureNodeId.current = selected.id;
+    }
+    previousCameraPhase.current = phase;
     const portrait = resolve();
     if (phase === "overview") {
       const focused = document.activeElement;
@@ -188,19 +225,29 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
         heldFlightKeys.current.clear();
         flightVelocity.current.set(0, 0, 0);
       }
+      flightOrientation.current = advanceLifeMapViewOrientation(flightOrientation.current, heldFlightKeys.current, delta);
       const offset = flightOffset.current, velocity = flightVelocity.current;
       const next = stepLifeMapFlight(
         { x: offset.x, y: offset.y, z: offset.z },
         { x: velocity.x, y: velocity.y, z: velocity.z },
-        heldFlightKeys.current, delta, reducedMotion,
+        heldFlightKeys.current, delta, reducedMotion, flightOrientation.current.yaw,
       );
       offset.set(next.offset.x, next.offset.y, next.offset.z);
       velocity.set(next.velocity.x, next.velocity.y, next.velocity.z);
     }
-    // Preserve exploratory departure; authored star travel then takes over.
-    const flightWeight = phase === "overview" || phase === "departure" ? 1 : phase === "travel" ? 0.5 : 0;
+    // The actual departure camera already includes exploration displacement;
+    // adding flight offset again would pull star travel away from its origin.
+    const flightWeight = phase === "overview" ? 1 : 0;
     positionGoal.current.addScaledVector(flightOffset.current, flightWeight);
     targetGoal.current.addScaledVector(flightOffset.current, flightWeight);
+    if (phase === "overview") {
+      const rotated = lifeMapRotatedLookTarget(
+        [positionGoal.current.x, positionGoal.current.y, positionGoal.current.z],
+        [targetGoal.current.x, targetGoal.current.y, targetGoal.current.z],
+        flightOrientation.current,
+      );
+      targetGoal.current.set(...rotated);
+    }
     if (phase === "overview" && !reducedMotion) {
       positionGoal.current.x += pointer.x * (portrait ? 0.45 : 1.05);
       positionGoal.current.y += pointer.y * (portrait ? 0.24 : 0.42);
@@ -381,7 +428,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const localSelectionId = useRef<string | null>(null);
   const overviewPending = useRef(overviewRequested);
   const restoredRoutePending = useRef(Boolean(!overviewRequested && queryNode));
-  const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
+  const selected = useMemo(() => nodes.find((node) => node.id === selectedId && lifeMapNodeSelectable(node)) || null, [nodes, selectedId]);
 
   const withIdentity = useCallback((next: URLSearchParams, memoryId?: string) => withLifeMapSelectionIdentity(params, next, memoryId), [params]);
 
@@ -407,6 +454,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   }, [phase, profile.reducedMotion, selected]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
+    if (!lifeMapNodeSelectable(node)) return;
     restoredRoutePending.current = false;
     overviewPending.current = false;
     localSelectionId.current = node.id;
@@ -414,48 +462,33 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     setSelectedId(node.id);
     if (profile.reducedMotion) setPhase("arrival");
     else setPhase("departure");
-    const next = withIdentity(new URLSearchParams(), node.id);
-    next.set("node", node.id);
-    if (explicitDemoRequested) next.set("memoryId", node.id);
-    else if (node.authorizedMemory && node.memoryId) next.set("memoryId", node.memoryId);
-    else next.delete("memoryId");
-    // Route metadata is not access authority. Never carry an unrelated private
-    // manifest forward, even if a star ID happens to match an older memory ID.
-    if (!explicitDemoRequested) {
-      next.delete("manifestId");
-      if (node.authorizedMemory && node.replayManifestId) next.set("manifestId", node.replayManifestId);
-    }
-    // Forward only this already-selected owner's exact movie and plan pair.
-    // Neither route metadata nor this source-side flag grants Studio authority.
-    if (!explicitDemoRequested && node.authorizedMemory && !node.locked && node.memoryId && node.replayManifestId) {
-      forwardPrivateMovieRouteSelection(next, params, {
-        memoryId: node.memoryId, manifestId: node.replayManifestId,
-        authorizedOwner: true, demo: false,
-      });
-    }
-    if (node.eraId) next.set("era", node.eraId);
-    router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [explicitDemoRequested, params, profile.reducedMotion, router, withIdentity]);
+    // Do not rewrite the same-route URL during authored star travel.
+    // LifeMapAccessGate intentionally rechecks auth on every query change;
+    // changing it here would unmount this camera before its journey finishes.
+    // Focus and Replay construct fresh, owner-scoped destination URLs below.
+  }, [profile.reducedMotion]);
 
   const overview = useCallback(() => {
     const retainedId = selectedId || queryNode;
+    const retainedNode = nodes.find((node) => node.id === retainedId && lifeMapNodeSelectable(node));
+    const safeRetainedId = retainedNode?.id ?? null;
     restoredRoutePending.current = false;
     overviewPending.current = true;
     localSelectionId.current = null;
     journeyToken.current += 1;
     setSelectedId(null);
     setPhase("overview");
-    const next = withIdentity(new URLSearchParams(), retainedId || undefined);
-    if (retainedId) {
-      const retainedNode = nodes.find((node) => node.id === retainedId);
-      next.set("node", retainedId);
-      if (explicitDemoRequested) next.set("memoryId", retainedId);
+    const next = withIdentity(new URLSearchParams(), safeRetainedId || undefined);
+    // Do not retain stale route identity from a revoked/locked selected star.
+    if (!safeRetainedId) next.delete("manifestId");
+    if (safeRetainedId) {
+      next.set("node", safeRetainedId);
+      if (explicitDemoRequested) next.set("memoryId", safeRetainedId);
       else if (retainedNode?.authorizedMemory && retainedNode.memoryId) next.set("memoryId", retainedNode.memoryId);
       else next.delete("memoryId");
     }
     if (!explicitDemoRequested) {
       next.delete("manifestId");
-      const retainedNode = nodes.find((node) => node.id === retainedId);
       if (retainedNode?.authorizedMemory && retainedNode.replayManifestId) next.set("manifestId", retainedNode.replayManifestId);
     }
     next.set("overview", "1");
@@ -464,6 +497,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
 
   const destinationHref = useCallback((route: "focus" | "replay") => {
     if (!selected) return "/life-map";
+    if (!(route === "focus" ? lifeMapFocusAllowed(selected, sourceMode) : lifeMapPhysicalReplayAllowed(selected, sourceMode))) return "/life-map";
     const next = withIdentity(new URLSearchParams(), selected.id);
     next.set("node", selected.id);
     if (explicitDemoRequested) next.set("memoryId", selected.id);
@@ -496,7 +530,17 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       }
     }
     return `/${route}?${next.toString()}`;
-  }, [explicitDemoRequested, params, phase, selected, withIdentity]);
+  }, [explicitDemoRequested, params, phase, selected, sourceMode, withIdentity]);
+
+  const activateWorldStar = useCallback((node: LifeMapNode) => {
+    if (!lifeMapNodeSelectable(node)) return;
+    const action = lifeMapPhysicalStarAction(node.id, selectedId, phase,
+      lifeMapPhysicalReplayAllowed(node, sourceMode));
+    if (action === "select") { selectNode(node); return; }
+    if (action === "replay" && selected?.id === node.id && webglState === "ready") {
+      router.push(destinationHref("replay"));
+    }
+  }, [destinationHref, phase, router, selectNode, selected, selectedId, sourceMode, webglState]);
 
   useEffect(() => {
     if (!overviewRequested) return;
@@ -509,7 +553,10 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
 
   useEffect(() => {
     if (overviewRequested || overviewPending.current || !queryNode || !nodes.length) return;
-    const node = nodes.find((candidate) => candidate.id === queryNode);
+    // A deep-link query is only an initial/restored selection. Do not let that
+    // stale URL identity override a newer local star selection in flight.
+    if (localSelectionId.current && localSelectionId.current !== queryNode) return;
+    const node = nodes.find((candidate) => candidate.id === queryNode && lifeMapNodeSelectable(candidate));
     if (!node) return;
     if (localSelectionId.current === node.id) {
       // Same-route URL synchronization for a locally initiated selection must not
@@ -532,7 +579,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.key !== "Escape" || (event.target instanceof HTMLElement && event.target.matches("input,textarea,select,[role='textbox']"))) return;
+      if (event.key !== "Escape" || !shouldHandleRealmEscape(event)) return;
       if (document.querySelector('#life-map-navigator, [role="dialog"][aria-modal="true"], [data-urai-adam-presence]')) return;
       event.preventDefault();
       if (selectedId) overview(); else returnHome();
@@ -589,6 +636,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
           phase={phase as LifeMapJourneyPhase}
           profile={profile}
           onSelect={selectNode}
+          onStarClick={activateWorldStar}
           cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} shellRef={shellRef} />}
           webglRecovery={null}
         />
@@ -600,7 +648,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
         left: 18, margin: 0, padding: "9px 12px", maxWidth: "min(345px,calc(100vw - 36px))",
         borderRadius: 12, background: "rgba(2,8,16,.75)", color: "#ceeaf6", fontSize: 12,
         pointerEvents: "none" }}>
-      Explore: W A S D move · Q E rise/fall · Shift faster · R recenter
+      Explore: W A S D move · Q E rise/fall · arrows or drag look · Shift faster · R recenter
     </p> : null}
     <header className="life-map-title">
       <span>URAI · LIFE MAP</span>
@@ -614,13 +662,13 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     </div>
 
     {thresholdsVisible ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}>
-      <button className="focus-threshold" data-destination-href={destinationHref("focus")} disabled={(!explicitDemoRequested && !selected!.authorizedMemory) || Boolean(selected!.locked)} onClick={() => router.push(destinationHref("focus"))}>
+      <button className="focus-threshold" data-life-map-threshold-route="focus" data-destination-href={destinationHref("focus")} disabled={!lifeMapFocusAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref("focus"))}>
         <span>Inspect</span><strong>Enter Focus</strong>
       </button>
-      <button className="replay-threshold" data-destination-href={destinationHref("replay")} disabled={!selected!.replayAvailable || selected!.locked || (!explicitDemoRequested && !selected!.authorizedMemory)} onClick={() => router.push(destinationHref("replay"))}>
+      <button className="replay-threshold" data-life-map-threshold-route="replay" data-destination-href={destinationHref("replay")} disabled={!lifeMapPhysicalReplayAllowed(selected, sourceMode)} onClick={() => router.push(destinationHref("replay"))}>
         <span>Cross threshold</span><strong>Replay</strong>
       </button>
-      <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
+      <button className="overview-return" data-life-map-overview-action="true" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
     </nav> : null}
 
     {!thresholdsVisible && sourceMode !== "signed-out" ? <nav className="life-map-overview-controls" aria-label="Life Map overview controls">
@@ -631,7 +679,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     {recovery ? <section className="life-map-recovery" role="status" aria-live="assertive">
       <h2>{webglState === "lost" ? "Visual field paused safely" : "Restoring visual field"}</h2>
       <p>Your selected memory, privacy state, and return position remain preserved.</p>
-      <button onClick={overview}>Open semantic overview</button>
+      <button data-life-map-overview-action="true" onClick={overview}>Open semantic overview</button>
       <button onClick={returnHome}>Return Home</button>
     </section> : null}
 

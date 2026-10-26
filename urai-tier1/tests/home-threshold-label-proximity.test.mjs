@@ -28,7 +28,20 @@ test('current original scene conditions labels without altering physical thresho
   assert.match(renderer, /function Thresholds\(\{ onGround, onLifeMap, nearby \}/)
   assert.match(renderer, /thresholds\.filter\(\(\{ destination \}\) => showHomeThresholdLabel\(phase, nearby, destination\)\)/)
   assert.match(renderer, /<Thresholds onGround=\{props\.onGround\} onLifeMap=\{props\.onLifeMap\} nearby=\{props\.nearby\} \/>/)
-  assert.match(renderer, /<Scene key=\{previewW13V3 \? 'w13-v3' : 'canonical'\} previewW13V3=\{previewW13V3\} nearby=\{nearby\}/)
+  // Additional review props are valid; all authority-bearing props must stay
+  // on the same canonical Scene invocation, regardless of their ordering.
+  const sceneMarker = "<Scene key={previewW13V3 ? 'w13-v3' : 'canonical'}"
+  assert.equal(renderer.split(sceneMarker).length - 1, 1, 'one canonical Home Scene invocation')
+  const sceneStart = renderer.indexOf(sceneMarker)
+  const sceneEnd = renderer.indexOf('/>', sceneStart)
+  assert.ok(sceneEnd > sceneStart && sceneEnd - sceneStart < 1500, 'bounded Scene JSX invocation')
+  const sceneTag = renderer.slice(sceneStart, sceneEnd + 2)
+  for (const prop of [
+    'previewW13V3={previewW13V3}',
+    'nearby={nearby}',
+    'onGround={startGround}',
+    'onLifeMap={startLifeMap}',
+  ]) assert.ok(sceneTag.includes(prop), `Scene must retain ${prop}`)
   assert.match(renderer, /name="home-ground-environmental-threshold"/)
   assert.match(renderer, /name="home-life-map-sky-lookout"/)
   assert.match(renderer, /onClick=\{\(e\) => \{ e\.stopPropagation\(\); onGround\(\) \}\}/)

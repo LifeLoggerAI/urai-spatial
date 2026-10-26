@@ -4,6 +4,7 @@ import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
 import { sanitizeMemoryId } from '../src/spatial/memory/selectedMemoryContract.ts'
+import { lifeMapSoftwareRouteDestination } from '../src/components/lifemap/lifeMapSoftwareRouteIntent.mjs'
 
 const source=fs.readFileSync(process.env.URAI_LIFEMAP_BOUNDARY_SOURCE ?? 'src/components/lifemap/LifeMapRouteBoundary.tsx','utf8')
 const compiled=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText
@@ -12,20 +13,21 @@ const arrival={lifeMapPhase:'arrival',lifeMapCameraX:'-3.3645',lifeMapCameraY:'1
 
 // Execute the actual mounted Boundary and its document capture handler. DOM,
 // React, and navigation edges are synthetic; this is not browser visual proof.
-function fixture({href=resolvedHref,software='true',disabled=false,label='Enter Focus',data={}}={}) {
+function fixture({href=resolvedHref,software='true',disabled=false,label='Enter Focus',action='focus',overviewAction=false,data={}}={}) {
   const listeners=[],cleanups=[],assigned=[],canceled=[]
   let frame=0,bubbleClicks=0
   class Element {
     closest(selector) {
       if(selector==='[data-testid="urai-true-3d-life-map"]')return root
       if(selector==='.life-map-thresholds button'||selector==='button')return button
+      if(selector==='button[data-life-map-overview-action="true"]')return button.dataset.lifeMapOverviewAction === 'true' ? button : null
       return null
     }
   }
   const root=new Element()
   root.dataset={softwareRenderer:software,...data}
   const button=new Element()
-  Object.assign(button,{disabled,textContent:label,dataset:{destinationHref:href}})
+  Object.assign(button,{disabled,textContent:label,dataset:{destinationHref:href,lifeMapThresholdRoute:action,lifeMapOverviewAction:overviewAction?'true':'false'}})
   const child=new Element()
   const location=new URL('http://localhost/life-map?demo=0&memoryId=unrelated-browser-memory&manifestId=unrelated-browser-manifest')
   location.assign=href=>assigned.push(href)
@@ -46,6 +48,7 @@ function fixture({href=resolvedHref,software='true',disabled=false,label='Enter 
     './LifeMapSemanticNavigator':{__esModule:true,default:()=>null},
     './lifeMapSelection':{LIFE_MAP_SELECTION_EVENT:'urai:life-map-select-node'},
     '@/spatial/memory/selectedMemoryContract':{sanitizeMemoryId},
+    './lifeMapSoftwareRouteIntent.mjs':{lifeMapSoftwareRouteDestination},
   }
   const module={exports:{}}
   vm.runInNewContext(compiled,{exports:module.exports,module,require:id=>{assert.ok(id in imports,'Unexpected dependency '+id);return imports[id]},window:browser,document,Element,URL,URLSearchParams})
@@ -105,7 +108,7 @@ for(const [name,patch] of [
 })
 
 test('Replay and nonarrival Focus thresholds preserve their existing destination',()=>{
-  for(const options of [{href:resolvedHref.replace('/focus?','/replay?'),label:'Replay',data:arrival},{data:{...arrival,lifeMapPhase:'approach'}}]) {
+  for(const options of [{href:resolvedHref.replace('/focus?','/replay?'),label:'Replay',action:'replay',data:arrival},{data:{...arrival,lifeMapPhase:'approach'}}]) {
     const f=fixture(options);f.click()
     assert.deepEqual(f.assigned,[options.href??resolvedHref])
   }
@@ -128,4 +131,27 @@ test('invalid destination authority is never intercepted for a software handoff'
 test('unmount removes both capture listeners and cancels the boundary frames',()=>{
   const f=fixture({data:arrival});f.unmount()
   assert.deepEqual(f.listeners,[]);assert.deepEqual(f.canceled,[1,2])
+})
+
+test('localized text cannot change a focus or replay handoff authored by the scene',()=>{
+  for (const [action,href] of [['focus',resolvedHref],['replay',resolvedHref.replace('/focus?','/replay?')]]) {
+    const f=fixture({action,href,label:'Zum Erinnerungsstern',data:arrival})
+    const event=f.click()
+    assert.equal(event.stopped,true)
+    assert.equal(new URL(f.assigned[0],'http://localhost').pathname,'/'+action)
+  }
+})
+test('mismatched route metadata, ambiguous IDs, and unmarked overview labels do not intercept clicks',()=>{
+  for (const options of [
+    {action:'replay',href:resolvedHref},
+    {action:'focus',href:resolvedHref+'&memoryId=another'},
+    {action:'overview',href:resolvedHref},
+  ]) {
+    const f=fixture({...options,data:arrival})
+    assert.equal(f.click().stopped,false)
+    assert.deepEqual(f.assigned,[])
+  }
+  const overviewLabel=fixture({action:'',label:'Overview',overviewAction:false,data:arrival})
+  assert.equal(overviewLabel.click().stopped,false)
+  assert.deepEqual(overviewLabel.assigned,[])
 })

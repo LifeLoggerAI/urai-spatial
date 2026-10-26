@@ -1,0 +1,148 @@
+# URAI: manually submitted, source-pinned, no-deployment verification.
+# No GitHub Actions, Cloud Build GitHub connection, production credentials,
+# real family media, or Firebase deployment is needed.
+# Submission is billable; obtain founder approval AND independently inspect
+# project, runner service account IAM, network/metadata privileges and costs.
+# Do not copy a production-linked project ID from a historical example.
+# Example ONLY AFTER authorized nonproduction project + least-privilege service
+# account are independently confirmed:
+# gcloud builds submit --no-source --config=cloudbuild.urai-verify.yaml \
+#   --project=<APPROVED_NONPRODUCTION_PROJECT> --region=us-central1 \
+#   --service-account=<APPROVED_MINIMAL_NONPRODUCTION_SERVICE_ACCOUNT> \
+#   --substitutions=_SOURCE_BRANCH=repair/operation-one-r148-original-urai-convergence-20261023,_SOURCE_SHA=<EXACT_40_CHAR_GIT_SHA>,_VERIFIER_SA_EMAIL=<APPROVED_PROJECT_LOCAL_VERIFIER_EMAIL>
+# This file never proves that unsetting credential env vars revokes metadata/IAM.
+# This configuration MUST NOT be submitted until those controls are verified.
+substitutions:
+  _SOURCE_BRANCH: 'repair/operation-one-r148-original-urai-convergence-20261023'
+  _SOURCE_SHA: 'EXPLICIT_PIN_REQUIRED'
+  _VERIFIER_SA_EMAIL: 'EXPLICIT_NONPRODUCTION_VERIFIER_REQUIRED'
+# Runtime code and dependency installers can request Google metadata tokens.
+# An explicit approved service account, with no production IAM rights, is required.
+# This requirement does NOT establish its IAM permissions; admin must verify first.
+serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/${_VERIFIER_SA_EMAIL}'
+steps:
+  - id: 'fetch-exact-source'
+    name: 'gcr.io/cloud-builders/git'
+    entrypoint: 'bash'
+    env:
+      - 'URAI_SOURCE_BRANCH=${_SOURCE_BRANCH}'
+      - 'URAI_SOURCE_SHA=${_SOURCE_SHA}'
+      - 'URAI_VERIFIER_SA=${_VERIFIER_SA_EMAIL}'
+      - 'URAI_CLOUD_PROJECT=${PROJECT_ID}'
+    args:
+      - '-ceu'
+      - |
+        # Never evaluate substitutions as shell commands.
+        [[ "$$URAI_SOURCE_BRANCH" =~ ^(repair|ci|verify)/[a-zA-Z0-9][a-zA-Z0-9._-]*(/[a-zA-Z0-9][a-zA-Z0-9._-]*)*$$ && "$$URAI_SOURCE_BRANCH" != *..* ]] || { echo 'INVALID_SOURCE_BRANCH'; exit 2; }
+        [[ "$$URAI_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'INVALID_SOURCE_SHA'; exit 2; }
+        [[ "$$URAI_VERIFIER_SA" =~ ^[a-z][a-z0-9-]{3,27}@[a-z][a-z0-9-]*\.iam\.gserviceaccount\.com$ ]] || { echo 'INVALID_VERIFIER_SA_EMAIL'; exit 2; }
+        [[ "$$URAI_VERIFIER_SA" == *"@$$URAI_CLOUD_PROJECT.iam.gserviceaccount.com" ]] || { echo 'VERIFIER_NOT_PROJECT_LOCAL'; exit 2; }
+        [[ "$$URAI_CLOUD_PROJECT" != "urai-4dc1d" ]] || { echo 'PRODUCTION_PROJECT_FORBIDDEN'; exit 2; }
+        export GIT_TERMINAL_PROMPT=0
+        git clone --depth=1 --single-branch --branch "$$URAI_SOURCE_BRANCH" https://github.com/LifeLoggerAI/urai-spatial.git /workspace/urai-spatial
+        head="$$(git -C /workspace/urai-spatial rev-parse HEAD)"
+        echo "URAI_EXACT_SOURCE_BRANCH=$$URAI_SOURCE_BRANCH"
+        echo "URAI_EXACT_SOURCE_SHA=$$head"
+        if [[ "$$head" != "$$URAI_SOURCE_SHA" ]]; then
+          echo "SOURCE_HEAD_MOVED: expected $$URAI_SOURCE_SHA; got $$head; refusing stale-source validation"
+          exit 3
+        fi
+        test -f /workspace/urai-spatial/scripts/run-first-private-memory-emulator.mjs
+        test -f /workspace/urai-spatial/apps/functions/src/createFirstPrivateMemory.ts
+        echo 'URAI_FULL_SOURCE_PATHS_PRESENT'
+
+  - id: 'node22-java21-firebase-emulator-verification'
+    name: 'node:22-trixie'
+    entrypoint: 'bash'
+    dir: 'urai-spatial'
+    env:
+      - 'URAI_SOURCE_SHA=${_SOURCE_SHA}'
+      - 'CI=true'
+      - 'NEXT_TELEMETRY_DISABLED=1'
+      - 'NEXT_PUBLIC_FIREBASE_API_KEY=fictional-emulator-only'
+      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=demo-urai-auth-journey.firebaseapp.com'
+      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-urai-auth-journey'
+      - 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=demo-urai-auth-journey.firebasestorage.app'
+      - 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=000000000000'
+      - 'NEXT_PUBLIC_FIREBASE_APP_ID=1:000000000000:web:fictional-emulator'
+    args:
+      - '-ceu'
+      - |
+        # These are code quality / emulator-only checks. Never deploy or use production authority.
+        export GCLOUD_PROJECT=demo-urai-auth-journey
+        export GCP_PROJECT=demo-urai-auth-journey
+        export GOOGLE_CLOUD_PROJECT=demo-urai-auth-journey
+        unset GOOGLE_APPLICATION_CREDENTIALS FIREBASE_TOKEN GOOGLE_OAUTH_ACCESS_TOKEN
+        unset URAI_MEDIA_STAGING_ENABLE URAI_MEDIA_STAGING_PROJECT URAI_MEDIA_STAGING_BUCKET FIREBASE_CONFIG
+        apt-get update -qq
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends openjdk-21-jre-headless ffmpeg python3
+        node -v
+        java -version
+        ffprobe -version | head -n 1
+        corepack enable
+        corepack prepare pnpm@10.0.0 --activate
+        pnpm --version
+        pnpm install --frozen-lockfile
+        node scripts/run-pnpm.mjs bootstrap:check
+        echo "URAI_VERIFIED_SOURCE_SHA=$$URAI_SOURCE_SHA"
+        # Receipts live in the same source tree as the verified code and every
+        # gate writes a source-bound JSON line to Cloud Logging as well.
+        # The local file alone is EPHEMERAL unless separately collected.
+        receipt_path="/workspace/urai-spatial/.urai-cloudbuild-gates.ndjson"
+        : > "$$receipt_path"
+        failed=0
+        run_gate() {
+          label="$$1"
+          shift
+          echo "=== BEGIN $$label ==="
+          result=0
+          if "$$@"; then
+            echo "=== PASS $$label ==="
+            outcome="PASS"
+          else
+            result="$$?"
+            echo "=== FAIL $$label exit=$$result ==="
+            outcome="FAIL"
+            failed=$$((failed + 1))
+          fi
+          # Gate names and source SHA are validated literal inputs; the JSON is
+          # intentionally one line per gate for dependable log extraction.
+          record="$$(printf '{"schema":"urai-cloudbuild-gate-v1","sourceSHA":"%s","gate":"%s","outcome":"%s","exitCode":%s}' "$$URAI_SOURCE_SHA" "$$label" "$$outcome" "$$result")"
+          printf '%s\n' "$$record" >> "$$receipt_path"
+          printf 'URAI_GATE_JSON=%s\n' "$$record"
+        }
+        run_gate source-integrity node scripts/check-source-integrity.mjs
+        run_gate lifemap-data-boundary node --test urai-tier1/tests/lifemap-data-boundary.test.mjs
+        run_gate lifemap-software-route node --test tests/life-map-software-route-intent.test.mjs
+        run_gate lifemap-software-handoff pnpm --dir urai-tier1 exec node --import tsx --test tests/lifemap-software-threshold-handoff.test.mjs
+        run_gate lifemap-semantic-privacy pnpm --dir urai-tier1 exec node --import tsx --test tests/lifemap-semantic-owner-contract.test.mjs tests/lifemap-signed-out-navigation-behavior.test.mjs
+        run_gate lifemap-hidden-event-privacy node --test urai-tier1/tests/lifemap-physical-star-action.test.mjs urai-tier1/tests/lifemap-hidden-canonical-fallback.test.mjs urai-tier1/tests/lifemap-event-coverage.test.mjs urai-tier1/tests/lifemap-event-privacy.test.mjs
+        run_gate ground-glb-source-anchors node --test tests/ground-glb-source-anchors.test.mjs
+        run_gate ground-active-workforce node --test tests/ground-active-workforce-verify.test.mjs
+        run_gate ground-active-owner node --test tests/ground-provider-active-owner-contract.test.mjs
+        run_gate unified-branch-authority node --test tests/unified-cloudbuild-branch.test.mjs
+        run_gate cloudbuild-shell-contract node --test tests/cloudbuild-shell-execution.test.mjs tests/cloudbuild-urai-source-pin-contract.test.mjs tests/cloudbuild-lifemap-loader-contract.test.mjs
+        run_gate source-authority node --test tests/rfinal-source-authority.test.mjs
+        run_gate firestore-java-contract node --test tests/firestore-java-runtime.test.mjs tests/firestore-rules-execution-authority.test.mjs
+        run_gate first-memory-preflight pnpm test:first-memory:emulator:preflight
+        run_gate first-memory-emulator pnpm test:first-memory:emulator
+        run_gate firestore-rules-emulator pnpm test:firestore-rules
+        run_gate functions-build pnpm --filter urai-functions build
+        run_gate functions-tests pnpm --filter urai-functions test
+        run_gate spatial-contract-tests pnpm --filter urai-tier1 test:unit
+        run_gate spatial-types pnpm --filter urai-tier1 typecheck
+        run_gate spatial-build pnpm --filter urai-tier1 build
+        echo "URAI_GATE_RECEIPT_LOCAL_PATH=$$receipt_path"
+        echo "URAI_GATE_RECEIPT_ROWS=$$(wc -l < "$$receipt_path")"
+        echo "URAI_VERIFICATION_FAILED_GATES=$$failed"
+        echo 'No live Firebase operations, secrets, family media, merge, or deployment were requested.'
+        if [[ "$$failed" -ne 0 ]]; then exit 1; fi
+        echo 'URAI_PINNED_SOURCE_CI_PASS (not a production launch certificate)'
+timeout: '7200s'
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: 'CLOUD_LOGGING_ONLY'
+tags:
+  - 'urai'
+  - 'no-deploy'
+  - 'synthetic-firebase-emulators'
