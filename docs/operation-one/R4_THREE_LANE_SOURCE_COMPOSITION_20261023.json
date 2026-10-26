@@ -644,14 +644,14 @@
     {
       "path": "cloudbuild.urai-verify.yaml",
       "originBlob": "c140159f264f19c986bc2bdb28645b49293509fa",
-      "expectedBlob": "df82e1cd1ba0dfcaeaac7b214a1b1385795f90c3",
-      "reason": "Unified nonproduction 21-gate Cloud Build verifier runs complete maintained native evidence runner tests at the exact source branch"
+      "expectedBlob": "9fa5178141be37d47d64e2fe0b7dba33fcb7ec2e",
+      "reason": "Reviewed unified Cloud Build source-locked nonproduction native verification gates"
     },
     {
       "path": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
       "originBlob": "85a486f80b73e1eaf266df7fd2549827763c63e6",
-      "expectedBlob": "e6f3356594b763c49a7df479fa17c17d699379f0",
-      "reason": "Unified semantic inspector denies locked direct URLs, and search results identify locked nodes as disabled with no activation"
+      "expectedBlob": "0d8ca50ea561def3426797edf2821f0097e84cbe",
+      "reason": "Hide locked or hidden metadata from semantic search, result counts and inspector selection"
     },
     {
       "path": "scripts/lib/ground-glb-source-anchors.mjs",
@@ -668,8 +668,8 @@
     {
       "path": "tests/cloudbuild-shell-execution.test.mjs",
       "originBlob": "c0125c3d7f02400d3c690ec3de437e7182acc95c",
-      "expectedBlob": "fd039197296baf9dd0587a8d3bdbae14ab42a1ca",
-      "reason": "Unified source-only Cloud Build shell contract now uses the exact reviewed nonproduction verifier branch"
+      "expectedBlob": "f18e13ce99791cc85d555105156cc89335ada8c9",
+      "reason": "Synthetic receipt tests must not accidentally execute real integration gates"
     },
     {
       "path": "urai-tier1/src/components/lifemap/lifeMapPhysicalStarAction.mjs",
@@ -748,6 +748,11 @@
       "path": "urai-tier1/src/spatial/layout/HomeCC0ReviewRetainedGround.tsx",
       "blob": "0e777c2fcdfc44537d365311c45c86a0d4a8ee0d",
       "reason": "Correct Three.js material construction while retaining shader variation"
+    },
+    {
+      "path": "tests/r4-semantic-privacy-surface.test.mjs",
+      "blob": "400741b2ffd435c0ce8488cdd2e6296d89762d92",
+      "reason": "Maintained locked-memory search and selected-world privacy regression exact source"
     }
   ]
 }
