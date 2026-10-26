@@ -443,6 +443,7 @@ test('fresh direct Privacy entry Escape uses the canonical Passport fallback', a
   await expect(world).toHaveAttribute('data-world-destination', 'privacy-controls')
   await expect(world).toHaveAttribute('data-world-transition', 'idle')
   await expect(page.locator('main[data-route-owner="consent-sanctuary"]')).toHaveAttribute('data-privacy-source', /^(signed-out|unavailable)$/)
+  await expect(page.locator('main[data-route-owner="consent-sanctuary"]')).toHaveAttribute('data-privacy-keyboard-ready', 'true')
   await page.keyboard.press('Escape')
   await expect(page).toHaveURL(/\/passport\/?(?:\?|$)/)
   await expect(page.locator('main[data-route-owner="passport-ownership-vault"]')).toBeVisible()
