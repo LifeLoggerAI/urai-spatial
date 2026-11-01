@@ -1,0 +1,147 @@
+name: Genesis Original Native Motion - Internal HOLD
+
+# Runs only as a scoped draft PR CI verification on the existing isolated original
+# consumer-source PR. This is NOT a release, a publish, or a paid browser dispatch.
+on:
+  pull_request:
+    types: [synchronize]
+    branches: ['repair/release-closure-integration-20261007']
+    paths:
+      - '.github/workflows/genesis-original-native-motion-hold.yml'
+      - 'scripts/genesis-original-native-motion-hold.mjs'
+      - 'scripts/genesis-original-canonical-motion-hold.mjs'
+      - 'scripts/genesis-original-motion-intervals.mjs'
+      - 'tests/genesis-original-native-motion-hold.test.mjs'
+      - 'tests/genesis-original-motion-intervals.test.mjs'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: genesis-original-native-motion-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  capture-unchanged-original:
+    if: >-
+      github.repository == 'LifeLoggerAI/urai-spatial' &&
+      github.event.pull_request.number == 1850 &&
+      github.event.pull_request.draft == true &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: '0'
+      ORIGINAL_SHA: '94c8a2cf68a436a0c49e80b3a09578935df12d48'
+      ORIGINAL_ARTIFACT_ID: '12145312224'
+      ORIGINAL_ARCHIVE_SHA256: '241902126b0f3a73e0a26b59e303bfc8d90289a008e9b3d4e2f238518f284fbe'
+      NO_PUBLIC_PUBLISHING: 'true'
+      NO_PRIVATE_MEDIA: 'true'
+      NO_NATIVE_DISPATCH: 'true'
+      URAI_GENESIS_HOLD_PUBLIC_KEY: "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAueb/1eroC3/BTIuLt1pV\n0w5DQ4rS5v2vnUcvtE4cG4zODTo/Pg0pfGXvb/DI2T1ycTa9NYJzbKQC5kowxp4v\n6NrS1EA9rGrsseZSLyF+PU/m16toq8FoI65JB7OwHuNC+qiTTtZy+nq311R2eAfT\nqFrQb128Lxr1sd74uFtliXgLNbEQ2Az+IpP5vGUVaguAFxJ/dMaEz7r6d4UPTghq\n9ocEGGkILIHGYWkIRanqM9T/VPH1zirZENwnetP2FyenTd17YDjeO5joOYEZK3C9\nx4x5f6vMv3aiMjYc6MAUM2n/kqHZOBx46AYQEG01LDHKsgdHLxMDtZqUW4a10Mud\nGlzJ9Ox1uOZ8w5OnRPSWcCpSoCElrLC6Ts/KpMGgKuttcrSJAosdSXnHMcwl9Jl2\nSWhTjxCuV2a2asvPBkAYtBqIh60wHSGHob4v/XrWyjihi/DYk9xfVSEzO4eq1YYb\n8CEtt1+1ZGNgbfYX4KoQvo91jA95HZlX2Kn10daezB9fAgMBAAE=\n-----END PUBLIC KEY-----"
+    steps:
+      - name: Checkout existing isolated capture PR (never main)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify draft tool source and exact historical source constraint
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          node --check scripts/genesis-original-native-motion-hold.mjs
+          node --check scripts/genesis-original-canonical-motion-hold.mjs
+          node --check scripts/genesis-original-motion-intervals.mjs
+          node --test tests/genesis-original-native-motion-hold.test.mjs tests/genesis-original-motion-intervals.test.mjs
+          test "${{ github.event.pull_request.base.ref }}" = 'repair/release-closure-integration-20261007'
+
+      - name: Download the retained original compiled GitHub Actions artifact by ID
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p original
+          curl --fail --location --retry 3 --silent --show-error \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/LifeLoggerAI/urai-spatial/actions/artifacts/${ORIGINAL_ARTIFACT_ID}/zip" \
+            --output original-workflow-artifact.zip
+          printf '%s  %s\n' "$ORIGINAL_ARCHIVE_SHA256" original-workflow-artifact.zip | sha256sum -c -
+          unzip -q original-workflow-artifact.zip -d original
+          test -f original/artifacts/consumer-export/real-static-manifest.json
+          test -f original/urai-tier1/out/home/index.html
+          test -f original/urai-tier1/out/replay/index.html
+
+      - name: Install original proof runner's already-established browser stack
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - name: Setup Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install locked dependencies and Chromium with FFmpeg
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+          pnpm --dir urai-tier1 exec playwright --version
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
+
+      - name: Check original compiled application integrity without a browser
+        shell: bash
+        run: |
+          node scripts/genesis-original-native-motion-hold.mjs --original original --verify-only --output artifacts/genesis-native-source-check
+
+      - name: Record the continuous original Home-Ascent-LifeMap-Focus-Replay-Return journey (HOLD)
+        id: canonical
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/genesis-native-motion-hold
+          node scripts/genesis-original-canonical-motion-hold.mjs \
+            --original original \
+            --output artifacts/genesis-native-motion-hold \
+            2>&1 | tee artifacts/genesis-native-motion-hold/canonical-runner.log
+
+      - name: Independently inspect accessible original scene motion if canonical continuity fails
+        if: ${{ failure() && steps.canonical.outcome == 'failure' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/genesis-native-motion-fallback
+          node scripts/genesis-original-native-motion-hold.mjs \
+            --original original \
+            --output artifacts/genesis-native-motion-fallback \
+            2>&1 | tee artifacts/genesis-native-motion-fallback/runner.log
+
+      - name: Upload encrypted-only motion and readable failure receipts, not raw footage
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: genesis-original-native-motion-HOLD-94c8a2-${{ github.run_id }}
+          path: |
+            artifacts/genesis-native-motion-hold/*.sealed
+            artifacts/genesis-native-motion-hold/*.json
+            artifacts/genesis-native-motion-hold/*.txt
+            artifacts/genesis-native-motion-hold/*.log
+            artifacts/genesis-native-motion-fallback/*.sealed
+            artifacts/genesis-native-motion-fallback/*.json
+            artifacts/genesis-native-motion-fallback/*.txt
+            artifacts/genesis-native-motion-fallback/*.log
+          if-no-files-found: warn
+          retention-days: 1
+          compression-level: 3
