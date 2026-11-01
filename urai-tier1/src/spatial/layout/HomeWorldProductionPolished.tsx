@@ -8,6 +8,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { isOrbState, resolveAuthorizedHomeReviewOrbState, resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, URAI_EMBODIED_MOVEMENT_INPUT_EVENT, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import HomeSkyInteraction from '@/spatial/navigation/HomeSkyAscentInteraction'
+import { sampleHomeAscentFlight } from '@/spatial/navigation/homeAscentFlight'
 import { useSceneStore } from '@/spatial/store/useSceneStore'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { HomeInterpretiveSplatEnvironment, resolveHomeInterpretiveSplatAsset } from '@/spatial/home/HomeInterpretiveSplat'
@@ -769,6 +770,8 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
   const lastNearby = useRef<Nearby>(null)
   const transitionStarted = useRef<number | null>(null)
   const transitionOrigin = useRef(new THREE.Vector3())
+  const transitionLookOrigin = useRef(new THREE.Vector3())
+  const ascentFrameCallbacks = useRef(0)
   const transitionIssued = useRef(false)
   const lastTransitionSequence = useRef<TransitionSequence>('idle')
   const desired = useRef(new THREE.Vector3())
@@ -830,6 +833,8 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
       if (transitionStarted.current === null) {
         transitionStarted.current = clock.elapsedTime
         transitionOrigin.current.copy(camera.position)
+        transitionLookOrigin.current.copy(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(8)).add(camera.position)
+        ascentFrameCallbacks.current = 0
       }
       const duration = reducedMotion ? .42 : ascending ? ASCENT_DURATION_SECONDS : GROUND_DESCENT_DURATION_SECONDS
       const t = THREE.MathUtils.smootherstep(THREE.MathUtils.clamp((clock.elapsedTime - transitionStarted.current) / duration, 0, 1), 0, 1)
@@ -838,8 +843,22 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
         : t < .16 ? 'ground:opening' : t < .84 ? 'ground:traversal' : 'ground:closing'
       if (sequence !== lastTransitionSequence.current) { lastTransitionSequence.current = sequence; onTransitionSequence(sequence) }
       if (ascending) {
-        camera.position.lerpVectors(transitionOrigin.current, new THREE.Vector3(0, 44, -54), t)
-        camera.lookAt(0, 20 + t * 28, -38 - t * 24)
+        // Real camera flight above native sanctuary, not a state-only sky cut.
+        const pose = sampleHomeAscentFlight(t,
+          [transitionOrigin.current.x, transitionOrigin.current.y, transitionOrigin.current.z],
+          [transitionLookOrigin.current.x, transitionLookOrigin.current.y, transitionLookOrigin.current.z],
+          reducedMotion)
+        camera.position.set(...pose.position)
+        camera.lookAt(...pose.lookAt)
+        ascentFrameCallbacks.current += 1
+        if (owner.current) {
+          // Frame callbacks are NOT proof of finished WebGL draws or moving pixels.
+          owner.current.dataset.homeAscentR3fCallbacks = String(ascentFrameCallbacks.current)
+          owner.current.dataset.homeAscentRendererFrame = String(gl.info.render.frame)
+          owner.current.dataset.homeAscentCameraX = camera.position.x.toFixed(4)
+          owner.current.dataset.homeAscentCameraY = camera.position.y.toFixed(4)
+          owner.current.dataset.homeAscentCameraZ = camera.position.z.toFixed(4)
+        }
         store.setProgress(t)
         if (t >= 1 && !transitionIssued.current) { transitionIssued.current = true; requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' }) }
       } else {
@@ -960,8 +979,9 @@ function World001V3Preview() {
 }
 
 function Scene(props: { previewW13V3: boolean; nearby: Nearby; input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onGroundComplete: () => void; onLifeMap: () => void; onReady: () => void; onTransitionSequence: (value: TransitionSequence) => void; groundDescent: boolean; reducedMotion: boolean; reducedStimulation: boolean; orbState: OrbState }) {
-  const phase = useSceneStore((state) => state.phase)
-  const cosmic = phase === 'ASCENT'
+  // Preserve the authored Home sky/lighting throughout real camera flight.
+  // LifeMap switches to its own cosmos only after navigation completes.
+  const cosmic = false
   const orbAnchor = props.previewW13V3 ? W13_V3_ORB : ORB
   const orbGroundY = props.previewW13V3 ? W13_V3_FLOOR_Y : terrainHeight(ORB.x, ORB.z)
   return <>
