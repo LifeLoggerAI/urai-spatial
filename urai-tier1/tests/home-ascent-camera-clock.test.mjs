@@ -60,7 +60,7 @@ test('normal ascent retains its duration, endpoint and exactly one canonical adm
   r.tick(0, 5); r.tick(3.399, 3.399)
   assert.equal(r.travels.length, 0)
   r.tick(3.4, .001); r.tick(4, .6)
-  near(r.camera.position, new THREE.Vector3(-1.5, 39, -12))
+  near(r.camera.position, new THREE.Vector3(-1.5, 39, -6))
   assert.deepEqual(r.travels, [{ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' }])
 })
 

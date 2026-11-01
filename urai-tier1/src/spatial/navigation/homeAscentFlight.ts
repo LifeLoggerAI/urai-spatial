@@ -13,6 +13,8 @@ const mix3 = (a: HomeAscentPoint, b: HomeAscentPoint, t: number): HomeAscentPoin
  * Stay over the real modeled sanctuary and look back at its physical terrain
  * while rising, then turn into the sky for the existing LifeMap handoff.
  * The previous 44m/-54m straight-line flight aimed into empty sky almost at once.
+ * The camera must remain south of its -9m sanctuary look target until skyward turn,
+ * or it will look backward near the end of the climb.
  * Reduced-motion leaves the camera stationary: the route can crossfade instead.
  */
 export function sampleHomeAscentFlight(
@@ -23,7 +25,7 @@ export function sampleHomeAscentFlight(
 ): HomeAscentPose {
   if (reducedMotion) return { position: [...origin], lookAt: [...initialLookAt] }
   const t = clamp01(progress)
-  const position = mix3(origin, [-1.5, 39, -12], ease(t))
+  const position = mix3(origin, [-1.5, 39, -6], ease(t))
   const sanctuaryAim: HomeAscentPoint = [0, 0.8, -9]
   const landscapeLook = mix3(initialLookAt, sanctuaryAim, ease(t / 0.18))
   const skyLook: HomeAscentPoint = [0, 47, -30]
