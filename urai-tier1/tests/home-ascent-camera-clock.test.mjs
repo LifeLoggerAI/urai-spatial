@@ -23,7 +23,7 @@ function rig(reducedMotion = false) {
   const output = {}
   vm.runInNewContext(code, {
     exports: output, THREE,
-    useThree: () => ({ camera, size: { width: 1440, height: 900 }, invalidate() {}, gl: { domElement: { closest: () => null } } }),
+    useThree: () => ({ camera, size: { width: 1440, height: 900 }, invalidate() {}, gl: { info: { render: { frame: 0 } }, domElement: { closest: () => null } } }),
     useRef: current => ({ current }), useCallback: callback => callback, useLayoutEffect: callback => callback(), useEffect() {},
     useFrame: callback => { frame = callback }, useSceneStore: { getState: () => state },
     homeWalkSurfaceHeight: () => 0, stepEmbodiedMotion() {}, resolveHomeSolidPenetration() {}, HOME_NAVIGATION_OBSTACLES: [],
