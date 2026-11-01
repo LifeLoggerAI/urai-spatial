@@ -78,11 +78,12 @@ try {
   const response=await page.goto(url.toString(),{waitUntil:'domcontentloaded',timeout:40_000})
   if(response?.status()!==200) throw Error('PATCHED_HOME_URL_NOT_200')
   const home=page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+  // Never mistake asynchronous Home mounting / asset readiness for a stale build.
+  await home.waitFor({state:'visible',timeout:90_000})
+  await page.waitForFunction(() => document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')?.getAttribute('data-home-assets-ready')==='true',null,{timeout:90_000})
   const actualBuildRevision=await home.getAttribute('data-home-genesis-build-revision')
   if(actualBuildRevision!==expectedCommit)throw Error('RUNNING_WEBGL_BUILD_REVISION_MISMATCH')
   receipt.runningWebglBuildRevision=actualBuildRevision
-  await home.waitFor({state:'visible',timeout:90_000})
-  await page.waitForFunction(() => document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')?.getAttribute('data-home-assets-ready')==='true',null,{timeout:90_000})
   const video=page.video()
   if(!video)throw Error('GENUINE_PLAYWRIGHT_VIDEO_CAPTURE_UNAVAILABLE')
   const { proveHomeSkyAscent } = await import('./home-sky-ascent-proof.mjs')
