@@ -26,7 +26,9 @@ export function createHomeSkyTapGate({ isReady, isVisibleSkyAt, onAscent }: {
     cancel,
     down(event: HomeSkyPointer) {
       cancel()
-      if (!valid(event) || !isReady()) return
+      // The press must begin on visible sky too. A release drifting off an Orb
+      // or Ground hit into adjacent sky is not a sky-tap ascent gesture.
+      if (!valid(event) || !isReady() || !isVisibleSkyAt(event.clientX, event.clientY)) return
       down = { pointerId:event.pointerId, isPrimary:event.isPrimary, button:event.button, clientX:event.clientX, clientY:event.clientY, timeStamp:event.timeStamp }
     },
     move(event: HomeSkyPointer) {
