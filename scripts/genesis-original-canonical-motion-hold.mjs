@@ -124,11 +124,19 @@ try {
               const prefix='desktop-pointer-keyboard-ascent-'
               if(!file.startsWith(prefix)||!file.endsWith('.png'))return result
               const id=file.slice(prefix.length,-4)
+              // Ensure return footage can satisfy the original four-second
+              // editorial cut, without slowing or manufacturing pixels.
+              if(id==='return-home') {
+                const replayEnd=timeline.find(entry=>entry.id==='replay-playback-end')
+                if(!replayEnd)throw Error('RETURN_SOURCE_PLAYBACK_CHECKPOINT_MISSING')
+                const elapsed=Date.now()-start-replayEnd.ms
+                if(elapsed<4500)await delay(4500-elapsed)
+              }
               mark(id)
               if(id==='home')await delay(4500)
-              if(id==='life-map-overview')await delay(3500)
+              if(id==='life-map-overview')await delay(5500)
               if(id==='memory-star')await delay(800)
-              if(id==='focus')await delay(3000)
+              if(id==='focus')await delay(3500)
               if(id==='replay') {
                 const root=page.getByTestId('cinematic-replay-client')
                 const play=root.getByRole('button',{name:'Continue memory',exact:true})
