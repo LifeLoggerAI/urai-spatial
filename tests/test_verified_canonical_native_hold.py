@@ -213,4 +213,56 @@ class GenuineOnlyTests(unittest.TestCase):
             self.assertFalse((folder / 'GENESIS_NATIVE_SOURCE_MANIFEST_HOLD.json').exists())
 
 
+    def test_review_media_acceptance_requires_720_h264_aac_frames(self):
+        def probe():
+            return {'streams': [
+                {'codec_type':'video', 'codec_name':'h264', 'width':540, 'height':960,
+                 'avg_frame_rate':'24/1', 'nb_read_frames':'720'},
+                {'codec_type':'audio', 'codec_name':'aac'}],
+                'format': {'duration':'30.018'}}
+        self.assertEqual(m.inspect_review_metadata(probe())['frameCount'], 720)
+        malformed = probe(); malformed['streams'][0]['nb_read_frames'] = '719'
+        with self.assertRaisesRegex(m.HoldRefusal, 'REVIEW_COPY_CODEC_RESOLUTION_FPS_OR_FRAMECOUNT_FAILED'):
+            m.inspect_review_metadata(malformed)
+        malformed = probe(); malformed['streams'][0]['codec_name'] = 'vp9'
+        with self.assertRaisesRegex(m.HoldRefusal, 'REVIEW_COPY_CODEC_RESOLUTION_FPS_OR_FRAMECOUNT_FAILED'):
+            m.inspect_review_metadata(malformed)
+        malformed = probe(); malformed['streams'][1]['codec_name'] = 'pcm_s16le'
+        with self.assertRaisesRegex(m.HoldRefusal, 'REVIEW_COPY_AAC_AUDIO_MISSING'):
+            m.inspect_review_metadata(malformed)
+        malformed = probe(); malformed['format']['duration'] = '29.5'
+        with self.assertRaisesRegex(m.HoldRefusal, 'REVIEW_COPY_30_SECOND_DURATION_FAILED'):
+            m.inspect_review_metadata(malformed)
+        malformed = probe(); malformed['format']['duration'] = 'nan'
+        with self.assertRaisesRegex(m.HoldRefusal, 'REVIEW_COPY_30_SECOND_DURATION_FAILED'):
+            m.inspect_review_metadata(malformed)
+
+    def test_cover_requires_real_decodable_vertical_png(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as td:
+            p=Path(td)/'cover.png'
+            Image.new('RGB',(1080,1920),(2,4,8)).save(p)
+            m.validate_cover(p)
+            Image.new('RGB',(720,1280),(2,4,8)).save(p)
+            with self.assertRaisesRegex(m.HoldRefusal, 'NATIVE_COVER_FORMAT_OR_DIMENSIONS_FAILED'):
+                m.validate_cover(p)
+            p.write_bytes(b'bad png content')
+            with self.assertRaisesRegex(m.HoldRefusal, 'NATIVE_COVER_DECODE_FAILED'):
+                m.validate_cover(p)
+
+    def test_review_full_decode_failure_cannot_pass(self):
+        from unittest.mock import patch
+        review = Path('/nonexistent/review.mp4')
+        probe = {'streams': [
+            {'codec_type':'video','codec_name':'h264','width':540,'height':960,
+             'avg_frame_rate':'24/1','nb_read_frames':'720'},
+            {'codec_type':'audio','codec_name':'aac'}],
+            'format':{'duration':'30.01'}}
+        class FailedProcess:
+            returncode = 1
+        with patch.object(m, 'ffprobe', return_value=probe), patch.object(m.subprocess, 'run', return_value=FailedProcess()):
+            with self.assertRaisesRegex(m.HoldRefusal, 'REVIEW_COPY_FULL_DECODE_FAILED'):
+                m.validate_review(review)
+
+
 if __name__=='__main__':unittest.main()

@@ -245,6 +245,45 @@ def validate_master(file: Path) -> dict:
 
 
 
+def inspect_review_metadata(info: dict) -> dict:
+    """Validate the actual lightweight review encoding, not only its dimensions."""
+    v = next((s for s in info.get('streams', []) if s.get('codec_type') == 'video'), {})
+    a = next((s for s in info.get('streams', []) if s.get('codec_type') == 'audio'), {})
+    require(v.get('codec_name') == 'h264' and v.get('width') == 540 and v.get('height') == 960
+            and v.get('avg_frame_rate') == '24/1' and v.get('nb_read_frames') == '720',
+            'REVIEW_COPY_CODEC_RESOLUTION_FPS_OR_FRAMECOUNT_FAILED')
+    require(a.get('codec_name') == 'aac', 'REVIEW_COPY_AAC_AUDIO_MISSING')
+    duration = info.get('format', {}).get('duration')
+    try:
+        duration = float(duration)
+    except (ValueError, TypeError, OverflowError):
+        raise HoldRefusal('REVIEW_COPY_30_SECOND_DURATION_FAILED') from None
+    require(math.isfinite(duration) and abs(duration - 30.0) < 0.06, 'REVIEW_COPY_30_SECOND_DURATION_FAILED')
+    return {'durationSeconds': duration, 'frameCount': 720, 'resolution': [540, 960],
+            'fps': '24/1', 'videoCodec': 'h264', 'audioCodec': 'aac'}
+
+
+def validate_review(file: Path) -> dict:
+    details = inspect_review_metadata(ffprobe(file))
+    decoded = subprocess.run(['ffmpeg', '-v', 'error', '-i', str(file), '-f', 'null', '-'],
+                             capture_output=True, timeout=90)
+    require(decoded.returncode == 0, 'REVIEW_COPY_FULL_DECODE_FAILED')
+    return details
+
+
+def validate_cover(file: Path):
+    from PIL import Image
+    try:
+        with Image.open(file) as im:
+            require(im.format == 'PNG' and im.size == (1080, 1920) and im.mode in ('RGB', 'RGBA'),
+                    'NATIVE_COVER_FORMAT_OR_DIMENSIONS_FAILED')
+            im.verify()
+    except (OSError, SyntaxError) as e:
+        raise HoldRefusal('NATIVE_COVER_DECODE_FAILED:' + str(e)) from e
+
+
+
+
 # Generate private, standalone provenance and reproducibility documents only
 # after a real native master has passed physical media inspection. No keys.
 ORIGINAL_ARCHIVE_SHA256 = '241902126b0f3a73e0a26b59e303bfc8d90289a008e9b3d4e2f238518f284fbe'
@@ -393,11 +432,10 @@ def build(args):
         draw.text((62, 1782), 'PRIVATE HOLD / NOT APPROVED', fill=(224, 183, 128), font=small)
         png = output / 'GENESIS-D01_THE_WORLD_OPENS_NATIVE_cover.png'
         cover.save(png, optimize=True)
+        validate_cover(png)
         review = output / 'GENESIS-D01_THE_WORLD_OPENS_NATIVE_review_540x960.mp4'
         run_ffmpeg(['-i', str(master), '-vf', 'scale=540:960', '-c:v', 'libx264', '-preset', 'fast', '-crf', '26', '-c:a', 'aac', '-b:a', '96k', '-movflags', '+faststart', str(review)])
-        review_info = ffprobe(review)
-        review_video = next((s for s in review_info['streams'] if s.get('codec_type') == 'video'), {})
-        require(review_video.get('width') == 540 and review_video.get('height') == 960, 'REVIEW_COPY_DIMENSIONS_FAILED')
+        review_details = validate_review(review)
         ledger = {
             'schema': 'urai-genesis-D01-verified-continuous-native-render-hold/v1',
             'createdAtUtc': datetime.now(timezone.utc).isoformat(),
@@ -408,7 +446,7 @@ def build(args):
             'editorialZipSha256': EDITORIAL_SHA256,
             'master': {'name': master.name, 'sha256': file_sha256(master), **details},
             'cover': {'name': png.name, 'sha256': file_sha256(png)},
-            'review': {'name': review.name, 'sha256': file_sha256(review)},
+            'review': {'name': review.name, 'sha256': file_sha256(review), **review_details},
             'captions': {'srtSha256': file_sha256(captions_srt), 'vttSha256': file_sha256(captions_vtt), 'approval': 'DRAFT'},
             'audio': 'EXISTING_OFFLINE_SYNTH_INTERNAL_REVIEW_NOT_RIGHTS_APPROVED',
             'rightsApproved': False, 'claimsApproved': False, 'accessibilityApproved': False,
