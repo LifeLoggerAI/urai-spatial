@@ -47,6 +47,9 @@ def record():
         'release':'NO-GO/HOLD','publicPublishing':'HOLD','privateMedia':'DISABLED','nativeDispatch':'DISABLED',
         'evidence':{
             'continuousJourney':True,'realAscent':True,'exactCompiledSourceVerified':True,
+            'ascentRasterMotion':{'verified':True,'sampleMethod':'decoded_original_webm_center_crop_grayscale_4fps',
+                                  'frames':20,'interiorPairs':11,'strongPairs':10,
+                                  'firstHalfStrongPairs':5,'secondHalfStrongPairs':5},
             'continuousRawVideo':{'videoSha256':'c'*64},
             'originalCanonicalProof':{'status':'passed','desktopPassed':True,'ascentProven':True,'identityStable':True},
         },
@@ -263,6 +266,39 @@ class GenuineOnlyTests(unittest.TestCase):
         with patch.object(m, 'ffprobe', return_value=probe), patch.object(m.subprocess, 'run', return_value=FailedProcess()):
             with self.assertRaisesRegex(m.HoldRefusal, 'REVIEW_COPY_FULL_DECODE_FAILED'):
                 m.validate_review(review)
+
+
+    def test_capture_ascent_raster_proof_is_mandatory_for_renderer(self):
+        r=record();r['evidence'].pop('ascentRasterMotion')
+        with self.assertRaisesRegex(m.HoldRefusal,'CAPTURE_ASCENT_RASTER_MOTION_NOT_PROVEN'):
+            m.validate_receipt(r)
+        for field, value in [('verified',False),('strongPairs',1),('firstHalfStrongPairs',1),('secondHalfStrongPairs',1),('sampleMethod','unverified')]:
+            r=record();r['evidence']['ascentRasterMotion'][field]=value
+            with self.assertRaisesRegex(m.HoldRefusal,'CAPTURE_ASCENT_RASTER_MOTION_NOT_PROVEN'):
+                m.validate_receipt(r)
+
+    def test_decrypted_ascent_interior_motion_rejects_frozen_and_cut_only_frames(self):
+        pixels = 16*12
+        def make_frames(generator):
+            return bytes(generator(i,p) % 256 for i in range(24) for p in range(pixels))
+        moving=m.inspect_ascent_decoded_grayscale(make_frames(lambda i,p: p*5+i*13),16,12)
+        self.assertTrue(moving['verified'])
+        self.assertGreaterEqual(moving['strongPairs'],6)
+        frozen=m.inspect_ascent_decoded_grayscale(make_frames(lambda i,p: 60),16,12)
+        self.assertFalse(frozen['verified'])
+        single_cut=m.inspect_ascent_decoded_grayscale(make_frames(lambda i,p: 20 if i<12 else 190),16,12)
+        self.assertFalse(single_cut['verified'])
+        burst=m.inspect_ascent_decoded_grayscale(make_frames(lambda i,p: (p*11+i*21) if 10<=i<=12 else 44),16,12)
+        self.assertFalse(burst['verified'])
+
+    def test_ascent_video_physical_decode_failure_refuses_render(self):
+        from unittest.mock import patch
+        class FailedProcess:
+            returncode=1
+            stdout=b''
+        with patch.object(m.subprocess,'run',return_value=FailedProcess()):
+            with self.assertRaisesRegex(m.HoldRefusal,'DECRYPTED_ASCENT_RASTER_FFMPEG_FAILED'):
+                m.verify_ascent_video_raster(Path('/not-real/ascent.webm'))
 
 
 if __name__=='__main__':unittest.main()

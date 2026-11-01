@@ -13,6 +13,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { segmentsFromEvents } from './genesis-original-motion-intervals.mjs'
 import { cleanupUnsealedCapture } from './genesis-original-raw-cleanup.mjs'
+import { proveAscentRasterMotion } from './genesis-original-ascent-raster-proof.mjs'
 
 const exec = promisify(execFile)
 const args = process.argv.slice(2)
@@ -192,6 +193,9 @@ try {
       const parsed=await probeVideo(plain)
       const motion=await proveDecodedMotion(plain)
       if(motion.sampledFrames<4||motion.uniqueFrames<4)throw Error(`SOURCE_FRAME_MOTION_NOT_PROVEN:${clip.name}:${JSON.stringify(motion)}`)
+      // Do not mistake progress or the readiness-only homeRenderedFrames counter
+      // for actual continuous camera/world pixels. Reject frozen Ascent interiors.
+      if(clip.name==='ascent')record.evidence.ascentRasterMotion=await proveAscentRasterMotion(plain)
       const content=await readFile(plain)
       const verified={...clip,codec:parsed.streams?.[0]?.codec_name,dimensions:[parsed.streams?.[0]?.width,parsed.streams?.[0]?.height],fps:parsed.streams?.[0]?.avg_frame_rate,durationSeconds:+Number(parsed.format?.duration||0).toFixed(3),motion,sourceSha256:sha(content),sourceBytes:content.length}
       if(verified.codec!=='vp9'||verified.sourceBytes<8192||verified.durationSeconds<clip.sourceDurationSeconds*0.75)throw Error(`DECODED_NATIVE_CLIP_INVALID:${clip.name}`)
@@ -201,7 +205,7 @@ try {
       console.log(JSON.stringify({scene:clip.name,motionFrames:motion.sampledFrames,uniqueFrames:motion.uniqueFrames,sealedSha256:verified.encryption.sealedSha256}))
     }
     await unlink(raw).catch(()=>{})
-    record.complete=record.evidence.continuousJourney&&record.clips.length===7&&record.errors.length===0
+    record.complete=record.evidence.continuousJourney&&record.evidence.ascentRasterMotion?.verified===true&&record.clips.length===7&&record.errors.length===0
   }
 }catch(error){record.errors.push(clean(error?.stack||error))}
 finally{

@@ -12,8 +12,10 @@ on:
       - 'scripts/genesis-original-native-motion-hold.mjs'
       - 'scripts/genesis-original-canonical-motion-hold.mjs'
       - 'scripts/genesis-original-motion-intervals.mjs'
+      - 'scripts/genesis-original-ascent-raster-proof.mjs'
       - 'tests/genesis-original-native-motion-hold.test.mjs'
       - 'tests/genesis-original-motion-intervals.test.mjs'
+      - 'tests/genesis-original-ascent-raster-proof.test.mjs'
   pull_request:
     types: [synchronize]
     branches: ['repair/release-closure-integration-20261007']
@@ -22,8 +24,10 @@ on:
       - 'scripts/genesis-original-native-motion-hold.mjs'
       - 'scripts/genesis-original-canonical-motion-hold.mjs'
       - 'scripts/genesis-original-motion-intervals.mjs'
+      - 'scripts/genesis-original-ascent-raster-proof.mjs'
       - 'tests/genesis-original-native-motion-hold.test.mjs'
       - 'tests/genesis-original-motion-intervals.test.mjs'
+      - 'tests/genesis-original-ascent-raster-proof.test.mjs'
 
 permissions:
   contents: read
@@ -101,7 +105,8 @@ jobs:
           node --check scripts/genesis-original-native-motion-hold.mjs
           node --check scripts/genesis-original-canonical-motion-hold.mjs
           node --check scripts/genesis-original-motion-intervals.mjs
-          node --test tests/genesis-original-native-motion-hold.test.mjs tests/genesis-original-motion-intervals.test.mjs
+          node --check scripts/genesis-original-ascent-raster-proof.mjs
+          node --test tests/genesis-original-native-motion-hold.test.mjs tests/genesis-original-motion-intervals.test.mjs tests/genesis-original-ascent-raster-proof.test.mjs
           if [ "${{ github.event_name }}" = 'pull_request' ]; then
             test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
             test "${{ github.event.pull_request.base.ref }}" = 'repair/release-closure-integration-20261007'

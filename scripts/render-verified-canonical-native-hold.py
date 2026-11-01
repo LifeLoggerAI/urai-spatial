@@ -102,6 +102,52 @@ def bounded_positive_int(value, ceiling) -> bool:
     return type(value) is int and 0 < value <= ceiling
 
 
+
+def inspect_ascent_decoded_grayscale(decoded: bytes, width=128, height=72) -> dict:
+    """Verify sustained interior decoded pixel movement, not a UI counter or cut."""
+    require(isinstance(decoded, bytes) and type(width) is int and type(height) is int
+            and 8 <= width and 8 <= height and width * height <= 100000
+            and len(decoded) % (width * height) == 0, 'ASCENT_RASTER_DECODED_BYTES_INVALID')
+    pixels = width * height
+    frames = len(decoded) // pixels
+    require(frames >= 12, 'ASCENT_RASTER_FRAMES_INSUFFICIENT')
+    edge = max(2, int(frames * .20))
+    pairs = []
+    for index in range(edge + 1, frames - edge):
+        a, b = (index - 1) * pixels, index * pixels
+        changed, delta_sum = 0, 0
+        for j in range(pixels):
+            delta = abs(decoded[a + j] - decoded[b + j])
+            delta_sum += delta
+            if delta >= 10:
+                changed += 1
+        mean = delta_sum / pixels
+        fraction = changed / pixels
+        pairs.append((mean, mean >= 1.2 and fraction >= .04))
+    require(len(pairs) >= 6, 'ASCENT_INTERIOR_RASTER_INTERVAL_TOO_SHORT')
+    split = len(pairs) // 2
+    first = sum(1 for _, strong in pairs[:split] if strong)
+    second = sum(1 for _, strong in pairs[split:] if strong)
+    return {
+        'verified': first >= 3 and second >= 3 and first + second >= 6,
+        'sampleMethod': 'decoded_original_webm_center_crop_grayscale_4fps',
+        'frames': frames, 'interiorPairs': len(pairs), 'strongPairs': first + second,
+        'firstHalfStrongPairs': first, 'secondHalfStrongPairs': second,
+        'interiorMeanDelta': round(sum(mean for mean, _ in pairs) / len(pairs), 3),
+    }
+
+
+def verify_ascent_video_raster(video: Path) -> dict:
+    """Independently repeat the capture-side raster proof on decrypted WebM."""
+    cmd = ['ffmpeg', '-hide_banner', '-loglevel', 'error', '-i', str(video),
+           '-vf', 'fps=4,crop=iw*0.70:ih*0.70,scale=128:72:flags=area,format=gray',
+           '-an', '-f', 'rawvideo', '-pix_fmt', 'gray', 'pipe:1']
+    r = subprocess.run(cmd, capture_output=True, timeout=90)
+    require(r.returncode == 0, 'DECRYPTED_ASCENT_RASTER_FFMPEG_FAILED')
+    evidence = inspect_ascent_decoded_grayscale(r.stdout)
+    require(evidence['verified'], 'DECRYPTED_ASCENT_INTERIOR_RASTER_MOTION_UNPROVEN')
+    return evidence
+
 def validate_receipt(record: dict) -> dict[str, dict]:
     require(isinstance(record, dict), 'INVALID_CONTINUOUS_CAPTURE_RECEIPT')
     require(record.get('schema') == SOURCE_RECEIPT_SCHEMA, 'CONTINUOUS_RECEIPT_SCHEMA_MISMATCH')
@@ -112,6 +158,13 @@ def validate_receipt(record: dict) -> dict[str, dict]:
     proof = record.get('evidence') or {}
     original = proof.get('originalCanonicalProof') or {}
     require(proof.get('continuousJourney') is True and proof.get('realAscent') is True, 'CONTINUOUS_REAL_ASCENT_NOT_PROVEN')
+    raster = proof.get('ascentRasterMotion') or {}
+    require(isinstance(raster, dict) and raster.get('verified') is True and raster.get('sampleMethod') == 'decoded_original_webm_center_crop_grayscale_4fps'
+            and type(raster.get('frames')) is int and raster['frames'] >= 12
+            and type(raster.get('strongPairs')) is int and raster['strongPairs'] >= 6
+            and type(raster.get('firstHalfStrongPairs')) is int and raster['firstHalfStrongPairs'] >= 3
+            and type(raster.get('secondHalfStrongPairs')) is int and raster['secondHalfStrongPairs'] >= 3,
+            'CAPTURE_ASCENT_RASTER_MOTION_NOT_PROVEN')
     require(original.get('status') == 'passed' and original.get('desktopPassed') is True and original.get('ascentProven') is True and original.get('identityStable') is True, 'ORIGINAL_CANONICAL_PROOF_NOT_PASSED')
     require(proof.get('exactCompiledSourceVerified') is True and hexhash(proof.get('continuousRawVideo', {}).get('videoSha256')), 'EXACT_COMPILED_SOURCE_OR_REAL_VIDEO_UNVERIFIED')
     require(record.get('complete') is True and record.get('nativeClipsCaptured') == 7 and record.get('errors') == [], 'NATIVE_CAPTURE_INCOMPLETE_OR_ERRORS')
@@ -389,7 +442,8 @@ def build(args):
             required_seconds = dict((n, sec) for n, source, sec in CUTS if source).get(name)
             actual_seconds = float(info.get('format', {}).get('duration', 0))
             require(v.get('codec_name') == 'vp9' and actual_seconds >= required_seconds - 0.02, 'INCOMPLETE_NATIVE_SOURCE_VIDEO:' + name)
-            decrypted[name] = {'path': dest, 'sha256': clip['sourceSha256'], 'duration': actual_seconds, 'motion': motion(dest)}
+            raster_motion = verify_ascent_video_raster(dest) if name == 'ascent' else None
+            decrypted[name] = {'path': dest, 'sha256': clip['sourceSha256'], 'duration': actual_seconds, 'motion': motion(dest), 'ascentRasterMotion': raster_motion}
         title = tmp / 'opening-title.png'
         render_title(title)
         (tmp / 'narration.wav').write_bytes(editor['narration.wav'])
@@ -441,7 +495,7 @@ def build(args):
             'createdAtUtc': datetime.now(timezone.utc).isoformat(),
             'originalApplication': {'commit': ORIGINAL_SOURCE_SHA, 'artifactId': ORIGINAL_ARTIFACT},
             'captureContinuity': {'originalCanonicalProof': 'passed', 'recordedInOneBrowserPage': True, 'sevenSourceClipsVerified': True},
-            'sourceMotion': [{'name': n, 'sourceSha256': c['sha256'], 'motion': c['motion']} for n, c in decrypted.items()],
+            'sourceMotion': [{'name': n, 'sourceSha256': c['sha256'], 'motion': c['motion'], 'ascentRasterMotion': c['ascentRasterMotion']} for n, c in decrypted.items()],
             'editTimeline': [{'name': name, 'source': source, 'seconds': secs} for name, source, secs in CUTS],
             'editorialZipSha256': EDITORIAL_SHA256,
             'master': {'name': master.name, 'sha256': file_sha256(master), **details},
