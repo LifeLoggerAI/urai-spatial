@@ -13,6 +13,7 @@ import { promisify } from 'node:util'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beginAscentCameraSampler, bindAscentTelemetryToVideo } from './genesis-ascent-camera-sampler.mjs'
+import { genesisPythonInvocation } from './genesis-windows-python-invocation.mjs'
 
 const exec = promisify(execFile)
 const thisFile = fileURLToPath(import.meta.url)
@@ -124,7 +125,8 @@ try {
   // The native recording is NOT complete until the actual decoded pixels pass
   // this fail-closed preflight. This still does not authorize human approval.
   const preflightPath=path.join(destination,'URAI_ASCENT_DECODED_PIXEL_PREFLIGHT_HOLD.json')
-  const {stdout:preflightStdout}=await exec('python3',[
+  const python=genesisPythonInvocation(process.platform)
+  const {stdout:preflightStdout}=await exec(python.executable,[...python.prefixArgs,
     path.join(repoRoot,'scripts','genesis-ascent-pixel-gate.py'),
     '--video',privateVideo,
     '--camera-telemetry',path.join(destination,'URAI_ASCENT_CAMERA_SOURCE_HOLD.json'),
