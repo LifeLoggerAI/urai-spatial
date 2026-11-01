@@ -72,3 +72,18 @@ The previous recorder admitted intervals shorter than the preserved cut needs (2
 The private renderer refuses to output decrypted video anywhere beneath the public source checkout **or any other Git checkout**, including linked worktrees. Explicitly specify an authorized private output directory outside the repo. Never commit plaintext WebMs, recovery keys, or private MP4 masters to a public branch.
 
 Hosted WebGL capture remains blocked by GitHub runner admission. The new gates are locally tested only.
+
+## Native source hardening (R Next)
+
+The private renderer independently validates each continuous-journey timestamp
+window against the unchanged 30-second editorial cut plus 250 ms of genuine
+recorded motion. Declared source duration must reconcile with actual checkpoint
+times, encoded WebM duration must cover the editorial cut, and nonfinite or
+malformed timestamps fail closed. Both source and encrypted file sizes are capped
+(256 MiB per source, with 16 KiB sealing overhead), and encrypted files are
+stat-checked before any whole-file read or decryption. Source checks remain
+independent of local test fixtures; no still-image padding or scene synthesis.
+
+These are source-side guards only. GitHub runner admission, seven authentic
+clips, media inspector acceptance, and private film export remain unverified
+until an authorized execution environment supplies real footage.

@@ -18,7 +18,7 @@ spec.loader.exec_module(m)
 
 
 EVENTS = [
-    ('home',300), ('home-first-person',4200), ('home-ascent',5000),
+    ('home',300), ('home-first-person',4700), ('home-ascent',5200),
     ('life-map-overview',9000), ('memory-star',14100), ('focus',15000),
     ('replay',19000), ('replay-playback-began',19300),
     ('replay-playback-end',24200), ('return-focus',26800),
@@ -131,6 +131,53 @@ class GenuineOnlyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             p=Path(t)/'not-the-original-review.zip';p.write_text('incorrect')
             with self.assertRaisesRegex(m.HoldRefusal,'ORIGINAL_EDITORIAL_ZIP_HASH_MISMATCH'):m.verify_editorial_zip(p)
+
+
+    def test_timestamp_margin_declared_duration_and_encoded_edit_requirement(self):
+        valid = record()
+        self.assertEqual(set(m.validate_receipt(valid)), m.EXPECTED_NAMES)
+        short = record()
+        short['timeline'][1]['ms'] = 4200
+        home = next(x for x in short['clips'] if x['name'] == 'home')
+        home['sourceEndSeconds'] = 4.2
+        home['sourceDurationSeconds'] = 3.9
+        home['durationSeconds'] = 3.9
+        with self.assertRaisesRegex(m.HoldRefusal, 'INSUFFICIENT_SOURCE_JOURNEY_FOR_EDIT:home'):
+            m.validate_receipt(short)
+        mismatch = record()
+        mismatch['clips'][0]['sourceDurationSeconds'] += 1.0
+        with self.assertRaisesRegex(m.HoldRefusal, 'DECLARED_CLIP_DURATION_MISMATCH'):
+            m.validate_receipt(mismatch)
+        encoded = record()
+        encoded['clips'][0]['durationSeconds'] = 3.6
+        with self.assertRaisesRegex(m.HoldRefusal, 'ENCODED_CLIP_TOO_SHORT_OR_MISMATCHED'):
+            m.validate_receipt(encoded)
+        invalid = record()
+        invalid['timeline'][2]['ms'] = float('nan')
+        with self.assertRaisesRegex(m.HoldRefusal, 'NONMONOTONIC_OR_DUPLICATE_JOURNEY_EVENT'):
+            m.validate_receipt(invalid)
+        invalid = record()
+        invalid['clips'][0]['sourceStartSeconds'] = float('inf')
+        with self.assertRaisesRegex(m.HoldRefusal, 'MALFORMED_SOURCE_CLIP_TIMESTAMPS'):
+            m.validate_receipt(invalid)
+
+    def test_bounded_encrypted_clip_checked_before_loading_bytes(self):
+        valid = record()
+        too_big = record()
+        too_big['clips'][0]['sourceBytes'] = m.MAX_NATIVE_SOURCE_BYTES + 1
+        with self.assertRaisesRegex(m.HoldRefusal, 'CLIP_SOURCE_BYTES_NOT_VERIFIED'):
+            m.validate_receipt(too_big)
+        with tempfile.TemporaryDirectory() as td:
+            target = Path(td) / 'home.sealed'
+            with target.open('wb') as f:
+                f.truncate(m.MAX_ENCRYPTED_CLIP_BYTES + 1)  # sparse, no large allocation
+            clip = valid['clips'][0]
+            with self.assertRaisesRegex(m.HoldRefusal, 'ENCRYPTED_CLIP_EXCEEDS_SIZE_LIMIT'):
+                m.verified_seal(clip, Path(td))
+            forged = dict(clip)
+            forged['encryption'] = dict(clip['encryption'], sealedBytes=m.MAX_ENCRYPTED_CLIP_BYTES + 1)
+            with self.assertRaisesRegex(m.HoldRefusal, 'ENCRYPTED_CLIP_EXCEEDS_SIZE_LIMIT'):
+                m.verified_seal(forged, Path(td))
 
 
 if __name__=='__main__':unittest.main()

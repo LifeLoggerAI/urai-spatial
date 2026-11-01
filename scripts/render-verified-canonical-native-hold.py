@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -46,6 +47,12 @@ EXPECTED_INTERVALS = {
     'return': ('replay-playback-end', 'return-home'),
 }
 assert sum(duration for _, _, duration in CUTS) == 30
+# The original recorder enforces a 250 ms motion margin over each final edit.
+SOURCE_CAPTURE_MARGIN_SECONDS = 0.25
+EDIT_SECONDS = {source: seconds for _, source, seconds in CUTS if source is not None}
+# Bound all externally supplied media sizes *before* whole-file reads/decryption.
+MAX_NATIVE_SOURCE_BYTES = 256 * 1024 * 1024
+MAX_ENCRYPTED_CLIP_BYTES = MAX_NATIVE_SOURCE_BYTES + 16 * 1024
 
 
 class HoldRefusal(RuntimeError):
@@ -87,6 +94,14 @@ def hexhash(value) -> bool:
     return isinstance(value, str) and re.fullmatch(r'[0-9a-f]{64}', value) is not None
 
 
+def finite_number(value) -> bool:
+    return type(value) in (int, float) and math.isfinite(value)
+
+
+def bounded_positive_int(value, ceiling) -> bool:
+    return type(value) is int and 0 < value <= ceiling
+
+
 def validate_receipt(record: dict) -> dict[str, dict]:
     require(isinstance(record, dict), 'INVALID_CONTINUOUS_CAPTURE_RECEIPT')
     require(record.get('schema') == SOURCE_RECEIPT_SCHEMA, 'CONTINUOUS_RECEIPT_SCHEMA_MISMATCH')
@@ -106,25 +121,32 @@ def validate_receipt(record: dict) -> dict[str, dict]:
     require(set(by_name) == EXPECTED_NAMES, 'CANONICAL_CLIP_IDENTITIES_INCOMPLETE')
     require(len(by_name) == len(clips), 'DUPLICATE_CLIP_IDENTITY')
     timeline = record.get('timeline')
-    require(isinstance(timeline, list) and len(timeline) >= 13, 'CANONICAL_TIMELINE_MISSING')
+    require(isinstance(timeline, list) and 13 <= len(timeline) <= 200, 'CANONICAL_TIMELINE_MISSING')
     milestones = {}
     prev_ms = -1
     for e in timeline:
-        require(isinstance(e, dict) and isinstance(e.get('id'), str) and isinstance(e.get('ms'), (int, float)) and e['ms'] >= prev_ms and e['id'] not in milestones, 'NONMONOTONIC_OR_DUPLICATE_JOURNEY_EVENT')
+        require(isinstance(e, dict) and isinstance(e.get('id'), str) and finite_number(e.get('ms')) and 0 <= e['ms'] <= 3600000 and e['ms'] >= prev_ms and e['id'] not in milestones, 'NONMONOTONIC_OR_DUPLICATE_JOURNEY_EVENT')
         milestones[e['id']] = e['ms'] / 1000.0
         prev_ms = e['ms']
     for name, clip in by_name.items():
         begin, end = EXPECTED_INTERVALS[name]
         require(begin in milestones and end in milestones and milestones[end] > milestones[begin], 'SOURCE_INTERVAL_OR_ROUTE_MISSING:' + name)
         require(clip.get('sourceCheckpointStart') == begin and clip.get('sourceCheckpointEnd') == end, 'CLIP_ORIGIN_EVENT_MISMATCH:' + name)
-        require(abs(clip.get('sourceStartSeconds', -100) - milestones[begin]) < 0.02 and abs(clip.get('sourceEndSeconds', -100) - milestones[end]) < 0.02, 'CLIP_TIMELINE_MISMATCH:' + name)
-        require(clip.get('sourceBytes', 0) > 8192 and hexhash(clip.get('sourceSha256')), 'CLIP_SOURCE_BYTES_NOT_VERIFIED:' + name)
+        start, end_seconds = clip.get('sourceStartSeconds'), clip.get('sourceEndSeconds')
+        declared_seconds, encoded_seconds = clip.get('sourceDurationSeconds'), clip.get('durationSeconds')
+        require(all(finite_number(v) for v in (start, end_seconds, declared_seconds, encoded_seconds)), 'MALFORMED_SOURCE_CLIP_TIMESTAMPS:' + name)
+        require(abs(start - milestones[begin]) < 0.02 and abs(end_seconds - milestones[end]) < 0.02, 'CLIP_TIMELINE_MISMATCH:' + name)
+        true_interval = milestones[end] - milestones[begin]
+        require(abs(declared_seconds - true_interval) <= 0.02 and declared_seconds > 0, 'DECLARED_CLIP_DURATION_MISMATCH:' + name)
+        required = EDIT_SECONDS[name]
+        require(true_interval >= required + SOURCE_CAPTURE_MARGIN_SECONDS - 0.02, 'INSUFFICIENT_SOURCE_JOURNEY_FOR_EDIT:' + name)
+        require(encoded_seconds >= required - 0.02 and encoded_seconds <= declared_seconds + 0.35, 'ENCODED_CLIP_TOO_SHORT_OR_MISMATCHED:' + name)
+        require(bounded_positive_int(clip.get('sourceBytes'), MAX_NATIVE_SOURCE_BYTES) and clip['sourceBytes'] > 8192 and hexhash(clip.get('sourceSha256')), 'CLIP_SOURCE_BYTES_NOT_VERIFIED:' + name)
         require(clip.get('codec') == 'vp9', 'NATIVE_CAPTURE_CODEC_UNEXPECTED:' + name)
         motion = clip.get('motion') or {}
-        require(motion.get('sampledFrames', 0) >= 4 and motion.get('uniqueFrames', 0) >= 4, 'GENUINE_FRAME_MOTION_NOT_PROVEN:' + name)
-        require(clip.get('durationSeconds', 0) > 1.0, 'NATIVE_CLIP_TOO_SHORT:' + name)
+        require(isinstance(motion, dict) and type(motion.get('sampledFrames')) is int and type(motion.get('uniqueFrames')) is int and 4 <= motion['uniqueFrames'] <= motion['sampledFrames'], 'GENUINE_FRAME_MOTION_NOT_PROVEN:' + name)
         seal = clip.get('encryption') or {}
-        require(safe_basename(seal.get('sealedFile')) and seal['sealedFile'] == name + '.sealed' and hexhash(seal.get('sealedSha256')) and seal.get('sealedBytes', 0) > 100, 'CLIP_ENCRYPTION_RECEIPT_INVALID:' + name)
+        require(isinstance(seal, dict) and safe_basename(seal.get('sealedFile')) and seal['sealedFile'] == name + '.sealed' and hexhash(seal.get('sealedSha256')) and bounded_positive_int(seal.get('sealedBytes'), MAX_ENCRYPTED_CLIP_BYTES) and seal['sealedBytes'] > clip['sourceBytes'], 'CLIP_ENCRYPTION_RECEIPT_INVALID:' + name)
     return by_name
 
 
@@ -147,11 +169,17 @@ def verified_seal(clip: dict, sealed_dir: Path) -> tuple[bytes, dict]:
     name = clip['encryption']['sealedFile']
     sealed_path = sealed_dir / name
     require(sealed_path.is_file() and sealed_path.is_symlink() is False, 'ENCRYPTED_CLIP_MISSING:' + name)
+    # Stat the bytes first; do not let a forged receipt trigger an unbounded read.
+    stored_bytes = sealed_path.stat().st_size
+    declared_bytes = clip['encryption']['sealedBytes']
+    require(bounded_positive_int(declared_bytes, MAX_ENCRYPTED_CLIP_BYTES) and stored_bytes <= MAX_ENCRYPTED_CLIP_BYTES, 'ENCRYPTED_CLIP_EXCEEDS_SIZE_LIMIT:' + name)
+    require(stored_bytes == declared_bytes, 'ENCRYPTED_CLIP_SHA256_MISMATCH:' + name)
     sealed = sealed_path.read_bytes()
-    require(len(sealed) == clip['encryption']['sealedBytes'] and sha256(sealed) == clip['encryption']['sealedSha256'], 'ENCRYPTED_CLIP_SHA256_MISMATCH:' + name)
+    require(len(sealed) == declared_bytes and sha256(sealed) == clip['encryption']['sealedSha256'], 'ENCRYPTED_CLIP_SHA256_MISMATCH:' + name)
     header_end = sealed.find(b'\n')
     require(20 <= header_end <= 8192, 'SEALED_HEADER_INVALID:' + name)
     header = json.loads(sealed[:header_end].decode('utf8'))
+    require(isinstance(header, dict), 'SEALED_HEADER_INVALID:' + name)
     require(header.get('format') == SEAL_FORMAT and header.get('originalSha256') == clip['sourceSha256'] and header.get('originalBytes') == clip['sourceBytes'], 'SEALED_ORIGINAL_IDENTITY_MISMATCH:' + name)
     require(len(sealed) - header_end - 1 == clip['sourceBytes'], 'SEALED_CIPHERTEXT_LENGTH_MISMATCH:' + name)
     return sealed[header_end+1:], header
