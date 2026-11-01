@@ -22,9 +22,11 @@ const get = name => args.includes(name) ? args[args.indexOf(name) + 1] : null
 const output = get('--output')
 const startUrl = get('--url')
 const expectedCommit = get('--source-sha')
+const chromiumPath = get('--chromium-path')
+const preflightPython = process.env.URAI_GENESIS_PYTHON?.trim() || (process.platform === 'win32' ? 'python' : 'python3')
 
 if (args.includes('--help')) {
-  console.log('node scripts/genesis-ascent-patched-review-capture.mjs --url http://127.0.0.1:4173/home/?demo=1 --source-sha <40hex-corrected-build-commit> --output /PRIVATE/urai-genesis-ascent-HOLD')
+  console.log('node scripts/genesis-ascent-patched-review-capture.mjs --url http://127.0.0.1:4173/home/?demo=1 --source-sha <40hex-corrected-build-commit> --output /PRIVATE/urai-genesis-ascent-HOLD [--chromium-path /path/to/authorized/chrome]')
   process.exit(0)
 }
 
@@ -37,6 +39,14 @@ const receipt = { schema:'urai-genesis-ascent-native-patched-capture-hold/v1',
 try {
   if (!startUrl || !expectedCommit || !output) throw Error('EXPLICIT_LOCAL_URL_SOURCE_SHA_AND_PRIVATE_DESTINATION_REQUIRED')
   if (!/^[0-9a-f]{40}$/.test(expectedCommit) || expectedCommit==='94c8a2cf68a436a0c49e80b3a09578935df12d48') throw Error('NEW_CORRECTED_BUILD_REVISION_REQUIRED')
+  // A Windows venv python.exe must be explicitly supplied by the local HOLD kit.
+  // A relative env executable is rejected; no command interpreter or shell is used.
+  if (process.env.URAI_GENESIS_PYTHON && !path.isAbsolute(preflightPython)) throw Error('PREFLIGHT_PYTHON_MUST_BE_ABSOLUTE_PATH')
+  if (chromiumPath && !path.isAbsolute(chromiumPath)) throw Error('CHROMIUM_PATH_MUST_BE_ABSOLUTE')
+  if (chromiumPath) {
+    const chromeStat=await lstat(chromiumPath)
+    if (!chromeStat.isFile() || chromeStat.isSymbolicLink()) throw Error('AUTHORIZED_CHROMIUM_FILE_REQUIRED')
+  }
   const url=new URL(startUrl)
   if (url.protocol!=='http:' || !['127.0.0.1','localhost'].includes(url.hostname) || url.username || url.password || url.pathname!=='/home/' || url.search!=='?demo=1' || url.hash) throw Error('ONLY_LOCAL_DISCLOSED_FIXTURE_HOME_ALLOWED')
   destination=path.resolve(output)
@@ -57,7 +67,8 @@ try {
   await mkdir(destination,{recursive:true,mode:0o700})
   const requireTier=createRequire(path.join(repoRoot,'urai-tier1','package.json'))
   const {chromium}=requireTier('playwright')
-  browser=await chromium.launch({headless:true,args:['--enable-webgl','--enable-unsafe-swiftshader','--disable-dev-shm-usage']})
+  browser=await chromium.launch({headless:true, ...(chromiumPath ? {executablePath:chromiumPath} : {}),
+    args:['--enable-webgl','--enable-unsafe-swiftshader','--disable-dev-shm-usage']})
   receipt.browserVersion=await browser.version()
   context=await browser.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1,
     reducedMotion:'no-preference',recordVideo:{dir:destination,size:{width:1440,height:900}}})
@@ -107,7 +118,7 @@ try {
   // The native recording is NOT complete until the actual decoded pixels pass
   // this fail-closed preflight. This still does not authorize human approval.
   const preflightPath=path.join(destination,'URAI_ASCENT_DECODED_PIXEL_PREFLIGHT_HOLD.json')
-  const {stdout:preflightStdout}=await exec('python3',[
+  const {stdout:preflightStdout}=await exec(preflightPython,[
     path.join(repoRoot,'scripts','genesis-ascent-pixel-gate.py'),
     '--video',privateVideo,
     '--camera-telemetry',path.join(destination,'URAI_ASCENT_CAMERA_SOURCE_HOLD.json'),
