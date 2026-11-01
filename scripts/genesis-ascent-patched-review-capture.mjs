@@ -22,9 +22,10 @@ const get = name => args.includes(name) ? args[args.indexOf(name) + 1] : null
 const output = get('--output')
 const startUrl = get('--url')
 const expectedCommit = get('--source-sha')
+const localChromium = get('--chromium')
 
 if (args.includes('--help')) {
-  console.log('node scripts/genesis-ascent-patched-review-capture.mjs --url http://127.0.0.1:4173/home/?demo=1 --source-sha <40hex-corrected-build-commit> --output /PRIVATE/urai-genesis-ascent-HOLD')
+  console.log('node scripts/genesis-ascent-patched-review-capture.mjs --url http://127.0.0.1:4173/home/?demo=1 --source-sha <40hex-corrected-build-commit> --output /PRIVATE/urai-genesis-ascent-HOLD [--chromium ABSOLUTE_LOCAL_CHROME_PATH]')
   process.exit(0)
 }
 
@@ -39,6 +40,18 @@ try {
   if (!/^[0-9a-f]{40}$/.test(expectedCommit) || expectedCommit==='94c8a2cf68a436a0c49e80b3a09578935df12d48') throw Error('NEW_CORRECTED_BUILD_REVISION_REQUIRED')
   const url=new URL(startUrl)
   if (url.protocol!=='http:' || !['127.0.0.1','localhost'].includes(url.hostname) || url.username || url.password || url.pathname!=='/home/' || url.search!=='?demo=1' || url.hash) throw Error('ONLY_LOCAL_DISCLOSED_FIXTURE_HOME_ALLOWED')
+  if (args.includes('--chromium') && !localChromium) throw Error('LOCAL_CHROMIUM_PATH_VALUE_REQUIRED')
+  if (localChromium) {
+    if (!path.isAbsolute(localChromium)) throw Error('LOCAL_CHROMIUM_PATH_MUST_BE_ABSOLUTE')
+    const binary = await lstat(localChromium).catch(error => {
+      if (error.code === 'ENOENT') throw Error('LOCAL_CHROMIUM_BINARY_NOT_FOUND')
+      throw error
+    })
+    if (!binary.isFile()) throw Error('LOCAL_CHROMIUM_PATH_NOT_A_FILE')
+    receipt.chromiumSource = 'OWNER_SELECTED_EXISTING_LOCAL_BINARY'
+  } else {
+    receipt.chromiumSource = 'PLAYWRIGHT_MANAGED_LOCAL_BROWSER'
+  }
   destination=path.resolve(output)
   for(let parent=destination;;parent=path.dirname(parent)) {
     const marker=await lstat(path.join(parent,'.git')).catch(e=>{
@@ -57,7 +70,11 @@ try {
   await mkdir(destination,{recursive:true,mode:0o700})
   const requireTier=createRequire(path.join(repoRoot,'urai-tier1','package.json'))
   const {chromium}=requireTier('playwright')
-  browser=await chromium.launch({headless:true,args:['--enable-webgl','--enable-unsafe-swiftshader','--disable-dev-shm-usage']})
+  browser=await chromium.launch({
+    headless:true,
+    ...(localChromium ? {executablePath:localChromium} : {}),
+    args:['--enable-webgl','--enable-unsafe-swiftshader','--disable-dev-shm-usage'],
+  })
   receipt.browserVersion=await browser.version()
   context=await browser.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1,
     reducedMotion:'no-preference',recordVideo:{dir:destination,size:{width:1440,height:900}}})

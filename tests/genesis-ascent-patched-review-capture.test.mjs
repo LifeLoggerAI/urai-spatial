@@ -40,3 +40,47 @@ test('patched capture cannot mark completion until decoded pixel preflight succe
  assert.match(source,/receipt\.humanVisualApproval=false/)
  assert.ok(source.indexOf('receipt.pixelPreflight=')<source.indexOf('receipt.completed=true'))
 })
+
+
+test('existing owner-installed local Chromium can be explicitly selected',()=>{
+ const source=readFileSync(base,'utf8')
+ assert.match(source,/get\('--chromium'\)/)
+ assert.match(source,/executablePath:localChromium/)
+ assert.match(source,/path\.isAbsolute\(localChromium\)/)
+ assert.match(source,/LOCAL_CHROMIUM_PATH_NOT_A_FILE/)
+})
+
+test('relative Chromium executable path refuses before source or browser access',()=>{
+ const r=capture('--url','http://127.0.0.1:4173/home/?demo=1','--source-sha',revised,'--output','/PRIVATE/test','--chromium','./chrome')
+ assert.equal(r.status,2)
+ assert.match(JSON.parse(r.stdout).errors.join(' '),/LOCAL_CHROMIUM_PATH_MUST_BE_ABSOLUTE/)
+})
+
+test('missing absolute Chromium path refuses before source or browser access',()=>{
+ const missing=path.join('/','this-chromium-does-not-exist', 'chrome')
+ const r=capture('--url','http://127.0.0.1:4173/home/?demo=1','--source-sha',revised,'--output','/PRIVATE/test','--chromium',missing)
+ assert.equal(r.status,2)
+ assert.match(JSON.parse(r.stdout).errors.join(' '),/LOCAL_CHROMIUM_BINARY_NOT_FOUND/)
+})
+
+test('real local executable path passes binary check but not checkout attestation',()=>{
+ const r=capture('--url','http://127.0.0.1:4173/home/?demo=1','--source-sha',revised,'--output','/PRIVATE/test','--chromium',process.execPath)
+ assert.equal(r.status,2)
+ const receipt=JSON.parse(r.stdout)
+ assert.equal(receipt.chromiumSource,'OWNER_SELECTED_EXISTING_LOCAL_BINARY')
+ assert.equal(receipt.completed,false)
+ assert.ok(receipt.errors.length>0)
+})
+
+
+test('explicit but missing Chromium argument refuses before checkout or browser',()=>{
+ const r=capture('--url','http://127.0.0.1:4173/home/?demo=1','--source-sha',revised,'--output','/PRIVATE/test','--chromium')
+ assert.equal(r.status,2)
+ assert.match(JSON.parse(r.stdout).errors.join(' '),/LOCAL_CHROMIUM_PATH_VALUE_REQUIRED/)
+})
+
+test('Chromium path that is a directory refuses before browser access',()=>{
+ const r=capture('--url','http://127.0.0.1:4173/home/?demo=1','--source-sha',revised,'--output','/PRIVATE/test','--chromium',path.dirname(process.execPath))
+ assert.equal(r.status,2)
+ assert.match(JSON.parse(r.stdout).errors.join(' '),/LOCAL_CHROMIUM_PATH_NOT_A_FILE/)
+})
