@@ -1,6 +1,9 @@
 'use client'
 
-import type { ThreeElements } from '@react-three/fiber'
+import { useFrame, type ThreeElements } from '@react-three/fiber'
+import { useRef } from 'react'
+import { useSceneStore } from '../store/useSceneStore'
+import { homeAscentSkyOpacity } from './homeAscentSkyFade'
 import * as THREE from 'three'
 
 type SurfaceKind = 'ground' | 'stone' | 'timber'
@@ -87,11 +90,17 @@ export function HomeSurfaceMaterial({ kind = 'stone', ...props }: MaterialProps)
 }
 
 export function HomeSkyGradient() {
+  const material = useRef<THREE.ShaderMaterial>(null)
+  useFrame(() => {
+    const {phase, progress} = useSceneStore.getState()
+    if (material.current?.uniforms.uSkyOpacity) material.current.uniforms.uSkyOpacity.value = homeAscentSkyOpacity(phase, progress)
+  })
   return <mesh name="home-original-living-sky" scale={150} renderOrder={-100}>
     <sphereGeometry args={[1, 64, 32]} />
-    <shaderMaterial side={THREE.BackSide} depthWrite={false} fog={false} toneMapped={false}
+    <shaderMaterial ref={material} transparent uniforms={{ uSkyOpacity: {value:1} }} side={THREE.BackSide} depthWrite={false} fog={false} toneMapped={false}
       vertexShader={`varying vec3 vHomeSkyDirection; void main() { vHomeSkyDirection = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`}
       fragmentShader={`
+        uniform float uSkyOpacity;
         varying vec3 vHomeSkyDirection;
         float skyHash(vec2 p) { return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453123); }
         float skyNoise(vec2 p) {
@@ -132,7 +141,7 @@ export function HomeSkyGradient() {
           sky+=starColor*star*smoothstep(.015,.18,dir.y)*(.65+skyHash(cell+1.3)*.8);
           float stellarBand=exp(-pow((dir.y-.28-dir.x*.18)*7.5,2.));
           sky+=vec3(.003,.004,.012)*stellarBand*(.4+.6*broad)*smoothstep(.02,.3,height);
-          gl_FragColor=vec4(sky,1.0);
+          gl_FragColor=vec4(sky,uSkyOpacity);
           #include <colorspace_fragment>
         }`.replace('#include <colorspace_fragment>', '\n#include <colorspace_fragment>\n')}
     />

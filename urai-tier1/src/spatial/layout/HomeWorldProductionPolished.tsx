@@ -959,7 +959,7 @@ function Scene(props: { previewW13V3: boolean; input: MovementInput; yaw: Mutabl
   const orbGroundY = props.previewW13V3 ? W13_V3_FLOOR_Y : terrainHeight(ORB.x, ORB.z)
   return <>
     <color attach="background" args={[cosmic ? '#01050b' : '#101d30']} />
-    {!cosmic ? <HomeSkyGradient /> : null}
+    <HomeSkyGradient />
     <Stars radius={190} depth={90} count={cosmic ? 2200 : 700} factor={cosmic ? 2.7 : 1.1} saturation={.12} fade speed={props.reducedMotion ? 0 : .02} />
     <fogExp2 attach="fog" args={[cosmic ? '#050b14' : '#172a38', cosmic ? .0017 : .006]} />
     <ambientLight intensity={cosmic ? .13 : .26} color="#bdcadc" />
