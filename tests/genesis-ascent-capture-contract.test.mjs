@@ -41,3 +41,13 @@ test('running original Home bundle must match exact Git revision before recordin
   assert.match(capture, /RUNNING_WEBGL_BUILD_REVISION_MISMATCH/)
   assert.match(capture, /data-home-genesis-build-revision/)
 })
+
+test('runtime SHA is only checked after original Home is visible and assets ready', () => {
+  const capture=source('scripts/genesis-ascent-patched-review-capture.mjs')
+  const mounted=capture.indexOf("await home.waitFor({state:'visible'")
+  const assets=capture.indexOf("data-home-assets-ready")
+  const revision=capture.indexOf("const actualBuildRevision=await home.getAttribute")
+  const start=capture.indexOf("const home=page.locator(")
+  assert.ok(start>=0 && mounted>start && assets>mounted && revision>assets, 'revision read precedes asynchronous Home scene readiness')
+  assert.match(capture, /RUNNING_WEBGL_BUILD_REVISION_MISMATCH/)
+})
