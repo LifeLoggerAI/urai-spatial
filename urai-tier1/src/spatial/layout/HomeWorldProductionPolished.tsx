@@ -860,7 +860,20 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
           owner.current.dataset.homeAscentCameraZ = camera.position.z.toFixed(4)
         }
         store.setProgress(t)
-        if (t >= 1 && !transitionIssued.current) { transitionIssued.current = true; requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' }) }
+        if (t >= 1 && !transitionIssued.current) {
+          transitionIssued.current = true
+          // Preserve only a single explicitly disclosed demo fixture across Home -> Life Map.
+          // Never infer demo authority from other query values or duplicate parameters.
+          const query = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search)
+          const disclosedDemo = query !== null && query.getAll('demo').length === 1 && query.get('demo') === '1'
+          requestUraiWorldTravel({
+            destination: 'life-map',
+            href: '/life-map/?from=home-sky',
+            entryPortal: 'home-sky',
+            cameraCheckpoint: 'home-sky-ascent-complete',
+            ...(disclosedDemo ? { context: { demo: true } } : {}),
+          })
+        }
       } else {
         camera.position.lerp(new THREE.Vector3(-5.3, -2.4, -16.5), 1 - Math.pow(.002, delta))
         camera.lookAt(-5.4, -1.2, -18)
