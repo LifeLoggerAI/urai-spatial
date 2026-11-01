@@ -125,7 +125,7 @@ try {
               if(!file.startsWith(prefix)||!file.endsWith('.png'))return result
               const id=file.slice(prefix.length,-4)
               mark(id)
-              if(id==='home')await delay(3500)
+              if(id==='home')await delay(4500)
               if(id==='life-map-overview')await delay(3500)
               if(id==='memory-star')await delay(800)
               if(id==='focus')await delay(3000)
@@ -145,7 +145,7 @@ try {
                 await orb.waitFor({state:'visible',timeout:20000})
                 await orb.click({timeout:10000})
                 mark('orb-clicked')
-                await delay(3000)
+                await delay(3500)
                 mark('orb-end')
               }
               return result
