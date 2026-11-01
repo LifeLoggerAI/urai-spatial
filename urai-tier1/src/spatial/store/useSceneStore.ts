@@ -26,17 +26,19 @@ type SceneState = {
   unlock: () => void;
 };
 
-const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const clamp01 = (value: number) => Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
+
+const isRouteOrChild = (path: string, route: string) => path === route || path.startsWith(`${route}/`);
 
 export function placeForPathname(pathname: string): CanonMode {
   const path = pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
   if (path === "/" || path === "/spatial/ar-vr") return "HOME";
-  if (path.indexOf("/ground") === 0) return "GROUND";
-  if (path.indexOf("/life-map") === 0) return "LIFEMAP";
-  if (path.indexOf("/focus") === 0) return "FOCUS";
-  if (path.indexOf("/replay") === 0) return "REPLAY";
-  if (path.indexOf("/passport") === 0) return "PASSPORT";
-  if (path.indexOf("/status") === 0) return "STATUS";
+  if (isRouteOrChild(path, "/ground")) return "GROUND";
+  if (isRouteOrChild(path, "/life-map")) return "LIFEMAP";
+  if (isRouteOrChild(path, "/focus")) return "FOCUS";
+  if (isRouteOrChild(path, "/replay")) return "REPLAY";
+  if (isRouteOrChild(path, "/passport")) return "PASSPORT";
+  if (isRouteOrChild(path, "/status")) return "STATUS";
   return "HOME";
 }
 
