@@ -32,3 +32,12 @@ test('review-only pipeline cannot call a field counter a rendered video acceptan
   assert.match(inspector, /CONTINUOUS_UPWARD_CAMERA_PATH_NOT_PROVEN/)
   assert.match(inspector, /independentHumanApproval': False/)
 })
+
+test('running original Home bundle must match exact Git revision before recording', () => {
+  const mounted=source('urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx')
+  const capture=source('scripts/genesis-ascent-patched-review-capture.mjs')
+  assert.match(mounted, /data-home-genesis-build-revision/)
+  assert.match(mounted, /NEXT_PUBLIC_URAI_GENESIS_BUILD_REVISION/)
+  assert.match(capture, /RUNNING_WEBGL_BUILD_REVISION_MISMATCH/)
+  assert.match(capture, /data-home-genesis-build-revision/)
+})
