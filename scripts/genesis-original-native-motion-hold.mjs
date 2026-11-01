@@ -13,6 +13,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import path from 'node:path'
 import os from 'node:os'
+import { cleanupUnsealedFallbackCapture } from './genesis-original-raw-cleanup.mjs'
 
 const exec = promisify(execFile)
 const sourceSha = '94c8a2cf68a436a0c49e80b3a09578935df12d48'
@@ -202,7 +203,7 @@ async function cdpBackup(context, page, folder) {
   }
 }
 
-async function capture(chromium, serverOrigin, spec) {
+async function captureUnsealed(chromium, serverOrigin, spec) {
   const scene = {scene:spec.name,route:spec.route,sourceSha,fixture:fixtures,startedAtUtc:now(),accepted:false,errors:[],captureMethod:null}
   receipt.scenes.push(scene)
   const folder = path.join(destination,spec.name)
@@ -355,6 +356,36 @@ async function capture(chromium, serverOrigin, spec) {
   return scene
 }
 
+// Neither a successful seal nor a failed browser/FFmpeg run may leave raw
+// scene WebM, Playwright videos, CDP JPEGs, or concat lists behind in artifacts.
+async function capture(chromium, serverOrigin, spec) {
+  try {
+    return await captureUnsealed(chromium, serverOrigin, spec)
+  } finally {
+    try {
+      const cleanup = await cleanupUnsealedFallbackCapture(destination, spec.name)
+      const scene = receipt.scenes.at(-1)
+      if (scene?.scene === spec.name) {
+        scene.unsealedCleanup = cleanup
+        if (scene.video) scene.video.rawFileRetained = false
+        if (scene.accepted && !scene.sealed) {
+          scene.errors.push('ENCRYPTED_SEAL_REQUIRED_FOR_ACCEPTANCE')
+          scene.accepted = false
+        }
+      }
+    } catch (error) {
+      const reason = 'UNSEALED_FALLBACK_CLEANUP_FAILED:' + clean(error)
+      const scene = receipt.scenes.at(-1)
+      if (scene?.scene === spec.name) {
+        scene.errors.push(reason)
+        scene.accepted = false
+      }
+      receipt.errors.push(reason)
+      throw error
+    }
+  }
+}
+
 await mkdir(destination,{recursive:true})
 let server=null,browser=null
 try {
@@ -398,7 +429,8 @@ receipt.journeyContinuityAccepted=false // Direct deep links cannot certify Home
 receipt.complete=receipt.exactCompiledBuildVerified&&receipt.nativeClipsCaptured===7&&receipt.errors.length===0&&receipt.journeyContinuityAccepted
 await writeFile(path.join(destination,'native-capture-receipt.json'),JSON.stringify(receipt,null,2)+'\n')
 const hashes=[]
-for(const scene of receipt.scenes)if(scene.video)hashes.push(`${scene.video.sha256}  ${scene.video.file}`)
+// SHA256SUMS must reference retained encrypted bytes, never removed raw videos.
+for(const scene of receipt.scenes)if(scene.sealed)hashes.push(`${scene.sealed.sealedSha256}  ${scene.sealed.sealedFile}`)
 await writeFile(path.join(destination,'CAPTURE_SHA256SUMS.txt'),hashes.join('\n')+'\n')
 console.log(JSON.stringify({complete:receipt.complete,nativeClipsCaptured:receipt.nativeClipsCaptured,sourceSha,artifactId,release:'HOLD'}))
 if(!receipt.complete && !verifyOnly)process.exitCode=2
