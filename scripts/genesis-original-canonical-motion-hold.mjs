@@ -12,6 +12,7 @@ import { promisify } from 'node:util'
 import path from 'node:path'
 import os from 'node:os'
 import { segmentsFromEvents } from './genesis-original-motion-intervals.mjs'
+import { cleanupUnsealedCapture } from './genesis-original-raw-cleanup.mjs'
 
 const exec = promisify(execFile)
 const args = process.argv.slice(2)
@@ -77,6 +78,7 @@ async function sealFile(plain,dest,expectedSha256) {
   return {sealedFile:path.basename(dest),sealedSha256:sha(sealed),sealedBytes:sealed.length}
 }
 let server=null
+let rawFolder=null
 let desktop=null
 let browserScriptThrown=null
 try {
@@ -96,7 +98,7 @@ try {
     const requireTier=createRequire(new URL('../urai-tier1/package.json',import.meta.url))
     const chromium=requireTier('playwright').chromium
     const originalLaunch=chromium.launch.bind(chromium)
-    const rawFolder=path.join(output,'raw')
+    rawFolder=path.join(output,'raw')
     await mkdir(rawFolder,{recursive:true})
     let contexts=0
     Object.defineProperty(chromium,'launch',{configurable:true,value:async options=>{
@@ -202,7 +204,18 @@ try {
     record.complete=record.evidence.continuousJourney&&record.clips.length===7&&record.errors.length===0
   }
 }catch(error){record.errors.push(clean(error?.stack||error))}
-finally{if(server){server.kill('SIGTERM');server=null}}
+finally{
+  if(server){server.kill('SIGTERM');server=null}
+  // A failed FFmpeg encode, navigation proof, or interrupted capture must not
+  // strand UNENCRYPTED movies underneath public-repository build artifacts.
+  if(rawFolder){
+    try{record.evidence.rawCaptureCleanup=await cleanupUnsealedCapture(output,rawFolder)}
+    catch(error){
+      record.errors.push('UNSEALED_CAPTURE_CLEANUP_FAILED:'+clean(error))
+      record.complete=false
+    }
+  }
+}
 record.completedAtUtc=new Date().toISOString()
 record.nativeClipsCaptured=record.clips.length
 await writeFile(path.join(output,'continuous-motion-receipt.json'),JSON.stringify(record,null,2)+'\n')
