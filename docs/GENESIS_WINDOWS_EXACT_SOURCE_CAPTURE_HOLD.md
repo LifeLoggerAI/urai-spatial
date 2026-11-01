@@ -5,7 +5,7 @@
 ## Starting authority and identity
 
 - Capture draft: `LifeLoggerAI/urai-spatial` PR #1850, branch `parallel/digital-human-performance-20261018`.
-- This handoff is pinned to corrected source commit `2cad0120f23fa493aa903f07d3824fd8087c37f1`.
+- This handoff is pinned to corrected source commit `ae6e8bcf75f5d1804c78afea40e586afaadae10d`.
 - Original compiled static application source `94c8a2cf68a436a0c49e80b3a09578935df12d48` is *not* this corrected build.
 - The source tree contains literal Windows-invalid `*audit` folder names. Do **not** run an unrestricted checkout. The script uses Git's supported cone sparse checkout and preflights selected files before checkout.
 - This is an executable local handoff, *not* a claim that the Windows build or native recording has been run.
@@ -26,7 +26,7 @@ Extract this handoff ZIP into a folder on the local computer. From **Git Bash**,
 bash scripts/genesis-windows-exact-checkout.sh /c/ur/g --build
 ```
 
-The script performs an authorized Git public-repository clone **without checkout**, verifies the pinned commit, scans NUL-separated Git tree names for Windows-invalid selected paths, installs only the specified sparse cone, checks out exactly the pinned SHA, verifies five source blobs, then runs the locked pnpm install, runtime typecheck and `next build`.
+The script performs an authorized Git public-repository clone **without checkout**, verifies the pinned commit (which includes the Windows `py -3` video pixel-gate invocation), scans NUL-separated Git tree names for Windows-invalid selected paths, installs only the specified sparse cone, checks out exactly the pinned SHA, verifies five source blobs, then runs the locked pnpm install, runtime typecheck and `next build`.
 
 If any source path is invalid or build command fails, it stops. **Do not** disable Git NTFS protections, force checkout, rename historical repository files, or call a failed build successful. The local preflight JSON appears beside the checkout directory.
 
@@ -66,7 +66,7 @@ CHROME="$(cygpath -w '/c/Program Files/Google/Chrome/Application/chrome.exe')"
 CAPTURE="$(cygpath -w '/c/ur/genesis-private-HOLD')"
 node scripts/genesis-ascent-patched-review-capture.mjs \
   --url 'http://127.0.0.1:4173/home/?demo=1' \
-  --source-sha '2cad0120f23fa493aa903f07d3824fd8087c37f1' \
+  --source-sha 'ae6e8bcf75f5d1804c78afea40e586afaadae10d' \
   --output "$CAPTURE" \
   --chromium "$CHROME"
 ```

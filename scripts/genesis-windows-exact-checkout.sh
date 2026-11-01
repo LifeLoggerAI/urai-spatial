@@ -2,7 +2,7 @@
 # Run in Git Bash on Windows. READ-ONLY checkout/build; not a deployment.
 set -Eeuo pipefail
 
-PINNED_SHA='2cad0120f23fa493aa903f07d3824fd8087c37f1'
+PINNED_SHA='ae6e8bcf75f5d1804c78afea40e586afaadae10d'
 BRANCH='parallel/digital-human-performance-20261018'
 REMOTE='https://github.com/LifeLoggerAI/urai-spatial.git'
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -73,7 +73,7 @@ verify_blob '1d5e06b3d8d1e83d3e22406d77fddce9a7b23326' 'urai-tier1/src/spatial/l
 verify_blob '7660d33bb75ff75ab8eee36f56f0c4ac0bdb5999' 'urai-tier1/src/spatial/layout/HomeSanctuaryMaterials.tsx'
 verify_blob '01f807082c1f588809aa80505fac7362a9a5c866' 'urai-tier1/src/spatial/layout/homeAscentSkyFade.ts'
 verify_blob '993e3914667ff28186382462d1c7b2d1ffb747df' 'urai-tier1/src/spatial/layout/homeAscentCinematicPath.ts'
-verify_blob 'e03089664616a4626491f718f072819a338e666d' 'scripts/genesis-ascent-patched-review-capture.mjs'
+verify_blob '7097e80c2365d3818e06710bb5ac391d4f9a09cf' 'scripts/genesis-ascent-patched-review-capture.mjs'
 printf 'CHECKOUT_ATTESTED SHA=%s\n' "$PINNED_SHA"
 if [[ "$MODE" == '--build' ]]; then
   (cd "$DEST" && corepack pnpm install --frozen-lockfile)
