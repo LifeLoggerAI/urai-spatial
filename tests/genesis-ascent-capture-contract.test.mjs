@@ -25,7 +25,7 @@ test('private sampler uses exactly the mounted Home Ascent camera source contrac
 test('review-only pipeline cannot call a field counter a rendered video acceptance', () => {
   const capture = source('scripts/genesis-ascent-patched-review-capture.mjs')
   const inspector = source('scripts/genesis-ascent-pixel-gate.py')
-  assert.match(capture, /genesis-ascent-pixel-gate\\.py/)
+  assert.match(capture, /genesis-ascent-pixel-gate\.py/)
   assert.match(capture, /PIXEL_AND_CAMERA_PREFLIGHT_PASSED_HUMAN_REVIEW_REQUIRED/)
   assert.ok(capture.indexOf('receipt.pixelPreflight=') < capture.indexOf('receipt.completed=true'))
   assert.match(inspector, /NO_GEOMETRIC_SCENERY_MOTION_PROVEN/)
