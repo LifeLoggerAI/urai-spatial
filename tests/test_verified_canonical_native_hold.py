@@ -180,4 +180,37 @@ class GenuineOnlyTests(unittest.TestCase):
                 m.verified_seal(forged, Path(td))
 
 
+    def test_private_package_manifest_contains_exact_source_and_no_key_material(self):
+        with tempfile.TemporaryDirectory() as td:
+            folder = Path(td)
+            receipt = folder / 'continuous-motion-receipt.json'
+            provenance = record()
+            receipt.write_text(json.dumps(provenance), encoding='utf8')
+            source, instructions = m.private_reproducibility_receipts(folder, provenance, receipt)
+            data = json.loads(source.read_text(encoding='utf8'))
+            self.assertEqual(data['originalCompiledApplication']['commit'], m.ORIGINAL_SOURCE_SHA)
+            self.assertEqual(data['originalCompiledApplication']['archiveSha256'], m.ORIGINAL_ARCHIVE_SHA256)
+            self.assertEqual(data['captureSourceReceiptSha256'], m.file_sha256(receipt))
+            self.assertEqual(data['renderImplementationSha256'], m.file_sha256(MODULE))
+            self.assertEqual(len(data['sevenNativeClips']), 7)
+            self.assertEqual(data['status'], 'PRIVATE_HOLD')
+            self.assertFalse(data['publicRelease'])
+            text = instructions.read_text(encoding='utf8')
+            self.assertIn('--check-only', text)
+            self.assertIn('OWNER_CONTROLLED_PRIVATE_KEY_PATH', text)
+            self.assertNotIn('-----BEGIN PRIVATE KEY-----', text)
+            self.assertNotIn('ghp_', text)
+
+    def test_private_package_manifest_refuses_missing_real_capture_receipt(self):
+        with tempfile.TemporaryDirectory() as td:
+            folder = Path(td)
+            receipt = folder / 'capture-receipt.json'
+            receipt.write_text('test only')
+            missing = record()
+            missing['complete'] = False
+            with self.assertRaisesRegex(m.HoldRefusal, 'NATIVE_CAPTURE_INCOMPLETE_FOR_PACKAGE_MANIFEST'):
+                m.private_reproducibility_receipts(folder, missing, receipt)
+            self.assertFalse((folder / 'GENESIS_NATIVE_SOURCE_MANIFEST_HOLD.json').exists())
+
+
 if __name__=='__main__':unittest.main()

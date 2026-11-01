@@ -244,6 +244,74 @@ def validate_master(file: Path) -> dict:
     return {'durationSeconds': duration, 'frameCount': 720, 'resolution': [1080, 1920], 'fps': '24/1', 'videoCodec': 'h264', 'audioCodec': 'aac'}
 
 
+
+# Generate private, standalone provenance and reproducibility documents only
+# after a real native master has passed physical media inspection. No keys.
+ORIGINAL_ARCHIVE_SHA256 = '241902126b0f3a73e0a26b59e303bfc8d90289a008e9b3d4e2f238518f284fbe'
+
+
+def private_reproducibility_receipts(output: Path, capture: dict, capture_receipt: Path) -> tuple[Path, Path]:
+    require(capture.get('complete') is True, 'NATIVE_CAPTURE_INCOMPLETE_FOR_PACKAGE_MANIFEST')
+    require(len(capture.get('clips') or []) == 7, 'SEVEN_NATIVE_CLIPS_REQUIRED_FOR_PACKAGE_MANIFEST')
+    manifest = {
+        'schema': 'urai-genesis-D01-original-native-source-manifest-hold/v1',
+        'generatedAtUtc': datetime.now(timezone.utc).isoformat(),
+        'originalCompiledApplication': {
+            'repository': 'LifeLoggerAI/urai-spatial',
+            'commit': ORIGINAL_SOURCE_SHA,
+            'artifactId': ORIGINAL_ARTIFACT,
+            'archiveSha256': ORIGINAL_ARCHIVE_SHA256,
+        },
+        'captureSourceReceiptSha256': file_sha256(capture_receipt),
+        'renderImplementationSha256': file_sha256(Path(__file__).resolve()),
+        'editorialArchiveSha256': EDITORIAL_SHA256,
+        'sampleFixture': capture['fixture'],
+        'captureEnvironment': capture.get('environment') or {},
+        'sevenNativeClips': [
+            {'name': clip['name'], 'sourceSha256': clip['sourceSha256'],
+             'encryptedSha256': clip['encryption']['sealedSha256']}
+            for clip in sorted(capture['clips'], key=lambda x: x['name'])
+        ],
+        'publicRelease': False, 'independentAcceptance': 'PENDING', 'status': 'PRIVATE_HOLD',
+    }
+    manifest_file = output / 'GENESIS_NATIVE_SOURCE_MANIFEST_HOLD.json'
+    manifest_file.write_text(json.dumps(manifest, sort_keys=True, indent=2) + '\n', encoding='utf8')
+    instructions = f'''# UrAi Genesis D01 - private native film reproduction (HOLD)
+
+This document describes the verified-source workflow; it does not authorize
+public publishing, private customer media, new infrastructure, or spending.
+All scenes use the disclosed Quiet Reset sample fixture, not customer memories.
+
+1. Retrieve original GitHub Actions artifact `{ORIGINAL_ARTIFACT}` from
+   `LifeLoggerAI/urai-spatial`, original commit `{ORIGINAL_SOURCE_SHA}`.
+   Verify the downloaded artifact SHA-256 exactly:
+   `{ORIGINAL_ARCHIVE_SHA256}`. Unzip to a private `original` directory.
+2. In the existing authorized, non-billable WebGL/Chromium environment, run
+   `node scripts/genesis-original-canonical-motion-hold.mjs --original original --output PRIVATE_CAPTURE_DIR`
+   with `URAI_GENESIS_HOLD_PUBLIC_KEY` supplied through approved local configuration.
+   Ensure seven real-motion `.sealed` files and `continuous-motion-receipt.json` exist.
+   Do not publish plaintext media, a recovery key, or failure screenshots.
+3. With the separate preserved editorial ZIP, perform the safe check-only step:
+   `python3 scripts/render-verified-canonical-native-hold.py --receipt PRIVATE_CAPTURE_DIR/continuous-motion-receipt.json --seals PRIVATE_CAPTURE_DIR --editorial-zip EDITORIAL.zip --output PRIVATE_OUTPUT_DIR --check-only`
+4. Only after source, authorization, rights and custody checks are satisfied,
+   run the same command without `--check-only` and with
+   `--private-key OWNER_CONTROLLED_PRIVATE_KEY_PATH`. Keep the key outside source,
+   CI, media ZIPs, and all logs. Never provide the key in chat.
+5. Verify the new MP4, motion clips, audio, 720 frames, subtitles, safe areas,
+   hashes and package integrity. Maintain independent creative/rights review.
+6. Store the resulting ZIP in `URAI Genesis Media - Internal HOLD`, folder
+   `1uJEw3P5qQXfEVzf_ZWziEC4EugChBou4`, then verify downloaded bytes and
+   access restrictions. No public release without separate founder authorization.
+
+Capture receipt SHA-256: `{manifest['captureSourceReceiptSha256']}`.
+Render implementation SHA-256: `{manifest['renderImplementationSha256']}`.
+Editorial archive SHA-256: `{EDITORIAL_SHA256}`.
+Release status: NO-GO / HOLD.
+'''
+    instructions_file = output / 'GENESIS_NATIVE_CAPTURE_RENDER_INSTRUCTIONS_HOLD.md'
+    instructions_file.write_text(instructions, encoding='utf8')
+    return manifest_file, instructions_file
+
 def build(args):
     sealed_dir = Path(args.seals).resolve()
     source_receipt_file = Path(args.receipt).resolve()
@@ -348,7 +416,9 @@ def build(args):
         }
         receipt_file = output / 'NATIVE_MASTER_INSPECTION_AND_PROVENANCE_HOLD.json'
         receipt_file.write_text(json.dumps(ledger, indent=2) + '\n', encoding='utf8')
-        exported = [master, png, review, captions_srt, captions_vtt, receipt_file, source_receipt_file]
+        manifest_file, instructions_file = private_reproducibility_receipts(output, original, source_receipt_file)
+        exported = [master, png, review, captions_srt, captions_vtt, receipt_file, source_receipt_file,
+                    manifest_file, instructions_file]
         for name, details in decrypted.items():
             # Authorized private package only: originals remain genuine WebM, not stills.
             target = output / (name + '.webm')
