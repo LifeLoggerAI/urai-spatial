@@ -46,6 +46,14 @@ function phaseState(phase: CanonMode) {
   return { mode: phase, sceneMode: phase, phase, isTransitioning: false, inputLocked: false, progress: phase === "ASCENT" ? 0 : 1 };
 }
 
+function navigatedPhaseState(phase: CanonMode) {
+  // Only Focus and Replay may carry a selected memory star. Imperative scene
+  // transitions must enforce the same invariant as pathname transitions.
+  return { ...phaseState(phase), ...(phase === "FOCUS" || phase === "REPLAY" ? {} : {
+    selectedStarId: null, selectedStarPosition: null,
+  }) };
+}
+
 export const useSceneStore = create<SceneState>((set) => ({
   mode: "HOME",
   sceneMode: "HOME",
@@ -55,14 +63,14 @@ export const useSceneStore = create<SceneState>((set) => ({
   isTransitioning: false,
   inputLocked: false,
   progress: 0,
-  setMode: (m) => set(phaseState(m)),
-  setPhase: (p) => set(phaseState(p)),
+  setMode: (m) => set(navigatedPhaseState(m)),
+  setPhase: (p) => set(navigatedPhaseState(p)),
   setSelectedStar: (id, position = null) => set({ selectedStarId: id, selectedStarPosition: position }),
   focusStar: (id, position) => set({ selectedStarId: id, selectedStarPosition: position, ...phaseState("FOCUS") }),
-  enterGround: () => set(phaseState("GROUND")),
-  enterPassport: () => set(phaseState("PASSPORT")),
-  enterStatus: () => set(phaseState("STATUS")),
-  enterReplay: () => set((state) => phaseState(state.selectedStarId ? "REPLAY" : state.phase)),
+  enterGround: () => set(navigatedPhaseState("GROUND")),
+  enterPassport: () => set(navigatedPhaseState("PASSPORT")),
+  enterStatus: () => set(navigatedPhaseState("STATUS")),
+  enterReplay: () => set((state) => state.phase === "FOCUS" && state.selectedStarId ? phaseState("REPLAY") : state),
   // A delayed Replay/Focus cleanup may arrive after navigation to Home or
   // Ground. Only unwind to LifeMap while the current scene is still focused.
   clearFocusedStar: () => set((state) => ({
@@ -70,7 +78,7 @@ export const useSceneStore = create<SceneState>((set) => ({
     selectedStarPosition: null,
     ...(state.phase === "FOCUS" || state.phase === "REPLAY" ? phaseState("LIFEMAP") : {}),
   })),
-  enterLifeMap: () => set({ mode: "ASCENT", sceneMode: "ASCENT", phase: "ASCENT", isTransitioning: true, inputLocked: true, progress: 0 }),
+  enterLifeMap: () => set({ mode: "ASCENT", sceneMode: "ASCENT", phase: "ASCENT", isTransitioning: true, inputLocked: true, progress: 0, selectedStarId: null, selectedStarPosition: null }),
   setPlaceFromRoute: (pathname) => set((state) => {
     const nextPhase = placeForPathname(pathname);
     // Focus and Replay share an intentional star selection. All other scene
@@ -80,10 +88,7 @@ export const useSceneStore = create<SceneState>((set) => ({
         (retainsStar || (state.selectedStarId === null && state.selectedStarPosition === null))) {
       return state;
     }
-    return {
-      ...phaseState(nextPhase),
-      ...(retainsStar ? {} : { selectedStarId: null, selectedStarPosition: null }),
-    };
+    return navigatedPhaseState(nextPhase);
   }),
   setProgress: (p) => set({ progress: clamp01(p) }),
   unlock: () => set({ isTransitioning: false, inputLocked: false }),
