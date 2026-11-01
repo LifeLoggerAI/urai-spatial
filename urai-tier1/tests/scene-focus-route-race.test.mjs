@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import test from 'node:test';
 const require = createRequire(import.meta.url);
 const ts = require('typescript');
-const source = readFileSync(new URL('../src/useSceneStore.ts', import.meta.url),'utf8');
+const source = readFileSync(new URL('../src/spatial/store/useSceneStore.ts', import.meta.url),'utf8');
 const compiled = ts.transpileModule(source, {reportDiagnostics:true, compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}});
 assert.equal((compiled.diagnostics||[]).filter(x=>x.category===ts.DiagnosticCategory.Error).length,0);
 const module={exports:{}};
