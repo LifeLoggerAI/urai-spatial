@@ -43,3 +43,13 @@ test('draft PR-only workflow, encryption-only transport, no plaintext footage up
   assert.doesNotMatch(workflow, /secrets\./)
   assert.match(workflow, /retention-days: 1/)
 })
+
+test('conflicted PR has exact-branch push execution but must prove current owner-controlled draft before browser', () => {
+  assert.match(workflow, /push:\n    branches: \[\'parallel\/digital-human-performance-20261018\'\]/)
+  assert.match(workflow, /github\.ref == 'refs\/heads\/parallel\/digital-human-performance-20261018'/)
+  assert.match(workflow, /GENESIS_OWNER_DRAFT_PR_IDENTITY_MISMATCH/)
+  assert.match(workflow, /pr\.head\?\.sha === triggeringSha/)
+  assert.match(workflow, /pr\.state === 'open' && pr\.draft === true/)
+  assert.match(workflow, /pr\.base\?\.ref === 'repair\/release-closure-integration-20261007'/)
+  assert.doesNotMatch(workflow, /pull_request_target/)
+})

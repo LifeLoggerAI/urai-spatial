@@ -45,3 +45,7 @@ Running the recording requires the authorized GitHub Actions Chromium/WebGL runn
 ## Next action / current connector boundary
 
 The engineering package is prepared but the GitHub write through the connected tool was declined by a safety check. Do not claim a commit, Actions run, native clip or verified film yet. An authorized maintainer may review the file list in this HOLD package and apply a single non-force commit to the existing draft PR #1850 only after rereading its actual branch head and confirming no concurrent changes. The workflow is `pull_request` synchronize-only for that draft PR, standard public GitHub Actions runner, no Vercel deployment. Recheck the result and SHA after native readback. No public social publishing or provider activation is permitted.
+
+## Conflicted draft PR execution recovery (2026-11-01)
+
+GitHub reported draft PR #1850 as `mergeable_state: dirty` and did not schedule the new `pull_request` capture workflow after commit `99285045f083bb311934d4dd0c2f84bfabfd6d7a`. To avoid modifying the release-controller branch or weakening draft custody, the workflow now also admits a **push solely to** `parallel/digital-human-performance-20261018`. Before any browser work, the runner performs a live read-only GitHub PR API check: exact PR #1850, owner-repository head, exact triggering SHA, open draft, and unchanged target branch. Any mismatch fails closed. The `pull_request` trigger and its original constraints remain intact. No automatic production deployment, provider dispatch, or publishing occurs.
