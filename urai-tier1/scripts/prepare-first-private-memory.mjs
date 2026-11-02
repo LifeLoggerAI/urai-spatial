@@ -9,7 +9,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, lstatSync, mkdirSync, openSync, fstatSync, realpathSync, writeFileSync, readSync, closeSync, unlinkSync, rmdirSync } from 'node:fs'
 import { resolve, sep, dirname, basename, relative, isAbsolute } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { verifiedPrivateFileHash } from './private-file-integrity.mjs'
+import { verifiedPrivateFileHash, samePrivateRegularFile } from './private-file-integrity.mjs'
 
 export const MAX_OWNED_MEMORY_MEDIA_BYTES = 4 * 1024 * 1024
 const IDENTIFIER = /^[A-Za-z0-9_-]{1,128}$/
@@ -20,7 +20,7 @@ const ALLOWED_BASIS = new Set(['verified-event-time', 'archive-time-proxy-not-ca
 function assert(value, message) { if (!value) throw new Error(message) }
 function safePrivateSource(path) {
   assert(typeof path === 'string' && path.trim(), 'PRIVATE_SOURCE_PATH_REQUIRED')
-  const info = lstatSync(path)
+  const info = lstatSync(path, { bigint: true })
   assert(info.isFile() && !info.isSymbolicLink(), 'PRIVATE_SOURCE_MUST_BE_REGULAR_FILE')
   return info
 }
@@ -60,7 +60,7 @@ export async function prepareFirstPrivateMemory(options) {
   assert(typeof summary === 'string' && summary.trim().length >= 10 && summary.length <= 2000, 'SOURCE_TRUTH_SUMMARY_REQUIRED')
   assert(Array.isArray(people) && people.length === 0, 'PERSON_IDENTITY_NOT_VERIFIED_LEAVE_PEOPLE_EMPTY')
   const stat = safePrivateSource(sourcePath)
-  assert(stat.size > 0 && stat.size <= MAX_OWNED_MEMORY_MEDIA_BYTES, 'OWNED_MEDIA_4MIB_LIMIT_EXCEEDED')
+  assert(stat.size > 0n && stat.size <= BigInt(MAX_OWNED_MEMORY_MEDIA_BYTES), 'OWNED_MEDIA_4MIB_LIMIT_EXCEEDED')
   // Read only the signature bytes of the sensitive derivative, never its full
   // contents into a second in-memory buffer. Keep the descriptor pinned to the
   // same regular file identity checked above.
@@ -68,9 +68,9 @@ export async function prepareFirstPrivateMemory(options) {
   const handle = openSync(sourcePath, 'r')
   let sampleLength = 0
   try {
-    const opened = fstatSync(handle)
-    assert(opened.isFile() && opened.dev === stat.dev && opened.ino === stat.ino
-      && opened.size > 0 && opened.size <= MAX_OWNED_MEMORY_MEDIA_BYTES,
+    const opened = fstatSync(handle, { bigint: true })
+    assert(samePrivateRegularFile(stat, opened)
+      && opened.size > 0n && opened.size <= BigInt(MAX_OWNED_MEMORY_MEDIA_BYTES),
       'PRIVATE_SOURCE_CHANGED_DURING_PREFLIGHT')
     while (sampleLength < header.length) {
       const count = readSync(handle, header, sampleLength, header.length - sampleLength, sampleLength)
@@ -80,9 +80,9 @@ export async function prepareFirstPrivateMemory(options) {
   } finally { closeSync(handle) }
   const content = sourceFormat(header.subarray(0, sampleLength))
   const originalStat = safePrivateSource(originalPath)
-  assert(originalStat.size > 0, 'ORIGINAL_EMPTY')
+  assert(originalStat.size > 0n && originalStat.size <= BigInt(Number.MAX_SAFE_INTEGER), 'ORIGINAL_SIZE_INVALID')
   const distinctPaths = realpathSync(sourcePath) !== realpathSync(originalPath)
-  const distinctFiles = !(stat.dev === originalStat.dev && stat.ino > 0 && stat.ino === originalStat.ino)
+  const distinctFiles = !(stat.dev === originalStat.dev && stat.ino > 0n && stat.ino === originalStat.ino)
   assert(distinctPaths && distinctFiles, 'DERIVATIVE_MUST_NOT_OVERWRITE_ORIGINAL')
   const [originalSha256, derivativeSha256] = await Promise.all([verifiedPrivateFileHash(originalPath, originalStat), verifiedPrivateFileHash(sourcePath, stat)])
   assert(SHA256.test(originalSha256) && SHA256.test(derivativeSha256), 'SOURCE_HASH_UNAVAILABLE')
@@ -92,7 +92,7 @@ export async function prepareFirstPrivateMemory(options) {
     sourceMedia: [],
     sourceProvenance: {
       originalSourceRef: sourceRef.trim(), originalSha256, derivativeSha256,
-      originalByteLength: originalStat.size, derivativeByteLength: stat.size,
+      originalByteLength: Number(originalStat.size), derivativeByteLength: Number(stat.size),
       derivedContentType: content.mimeType, occurredAtBasis,
       speakerDiarization: 'not-verified', transcriptSync: 'not-verified',
       authenticity: 'source-derivative-not-generated-autobiography',
@@ -124,12 +124,12 @@ export async function prepareFirstPrivateMemory(options) {
       initialVisibility: 'hidden',
       existingCallable: 'registerMemoryMedia', existingAuthorityCallable: 'getMemoryMediaUploadAuthority',
       request: { memoryId, operationId: 'firstlife_' + createHash('sha256').update(ownerId + '\n' + memoryId + '\n' + derivativeSha256).digest('hex').slice(0, 40), kind: 'audio', contentType: content.mimeType },
-      fileByteLength: stat.size, sha256: derivativeSha256,
+      fileByteLength: Number(stat.size), sha256: derivativeSha256,
       filePathNotEmbedded: true, base64NotEmbedded: true,
       activateAfter: 'ready owner-scoped receipt, actual playback and current consent checks',
     },
     recordedTruth: { originalSha256, derivativeSha256, contentType: content.mimeType,
-      byteLength: stat.size, originalByteLength: originalStat.size, occurredAtBasis,
+      byteLength: Number(stat.size), originalByteLength: Number(originalStat.size), occurredAtBasis,
       claimedReconstruction: false, claimedLifeMovieAcceptance: false },
   }
 }
