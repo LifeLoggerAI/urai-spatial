@@ -375,7 +375,7 @@ test('aborted and deadline-limited streams retain full charges and never release
   const f=fixture(), controller=new AbortController(), args=f.directArgs(); args[7].signal=controller.signal
   const response=await f.paidFetch(...args); controller.abort(); await assert.rejects(response.text()); assert.equal([...f.rows.values()][0].hold,2500000); assert.equal([...f.rows.values()][0].attempt.status,'RECONCILIATION_REQUIRED')
   const g=fixture(); g.setProvider(async()=>new Response(new ReadableStream({ pull:()=>new Promise(()=>{}) })))
-  const before=Date.now(), stalled=await g.paidFetch(...g.directArgs()); await assert.rejects(stalled.text()); assert.ok(Date.now()-before<3500); assert.equal([...g.rows.values()][0].hold,2500000); assert.equal(g.providerCalls.length,1)
+  const stalled=await g.paidFetch(...g.directArgs()); await assert.rejects(stalled.text()); assert.equal(g.providerCalls[0]?.init.signal.aborted,true, 'the original approved runtime must abort the stalled upstream stream'); assert.equal([...g.rows.values()][0].attempt.status,'RECONCILIATION_REQUIRED'); assert.equal([...g.rows.values()][0].hold,2500000); assert.equal(g.providerCalls.length,1)
   await assert.rejects(g.paidFetch(...g.directArgs())); assert.equal(g.providerCalls.length,1); assert.equal(g.calls.some(x=>x.action==='reconcile'),false)
 })
 
