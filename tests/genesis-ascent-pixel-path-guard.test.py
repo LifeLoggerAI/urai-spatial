@@ -1,7 +1,14 @@
 import unittest
 import tempfile
 from pathlib import Path
-from genesis_ascent_pixel_gate import private_evidence_path, HoldRefusal
+import importlib.util
+
+source = Path(__file__).resolve().parents[1] / 'scripts' / 'genesis-ascent-pixel-gate.py'
+spec = importlib.util.spec_from_file_location('genesis_ascent_pixel_gate', source)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+private_evidence_path = module.private_evidence_path
+HoldRefusal = module.HoldRefusal
 
 class PrivateAscentPathTests(unittest.TestCase):
     def setUp(self):
