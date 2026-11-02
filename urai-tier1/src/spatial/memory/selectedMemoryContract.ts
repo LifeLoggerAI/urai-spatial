@@ -145,7 +145,9 @@ function trustedMemoryMediaUrl(value: unknown, storageBucket?: string | null) {
   if (!storageBucket) return null
   try {
     const parsed = new URL(raw)
-    if (parsed.protocol !== 'https:') return null
+    // Userinfo and nonstandard ports change the origin/security context even
+    // when the hostname text appears to match an approved Storage endpoint.
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.port) return null
     if (parsed.hostname === 'firebasestorage.googleapis.com') {
       return parsed.pathname.startsWith(`/v0/b/${storageBucket}/o/`) ? raw : null
     }

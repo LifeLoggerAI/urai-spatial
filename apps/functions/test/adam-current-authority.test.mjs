@@ -17,6 +17,7 @@ function load(name,imports,globals={}){
  return module.exports
 }
 const policyAuthority=load('consentPolicyAuthority.ts',{})
+const founderVoiceReceiptContract=load('adamFounderVoiceReceiptContract.mjs',{})
 function policy(){return{version:2,revision:4,ownerId:uid,domains:Object.fromEntries(['memory','location','models','exports','workforce','identity'].map(domain=>[domain,{mode:domain==='models'?'granted':'denied',retentionDays:null,precise:false,replayVisible:false,lifeMapVisible:false,modelContext:domain==='models',sharingEnabled:false,automationEnabled:false,likenessEnabled:false}])),enforcement:{state:'fully-enforced',jobId:null,affectedTargets:[],providerState:'not-applicable'}}}
 function fixture(lane,controls={}){
  const state={uid,policy:policy(),connection:{processingAllowed:true,revocationState:'not-required'},paid:[],authReads:0,policyReads:0,outputChecks:0,expired:false}
@@ -39,6 +40,7 @@ function fixture(lane,controls={}){
   'firebase-functions/params':{defineSecret:()=>({value:()=> 'synthetic-not-a-key'})},'firebase-functions/v2/https':{onRequest:(_options,handler)=>handler},
   '../../../packages/localization/src/contentLanguage':{contentLanguage:tag=>tag==='en-US'?{speechTag:'en-US'}:null,URAI_CONTENT_LANGUAGE_TAGS:['en-US']},
   './consentPolicyAuthority':policyAuthority,
+  './adamFounderVoiceReceiptContract.mjs':founderVoiceReceiptContract,
   './protectedProviderSpend':{paidSpatialFetch,assertSpatialPaidOutputCurrent(upstream){assert.ok(upstream);state.outputChecks++;if(state.expired)throw new SpatialSpendError()},SpatialSpendError,SPATIAL_SPEND_WORKER_TOKENS_JSON:{}},
  },{process:{env:{ADAM_PRESENCE_ENABLED:controls.disabled?'false':'true',FOUNDER_VOICE_ENABLED:'true',FOUNDER_ELEVENLABS_VOICE_ID:'synthetic-voice'}},setTimeout:(fn,ms)=>setTimeout(fn,controls.timeoutMs??ms)})
  const response={statusCode:200,headersSent:false,writableEnded:false,chunks:[],body:null,headers:{},status(code){this.statusCode=code;return this},setHeader(key,value){this.headers[key]=value},on(){},write(value){this.headersSent=true;this.chunks.push(Buffer.from(value))},end(value){if(value)this.write(value);this.writableEnded=true},json(value){this.body=value;this.headersSent=true;this.writableEnded=true}}
@@ -46,7 +48,46 @@ function fixture(lane,controls={}){
  const output=()=>Buffer.concat(response.chunks).toString()
  return{state,run,response,output}
 }
-for(const lane of ['reasoning','voice']){
+// With no trusted Founder voice issuer, the endpoint must refuse before any
+// provider call. These cases deliberately do NOT claim to exercise an admitted
+// in-flight Founder audio stream; those tests require a reviewed issuer.
+const voiceDeniedCases=[
+ ['otherwise-valid request',()=>fixture('voice')],
+ ['owner mutation at hypothetical rate write',()=>fixture('voice',{afterRate(state){state.uid='other-owner'}})],
+ ['consent mutation at hypothetical rate write',()=>fixture('voice',{afterRate(state){state.policy.domains.models.mode='denied'}})],
+ ['foreign stored policy',()=>{const f=fixture('voice');f.state.policy.ownerId='other-owner';return f}],
+ ['partial stored policy',()=>{const f=fixture('voice');delete f.state.policy.domains.location;return f}],
+ ...['owner','consent','provider','expiry'].map(reason=>[
+   'hypothetical in-flight withdrawal: '+reason,
+   ()=>fixture('voice',{onPaid(state,leaf){
+     if(leaf==='adam-moderation')return
+     if(reason==='owner')state.uid='other-owner'
+     else if(reason==='consent')state.policy.domains.models.mode='denied'
+     else if(reason==='provider')state.connection.revocationState='complete'
+     else state.expired=true
+   }}),
+ ]),
+ ['hypothetical output deadline',()=>fixture('voice',{timeoutMs:15,async onRead(){await new Promise(resolve=>setTimeout(resolve,35))}})],
+ ['hypothetical policy change after output read',()=>fixture('voice',{onRead(state,index){if(index===0)state.policy.domains.models.mode='denied'}})],
+]
+for(const [scenario,makeFixture] of voiceDeniedCases)test('actual Adam voice refuses before unapproved issuer: '+scenario,async()=>{
+ const f=makeFixture(),response=await f.run()
+ assert.equal(founderVoiceReceiptContract.founderVoiceIssuerReadiness().ready,false)
+ assert.equal(response.statusCode,409)
+ assert.equal(response.body?.error,founderVoiceReceiptContract.FOUNDER_VOICE_RECEIPT_DENIED)
+ assert.equal(f.state.paid.length,0,'no paid provider dispatch')
+ assert.equal(f.state.outputChecks,0,'no post-provider output path')
+ assert.equal(f.state.policyReads,0,'current policy cannot substitute for voice issuance')
+ assert.equal(f.output(),'','no private audio bytes')
+})
+test('actual Adam voice disabled remains hard-off before issuer or paid dispatch',async()=>{
+ const f=fixture('voice',{disabled:true}),response=await f.run()
+ assert.equal(response.statusCode,503)
+ assert.equal(f.state.paid.length,0)
+ assert.equal(f.output(),'')
+})
+
+for(const lane of ['reasoning']){
  test(`actual Adam ${lane} retains guarded private success`,async()=>{
   const f=fixture(lane),response=await f.run();assert.equal(response.statusCode,200);assert.ok(f.output().includes(lane==='voice'?audio:answer))
   assert.ok(f.state.authReads>1);assert.ok(f.state.policyReads>1);assert.ok(f.state.outputChecks>0)

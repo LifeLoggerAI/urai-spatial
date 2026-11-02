@@ -375,7 +375,7 @@ test('aborted and deadline-limited streams retain full charges and never release
   const f=fixture(), controller=new AbortController(), args=f.directArgs(); args[7].signal=controller.signal
   const response=await f.paidFetch(...args); controller.abort(); await assert.rejects(response.text()); assert.equal([...f.rows.values()][0].hold,2500000); assert.equal([...f.rows.values()][0].attempt.status,'RECONCILIATION_REQUIRED')
   const g=fixture(); g.setProvider(async()=>new Response(new ReadableStream({ pull:()=>new Promise(()=>{}) })))
-  const before=Date.now(), stalled=await g.paidFetch(...g.directArgs()); await assert.rejects(stalled.text()); assert.ok(Date.now()-before<3500); assert.equal([...g.rows.values()][0].hold,2500000); assert.equal(g.providerCalls.length,1)
+  const stalled=await g.paidFetch(...g.directArgs()); await assert.rejects(stalled.text()); assert.equal(g.providerCalls[0]?.init.signal.aborted,true, 'the original approved runtime must abort the stalled upstream stream'); assert.equal([...g.rows.values()][0].attempt.status,'RECONCILIATION_REQUIRED'); assert.equal([...g.rows.values()][0].hold,2500000); assert.equal(g.providerCalls.length,1)
   await assert.rejects(g.paidFetch(...g.directArgs())); assert.equal(g.providerCalls.length,1); assert.equal(g.calls.some(x=>x.action==='reconcile'),false)
 })
 
@@ -441,6 +441,7 @@ function leafFixture(leaf, change = {}) {
     if (id === 'firebase-functions/v2/https') return { onRequest:(options,handler) => { assert.ok(options.secrets.includes(f.helper.SPATIAL_SPEND_WORKER_TOKENS_JSON)); return handler } }
     if (id === '../../../packages/localization/src/contentLanguage') return language
     if (id === './consentPolicyAuthority') return policyAuthority
+    if (id === './adamFounderVoiceReceiptContract.mjs') return sourceModule('../src/adamFounderVoiceReceiptContract.mjs', unexpected => { throw new Error('Unexpected founder receipt import '+unexpected) })
     if (id === './councilGraphEvidenceAuthority') return graphEvidenceAuthority
     if (id === './protectedProviderSpend') return { ...f.helper, paidSpatialFetch:f.paidFetch }
     if (id === './personPresenceAuthority') return { PersonPresenceAuthorityError, loadPersonPresenceAuthority:requireAuthority, requirePersonPresenceRenderBinding:async () => { await requireAuthority(); return { get:key => ({ provider:'elevenlabs',bindingHash:'e'.repeat(64),providerResourceId:'SYNTHETIC_VOICE',providerModelId:'synthetic-model' })[key] } } }
@@ -471,8 +472,19 @@ for (const leaf of leaves) {
   test(`actual paid leaf ${leaf[1]} denies absent authentic admission before any external POST`, async () => {
     const f=leafFixture(leaf,{ missingBinding:true }); await f.invoke(); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.filter(x => x.action === 'reserve').length,0)
   })
-  test(`actual paid leaf ${leaf[1]} uses protected exact request and retains stream charges`, async () => {
-    const f=leafFixture(leaf), result=await f.invoke(); assert.equal(result.code,200,JSON.stringify(result.json)); assert.equal(f.providerCalls.length,leaf[3] === 'openai' ? 2 : 1)
+  test(`actual paid leaf ${leaf[1]} ${leaf[1]==='adamFounderVoiceProvider'?'refuses before voice issuer and provider spend':'uses protected exact request and retains stream charges'}`, async () => {
+    const f=leafFixture(leaf), result=await f.invoke();
+    if(leaf[1]==='adamFounderVoiceProvider'){
+      assert.equal(result.code,409)
+      assert.equal(result.json?.error,'FOUNDER_PLAYBACK_AUTHORITY_NOT_READY')
+      assert.equal(f.providerCalls.length,0)
+      assert.equal(f.calls.some(x=>x.action==='reserve'),false)
+      assert.equal(f.rows.size,0)
+      assert.equal(f.controls.tokenReads,0)
+      assert.equal(result.chunks.length,0)
+      return
+    }
+    assert.equal(result.code,200,JSON.stringify(result.json)); assert.equal(f.providerCalls.length,leaf[3] === 'openai' ? 2 : 1)
     for (const row of f.rows.values()) { assert.equal(row.attempt.status,'RECONCILIATION_REQUIRED'); assert.equal(row.attempt.charges_reconciled,false); assert.equal(row.hold,2500000) }
     assert.equal(f.calls.some(x => x.action === 'reconcile'),false)
   })

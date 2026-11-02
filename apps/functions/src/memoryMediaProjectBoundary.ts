@@ -43,17 +43,32 @@ export function resolveMemoryMediaProject(env: Environment,
   const emulatorConfigured = EMULATOR_KEYS.some(key => Boolean(env[key]))
   const firebaseConfig = exactConfig(env.FIREBASE_CONFIG)
 
+  // Firebase Admin's default storage bucket may come from FIREBASE_CONFIG.
+  // A matching projectId alone never authorizes a different project's bucket.
+  // This guard is deliberately limited to the default Firebase bucket names;
+  // any custom private-media bucket needs separately reviewed source authority.
+  const requireDefaultBucketBinding = () => {
+    const buckets = [project + '.appspot.com', project + '.firebasestorage.app']
+    const configured = firebaseConfig?.storageBucket
+    const override = env.FIREBASE_STORAGE_BUCKET
+    if ((configured !== undefined && (typeof configured !== 'string' || !buckets.includes(configured)))
+      || (override !== undefined && !buckets.includes(override))
+      || (configured !== undefined && override !== undefined && configured !== override)) denied()
+  }
+
   if (project === PRODUCTION_PROJECT) {
-    // Exact old production binding, with no staging override or emulator.
+    // Exact production project, no staging/emulator, no alternate bucket.
     if (stagingConfigured || emulatorConfigured || (env.FIREBASE_CONFIG &&
       (!firebaseConfig || firebaseConfig.projectId !== project))) denied()
+    requireDefaultBucketBinding()
     return project
   }
 
   if (env.FUNCTIONS_EMULATOR === 'true') {
-    // Only genuinely fictional demo projects; no staging option in an emulator.
+    // Only genuinely fictional demo projects; no production bucket override.
     if (stagingConfigured || !/^demo-[a-z0-9-]{1,50}$/.test(project)
       || (env.FIREBASE_CONFIG && (!firebaseConfig || firebaseConfig.projectId !== project))) denied()
+    requireDefaultBucketBinding()
     return project
   }
 

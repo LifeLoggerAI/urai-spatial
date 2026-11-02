@@ -46,8 +46,8 @@ function cleanString(value: unknown, max = 160) {
 }
 
 function finiteNumber(value: unknown, min: number, max: number) {
-  const next = Number(value)
-  return Number.isFinite(next) && next >= min && next <= max ? next : undefined
+  return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
+    ? value : undefined
 }
 
 function enabledDomain(value: unknown) {

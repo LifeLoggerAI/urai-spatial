@@ -186,7 +186,7 @@ function fixture(options = {}) {
       module: result, exports: result.exports, Buffer, Error, Date: class extends Date { static now() { return options.clock?.value ?? now } },
       process: { env: { GCLOUD_PROJECT: 'urai-4dc1d', ...options.env } },
       require: name => { if (name === 'firebase-admin') return admin; if (name === 'firebase-admin/firestore') return { Timestamp, FieldPath: { documentId: () => '__name__' }, FieldValue: admin.firestore.FieldValue }; if (name === 'firebase-functions/v1') return functions;
-        if (name === 'node:crypto') return crypto; if (name === 'node:stream/promises') return require(name); if (name === './exportPagination') return loadPagination(); if (name === './consentPolicyAuthority') return loadPolicyAuthority(); if (name === './memoryMediaProjectBoundary') return require(path.join(path.dirname(filename), 'memoryMediaProjectBoundary.js')); throw new Error(`Unexpected memory-media dependency ${name}`) },
+        if (name === 'node:crypto') return crypto; if (name === 'node:stream/promises') return require(name); if (name === './exportPagination') return loadPagination(); if (name === './consentPolicyAuthority') return loadPolicyAuthority(); if (name === './memoryMediaProjectBoundary') return require(path.join(path.dirname(filename), 'memoryMediaProjectBoundary.js')); if (name === './privatePreparedMediaAuthority') return require(path.join(path.dirname(filename), 'privatePreparedMediaAuthority.js')); throw new Error(`Unexpected memory-media dependency ${name}`) },
     }, { filename: 'memoryMedia.strict-compiled.js' })
     return memoryMedia = result.exports
   }
@@ -259,7 +259,7 @@ test('unbound memory media cannot publish a portable package containing a bearer
 const fictionalPng = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.from('fictional memory pixels')])
 function mediaFixture(options = {}) {
   const f = fixture(options)
-  f.records.set(`${prefix}/memories/synthetic-memory`, { ownerId: uid, sourceMedia: [] })
+  f.records.set(`${prefix}/memories/synthetic-memory`, { ownerId: uid, consentState: 'authorized', sourceMedia: [] })
   f.records.set(`consentRecords/${uid}_memory_storage`, { uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0',
     status: 'granted', receiptHash: 'b'.repeat(64), expiresAt: new f.Timestamp(now + 3600000) })
   f.upload = (changes = {}, context = f.context) => f.media.registerMemoryMedia({ memoryId: 'synthetic-memory', operationId: 'synthetic-media-upload',
@@ -268,6 +268,36 @@ function mediaFixture(options = {}) {
     await f.handlers.processExportJob(await f.db.doc(jobPath).get()); return JSON.parse(f.objects.get(exportPath).bytes.toString()) }
   return f
 }
+
+
+test('current C1 owner with separately projected C7 grant admits media authority before any Storage effects', async () => {
+  const f = mediaFixture()
+  const authority = await f.media.getMemoryMediaUploadAuthority({ memoryId: 'synthetic-memory' }, f.context)
+  assert.equal(authority.ownerId, uid)
+  assert.equal(authority.memoryId, 'synthetic-memory')
+  assert.equal(authority.consentRevision, 4)
+  assert.equal(authority.expiresAt, now + 3600000)
+  assert.equal(f.stats.storageWrites.length, 0)
+  assert.equal(f.stats.signed, 0)
+})
+
+test('current C1 owner remains valid without separate C7 grant or projection', async () => {
+  const f = mediaFixture()
+  f.records.delete(canonicalPath)
+  f.records.delete(canonicalFencePath)
+  const authority = await f.media.getMemoryMediaUploadAuthority({ memoryId: 'synthetic-memory' }, f.context)
+  assert.equal(authority.ownerId, uid)
+  assert.equal(authority.consentRevision, 4)
+  assert.equal(f.stats.storageWrites.length, 0)
+})
+
+test('C7 export grant never substitutes for revoked C1 memory authority', async () => {
+  const f = mediaFixture()
+  f.records.get(`consentRecords/${uid}_memory_storage`).status = 'revoked'
+  await assert.rejects(f.media.getMemoryMediaUploadAuthority({ memoryId: 'synthetic-memory' }, f.context), /MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED/)
+  assert.equal(f.stats.storageWrites.length, 0)
+  assert.equal(f.stats.signed, 0)
+})
 
 test('actual compiled producer registers the attempt before create-only bytes and exports verified media without a URL credential', async () => {
   let observedAttempt = false
@@ -1321,7 +1351,7 @@ test('actual Node pipeline obeys byte integrity/backpressure and stops canonical
 
 test('deployment source guard rejects canonical namespace, wrong project, wrong route and Storage credentials',async()=>{
   const root=path.resolve(__dirname,'../../..')
-  const {verifySpatialExportDeploymentBoundary:verify}=await import(path.join(root,'scripts/check-spatial-export-deployment-boundary.mjs'))
+  const {verifySpatialExportDeploymentBoundary:verify}=await import(require('node:url').pathToFileURL(path.join(root,'scripts/check-spatial-export-deployment-boundary.mjs')).href)
   const baseline={index:fs.readFileSync(path.join(root,'apps/functions/src/index.ts'),'utf8'),operations:fs.readFileSync(path.join(root,'apps/functions/src/privacyOperations.ts'),'utf8'),firebase:JSON.parse(fs.readFileSync(path.join(root,'firebase.json'),'utf8')),projects:JSON.parse(fs.readFileSync(path.join(root,'.firebaserc'),'utf8'))}
   assert.deepEqual(verify(baseline),[])
   const samples=[

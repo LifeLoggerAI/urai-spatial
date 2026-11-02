@@ -127,9 +127,8 @@ function parseDomainPolicy(value: unknown): ConsentDomainPolicy {
   if (!CONSENT_MODES.includes(mode)) {
     throw new functions.https.HttpsError('invalid-argument', 'Invalid consent mode.')
   }
-  const retentionValue = value.retentionDays
-  const retentionDays = retentionValue === null ? null : Number(retentionValue)
-  if (retentionDays !== null && ![30, 90, 365].includes(retentionDays)) {
+  const retentionDays = value.retentionDays
+  if (retentionDays !== null && (typeof retentionDays !== 'number' || ![30, 90, 365].includes(retentionDays))) {
     throw new functions.https.HttpsError('invalid-argument', 'Invalid retention period.')
   }
   const booleanFields = [
@@ -235,8 +234,8 @@ export const applyConsentPolicy = functions.https.onCall(async (data, context) =
     throw new functions.https.HttpsError('invalid-argument', 'Unknown consent domain.')
   }
   const next = parseDomainPolicy(data?.next)
-  const expectedRevision = Number(data?.expectedRevision)
-  if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
+  const expectedRevision = data?.expectedRevision
+  if (typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision) || expectedRevision < 0) {
     throw new functions.https.HttpsError('invalid-argument', 'Invalid expected revision.')
   }
 

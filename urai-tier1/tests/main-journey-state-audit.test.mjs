@@ -36,7 +36,7 @@ test('actual complete journey audit accepts the current localized selected-memor
 })
 
 for (const mutation of [
-  {label:'explicit demo node authorization', path:hookPath, before:"(demoRequested ? params.get('node') : null)", after:"params.get('node')", failure:'Selected-memory hook reads node only under explicit demo'},
+  {label:'explicit demo node authorization', path:hookPath, before:"(demoRequested ? params.get('node') : null)", after:"params.get('node')", failure:'Selected-memory hook restricts Life Map node fallback to explicit demo'},
   {label:'matching return node identity', path:focusPath, before:"const sameMemory = incoming.get('memoryId') === memory.id && incoming.get('manifestId') === memory.replayManifest.id", after:'const sameMemory = true', failure:'Focus binds return node to matching selected memory and manifest'},
   {label:'scene node validation', path:focusPath, before:"const validNode = Boolean(node && /^[A-Za-z0-9._:-]{1,120}$/.test(node))", after:'const validNode = Boolean(node)', failure:'Focus validates incoming scene node'},
   {label:'projected node authorization', path:focusPath, before:"const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id", after:'const returnNode = node!', failure:'Focus limits projected return node to authenticated selection'},
