@@ -17,6 +17,8 @@ export function assertPreparedPrivateMediaFirstUpload(
   const provenance = asRow(row.sourceProvenance)
   const isPrepared = Object.prototype.hasOwnProperty.call(provenance, 'derivativeSha256')
     || provenance.authenticity === 'source-derivative-not-generated-autobiography'
+    || Object.prototype.hasOwnProperty.call(row, 'firstPrivateMemoryConsent')
+    || Object.prototype.hasOwnProperty.call(row, 'firstPrivateMemoryActivation')
   const marked = operationId.startsWith('firstlife_')
   const current = row.sourceMedia
   if (current !== undefined && !Array.isArray(current)) throw new Error('FIRST_PRIVATE_MEDIA_BINDING_INVALID')
@@ -24,9 +26,20 @@ export function assertPreparedPrivateMediaFirstUpload(
     if (marked) throw new Error('FIRST_PRIVATE_MEDIA_BINDING_INVALID')
     return
   }
-  // Ordinary subsequent attachments remain supported after an actual media
-  // receipt exists, but the first source cannot be silently bypassed.
-  if (Array.isArray(current) && current.length > 0 && !marked) return
+  // Subsequent ordinary attachments remain supported after an actual first
+  // audio receipt exists, but erasing provenance must never downgrade a
+  // server-marked first memory into an ordinary attachment path.
+  if (Array.isArray(current) && current.length > 0 && !marked) {
+    const boundAudio = current.some(entry => {
+      const media = asRow(entry)
+      return media.kind === 'audio' && SHA256.test(String(media.mediaReceiptId))
+    })
+    if (provenance.authenticity !== 'source-derivative-not-generated-autobiography'
+      || !SHA256.test(String(provenance.originalSha256))
+      || !SHA256.test(String(provenance.derivativeSha256))
+      || !boundAudio) throw new Error('FIRST_PRIVATE_MEDIA_BINDING_INVALID')
+    return
+  }
   if (provenance.authenticity !== 'source-derivative-not-generated-autobiography'
     || typeof uid !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(uid)
     || typeof memoryId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(memoryId)
@@ -60,6 +73,8 @@ export function assertFirstPrivateMemoryPlaybackBinding(
   const source = asRow(selected.sourceProvenance)
   const prepared = Object.prototype.hasOwnProperty.call(source, 'derivativeSha256')
     || source.authenticity === 'source-derivative-not-generated-autobiography'
+    || Object.prototype.hasOwnProperty.call(selected, 'firstPrivateMemoryConsent')
+    || Object.prototype.hasOwnProperty.call(selected, 'firstPrivateMemoryActivation')
   if (!prepared) return
   const activation = asRow(selected.firstPrivateMemoryActivation)
   if (selected.privacy !== 'private'
