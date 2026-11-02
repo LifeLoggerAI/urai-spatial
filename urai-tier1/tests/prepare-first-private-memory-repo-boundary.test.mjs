@@ -60,6 +60,9 @@ async function exportedSourceFixture() {
   const script = join(source, 'urai-tier1', 'scripts', 'prepare-first-private-memory.mjs')
   mkdirSync(dirname(script), { recursive: true })
   copyFileSync(new URL('../scripts/prepare-first-private-memory.mjs', import.meta.url), script)
+  // Export both modules required by the real preflight entrypoint. The guard
+  // must be tested after an authentic source export can actually import.
+  copyFileSync(new URL('../scripts/private-file-integrity.mjs', import.meta.url), join(dirname(script), 'private-file-integrity.mjs'))
   const module = await import(pathToFileURL(script).href)
   return { temp, source, write: module.privatePacketWrite }
 }
