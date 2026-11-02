@@ -46,5 +46,5 @@ test('both protected descriptor and byte-stream reuse the centralized authorizat
   assert.match(media, /async function playbackReceipt/)
   assert.match(media, /assertFirstPrivateMemoryPlaybackBinding\(authority\.memory\.data\(\), uid, memoryId, receiptId/)
   assert.match(media, /getMemoryMediaPlaybackAuthority[^]*playbackReceipt\(transaction, uid, memoryId, receiptId\)/)
-  assert.match(media, /streamMemoryMediaPlayback[^]*playbackReceipt\(transaction, uid, memoryId, receiptId\)/)
+  assert.match(media, /streamMemoryMediaPlayback[^]*playbackReceipt\(transaction, token\.uid, memoryId, receiptId\)/)
 })
