@@ -229,7 +229,7 @@ for (const testPath of tests) {
   }
   // Stripe's source-level registerHooks loader needs Node's native TypeScript loader,
   // not the tsx loader used by the other tests. Keep the original test in the gate.
-  const args = testPath.endsWith('/stripe-webhook-lifecycle.test.mjs')
+  const args = (testPath.endsWith('/stripe-webhook-lifecycle.test.mjs') || testPath.endsWith('/stripe-session-authority.test.mjs'))
     ? ['--experimental-strip-types', '--test', testPath]
     : ['--import', 'tsx', '--test', testPath]
   const result = spawnSync(process.execPath, args, { encoding: 'utf8' })
