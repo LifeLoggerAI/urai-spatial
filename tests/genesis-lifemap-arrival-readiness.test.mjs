@@ -37,3 +37,11 @@ test('private review refuses pre-existing evidence and samples destination conti
   assert.ok(capture.includes('RECEIPT_WRITE_FAILED'))
   assert.ok(!capture.includes('await page.waitForTimeout(900)'))
 })
+
+test('render proof only counts visible mounted scene and fresh WebGL frames',()=>{
+  assert.ok(world.includes('scene.traverseVisible((object) =>'))
+  assert.ok(world.includes('canvas.isConnected && !gl.getContext().isContextLost()'))
+  assert.ok(world.includes('frames.current >= 4 && calls > 0 && triangles > 0'))
+  assert.ok(world.includes('const element = gl.domElement.closest<HTMLElement>'))
+  assert.ok(!world.includes("?? document.querySelector<HTMLElement>('[data-testid=\"urai-true-3d-life-map\"]')"))
+})
