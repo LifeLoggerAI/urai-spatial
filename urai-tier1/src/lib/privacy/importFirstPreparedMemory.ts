@@ -43,6 +43,7 @@ export async function importFirstPreparedMemory(packet: unknown, file: FirstFile
     || !Number.isSafeInteger(file.size) || file.size < 1 || file.size > MEMORY_MEDIA_MAX_BYTES
     || file.size !== upload.fileByteLength) invalid()
   const validatedId = id as string // The guard above rejects non-string IDs.
+  const validatedOperationId = request.operationId as string // The same guard validates the operation ID.
   // Identity freshness precedes local media reads. A token refresh does not
   // reauthenticate an old session and must not authorize private file access.
   const token = await owner.getIdTokenResult(true); check()
@@ -93,7 +94,7 @@ export async function importFirstPreparedMemory(packet: unknown, file: FirstFile
   // The record is deliberately left for later owner-authorized recovery.
   try {
     const receipt = await attachOwnedMemoryFile({ id: validatedId, ownerId: owner.uid, privacy: 'hidden' }, file,
-      lifecycle, request.operationId, sha)
+      lifecycle, validatedOperationId, sha)
     check()
     if (receipt.memoryId !== id || typeof receipt.receiptId !== 'string' || !SHA.test(receipt.receiptId))
       throw new Error('FIRST_MEMORY_UPLOAD_RECEIPT_INVALID')
