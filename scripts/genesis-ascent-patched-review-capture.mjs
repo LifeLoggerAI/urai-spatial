@@ -93,7 +93,36 @@ try {
   try{
     const proof=await proveHomeSkyAscent(page,home,{mode:'pointer'})
     receipt.canonicalProof={ascentProven:proof.ascentProven,startingHeight:proof.startingHeight,peakHeight:proof.peakHeight,arrivalUrl:proof.arrivalUrl}
-    await page.waitForTimeout(450)
+    // Do not end recording on route navigation alone. Require the real 3D
+    // destination to mount its authored assets and render multiple frames.
+    const lifeMap=page.getByTestId('urai-true-3d-life-map')
+    await lifeMap.waitFor({state:'visible',timeout:90_000})
+    const ready=()=>page.evaluate(()=>{
+      const root=document.querySelector('[data-testid="urai-true-3d-life-map"]')
+      if(!root)return false
+      const data=root.dataset
+      const canvas=root.querySelector('canvas')
+      return data.lifeMapRenderReady==='true' && data.webglState==='ready'
+        && Number(data.lifeMapRenderCalls)>0
+        && Number(data.lifeMapVisibleObjects)>20
+        && Number(data.lifeMapVisibleAnchors)>=8
+        && Number(data.lifeMapAuthoredStarsMounted)>0
+        && canvas instanceof HTMLCanvasElement && canvas.width>=320 && canvas.height>=180
+    })
+    await page.waitForFunction(()=>{
+      const root=document.querySelector('[data-testid="urai-true-3d-life-map"]')
+      const data=root?.dataset
+      const canvas=root?.querySelector('canvas')
+      return !!data && data.lifeMapRenderReady==='true' && data.webglState==='ready'
+        && Number(data.lifeMapRenderCalls)>0 && Number(data.lifeMapVisibleObjects)>20
+        && Number(data.lifeMapVisibleAnchors)>=8 && Number(data.lifeMapAuthoredStarsMounted)>0
+        && canvas instanceof HTMLCanvasElement && canvas.width>=320 && canvas.height>=180
+    },null,{timeout:90_000,polling:100})
+    if(!await ready())throw Error('LIFEMAP_REAL_WEBGL_READY_LOST')
+    receipt.lifeMapRenderReady=true
+    await page.waitForTimeout(900)
+    if(!await ready())throw Error('LIFEMAP_REAL_WEBGL_NOT_STABLE')
+    receipt.lifeMapStableAfterMs=900
   }finally{samples=await sampler.stop()}
   const captureWindowEndMs=Date.now()
   await context.close()
@@ -122,12 +151,22 @@ try {
   // The native recording is NOT complete until the actual decoded pixels pass
   // this fail-closed preflight. This still does not authorize human approval.
   const preflightPath=path.join(destination,'URAI_ASCENT_DECODED_PIXEL_PREFLIGHT_HOLD.json')
-  const {stdout:preflightStdout}=await exec(preflightPython,[
+  let preflightStdout
+  try {
+    ({stdout:preflightStdout}=await exec(preflightPython,[
     path.join(repoRoot,'scripts','genesis-ascent-pixel-gate.py'),
     '--video',privateVideo,
     '--camera-telemetry',path.join(destination,'URAI_ASCENT_CAMERA_SOURCE_HOLD.json'),
     '--receipt',preflightPath,
-  ],{cwd:repoRoot,timeout:120_000,maxBuffer:1024*1024})
+    ],{cwd:repoRoot,timeout:120_000,maxBuffer:1024*1024}))
+  } catch(error) {
+    const diagnostic=String(error?.stdout||'').trim()
+    const stderr=String(error?.stderr||'').trim()
+    let reason=''
+    try { reason=JSON.parse(diagnostic).reason||'' } catch {}
+    receipt.pixelPreflightFailure={reason:reason||'PREFLIGHT_PROCESS_FAILED',stdout:diagnostic.slice(0,4000),stderr:stderr.slice(0,2000),exitCode:error?.code??null}
+    throw Error('PHYSICAL_ASCENT_PIXEL_PREFLIGHT_REJECTED: '+(reason||stderr||'unknown'))
+  }
   const preflight=JSON.parse(preflightStdout)
   if(preflight.status!=='PIXEL_AND_CAMERA_PREFLIGHT_PASSED_HUMAN_REVIEW_REQUIRED')throw Error('PHYSICAL_ASCENT_PIXEL_PREFLIGHT_REJECTED')
   receipt.pixelPreflight=preflight.status

@@ -144,6 +144,7 @@ const tests = [
   'tests/lifemap-galactic-structure.test.mjs',
   'tests/lifemap-deep-link-controls-contract.test.mjs',
   'tests/lifemap-scene-behavior.test.mjs',
+  '../tests/genesis-lifemap-arrival-readiness.test.mjs',
   'tests/lifemap-software-threshold-handoff.test.mjs',
   'tests/life-movie-privacy-contract.test.mjs',
   'tests/localization-runtime-contract.test.mjs',
