@@ -68,8 +68,13 @@ function RenderProofRepublisher() {
   const lastSampleFrame = useRef(0);
 
   const resolveOwner = useCallback(() => {
-    const element = gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
-      ?? document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+    // Only the mounted WebGL canvas can publish evidence for its own LifeMap.
+    // A detached prior renderer must never update a replacement page's DOM.
+    if (!gl.domElement.isConnected) {
+      root.current = null;
+      return null;
+    }
+    const element = gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
     root.current = element;
     return element;
   }, [gl]);
@@ -78,16 +83,22 @@ function RenderProofRepublisher() {
     let objects = 0;
     let anchors = 0;
     let authoredStars = 0;
-    scene.traverse((object) => {
-      if (object.visible) objects += 1;
-      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
-      // The environment can render while an authored memory-star GLB is loading.
-      // A partially rendered galaxy must never be reported as a finished arrival.
-      if (object.visible && object.userData.runtimeAsset === MEMORY_STAR_MODEL && object.userData.authored === true) authoredStars += 1;
+    // Only traversing visible branches correctly excludes authored assets
+    // beneath a hidden parent, which would otherwise yield false arrival.
+    scene.traverseVisible((object) => {
+      objects += 1;
+      if (object.name.startsWith("life-map-")) anchors += 1;
+      if (object.userData.runtimeAsset === MEMORY_STAR_MODEL && object.userData.authored === true) authoredStars += 1;
     });
     const calls = gl.info.render.calls;
     const triangles = gl.info.render.triangles;
-    const ready = calls > 0 && objects > 20 && anchors >= 8 && authoredStars > 0;
+    // A context-loss watchdog may run before the next real draw. Require
+    // multiple post-mount/post-recovery R3F frames, a live canvas, and a
+    // non-lost context before treating existing draw counters as evidence.
+    const canvas = gl.domElement;
+    const ready = canvas.isConnected && !gl.getContext().isContextLost()
+      && frames.current >= 4 && calls > 0 && triangles > 0
+      && objects > 20 && anchors >= 8 && authoredStars > 0;
     const signature = `${objects}:${anchors}:${authoredStars}:${calls}:${triangles}`;
     const element = resolveOwner();
     if (!element) return false;

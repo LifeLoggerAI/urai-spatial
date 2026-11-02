@@ -20,7 +20,9 @@ test('render proof cannot claim complete arrival before authored stars mount',()
 test('private recorder awaits real LifeMap rendering, not just the route',()=>{
   assert.ok(capture.includes("lifeMapRenderReady==='true'"))
   assert.ok(capture.includes('lifeMapAuthoredStarsMounted'))
-  assert.ok(capture.includes('LIFEMAP_REAL_WEBGL_NOT_STABLE'))
+  const stability=readFileSync(new URL('../scripts/genesis-lifemap-stable-arrival.mjs',import.meta.url),'utf8')
+  assert.ok(stability.includes('LIFEMAP_REAL_WEBGL_NOT_STABLE'))
+  assert.ok(capture.includes("from './genesis-lifemap-stable-arrival.mjs'"))
   assert.ok(!capture.includes('await page.waitForTimeout(450)'))
 })
 test('pixel validator failure reason is retained and release stays hold',()=>{
@@ -28,4 +30,20 @@ test('pixel validator failure reason is retained and release stays hold',()=>{
   assert.ok(capture.includes('PHYSICAL_ASCENT_PIXEL_PREFLIGHT_REJECTED'))
   assert.ok(capture.includes('NO-GO/HOLD'))
   assert.ok(capture.includes('receipt.completed=true'))
+})
+
+test('private review refuses pre-existing evidence and samples destination continuously',()=>{
+  assert.ok(capture.includes('PRIVATE_VIDEO_DESTINATION_NOT_EMPTY'))
+  assert.ok(capture.includes('requireStableLifeMapArrival({isReady:ready'))
+  assert.ok(capture.includes('lifeMapStabilitySamples'))
+  assert.ok(capture.includes('RECEIPT_WRITE_FAILED'))
+  assert.ok(!capture.includes('await page.waitForTimeout(900)'))
+})
+
+test('render proof only counts visible mounted scene and fresh WebGL frames',()=>{
+  assert.ok(world.includes('scene.traverseVisible((object) =>'))
+  assert.ok(world.includes('canvas.isConnected && !gl.getContext().isContextLost()'))
+  assert.ok(world.includes('frames.current >= 4 && calls > 0 && triangles > 0'))
+  assert.ok(world.includes('const element = gl.domElement.closest<HTMLElement>'))
+  assert.ok(!world.includes("?? document.querySelector<HTMLElement>('[data-testid=\"urai-true-3d-life-map\"]')"))
 })
