@@ -87,7 +87,10 @@ function RenderProofRepublisher() {
     });
     const calls = gl.info.render.calls;
     const triangles = gl.info.render.triangles;
-    const ready = calls > 0 && objects > 20 && anchors >= 8 && authoredStars > 0;
+    // WebGL draw counters may retain their last values after GPU context loss.
+    // Require a live context and fresh renderer frames before publishing arrival.
+    const contextLost = gl.getContext().isContextLost();
+    const ready = !contextLost && frames.current >= 4 && calls > 0 && objects > 20 && anchors >= 8 && authoredStars > 0;
     const signature = `${objects}:${anchors}:${authoredStars}:${calls}:${triangles}`;
     const element = resolveOwner();
     if (!element) return false;
@@ -132,14 +135,19 @@ function RenderProofRepublisher() {
       requestRender();
       publishSnapshot();
     }, 100);
-    canvas.addEventListener("webglcontextlost", markInvalid, false);
+    const handleContextLost = (event: Event) => {
+      // Cancel the default lost-context event so the browser may restore it.
+      event.preventDefault();
+      markInvalid();
+    };
+    canvas.addEventListener("webglcontextlost", handleContextLost, false);
     canvas.addEventListener("webglcontextrestored", markInvalid, false);
     markInvalid();
     return () => {
       invalidated.current = false;
       window.clearInterval(watchdog);
       if (invalidationFrame.current !== null) window.cancelAnimationFrame(invalidationFrame.current);
-      canvas.removeEventListener("webglcontextlost", markInvalid, false);
+      canvas.removeEventListener("webglcontextlost", handleContextLost, false);
       canvas.removeEventListener("webglcontextrestored", markInvalid, false);
     };
   }, [gl, publishSnapshot, requestRender, resolveOwner]);
