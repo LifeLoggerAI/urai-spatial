@@ -47,6 +47,7 @@ requireMatch('Replay authenticated memory authority', replayClient, /useSelected
 for (const token of ['memoryId', 'manifestId']) {
   requireMatch(`Selected-memory hook reads ${token}`, selectedMemoryHook, new RegExp(`params\\.get\\('${token}'\\)`))
 }
+requireMatch('Selected-memory hook requires explicit demo authority for node fallback', selectedMemoryHook, /const demoRequested = isExplicitDemoRequest\(params\)/)
 requireMatch('Selected-memory hook restricts Life Map node fallback to explicit demo', selectedMemoryHook, /params\.get\('memoryId'\) \?\? \(demoRequested \? params\.get\('node'\) : null\)/)
 requireMatch('Selected-memory manifest identity check', selectedMemoryHook, /parsed\.memory\.replayManifest\.id !== manifestId/)
 
@@ -55,6 +56,9 @@ requireMatch(
   focusClient,
   /new URLSearchParams\(\{\s*memoryId:\s*memory\.id,\s*manifestId:\s*memory\.replayManifest\.id,\s*node:\s*returnNode,\s*from:\s*'focus-artifact',?\s*\}\)/,
 )
+requireMatch('Focus binds return node to matching selected memory and manifest', focusClient, /const sameMemory = incoming\.get\('memoryId'\) === memory\.id && incoming\.get\('manifestId'\) === memory\.replayManifest\.id/)
+requireMatch('Focus validates incoming scene node', focusClient, /const validNode = Boolean\(node && \/\^\[A-Za-z0-9._:-\]\{1,120\}\$\/\.test\(node\)\)/)
+requireMatch('Focus limits projected return node to authenticated selection', focusClient, /const returnNode = sameMemory && validNode && \(originalSelection \|\| projectedSelection\) \? node! : memory\.star\.id/)
 requireMatch('Focus enters Replay through world travel', focusClient, /requestUraiWorldTravel\(\{/)
 requireMatch('Focus Replay destination', focusClient, /destination: 'replay'/)
 requireMatch('Focus Replay manifest context', focusClient, /replayManifestId: memory\.replayManifest\.id/)
