@@ -118,8 +118,15 @@ export function useSelectedMemory(): SelectedMemoryResult {
         try {
           unsubscribeMemory = onSnapshot(
             doc(getFirebaseDb(), 'users', user.uid, 'memories', memoryId),
+            { includeMetadataChanges: true },
             (snapshot) => {
               if (!isCurrentMemory()) return
+              // Never display cached or locally optimistic private memory as verified source truth.
+              // A metadata-only server acknowledgement can reopen the view after reconciliation.
+              if (snapshot.metadata?.fromCache !== false || snapshot.metadata?.hasPendingWrites !== false) {
+                setResult(unavailable('Selected memory is awaiting verified server state.'))
+                return
+              }
               if (!snapshot.exists()) {
                 setResult(unavailable('Selected memory could not be found.'))
                 return
@@ -145,8 +152,18 @@ export function useSelectedMemory(): SelectedMemoryResult {
       try {
         unsubscribePolicy = onSnapshot(
           doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current'),
+          { includeMetadataChanges: true },
           (snapshot) => {
             if (!isCurrentOwner()) return
+            // Firestore may replay an old granted policy from the browser cache or
+            // expose an uncommitted local grant. Neither is current consent authority.
+            // Subscribe to metadata changes so only a server-confirmed, committed
+            // revision may authorize the private memory stream.
+            if (snapshot.metadata?.fromCache !== false || snapshot.metadata?.hasPendingWrites !== false) {
+              detachMemory()
+              setResult(unavailable('Private memory consent authority is awaiting live verification.'))
+              return
+            }
             const raw = snapshot.exists() ? snapshot.data() : undefined
             if (!isConsentPolicy(raw, user.uid)) {
               detachMemory()
