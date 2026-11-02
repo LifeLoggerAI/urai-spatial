@@ -41,10 +41,17 @@ def private_evidence_path(raw: str) -> Path:
     target = Path(os.path.abspath(raw))
     for component in (target, *target.parents):
         try:
-            mode = component.lstat().st_mode
+            info = component.lstat()
         except FileNotFoundError:
             continue
+        mode = info.st_mode
         require(not stat.S_ISLNK(mode), 'PRIVATE_EVIDENCE_SYMLINK_PATH_FORBIDDEN')
+        # On Python 3.11 a Windows junction may not expose Path.is_junction().
+        # Inspect the Win32 reparse attribute directly; fail closed on any
+        # linked/reparse ancestor, even when its target is not a checkout.
+        require(not (getattr(info, 'st_file_attributes', 0) &
+                     getattr(stat, 'FILE_ATTRIBUTE_REPARSE_POINT', 0x400)),
+                'PRIVATE_EVIDENCE_SYMLINK_PATH_FORBIDDEN')
         junction = getattr(component, 'is_junction', None)
         if junction is not None:
             require(not junction(), 'PRIVATE_EVIDENCE_SYMLINK_PATH_FORBIDDEN')
