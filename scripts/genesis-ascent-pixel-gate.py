@@ -31,6 +31,39 @@ def require(test: bool, message: str):
         raise HoldRefusal(message)
 
 
+
+def private_evidence_path(raw: str) -> Path:
+    """Reject linked evidence paths, including junction ancestors and .git worktrees."""
+    import os
+    import stat
+    require(isinstance(raw, str) and bool(raw) and chr(0) not in raw,
+            'PRIVATE_EVIDENCE_PATH_REQUIRED')
+    target = Path(os.path.abspath(raw))
+    for component in (target, *target.parents):
+        try:
+            info = component.lstat()
+        except FileNotFoundError:
+            continue
+        mode = info.st_mode
+        require(not stat.S_ISLNK(mode), 'PRIVATE_EVIDENCE_SYMLINK_PATH_FORBIDDEN')
+        # On Python 3.11 a Windows junction may not expose Path.is_junction().
+        # Inspect the Win32 reparse attribute directly; fail closed on any
+        # linked/reparse ancestor, even when its target is not a checkout.
+        require(not (getattr(info, 'st_file_attributes', 0) &
+                     getattr(stat, 'FILE_ATTRIBUTE_REPARSE_POINT', 0x400)),
+                'PRIVATE_EVIDENCE_SYMLINK_PATH_FORBIDDEN')
+        junction = getattr(component, 'is_junction', None)
+        if junction is not None:
+            require(not junction(), 'PRIVATE_EVIDENCE_SYMLINK_PATH_FORBIDDEN')
+        if stat.S_ISDIR(mode):
+            try:
+                (component / '.git').lstat()
+            except FileNotFoundError:
+                pass
+            else:
+                raise HoldRefusal('PRIVATE_EVIDENCE_INSIDE_GIT_CHECKOUT')
+    return target
+
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     with path.open('rb') as fd:
@@ -221,7 +254,7 @@ def main() -> int:
               'release': 'NO-GO/HOLD', 'publicPublishing': False,
               'independentHumanApproval': False, 'visuallyApproved': False}
     try:
-        video = Path(args.video).resolve()
+        video = private_evidence_path(args.video)
         require(video.is_file() and not video.is_symlink() and
                 8192 < video.stat().st_size <= MAX_VIDEO_BYTES,
                 'GENUINE_ASCENT_SOURCE_VIDEO_MISSING_OR_UNSAFE')
@@ -232,7 +265,7 @@ def main() -> int:
         result['pixels'] = inspect_pixels(frames, metadata['durationSeconds'])
         if not args.camera_telemetry:
             raise HoldRefusal('CAMERA_TELEMETRY_REQUIRED_FOR_PHYSICAL_ASCENT_PRECHECK')
-        with open(args.camera_telemetry, 'r', encoding='utf8') as f:
+        with private_evidence_path(args.camera_telemetry).open('r', encoding='utf8') as f:
             camera = json.load(f)
         result['camera'] = validate_camera_telemetry(camera, result['videoSha256'], metadata['durationSeconds'])
         result['status'] = 'PIXEL_AND_CAMERA_PREFLIGHT_PASSED_HUMAN_REVIEW_REQUIRED'
@@ -241,9 +274,10 @@ def main() -> int:
         result['status'] = 'HOLD_FAIL'
         result['reason'] = str(e)[:350]
     if args.receipt:
-        dest = Path(args.receipt).resolve()
+        dest = private_evidence_path(args.receipt)
         require(dest.parent.is_dir(), 'RECEIPT_PARENT_DOES_NOT_EXIST')
-        dest.write_text(json.dumps(result, indent=2) + '\n', encoding='utf8')
+        with dest.open('x', encoding='utf8') as output:
+            output.write(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result, indent=2))
     return 0 if result['status'].startswith('PIXEL_AND_CAMERA_PREFLIGHT_PASSED') else 2
 
