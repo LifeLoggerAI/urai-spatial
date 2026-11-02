@@ -1321,7 +1321,7 @@ test('actual Node pipeline obeys byte integrity/backpressure and stops canonical
 
 test('deployment source guard rejects canonical namespace, wrong project, wrong route and Storage credentials',async()=>{
   const root=path.resolve(__dirname,'../../..')
-  const {verifySpatialExportDeploymentBoundary:verify}=await import(path.join(root,'scripts/check-spatial-export-deployment-boundary.mjs'))
+  const {verifySpatialExportDeploymentBoundary:verify}=await import(require('node:url').pathToFileURL(path.join(root,'scripts/check-spatial-export-deployment-boundary.mjs')).href)
   const baseline={index:fs.readFileSync(path.join(root,'apps/functions/src/index.ts'),'utf8'),operations:fs.readFileSync(path.join(root,'apps/functions/src/privacyOperations.ts'),'utf8'),firebase:JSON.parse(fs.readFileSync(path.join(root,'firebase.json'),'utf8')),projects:JSON.parse(fs.readFileSync(path.join(root,'.firebaserc'),'utf8'))}
   assert.deepEqual(verify(baseline),[])
   const samples=[
