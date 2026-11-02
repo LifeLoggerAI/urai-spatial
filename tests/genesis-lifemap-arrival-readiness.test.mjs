@@ -29,3 +29,11 @@ test('pixel validator failure reason is retained and release stays hold',()=>{
   assert.ok(capture.includes('NO-GO/HOLD'))
   assert.ok(capture.includes('receipt.completed=true'))
 })
+
+test('private review refuses pre-existing evidence and samples destination continuously',()=>{
+  assert.ok(capture.includes('PRIVATE_VIDEO_DESTINATION_NOT_EMPTY'))
+  assert.ok(capture.includes('requireStableLifeMapArrival({isReady:ready'))
+  assert.ok(capture.includes('lifeMapStabilitySamples'))
+  assert.ok(capture.includes('RECEIPT_WRITE_FAILED'))
+  assert.ok(!capture.includes('await page.waitForTimeout(900)'))
+})
