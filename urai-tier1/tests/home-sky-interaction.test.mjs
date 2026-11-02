@@ -188,7 +188,10 @@ test('canonical source uses same existing scene/action/motion and current physic
   assert.match(source,/onLifeMap=\{startLifeMap\}/);assert.match(source,/camera.position.y.toFixed\(4\)/)
   assert.match(source,/const duration = reducedMotion \? \.42 : ascending \? ASCENT_DURATION_SECONDS/)
   assert.match(source,/transitionOrigin.current.copy\(camera.position\)/)
-  assert.match(source,/camera.position.lerpVectors\(transitionOrigin.current, new THREE.Vector3\(0, 44, -54\), t\)/)
+  // The current original Ascent now uses the reviewed sampled camera flight,
+  // not its superseded straight-line lerp. Assert the genuine camera update.
+  assert.match(source,/const pose = sampleHomeAscentFlight\(t,/)
+  assert.match(source,/camera.position.set\(\.\.\.pose.position\)/)
   assert.doesNotMatch(source,/data-home-stable-state=|AVATAR_HOME_FIRST_PERSON|SKY_ASCENT|hand-controller|first-person-arms/)
   const proof=fs.readFileSync(new URL('../../scripts/capture-canonical-journey-proof.mjs',import.meta.url),'utf8')
   assert.match(proof,/proveHomeSkyAscent\(page, home/);assert.match(proof,/journey.ascentProven = journey.ascentEvidence.ascentProven/)
