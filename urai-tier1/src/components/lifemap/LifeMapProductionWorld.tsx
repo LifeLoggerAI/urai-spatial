@@ -143,14 +143,19 @@ function RenderProofRepublisher() {
       requestRender();
       publishSnapshot();
     }, 100);
-    canvas.addEventListener("webglcontextlost", markInvalid, false);
+    // Prevent the browser's default lost-context handling so the context can be restored.
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      markInvalid();
+    };
+    canvas.addEventListener("webglcontextlost", handleContextLost, false);
     canvas.addEventListener("webglcontextrestored", markInvalid, false);
     markInvalid();
     return () => {
       invalidated.current = false;
       window.clearInterval(watchdog);
       if (invalidationFrame.current !== null) window.cancelAnimationFrame(invalidationFrame.current);
-      canvas.removeEventListener("webglcontextlost", markInvalid, false);
+      canvas.removeEventListener("webglcontextlost", handleContextLost, false);
       canvas.removeEventListener("webglcontextrestored", markInvalid, false);
     };
   }, [gl, publishSnapshot, requestRender, resolveOwner]);
