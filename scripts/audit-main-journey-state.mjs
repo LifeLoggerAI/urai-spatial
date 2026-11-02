@@ -48,7 +48,7 @@ for (const token of ['memoryId', 'manifestId']) {
   requireMatch(`Selected-memory hook reads ${token}`, selectedMemoryHook, new RegExp(`params\\.get\\('${token}'\\)`))
 }
 requireMatch('Selected-memory hook requires explicit demo authority for node fallback', selectedMemoryHook, /const demoRequested = isExplicitDemoRequest\(params\)/)
-requireMatch('Selected-memory hook reads node only under explicit demo', selectedMemoryHook, /params\.get\('memoryId'\) \?\? \(demoRequested \? params\.get\('node'\) : null\)/)
+requireMatch('Selected-memory hook restricts Life Map node fallback to explicit demo', selectedMemoryHook, /params\.get\('memoryId'\) \?\? \(demoRequested \? params\.get\('node'\) : null\)/)
 requireMatch('Selected-memory manifest identity check', selectedMemoryHook, /parsed\.memory\.replayManifest\.id !== manifestId/)
 
 requireMatch(

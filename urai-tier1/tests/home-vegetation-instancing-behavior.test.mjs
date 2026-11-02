@@ -66,7 +66,7 @@ function mountVegetation(scene) {
     './HomeWorldProduction.module.css': {}, './HomeThresholdVisibility': {},
     './HomeSanctuaryMaterials': {}, './HomeSanctuaryAssetPolicy': {}, './HomeCC0ReviewMaterial': {}, './HomeCC0ReviewShrubs': {}, './HomeCC0ReviewRetainedGround': {},
     '@/app/home/orbStateController': {}, '@/spatial/navigation/EmbodiedNavigation': {},
-    '@/spatial/navigation/HomeSkyAscentInteraction': {}, '@/spatial/navigation/homeAscentFlight': { sampleHomeAscentFlight: unexpectedOrbWork }, '@/spatial/store/useSceneStore': {},
+    '@/spatial/navigation/homeAscentFlight': { sampleHomeAscentFlight: unexpectedOrbWork },
     '@/spatial/world/worldEvents': {}, '@/spatial/accessibility/SensorySafeRuntime': {},
     '@/spatial/performance/useAdaptiveSpatialQuality': {}, '@/lib/i18n/useUraiLocale': {},
     '@/spatial/home/HomeInterpretiveSplat': { resolveHomeInterpretiveSplatAsset: () => null },
