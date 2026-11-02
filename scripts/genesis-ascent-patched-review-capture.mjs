@@ -13,6 +13,7 @@ import { promisify } from 'node:util'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beginAscentCameraSampler, bindAscentTelemetryToVideo } from './genesis-ascent-camera-sampler.mjs'
+import { requireStableLifeMapArrival } from './genesis-lifemap-stable-arrival.mjs'
 
 const exec = promisify(execFile)
 const thisFile = fileURLToPath(import.meta.url)
@@ -57,6 +58,14 @@ try {
     })
     if(marker) throw Error('PRIVATE_VIDEO_DIRECTORY_INSIDE_GIT_REPOSITORY')
     if(path.dirname(parent)===parent) break
+  }
+  // Never mix fresh capture evidence with artifacts from an earlier attempt.
+  // A destination may pre-exist, but must be an empty real directory.
+  const existing=await lstat(destination).catch(e=>e.code==='ENOENT'?null:Promise.reject(e))
+  if(existing && (!existing.isDirectory() || existing.isSymbolicLink())) throw Error('PRIVATE_VIDEO_DESTINATION_NOT_DIRECTORY')
+  if(existing) {
+    const {readdir}=await import('node:fs/promises')
+    if((await readdir(destination)).length)throw Error('PRIVATE_VIDEO_DESTINATION_NOT_EMPTY')
   }
   destinationVerified = true
   const {stdout}=await exec('git',['rev-parse','HEAD'],{cwd:repoRoot,timeout:10_000})
@@ -120,9 +129,9 @@ try {
     },null,{timeout:90_000,polling:100})
     if(!await ready())throw Error('LIFEMAP_REAL_WEBGL_READY_LOST')
     receipt.lifeMapRenderReady=true
-    await page.waitForTimeout(900)
-    if(!await ready())throw Error('LIFEMAP_REAL_WEBGL_NOT_STABLE')
-    receipt.lifeMapStableAfterMs=900
+    const stability=await requireStableLifeMapArrival({isReady:ready,sleep:ms=>page.waitForTimeout(ms)})
+    receipt.lifeMapStableAfterMs=stability.stableMs
+    receipt.lifeMapStabilitySamples=stability.samples
   }finally{samples=await sampler.stop()}
   const captureWindowEndMs=Date.now()
   await context.close()
@@ -177,7 +186,10 @@ try {
 } finally {
   await context?.close().catch(()=>{})
   await browser?.close().catch(()=>{})
-  if(destinationVerified)await writeFile(path.join(destination,'URAI_ASCENT_PATCHED_CAPTURE_HOLD_RECEIPT.json'),JSON.stringify(receipt,null,2)+'\n',{flag:'wx',mode:0o600}).catch(()=>{})
+  if(destinationVerified) {
+    try { await writeFile(path.join(destination,'URAI_ASCENT_PATCHED_CAPTURE_HOLD_RECEIPT.json'),JSON.stringify(receipt,null,2)+'\n',{flag:'wx',mode:0o600}) }
+    catch(error) { receipt.errors.push('RECEIPT_WRITE_FAILED:'+String(error?.code||error)); receipt.completed=false }
+  }
 }
 console.log(JSON.stringify(receipt,null,2))
 if(!receipt.completed) process.exitCode=2
