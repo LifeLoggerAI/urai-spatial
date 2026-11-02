@@ -47,3 +47,12 @@ test('render proof only counts visible mounted scene and fresh WebGL frames',()=
   assert.ok(world.includes('const element = gl.domElement.closest<HTMLElement>'))
   assert.ok(!world.includes("?? document.querySelector<HTMLElement>('[data-testid=\"urai-true-3d-life-map\"]')"))
 })
+
+test('WebGL context-loss event is explicitly cancelable and can recover without stale proof',()=>{
+  // This checks source wiring only; device-level loss/recovery requires WebGL capture.
+  assert.ok(world.includes('const handleContextLost = (event: Event) => {'))
+  assert.ok(world.includes('event.preventDefault()'))
+  assert.ok(world.includes('canvas.addEventListener("webglcontextlost", handleContextLost, false)'))
+  assert.ok(world.includes('canvas.removeEventListener("webglcontextlost", handleContextLost, false)'))
+  assert.ok(world.includes('canvas.addEventListener("webglcontextrestored", markInvalid, false)'))
+})
