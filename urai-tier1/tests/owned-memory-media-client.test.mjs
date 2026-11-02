@@ -21,7 +21,7 @@ function fixture() {
   } }; auth.currentUser = user
   const authority = { schemaVersion: 'urai-owned-memory-media-v1', ownerId: memory.ownerId, memoryId: memory.id, consentRevision: 4, expiresAt: Date.now() + 30000 }
   const receipt = { memoryId: memory.id, receiptId: 'a'.repeat(64), state: 'ready', sha256: digest, byteLength: bytes.length, contentType: 'image/png' }
-  const imports = { 'firebase/auth': { getAuth: () => auth }, '@/lib/firebase/client': { app, firebasePublicEnvReady: true, functions: {} },
+  const imports = { 'firebase/auth': { getAuth: () => auth }, '@/lib/firebase/client': { app, firebasePublicEnvReady: true, functions: {}, getUraiAuth: () => auth },
     'firebase/functions': { httpsCallable: (_functions, name) => async payload => {
       state.calls.push({ name, payload }); await control[name]?.(payload)
       return { data: name === 'getMemoryMediaUploadAuthority' ? { ...authority } : { ...receipt } }
