@@ -39,7 +39,8 @@ function mount(bucket) {
     react,
     'firebase/firestore': {
       doc: (_database, ...parts) => parts,
-      onSnapshot: (ref, receive) => {
+      onSnapshot: (ref, options, receive) => {
+        assert.equal(options.includeMetadataChanges, true, 'private listeners require metadata events')
         const entry = { ref, receive }
         subscriptions.push(entry)
         return () => { entry.stopped = true }
@@ -63,7 +64,7 @@ function mount(bucket) {
   authListener({ uid: 'synthetic-owner' })
   const policy = subscriptions.find(({ ref }) => ref.includes('privacyPolicy'))
   assert.ok(policy)
-  policy.receive({ exists: () => true, data: () => ({ ownerId: 'synthetic-owner', revision: 1,
+  policy.receive({ exists: () => true, metadata: { fromCache: false, hasPendingWrites: false }, data: () => ({ ownerId: 'synthetic-owner', revision: 1,
     domains: { memory: { mode: 'granted', lifeMapVisible: true, replayVisible: true } },
     enforcement: { state: 'fully-enforced' },
   }) })
@@ -71,7 +72,7 @@ function mount(bucket) {
   assert.ok(subscription)
   return {
     load(record) {
-      subscription.receive({ exists: () => true, data: () => record })
+      subscription.receive({ exists: () => true, metadata: { fromCache: false, hasPendingWrites: false }, data: () => record })
       return hooks.useSelectedMemory()
     },
     unmount,
