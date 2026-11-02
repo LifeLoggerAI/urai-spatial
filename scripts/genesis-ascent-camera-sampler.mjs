@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { lstat, mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { assertPrivateEvidenceDirectory } from './genesis-private-evidence-path.mjs'
 
 const SOURCE_RECEIPT_SCHEMA = 'urai-genesis-ascent-camera-pixel-proof-hold/v1'
 const FIXTURE = 'EXPLICIT_DISCLOSED_DEMO_QUIET_RESET_NO_PERSONAL_ACCOUNT'
@@ -55,15 +56,10 @@ async function videoDigest(file) {
 }
 
 async function outsideGit(file) {
-  const full = path.resolve(file)
-  for (let dir = path.dirname(full); ; dir = path.dirname(dir)) {
-    const entry = await lstat(path.join(dir, '.git')).catch(e => {
-      if (e.code === 'ENOENT') return null
-      throw e
-    })
-    if (entry) throw Error('PRIVATE_ASCENT_EVIDENCE_CANNOT_BE_INSIDE_GIT_CHECKOUT')
-    if (path.dirname(dir) === dir) return
-  }
+  await assertPrivateEvidenceDirectory(path.dirname(path.resolve(file)), {
+    gitError: 'PRIVATE_ASCENT_EVIDENCE_CANNOT_BE_INSIDE_GIT_CHECKOUT',
+    symlinkError: 'PRIVATE_ASCENT_EVIDENCE_SYMLINK_PATH_FORBIDDEN',
+  })
 }
 
 export async function bindAscentTelemetryToVideo({ videoFile, outputFile, applicationRevision, samples }) {
