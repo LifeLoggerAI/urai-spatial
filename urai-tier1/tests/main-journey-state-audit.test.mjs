@@ -9,6 +9,7 @@ const root = fileURLToPath(new URL('../..', import.meta.url))
 const auditSource = fs.readFileSync(path.join(root, 'scripts/audit-main-journey-state.mjs'), 'utf8')
 const focusPath = 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
 const replayPath = 'urai-tier1/src/app/replay/CinematicReplayClient.tsx'
+const hookPath = 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
 
 function runAudit(mutation) {
   const processFixture = { cwd: () => root, exitCode: undefined }
@@ -35,6 +36,10 @@ test('actual complete journey audit accepts the current localized selected-memor
 })
 
 for (const mutation of [
+  {label:'explicit demo node authorization', path:hookPath, before:"(demoRequested ? params.get('node') : null)", after:"params.get('node')", failure:'Selected-memory hook reads node only under explicit demo'},
+  {label:'matching return node identity', path:focusPath, before:"const sameMemory = incoming.get('memoryId') === memory.id && incoming.get('manifestId') === memory.replayManifest.id", after:'const sameMemory = true', failure:'Focus binds return node to matching selected memory and manifest'},
+  {label:'scene node validation', path:focusPath, before:"const validNode = Boolean(node && /^[A-Za-z0-9._:-]{1,120}$/.test(node))", after:'const validNode = Boolean(node)', failure:'Focus validates incoming scene node'},
+  {label:'projected node authorization', path:focusPath, before:"const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id", after:'const returnNode = node!', failure:'Focus limits projected return node to authenticated selection'},
   {label:'private title interpolation', path:focusPath, before:"{title:memory.title}", after:"{title:'Generic memory'}", failure:'Focus Replay portal accessibility'},
   {label:'scoped localized name', path:focusPath, before:"aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}", after:'aria-label="Open Replay"', failure:'Focus Replay portal accessibility'},
   {label:'matching locale metadata', path:focusPath, before:"{...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')}", after:'lang="ar" dir="rtl"', failure:'Focus Replay portal locale metadata'},
