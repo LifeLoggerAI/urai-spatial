@@ -67,12 +67,14 @@ export function parsePreparedFirstPrivateMemory(packet: unknown, uid: string): {
     || provenance.authenticity !== 'source-derivative-not-generated-autobiography'
     || upload.requiresExistingServerAuthoredMemory !== true
     || upload.requiredSelectedMemoryConsentState !== 'authorized'
+    || upload.requiredCanonicalConsent !== 'memory.granted + C1 memory.storage + fully-enforced + no deletion fences'
     || upload.offlinePreparationGrantsConsent !== false || upload.ownerIdentityVerifiedOffline !== false
     || upload.requiredOwnerAuthFreshnessSeconds !== 300 || upload.initialVisibility !== 'hidden'
     || upload.existingCallable !== 'registerMemoryMedia'
     || upload.existingAuthorityCallable !== 'getMemoryMediaUploadAuthority'
     || request.kind !== 'audio' || request.contentType !== provenance.derivedContentType
     || upload.sha256 !== provenance.derivativeSha256
+    || upload.activateAfter !== 'ready owner-scoped receipt, actual playback and current consent checks'
     || upload.fileByteLength !== provenance.derivativeByteLength
     || upload.filePathNotEmbedded !== true || upload.base64NotEmbedded !== true
     || truth.originalSha256 !== provenance.originalSha256 || truth.derivativeSha256 !== provenance.derivativeSha256
