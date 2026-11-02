@@ -14,6 +14,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beginAscentCameraSampler, bindAscentTelemetryToVideo } from './genesis-ascent-camera-sampler.mjs'
 import { requireStableLifeMapArrival } from './genesis-lifemap-stable-arrival.mjs'
+import { assertPrivateEvidenceDirectory } from './genesis-private-evidence-path.mjs'
 
 const exec = promisify(execFile)
 const thisFile = fileURLToPath(import.meta.url)
@@ -51,14 +52,10 @@ try {
   const url=new URL(startUrl)
   if (url.protocol!=='http:' || !['127.0.0.1','localhost'].includes(url.hostname) || url.username || url.password || url.pathname!=='/home/' || url.search!=='?demo=1' || url.hash) throw Error('ONLY_LOCAL_DISCLOSED_FIXTURE_HOME_ALLOWED')
   destination=path.resolve(output)
-  for(let parent=destination;;parent=path.dirname(parent)) {
-    const marker=await lstat(path.join(parent,'.git')).catch(e=>{
-      if(e.code==='ENOENT') return null
-      throw e
-    })
-    if(marker) throw Error('PRIVATE_VIDEO_DIRECTORY_INSIDE_GIT_REPOSITORY')
-    if(path.dirname(parent)===parent) break
-  }
+  await assertPrivateEvidenceDirectory(destination,{
+    gitError:'PRIVATE_VIDEO_DIRECTORY_INSIDE_GIT_REPOSITORY',
+    symlinkError:'PRIVATE_VIDEO_SYMLINK_PATH_FORBIDDEN',
+  })
   // Never mix fresh capture evidence with artifacts from an earlier attempt.
   // A destination may pre-exist, but must be an empty real directory.
   const existing=await lstat(destination).catch(e=>e.code==='ENOENT'?null:Promise.reject(e))

@@ -146,6 +146,7 @@ const tests = [
   'tests/lifemap-scene-behavior.test.mjs',
   '../tests/genesis-lifemap-arrival-readiness.test.mjs',
   '../tests/genesis-lifemap-stable-arrival.test.mjs',
+  '../tests/genesis-private-evidence-path.test.mjs',
   'tests/lifemap-software-threshold-handoff.test.mjs',
   'tests/life-movie-privacy-contract.test.mjs',
   'tests/localization-runtime-contract.test.mjs',
