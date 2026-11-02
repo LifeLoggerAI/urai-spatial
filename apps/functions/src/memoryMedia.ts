@@ -5,6 +5,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 import { resolveMemoryMediaProject } from './memoryMediaProjectBoundary'
+import { assertPreparedPrivateMediaFirstUpload, assertFirstPrivateMemoryPlaybackBinding } from './privatePreparedMediaAuthority'
 import { chargeExportValue, requireExportReadBudget, type ExportReadBudget } from './exportPagination'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -67,7 +68,10 @@ async function readOwner(transaction: FirebaseFirestore.Transaction, uid: string
   const pending = local.get('pendingDeletions'), expiresAt = millis(c?.expiresAt)
   if (!user.exists || user.get('deleted') === true || ['deleting', 'deleted', 'disabled'].includes(String(user.get('accountStatus')))
     || !memory.exists || (memory.get('ownerId') ?? memory.get('userId')) !== uid || memory.get('deleted') === true
-    || ['pending', 'revoked'].includes(String(memory.get('consentState')))
+    // A missing/legacy/unknown memory-level state is never affirmative consent.
+    // The current owner C1 grant below is necessary, but not a substitute for
+    // this selected memory's explicit authorization (private visibility remains allowed).
+    || memory.get('consentState') !== 'authorized'
     || !policy.exists || !isCanonicalStoredPolicy(p, uid) || p.revision < 1
     || p.domains.memory.mode !== 'granted' || p.enforcement.state !== 'fully-enforced'
     || !consent.exists || c?.uid !== uid || c.purpose !== 'memory.storage' || c.consentTier !== 'C1' || c.policyVersion !== '1.0.0'
@@ -279,6 +283,8 @@ export const registerMemoryMedia = functions.runWith({ timeoutSeconds: 180, memo
   try {
     bound = await db.runTransaction(async transaction => {
       const [authority, old] = await Promise.all([readOwner(transaction, uid, memoryId), transaction.get(ref)])
+      try { assertPreparedPrivateMediaFirstUpload(authority.memory.data(), uid, memoryId, operationId, value.kind, contentType, digest, bytes.length) }
+      catch { fail('FIRST_PRIVATE_MEDIA_BINDING_INVALID') }
       if (old.exists) {
         const r = receipt(old.data(), uid); sameAuthority(r, authority)
         if (r.sha256 !== digest || r.contentType !== contentType || r.byteLength !== bytes.length || r.state !== 'ready') fail('MEMORY_MEDIA_OPERATION_ALREADY_BOUND')
@@ -316,6 +322,8 @@ export const registerMemoryMedia = functions.runWith({ timeoutSeconds: 180, memo
     const storageGeneration = String(metadata.generation)
     await db.runTransaction(async transaction => {
       const [authority, current] = await Promise.all([readOwner(transaction, uid, memoryId), transaction.get(ref)])
+      try { assertPreparedPrivateMediaFirstUpload(authority.memory.data(), uid, memoryId, operationId, value.kind, contentType, digest, bytes.length) }
+      catch { fail('FIRST_PRIVATE_MEDIA_BINDING_INVALID') }
       const r = receipt(current.data(), uid); sameAuthority(r, authority)
       if (r.state !== 'uploading' || r.attemptNonce !== bound!.attemptNonce || millis(r.leaseExpiresAt) <= Date.now()) fail('MEMORY_MEDIA_UPLOAD_LEASE_UNAVAILABLE')
       const existing = authority.memory.get('sourceMedia')
@@ -412,6 +420,10 @@ async function playbackReceipt(transaction: FirebaseFirestore.Transaction, uid: 
   if (block.exists && (block.get('ownerUid') !== uid || block.get('purpose') !== 'memory.storage'
     || block.get('active') !== false)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
   assertBoundMemoryMedia(authority.memory.data() ?? {})
+  try {
+    assertFirstPrivateMemoryPlaybackBinding(authority.memory.data(), uid, memoryId, receiptId,
+      authority.consentRevision, authority.consentReceiptHash)
+  } catch { fail('FIRST_PRIVATE_MEMORY_REPLAY_NOT_ACTIVATED') }
   const r = receipt(snapshot.data(), uid)
   sameAuthority(r, authority)
   const attachments = authority.memory.get('sourceMedia') as Row[]
@@ -432,7 +444,19 @@ function playbackHashes(uid: string, r: MediaReceipt, creationTime: string, expi
 
 async function playbackObject(uid: string, r: MediaReceipt, requireCurrent: () => Promise<unknown>) {
   const bucket = admin.storage().bucket()
-  const [bucketMetadata] = await bucket.getMetadata()
+  // Storage emulator does not attest cloud bucket IAM. Missing/unsupported
+  // metadata stays fail-closed; callers receive a specific evidence error,
+  // never a synthetic success or a bypass of production bucket security.
+  // An overloaded callback signature makes ReturnType<typeof bucket.getMetadata> void.
+  // Model only the two fail-closed IAM fields read by this authority.
+  let bucketMetadata: {
+    iamConfiguration?: {
+      uniformBucketLevelAccess?: { enabled?: boolean }
+      publicAccessPrevention?: string
+    }
+  }
+  try { [bucketMetadata] = await bucket.getMetadata() }
+  catch { fail('MEMORY_MEDIA_BUCKET_IAM_UNVERIFIABLE') }
   await requireCurrent()
   if (bucketMetadata.iamConfiguration?.uniformBucketLevelAccess?.enabled !== true
     || bucketMetadata.iamConfiguration?.publicAccessPrevention !== 'enforced') fail('MEMORY_MEDIA_PRIVATE_BUCKET_REQUIRED')
@@ -483,7 +507,8 @@ function playbackProject() {
 function playbackOrigin(origin: string, project: string) {
   if (['https://urai.app', 'https://www.urai.app', 'https://urai.life', 'https://uraispatial.com', 'https://localhost',
     'capacitor://localhost', 'http://localhost', `https://${project}.web.app`, `https://${project}.firebaseapp.com`].includes(origin)) return true
-  if (process.env.FUNCTIONS_EMULATOR === 'true' && ['http://localhost:4173', 'http://127.0.0.1:4173'].includes(origin)) return true
+  if (process.env.FUNCTIONS_EMULATOR === 'true' && project === 'demo-urai-auth-journey'
+    && ['4173', '3000', '3002'].some(port => ['http://localhost:' + port, 'http://127.0.0.1:' + port].includes(origin))) return true
   return new RegExp(`^https://${project}--[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.web\\.app$`).test(origin)
     && new URL(origin).hostname.split('.')[0].length <= 63
 }
@@ -736,4 +761,67 @@ export const reconcileMemoryMediaUploads = functions.runWith({ timeoutSeconds: 1
     await db.runTransaction(async transaction => { const current = await transaction.get(snap.ref); if (current.exists && current.get('state') === 'closing'
       && current.get('attemptNonce') === r.attemptNonce && millis(current.get('leaseExpiresAt')) <= Date.now()) transaction.update(snap.ref, { state: 'aborted', tombstoneGeneration: generation, cleanupStatus: 'completed', permanentErasureProven: false }) })
   }
+})
+
+
+/**
+ * RFINAL58: publication requires a second deliberate owner action.
+ * An initial memory stays hidden even after successful media registration.
+ * This binds a ready source receipt and current C1 to a private-only transition.
+ */
+export const activateFirstPrivateMemory = functions.https.onCall(async (data, context) => {
+  playbackProject()
+  const { uid, requireAuthentication } = authenticatedOwner(context)
+  await requireAuthentication()
+  const value = row(data)
+  const allowed = ['memoryId', 'receiptId', 'derivativeSha256', 'confirmPrivateReplay']
+  if (Object.keys(value).length !== allowed.length || Object.keys(value).some(key => !allowed.includes(key))
+    || value.confirmPrivateReplay !== true) fail('FIRST_PRIVATE_MEMORY_ACTIVATION_CONFIRMATION_REQUIRED')
+  const memoryId = id(value.memoryId), receiptId = String(value.receiptId), expectedSha256 = String(value.derivativeSha256)
+  if (!SHA.test(receiptId) || !SHA.test(expectedSha256)) fail('FIRST_PRIVATE_MEMORY_ACTIVATION_INPUT_INVALID')
+  await requireAuthentication()
+  return db.runTransaction(async transaction => {
+    const [authority, ready, policy] = await Promise.all([
+      readOwner(transaction, uid, memoryId),
+      transaction.get(db.doc('users/' + uid + '/memoryMediaReceipts/' + receiptId)),
+      transaction.get(db.doc('users/' + uid + '/privacyPolicy/current')),
+    ])
+    const m = authority.memory.data() ?? {}, recorded = row(m.firstPrivateMemoryConsent)
+    const source = row(m.sourceProvenance), attachments = m.sourceMedia
+    if (m.privacy !== 'hidden' || m.deleted !== false || m.consentState !== 'authorized'
+      || recorded.status !== 'explicit-owner-confirmation' || recorded.ownerId !== uid
+      || recorded.memoryId !== memoryId || recorded.derivativeSha256 !== expectedSha256
+      || recorded.canonicalConsentReceiptHash !== authority.consentReceiptHash
+      || source.derivativeSha256 !== expectedSha256 || source.derivedContentType === undefined
+      || policy.get('domains.memory.mode') !== 'granted'
+      || policy.get('domains.memory.lifeMapVisible') !== true
+      || policy.get('domains.memory.replayVisible') !== true
+      || policy.get('enforcement.state') !== 'fully-enforced'
+      || !Array.isArray(attachments) || attachments.length !== 1
+      || row(attachments[0]).kind !== 'audio' || row(attachments[0]).mediaReceiptId !== receiptId) {
+      fail('FIRST_PRIVATE_MEMORY_ACTIVATION_NOT_AUTHORIZED')
+    }
+    const r = receipt(ready.data(), uid)
+    sameAuthority(r, authority)
+    if (r.memoryId !== memoryId || r.receiptId !== receiptId || r.state !== 'ready'
+      || r.sha256 !== expectedSha256 || r.kind !== 'audio' || r.contentType !== source.derivedContentType
+      || r.byteLength !== source.derivativeByteLength
+      || !/^[1-9][0-9]{0,39}$/.test(String(r.storageGeneration))) {
+      fail('FIRST_PRIVATE_MEMORY_ACTIVATION_MEDIA_NOT_READY')
+    }
+    await requireAuthentication()
+    if (authority.consentExpiresAt <= Date.now()) fail('FIRST_PRIVATE_MEMORY_ACTIVATION_NOT_AUTHORIZED')
+    transaction.update(authority.memory.ref, {
+      privacy: 'private',
+      firstPrivateMemoryActivation: {
+        status: 'explicit-owner-private-replay', ownerId: uid, memoryId,
+        mediaReceiptId: receiptId, derivativeSha256: expectedSha256,
+        consentRevision: authority.consentRevision,
+        consentReceiptHash: authority.consentReceiptHash,
+        confirmedAt: FieldValue.serverTimestamp(),
+      },
+    })
+    return { ownerId: uid, memoryId, receiptId, visibility: 'private',
+      state: 'owner-confirmed-ready-receipt' }
+  })
 })

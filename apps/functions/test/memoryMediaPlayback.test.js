@@ -44,7 +44,7 @@ function fixture({ modularFirestoreOnly = false, projectEnv = {} } = {}) {
     byteLength: bytes.length, attemptNonce: 'd'.repeat(64), state: 'ready', storageGeneration: '123', leaseExpiresAt: new Timestamp(clock.value + 120_000),
     consentRevision: 4, consentReceiptHash: 'b'.repeat(64), consentExpiresAt: clock.value + 3_600_000, deletionGeneration: 0 }
   const docs = new Map([
-    [userPath, { accountStatus: 'active' }], [memoryPath, { ownerId: uid, sourceMedia: [{ kind: 'video', mediaReceiptId: receiptId }] }],
+    [userPath, { accountStatus: 'active' }], [memoryPath, { ownerId: uid, consentState: 'authorized', sourceMedia: [{ kind: 'video', mediaReceiptId: receiptId }] }],
     [policyPath, policy], [consentPath, { uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0',
       status: 'granted', receiptHash: receipt.consentReceiptHash, expiresAt: new Timestamp(receipt.consentExpiresAt) }], [receiptPath, receipt],
   ])
@@ -234,6 +234,10 @@ for (const [label, mutate] of [
   ['revoked token', f => f.revoke()], ['disabled current Auth account', f => f.disable()], ['foreign current token', f => f.foreign()],
   ['missing current owner', f => f.docs.delete(userPath)], ['deleted owner', f => { f.docs.get(userPath).deleted = true }],
   ['foreign memory owner', f => { f.docs.get(memoryPath).ownerId = 'fictional-foreign-owner' }],
+  ['missing selected-memory consent', f => { delete f.docs.get(memoryPath).consentState }],
+  ['pending selected-memory consent', f => { f.docs.get(memoryPath).consentState = 'pending' }],
+  ['revoked selected-memory consent', f => { f.docs.get(memoryPath).consentState = 'revoked' }],
+  ['unknown selected-memory consent', f => { f.docs.get(memoryPath).consentState = 'legacy' }],
   ['memory withdrawal', f => { f.policy.domains.memory.mode = 'denied' }], ['pending enforcement', f => { f.policy.enforcement.state = 'pending' }],
   ['memory Replay visibility disabled', f => { f.policy.domains.memory.replayVisible = false }],
   ['canonical C1 withdrawal', f => { f.docs.get(consentPath).status = 'revoked' }], ['canonical C1 expiry', f => { f.docs.get(consentPath).expiresAt = new f.Timestamp(f.clock.value) }],
@@ -492,4 +496,39 @@ for (const status of ['granted', 'revoked']) test('canonical C7 ' + status + ' p
     exportConsentPolicyVersion: '1.0.0', exportConsentExpiresAt: new f.Timestamp(f.clock.value + 60_000) })
   const result = await f.handler.getMemoryMediaUploadAuthority({ memoryId }, f.context)
   assert.equal(result.ownerId, uid); const playback = await f.descriptor(); assert.equal(playback.memoryId, memoryId)
+})
+
+
+for (const [label, state] of [
+  ['missing', undefined], ['pending', 'pending'],
+  ['revoked', 'revoked'], ['unknown', 'legacy'],
+]) test('selected-memory state also fences upload and registration before private object access: ' + label, async () => {
+  const f = fixture()
+  const memory = f.docs.get(memoryPath)
+  if (state === undefined) delete memory.consentState
+  else memory.consentState = state
+  const rejected = error => {
+    assert.equal(error.code, 'failed-precondition')
+    assert.equal(error.message, 'MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
+    return true
+  }
+  await assert.rejects(
+    f.handler.getMemoryMediaUploadAuthority({ memoryId }, f.context), rejected)
+  await assert.rejects(
+    f.handler.registerMemoryMedia({
+      memoryId, operationId: 'fictional-state-' + label,
+      contentType: 'video/mp4', kind: 'video', base64: f.bytes.toString('base64'),
+    }, f.context), rejected)
+  assert.equal(f.stats.bucketMetadata, 0)
+  assert.equal(f.stats.objectMetadata, 0)
+  assert.equal(f.stats.streams, 0)
+})
+
+test('private hidden selected memory retains authenticated upload authority only with affirmative consent', async () => {
+  const f = fixture()
+  f.docs.get(memoryPath).privacy = 'hidden'
+  const allowed = await f.handler.getMemoryMediaUploadAuthority({ memoryId }, f.context)
+  assert.equal(allowed.ownerId, uid)
+  assert.equal(allowed.memoryId, memoryId)
+  assert.equal(f.stats.streams, 0)
 })
