@@ -441,6 +441,7 @@ function leafFixture(leaf, change = {}) {
     if (id === 'firebase-functions/v2/https') return { onRequest:(options,handler) => { assert.ok(options.secrets.includes(f.helper.SPATIAL_SPEND_WORKER_TOKENS_JSON)); return handler } }
     if (id === '../../../packages/localization/src/contentLanguage') return language
     if (id === './consentPolicyAuthority') return policyAuthority
+    if (id === './adamFounderVoiceReceiptContract.mjs') return { founderVoiceIssuerReadiness: () => ({ ready:false, code:'FOUNDER_PLAYBACK_AUTHORITY_NOT_READY', message:'No trusted issuer' }) }
     if (id === './councilGraphEvidenceAuthority') return graphEvidenceAuthority
     if (id === './protectedProviderSpend') return { ...f.helper, paidSpatialFetch:f.paidFetch }
     if (id === './personPresenceAuthority') return { PersonPresenceAuthorityError, loadPersonPresenceAuthority:requireAuthority, requirePersonPresenceRenderBinding:async () => { await requireAuthority(); return { get:key => ({ provider:'elevenlabs',bindingHash:'e'.repeat(64),providerResourceId:'SYNTHETIC_VOICE',providerModelId:'synthetic-model' })[key] } } }
@@ -472,7 +473,15 @@ for (const leaf of leaves) {
     const f=leafFixture(leaf,{ missingBinding:true }); await f.invoke(); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.filter(x => x.action === 'reserve').length,0)
   })
   test(`actual paid leaf ${leaf[1]} uses protected exact request and retains stream charges`, async () => {
-    const f=leafFixture(leaf), result=await f.invoke(); assert.equal(result.code,200,JSON.stringify(result.json)); assert.equal(f.providerCalls.length,leaf[3] === 'openai' ? 2 : 1)
+    const f=leafFixture(leaf), result=await f.invoke();
+    if (leaf[1] === 'adamFounderVoiceProvider') {
+      assert.equal(result.code,409,JSON.stringify(result.json))
+      assert.equal(result.json?.error,'FOUNDER_PLAYBACK_AUTHORITY_NOT_READY')
+      assert.equal(f.providerCalls.length,0)
+      assert.equal(f.calls.some(x => x.action === 'reserve'),false)
+      return
+    }
+    assert.equal(result.code,200,JSON.stringify(result.json)); assert.equal(f.providerCalls.length,leaf[3] === 'openai' ? 2 : 1)
     for (const row of f.rows.values()) { assert.equal(row.attempt.status,'RECONCILIATION_REQUIRED'); assert.equal(row.attempt.charges_reconciled,false); assert.equal(row.hold,2500000) }
     assert.equal(f.calls.some(x => x.action === 'reconcile'),false)
   })
