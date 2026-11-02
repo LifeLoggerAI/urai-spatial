@@ -36,7 +36,7 @@ def private_evidence_path(raw: str) -> Path:
     """Reject linked evidence paths, including junction ancestors and .git worktrees."""
     import os
     import stat
-    require(isinstance(raw, str) and bool(raw) and '\\0' not in raw,
+    require(isinstance(raw, str) and bool(raw) and chr(0) not in raw,
             'PRIVATE_EVIDENCE_PATH_REQUIRED')
     target = Path(os.path.abspath(raw))
     for component in (target, *target.parents):
