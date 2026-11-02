@@ -125,3 +125,29 @@ test('a removed subscriber cannot receive a queued commit while another observer
   assert.equal(current, 1)
   stopCurrent()
 })
+
+test('a stale cleanup cannot unsubscribe a later mount that reuses the same callback', async () => {
+  const f = fixture(); let observed = 0
+  const listener = () => { observed += 1 }
+  const oldStop = f.store.subscribeBrowserLocation(listener)
+  oldStop()
+  const currentStop = f.store.subscribeBrowserLocation(listener)
+  oldStop()
+  f.window.history.pushState({}, '', '?memoryId=current')
+  await Promise.resolve()
+  assert.equal(observed, 1, 'the current subscription must survive an old cleanup')
+  currentStop()
+})
+
+test('two simultaneous owners of one callback retain observation until both release it', async () => {
+  const f = fixture(); let observed = 0
+  const listener = () => { observed += 1 }
+  const firstStop = f.store.subscribeBrowserLocation(listener)
+  const secondStop = f.store.subscribeBrowserLocation(listener)
+  firstStop()
+  f.window.history.pushState({}, '', '?memoryId=still-mounted')
+  await Promise.resolve()
+  assert.equal(observed, 1, 'the remaining subscriber still owns the callback')
+  secondStop()
+  assert.equal(f.events.size, 0)
+})

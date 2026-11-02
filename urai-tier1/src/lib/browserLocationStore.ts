@@ -1,6 +1,7 @@
 type LocationListener = () => void
 
-const listeners = new Set<LocationListener>()
+// Count independently mounted owners even when React reuses one callback.
+const listeners = new Map<LocationListener, number>()
 let detachHistory: (() => void) | undefined
 
 export function browserLocationSnapshot(): string {
@@ -17,14 +18,16 @@ export function serverLocationSnapshot(): string {
 // a mounted private consumer cannot keep the previous query identity.
 export function subscribeBrowserLocation(listener: LocationListener): () => void {
   if (typeof window === 'undefined') return () => {}
-  listeners.add(listener)
+  listeners.set(listener, (listeners.get(listener) ?? 0) + 1)
   if (!detachHistory) {
     const history = window.history
     const previousPush = history.pushState
     const previousReplace = history.replaceState
     let active = true
     const notify = () => {
-      if (active) for (const subscriber of [...listeners]) subscriber()
+      if (active) for (const subscriber of [...listeners.keys()]) {
+        if (listeners.has(subscriber)) subscriber()
+      }
     }
     const notifyAfterCommit = () => {
       // Next commits history from useInsertionEffect. Keep snapshots synchronous,
@@ -55,8 +58,14 @@ export function subscribeBrowserLocation(listener: LocationListener): () => void
       if (history.replaceState === replaceState) history.replaceState = previousReplace
     }
   }
+  let subscribed = true
   return () => {
-    listeners.delete(listener)
+    // A delayed StrictMode/route cleanup must not release a later mount.
+    if (!subscribed) return
+    subscribed = false
+    const count = listeners.get(listener)
+    if (count === 1) listeners.delete(listener)
+    else if (count !== undefined) listeners.set(listener, count - 1)
     if (listeners.size === 0) {
       detachHistory?.()
       detachHistory = undefined
