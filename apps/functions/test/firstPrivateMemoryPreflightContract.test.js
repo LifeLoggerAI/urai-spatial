@@ -80,3 +80,20 @@ test('server rejects derivative rebind and forged offline consent claims', async
     assert.throws(() => parse(injected, ownerId), /FIRST_PRIVATE_MEMORY_PACKET_INVALID/)
   })
 })
+
+
+test('offline-to-server boundary rejects unsafe source references without leaking source location', async () => {
+  await withSyntheticPacket(({ packet, ownerId }) => {
+    for (const sourceRef of [
+      'https://fictional.invalid/private?token=synthetic',
+      'gs://fictional-private-bucket/original',
+      '/home/owner/private/original.mp3',
+      'C:\\Users\\Owner\\Private.mp3',
+      '../private/original.mp3',
+    ]) {
+      const changed = structuredClone(packet)
+      changed.memory.sourceProvenance.originalSourceRef = sourceRef
+      assert.throws(() => parse(changed, ownerId), /FIRST_PRIVATE_MEMORY_PACKET_INVALID/, sourceRef)
+    }
+  })
+})

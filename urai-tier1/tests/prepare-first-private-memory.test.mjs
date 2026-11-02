@@ -204,3 +204,21 @@ test('offline preparation rejects an attempt to mint individual memory consent',
   await assert.rejects(prepareFirstPrivateMemory({ ...f.options, consentState: 'authorized' }),
     /OFFLINE_MEMORY_CONSENT_STATE_FORBIDDEN/)
 })
+
+
+test('offline source references must be opaque and never embed paths or URL credentials', async () => {
+  const f = fixture()
+  for (const sourceRef of [
+    'https://fictional.invalid/private?token=synthetic',
+    'gs://fictional-private-bucket/original',
+    '/home/owner/private/original.mp3',
+    'C:\\Users\\Owner\\Private.mp3',
+    '../private/original.mp3',
+    'file:synthetic-relative.mp3',
+  ]) {
+    await assert.rejects(prepareFirstPrivateMemory({ ...f.options, sourceRef }),
+      /PRIVATE_ORIGINAL_SOURCE_REFERENCE_REQUIRED/, sourceRef)
+  }
+  const valid = await prepareFirstPrivateMemory({ ...f.options, sourceRef: 'urn:urai:fictional_source_01' })
+  assert.equal(valid.memory.sourceProvenance.originalSourceRef, 'urn:urai:fictional_source_01')
+})

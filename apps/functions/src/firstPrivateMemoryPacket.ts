@@ -3,6 +3,11 @@ import { createHash } from 'node:crypto'
 type Row = Record<string, unknown>
 const ID = /^[A-Za-z0-9_-]{1,128}$/
 const SHA = /^[a-f0-9]{64}$/
+// The offline source reference must be an opaque stable ID, not a file path,
+// Storage URI or signed URL that could leak into canonical memory metadata.
+const SOURCE_REF = /^[A-Za-z0-9][A-Za-z0-9._:-]{4,511}$/
+const safeSourceRef = (value: unknown): value is string => typeof value === 'string' && SOURCE_REF.test(value)
+  && !/^(?:[a-z]:|https?:|gs:|s3:|file:|ftp:)/i.test(value)
 const TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 const PHASES = ['memory', 'emotion', 'pattern', 'return'] as const
 const TITLES = ['Recording', 'Listening', 'Context', 'Return'] as const
@@ -56,7 +61,7 @@ export function parsePreparedFirstPrivateMemory(packet: unknown, uid: string): {
     || m.emotionalState !== 'unknown' || !Array.isArray(m.emotionalArc) || m.emotionalArc.length !== 0
     || !Array.isArray(m.people) || m.people.length !== 0
     || !Array.isArray(m.sourceMedia) || m.sourceMedia.length !== 0
-    || !text(provenance.originalSourceRef, 5, 512)
+    || !safeSourceRef(provenance.originalSourceRef)
     || !SHA.test(String(provenance.originalSha256)) || !SHA.test(String(provenance.derivativeSha256))
     || !Number.isSafeInteger(provenance.originalByteLength) || Number(provenance.originalByteLength) < 1
     || !Number.isSafeInteger(provenance.derivativeByteLength) || Number(provenance.derivativeByteLength) < 1

@@ -13,6 +13,11 @@ import { verifiedPrivateFileHash, samePrivateRegularFile } from './private-file-
 
 export const MAX_OWNED_MEMORY_MEDIA_BYTES = 4 * 1024 * 1024
 const IDENTIFIER = /^[A-Za-z0-9_-]{1,128}$/
+// Only stable opaque IDs; never serialize a local path, cloud object URI,
+// credential-bearing URL or other location as an original source reference.
+const SOURCE_REF = /^[A-Za-z0-9][A-Za-z0-9._:-]{4,511}$/
+const safeSourceRef = value => typeof value === 'string' && SOURCE_REF.test(value)
+  && !/^(?:[a-z]:|https?:|gs:|s3:|file:|ftp:)/i.test(value)
 const ISO_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 const SHA256 = /^[a-f0-9]{64}$/
 const ALLOWED_BASIS = new Set(['verified-event-time', 'archive-time-proxy-not-capture-date'])
@@ -52,7 +57,7 @@ export async function prepareFirstPrivateMemory(options) {
   assert(!Object.hasOwn(options ?? {}, 'consentState'), 'OFFLINE_MEMORY_CONSENT_STATE_FORBIDDEN')
   assert(IDENTIFIER.test(ownerId ?? ''), 'EXACT_AUTH_OWNER_UID_REQUIRED')
   assert(IDENTIFIER.test(memoryId ?? ''), 'CANONICAL_MEMORY_ID_REQUIRED')
-  assert(typeof sourceRef === 'string' && sourceRef.trim().length > 4, 'PRIVATE_ORIGINAL_SOURCE_REFERENCE_REQUIRED')
+  assert(safeSourceRef(sourceRef), 'PRIVATE_ORIGINAL_SOURCE_REFERENCE_REQUIRED')
   assert(canonicalTime(occurredAt), 'CANONICAL_UTC_TIMESTAMP_REQUIRED')
   assert(ALLOWED_BASIS.has(occurredAtBasis), 'EVENT_TIME_PROVENANCE_REQUIRED')
   assert(Number.isSafeInteger(durationMs) && durationMs >= 4000 && durationMs <= 7 * 24 * 60 * 60 * 1000, 'MEDIA_DURATION_INVALID')

@@ -91,3 +91,20 @@ denies(p=>{p.upload.request.base64='AA=='},'embedded owner media bytes rejected'
 denies(p=>{p.recordedTruth.claimedLifeMovieAcceptance=true},'unverified Life Movie claim rejected')
 denies(p=>{p.memory.sourceProvenance.derivativeByteLength=4*1024*1024+1},'overlimit derivative rejected')
 denies(p=>{p.memory.summary='\u0000secret'},'control characters in owner text rejected')
+
+
+for (const [label, value] of [
+  ['private HTTPS credential URL', 'https://fictional.invalid/private?token=synthetic'],
+  ['cloud Storage URI', 'gs://fictional-private-bucket/original'],
+  ['absolute Linux private path', '/home/owner/private/original.mp3'],
+  ['absolute Windows private path', 'C:\\Users\\Owner\\Private.mp3'],
+  ['relative traversal source path', '../private/original.mp3'],
+  ['file URI-like source reference', 'file:synthetic-relative.mp3'],
+]) denies(p => { p.memory.sourceProvenance.originalSourceRef = value }, 'source reference rejects ' + label)
+test('server accepts opaque source references without embedded URLs or paths', () => {
+  for (const reference of ['urn:urai:fictional_source_01', 'offline:synthetic-proof', 'private-source-reference:test']) {
+    const p = packet()
+    p.memory.sourceProvenance.originalSourceRef = reference
+    assert.equal(parse(p, uid).memory.sourceProvenance.originalSourceRef, reference)
+  }
+})
