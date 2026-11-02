@@ -17,6 +17,13 @@ test('render proof cannot claim complete arrival before authored stars mount',()
   assert.ok(world.includes('runtimeAsset === MEMORY_STAR_MODEL'))
   assert.ok(world.includes('lifeMapAuthoredStarsMounted = "0"'))
 })
+test('WebGL recovery requires a live context and new frames, never stale draw counters',()=>{
+  assert.ok(world.includes('gl.getContext().isContextLost()'))
+  assert.ok(world.includes('!contextLost && frames.current >= 4 && calls > 0'))
+  assert.ok(world.includes('event.preventDefault()'))
+  assert.ok(world.includes('canvas.addEventListener("webglcontextlost", handleContextLost, false)'))
+  assert.ok(world.includes('canvas.removeEventListener("webglcontextlost", handleContextLost, false)'))
+})
 test('private recorder awaits real LifeMap rendering, not just the route',()=>{
   assert.ok(capture.includes("lifeMapRenderReady==='true'"))
   assert.ok(capture.includes('lifeMapAuthoredStarsMounted'))
