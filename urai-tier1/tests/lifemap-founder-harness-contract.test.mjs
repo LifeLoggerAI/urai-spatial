@@ -183,7 +183,9 @@ test('render proof refuses stale invalidation writes and republishes after WebGL
   assert.match(world, /lifeMapRenderReady = "false"/)
   assert.match(world, /const writeInvalid = \(\) => \{\s+if \(!invalidated\.current\) return;/)
   assert.match(world, /frames\.current < 4/)
-  assert.match(world, /(?:lifeMapRenderReady =|const ready =) calls > 0 && objects > 20 && anchors >= 8(?: \? "true" : "false")?/)
+  assert.match(world, /frames\.current >= 4 && calls > 0 && triangles > 0/)
+  assert.match(world, /objects > 20 && anchors >= 8 && authoredStars > 0/)
+  assert.match(world, /canvas\.isConnected && !gl\.getContext\(\)\.isContextLost\(\)/)
   assert.match(world, /<RenderProofRepublisher \/>/)
 })
 
