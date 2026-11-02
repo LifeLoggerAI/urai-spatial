@@ -148,7 +148,7 @@ function fixture({ modularFirestoreOnly = false, projectEnv = {} } = {}) {
     await handler.streamMemoryMediaPlayback(request, response)
     return { response, request, bytes: Buffer.concat(chunks), chunks }
   }
-  return { bytes, docs, policy, receipt, metadata, objects, bucketMetadata, clock, stats, handler, context, selection, descriptor, deliver, query,
+  return { load, bytes, docs, policy, receipt, metadata, objects, bucketMetadata, clock, stats, handler, context, selection, descriptor, deliver, query,
     revoke: () => { revoked = true }, disable: () => { disabled = true }, foreign: () => { currentUid = 'fictional-foreign-owner' },
     recreate: () => { creationTime = '2026-10-09T09:00:00.000Z' }, afterAuth: fn => { afterAuth = fn }, afterAccount: fn => { afterAccount = fn },
     afterMetadata: fn => { afterMetadata = fn }, afterWrite: fn => { afterWrite = fn }, beforeSource: fn => { beforeSource = fn }, Timestamp }
@@ -531,4 +531,108 @@ test('private hidden selected memory retains authenticated upload authority only
   assert.equal(allowed.ownerId, uid)
   assert.equal(allowed.memoryId, memoryId)
   assert.equal(f.stats.streams, 0)
+})
+
+
+// First-life shared-transaction lifecycle: keep the actual offline preflight,
+// create callable, media receipt and playback code on ONE synthetic backend.
+// This is not an Auth/Firestore/Storage/Functions emulator or an E2E browser.
+async function fictionalFirstMemoryLifecycleFixture() {
+  const { mkdtempSync, writeFileSync } = require('node:fs')
+  const { tmpdir } = require('node:os')
+  const { pathToFileURL } = require('node:url')
+  const f = fixture({ modularFirestoreOnly: true })
+  f.docs.delete(memoryPath)
+  f.docs.get(consentPath).expiresAt = new Date(f.receipt.consentExpiresAt).toISOString()
+  const dir = mkdtempSync(path.join(tmpdir(), 'urai-firstlife-lifecycle-'))
+  const originalPath = path.join(dir, 'fictional-original.mp3')
+  const sourcePath = path.join(dir, 'fictional-derivative.ogg')
+  writeFileSync(originalPath, Buffer.from('ID3\x04\0synthetic input not personal'))
+  const source = Buffer.concat([Buffer.from('OggS\0\0\0\0OpusHead'), Buffer.alloc(512, 44)])
+  writeFileSync(sourcePath, source)
+  const { prepareFirstPrivateMemory } = await import(pathToFileURL(path.resolve(__dirname,
+    '../../../urai-tier1/scripts/prepare-first-private-memory.mjs')).href)
+  const packet = await prepareFirstPrivateMemory({ ownerId: uid, memoryId,
+    originalPath, sourcePath, sourceRef: 'synthetic-recording:local-regression',
+    occurredAt: '2026-10-01T00:00:00.000Z', occurredAtBasis: 'verified-event-time', durationMs: 12000,
+    title: 'Fictional source', summary: 'This is an entirely synthetic local validation source.' })
+  const createModule = f.load(path.resolve(__dirname, '../lib/apps/functions/src/createFirstPrivateMemory.js'))
+  const create = () => createModule.createFirstPrivateMemory({ packet, ownerConfirmation: {
+    authorize: true, memoryId, derivativeSha256: packet.upload.sha256, visibility: 'hidden',
+  } }, f.context)
+  const upload = () => f.handler.registerMemoryMedia({ ...packet.upload.request,
+    base64: source.toString('base64') }, f.context)
+  const activate = (ready, confirmPrivateReplay = true) => f.handler.activateFirstPrivateMemory({
+    memoryId, receiptId: ready.receiptId, derivativeSha256: packet.upload.sha256, confirmPrivateReplay,
+  }, f.context)
+  const dispose = () => require('node:fs').rmSync(dir, { recursive: true, force: true })
+  return { ...f, packet, source, create, upload, activate, dispose }
+}
+
+test('first-life shared-transaction lifecycle: original packet -> hidden create -> upload -> explicit activation -> authenticated bytes', async () => {
+  const f = await fictionalFirstMemoryLifecycleFixture()
+  try {
+    assert.equal(f.packet.status, 'PREPARED_NOT_IMPORTED_NOT_PLAYBACK_PROVEN')
+    const created = await f.create()
+    assert.equal(created.visibility, 'hidden')
+    assert.equal(f.docs.get(memoryPath).privacy, 'hidden')
+    const ready = await f.upload()
+    assert.equal(ready.state, 'ready')
+    assert.equal(f.docs.get(memoryPath).privacy, 'hidden')
+    await assert.rejects(f.handler.getMemoryMediaPlaybackAuthority({ memoryId, receiptId: ready.receiptId }, f.context),
+      /FIRST_PRIVATE_MEMORY_REPLAY_NOT_ACTIVATED/)
+    const activated = await f.activate(ready)
+    assert.equal(activated.visibility, 'private')
+    const descriptor = await f.descriptor({ memoryId, receiptId: ready.receiptId })
+    const delivered = await f.deliver(descriptor)
+    assert.equal(delivered.response.statusCode, 200)
+    assert.deepEqual(delivered.bytes, f.source)
+    assert.equal(f.stats.signed, 0)
+  } finally { f.dispose() }
+})
+
+test('first-life shared-transaction lifecycle: duplicate create preserves original hidden source', async () => {
+  const f = await fictionalFirstMemoryLifecycleFixture()
+  try {
+    await f.create()
+    const stored = f.docs.get(memoryPath)
+    await assert.rejects(f.create(), /FIRST_PRIVATE_MEMORY_ALREADY_EXISTS/)
+    assert.equal(f.docs.get(memoryPath), stored)
+  } finally { f.dispose() }
+})
+
+test('first-life shared-transaction lifecycle: missing second approval cannot activate a ready receipt', async () => {
+  const f = await fictionalFirstMemoryLifecycleFixture()
+  try {
+    await f.create()
+    const ready = await f.upload()
+    await assert.rejects(f.activate(ready, false), /FIRST_PRIVATE_MEMORY_ACTIVATION_CONFIRMATION_REQUIRED/)
+    assert.equal(f.docs.get(memoryPath).privacy, 'hidden')
+  } finally { f.dispose() }
+})
+
+test('first-life shared-transaction lifecycle: ready same-source retry is idempotent before activation', async () => {
+  const f = await fictionalFirstMemoryLifecycleFixture()
+  try {
+    await f.create()
+    const first = await f.upload(), second = await f.upload()
+    assert.equal(second.receiptId, first.receiptId)
+    assert.equal(second.state, 'ready')
+    assert.equal(f.docs.get(memoryPath).sourceMedia.length, 1)
+  } finally { f.dispose() }
+})
+
+test('first-life shared-transaction lifecycle: C1 revocation invalidates issued private replay descriptor', async () => {
+  const f = await fictionalFirstMemoryLifecycleFixture()
+  try {
+    await f.create()
+    const ready = await f.upload()
+    await f.activate(ready)
+    const descriptor = await f.descriptor({ memoryId, receiptId: ready.receiptId })
+    f.docs.get(consentPath).status = 'revoked'
+    const out = await f.deliver(descriptor)
+    assert.equal(out.response.statusCode, 409)
+    assert.equal(out.response.headers['X-URAI-Checksum-SHA256'], undefined)
+    assert.ok(out.bytes.length < 128)
+  } finally { f.dispose() }
 })
