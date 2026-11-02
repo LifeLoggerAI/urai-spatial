@@ -37,7 +37,8 @@ function harness(href='/focus?node=memory-one') {
       }
     },
   }
-  const fsImport={doc:(_db,...path)=>path,onSnapshot(ref,receive,error){
+  const fsImport={doc:(_db,...path)=>path,onSnapshot(ref,options,receive,error){
+    assert.equal(options.includeMetadataChanges,true,'server confirmation requires metadata events')
     const item={ref,receive,error,stopped:false};subscriptions.push(item)
     return ()=>{item.stopped=true}
   }}
@@ -67,12 +68,12 @@ function harness(href='/focus?node=memory-one') {
       authCallback({uid:owner});render()
       const policy=subscriptions.findLast(s=>s.ref.includes('privacyPolicy'))
       assert.ok(policy,'policy must subscribe')
-      policy.receive({exists:()=>true,data:()=>({ownerId:owner,revision:1,
+      policy.receive({exists:()=>true,metadata:{fromCache:false,hasPendingWrites:false},data:()=>({ownerId:owner,revision:1,
         domains:{memory:{mode:'granted',lifeMapVisible:true,replayVisible:true}},enforcement:{state:'fully-enforced'}})})
       return render()
     },
     supplyMemory(id){const sub=subscriptions.findLast(s=>s.ref.includes('memories'))
-      assert.ok(sub);sub.receive({exists:()=>true,data:()=>({title:id})});return render()},
+      assert.ok(sub);sub.receive({exists:()=>true,metadata:{fromCache:false,hasPendingWrites:false},data:()=>({title:id})});return render()},
     privateSubs(){return subscriptions.filter(s=>s.ref.includes('memories'))},
   }
 }
