@@ -269,6 +269,36 @@ function mediaFixture(options = {}) {
   return f
 }
 
+
+test('current C1 owner with separately projected C7 grant admits media authority before any Storage effects', async () => {
+  const f = mediaFixture()
+  const authority = await f.media.getMemoryMediaUploadAuthority({ memoryId: 'synthetic-memory' }, f.context)
+  assert.equal(authority.ownerId, uid)
+  assert.equal(authority.memoryId, 'synthetic-memory')
+  assert.equal(authority.consentRevision, 4)
+  assert.equal(authority.expiresAt, now + 3600000)
+  assert.equal(f.stats.storageWrites.length, 0)
+  assert.equal(f.stats.signed, 0)
+})
+
+test('current C1 owner remains valid without separate C7 grant or projection', async () => {
+  const f = mediaFixture()
+  f.records.delete(canonicalPath)
+  f.records.delete(canonicalFencePath)
+  const authority = await f.media.getMemoryMediaUploadAuthority({ memoryId: 'synthetic-memory' }, f.context)
+  assert.equal(authority.ownerId, uid)
+  assert.equal(authority.consentRevision, 4)
+  assert.equal(f.stats.storageWrites.length, 0)
+})
+
+test('C7 export grant never substitutes for revoked C1 memory authority', async () => {
+  const f = mediaFixture()
+  f.records.get(`consentRecords/${uid}_memory_storage`).status = 'revoked'
+  await assert.rejects(f.media.getMemoryMediaUploadAuthority({ memoryId: 'synthetic-memory' }, f.context), /MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED/)
+  assert.equal(f.stats.storageWrites.length, 0)
+  assert.equal(f.stats.signed, 0)
+})
+
 test('actual compiled producer registers the attempt before create-only bytes and exports verified media without a URL credential', async () => {
   let observedAttempt = false
   const f = mediaFixture({ beforeSave: (location, bytes, records) => {
