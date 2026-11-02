@@ -39,7 +39,16 @@ export function validateOwnedMemoryPlaybackDescriptor(value: unknown,
 
 export function ownedMemoryPlaybackEndpoint(descriptor: OwnedMemoryPlaybackDescriptor, projectId: string) {
   if (!/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/.test(projectId)) throw new Error('PRIVATE_MEDIA_PROJECT_UNBOUND')
-  const endpoint = new URL(`https://us-central1-${projectId}.cloudfunctions.net/streamMemoryMediaPlayback`)
+  // Local protected-byte delivery must use the same isolated Firebase emulators
+  // as the authenticated test client. A test flag in any other project or a
+  // production build must never redirect sensitive media to localhost.
+  const isolatedDevelopment = process.env.NODE_ENV === 'development'
+    && process.env.NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR === 'true'
+    && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === 'demo-urai-auth-journey'
+    && projectId === 'demo-urai-auth-journey'
+  const endpoint = new URL(isolatedDevelopment
+    ? 'http://127.0.0.1:5001/demo-urai-auth-journey/us-central1/streamMemoryMediaPlayback'
+    : `https://us-central1-${projectId}.cloudfunctions.net/streamMemoryMediaPlayback`)
   for (const key of ['memoryId', 'receiptId', 'authorityHash', 'expiresAt', 'storageGeneration'] as const) endpoint.searchParams.set(key, String(descriptor[key]))
   return endpoint.toString()
 }

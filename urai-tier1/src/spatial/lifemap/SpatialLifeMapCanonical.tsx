@@ -3,12 +3,13 @@
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { assetCssStack, lifeMapAssets } from "@/spatial/assets/uraiAssets";
 import { requestUraiWorldReturn } from "@/spatial/world/worldEvents";
 import LifeMapRouteBoundary from "@/components/lifemap/LifeMapRouteBoundary";
 import LifeMapSemanticNavigator from "@/components/lifemap/LifeMapSemanticNavigator";
-import { app, firebasePublicEnvReady } from "@/lib/firebase/client";
+import { firebasePublicEnvReady, getUraiAuth } from "@/lib/firebase/client";
+import { subscribeLifeMapAuth } from './lifeMapAuthGate';
 
 const DEMO_MANIFEST_ID = "replay-recovery-thread";
 type LifeMapAccessMode = "checking" | "signed-out" | "private" | "explicit-demo";
@@ -76,8 +77,26 @@ function LifeMapAccessGate() {
   const router = useRouter();
   const params = useSearchParams();
   const query = useMemo(() => params.toString(), [params]);
-  const [mode, setMode] = useState<LifeMapAccessMode>("checking");
-  const [authenticatedUserId, setAuthenticatedUserId] = useState<string | null>(null);
+  // Authentication callbacks are asynchronous. A Next.js query transition
+  // renders once before the old effect unsubscribes; do not render any private
+  // memory for that new route from the previous route's auth state.
+  const [settledAccess, setSettledAccess] = useState<{
+    query: string;
+    mode: LifeMapAccessMode;
+    userId: string | null;
+  }>({ query: "", mode: "checking", userId: null });
+  const mode: LifeMapAccessMode = settledAccess.query === query ? settledAccess.mode : "checking";
+  const authenticatedUserId = mode === "private" ? settledAccess.userId : null;
+  const setMode = useCallback((nextMode: LifeMapAccessMode) => setSettledAccess(previous => ({
+    query,
+    mode: nextMode,
+    userId: nextMode === "private" && previous.query === query ? previous.userId : null,
+  })), [query]);
+  const setAuthenticatedUserId = useCallback((userId: string | null) => setSettledAccess(previous => ({
+    query,
+    mode: previous.query === query ? previous.mode : "checking",
+    userId,
+  })), [query]);
   const webglAvailable = useWebGLCapability();
 
   useEffect(() => {
@@ -91,12 +110,21 @@ function LifeMapAccessGate() {
     }
 
     setMode("checking");
-    const auth = getAuth(app);
-    return onAuthStateChanged(auth, (user) => {
-      setAuthenticatedUserId(user?.uid ?? null);
-      setMode(user ? "private" : "signed-out");
+    return subscribeLifeMapAuth({
+      listen: (onIdentity, onFailure) => {
+        const auth = getUraiAuth();
+        // A delayed callback for a replaced Firebase User (even the same UID)
+        // cannot restore a private Life Map owner. Fail closed until the
+        // canonical auth instance reports its current actor.
+        return onAuthStateChanged(auth, user =>
+          onIdentity(user && auth.currentUser === user ? user.uid : null), onFailure);
+      },
+      onResolved: userId => {
+        setAuthenticatedUserId(userId);
+        setMode(userId ? "private" : "signed-out");
+      },
     });
-  }, [query]);
+  }, [query, setMode, setAuthenticatedUserId]);
 
   const openDemo = useCallback(() => {
     const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -107,7 +135,7 @@ function LifeMapAccessGate() {
     next.set("overview", "1");
     setMode("explicit-demo");
     router.replace(`/life-map?${next.toString()}`, { scroll:false });
-  }, [query, router]);
+  }, [query, router, setMode]);
 
   if (mode === "checking" || webglAvailable === null) return <LifeMapLoading label="Checking the private threshold" />;
   if (!webglAvailable) {

@@ -5,6 +5,7 @@ import test from 'node:test'
 import ts from 'typescript'
 import { withLifeMapSelectionIdentity } from '../src/spatial/memory/lifeMapSelectionJourney.ts'
 import { buildNamedExplicitDemoMemory } from '../src/spatial/memory/explicitDemoMemory.ts'
+import { subscribeLifeMapAuth } from '../src/spatial/lifemap/lifeMapAuthGate.ts'
 
 // Execute the actual scene and canonical threshold with explicit synthetic
 // hook/router/Auth/WebGL adapters. This is component proof, not browser,
@@ -65,10 +66,11 @@ function fixture({ component = 'scene', sourceMode = 'signed-out', pathname = '/
     '@/spatial/memory/lifeMapSelectionJourney': { withLifeMapSelectionIdentity },
     '@/spatial/life-movie/privateLifeMovieRouteSelection': privateMovieModule.exports,
     './useLifeMapEvents': { useLifeMapEvents: () => ({ nodes: memoryNodes, loading: false, sourceMode }) },
+    './lifeMapAuthGate': { subscribeLifeMapAuth },
     './LifeMapProductionWorld': { LifeMapProductionWorld: 'synthetic-production-world-boundary' },
     './lifeMapVisualSystem': { artifactFamilyLabel: () => 'Visual memory', resolveArtifactFamily: () => 'visual' },
     'firebase/auth': { getAuth: () => ({}), onAuthStateChanged: (_auth, callback) => { callback(null); return () => {} } },
-    '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true },
+    '@/lib/firebase/client': { getUraiAuth: () => ({}), firebasePublicEnvReady: true },
     '@/spatial/assets/uraiAssets': { assetCssStack: () => '', lifeMapAssets: { primary: { src: 'synthetic-primary' }, mobile: { src: 'synthetic-mobile' } } },
     '@/spatial/adam/AdamLauncherSlot': 'synthetic-founder-slot',
     '@/components/lifemap/LifeMapRouteBoundary': 'synthetic-scene-boundary',

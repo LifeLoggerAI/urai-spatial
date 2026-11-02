@@ -28,7 +28,7 @@ export default function MemoryMediaAttachment({ memory }: { memory: SelectedMemo
   }, [memory.id, memory.ownerId])
 
   const attachFile = async () => {
-    if (!file || busy || transfer.current || !operation.current || ownerId !== memory.ownerId || memory.demo || memory.privacy !== 'private') return
+    if (!file || busy || transfer.current || !operation.current || ownerId !== memory.ownerId || memory.demo || (memory.privacy !== 'private' && memory.privacy !== 'hidden')) return
     const controller = new AbortController(), generation = epoch.current
     transfer.current = controller
     const isCurrent = () => epoch.current === generation && transfer.current === controller && !controller.signal.aborted
@@ -49,7 +49,7 @@ export default function MemoryMediaAttachment({ memory }: { memory: SelectedMemo
       if (isCurrent()) { setBusy(false); transfer.current = null }
     }
   }
-  if (memory.demo || memory.privacy !== 'private' || ownerId !== memory.ownerId) return null
+  if (memory.demo || (memory.privacy !== 'private' && memory.privacy !== 'hidden') || ownerId !== memory.ownerId) return null
   const statusCopy = message ? memoryMediaCopy(locale.preference,message) : null
   return <details className="memoryMediaAttachment">
     <summary {...locale.props('memoryMedia.summary')}>{locale.text('memoryMedia.summary')}</summary>

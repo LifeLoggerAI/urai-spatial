@@ -10,6 +10,8 @@ import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 const require = createRequire(import.meta.url), ts = require('typescript')
 const compile = source => ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
 const code = compile(fs.readFileSync('src/lib/privacy/ownedMemoryMediaClient.ts', 'utf8'))
+assert.match(fs.readFileSync('src/lib/privacy/ownedMemoryMediaClient.ts', 'utf8'), /getUraiAuth\(\)/)
+assert.doesNotMatch(fs.readFileSync('src/lib/privacy/ownedMemoryMediaClient.ts', 'utf8'), /\bgetAuth\(app\)/)
 const componentCode = compile(fs.readFileSync('src/spatial/memory/MemoryMediaAttachment.tsx', 'utf8'))
 const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3])
 const digest = createHash('sha256').update(bytes).digest('hex')
@@ -21,7 +23,7 @@ function fixture() {
   } }; auth.currentUser = user
   const authority = { schemaVersion: 'urai-owned-memory-media-v1', ownerId: memory.ownerId, memoryId: memory.id, consentRevision: 4, expiresAt: Date.now() + 30000 }
   const receipt = { memoryId: memory.id, receiptId: 'a'.repeat(64), state: 'ready', sha256: digest, byteLength: bytes.length, contentType: 'image/png' }
-  const imports = { 'firebase/auth': { getAuth: () => auth }, '@/lib/firebase/client': { app, firebasePublicEnvReady: true, functions: {} },
+  const imports = { 'firebase/auth': { getAuth: () => auth }, '@/lib/firebase/client': { app, firebasePublicEnvReady: true, functions: {}, getUraiAuth: () => auth },
     'firebase/functions': { httpsCallable: (_functions, name) => async payload => {
       state.calls.push({ name, payload }); await control[name]?.(payload)
       return { data: name === 'getMemoryMediaUploadAuthority' ? { ...authority } : { ...receipt } }
@@ -124,7 +126,23 @@ test('Focus mounts the real file control only for an owned selected private memo
   const ast = ts.createSourceFile('Focus.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const mounts = []; const visit = node => { if (ts.isConditionalExpression(node) && node.whenTrue.getText(ast).includes('<MemoryMediaAttachment ')) mounts.push(node); ts.forEachChild(node, visit) }; visit(ast)
   assert.equal(mounts.length, 1)
-  assert.match(mounts[0].condition.getText(ast), /memory && !memory.demo && memory.privacy === 'private' && memory.authorization === 'owner'/)
+  assert.match(mounts[0].condition.getText(ast), /memory && !memory.demo && \(memory.privacy === 'private' \|\| memory.privacy === 'hidden'\) && memory.authorization === 'owner'/)
   assert.match(fs.readFileSync('src/spatial/memory/MemoryMediaAttachment.tsx', 'utf8'), /setMessage\('memoryMedia.attached'\)/)
   assert.match(URAI_SOURCE_MESSAGES['memoryMedia.attached'].source,/Preview is not available here/)
+})
+
+
+test('hidden first-life attachment remains private and requires current C1 server authority', async () => {
+  const f = fixture()
+  const hidden = { ...memory, privacy: 'hidden' }
+  const receipt = await f.run(hidden)
+  assert.equal(receipt.memoryId, memory.id)
+  assert.equal(f.state.fileReads, 1)
+  assert.deepEqual(f.state.calls.map(call => call.name), ['getMemoryMediaUploadAuthority', 'getMemoryMediaUploadAuthority', 'registerMemoryMedia'])
+  assert.equal(hidden.privacy, 'hidden')
+  const denied = fixture()
+  denied.control.getMemoryMediaUploadAuthority = () => { throw new Error('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED') }
+  await assert.rejects(denied.run(hidden), /MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED/)
+  assert.equal(denied.state.fileReads, 0)
+  assert.equal(denied.state.calls.some(call => call.name === 'registerMemoryMedia'), false)
 })

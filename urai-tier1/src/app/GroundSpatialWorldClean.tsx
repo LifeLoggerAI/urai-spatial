@@ -18,6 +18,7 @@ import {
   type MovementInput,
 } from "@/spatial/navigation/EmbodiedNavigation";
 import { DESTINATIONS, type GroundDestination, type GroundChamberForm } from "./ground/GroundWorldModel";
+import { GROUND_WORKFORCE, GroundWorkforcePresences } from "./GroundWorkforcePresences";
 
 const GROUND_MODEL = "/assets/urai/generated/models/ground-world-terrain-v1.glb";
 const BOUNDS = { minX: -14, maxX: 14, minZ: -34, maxZ: 11 };
@@ -187,6 +188,7 @@ function GroundWorld({ target, activeId, onSelect, terrainHeights }: {
         <group name="ground-central-nexus" userData={{ authoredNodeFamily: "ground-central-nexus nexus-core" }}>
           <group name="ground-workforce-and-council-presences" userData={{ authoredNodeFamily: "ground-destination-council council-* workforce-*" }}>
             <primitive object={world} />
+            <GroundWorkforcePresences world={world} />
           </group>
         </group>
       </group>
@@ -310,6 +312,7 @@ export default function GroundSpatialWorldClean() {
   const [nearby, setNearby] = useState<GroundDestination | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [workforceOpen, setWorkforceOpen] = useState(false);
   const yaw = useRef(0);
   const pitch = useRef(-0.08);
   const target = useRef<THREE.Vector3 | null>(null);
@@ -346,6 +349,7 @@ export default function GroundSpatialWorldClean() {
       data-ground-visual-owner="shared-continuity-architecture"
       data-ground-runtime-owner="final-glb-infrastructure-world"
       data-ground-runtime-assets="ground-world-terrain-v1.glb"
+      data-ground-workforce-art="provider-reference-pending-acceptance"
       data-ground-no-compositing-bands="true"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
@@ -415,6 +419,33 @@ export default function GroundSpatialWorldClean() {
           </button>
         ))}
       </nav>
+      <button
+        className="ground-workforce-toggle"
+        type="button"
+        aria-expanded={workforceOpen}
+        aria-controls="ground-workforce-directory"
+        onClick={() => setWorkforceOpen(open => !open)}
+      >
+        Workforce
+      </button>
+      {workforceOpen ? <nav id="ground-workforce-directory" className="ground-workforce-directory" aria-label="Ground workforce presences">
+        <strong>Reference presences — services require separate authorization</strong>
+        {GROUND_WORKFORCE.map(member => (
+          <button
+            key={member.id}
+            type="button"
+            data-ground-workforce-entry={member.id}
+            aria-label={`Approach ${member.label} in Ground`}
+            onClick={() => {
+              const destination = DESTINATIONS.find(item => item.id === member.destinationId);
+              if (destination) focusDestination(destination);
+              setWorkforceOpen(false);
+            }}
+          >
+            {member.label}
+          </button>
+        ))}
+      </nav> : null}
       {webglUsable ? <MobileMovementPad input={input} label="Ground movement controls" /> : null}
       <span className="sr-only" data-testid="urai-ground-walkable-surface">{webglUsable ? "The authored Ground navigation surface is active." : "Use direct Ground routes while the spatial renderer is unavailable."}</span>
 
@@ -447,7 +478,7 @@ export default function GroundSpatialWorldClean() {
         .ground-directory button:is(:hover,:focus-visible,[aria-current="location"]) strong{max-width:122px;opacity:.82}
         .ground-destination-compass :is(a,button) strong{transition:max-width .2s ease,opacity .2s ease}
         @media(max-width:760px){.ground-brand{left:14px;top:14px;max-width:62vw}.ground-brand strong{font-size:10px}.ground-home-return{right:12px;top:12px}.ground-directory{left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));transform:none;max-width:none;padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right));scroll-padding-inline-start:max(14px,env(safe-area-inset-left));scroll-padding-inline-end:max(14px,env(safe-area-inset-right));mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent)}.ground-directory button{flex:0 0 48px}.ground-directory button:is(:hover,:focus-visible,[aria-current="location"]){flex-basis:auto}.ground-prompt{bottom:78px;max-width:calc(100vw - 28px);overflow:hidden;text-overflow:ellipsis}}
-        @media(prefers-reduced-motion:reduce){.ground-directory strong{font-size:9px;transition:none}.ground-destination-compass :is(a,button) strong{transition:none}.ground-directory button{transition:none}}
+        @media(prefers-reduced-motion:reduce){.ground-workforce-directory button,.ground-workforce-toggle{transition:none;animation:none}.ground-directory strong{font-size:9px;transition:none}.ground-destination-compass :is(a,button) strong{transition:none}.ground-directory button{transition:none}}
         .ground-directory{gap:6px;background:rgba(5,19,24,.88);border:1px solid #d4eeee38;border-radius:20px;scrollbar-width:thin;mask-image:none;scroll-padding:10px}
         .ground-spatial-root .ground-directory button{width:auto!important;border-radius:14px!important;flex:0 0 auto;gap:8px;padding:0 13px;border-color:#d4eeee24;background:#173239}
         .ground-directory strong{max-width:160px;opacity:1;font-size:11px}
@@ -456,7 +487,12 @@ export default function GroundSpatialWorldClean() {
         .ground-prompt{color:#f0faf8;background:#0c222de8;font-size:11px;letter-spacing:.02em}
         .ground-enter{position:absolute;z-index:14;left:50%;bottom:144px;transform:translateX(-50%);min-height:48px;max-width:calc(100vw - 32px);padding:10px 20px;border:1px solid #e7ffff80;border-radius:16px;background:#d9eeeb;color:#122b31;font:700 13px/1.3 system-ui;cursor:pointer}
         .ground-enter:focus-visible{outline:3px solid white;outline-offset:4px}
-        @media(max-width:760px){.ground-directory button{flex-basis:auto}.ground-directory strong{font-size:11px}.ground-prompt{max-width:calc(100vw - 40px);font-size:10px}.ground-enter{bottom:142px}}
+        .ground-workforce-toggle{position:absolute;z-index:16;right:max(16px,env(safe-area-inset-right));top:74px;min-height:48px;min-width:96px;padding:0 12px;border:1px solid #d4eeee60;border-radius:12px;background:#102b38ed;color:#f6ffff;font:700 12px/1 system-ui;cursor:pointer}
+        .ground-workforce-directory{position:absolute;z-index:16;right:max(16px,env(safe-area-inset-right));top:130px;width:min(300px,calc(100vw - 32px));max-height:min(65svh,580px);overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px;border:1px solid #d4eeee80;border-radius:16px;background:#102b38f5;box-shadow:0 14px 48px #0009;touch-action:pan-y}
+        .ground-workforce-directory strong{grid-column:1/-1;font:600 12px/1.35 system-ui;color:#f3fbfc}
+        .ground-workforce-directory button{min-height:48px;padding:7px 9px;border:1px solid #d4eeee50;border-radius:10px;background:#24444b;color:#fff;font:600 11px/1.25 system-ui;cursor:pointer}
+        .ground-workforce-toggle:focus-visible,.ground-workforce-directory button:focus-visible{outline:3px solid white;outline-offset:3px}
+        @media(max-width:760px){.ground-workforce-toggle{top:70px;right:12px}.ground-workforce-directory{top:126px;right:12px;max-height:55svh}.ground-directory button{flex-basis:auto}.ground-directory strong{font-size:11px}.ground-prompt{max-width:calc(100vw - 40px);font-size:10px}.ground-enter{bottom:142px}}
       `}</style>
     </main>
   );

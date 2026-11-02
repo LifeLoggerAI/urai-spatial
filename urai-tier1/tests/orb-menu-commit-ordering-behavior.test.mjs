@@ -270,7 +270,7 @@ test('phase-driven close preserves disabled guards and never flushes inside a li
 
 test('ready Home travel commits the menu before a real Ascent request without premature route push', t => {
   const context = { memoryId: 'synthetic-memory', threadId: 'synthetic-thread', replayManifestId: 'synthetic-manifest', privacyMode: 'private' }
-  const f = fixture(t, { context, search: '?placeId=synthetic-place&chapterId=synthetic-chapter' })
+  const f = fixture(t, { context, search: '?memoryId=synthetic-memory&node=synthetic-star&placeId=synthetic-place&chapterId=synthetic-chapter' })
   f.open()
   f.observations.length = 0
   act(() => f.container.querySelector('[data-world-target="life-map"]').click())
@@ -288,7 +288,7 @@ test('ready Home travel commits the menu before a real Ascent request without pr
   assert.equal(f.calls[0].value.cameraCheckpoint, 'home-sky-ascent')
   const href = new URL(f.calls[0].value.href, window.location.origin)
   assert.equal(href.pathname, '/life-map')
-  for (const [key, value] of Object.entries({ memoryId: context.memoryId, node: context.memoryId, thread: context.threadId, manifestId: context.replayManifestId, privacyMode: context.privacyMode, placeId: 'synthetic-place', chapterId: 'synthetic-chapter' })) assert.equal(href.searchParams.get(key), value)
+  for (const [key, value] of Object.entries({ memoryId: context.memoryId, node: 'synthetic-star', thread: context.threadId, manifestId: context.replayManifestId, privacyMode: context.privacyMode, placeId: 'synthetic-place', chapterId: 'synthetic-chapter' })) assert.equal(href.searchParams.get(key), value)
 })
 
 for (const blocked of [{ homeReady: false }, { homeLocked: true }]) {

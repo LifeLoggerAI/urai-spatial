@@ -3,10 +3,34 @@
 const assert = require('node:assert/strict')
 const crypto = require('node:crypto')
 const { test } = require('node:test')
-const { oauthHarness, deferred, TOKEN_PATH, CONNECTION_PATH, BASELINE_BLOB, GENERATION_ONLY_BLOB } = require('./helpers/googleWorkspaceOAuthHarness')
+const { oauthHarness, deferred, TOKEN_PATH, CONNECTION_PATH, BASELINE_BLOB, GENERATION_ONLY_BLOB, gitBlobSha, verifyPinnedHistoricalSource } = require('./helpers/googleWorkspaceOAuthHarness')
 const caseTest = (name, fn) => test(name, { timeout: 10000 }, fn)
 const EXCHANGE_URL = 'https://oauth2.googleapis.com/token'
 const REVOKE_URL = 'https://oauth2.googleapis.com/revoke'
+
+caseTest('historical OAuth fixture receipts accept Windows CRLF but reject altered source', () => {
+  const fs = require('node:fs')
+  const path = require('node:path')
+  const fixtures = [
+    ['googleWorkspaceOAuth.before.ts', BASELINE_BLOB],
+    ['googleWorkspaceOAuth.generationOnly.before.ts', GENERATION_ONLY_BLOB],
+  ]
+  for (const [filename, expected] of fixtures) {
+    const raw = fs.readFileSync(path.join(__dirname, 'fixtures', filename), 'utf8')
+    const canonical = raw.replace(/\r\n/g, '\n')
+    assert.equal(gitBlobSha(canonical), expected)
+    assert.equal(verifyPinnedHistoricalSource(canonical, expected), canonical)
+    assert.equal(verifyPinnedHistoricalSource(canonical.replace(/\n/g, '\r\n'), expected), canonical)
+    assert.throws(
+      () => verifyPinnedHistoricalSource(canonical.replace('const PROVIDER_ID =', 'const TAMPERED_PROVIDER_ID ='), expected),
+      /violates its pinned Git blob/,
+    )
+    assert.throws(
+      () => verifyPinnedHistoricalSource(canonical.replace(/\n/, '\r'), expected),
+      /standalone carriage return/,
+    )
+  }
+})
 
 async function start(h, request) {
   const response = await h.invoke('googleOAuthStart', request)

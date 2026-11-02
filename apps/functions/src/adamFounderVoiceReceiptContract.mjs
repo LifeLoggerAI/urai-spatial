@@ -18,7 +18,7 @@ const validSha = value => typeof value === 'string' && SHA.test(value)
 const refusal = reason => Object.freeze({ valid: false, reason })
 
 /** Shape validation is explicitly NOT authorization. Never use it to play audio. */
-export function inspectFounderVoiceReceiptShape(receipt, expected = {}, nowMs = Date.now()) {
+function inspectFounderVoiceReceiptShapeUnchecked(receipt, expected = {}, nowMs = Date.now()) {
   if (!record(receipt) || !record(expected)) return refusal('missing-receipt-or-binding')
   if (receipt.version !== FOUNDER_VOICE_RECEIPT_VERSION
     || receipt.audience !== 'urai:adam-founder-voice'
@@ -53,6 +53,15 @@ export function inspectFounderVoiceReceiptShape(receipt, expected = {}, nowMs = 
   return Object.freeze({ valid: true, canonicalPayload })
 }
 
+/** Safe fail-closed parser: untrusted object accessors and proxies cannot throw outward. */
+export function inspectFounderVoiceReceiptShape(receipt, expected = {}, nowMs = Date.now()) {
+  try {
+    return inspectFounderVoiceReceiptShapeUnchecked(receipt, expected, nowMs)
+  } catch {
+    return refusal('untrusted-receipt-or-binding')
+  }
+}
+
 /**
  * Server-owned adapters MUST perform real issuer-signature verification,
  * independently verify provider execution, read live admission/consent, and
@@ -60,13 +69,13 @@ export function inspectFounderVoiceReceiptShape(receipt, expected = {}, nowMs = 
  * Caller must still revalidate current admission immediately before playback.
  */
 export async function verifyFounderVoiceReceipt(receipt, expected, trustedServer = null, nowMs = Date.now()) {
-  const shape = inspectFounderVoiceReceiptShape(receipt, expected, nowMs)
-  if (!shape.valid || !record(trustedServer)
-    || typeof trustedServer.verifyIssuerSignature !== 'function'
-    || typeof trustedServer.verifyProviderExecution !== 'function'
-    || typeof trustedServer.readCurrentAdmission !== 'function'
-    || typeof trustedServer.consumeNonceOnce !== 'function') return false
   try {
+    const shape = inspectFounderVoiceReceiptShape(receipt, expected, nowMs)
+    if (!shape.valid || !record(trustedServer)
+      || typeof trustedServer.verifyIssuerSignature !== 'function'
+      || typeof trustedServer.verifyProviderExecution !== 'function'
+      || typeof trustedServer.readCurrentAdmission !== 'function'
+      || typeof trustedServer.consumeNonceOnce !== 'function') return false
     if (await trustedServer.verifyIssuerSignature(receipt, shape.canonicalPayload) !== true) return false
     if (await trustedServer.verifyProviderExecution(receipt.providerReceipt, receipt.providerReceiptId, receipt.audioSha256) !== true) return false
     const admitted = await trustedServer.readCurrentAdmission(receipt.accountId)

@@ -4,7 +4,7 @@
   "main": "lib/apps/functions/src/index.js",
   "types": "lib/apps/functions/src/index.d.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/copy-runtime-contracts.mjs",
     "test": "node scripts/run-tests.mjs",
     "release:check": "corepack pnpm --dir ../.. release:check",
     "release:p1": "corepack pnpm --dir ../.. release:p1",

@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { doc, onSnapshot } from 'firebase/firestore'
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
-import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
+import { onAuthStateChanged } from 'firebase/auth'
+import { firebasePublicEnvReady, getFirebaseDb, getUraiAuth } from '@/lib/firebase/client'
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import { isConsentPolicy } from '@/app/privacy-controls/consentModel'
 import { buildNamedExplicitDemoMemory } from './explicitDemoMemory'
@@ -95,12 +95,14 @@ export function useSelectedMemory(): SelectedMemoryResult {
       return () => { cancelled = true }
     }
 
-    const auth = getAuth(app)
+    const auth = getUraiAuth()
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (cancelled) return
       detachActor()
       const ownerEpoch = actorEpoch
-      const isCurrentOwner = () => !cancelled && actorEpoch === ownerEpoch
+      // An auth callback or Firestore listener may lag a Firebase User-object
+      // replacement, including a fresh session under the same UID.
+      const isCurrentOwner = () => !cancelled && actorEpoch === ownerEpoch && auth.currentUser === user
       if (!user) {
         setResult({ status: 'unauthorized', memory: null, message: 'Sign in to open this private memory.' })
         return
@@ -124,7 +126,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
                 setResult(unavailable('Selected memory could not be found.'))
                 return
               }
-              const parsed = parseSelectedMemory(snapshot.data(), user.uid, memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
+              const parsed = parseSelectedMemory(snapshot.data(), user.uid, memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, currentRevision)
               if (parsed.memory && manifestId && parsed.memory.replayManifest.id !== manifestId) {
                 setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this memory.' })
                 return

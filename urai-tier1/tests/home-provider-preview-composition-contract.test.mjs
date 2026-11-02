@@ -29,14 +29,14 @@ test('fine-pointer desktop omits the touch-only pad while mounting functional ac
   assert.match(controls, /document\.addEventListener\('visibilitychange', releaseWhenHidden\)/)
 })
 
-test('desktop composition expands then scales the canvas without leaving uncovered edges', () => {
+test('desktop composition fills the viewport without scaling or uncovered edges', () => {
   const css = appFile('home-provider-preview-composition.css')
-  assert.match(css, /width: 112% !important;/)
-  assert.match(css, /height: 112% !important;/)
-  assert.match(css, /left: -6% !important;/)
-  assert.match(css, /top: -6% !important;/)
-  assert.match(css, /transform: scale\(0\.9\);/)
-  assert.match(css, /transform-origin: 50% 54%;/)
+  assert.match(css, /width: 100% !important;/)
+  assert.match(css, /height: 100% !important;/)
+  assert.match(css, /left: 0 !important;/)
+  assert.match(css, /top: 0 !important;/)
+  assert.match(css, /transform: none;/)
+  assert.match(css, /transform-origin: 50% 50%;/)
 })
 
 test('desktop provenance and unavailable ambience controls remain accessible but visually discreet', () => {

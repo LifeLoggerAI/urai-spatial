@@ -47,14 +47,15 @@ requireMatch('Replay authenticated memory authority', replayClient, /useSelected
 for (const token of ['memoryId', 'manifestId']) {
   requireMatch(`Selected-memory hook reads ${token}`, selectedMemoryHook, new RegExp(`params\\.get\\('${token}'\\)`))
 }
-requireMatch('Selected-memory hook accepts Life Map node identity', selectedMemoryHook, /params\.get\('memoryId'\) \?\? params\.get\('node'\)/)
+requireMatch('Selected-memory hook only permits node identity for explicit demo', selectedMemoryHook, /params\.get\('memoryId'\)\s*\?\?\s*\(demoRequested\s*\?\s*params\.get\('node'\)\s*:\s*null\)/)
 requireMatch('Selected-memory manifest identity check', selectedMemoryHook, /parsed\.memory\.replayManifest\.id !== manifestId/)
 
 requireMatch(
   'Focus forwards complete selected identity',
   focusClient,
-  /new URLSearchParams\(\{\s*memoryId:\s*memory\.id,\s*manifestId:\s*memory\.replayManifest\.id,\s*node:\s*memory\.star\.id,\s*from:\s*'focus-artifact',?\s*\}\)/,
+  /new URLSearchParams\(\{\s*memoryId:\s*memory\.id,\s*manifestId:\s*memory\.replayManifest\.id,\s*node:\s*returnNode,\s*from:\s*'focus-artifact',?\s*\}\)/,
 )
+requireMatch('Focus replay node continuity requires same authorized memory', focusClient, /const returnNode = sameMemory && validNode && \(originalSelection \|\| projectedSelection\) \? node! : memory\.star\.id/)
 requireMatch('Focus enters Replay through world travel', focusClient, /requestUraiWorldTravel\(\{/)
 requireMatch('Focus Replay destination', focusClient, /destination: 'replay'/)
 requireMatch('Focus Replay manifest context', focusClient, /replayManifestId: memory\.replayManifest\.id/)
@@ -98,7 +99,11 @@ requireMatch('Life Movie registry route', worldRegistry, /href:\s*'\/life-movie'
 requireMatch('Life Movie registry cinematic continuum', worldRegistry, /environmentalForm:\s*'cinematic-memory-continuum'/)
 requireMatch('Life Movie enters Replay through world travel', lifeMovieClient, /requestUraiWorldTravel\(\{/)
 requireMatch('Life Movie targets Replay', lifeMovieClient, /destination:\s*'replay'/)
-requireMatch('Life Movie preserves movie identity', lifeMovieClient, /movieId:\s*requestedMovieId/)
+// Bound owner sequence identity and actual Replay travel authority are distinct.
+// Do not accept an unrelated movieId assignment as evidence for either.
+requireMatch('Life Movie binds owner sequence to requested movie identity', lifeMovieClient, /setBoundMemories\(\{\s*actor:\s*user,\s*movieId:\s*requestedMovieId,/)
+const lifeMovieReplayTravel = lifeMovieClient.match(/requestUraiWorldTravel\(\{\s*destination:\s*'replay',[\s\S]*?\}\)/)?.[0] ?? ''
+requireMatch('Life Movie preserves movie identity', lifeMovieReplayTravel, /context:\s*\{[\s\S]*?movieId:\s*requestedMovieId\s*\?\?\s*undefined,/)
 requireMatch('Life Movie preserves chapter identity', lifeMovieClient, /chapterId:\s*activeChapter\?\.id/)
 requireMatch('Replay continues to Life Movie through world travel', replayClient, /destination:\s*'life-movie'/)
 requireMatch('Replay preserves Life Movie identity', replayClient, /movieId:\s*world\.movieId/)

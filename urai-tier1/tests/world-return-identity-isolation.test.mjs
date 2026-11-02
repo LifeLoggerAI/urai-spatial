@@ -159,3 +159,51 @@ for (const [name, fileName, functionName] of [
    assert.equal(u.searchParams.get('demo'), '1')
  })
 }
+
+// R-FINAL: scoped relationship identity must not leak into neutral travel.
+for (const [name, fileName, functionName] of [
+ ['transition controller', 'WorldTransitionController.tsx', 'buildTravelHref'],
+ ['hard fallback', 'worldEvents.ts', 'buildFallbackHref'],
+ ['persistent companion', 'PersistentWorldCompanion.tsx', 'buildCompanionTravelHref'],
+]) {
+ const assertNoRelationshipLeak = (url) => {
+   for (const key of ['thread','personId','placeId'])
+     assert.equal(url.searchParams.has(key), false, name + ' leaked ' + key + ' to ' + url.pathname)
+ }
+ test(name + ': neutral Home and Ground discard inherited private relationship context', () => {
+   for (const [destination,href] of [['home','/home'],['infrastructure-hub','/ground']]) {
+     const u = checkOriginalRoute(fileName,functionName,
+       '?memoryId=memory-A&thread=old-thread&personId=old-person&placeId=old-place',
+       {destination,href})
+     assertNoRelationshipLeak(u)
+     assert.equal(u.searchParams.has('memoryId'),false)
+   }
+ })
+ test(name + ': neutral Home discards explicit stale relationship selectors', () => {
+   const u = checkOriginalRoute(fileName,functionName,'?memoryId=memory-A',
+     {destination:'home',href:'/home?thread=target-old',
+       context:{threadId:'context-old',personId:'context-person',placeId:'context-place'}})
+   assertNoRelationshipLeak(u)
+ })
+ test(name + ': new selected memory does not inherit orphaned previous relationship context', () => {
+   const u = checkOriginalRoute(fileName,functionName,
+     '?thread=orphan-thread&personId=orphan-person&placeId=orphan-place',
+     {destination:'focus',href:'/focus?memoryId=memory-B'})
+   assert.equal(u.searchParams.get('memoryId'),'memory-B')
+   assertNoRelationshipLeak(u)
+ })
+ test(name + ': same selected memory keeps its intended relationship context', () => {
+   const u = checkOriginalRoute(fileName,functionName,
+     '?memoryId=memory-A&thread=same-thread&personId=same-person&placeId=same-place',
+     {destination:'focus',href:'/focus?memoryId=memory-A'})
+   assert.equal(u.searchParams.get('thread'),'same-thread')
+   assert.equal(u.searchParams.get('personId'),'same-person')
+   assert.equal(u.searchParams.get('placeId'),'same-place')
+ })
+ test(name + ': explicitly chosen Location Map place remains available', () => {
+   const u = checkOriginalRoute(fileName,functionName,'?memoryId=memory-A',
+     {destination:'location-map',href:'/location-map',context:{placeId:'selected-place'}})
+   assert.equal(u.searchParams.get('placeId'),'selected-place')
+   assert.equal(u.searchParams.has('memoryId'),false)
+ })
+}

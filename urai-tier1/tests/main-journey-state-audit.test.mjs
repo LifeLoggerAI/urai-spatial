@@ -46,8 +46,10 @@ for (const mutation of [
   {label:'selected manifest travel identity', path:focusPath, before:'manifestId: memory.replayManifest.id, node:', after:"manifestId: 'foreign-manifest', node:", failure:'Focus forwards complete selected identity'},
   {label:'Replay authentication', path:replayPath, before:'useSelectedMemory()', after:'useFixtureMemory()', failure:'Replay authenticated memory authority'},
   {label:'Replay reduced motion', path:replayPath, before:'const reducedMotion = useReducedMotion()', after:'const reducedMotion = false', all:true, failure:'Replay honors reduced motion'},
+  {label:'node-only private identity', path:'urai-tier1/src/spatial/memory/useSelectedMemory.ts', before:"(demoRequested ? params.get('node') : null)", after:"params.get('node')", failure:'Selected-memory hook only permits node identity for explicit demo'},
   {label:'manifest mismatch denial', path:'urai-tier1/src/spatial/memory/useSelectedMemory.ts', before:'parsed.memory.replayManifest.id !== manifestId', after:'false', failure:'Selected-memory manifest identity check'},
-  {label:'movie travel identity', path:'urai-tier1/src/app/life-movie/LifeMovieClient.tsx', before:'movieId: requestedMovieId', after:"movieId: 'other-movie'", failure:'Life Movie preserves movie identity'},
+  {label:'movie sequence binding identity', path:'urai-tier1/src/app/life-movie/LifeMovieClient.tsx', before:'movieId: requestedMovieId,', after:"movieId: 'other-movie',", failure:'Life Movie binds owner sequence to requested movie identity'},
+  {label:'movie travel identity', path:'urai-tier1/src/app/life-movie/LifeMovieClient.tsx', before:'movieId: requestedMovieId ?? undefined,', after:"movieId: 'other-movie',", failure:'Life Movie preserves movie identity'},
   {label:'Replay hard navigation', path:replayPath, before:'requestUraiWorldReturn()', after:'window.location.assign("/home")', failure:'Replay client: forbidden hardcoded pattern'},
 ]) {
   test(`actual journey audit rejects loss of ${mutation.label}`, () => {

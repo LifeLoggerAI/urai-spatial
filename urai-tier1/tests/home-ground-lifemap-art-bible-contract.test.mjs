@@ -85,7 +85,9 @@ test('Home is one coherent authored natural 3D sanctuary with final physical ass
   assert.match(homeProduction, /pointer: coarse/)
   assert.match(homeProduction, /cameraCheckpoint:\s*'home-ground-descent'/)
   assert.match(homeProduction, /cameraCheckpoint:\s*'home-sky-ascent-complete'/)
-  assert.match(homeProduction, /href:\s*'\/life-map\/\?from=home-sky'/)
+  // Home's Ascent handoff must preserve route context through the canonical
+  // navigation helper rather than bypass it with a bare literal href.
+  assert.match(homeProduction, /requestUraiWorldTravel\(\{ destination: 'life-map', href: homeJourneyHref\('\/life-map\/\?from=home-sky', window\.location\.search\), entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' \}\)/)
   assert.match(homeRuntime, /aria-label=\{locale.text\('home.lifeMapAction'\)\}/)
   assert.match(homeRuntime, /data-testid="home-semantic-life-map"/)
   assert.match(homeRuntime, /href=\{homeJourneyHref\('\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete', currentSearch\)\}/)

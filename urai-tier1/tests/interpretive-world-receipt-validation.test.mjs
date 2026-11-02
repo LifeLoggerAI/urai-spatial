@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 const validator = new URL('../../scripts/validate-interpretive-world-receipt.mjs', import.meta.url)
 const pendingReceipt = new URL('../../operations/captured-reality/worlds/URAI-IW-001-QUIET-RESET/reconstruction-receipt.pending.json', import.meta.url)
@@ -39,13 +40,13 @@ function run(receipt) {
   if (receipt.visual?.literalAcceptance === true && typeof receipt.visual?.receiptRef === 'string') {
     fs.writeFileSync(path.join(dir, receipt.visual.receiptRef), JSON.stringify(acceptedVisualReceipt(receipt)))
   }
-  const result = spawnSync(process.execPath, [validator.pathname, file], { encoding: 'utf8' })
+  const result = spawnSync(process.execPath, [fileURLToPath(validator), file], { encoding: 'utf8' })
   fs.rmSync(dir, { recursive: true, force: true })
   return result
 }
 
 test('checked-in World 001 pending receipt is truthfully valid without overstating reconstruction', () => {
-  const result = spawnSync(process.execPath, [validator.pathname, pendingReceipt.pathname], { encoding: 'utf8' })
+  const result = spawnSync(process.execPath, [fileURLToPath(validator), fileURLToPath(pendingReceipt)], { encoding: 'utf8' })
   assert.equal(result.status, 0, result.stderr || result.stdout)
   assert.match(result.stdout, /PRE_RECONSTRUCTION/)
 })

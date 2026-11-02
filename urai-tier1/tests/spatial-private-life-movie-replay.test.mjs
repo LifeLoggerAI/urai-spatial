@@ -1,11 +1,14 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import { parsePrivateLifeMovieTimeline, selectPrivateLifeMovieSegment, currentPrivateLifeMovieCaption } from '../src/app/replay/privateLifeMovieSegmentTimeline.ts'
+import { parsePrivateLifeMovieTimeline, selectPrivateLifeMovieSegment, currentPrivateLifeMovieCaption, privateLifeMovieTimelineCurrent } from '../src/app/replay/privateLifeMovieSegmentTimeline.ts'
 
 const root = new URL('../src/app/replay/', import.meta.url)
 const hook = fs.readFileSync(new URL('useProtectedLifeMovieReplay.ts',root),'utf8')
 const replay = fs.readFileSync(new URL('CinematicReplayClient.tsx',root),'utf8')
+const recorded = fs.readFileSync(new URL('ReplayRecordedSource.tsx',root),'utf8')
+const boundary = fs.readFileSync(new URL('privateMovieResponseBoundary.mjs',root),'utf8')
+const lengthPolicy = fs.readFileSync(new URL('privateMovieContentLengthPolicy.ts',root),'utf8')
 const studio = 'POST /api/studio/spatial-private-media'
 
 test('original Replay consumes only gated private delivery and keeps the cinematic owner',()=>{
@@ -16,9 +19,9 @@ test('original Replay consumes only gated private delivery and keeps the cinemat
     'ReplayCanvasBoundary',
     'ReplaySpatialScene',
     'requestUraiWorldReturn',
-    'createReplayMediaSession',
     'data-private-life-movie-captions="verified"',
   ]) assert.ok(replay.includes(marker),'missing existing immersive integration: '+marker)
+  assert.ok(recorded.includes('createReplayMediaSession'))
   assert.ok(!replay.includes('video src="https://'))
 })
 test('browser does not receive privileged Studio bridge tokens or fake account-link authority',()=>{
@@ -38,12 +41,14 @@ test('browser does not receive privileged Studio bridge tokens or fake account-l
     "cache:'no-store'",
     "action:'deliver-spatial-final'",
     "result.status !== 200",
-    "bytes.byteLength !== length",
+    "readBoundedPrivateMovieBlob(result,",
     "video.playlist !== captions.playlist",
     "URL.revokeObjectURL",
     "stopStudio?.()",
     "window.addEventListener('offline',offline)",
   ]) assert.ok(hook.includes(marker),'missing browser private-media boundary: '+marker)
+  assert.ok(boundary.includes('written !== expectedBytes'))
+  assert.ok(boundary.includes('value.byteLength > expectedBytes - written'))
   assert.equal(hook.includes("credentials:'include'"),false)
 })
 test('no cross-origin, huge response, demo or wrong identity fallback',()=>{
@@ -51,7 +56,7 @@ test('no cross-origin, huge response, demo or wrong identity fallback',()=>{
     "memory.demo",
     "memory.privacy !== 'private'",
     "memory.authorization !== 'owner'",
-    "MAX_BYTES = 64 * 1024 * 1024",
+    "privateMovieContentLengthAllowed(kind,length)",
     "result.headers.get('cache-control')?.includes('no-store')",
     "result.headers.get('content-type') !== mime",
     "result.headers.get('x-urai-private-playlist-digest')",
@@ -60,6 +65,8 @@ test('no cross-origin, huge response, demo or wrong identity fallback',()=>{
     "studioAuth.currentUser === studioUser",
     "spatialAuth.currentUser === spatialUser",
   ]) assert.ok(hook.includes(marker),marker)
+  assert.match(lengthPolicy,/PRIVATE_MOVIE_MAX_VIDEO_BYTES = 64 \* 1024 \* 1024/)
+  assert.match(lengthPolicy,/PRIVATE_MOVIE_MAX_SUBTITLE_BYTES = 2 \* 1024 \* 1024/)
   // The nested async retrieval must use immutable values narrowed after the
   // optional private-media guard, without assertions that bypass validation.
   for (const capture of ['const approvedConfig = config','const selectedMemory = memory',
@@ -122,4 +129,20 @@ test('segmented original Replay uses actual Studio action and retains final fall
     'protectedMovie.timeline?.durationMs']) {
     assert.ok(replay.includes(marker),'missing original controls/segment caption binding: '+marker)
   }
+})
+
+test('segmented private movie denies delivery on timeline expiration, not merely account rotation', () => {
+  const timeline = { expiresAt: 5000 }
+  assert.equal(privateLifeMovieTimelineCurrent(timeline, 4999), true)
+  assert.equal(privateLifeMovieTimelineCurrent(timeline, 5000), false)
+  assert.equal(privateLifeMovieTimelineCurrent(timeline, 5001), false)
+  for (const invalid of [null, { expiresAt: Infinity }, { expiresAt: NaN }, { expiresAt: 5000.5 }])
+    assert.equal(privateLifeMovieTimelineCurrent(invalid, 4999), false)
+  // Keep the source assertion syntax valid and check the actual hook code.
+  for (const marker of [
+    'requestNumber === segmentVersion && privateLifeMovieTimelineCurrent(timeline)',
+    'if (!privateLifeMovieTimelineCurrent(timeline)) { clean(); return }',
+    'window.setTimeout(enforceTimelineExpiry',
+    'if (currentSession() && requestNumber === segmentVersion) clean()',
+  ]) assert.ok(hook.includes(marker), 'missing active timeline guard: ' + marker)
 })

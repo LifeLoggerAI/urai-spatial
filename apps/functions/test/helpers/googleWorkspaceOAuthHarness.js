@@ -13,6 +13,26 @@ const CONNECTION_PATH = 'users/owner-a/providerConnections/google-workspace'
 const BASELINE_BLOB = 'e4e6a39a7f6d66377a532397a3efda7459225ee9'
 const GENERATION_ONLY_BLOB = '5db8e719dddbf073111b6c3f05f363063a8e7b6d'
 
+// A historical fixture is pinned to exact Git content, not to the host's
+// choice of text-file line endings. Git's blob hash is computed from LF
+// canonical bytes after converting only CRLF; every other mutation fails.
+function gitBlobSha(content) {
+  return crypto.createHash('sha1')
+    .update(`blob ${Buffer.byteLength(content)}\0`)
+    .update(content)
+    .digest('hex')
+}
+function verifyPinnedHistoricalSource(content, expectedBlob) {
+  if (/\r(?!\n)/.test(content)) {
+    throw new Error('Historical Google Workspace OAuth fixture contains a standalone carriage return.')
+  }
+  const canonical = content.replace(/\r\n/g, '\n')
+  if (gitBlobSha(canonical) !== expectedBlob) {
+    throw new Error('Historical Google Workspace OAuth fixture violates its pinned Git blob.')
+  }
+  return canonical
+}
+
 function deferred() {
   let resolve, reject
   const promise = new Promise((yes, no) => { resolve = yes; reject = no })
@@ -137,8 +157,15 @@ function oauthHarness(options = {}) {
     : options.baseline
       ? path.join(__dirname, '../fixtures/googleWorkspaceOAuth.before.ts')
       : path.join(__dirname, '../../src/googleWorkspaceOAuth.ts')
-  const source = fs.readFileSync(sourcePath, 'utf8')
-  const sourceBlob = crypto.createHash('sha1').update(`blob ${Buffer.byteLength(source)}\0`).update(source).digest('hex')
+  const unverifiedSource = fs.readFileSync(sourcePath, 'utf8')
+  const expectedFixtureBlob = options.generationOnlyBaseline
+    ? GENERATION_ONLY_BLOB : options.baseline ? BASELINE_BLOB : null
+  // Canonicalize only historical frozen test fixtures. Active source remains
+  // byte-exact, and even a one-character change to a fixture fails closed.
+  const source = expectedFixtureBlob
+    ? verifyPinnedHistoricalSource(unverifiedSource, expectedFixtureBlob)
+    : unverifiedSource
+  const sourceBlob = gitBlobSha(source)
   const compiled = ts.transpileModule(source, {
     fileName: sourcePath,
     reportDiagnostics: true,
@@ -188,4 +215,4 @@ function oauthHarness(options = {}) {
   }
 }
 
-module.exports = { oauthHarness, deferred, TOKEN_PATH, CONNECTION_PATH, BASELINE_BLOB, GENERATION_ONLY_BLOB }
+module.exports = { oauthHarness, deferred, TOKEN_PATH, CONNECTION_PATH, BASELINE_BLOB, GENERATION_ONLY_BLOB, gitBlobSha, verifyPinnedHistoricalSource }

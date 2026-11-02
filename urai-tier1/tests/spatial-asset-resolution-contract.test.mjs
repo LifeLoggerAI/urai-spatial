@@ -37,7 +37,7 @@ test('resolver chooses selected assets only when ready and otherwise uses explic
 })
 
 test('active spatial model layer resolves asset ids instead of hardcoded paths', () => {
-  assert.match(assetLayer, /resolveUraiSpatialAssetPath/)
+  assert.match(assetLayer, /resolvePromotedUraiSpatialAssetPath/)
   assert.match(assetLayer, /assetId="home-entry-chamber-model-v1"/)
   assert.match(assetLayer, /assetId="ground-world-terrain-glb-v1"/)
   assert.match(assetLayer, /assetId="life-map-memory-star-glb-v1"/)

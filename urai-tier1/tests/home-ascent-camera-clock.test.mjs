@@ -4,6 +4,7 @@ import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
 import * as THREE from 'three'
+import { homeJourneyHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
 
 const source = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionPolished.tsx', import.meta.url), 'utf8')
 const ast = ts.createSourceFile('HomeWorldProductionPolished.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
@@ -15,13 +16,13 @@ const code = ts.transpileModule(declarations.map(node => node.getText(ast)).join
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
 }).outputText
 
-function rig(reducedMotion = false) {
+function rig(reducedMotion = false, search = '') {
   const camera = new THREE.PerspectiveCamera(), travels = [], sequences = []
   const state = { phase: 'ASCENT', progress: 0, setProgress(value) { state.progress = value } }
   let frame
   const output = {}
   vm.runInNewContext(code, {
-    exports: output, THREE,
+    exports: output, THREE, homeJourneyHref, window: { location: { search } },
     useThree: () => ({ camera, size: { width: 1440, height: 900 }, invalidate() {}, gl: { domElement: { closest: () => null } } }),
     useRef: current => ({ current }), useCallback: callback => callback, useLayoutEffect: callback => callback(), useEffect() {},
     useFrame: callback => { frame = callback }, useSceneStore: { getState: () => state },
@@ -60,6 +61,26 @@ test('normal ascent retains its duration, endpoint and exactly one canonical adm
   r.tick(3.4, .001); r.tick(4, .6)
   near(r.camera.position, new THREE.Vector3(0, 44, -54))
   assert.deepEqual(r.travels, [{ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' }])
+})
+
+for (const [label, search, expectedHref] of [
+  ['disclosed sample', '?demo=1', '/life-map/?from=home-sky&demo=1'],
+  ['normal signed-out navigation', '', '/life-map/?from=home-sky'],
+  ['demo=0 never grants sample authority', '?demo=0', '/life-map/?from=home-sky'],
+  ['demo=true never grants sample authority', '?demo=true', '/life-map/?from=home-sky'],
+  ['duplicate demo=1 flags are rejected', '?demo=1&demo=1', '/life-map/?from=home-sky'],
+  ['conflicting demo flags are rejected', '?demo=1&demo=0', '/life-map/?from=home-sky'],
+  ['private identifiers and tokens are never forwarded', '?demo=1&memoryId=private-secret&manifestId=private-manifest&token=secret', '/life-map/?from=home-sky&demo=1'],
+]) test('physical camera Ascent safely preserves '+label, () => {
+  const r = rig(false, search)
+  r.tick(0, 0)
+  r.tick(3.4, 3.4)
+  assert.equal(r.travels.length, 1)
+  const travel = r.travels[0]
+  assert.equal(travel.destination, 'life-map')
+  assert.equal(travel.entryPortal, 'home-sky')
+  assert.equal(travel.cameraCheckpoint, 'home-sky-ascent-complete')
+  assert.equal(travel.href, expectedHref)
 })
 
 test('reduced motion retains the existing .42-second duration', () => {

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { createPortal } from 'react-dom'
+import { onAuthStateChanged } from 'firebase/auth'
+import { firebasePublicEnvReady, getUraiAuth } from '@/lib/firebase/client'
 import { currentSpeechTag } from '@/lib/i18n/localePreference'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import { contentLanguage, contentLanguageProps, type UraiContentLanguageTag } from '@/lib/i18n/contentLanguage'
@@ -171,6 +173,33 @@ export default function AdamPresenceRuntime() {
   }, [open, closePresence])
 
   useEffect(() => () => stopAll(), [stopAll])
+  useEffect(() => {
+    if (!firebasePublicEnvReady) return
+    let disposed = false
+    let lastUid: string | null | undefined
+    const resetSession = () => {
+      stopAll()
+      setMessages([])
+      setMessage('')
+      setStreamedText('')
+      setStreamedLocale('en-US')
+      setAiConsent(false)
+      setVoiceConsent(false)
+      setStatus('Account changed. Sign in to talk with Adam.')
+    }
+    const unsubscribe = onAuthStateChanged(getUraiAuth(), user => {
+      if (disposed) return
+      const nextUid = user?.uid ?? null
+      if ((lastUid === undefined && nextUid === null)
+        || (lastUid !== undefined && lastUid !== nextUid)) resetSession()
+      lastUid = nextUid
+    }, () => {
+      if (disposed) return
+      lastUid = null
+      resetSession()
+    })
+    return () => { disposed = true; unsubscribe() }
+  }, [stopAll])
   useEffect(() => {
     if (activeSurfaceKey.current !== surfaceKey) {
       activeSurfaceKey.current = surfaceKey

@@ -12,6 +12,11 @@ const js=fs.readFileSync(path.join(dir,'next.config.mjs'),'utf8')
 const compiled=ts.transpileModule(fs.readFileSync(path.join(dir,'next.config.ts'),'utf8'),{fileName:'next.config.ts',reportDiagnostics:true,compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}})
 assert.equal(compiled.diagnostics?.length,0)
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'urai-cc0-release-'))
+// Next config imports the actual local ADAM proxy; a disposable config-only
+// fixture must copy its original sidecar or no release guard executes.
+fs.mkdirSync(path.join(tmp,'scripts'),{recursive:true})
+fs.copyFileSync(new URL('../scripts/adam-local-functions-proxy.mjs',import.meta.url),
+  path.join(tmp,'scripts/adam-local-functions-proxy.mjs'))
 for(const [name,body] of [['js.mjs',js],['ts.mjs',compiled.outputText]])fs.writeFileSync(path.join(tmp,name),body)
 const cc0=path.join(tmp,'public/assets/urai/home-production/cc0-review')
 function load(name,env){const u=pathToFileURL(path.join(tmp,name)).href;return spawnSync(process.execPath,['--input-type=module','-e',`import(${JSON.stringify(u)}).then(()=>console.log('allowed')).catch(e=>{console.error(e.message);process.exitCode=7})`],{encoding:'utf8',env:{...process.env,NODE_ENV:'development',URAI_FIREBASE_STATIC_EXPORT:'false',...env}})}

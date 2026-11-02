@@ -11,17 +11,41 @@ export async function readPresenceContentStream<Result extends ContentResult, Ev
   validateDone: (event: EventRecord) => void
   error: (code: string, message: string) => Error
   incompleteCode: string
+  // Optional because non-ADAM consumers use their existing cancellation policy.
+  // When provided, only literal true can authorize continued private delivery.
+  isCurrent?: () => boolean
 }): Promise<Result> {
   const invalid = () => options.error('INVALID_PROVIDER_RESPONSE', 'The presence response failed its content-language boundary.')
   if (!response.body) throw invalid()
   const reader = response.body.getReader()
   const decoder = new TextDecoder('utf-8', { fatal: true })
+  // Bound cumulative streamed network work, not only individual SSE frames.
+  // Otherwise endless small status events can keep an actor-owned stream alive.
+  const MAX_STREAM_BYTES = 64 * 1024
+  const MAX_STREAM_EVENTS = 256
+  let receivedBytes = 0, eventCount = 0
   let buffer = '', streamed = '', finalResult: Result | null = null
   const cancel = () => { void reader.cancel().catch(() => undefined) }
-  options.signal.addEventListener('abort', cancel, { once: true })
-  const accept = (line: string) => {
+  let authorityLost = false
+  const authorized = () => {
+    if (!options.isCurrent) return true
+    try { return options.isCurrent() === true } catch { return false }
+  }
+  const ensureCurrent = () => {
     if (options.signal.aborted) throw new DOMException('Presence request aborted.', 'AbortError')
+    if (authorityLost || !authorized()) throw options.error('AUTH_SESSION_CHANGED', 'Sign in again to talk with Adam.')
+  }
+  options.signal.addEventListener('abort', cancel, { once: true })
+  // Account switches do not always abort the request's network controller.
+  // Cancel a stalled read so the old owner's private response cannot linger.
+  const ownerPoll = options.isCurrent ? setInterval(() => {
+    if (!authorized()) { authorityLost = true; cancel() }
+  }, 50) : null
+  ownerPoll?.unref?.()
+  const accept = (line: string) => {
+    ensureCurrent()
     if (!line.trim()) return
+    if (++eventCount > MAX_STREAM_EVENTS) throw invalid()
     let value: unknown
     try { value = JSON.parse(line) } catch { throw invalid() }
     if (!value || typeof value !== 'object' || Array.isArray(value) || finalResult) throw invalid()
@@ -46,9 +70,13 @@ export async function readPresenceContentStream<Result extends ContentResult, Ev
   }
   try {
     while (true) {
-      if (options.signal.aborted) throw new DOMException('Presence request aborted.', 'AbortError')
+      ensureCurrent()
       const { value, done } = await reader.read()
+      ensureCurrent()
       if (done) break
+      // Inspect actual bytes before decoding any potentially giant chunk.
+      if (!(value instanceof Uint8Array) || value.byteLength > MAX_STREAM_BYTES - receivedBytes) throw invalid()
+      receivedBytes += value.byteLength
       try { buffer += decoder.decode(value, { stream: true }) } catch { throw invalid() }
       if (buffer.length > 32_000) throw invalid()
       const lines = buffer.split('\n')
@@ -57,11 +85,12 @@ export async function readPresenceContentStream<Result extends ContentResult, Ev
     }
     try { buffer += decoder.decode() } catch { throw invalid() }
     accept(buffer)
-    if (options.signal.aborted) throw new DOMException('Presence request aborted.', 'AbortError')
+    ensureCurrent()
     if (!finalResult) throw options.error(options.incompleteCode, 'Presence returned an incomplete response.')
     options.onEvent?.(finalResult as Event)
     return finalResult
   } finally {
+    if (ownerPoll !== null) clearInterval(ownerPoll)
     options.signal.removeEventListener('abort', cancel)
     await reader.cancel().catch(() => undefined)
     reader.releaseLock()

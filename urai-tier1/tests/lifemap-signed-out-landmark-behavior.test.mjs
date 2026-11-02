@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import test from 'node:test'
 import ts from 'typescript'
+import { subscribeLifeMapAuth } from '../src/spatial/lifemap/lifeMapAuthGate.ts'
 
 const source = ts.transpileModule(fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -11,7 +12,8 @@ const source = ts.transpileModule(fs.readFileSync(new URL('../src/spatial/lifema
 // Execute the production access gate and callbacks. Identity, capability, hooks,
 // router and renderer adapters are synthetic; this is not private-world proof.
 function mount(mode, capability = true) {
-  const states = [mode, mode === 'private' ? 'synthetic-owner' : null, capability]
+  // Source-faithful first hook holds query-scoped authority, not a scalar mode.
+  const states = [{ query: 'overview=1', mode, userId: mode === 'private' ? 'synthetic-owner' : null }, capability]
   const routes = []
   let stateIndex = 0
   const boundary = () => null
@@ -36,6 +38,7 @@ function mount(mode, capability = true) {
     '@/components/lifemap/LifeMapRouteBoundary': { __esModule: true, default: boundary },
     '@/components/lifemap/LifeMapSemanticNavigator': { __esModule: true, default: semantic },
     '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true },
+    './lifeMapAuthGate': { subscribeLifeMapAuth },
     '@/spatial/adam/AdamLauncherSlot': { __esModule: true, default: () => null },
   }
   const exports = {}
@@ -81,9 +84,9 @@ test('signed-out disclosure retains explicit sample consent and canonical Home r
   const tree = h.render()
   const sample = walk(tree, node => node.type === 'button' && node.props.children === 'Open disclosed sample')
   const home = walk(tree, node => node.type === 'button' && node.props.children === 'Return Home')
-  assert.equal(h.states[0], 'signed-out')
+  assert.equal(h.states[0].mode, 'signed-out')
   sample.props.onClick()
-  assert.equal(h.states[0], 'explicit-demo')
+  assert.equal(h.states[0].mode, 'explicit-demo')
   assert.equal(h.routes[0][0], 'replace')
   const params = new URLSearchParams(h.routes[0][1].split('?')[1])
   assert.equal(params.get('demo'), '1')

@@ -14,7 +14,7 @@ function policy(){return{version:2,revision:4,ownerId:owner,domains:{memory:doma
 const clone=v=>v===undefined?undefined:JSON.parse(JSON.stringify(v))
 class Timestamp{constructor(value){this.value=value}toMillis(){return this.value}static fromMillis(value){return new Timestamp(value)}}
 function database(options={}){
- const records=new Map([[policyPath,policy()],['users/'+owner+'/providerConnections/openai',{processingAllowed:true,revocationState:'not-required'}],['users/'+owner+'/providerConnections/elevenlabs',{processingAllowed:true,revocationState:'not-required'}],['users/'+owner+'/memories/memory-fixture',{synthetic:true}],['users/'+owner+'/lifeEntities/person-fixture',{synthetic:true}],['users/'+owner+'/lifeEntities/place-fixture',{synthetic:true}]])
+ const records=new Map([[policyPath,policy()],['users/'+owner+'/providerConnections/openai',{processingAllowed:true,revocationState:'not-required'}],['users/'+owner+'/providerConnections/elevenlabs',{processingAllowed:true,revocationState:'not-required'}],['users/'+owner+'/memories/memory-fixture',{ownerId:owner,synthetic:false,consentState:'granted'}],['users/'+owner+'/lifeEntities/person-fixture',{ownerId:owner,kind:'person',synthetic:false,status:'current'}],['users/'+owner+'/lifeEntities/place-fixture',{ownerId:owner,kind:'place',synthetic:false,status:'current'}]])
  const stats={reads:[],transactionReads:[],committed:[],attempts:0,stagedBeforeRetry:[],paidCalls:[],outputChecks:0,authChecks:0,bytes:0,chunks:[],status:null,body:null,ended:false,destroyed:false,cancelled:0}
  const snapshot=ref=>({exists:records.has(ref.path),id:ref.path.split('/').at(-1),ref,data:()=>clone(records.get(ref.path))})
  const doc=location=>({path:location,id:location.split('/').at(-1),collection:name=>({doc:id=>doc(location+'/'+name+'/'+id)}),
@@ -72,6 +72,12 @@ const malformed=[
  ['missing-other-domain',(records,p)=>delete p.domains.location],['extra-domain',(records,p)=>p.domains.extra=clone(p.domains.memory)],['missing-unrelated-permission',(records,p)=>delete p.domains.memory.replayVisible],['string-unrelated-permission',(records,p)=>p.domains.memory.replayVisible='false'],['string-retention',(records,p)=>p.domains.memory.retentionDays='365'],['unsupported-retention',(records,p)=>p.domains.memory.retentionDays=999],['unknown-mode',(records,p)=>p.domains.workforce.mode='approved'],
  ['missing-enforcement-job',(records,p)=>delete p.enforcement.jobId],['missing-enforcement-targets',(records,p)=>delete p.enforcement.affectedTargets],['missing-provider-state',(records,p)=>delete p.enforcement.providerState],['unknown-provider-state',(records,p)=>p.enforcement.providerState='approved'],['duplicate-targets',(records,p)=>p.enforcement.affectedTargets=['same','same']],['extra-authority',(records,p)=>p.approved=true]
 ]
+test('actual Scenario never admits synthetic private records as authorized evidence',async()=>{
+ const f=scenarioFixture()
+ for(const location of ['users/'+owner+'/memories/memory-fixture','users/'+owner+'/lifeEntities/person-fixture','users/'+owner+'/lifeEntities/place-fixture'])f.records.get(location).synthetic=true
+ await assert.rejects(f.call(),error=>error.code==='failed-precondition'&&/AUTHORIZED_EVIDENCE_OR_EXPLICIT_ASSUMPTION_ONLY/.test(error.message))
+ assert.equal(f.stats.committed.length,0)
+})
 for(const[label,mutate]of malformed){
  for(const provider of ['openai','elevenlabs'])test('actual '+provider+' rejects malformed owner consent before paid admission: '+label,async()=>{
   const f=providerFixture();mutate(f.records,f.records.get(policyPath));assert.equal(policyAuthority.isCanonicalStoredPolicy(f.records.get(policyPath),owner),false)

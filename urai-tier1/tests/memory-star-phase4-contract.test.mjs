@@ -186,7 +186,7 @@ test('all generated demo aliases roundtrip through real redirects and fixture/pa
       assert.equal(fixture.demo, true)
       assert.equal(fixture.replayManifest.id, url.searchParams.get('manifestId'))
       assert.equal(fixture.replayManifest.id, star.id)
-      const parsed = parseSelectedMemory(fixture, fixture.ownerId, fixture.id)
+      const parsed = parseSelectedMemory({ ...fixture, consentState: 'authorized' }, fixture.ownerId, fixture.id)
       assert.equal(parsed.status, 'ready', 'fixture must satisfy the production memory schema')
       assert.equal(parsed.memory.title, star.title)
       assert.equal(parsed.memory.id, memoryId)

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { spawnSync } from 'node:child_process'
 import { Readable } from 'node:stream'
+import { pathToFileURL } from 'node:url'
 import test from 'node:test'
 
 // These assertions prove retained historical algorithms, never launch ingress.
@@ -45,8 +46,8 @@ test('retained historical vendor source: direct AST consumers have the same boun
 })
 
 test('updated CLI parsers preserve duplicate columns without inherited JSON authority', async () => {
-  const { parser } = await import(require.resolve('stream-json'))
-  const { streamValues } = await import(require.resolve('stream-json/streamers/stream-values.js'))
+  const { parser } = await import(pathToFileURL(require.resolve('stream-json')).href)
+  const { streamValues } = await import(pathToFileURL(require.resolve('stream-json/streamers/stream-values.js')).href)
   const { parse } = require('csv-parse/sync')
   const values = []
   for await (const row of Readable.from(['{"__proto__":{"isAdmin":true},"name":"synthetic"}']).pipe(parser.asStream()).pipe(streamValues.asStream())) values.push(row.value)

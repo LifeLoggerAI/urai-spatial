@@ -122,6 +122,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const [canonicalMemories, setCanonicalMemories] = useState<Map<string, SelectedMemory>>(new Map());
   const [memoriesOwner, setMemoriesOwner] = useState<string | null>(null);
   const [memoriesLoading, setMemoriesLoading] = useState(!explicitDemo);
+  const [memoriesError, setMemoriesError] = useState<string | null>(null);
   // Identity changes can render before the old Firestore listener's useEffect
   // cleanup runs. Fence previously loaded private data synchronously during
   // render, rather than briefly showing another actor's Life Map.
@@ -343,45 +344,63 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       setCanonicalMemories(new Map());
       setMemoriesOwner(explicitDemo ? 'demo-user' : resolvedUserId);
       setMemoriesLoading(false);
+      setMemoriesError(null);
       return () => { cancelled = true; };
     }
     if (!authorityKey) {
       setCanonicalMemories(new Map()); setMemoriesOwner(resolvedUserId);
       setMemoriesAuthority(null); setMemoriesLoading(false);
+      setMemoriesError(null);
       return () => { cancelled = true; };
     }
     setMemoriesLoading(true);
+    setMemoriesError(null);
     // Canonical private memory documents are server-authored, owner-readable.
     // No data from this subscription is made accessible across account changes.
-    const unsub = onSnapshot(
-      query(collection(getFirebaseDb(), "users", resolvedUserId, "memories"), limit(240)),
-      snapshot => {
-        if (cancelled) return;
-        const accepted = new Map<string, SelectedMemory>();
-        for (const doc of snapshot.docs) {
-          const parsed = parseSelectedMemory(doc.data(), resolvedUserId, doc.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-          if (parsed.status === 'ready' && parsed.memory.privacy !== 'hidden') accepted.set(doc.id, parsed.memory);
-        }
-        setCanonicalMemories(accepted);
-        setMemoriesOwner(resolvedUserId);
-        setMemoriesAuthority(authorityKey);
-        setMemoriesLoading(false);
-      },
-      () => {
-        if (cancelled) return;
-        setCanonicalMemories(new Map());
-        setMemoriesOwner(resolvedUserId);
-        setMemoriesAuthority(authorityKey);
-        setMemoriesLoading(false);
-      },
-    );
-    return () => { cancelled = true; unsub(); };
+    // A Firestore subscription can throw while being constructed, and a
+    // malformed persisted document can throw while its snapshot is parsed.
+    // Both must clear cached private bytes/metadata and end the spinner.
+    const memoryUnavailable = () => {
+      if (cancelled) return;
+      setCanonicalMemories(new Map());
+      setMemoriesOwner(resolvedUserId);
+      setMemoriesAuthority(authorityKey);
+      setMemoriesLoading(false);
+      setMemoriesError("Private memories could not be verified.");
+    };
+    try {
+      const unsub = onSnapshot(
+        query(collection(getFirebaseDb(), "users", resolvedUserId, "memories"), limit(240)),
+        snapshot => {
+          if (cancelled) return;
+          try {
+            const accepted = new Map<string, SelectedMemory>();
+            for (const doc of snapshot.docs) {
+              const parsed = parseSelectedMemory(doc.data(), resolvedUserId, doc.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+              if (parsed.status === 'ready' && parsed.memory.privacy !== 'hidden') accepted.set(doc.id, parsed.memory);
+            }
+            setCanonicalMemories(accepted);
+            setMemoriesOwner(resolvedUserId);
+            setMemoriesAuthority(authorityKey);
+            setMemoriesLoading(false);
+            setMemoriesError(null);
+          } catch {
+            memoryUnavailable();
+          }
+        },
+        memoryUnavailable,
+      );
+      return () => { cancelled = true; unsub(); };
+    } catch {
+      memoryUnavailable();
+      return () => { cancelled = true; };
+    }
   }, [explicitDemo, resolvedUserId, authorityKey]);
 
   const loading = (Boolean(resolvedUserId) && !explicitDemo && (!consent.checked || consent.owner !== resolvedUserId))
     || (authorityKey !== null && (nodesAuthority !== authorityKey || erasAuthority !== authorityKey || memoriesAuthority !== authorityKey))
     || eventsLoading || erasLoading || memoriesLoading || (Boolean(resolvedUserId) && consentAllowed && (nodesOwner !== currentOwner || erasOwner !== currentOwner || memoriesOwner !== currentOwner));
-  const error = eventsError || erasError;
+  const error = eventsError || erasError || memoriesError;
   const sourceMode: LifeMapSourceMode = explicitDemo ? "explicit-demo" : !resolvedUserId ? "signed-out" : !firebasePublicEnvReady || (!consentAllowed && consent.checked) ? "unavailable" : error ? "error" : !loading && resolvedNodes.length === 0 ? "empty" : "private";
   return { nodes: resolvedNodes, eras: visibleEras, loading, error, usingSeedData: explicitDemo, sourceMode };
 }

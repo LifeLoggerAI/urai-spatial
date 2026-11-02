@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 const validator = new URL('../../scripts/validate-interpretive-world-visual-acceptance.mjs', import.meta.url)
 const currentReceipt = new URL('../../operations/captured-reality/worlds/URAI-IW-001-QUIET-RESET/visual-acceptance.current.json', import.meta.url)
@@ -12,13 +13,13 @@ function run(receipt) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-iw-visual-'))
   const file = path.join(dir, 'receipt.json')
   fs.writeFileSync(file, JSON.stringify(receipt))
-  const result = spawnSync(process.execPath, [validator.pathname, file], { encoding: 'utf8' })
+  const result = spawnSync(process.execPath, [fileURLToPath(validator), file], { encoding: 'utf8' })
   fs.rmSync(dir, { recursive: true, force: true })
   return result
 }
 
 test('checked-in visual receipt retains the inspected motion rejection without granting acceptance', () => {
-  const result = spawnSync(process.execPath, [validator.pathname, currentReceipt.pathname], { encoding: 'utf8' })
+  const result = spawnSync(process.execPath, [fileURLToPath(validator), fileURLToPath(currentReceipt)], { encoding: 'utf8' })
   assert.equal(result.status, 0, result.stderr || result.stdout)
   assert.match(result.stdout, /REJECTED/)
   const receipt = JSON.parse(fs.readFileSync(currentReceipt, 'utf8'))

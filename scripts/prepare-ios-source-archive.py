@@ -52,8 +52,20 @@ def safe_name(name):
             and ":" not in name)
 
 
+def unsafe_link(file):
+    # Windows junctions are directory reparse points, not always symlinks.
+    # Reject either form before packaging or copying generated native source.
+    if file.is_symlink():
+        return True
+    try:
+        attributes = getattr(file.lstat(), "st_file_attributes", 0)
+    except FileNotFoundError:
+        return False
+    return bool(attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0))
+
+
 def regular(file):
-    require(file.is_file() and not file.is_symlink(), "REGULAR_FILE_REQUIRED")
+    require(file.is_file() and not unsafe_link(file), "REGULAR_FILE_REQUIRED")
 
 
 def exact_source(source):
@@ -101,11 +113,11 @@ def vendor(project, package):
     after = '.package(name: "CapacitorApp", path: "Dependencies/CapacitorApp")'
     require(text.count(before) == 1 and 'exact: "8.5.2"' in text, "LOCKED_SPM_INPUT_REQUIRED")
     destination = manifest.parent / "Dependencies/CapacitorApp"
-    require(not destination.exists() and not destination.is_symlink(), "VENDOR_OUTPUT_EXISTS")
+    require(not destination.exists() and not unsafe_link(destination), "VENDOR_OUTPUT_EXISTS")
     require(all((package / name).is_file() for name in ("Package.swift", "LICENSE", "package.json")), "PLUGIN_INPUT_MISSING")
     require((package / "ios/Sources/AppPlugin/AppPlugin.swift").is_file(), "PLUGIN_SOURCE_MISSING")
     for file in package.rglob("*"):
-        require(not file.is_symlink(), "PLUGIN_SYMLINK_REJECTED")
+        require(not unsafe_link(file), "PLUGIN_SYMLINK_REJECTED")
     destination.mkdir(parents=True)
     for name in ("Package.swift", "LICENSE", "package.json"):
         shutil.copy2(package / name, destination / name)
@@ -155,11 +167,11 @@ def verify_archive(archive, source):
 def package(project, receipt, output, source, run):
     exact_source(source)
     require(re.fullmatch(r"[1-9][0-9]*", run or ""), "RUN_REQUIRED")
-    require(project.is_dir() and not project.is_symlink(), "PROJECT_REQUIRED")
+    require(project.is_dir() and not unsafe_link(project), "PROJECT_REQUIRED")
     regular(receipt)
     sources = {"ios-source-receipt.json": receipt}
     for file in sorted(project.rglob("*")):
-        require(not file.is_symlink(), "SYMLINK_REJECTED")
+        require(not unsafe_link(file), "SYMLINK_REJECTED")
         if file.is_file():
             regular(file)
             name = PREFIX + file.relative_to(project).as_posix()
@@ -168,7 +180,7 @@ def package(project, receipt, output, source, run):
     require(all(PREFIX + name in sources for name in CRITICAL), "INCOMPLETE_PROJECT")
     verify_identity(lambda name: sources[name].read_bytes(), source, run)
     output.mkdir(parents=True, exist_ok=True)
-    require(not output.is_symlink(), "OUTPUT_UNSAFE")
+    require(not unsafe_link(output), "OUTPUT_UNSAFE")
     require(not any(output.iterdir()), "OUTPUT_NOT_EMPTY")
     spm = sources[PREFIX + "App/CapApp-SPM/Package.swift"].read_text()
     require('.package(name: "CapacitorApp", path: "Dependencies/CapacitorApp")' in spm and 'exact: "8.5.2"' in spm, "SELF_CONTAINED_SPM_REQUIRED")
@@ -216,9 +228,9 @@ def reconstruct(manifest, parts_directory, output, source):
             and transport.get("partBytes") == PART_BYTES, "TRANSPORT_IDENTITY_MISMATCH")
     parts = transport.get("parts")
     require(isinstance(parts, list) and 0 < len(parts) <= 100, "TRANSPORT_PARTS_INVALID")
-    require(not output.exists() and not output.is_symlink(), "OUTPUT_EXISTS")
+    require(not output.exists() and not unsafe_link(output), "OUTPUT_EXISTS")
     temporary = output.with_name(output.name + ".partial")
-    require(not temporary.exists() and not temporary.is_symlink(), "OUTPUT_EXISTS")
+    require(not temporary.exists() and not unsafe_link(temporary), "OUTPUT_EXISTS")
     try:
         with temporary.open("xb") as stream:
             for number, entry in enumerate(parts, 1):
