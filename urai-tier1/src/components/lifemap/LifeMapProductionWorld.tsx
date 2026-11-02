@@ -2,7 +2,7 @@
 
 import { Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, Suspense, type ReactNode } from "react";
 import * as THREE from "three";
 import StellarCorona from "@/spatial/stellar/StellarCorona";
 import GalacticSpiralStructure from "./GalacticSpiralStructure";
@@ -77,14 +77,18 @@ function RenderProofRepublisher() {
   const publishSnapshot = useCallback(() => {
     let objects = 0;
     let anchors = 0;
+    let authoredStars = 0;
     scene.traverse((object) => {
       if (object.visible) objects += 1;
       if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
+      // The environment can render while an authored memory-star GLB is loading.
+      // A partially rendered galaxy must never be reported as a finished arrival.
+      if (object.visible && object.userData.runtimeAsset === MEMORY_STAR_MODEL && object.userData.authored === true) authoredStars += 1;
     });
     const calls = gl.info.render.calls;
     const triangles = gl.info.render.triangles;
-    const ready = calls > 0 && objects > 20 && anchors >= 8;
-    const signature = `${objects}:${anchors}:${calls}:${triangles}`;
+    const ready = calls > 0 && objects > 20 && anchors >= 8 && authoredStars > 0;
+    const signature = `${objects}:${anchors}:${authoredStars}:${calls}:${triangles}`;
     const element = resolveOwner();
     if (!element) return false;
     if (lastSignature.current !== signature || invalidated.current) {
@@ -92,6 +96,7 @@ function RenderProofRepublisher() {
       element.dataset.lifeMapRenderReady = ready ? "true" : "false";
       element.dataset.lifeMapVisibleObjects = String(objects);
       element.dataset.lifeMapVisibleAnchors = String(anchors);
+      element.dataset.lifeMapAuthoredStarsMounted = String(authoredStars);
       element.dataset.lifeMapRenderCalls = String(calls);
       element.dataset.lifeMapRenderTriangles = String(triangles);
     }
@@ -108,6 +113,7 @@ function RenderProofRepublisher() {
         element.dataset.lifeMapRenderReady = "false";
         element.dataset.lifeMapVisibleObjects = "0";
         element.dataset.lifeMapVisibleAnchors = "0";
+        element.dataset.lifeMapAuthoredStarsMounted = "0";
         element.dataset.lifeMapRenderCalls = "0";
         element.dataset.lifeMapRenderTriangles = "0";
       }
@@ -855,12 +861,16 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
           <group name="life-map-light-bridges"><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /></group>
           <ChapterTerritories selected={selected} />
           <ForegroundObservatory selected={selected} />
-          <OverviewLandmarks selected={selected} />
-          <group name="life-map-memory-artifact-families">
-            {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}
-          </group>
+          {/* Keep the existing galaxy, life core and environment rendering while
+              the real authored memory-star model loads. No replacement imagery. */}
+          <Suspense fallback={null}>
+            <OverviewLandmarks selected={selected} />
+            <group name="life-map-memory-artifact-families">
+              {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}
+            </group>
+            <SelectedMemoryArrival selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
+          </Suspense>
           <group name="life-map-selected-relationship-context" />
-          <SelectedMemoryArrival selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
         </group>
         <MemoryWeather reducedMotion={profile.reducedMotion} />
         <ArchiveParticles qualityTier={profile.tier} reducedMotion={profile.reducedMotion} />
