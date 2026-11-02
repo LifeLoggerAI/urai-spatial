@@ -169,10 +169,10 @@ for (const precision of ['precise', 'approximate']) {
   })
 }
 
-test('coarse retention keeps a larger sensor radius and normalizes numeric coordinate input', async () => {
+test('coarse retention preserves sensor radius but rejects numeric-string coordinates', async () => {
   const f = await fixture()
   await f.record({ latitude: '-33.8688197', longitude: '151.2092955', accuracyMeters: 8000, precision: 'approximate' })
-  assert.deepEqual(stored(f), { source: 'browser', precision: 'approximate', latitude: -33.87, longitude: 151.21, accuracyMeters: 8000 })
+  assert.deepEqual(stored(f), { source: 'browser', precision: 'approximate', accuracyMeters: 8000 })
 })
 
 test('invalid coordinates are omitted and an absent accuracy receives the coarse floor', async () => {
@@ -301,4 +301,38 @@ test('unsupported signal rejects before reading policy or starting a transaction
   assert.equal(f.reads.length, 0)
   assert.equal(f.transactionAttempts(), 0)
   assert.equal(f.writes.length, 0)
+})
+
+// Numeric inputs must be real finite numbers, never coerced from JSON values.
+// This guards against fabricated 0,0 positions from null and string values.
+const malformedNumericLocationCases = [
+  ['null', null, null],
+  ['numeric strings', '37.4219999', '-122.0840575'],
+  ['empty strings', '', ' '],
+  ['boolean', true, false],
+  ['array', [37.4219999], [-122.0840575]],
+  ['object', { degrees: 37.4219999 }, { degrees: -122.0840575 }],
+  ['nonfinite', NaN, Infinity],
+  ['out of range', 91, -181],
+]
+for (const [name, latitude, longitude] of malformedNumericLocationCases) {
+  test(`server rejects coerced GPS inputs: ${name}`, async () => {
+    const f = await fixture()
+    await f.record({ latitude, longitude, accuracyMeters: '1', precision: 'precise' })
+    assert.deepEqual(stored(f), { source: 'browser', precision: 'approximate', accuracyMeters: 1000 })
+    assert.equal(f.transactionAttempts(), 1)
+    assert.equal(f.logs.length, 0)
+  })
+}
+
+test('genuine numeric zero coordinates are preserved without fabricating precision', async () => {
+  const f = await fixture()
+  await f.record({ latitude: 0, longitude: 0, accuracyMeters: 0, precision: 'precise' })
+  assert.deepEqual(stored(f), { source: 'browser', precision: 'approximate', latitude: 0, longitude: 0, accuracyMeters: 1000 })
+})
+
+test('genuine finite numeric GPS readings are coarsened under approximate consent', async () => {
+  const f = await fixture()
+  await f.record({ ...coordinates, precision: 'precise' })
+  assert.deepEqual(stored(f), { source: 'browser', precision: 'approximate', ...approximate })
 })
