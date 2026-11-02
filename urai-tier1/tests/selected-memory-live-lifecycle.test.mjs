@@ -93,7 +93,8 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
     'firebase/auth': { getAuth: () => ({}), onAuthStateChanged(_auth, callback) { authCallback = callback; return () => { authStopped = true } } },
     'firebase/firestore': {
       doc: (...parts) => parts,
-      onSnapshot(ref, receive, error) {
+      onSnapshot(ref, options, receive, error) {
+        assert.equal(options.includeMetadataChanges, true, 'private listeners require server-confirmation metadata')
         const subscription = { ref, receive, error, stopped: false }
         if (ref.includes('privacyPolicy')) policySubscriptions.push(subscription)
         else subscriptions.push(subscription)
@@ -109,10 +110,12 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
   const render = () => driver.render(owner.useSelectedMemory)
   render()
   const data = (uid = 'account-a', id = 'memory-one') => ({ ...contract.buildExplicitDemoMemory(id), ownerId: uid, demo: false })
-  const snapshot = (value) => ({ exists: () => value !== null, data: () => value })
+  const snapshot = (value) => ({ exists: () => value !== null, data: () => value,
+    metadata: { fromCache: false, hasPendingWrites: false } })
   let currentPolicy = null
   const seededPolicy = uid => ({ ...consentModel.defaultConsentPolicy(uid), revision: 1 })
-  const policySnapshot = value => ({ exists: () => value !== null, data: () => value })
+  const policySnapshot = value => ({ exists: () => value !== null, data: () => value,
+    metadata: { fromCache: false, hasPendingWrites: false } })
   return {
     render, subscriptions, policySubscriptions, data,
     policy: () => currentPolicy,
@@ -340,7 +343,8 @@ test('actor change invalidates prior policy and memory subscriptions and late ev
   assert.equal(h.policySubscriptions[0].stopped, true)
   assert.equal(h.emit(0, h.data('account-a')).memory, null)
   const staleGrant = { ...priorA, revision: 15 }
-  h.policySubscriptions[0].receive({ exists: () => true, data: () => staleGrant })
+  h.policySubscriptions[0].receive({ exists: () => true, data: () => staleGrant,
+    metadata: { fromCache: false, hasPendingWrites: false } })
   assert.equal(h.render().memory, null)
   assert.equal(h.emit(1, h.data('account-b')).memory.ownerId, 'account-b')
   assert.equal(h.emit(0, h.data('account-a')).memory.ownerId, 'account-b')
