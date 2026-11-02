@@ -20,7 +20,9 @@ test('render proof cannot claim complete arrival before authored stars mount',()
 test('private recorder awaits real LifeMap rendering, not just the route',()=>{
   assert.ok(capture.includes("lifeMapRenderReady==='true'"))
   assert.ok(capture.includes('lifeMapAuthoredStarsMounted'))
-  assert.ok(capture.includes('LIFEMAP_REAL_WEBGL_NOT_STABLE'))
+  const stability=readFileSync(new URL('../scripts/genesis-lifemap-stable-arrival.mjs',import.meta.url),'utf8')
+  assert.ok(stability.includes('LIFEMAP_REAL_WEBGL_NOT_STABLE'))
+  assert.ok(capture.includes("from './genesis-lifemap-stable-arrival.mjs'"))
   assert.ok(!capture.includes('await page.waitForTimeout(450)'))
 })
 test('pixel validator failure reason is retained and release stays hold',()=>{
