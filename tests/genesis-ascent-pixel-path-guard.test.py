@@ -2,6 +2,9 @@ import unittest
 import tempfile
 from pathlib import Path
 import importlib.util
+import stat
+from types import SimpleNamespace
+from unittest.mock import patch
 
 source = Path(__file__).resolve().parents[1] / 'scripts' / 'genesis-ascent-pixel-gate.py'
 spec = importlib.util.spec_from_file_location('genesis_ascent_pixel_gate', source)
@@ -28,6 +31,20 @@ class PrivateAscentPathTests(unittest.TestCase):
         alias=self.root/'alias'; alias.symlink_to(sub,target_is_directory=True)
         with self.assertRaisesRegex(HoldRefusal,'SYMLINK_PATH_FORBIDDEN'):
             private_evidence_path(str(alias/'capture.webm'))
+
+    def test_windows_reparse_attribute_rejected_on_any_python_version(self):
+        # Simulates the Win32 junction/reparse lstat bit without Windows hardware.
+        # Real junction behavior still requires a Windows acceptance run.
+        fake = self.root/'fake-reparse'
+        lstat = Path.lstat
+        def with_reparse_attribute(component):
+            if component == fake:
+                return SimpleNamespace(st_mode=stat.S_IFDIR,
+                                       st_file_attributes=0x400)
+            return lstat(component)
+        with patch.object(Path, 'lstat', with_reparse_attribute):
+            with self.assertRaisesRegex(HoldRefusal, 'SYMLINK_PATH_FORBIDDEN'):
+                private_evidence_path(str(fake/'future.webm'))
 
     def test_git_checkout_evidence_rejected(self):
         checkout=self.root/'checkout'; checkout.mkdir()
