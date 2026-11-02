@@ -1,23 +1,39 @@
 import { createHash } from 'node:crypto'
 import { createReadStream, openSync, closeSync, fstatSync, lstatSync } from 'node:fs'
 
-function sameFile(a, b) {
-  return a.isFile() && b.isFile() && a.dev === b.dev && a.ino === b.ino
-    && a.size === b.size && a.mtimeMs === b.mtimeMs && a.ctimeMs === b.ctimeMs
+/**
+ * Node/Windows can report path-based st_dev = 0 while fstat on the same
+ * handle reports the volume serial. Compare exact bigint file IDs instead
+ * of lossy 64-bit Numbers; permit only that Windows-specific dev mismatch.
+ * Every unsupported/ambiguous ID fails closed, and all mutation timestamps
+ * and link count must remain identical across the same opened descriptor.
+ */
+export function samePrivateRegularFile(a, b, platform = process.platform) {
+  const exact = [a, b].every(s => s?.isFile?.() === true
+    && typeof s.dev === 'bigint' && typeof s.ino === 'bigint'
+    && typeof s.size === 'bigint' && typeof s.mtimeNs === 'bigint'
+    && typeof s.ctimeNs === 'bigint' && typeof s.birthtimeNs === 'bigint'
+    && typeof s.nlink === 'bigint')
+  if (!exact || a.ino <= 0n || b.ino <= 0n || a.ino !== b.ino) return false
+  const sameDevice = a.dev === b.dev
+    || (platform === 'win32' && ((a.dev === 0n && b.dev > 0n) || (b.dev === 0n && a.dev > 0n)))
+  return sameDevice && a.size === b.size && a.mtimeNs === b.mtimeNs
+    && a.ctimeNs === b.ctimeNs && a.birthtimeNs === b.birthtimeNs
+    && a.nlink === b.nlink
 }
 
 /** Hash the same regular source checked by preflight. Never follow a new
  * symlink, a replaced inode, or a file mutated while the digest is read. */
 export async function verifiedPrivateFileHash(path, expected) {
-  if (typeof path !== 'string' || !expected?.isFile?.() || !sameFile(expected, lstatSync(path))) {
+  if (typeof path !== 'string' || !expected?.isFile?.() || !samePrivateRegularFile(expected, lstatSync(path, { bigint: true }))) {
     throw new Error('PRIVATE_SOURCE_CHANGED_DURING_PREFLIGHT')
   }
   const fd = openSync(path, 'r')
   try {
-    if (!sameFile(expected, fstatSync(fd))) throw new Error('PRIVATE_SOURCE_CHANGED_DURING_PREFLIGHT')
+    if (!samePrivateRegularFile(expected, fstatSync(fd, { bigint: true }))) throw new Error('PRIVATE_SOURCE_CHANGED_DURING_PREFLIGHT')
     const hash = createHash('sha256')
     for await (const chunk of createReadStream(path, { fd, autoClose: false })) hash.update(chunk)
-    if (!sameFile(expected, fstatSync(fd)) || !sameFile(expected, lstatSync(path))) {
+    if (!samePrivateRegularFile(expected, fstatSync(fd, { bigint: true })) || !samePrivateRegularFile(expected, lstatSync(path, { bigint: true }))) {
       throw new Error('PRIVATE_SOURCE_CHANGED_DURING_PREFLIGHT')
     }
     return hash.digest('hex')
