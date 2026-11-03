@@ -9,6 +9,9 @@ on:
       - 'urai-tier1/src/lib/privacy/importFirstPreparedMemory.ts'
       - 'urai-tier1/tests/import-first-prepared-memory.test.mjs'
       - 'firebase/firestore.rules'
+      - 'scripts/run-firestore-rules-tests.mjs'
+      - 'tests/firestore.userAuthority.rules.test.mjs'
+      - 'tests/firestore.privacyConsent.rules.static.test.mjs'
       - 'firebase/storage.rules'
       - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
       - 'urai-tier1/src/spatial/memory/selectedMemoryContract.ts'
@@ -31,6 +34,9 @@ on:
       - 'urai-tier1/src/lib/privacy/importFirstPreparedMemory.ts'
       - 'urai-tier1/tests/import-first-prepared-memory.test.mjs'
       - 'firebase/firestore.rules'
+      - 'scripts/run-firestore-rules-tests.mjs'
+      - 'tests/firestore.userAuthority.rules.test.mjs'
+      - 'tests/firestore.privacyConsent.rules.static.test.mjs'
       - 'firebase/storage.rules'
       - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
       - 'urai-tier1/src/spatial/memory/selectedMemoryContract.ts'
@@ -77,7 +83,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/urai-first-memory"
           git rev-parse HEAD > "$RUNNER_TEMP/urai-first-memory/exact-head.txt"
           git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/urai-first-memory/exact-tree.txt"
-          sha256sum scripts/run-first-private-memory-emulator.mjs apps/functions/scripts/first-private-memory-emulator-proof.cjs apps/functions/src/createFirstPrivateMemory.ts urai-tier1/src/lib/privacy/importFirstPreparedMemory.ts urai-tier1/src/spatial/memory/useSelectedMemory.ts urai-tier1/src/spatial/memory/selectedMemoryContract.ts urai-tier1/src/app/privacy-controls/consentModel.ts urai-tier1/tests/selected-memory-server-confirmation.test.mjs firebase/firestore.rules firebase/storage.rules > "$RUNNER_TEMP/urai-first-memory/source-files.sha256"
+          sha256sum scripts/run-first-private-memory-emulator.mjs apps/functions/scripts/first-private-memory-emulator-proof.cjs apps/functions/src/createFirstPrivateMemory.ts urai-tier1/src/lib/privacy/importFirstPreparedMemory.ts urai-tier1/src/spatial/memory/useSelectedMemory.ts urai-tier1/src/spatial/memory/selectedMemoryContract.ts urai-tier1/src/app/privacy-controls/consentModel.ts urai-tier1/tests/selected-memory-server-confirmation.test.mjs firebase/firestore.rules firebase/storage.rules scripts/run-firestore-rules-tests.mjs tests/firestore.userAuthority.rules.test.mjs tests/firestore.privacyConsent.rules.static.test.mjs > "$RUNNER_TEMP/urai-first-memory/source-files.sha256"
       - name: Set up Java 21
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
         with:
@@ -103,6 +109,11 @@ jobs:
           test "$(node --version | cut -d. -f1)" = 'v22'
           java -version
           pnpm install --frozen-lockfile
+      - name: Run owner-profile Firestore rules in a required real emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          URAI_REQUIRE_FIRESTORE_EMULATOR=1 pnpm exec node scripts/run-firestore-rules-tests.mjs 2>&1 | tee "$RUNNER_TEMP/urai-first-memory/firestore-owner-authority-rules.tap"
       - name: Run actual maintained source regressions
         shell: bash
         run: |
