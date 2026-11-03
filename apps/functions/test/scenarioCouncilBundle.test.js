@@ -83,6 +83,55 @@ test('actual compiled Council denies a source-backed model entity after model co
   f.docs.get(key).domains.models.mode='denied'
   await assert.rejects(f.call(),e=>e.code==='failed-precondition')
 })
+for(const [label,recordPath,patch] of [
+  ['revoked memory','users/'+ownerId+'/memories/memory_a',{consentState:'revoked'}],
+  ['deleted memory','users/'+ownerId+'/memories/memory_a',{deleted:true}],
+  ['synthetic memory','users/'+ownerId+'/memories/memory_a',{synthetic:true}],
+  ['foreign-owned memory','users/'+ownerId+'/memories/memory_a',{ownerId:'another-owner'}],
+]) test('actual compiled Council blocks stale '+label,async()=>{
+  const f=privateEvidenceFixture()
+  f.docs.set(recordPath,{...f.docs.get(recordPath),...patch})
+  await assert.rejects(f.call(),error=>error.code==='failed-precondition')
+})
+for(const [label,patch] of [
+  ['revoked entity',{revoked:true}],
+  ['synthetic entity',{synthetic:true}],
+  ['foreign owner',{ownerId:'another-owner'}],
+  ['wrong entity kind',{kind:'place'}],
+  ['superseded entity',{status:'superseded'}],
+]) test('actual compiled Council blocks stale '+label,async()=>{
+  const f=privateEvidenceFixture('interpretation')
+  const key='users/'+ownerId+'/lifeEntities/person_a'
+  f.docs.set(key,{...f.docs.get(key),...patch})
+  await assert.rejects(f.call(),error=>error.code==='failed-precondition')
+})
+test('actual compiled Council rejects missing source without falling back to assumptions',async()=>{
+  const f=privateEvidenceFixture()
+  f.docs.delete('users/'+ownerId+'/memories/memory_a')
+  await assert.rejects(f.call(),error=>error.code==='failed-precondition')
+})
+test('actual compiled Council rejects a forged source path outside owner scope',async()=>{
+  const f=privateEvidenceFixture()
+  f.docs.get(prefix+'/basis/current').evidenceRefs[0].sourceId='users/another-owner/memories/memory_a'
+  await assert.rejects(f.call(),error=>error.code==='failed-precondition')
+})
+test('actual compiled Council rejects a changed evidence basis',async()=>{
+  const f=privateEvidenceFixture()
+  const key=prefix+'/basis/current'
+  const old=f.docs.get(key)
+  const existing=f.docs.get('users/'+ownerId+'/privacyPolicy/current')
+  let count=0
+  const original=f.docs.get.bind(f.docs)
+  f.docs.get=(path)=>{if(path===key){count++;if(count===2)return {...old,evidenceRefs:[]}}return original(path)}
+  await assert.rejects(f.call(),error=>error.code==='failed-precondition')
+  f.docs.get=original
+})
+test('actual compiled Council admits current owner-scoped person evidence',async()=>{
+  const f=privateEvidenceFixture('interpretation')
+  const out=await f.call()
+  assert.equal(out.evidenceCount,1)
+  assert.equal(out.evidenceKinds[0],'interpretation')
+})
 test('actual compiled bundle selects the exact requested branch and remains hypothetical',async()=>{
   const f=fixture(),result=await f.call({ branchId:'br_b' });assert.equal(result.branchId,'br_b');assert.equal(result.branchLabel,'Branch B');assert.equal(result.branchSummary,'Synthetic B');assert.equal(result.scenarioId,scenarioId);assert.equal(result.truthKind,'scenario');assert.match(result.disclosure,/Not a memory, prediction/);assert.deepEqual(f.limits,[3])
 })
