@@ -252,25 +252,62 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
   if (requestedBranchId && !branch) throw new functions.https.HttpsError('not-found', 'Scenario branch not found.')
   const basis = basisSnap.data() ?? {}
   const evidenceRefs = Array.isArray(basis.evidenceRefs) ? basis.evidenceRefs : []
-  // A historical Scenario receipt is not perpetual consent to disclose its
-  // private basis to another model. The server checks current owner authority
-  // before returning even the bounded external-provider Council context.
+  if (scenario.ownerId !== ownerId || basis.ownerId !== ownerId ||
+    ['discarded', 'revoked', 'archived'].includes(String(scenario.status ?? ''))) {
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_BASIS_UNAVAILABLE')
+  }
   if (evidenceRefs.length) {
-    const policySnapshot = await db.doc(`users/${ownerId}/privacyPolicy/current`).get()
-    const policy = policySnapshot.exists ? policySnapshot.data() : undefined
-    if (!isCanonicalStoredPolicy(policy, ownerId) || policy.enforcement.state !== 'fully-enforced') {
-      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_CONSENT_NOT_CURRENT')
+    if (evidenceRefs.length > 3 || basis.assumptionOnly === true) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_BASIS_INVALID')
     }
-    if (!evidenceRefs.every((item: unknown) => {
-      if (!item || typeof item !== 'object') return false
-      const ref = item as Record<string, unknown>
-      const domain = ref.truthKind === 'autobiographical-memory' ? policy.domains.memory : policy.domains.models
-      return ref.sourceRevision === policy.revision
-        && domain.modelContext === true
-        && ['granted', 'limited'].includes(domain.mode)
-    })) {
-      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_EVIDENCE_REAUTHORIZATION_REQUIRED')
+    let sources
+    try {
+      sources = evidenceRefs.map((entry: unknown) => parseScenarioSourceRef(ownerId, entry))
+    } catch (error) {
+      if (error instanceof ScenarioSourceAuthorityError) {
+        throw new functions.https.HttpsError('failed-precondition', error.code)
+      }
+      throw error
     }
+    if (new Set(sources.map(source => source.path)).size !== sources.length) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_SOURCE_REFERENCE_INVALID')
+    }
+    await db.runTransaction(async tx => {
+      const [currentBasis, policySnap, ...liveSources] = await Promise.all([
+        tx.get(ref.collection('basis').doc('current')),
+        tx.get(db.doc(`users/${ownerId}/privacyPolicy/current`)),
+        ...sources.map(source => tx.get(db.doc(source.path))),
+      ])
+      const policy = policySnap.exists ? policySnap.data() : undefined
+      if (!currentBasis.exists || JSON.stringify(currentBasis.get('evidenceRefs')) !== JSON.stringify(evidenceRefs)
+        || currentBasis.get('ownerId') !== ownerId) {
+        throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_BASIS_CHANGED')
+      }
+      if (!isCanonicalStoredPolicy(policy, ownerId) || policy.enforcement.state !== 'fully-enforced') {
+        throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_CONSENT_NOT_CURRENT')
+      }
+      for (let index = 0; index < sources.length; index++) {
+        const source = sources[index]
+        const domain = source.truthKind === 'autobiographical-memory' ? policy.domains.memory : policy.domains.models
+        if (source.sourceRevision !== policy.revision || domain.modelContext !== true
+          || !['granted', 'limited'].includes(domain.mode)) {
+          throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_EVIDENCE_REAUTHORIZATION_REQUIRED')
+        }
+        if (!liveSources[index].exists) {
+          throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_SOURCE_UNAVAILABLE')
+        }
+        try {
+          assertCurrentScenarioSourceRecord(ownerId, source, liveSources[index].data())
+        } catch (error) {
+          if (error instanceof ScenarioSourceAuthorityError) {
+            throw new functions.https.HttpsError('failed-precondition', error.code)
+          }
+          throw error
+        }
+      }
+    })
+  } else if (basis.assumptionOnly !== true) {
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_BASIS_INVALID')
   }
   const evidenceKinds = [...new Set(evidenceRefs.map((entry: unknown) =>
     entry && typeof entry === 'object' ? String((entry as Record<string, unknown>).truthKind ?? 'unknown') : 'unknown'
