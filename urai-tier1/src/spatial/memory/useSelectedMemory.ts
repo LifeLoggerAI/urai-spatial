@@ -151,6 +151,9 @@ export function useSelectedMemory(): SelectedMemoryResult {
           )
         } catch {
           if (!isCurrentMemory()) return
+          // A subscription may throw after scheduling a callback. Invalidate
+          // that generation even when no unsubscribe handle was returned.
+          detachMemory()
           setResult(unavailable('Selected memory could not be loaded.'))
         }
       }
@@ -216,6 +219,9 @@ export function useSelectedMemory(): SelectedMemoryResult {
         )
       } catch {
         if (!isCurrentOwner()) return
+        // A failed policy subscription cannot ever authorize memory through
+        // a queued success callback, even without an unsubscribe handle.
+        policyListenerFailed = true
         detachMemory()
         setResult(unavailable('Private memory consent authority could not be loaded.'))
       }
