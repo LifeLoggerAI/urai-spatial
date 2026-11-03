@@ -56,19 +56,32 @@ export function parseScenarioSourceRef(ownerId: string, value: unknown): Scenari
   }
 }
 
+// Older imported memories may not carry a record-local consent field. They
+// still require current owner policy in the caller; an explicit denial cannot
+// be overridden by that policy or by a stale saved scenario.
+export function isScenarioMemoryConsentUsable(value: unknown): boolean {
+  return value == null || value === 'granted' || value === 'limited'
+}
+
+const BLOCKED_SOURCE_STATUSES = new Set(['revoked', 'deleted', 'superseded', 'archived', 'withdrawn', 'blocked', 'disabled', 'expired', 'denied', 'pending', 'rejected'])
+export function isScenarioSourceStatusUsable(value: unknown): boolean {
+  return value == null || (typeof value === 'string' && !BLOCKED_SOURCE_STATUSES.has(value.trim().toLowerCase()))
+}
+
 export function assertCurrentScenarioSourceRecord(ownerId: string, source: ScenarioSourceRef, value: unknown): void {
   const row = object(value)
   if (!row) throw new ScenarioSourceAuthorityError('SCENARIO_SOURCE_UNAVAILABLE')
   if (source.truthKind === 'autobiographical-memory') {
-    if ((row.ownerId ?? row.userId) !== ownerId || row.deleted === true || row.demo === true ||
-        row.synthetic === true || ['pending', 'revoked'].includes(String(row.consentState ?? ''))) {
+    if ((row.ownerId ?? row.userId) !== ownerId || row.deleted === true || row.revoked === true || row.demo === true ||
+        row.synthetic === true || !isScenarioMemoryConsentUsable(row.consentState) ||
+        !isScenarioSourceStatusUsable(row.status)) {
       throw new ScenarioSourceAuthorityError('SCENARIO_SOURCE_UNAVAILABLE')
     }
   } else {
-    if (row.ownerId !== ownerId || row.revoked === true || row.synthetic === true ||
-        (row.kind !== 'person' && row.kind !== 'place') ||
+    if (row.ownerId !== ownerId || row.revoked === true || row.deleted === true || row.demo === true ||
+        row.synthetic === true || (row.kind !== 'person' && row.kind !== 'place') ||
         (source.entityKind !== undefined && source.entityKind !== row.kind) ||
-        ['superseded', 'revoked'].includes(String(row.status ?? ''))) {
+        !isScenarioSourceStatusUsable(row.status)) {
       throw new ScenarioSourceAuthorityError('SCENARIO_SOURCE_UNAVAILABLE')
     }
   }
