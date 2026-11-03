@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   type ReactNode,
 } from 'react'
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
@@ -231,10 +232,16 @@ function transitionPhaseFor(state: UraiWorldState, destination: UraiDestination)
 export function UraiWorldStateProvider({ pathname, children }: { pathname: string; children: ReactNode }) {
   const [runtime, dispatch] = useReducer(reducer, pathname, initialRuntimeState)
   const location = useBrowserLocation()
+  const graphReadGeneration = useRef(0)
 
   useEffect(() => {
+    // Invalidate pending graph fetches before a route can display a stale result.
+    graphReadGeneration.current += 1
     const destination = destinationForPathname(pathname)
-    if (!destination) return
+    if (!destination) {
+      dispatch({ type: 'CLEAR_GRAPH_VIEW' })
+      return
+    }
     dispatch({ type: 'SYNC_ROUTE', destination, context: contextFromLocation() })
   }, [pathname, location])
 
@@ -253,16 +260,26 @@ export function UraiWorldStateProvider({ pathname, children }: { pathname: strin
   // old snapshot and never carries raw claims or person data between owners.
   useEffect(() => {
     const auth = getAuth(app)
-    return onAuthStateChanged(auth, () => dispatch({ type: 'CLEAR_GRAPH_VIEW' }))
+    const unsubscribe = onAuthStateChanged(auth, () => {
+      graphReadGeneration.current += 1
+      dispatch({ type: 'CLEAR_GRAPH_VIEW' })
+    })
+    return () => {
+      graphReadGeneration.current += 1
+      unsubscribe()
+    }
   }, [])
 
   const loadGraphView = useCallback(async (snapshotId: string, entityIds: string[]) => {
     const auth = getAuth(app)
     const owner = auth.currentUser
     if (!owner) throw new Error('LIFE_GRAPH_WORLD_AUTH_REQUIRED')
+    // Only the newest in-flight request for this owner and route may publish.
+    const generation = ++graphReadGeneration.current
     const readGraph = httpsCallable<{ snapshotId: string; entityIds: string[] }, unknown>(functions, 'getCouncilLifeGraphEvidence')
     const response = await readGraph({ snapshotId, entityIds })
     if (auth.currentUser !== owner) throw new Error('LIFE_GRAPH_WORLD_OWNER_CHANGED')
+    if (generation !== graphReadGeneration.current) throw new Error('LIFE_GRAPH_WORLD_CONTEXT_CHANGED')
     // Only the protected callable verifies current C1 sources and snapshot
     // graph hash. The client projection is display state, not authorization.
     const view = projectLifeGraphEvidence(response.data, snapshotId, entityIds)
