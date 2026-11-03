@@ -74,6 +74,14 @@ async function resolveAuthorizedScenarioEvidence(ownerId: string, value: unknown
   if (memoryId && memoryPolicy.modelContext === true && ['granted', 'limited'].includes(String(memoryPolicy.mode ?? ''))) {
     const memory = await transaction.get(db.doc(`users/${ownerId}/memories/${memoryId}`))
     if (memory.exists) {
+      // Match existing Life Model memory-admission fields; a selected ID alone
+      // cannot promote a synthetic, deleted, revoked or foreign record into evidence.
+      if ((memory.get('ownerId') ?? memory.get('userId')) !== ownerId
+        || memory.get('deleted') === true || memory.get('demo') === true
+        || memory.get('synthetic') === true
+        || ['pending','revoked'].includes(String(memory.get('consentState') ?? ''))) {
+        throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_MEMORY_SOURCE_UNAVAILABLE')
+      }
       evidenceRefs.push({
         id: `evr_memory_${createHash('sha256').update(memoryId).digest('hex').slice(0, 24)}`,
         truthRecordId: `memory:${memoryId}`,
@@ -91,6 +99,13 @@ async function resolveAuthorizedScenarioEvidence(ownerId: string, value: unknown
       if (!entityId) continue
       const entity = await transaction.get(db.doc(`users/${ownerId}/lifeEntities/${entityId}`))
       if (!entity.exists) continue
+      // Reuse the canonical owner/kind/revocation fields of lifeEntities.
+      // This is a metadata admission guard, not full source-fixity certification.
+      if (entity.get('ownerId') !== ownerId || entity.get('kind') !== kind
+        || entity.get('revoked') === true || entity.get('synthetic') === true
+        || ['superseded','revoked'].includes(String(entity.get('status') ?? ''))) {
+        throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_LIFE_ENTITY_UNAVAILABLE')
+      }
       evidenceRefs.push({
         id: `evr_${kind}_${createHash('sha256').update(entityId).digest('hex').slice(0, 24)}`,
         truthRecordId: `life-entity:${entityId}`,
