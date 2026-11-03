@@ -63,7 +63,6 @@ test('privacy rules end in a default-deny boundary', () => {
   assert.doesNotMatch(rules.replace(publicFeatureFlags, ''), /allow\s+(read|write|create|update|delete)[^;]*:\s*if\s+true\s*;/i)
 })
 
-
 // User-profile authority mutation boundary.
 const userRuleBlock = rules.match(/match \/users\/\{uid\} \{([\s\S]*?)\n\s*match \/privacyPolicy\/\{docId\}/)?.[1]
 
