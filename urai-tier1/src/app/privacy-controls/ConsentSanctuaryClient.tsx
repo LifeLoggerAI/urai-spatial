@@ -580,7 +580,7 @@ export default function ConsentSanctuaryClient() {
             <button type="button" disabled={explicitDemo || !user || (typeof navigator === 'undefined' || !navigator.onLine) || c1Busy || c1State.status === 'loading'} onClick={() => setC1Confirmation('granted')}>Grant separate C1 consent</button>
             <button type="button" disabled={explicitDemo || !user || (typeof navigator === 'undefined' || !navigator.onLine) || c1Busy || c1State.status === 'loading'} onClick={() => setC1Confirmation('revoked')}>Revoke C1 consent</button>
           </div>
-        </section>
+        </section>}
 
         <fieldset disabled={!canWrite}><legend>Authority level</legend><div className="consentChoiceGrid">{MODE_OPTIONS.map((mode) => <button type="button" key={mode} aria-pressed={selected.mode === mode} onClick={() => propose(selectedDomain, { mode })}>{mode}</button>)}</div></fieldset>
         <div className="consentToggleGrid">
