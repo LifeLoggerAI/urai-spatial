@@ -60,7 +60,7 @@ function providerFixture(options={}){
 }
 function scenarioFixture(options={}){
  const f=database(options),functions={https:{onCall:handler=>handler,HttpsError:class extends Error{constructor(code,message,details){super(message);this.code=code;this.details=details}}}}
- const imports={'firebase-functions/v1':functions,'firebase-admin':{apps:[{}],firestore:f.firestore,initializeApp(){assert.fail('No SDK initialization')}},'node:crypto':crypto,'./scenarioProvider':{scenarioProviderState:'provider-unavailable'},'./consentPolicyAuthority':policyAuthority}
+ const imports={'firebase-functions/v1':functions,'firebase-admin':{apps:[{}],firestore:f.firestore,initializeApp(){assert.fail('No SDK initialization')}},'node:crypto':crypto,'./scenarioProvider':{scenarioProviderState:'provider-unavailable'},'./consentPolicyAuthority':policyAuthority,'./scenarioSourceAuthority':require(path.join(candidateRoot,'scenarioSourceAuthority.js'))}
  const module={exports:{}}
  vm.runInNewContext(scenarioCode,{module,exports:module.exports,require:name=>{assert.ok(name in imports,'Unexpected actual Scenario import '+name);return imports[name]}},{filename:'actual-compiled-scenarioOperations.js'})
  return{...f,async call(extra={},context={auth:{uid:owner}}){return module.exports.createPossibleFuture({operationId:'synthetic-operation-fixture',question:'Synthetic what-if?',originRealm:'home',sourceContext:{memoryId:'memory-fixture',personId:'person-fixture',placeId:'place-fixture'},...extra},context)},basis(){return f.stats.committed.find(row=>row.path.includes('/basis/current'))?.value}}
