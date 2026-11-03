@@ -101,3 +101,76 @@ test('a cached policy after a live grant immediately clears the private view', (
     assert.equal(h.listeners.filter(x => x.ref.includes('memories'))[0].stopped, true)
   } finally { h.cleanup() }
 })
+
+test('a policy snapshot with missing metadata never grants private read authority', () => {
+  const h = fixture()
+  try {
+    const listener = h.listeners.find(x => x.ref.includes('privacyPolicy'))
+    assert.ok(listener)
+    listener.receive({ exists: () => true, data: () => h.policy })
+    assert.equal(h.status().status, 'unavailable')
+    assert.equal(h.status().memory, null)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
+  } finally { h.cleanup() }
+})
+
+test('a private memory snapshot with missing metadata never becomes visible', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    const listener = h.listeners.find(x => x.ref.includes('memories'))
+    assert.ok(listener)
+    listener.receive({ exists: () => true, data: () => ({ title: 'unverified source' }) })
+    assert.equal(h.status().status, 'unavailable')
+    assert.equal(h.status().memory, null)
+    const confirmed = h.send('memories', { title: 'verified source' })
+    assert.equal(confirmed.status, 'ready')
+    assert.equal(confirmed.memory.title, 'verified source')
+  } finally { h.cleanup() }
+})
+
+test('pending source writes immediately hide previously verified private memory', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    assert.equal(h.send('memories', { title: 'verified original' }).status, 'ready')
+    const pending = h.send('memories', { title: 'optimistic local rewrite' }, false, true)
+    assert.equal(pending.status, 'unavailable')
+    assert.equal(pending.memory, null)
+    const confirmed = h.send('memories', { title: 'new server committed source' })
+    assert.equal(confirmed.status, 'ready')
+    assert.equal(confirmed.memory.title, 'new server committed source')
+  } finally { h.cleanup() }
+})
+
+test('revocation and stale grants cannot restore a private listener at the same policy revision', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    h.send('memories', { title: 'verified original' })
+    const revoked = { ...h.policy, revision: 2, domains: { memory: { ...h.policy.domains.memory, mode: 'denied' } } }
+    const denied = h.send('privacyPolicy', revoked)
+    assert.equal(denied.status, 'unauthorized')
+    assert.equal(denied.memory, null)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories'))[0].stopped, true)
+    assert.equal(h.send('privacyPolicy', h.policy, true).status, 'unavailable')
+    assert.equal(h.send('privacyPolicy', h.policy).status, 'unavailable')
+    assert.equal(h.send('privacyPolicy', { ...h.policy, revision: 2 }).status, 'unauthorized')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
+    const allowed = h.send('privacyPolicy', { ...h.policy, revision: 3 })
+    assert.equal(allowed.status, 'loading')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 2)
+    assert.equal(h.send('memories', { title: 'new authoritative snapshot' }).status, 'ready')
+  } finally { h.cleanup() }
+})
+
+test('metadata-only confirmed policy acknowledgements do not duplicate private listeners', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
+    h.send('privacyPolicy', h.policy)
+    h.send('privacyPolicy', h.policy)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
+  } finally { h.cleanup() }
+})
