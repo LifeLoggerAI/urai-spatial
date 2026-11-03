@@ -462,3 +462,25 @@ test('a stale previously revoked C1 receipt cannot reopen private memory until a
     assert.equal(h.send('memories', { title: 'freshly authorized private' }).status, 'ready')
   } finally { h.cleanup() }
 })
+
+test('a frozen expired C1 receipt cannot be revived by rewriting its expiry without a new receipt', () => {
+  const h = fixture({ virtualClock: true, seedC1: false })
+  try {
+    h.send('privacyPolicy', h.policy)
+    h.send('consentRecords', { ...h.grant, expiresAt: new Date(h.clock.now() + 100).toISOString() })
+    assert.equal(h.send('memories', { title: 'private before expiry' }).status, 'ready')
+    const old = h.listeners.find(x => x.ref.includes('memories'))
+    h.clock.jumpWithoutCallbacks(1000)
+    assert.equal(h.status().status, 'unauthorized')
+    // A later callback that stretches the *same* consent receipt must not
+    // bypass the expiry already observed by this client.
+    const replay = h.send('consentRecords', { ...h.grant, expiresAt: new Date(h.clock.now() + 3600000).toISOString() })
+    assert.equal(replay.status, 'unauthorized')
+    assert.equal(replay.memory, null)
+    assert.equal(old.stopped, true)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
+    const newReceipt = { ...h.grant, receiptHash: 'c'.repeat(64), expiresAt: new Date(h.clock.now() + 3600000).toISOString() }
+    assert.equal(h.send('consentRecords', newReceipt).status, 'loading')
+    assert.equal(h.send('memories', { title: 'new owner-granted memory' }).status, 'ready')
+  } finally { h.cleanup() }
+})
