@@ -30,3 +30,16 @@ test('graph projection rejects duplicate selection',()=>assert.throws(
   ()=>projectLifeGraphEvidence(verified,snapshotId,['person_1','person_1']),/LIFE_GRAPH_WORLD_PROJECTION_UNAVAILABLE/))
 test('graph projection rejects an invalid snapshot token',()=>assert.throws(
   ()=>projectLifeGraphEvidence(verified,'../owner',entityIds),/LIFE_GRAPH_WORLD_PROJECTION_UNAVAILABLE/))
+
+test('shared world loads source-checked graph only through existing protected callable',async()=>{
+  const fs=await import('node:fs')
+  const world=fs.readFileSync(new URL('../src/spatial/world/WorldStateProvider.tsx',import.meta.url),'utf8')
+  const council=fs.readFileSync(new URL('../src/spatial/council/CouncilConversationPanel.tsx',import.meta.url),'utf8')
+  assert.match(world,/getCouncilLifeGraphEvidence/)
+  assert.match(world,/projectLifeGraphEvidence\(response\.data, snapshotId, entityIds\)/)
+  assert.match(world,/auth\.currentUser !== owner/)
+  assert.match(world,/CLEAR_GRAPH_VIEW/)
+  assert.match(world,/onAuthStateChanged/)
+  assert.match(council,/loadGraphView\(snapshotId, entityIds\)/)
+  assert.match(council,/No external provider was contacted/)
+})
