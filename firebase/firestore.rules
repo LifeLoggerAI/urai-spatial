@@ -4,6 +4,21 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() { return request.auth != null; }
     function isSelf(uid) { return isSignedIn() && request.auth.uid == uid; }
+    // Preserve Privacy's canonical root deletion fence for owner profile writes.
+    // The marker is server-owned and not writable or readable by clients.
+    function deletionFenceIsInactive(uid) {
+      let tombstone = /databases/$(database)/documents/privacyDeletionTombstones/$(uid);
+      return !exists(tombstone) || (
+        get(tombstone).data.get('active', null) == false
+        && !get(tombstone).data.keys().hasAny([
+          'deletionPlanningLeaseToken',
+          'deletionPlanningLeaseUntil',
+          'deletionPlanningLeaseRequestId',
+          'deletionPlanningLeaseOperation',
+          'deletionPlanningLeaseBy'
+        ])
+      );
+    }
     function isAdmin() {
       return isSignedIn() && (request.auth.token.admin == true || request.auth.token.founder == true);
     }
@@ -84,10 +99,13 @@ service cloud.firestore {
     match /consentRecords/{consentId} {
       allow get: if isSignedIn()
         && consentId == request.auth.uid + '_memory_storage'
-        && resource.data.uid == request.auth.uid
-        && resource.data.purpose == 'memory.storage'
-        && resource.data.consentTier == 'C1'
-        && resource.data.policyVersion == '1.0.0';
+        // A missing first-consent record is a valid owner readback state;
+        // existing records must still match the owner and policy contract.
+        && (!exists(/databases/$(database)/documents/consentRecords/$(consentId))
+          || (resource.data.uid == request.auth.uid
+            && resource.data.purpose == 'memory.storage'
+            && resource.data.consentTier == 'C1'
+            && resource.data.policyVersion == '1.0.0'));
       allow list, write: if false;
     }
 
@@ -108,13 +126,19 @@ service cloud.firestore {
       // and account-lifecycle fields. affectedKeys() covers additions, removals
       // AND edits; changedKeys() alone misses adding privileged fields.
       allow create: if isSelf(uid)
+        && isUserOwnedCreate(uid)
+        && deletionFenceIsInactive(uid)
         && !request.resource.data.keys().hasAny([
-          'entitlementTier', 'isAdmin', 'founderOverride', 'deleted', 'accountStatus'
+          'role', 'admin', 'isAdmin', 'legalHold', 'markedForDeletion',
+          'deletionMarkedAt', 'entitlementTier', 'founderOverride', 'deleted', 'accountStatus'
         ])
         && isPrivateSpatialPayloadSafe();
       allow update: if isSelf(uid)
+        && isUserOwnedUpdate(uid)
+        && deletionFenceIsInactive(uid)
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-          'entitlementTier', 'isAdmin', 'founderOverride', 'deleted', 'accountStatus'
+          'role', 'admin', 'isAdmin', 'legalHold', 'markedForDeletion',
+          'deletionMarkedAt', 'entitlementTier', 'founderOverride', 'deleted', 'accountStatus'
         ])
         && isPrivateSpatialPayloadSafe();
       allow delete: if false;

@@ -58,26 +58,61 @@ export function watchCanonicalMemoryConsent(
   }
   let active = true
   let failed = false
+  let expiryTimer: ReturnType<typeof setTimeout> | null = null
+  const clearExpiry = () => {
+    if (expiryTimer !== null) clearTimeout(expiryTimer)
+    expiryTimer = null
+  }
+  // Server-confirmed grants expire even if no further Firestore snapshot arrives.
+  // UI state alone is never permission to perform a governed operation.
+  const publish = (state: CanonicalMemoryConsentState) => {
+    clearExpiry()
+    if (!active || failed || !sameOwner(uid)) return
+    if (state.status !== 'granted' || !state.expiresAt) {
+      onState(state)
+      return
+    }
+    const deadline = Date.parse(state.expiresAt)
+    if (!Number.isFinite(deadline) || deadline <= Date.now()) {
+      onState({ ...state, status: 'expired' })
+      return
+    }
+    onState(state)
+    const recheck = () => {
+      expiryTimer = null
+      if (!active || failed || !sameOwner(uid)) return
+      const remaining = deadline - Date.now()
+      if (remaining <= 0) {
+        onState({ ...state, status: 'expired' })
+        return
+      }
+      // Timers cannot reliably represent delays longer than 2^31 - 1 ms.
+      expiryTimer = setTimeout(recheck, Math.min(remaining, 2_147_483_647))
+    }
+    recheck()
+  }
   try {
     const stop = onSnapshot(memoryConsentRef(uid), { includeMetadataChanges: true }, (snapshot) => {
       if (!active || failed || !sameOwner(uid)) return
       if (snapshot.metadata?.fromCache !== false || snapshot.metadata?.hasPendingWrites !== false) {
-        onState(UNKNOWN)
+        publish(UNKNOWN)
         return
       }
-      onState(snapshot.exists() ? parseCanonicalMemoryConsent(snapshot.data(), uid) : {
+      publish(snapshot.exists() ? parseCanonicalMemoryConsent(snapshot.data(), uid) : {
         status: 'missing', receiptHash: null, expiresAt: null,
       })
     }, () => {
       if (!active) return
       failed = true
+      clearExpiry()
       onState(UNKNOWN)
     })
-    return () => { active = false; stop() }
+    return () => { active = false; clearExpiry(); stop() }
   } catch {
     failed = true
+    clearExpiry()
     onState(UNKNOWN)
-    return () => { active = false }
+    return () => { active = false; clearExpiry() }
   }
 }
 

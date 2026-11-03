@@ -127,3 +127,123 @@ test('setDoc merge cannot add or modify protected fields, but normal owner merge
   assert.equal(current.entitlementTier, 'free')
   assert.equal(current.accountStatus, 'active')
 })
+
+test('canonical root deletion tombstone fences profile create and update and remains unreadable', async () => {
+  const owner = env.authenticatedContext(ownerId).firestore()
+  const barrier = doc(owner, 'privacyDeletionTombstones', ownerId)
+  const adminBarrier = doc(env.unauthenticatedContext().firestore(), 'privacyDeletionTombstones', ownerId)
+  const seedFence = async (active) => env.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore()
+    await setDoc(doc(db, 'privacyDeletionTombstones', ownerId), { uid: ownerId, active })
+  })
+  const dropFence = async () => env.withSecurityRulesDisabled(async (context) =>
+    deleteDoc(doc(context.firestore(), 'privacyDeletionTombstones', ownerId)))
+  try {
+    await clear()
+    await seedFence(true)
+    await assertFails(setDoc(profile(owner), { displayName: 'Blocked create' }))
+    await seed({ displayName: 'Server established' })
+    await assertFails(updateDoc(profile(owner), { displayName: 'Blocked update' }))
+    await assertFails(getDoc(barrier))
+    await assertFails(getDoc(adminBarrier))
+    await assertFails(setDoc(barrier, { uid: ownerId, active: false }))
+    await seedFence(false)
+    await assertSucceeds(updateDoc(profile(owner), { displayName: 'Allowed after cleared fence' }))
+    await dropFence()
+    await assertSucceeds(updateDoc(profile(owner), { displayName: 'Allowed with missing fence' }))
+  } finally {
+    await dropFence()
+    await clear()
+  }
+})
+
+test('malformed tombstones and unreconciled planning leases block profile creation and updates', async () => {
+  const owner = env.authenticatedContext(ownerId).firestore()
+  const target = profile(owner)
+  const barrier = doc(owner, 'privacyDeletionTombstones', ownerId)
+  const setFence = (entry) => env.withSecurityRulesDisabled((context) =>
+    setDoc(doc(context.firestore(), 'privacyDeletionTombstones', ownerId), { uid: ownerId, ...entry }))
+  const removeFence = () => env.withSecurityRulesDisabled((context) =>
+    deleteDoc(doc(context.firestore(), 'privacyDeletionTombstones', ownerId)))
+  const invalid = [
+    {}, { active: null }, { active: 'false' }, { active: 0 }, { active: true },
+    { active: false, deletionPlanningLeaseToken: 'unresolved-lease' },
+    { active: false, deletionPlanningLeaseUntil: '2026-11-03T05:00:00.000Z' },
+    { active: false, deletionPlanningLeaseRequestId: 'request-pending' },
+    { active: false, deletionPlanningLeaseOperation: 'pending' },
+    { active: false, deletionPlanningLeaseBy: 'reviewer' },
+  ]
+  try {
+    for (const [index, tombstone] of invalid.entries()) {
+      await clear()
+      await setFence(tombstone)
+      await assertFails(setDoc(target, { displayName: 'Blocked create ' + index }))
+      await seed({ displayName: 'Server-established' })
+      await assertFails(updateDoc(target, { displayName: 'Blocked update ' + index }))
+      await assertFails(getDoc(barrier))
+    }
+    await setFence({ active: false })
+    await assertSucceeds(updateDoc(target, { displayName: 'Allowed only when explicitly inactive' }))
+    await removeFence()
+    await assertSucceeds(updateDoc(target, { displayName: 'Allowed with no tombstone' }))
+  } finally {
+    await removeFence()
+    await clear()
+  }
+})
+
+test('profile create and update reject forged embedded owner identities', async () => {
+  const own = env.authenticatedContext(ownerId).firestore()
+  const target = profile(own)
+  await clear()
+  try {
+    for (const key of ['uid', 'userId', 'ownerId']) {
+      await assertFails(setDoc(target, { displayName: 'Forged create', [key]: otherOwnerId }))
+    }
+    await assertSucceeds(setDoc(target, { displayName: 'Valid create', uid: ownerId,
+      userId: ownerId, ownerId }))
+    for (const key of ['uid', 'userId', 'ownerId']) {
+      await assertFails(updateDoc(target, { [key]: otherOwnerId }))
+      await assertFails(setDoc(target, { displayName: 'Forged replacement',
+        uid: ownerId, userId: ownerId, ownerId, [key]: otherOwnerId }))
+    }
+    await assertSucceeds(updateDoc(target, { displayName: 'Valid update' }))
+    await seed({ displayName: 'Historical corrupted profile', uid: otherOwnerId })
+    await assertFails(updateDoc(target, { displayName: 'Cannot modify foreign-bound record' }))
+  } finally {
+    await clear()
+  }
+})
+
+test('first-time missing C1 consent read succeeds without permitting foreign or forged consent records', async () => {
+  const uid = 'fictional-consent-read-' + Date.now()
+  const own = env.authenticatedContext(uid).firestore()
+  const other = env.authenticatedContext(otherOwnerId).firestore()
+  const path = ['consentRecords', uid + '_memory_storage']
+  const record = doc(own, ...path)
+  const seedConsent = value => env.withSecurityRulesDisabled(context =>
+    setDoc(doc(context.firestore(), ...path), value))
+  const clearConsent = () => env.withSecurityRulesDisabled(context =>
+    deleteDoc(doc(context.firestore(), ...path)))
+  try {
+    await clearConsent()
+    const missing = await assertSucceeds(getDoc(record))
+    assert.equal(missing.exists(), false)
+    await assertFails(getDoc(doc(other, ...path)))
+    await assertFails(setDoc(record, { uid, status: 'granted' }))
+    await seedConsent({ uid, purpose: 'memory.storage', consentTier: 'C1',
+      policyVersion: '1.0.0', status: 'granted' })
+    assert.equal((await assertSucceeds(getDoc(record))).exists(), true)
+    for (const data of [
+      { uid: otherOwnerId, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0' },
+      { uid, purpose: 'data.export', consentTier: 'C1', policyVersion: '1.0.0' },
+      { uid, purpose: 'memory.storage', consentTier: 'C7', policyVersion: '1.0.0' },
+      { uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '0.0.0' },
+    ]) {
+      await seedConsent(data)
+      await assertFails(getDoc(record))
+    }
+  } finally {
+    await clearConsent()
+  }
+})
