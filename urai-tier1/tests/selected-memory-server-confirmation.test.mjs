@@ -8,9 +8,36 @@ import ts from 'typescript'
 const code = fs.readFileSync(new URL('../src/spatial/memory/useSelectedMemory.ts', import.meta.url), 'utf8')
 const js = ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
 
-function fixture({ failPolicySubscribe = false, failMemorySubscribe = false, failC1Subscribe = false, seedC1 = true } = {}) {
+function fixture({ failPolicySubscribe = false, failMemorySubscribe = false, failC1Subscribe = false, seedC1 = true, virtualClock = false } = {}) {
   const state = [], effects = [], listeners = []
   let cursor = 0, auth, dirty
+  let nowMs = Date.now(), nextTimer = 0
+  const timers = new Map()
+  const clock = {
+    now: () => nowMs,
+    advance(milliseconds) {
+      assert.ok(virtualClock)
+      const target = nowMs + milliseconds
+      for (let spins = 0; spins < 100; spins++) {
+        const next = [...timers.entries()].filter(([, timer]) => timer.due <= target)
+          .sort((a, b) => a[1].due - b[1].due)[0]
+        if (!next) break
+        nowMs = next[1].due
+        timers.delete(next[0])
+        next[1].callback()
+      }
+      assert.equal([...timers.values()].some(timer => timer.due <= target), false)
+      nowMs = target
+    },
+    pending: () => timers.size,
+  }
+  const setVirtualTimeout = (callback, delay) => {
+    const id = ++nextTimer
+    timers.set(id, { callback, due: nowMs + delay })
+    return id
+  }
+  const clearVirtualTimeout = id => { timers.delete(id) }
+  class ClockDate extends Date { static now() { return nowMs } }
   const react = {
     useMemo: fn => fn(),
     useState(value) {
@@ -52,7 +79,7 @@ function fixture({ failPolicySubscribe = false, failMemorySubscribe = false, fai
   vm.runInNewContext(js, { module, exports, require(name) {
     assert.ok(Object.prototype.hasOwnProperty.call(imports, name), 'unexpected dependency: ' + name)
     return imports[name]
-  }, URLSearchParams, process: { env: {} } })
+  }, URLSearchParams, process: { env: {} }, ...(virtualClock ? { Date: ClockDate, setTimeout: setVirtualTimeout, clearTimeout: clearVirtualTimeout } : {}) })
   cursor = 0
   module.exports.useSelectedMemory()
   const cleanup = effects.shift()()
@@ -61,7 +88,7 @@ function fixture({ failPolicySubscribe = false, failMemorySubscribe = false, fai
     exists: () => value !== null, data: () => value,
     metadata: { fromCache, hasPendingWrites: pending },
   })
-  const grant = { uid: 'synthetic-owner', purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: 'a'.repeat(64), expiresAt: new Date(Date.now() + 3600000).toISOString() }
+  const grant = { uid: 'synthetic-owner', purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: 'a'.repeat(64), expiresAt: new Date(nowMs + 3600000).toISOString() }
   if (seedC1) {
     const c1 = listeners.find(x => x.ref.includes('consentRecords'))
     assert.ok(c1)
@@ -75,7 +102,7 @@ function fixture({ failPolicySubscribe = false, failMemorySubscribe = false, fai
     cursor = 0; dirty = false
     return module.exports.useSelectedMemory()
   }
-  return { listeners, policy, grant, send, cleanup, status: () => { cursor = 0; return module.exports.useSelectedMemory() } }
+  return { listeners, policy, grant, clock, send, cleanup, status: () => { cursor = 0; return module.exports.useSelectedMemory() } }
 }
 
 test('cache-only and locally pending consent grants never start private memory listeners', () => {
@@ -341,4 +368,56 @@ test('failed C1 listener cannot reauthorize memory through a late success callba
     assert.equal(h.status().memory, null)
     assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
   } finally { h.cleanup() }
+})
+
+
+test('C1 expiry clears idle private memory without any Firestore update', () => {
+  const h = fixture({ virtualClock: true, seedC1: false })
+  try {
+    h.send('privacyPolicy', h.policy)
+    h.send('consentRecords', { ...h.grant, expiresAt: new Date(h.clock.now() + 100).toISOString() })
+    assert.equal(h.send('memories', { title: 'private before expiry' }).status, 'ready')
+    assert.equal(h.clock.pending(), 1)
+    const old = h.listeners.find(x => x.ref.includes('memories'))
+    h.clock.advance(102)
+    assert.equal(h.status().status, 'unauthorized')
+    assert.equal(h.status().memory, null)
+    assert.equal(old.stopped, true)
+    assert.equal(h.clock.pending(), 0)
+    assert.equal(h.send('privacyPolicy', h.policy).memory, null)
+  } finally { h.cleanup() }
+})
+
+test('C1 renewal cancels the old expiry timer and only the new grant lifetime governs', () => {
+  const h = fixture({ virtualClock: true, seedC1: false })
+  try {
+    h.send('privacyPolicy', h.policy)
+    h.send('consentRecords', { ...h.grant, expiresAt: new Date(h.clock.now() + 100).toISOString() })
+    h.send('memories', { title: 'previous grant' })
+    const old = h.listeners.find(x => x.ref.includes('memories'))
+    h.clock.advance(50)
+    h.send('consentRecords', { ...h.grant, receiptHash: 'b'.repeat(64), expiresAt: new Date(h.clock.now() + 1000).toISOString() })
+    assert.equal(old.stopped, true)
+    assert.equal(h.send('memories', { title: 'renewed private memory' }).status, 'ready')
+    h.clock.advance(100)
+    assert.equal(h.status().memory.title, 'renewed private memory')
+    assert.equal(h.clock.pending(), 1)
+    h.clock.advance(901)
+    assert.equal(h.status().memory, null)
+    assert.equal(h.clock.pending(), 0)
+  } finally { h.cleanup() }
+})
+
+test('unmount cancels pending C1 expiry and fences all private callbacks', () => {
+  const h = fixture({ virtualClock: true })
+  h.send('privacyPolicy', h.policy)
+  h.send('memories', { title: 'must disappear' })
+  assert.equal(h.clock.pending(), 1)
+  const old = h.listeners.find(x => x.ref.includes('memories'))
+  h.cleanup()
+  assert.equal(h.clock.pending(), 0)
+  assert.equal(old.stopped, true)
+  old.receive({ exists: () => true, data: () => ({ title: 'late private memory' }),
+    metadata: { fromCache: false, hasPendingWrites: false } })
+  assert.equal(h.status().memory.title, 'must disappear', 'unmounted hook state is not updated by a detached callback')
 })
