@@ -21,6 +21,7 @@ import {
   type PrivacyRow,
 } from '@/lib/privacy/operationalPrivacyClient'
 import { OperationalExportDownloadSession, type OperationalExportRequest } from '@/lib/privacy/authorizedExportDownload'
+import { requestCanonicalMemoryConsent, watchCanonicalMemoryConsent, type CanonicalMemoryConsentState, type CanonicalMemoryConsentWriteStatus } from '@/lib/privacy/canonicalMemoryConsentClient'
 import {
   consequenceSummary,
   defaultConsentPolicy,
@@ -256,6 +257,9 @@ export default function ConsentSanctuaryClient() {
   const [deletionScope, setDeletionScope] = useState('memories')
   const [deletionConfirmation, setDeletionConfirmation] = useState('')
   const [operationBusy, setOperationBusy] = useState(false)
+  const [c1State, setC1State] = useState<CanonicalMemoryConsentState>({ status: 'loading', receiptHash: null, expiresAt: null })
+  const [c1Busy, setC1Busy] = useState(false)
+  const [c1Confirmation, setC1Confirmation] = useState<CanonicalMemoryConsentWriteStatus | null>(null)
   const [exportDownloading, setExportDownloading] = useState(false)
   const exportDownloads = useRef<OperationalExportDownloadSession | null>(null)
   if (!exportDownloads.current) exportDownloads.current = new OperationalExportDownloadSession()
@@ -320,6 +324,9 @@ export default function ConsentSanctuaryClient() {
       setMutationState('idle')
       setDeletionConfirmation('')
       setOperationBusy(false)
+      setC1Busy(false)
+      setC1Confirmation(null)
+      setC1State({ status: 'loading', receiptHash: null, expiresAt: null })
       setShowAudit(false)
       setUser(nextUser)
       if (!nextUser) {
@@ -330,6 +337,20 @@ export default function ConsentSanctuaryClient() {
       setLoadState(navigator.onLine ? 'loading' : 'offline')
     })
   }, [explicitDemo])
+
+  useEffect(() => {
+    if (!user || explicitDemo || !firebasePublicEnvReady) {
+      setC1State({ status: 'unavailable', receiptHash: null, expiresAt: null })
+      return
+    }
+    const owner = user.uid
+    const epoch = authEpoch.current
+    setC1State({ status: 'loading', receiptHash: null, expiresAt: null })
+    return watchCanonicalMemoryConsent(owner, (next) => {
+      if (epoch !== authEpoch.current || getAuth(app).currentUser?.uid !== owner) return
+      setC1State(next)
+    })
+  }, [user, explicitDemo])
 
   useEffect(() => {
     if (!user || explicitDemo || loadState === 'signed-out' || loadState === 'unavailable' || loadState === 'offline') return
@@ -405,6 +426,7 @@ export default function ConsentSanctuaryClient() {
       if (event.key !== 'Escape' || event.defaultPrevented) return
       event.preventDefault()
       if (pending) { setPending(null); setMutationState('idle'); return }
+      if (c1Confirmation) { setC1Confirmation(null); return }
       if (showAudit) { setShowAudit(false); return }
       if (phase !== 'idle') return
       if (world.previousDestination && world.previousDestination !== 'privacy-controls') requestUraiWorldReturn()
@@ -412,7 +434,7 @@ export default function ConsentSanctuaryClient() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [pending, showAudit, phase, world.previousDestination])
+  }, [pending, c1Confirmation, showAudit, phase, world.previousDestination])
 
   useEffect(() => { if (pending) requestAnimationFrame(() => confirmRef.current?.focus()) }, [pending])
 
@@ -445,6 +467,29 @@ export default function ConsentSanctuaryClient() {
       setMutationState(code === 'conflict' ? 'conflict' : 'failed')
       setMessage(code === 'conflict' ? 'Another session changed this policy first. Current server authority must be reloaded.' : 'The change was not accepted. The prior server policy remains authoritative.')
     }
+  }
+
+  const confirmCanonicalC1 = async () => {
+    const status = c1Confirmation
+    const owner = user?.uid
+    const epoch = authEpoch.current
+    setC1Confirmation(null)
+    if (!status || !owner || explicitDemo || !firebasePublicEnvReady || !navigator.onLine || c1Busy) return
+    setC1Busy(true)
+    setC1State({ status: 'loading', receiptHash: null, expiresAt: null })
+    setMessage(status === 'granted' ? 'Requesting separate C1 memory-storage consent…' : 'Requesting separate C1 memory-storage revocation…')
+    try {
+      const confirmed = await requestCanonicalMemoryConsent(owner, status)
+      if (epoch !== authEpoch.current || getAuth(app).currentUser?.uid !== owner) return
+      setC1State(confirmed)
+      setMessage(status === 'granted'
+        ? 'C1 memory-storage consent independently confirmed by the server. Spatial memory policy remains separately required.'
+        : 'C1 memory-storage revocation independently confirmed by the server. Private memories remain unavailable.')
+    } catch {
+      if (epoch !== authEpoch.current || getAuth(app).currentUser?.uid !== owner) return
+      setC1State({ status: 'unavailable', receiptHash: null, expiresAt: null })
+      setMessage('Canonical C1 consent could not be verified. No memory-storage authorization is claimed. The Privacy callable may not be deployed.')
+    } finally { if (epoch === authEpoch.current) setC1Busy(false) }
   }
 
   const requestExport = async () => {
@@ -527,6 +572,16 @@ export default function ConsentSanctuaryClient() {
       <section id="consent-controls" tabIndex={-1} className="consentPanel" aria-label={`${DOMAIN_LABELS[selectedDomain]} controls`}>
         <div className="consentPanelHeading"><div><p>Revision {policy.revision}</p><h2>{DOMAIN_LABELS[selectedDomain]}</h2></div><span className="consentMode" data-mode={selected.mode}>{selected.mode}</span></div>
         <p><strong>Enforcement:</strong> {policy.enforcement.state}; provider state: {policy.enforcement.providerState}.</p>
+        {selectedDomain === 'memory' && <section aria-label="Canonical memory-storage consent">
+          <h3>Separate C1 memory-storage consent</h3>
+          <p>This explicit authorization is separate from the Spatial memory policy. It is never granted automatically. A server-confirmed C1 record and an allowed Spatial policy are both required before private memories can open.</p>
+          <p role="status" aria-live="polite">C1: {c1State.status === 'granted' && c1State.expiresAt && Date.parse(c1State.expiresAt) <= Date.now() ? 'expired' : c1State.status}</p>
+          <div className="consentActions">
+            <button type="button" disabled={explicitDemo || !user || (typeof navigator === 'undefined' || !navigator.onLine) || c1Busy || c1State.status === 'loading'} onClick={() => setC1Confirmation('granted')}>Grant separate C1 consent</button>
+            <button type="button" disabled={explicitDemo || !user || (typeof navigator === 'undefined' || !navigator.onLine) || c1Busy || c1State.status === 'loading'} onClick={() => setC1Confirmation('revoked')}>Revoke C1 consent</button>
+          </div>
+        </section>}
+
         <fieldset disabled={!canWrite}><legend>Authority level</legend><div className="consentChoiceGrid">{MODE_OPTIONS.map((mode) => <button type="button" key={mode} aria-pressed={selected.mode === mode} onClick={() => propose(selectedDomain, { mode })}>{mode}</button>)}</div></fieldset>
         <div className="consentToggleGrid">
           {selectedDomain === 'location' && <label><input disabled={!canWrite} type="checkbox" checked={selected.precise} onChange={(event) => propose(selectedDomain, { precise: event.target.checked })} /><span>Allow precise private location</span></label>}
@@ -559,6 +614,7 @@ export default function ConsentSanctuaryClient() {
 
       {showAudit && <section className="consentAudit" aria-label="Privacy audit receipts"><div><h2>Append-only receipts</h2><button type="button" onClick={() => setShowAudit(false)}>Close</button></div><ol>{receipts.length ? receipts.map((entry) => <li key={entry.id}><strong>{String(entry.kind ?? 'privacy')}</strong><span>{String(entry.result ?? 'recorded')}</span><small>{entry.id.slice(0, 12)}</small></li>) : <li>No receipts exist for this owner.</li>}</ol></section>}
 
+      {c1Confirmation && <div className="consentDialogBackdrop"><section className="consentDialog" role="dialog" aria-modal="true" aria-label="Confirm separate C1 memory-storage consent"><h2>{c1Confirmation === 'granted' ? 'Grant C1 memory-storage consent?' : 'Revoke C1 memory-storage consent?'}</h2><p>This changes the canonical C1 consent record through the authenticated Privacy service. It does not silently change your Spatial privacy policy, and a server-confirmed receipt is required.</p><div><button type="button" onClick={() => setC1Confirmation(null)}>Cancel</button><button type="button" disabled={c1Busy} onClick={() => void confirmCanonicalC1()}>Confirm C1 {c1Confirmation === 'granted' ? 'grant' : 'revocation'}</button></div></section></div>}
       {pending && <div className="consentDialogBackdrop"><section className="consentDialog" role="dialog" aria-modal="true" aria-labelledby="consent-preview-title"><p>Consequence preview</p><h2 id="consent-preview-title">Confirm {DOMAIN_LABELS[pending.domain]}</h2><ul>{consequenceSummary(pending.domain, pending.next).map((effect) => <li key={effect}>{effect}</li>)}</ul><div><button type="button" onClick={() => { setPending(null); setMutationState('idle') }}>Cancel</button><button ref={confirmRef} type="button" onClick={() => void confirmChange()}>Confirm and request enforcement</button></div></section></div>}
     </main>
   )

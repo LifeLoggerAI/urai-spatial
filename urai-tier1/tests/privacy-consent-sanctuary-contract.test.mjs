@@ -117,8 +117,8 @@ class TestElement {
   closest() { return this.isContentEditable ? this : null }
 }
 
-function escapeHarness({ pending = null, showAudit = false, historyLength = 2, destination = 'privacy-controls', phase = 'idle', previousDestination } = {}) {
-  const effects = { pending: [], mutations: [], audit: [], historyBack: 0, locations: [], reverseTravel: 0, worldReturns: 0, worldTravels: [], domains: [], focus: 0 }
+function escapeHarness({ pending = null, c1Confirmation = null, showAudit = false, historyLength = 2, destination = 'privacy-controls', phase = 'idle', previousDestination } = {}) {
+  const effects = { pending: [], c1: [], mutations: [], audit: [], historyBack: 0, locations: [], reverseTravel: 0, worldReturns: 0, worldTravels: [], domains: [], focus: 0 }
   const reverseTravel = () => { effects.reverseTravel += 1 }
   const elementBindings = { HTMLElement: TestElement, Element: TestElement }
   const global = sourceCallback(controllerPath, 'onKeyDown', {
@@ -126,10 +126,11 @@ function escapeHarness({ pending = null, showAudit = false, historyLength = 2, d
     isEditableTarget: sourceCallback(controllerPath, 'isEditableTarget', elementBindings, true),
   })
   const consent = sourceCallback(sanctuaryPath, 'onKeyDown', {
-    ...elementBindings, pending, showAudit, phase, world: { previousDestination },
+    ...elementBindings, pending, c1Confirmation, showAudit, phase, world: { previousDestination },
     requestUraiWorldReturn: () => { effects.worldReturns += 1 },
     requestUraiWorldTravel: request => effects.worldTravels.push({ ...request }),
     setPending: value => effects.pending.push(value),
+    setC1Confirmation: value => effects.c1.push(value),
     setMutationState: value => effects.mutations.push(value),
     setShowAudit: value => effects.audit.push(value),
     setSelectedDomain: value => effects.domains.push(value),
@@ -160,6 +161,17 @@ for (const order of ['global-first', 'consent-first']) {
     assert.equal(event.defaultPrevented, true)
   })
 }
+
+test('C1 confirmation Escape cancels the separate action before navigation', () => {
+  const { global, consent, event, effects } = escapeHarness({ c1Confirmation: 'granted', showAudit: true })
+  global(event)
+  consent(event)
+  assert.deepEqual(effects.c1, [null])
+  assert.deepEqual(effects.audit, [])
+  assert.equal(effects.worldReturns, 0)
+  assert.deepEqual(effects.worldTravels, [])
+  assert.equal(event.defaultPrevented, true)
+})
 
 test('pending-consent Escape cancels only the preview, before audit dismissal or navigation', () => {
   const { global, consent, event, effects } = escapeHarness({ pending: { domain: 'memory' }, showAudit: true })
