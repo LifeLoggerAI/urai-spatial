@@ -147,6 +147,10 @@ export function useSelectedMemory(): SelectedMemoryResult {
       let policyGranted = false
       let c1ExpiresAt = 0
       let c1ReceiptHash = ''
+      // A server-observed withdrawal/expiry retires the old consent receipt.
+      // A queued grant carrying that same receipt must not reopen private content.
+      const retiredC1Receipts = new Set<string>()
+      const retireC1Receipt = () => { if (c1ReceiptHash) retiredC1Receipts.add(c1ReceiptHash) }
       const revokeC1 = (message: string, status: 'unauthorized' | 'unavailable' = 'unauthorized') => {
         c1ExpiresAt = 0
         c1ReceiptHash = ''
@@ -163,13 +167,17 @@ export function useSelectedMemory(): SelectedMemoryResult {
         c1ExpiryTimer = setTimeout(() => {
           c1ExpiryTimer = undefined
           if (!isCurrentOwner()) return
-          if (Date.now() >= c1ExpiresAt) revokeC1('Memory storage consent has expired.')
+          if (Date.now() >= c1ExpiresAt) {
+            retireC1Receipt()
+            revokeC1('Memory storage consent has expired.')
+          }
           else watchC1Expiry()
         }, Math.min(Math.max(1, c1ExpiresAt - Date.now() + 1), 2_147_483_647))
       }
       const attachMemory = () => {
         if (!isCurrentOwner() || unsubscribeMemory || !policyGranted || !c1ReceiptHash) return
         if (c1ExpiresAt <= Date.now()) {
+          retireC1Receipt()
           revokeC1('Memory storage consent has expired.')
           return
         }
@@ -182,6 +190,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
             (snapshot) => {
               if (!isCurrentMemory()) return
               if (!policyGranted || !c1ReceiptHash || c1ExpiresAt <= Date.now()) {
+                if (c1ExpiresAt <= Date.now()) retireC1Receipt()
                 revokeC1('Current memory storage authorization is required.')
                 return
               }
@@ -309,7 +318,12 @@ export function useSelectedMemory(): SelectedMemoryResult {
             }
             const grant = snapshot.exists() ? activeC1MemoryGrant(snapshot.data(), user.uid) : null
             if (!grant) {
+              retireC1Receipt()
               revokeC1('Current C1 memory storage consent is required.')
+              return
+            }
+            if (retiredC1Receipts.has(grant.receiptHash)) {
+              revokeC1('A fresh C1 consent receipt is required after withdrawal.')
               return
             }
             if (c1ReceiptHash && (c1ReceiptHash !== grant.receiptHash || c1ExpiresAt !== grant.expiresAt)) {
