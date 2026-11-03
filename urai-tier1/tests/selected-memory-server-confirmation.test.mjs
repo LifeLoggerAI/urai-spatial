@@ -29,9 +29,9 @@ function fixture() {
     react,
     'firebase/firestore': {
       doc: (...parts) => parts,
-      onSnapshot(ref, options, receive) {
+      onSnapshot(ref, options, receive, error) {
         assert.equal(options.includeMetadataChanges, true, 'metadata-only server confirmation is mandatory')
-        const listener = { ref, receive, stopped: false }
+        const listener = { ref, receive, error, stopped: false }
         listeners.push(listener)
         return () => { listener.stopped = true }
       },
@@ -171,6 +171,44 @@ test('metadata-only confirmed policy acknowledgements do not duplicate private l
     assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
     h.send('privacyPolicy', h.policy)
     h.send('privacyPolicy', h.policy)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
+  } finally { h.cleanup() }
+})
+
+test('terminal private-memory listener failure invalidates stale callbacks until a fresh server-confirmed subscription', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    assert.equal(h.send('memories', { title: 'verified source' }).status, 'ready')
+    const old = h.listeners.find(x => x.ref.includes('memories'))
+    assert.ok(old)
+    old.error(new Error('synthetic provider detail not for display'))
+    assert.equal(h.status().status, 'unavailable')
+    assert.equal(h.status().memory, null)
+    assert.equal(old.stopped, true)
+    old.receive({ exists: () => true, data: () => ({ title: 'stale private source' }),
+      metadata: { fromCache: false, hasPendingWrites: false } })
+    assert.equal(h.status().memory, null)
+    assert.equal(h.send('privacyPolicy', h.policy).status, 'unavailable')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 2)
+    assert.equal(h.send('memories', { title: 'new verified source' }).memory.title, 'new verified source')
+  } finally { h.cleanup() }
+})
+
+test('terminal policy listener error never re-admits a stale grant callback', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    h.send('memories', { title: 'verified source' })
+    const oldPolicy = h.listeners.find(x => x.ref.includes('privacyPolicy'))
+    const oldMemory = h.listeners.find(x => x.ref.includes('memories'))
+    oldPolicy.error(new Error('synthetic private consent provider detail'))
+    assert.equal(h.status().status, 'unavailable')
+    assert.equal(h.status().memory, null)
+    assert.equal(oldMemory.stopped, true)
+    oldPolicy.receive({ exists: () => true, data: () => h.policy,
+      metadata: { fromCache: false, hasPendingWrites: false } })
+    assert.equal(h.status().memory, null)
     assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
   } finally { h.cleanup() }
 })
