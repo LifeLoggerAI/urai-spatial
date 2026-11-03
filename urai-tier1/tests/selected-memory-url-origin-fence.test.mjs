@@ -42,7 +42,7 @@ test('canonical HTTPS bucket origins and legitimate query signatures remain avai
 
 test('selected memory and Replay do not inherit credentialed or foreign-port media URLs', () => {
   const dangerous = `https://synthetic-user:synthetic-pass@storage.googleapis.com:8443/${bucket}/private/photo.jpg`
-  const raw = { ...buildExplicitDemoMemory('synthetic-memory'), ownerId: 'synthetic-owner', demo: false,
+  const raw = { ...buildExplicitDemoMemory('synthetic-memory'), ownerId: 'synthetic-owner', demo: false, consentState: 'authorized',
     sourceMedia: [{ kind: 'image', url: dangerous }],
     replayManifest: { ...buildExplicitDemoMemory('synthetic-memory').replayManifest, audioUrl: dangerous },
   }
@@ -50,4 +50,16 @@ test('selected memory and Replay do not inherit credentialed or foreign-port med
   assert.equal(result.status, 'ready')
   assert.deepEqual(Array.from(result.memory.sourceMedia), [])
   assert.equal(result.memory.replayManifest.audioUrl, undefined)
+})
+
+test('private memory requires explicit authorized consent state before admitting data', () => {
+  for (const consentState of [undefined, null, 'unknown', 'inactive', false, 'pending', 'revoked']) {
+    const raw = { ...buildExplicitDemoMemory('synthetic-memory'), ownerId: 'synthetic-owner', demo: false,
+      consentState, title: 'unverified synthetic personal content' }
+    const selected = parseSelectedMemory(raw, 'synthetic-owner', 'synthetic-memory', bucket)
+    assert.equal(selected.status, 'unauthorized', `invalid consent state ${String(consentState)}`)
+    assert.equal(selected.memory, null)
+  }
+  const authorized = { ...buildExplicitDemoMemory('synthetic-memory'), ownerId: 'synthetic-owner', demo: false, consentState: 'authorized' }
+  assert.equal(parseSelectedMemory(authorized, 'synthetic-owner', 'synthetic-memory', bucket).status, 'ready')
 })
