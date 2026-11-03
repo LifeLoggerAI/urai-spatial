@@ -15,9 +15,14 @@ if (javaCheck.status === 0) {
     'emulators:exec',
     '--only',
     'firestore',
-    'node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs',
+    'node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs tests/firestore.userAuthority.rules.test.mjs',
   ])
   process.exit(result.status ?? 1)
+}
+
+if (process.env.URAI_REQUIRE_FIRESTORE_EMULATOR === '1') {
+  console.error('[URAI] Required Firestore emulator could not run: Java is unavailable.')
+  process.exit(2)
 }
 
 console.warn('[URAI] Java is not available, so the Firestore emulator cannot run in this environment.')
