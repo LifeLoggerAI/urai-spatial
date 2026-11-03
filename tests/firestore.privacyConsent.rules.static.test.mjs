@@ -114,3 +114,29 @@ test('owner profiles require explicitly inactive Privacy tombstones with no outs
     assert.ok(fence.includes("'" + key + "'"), 'missing deletion-planning lease: ' + key)
   }
 })
+
+test('profile create and update preserve embedded user identity on both old and new fields', () => {
+  assert.ok(userRuleBlock, 'canonical users/{uid} match required')
+  const create = userRuleBlock.match(/allow create: if ([\\s\\S]*?);/)?.[1] ?? ''
+  const update = userRuleBlock.match(/allow update: if ([\\s\\S]*?);/)?.[1] ?? ''
+  assert.match(create, /isUserOwnedCreate\\(uid\\)/)
+  assert.match(update, /isUserOwnedUpdate\\(uid\\)/)
+  for (const name of ['uid', 'userId', 'ownerId']) {
+    assert.ok(rules.includes(`request.resource.data.${name} == uid`),
+      name + ' must be owner-bound after write')
+    assert.ok(rules.includes(`resource.data.${name} == uid`),
+      name + ' must be owner-bound before update')
+  }
+})
+
+test('canonical C1 consent can be read before the first grant without opening cross-owner reads', () => {
+  const c1 = rules.match(/match \/consentRecords\/\\{consentId\\} \\{([\\s\\S]*?)\\n\\s*\\}/)?.[1] ?? ''
+  assert.ok(c1, 'canonical C1 read rule required')
+  assert.match(c1, /consentId == request.auth.uid \\+ '_memory_storage'/)
+  assert.match(c1, /!exists\\(\\/databases\\/\\$\\(database\\)\\/documents\\/consentRecords\\/\\$\\(consentId\\)\\)/)
+  for (const field of ['uid', 'purpose', 'consentTier', 'policyVersion']) {
+    assert.match(c1, new RegExp('resource\\.data\\.' + field + '\\s*=='),
+      field + ' must be checked on an existing record')
+  }
+  assert.match(c1, /allow list, write: if false;/)
+})
