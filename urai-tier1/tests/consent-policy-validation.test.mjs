@@ -111,10 +111,11 @@ class Element {
 class HTMLElement extends Element { constructor(tag = 'DIV', role = null, rich = false) { super(tag, role); this.isContentEditable = rich } }
 const runKey = (event = {}, context = {}) => {
   const effects = [], state = {
-    pending: null, showAudit: false, phase: 'idle', world: { previousDestination: null }, ...context,
+    pending: null, c1Confirmation: null, showAudit: false, phase: 'idle', world: { previousDestination: null }, ...context,
     Element, HTMLElement,
     setSelectedDomain: d => effects.push(['selected', d]), setPending: value => effects.push(['pending', value]),
     setMutationState: value => effects.push(['mutation', value]), setShowAudit: value => effects.push(['audit', value]),
+    setC1Confirmation: value => effects.push(['c1', value]),
     requestUraiWorldReturn: () => effects.push(['return']),
     requestUraiWorldTravel: request => effects.push(['travel', JSON.parse(JSON.stringify(request))]),
     document: { getElementById: id => ({ focus: () => effects.push(['focus', id]) }) },
