@@ -109,12 +109,14 @@ service cloud.firestore {
       // AND edits; changedKeys() alone misses adding privileged fields.
       allow create: if isSelf(uid)
         && !request.resource.data.keys().hasAny([
-          'entitlementTier', 'isAdmin', 'founderOverride', 'deleted', 'accountStatus'
+          'role', 'admin', 'isAdmin', 'legalHold', 'markedForDeletion',
+          'deletionMarkedAt', 'entitlementTier', 'founderOverride', 'deleted', 'accountStatus'
         ])
         && isPrivateSpatialPayloadSafe();
       allow update: if isSelf(uid)
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-          'entitlementTier', 'isAdmin', 'founderOverride', 'deleted', 'accountStatus'
+          'role', 'admin', 'isAdmin', 'legalHold', 'markedForDeletion',
+          'deletionMarkedAt', 'entitlementTier', 'founderOverride', 'deleted', 'accountStatus'
         ])
         && isPrivateSpatialPayloadSafe();
       allow delete: if false;
