@@ -441,3 +441,24 @@ test('suspended browser timers never expose expired private memory on next rende
     assert.equal(view.memory, null)
   } finally { h.cleanup() }
 })
+
+test('a stale previously revoked C1 receipt cannot reopen private memory until a new receipt is issued', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    assert.equal(h.send('memories', { title: 'private before withdrawal' }).status, 'ready')
+    const active = h.listeners.find(x => x.ref.includes('memories'))
+    assert.equal(h.send('consentRecords', { ...h.grant, status: 'revoked' }).status, 'unauthorized')
+    assert.equal(h.status().memory, null)
+    assert.equal(active.stopped, true)
+    // A queued or misordered same-receipt grant must not reverse a witnessed withdrawal.
+    const stale = h.send('consentRecords', h.grant)
+    assert.equal(stale.status, 'unauthorized')
+    assert.equal(stale.memory, null)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
+    const newGrant = { ...h.grant, receiptHash: 'b'.repeat(64) }
+    assert.equal(h.send('consentRecords', newGrant).status, 'loading')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 2)
+    assert.equal(h.send('memories', { title: 'freshly authorized private' }).status, 'ready')
+  } finally { h.cleanup() }
+})
