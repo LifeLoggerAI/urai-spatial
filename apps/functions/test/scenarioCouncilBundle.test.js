@@ -12,12 +12,12 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
 function fixture() {
   const docs = new Map(), reads = [], limits = []
   const ref = location => ({ path:location, id:location.split('/').at(-1), get:async()=>snapshot(location), collection:name=>query(location+'/'+name) })
-  const snapshot = location => { reads.push(location);return { id:location.split('/').at(-1),exists:docs.has(location),data:()=>docs.get(location),ref:ref(location) } }
+  const snapshot = location => { reads.push(location);return { id:location.split('/').at(-1),exists:docs.has(location),data:()=>docs.get(location),get:key=>docs.get(location)?.[key],ref:ref(location) } }
   const query = location => { let limit=Infinity;return { doc:id=>ref(location+'/'+id),limit(count){limit=count;limits.push(count);return this},get:async()=>({ docs:[...docs.keys()].filter(key=>key.startsWith(location+'/') && !key.slice(location.length+1).includes('/')).slice(0,limit).map(snapshot) }) } }
-  const db = { doc:ref }
+  const db = { doc:ref,runTransaction:async work=>work({get:async reference=>snapshot(reference.path)}) }
   const firestore = () => db
   firestore.FieldValue = { serverTimestamp:()=>({ synthetic:true }) }
-  const imports = { 'firebase-functions/v1':{ https:{ onCall:handler=>handler,HttpsError } },'firebase-admin':{ apps:[{}],firestore },'node:crypto':crypto,'./scenarioProvider':{ scenarioProviderState:'provider-unavailable' },'./consentPolicyAuthority':require(path.resolve(__dirname,'../lib/apps/functions/src/consentPolicyAuthority.js')) }
+  const imports = { 'firebase-functions/v1':{ https:{ onCall:handler=>handler,HttpsError } },'firebase-admin':{ apps:[{}],firestore },'node:crypto':crypto,'./scenarioProvider':{ scenarioProviderState:'provider-unavailable' },'./consentPolicyAuthority':require(path.resolve(__dirname,'../lib/apps/functions/src/consentPolicyAuthority.js')),'./scenarioSourceAuthority':require(path.resolve(__dirname,'../lib/apps/functions/src/scenarioSourceAuthority.js')) }
   const module = { exports:{} }
   vm.runInNewContext(code,{ module,exports:module.exports,require:name=>{ assert.ok(name in imports,'Unexpected import '+name);return imports[name] } },{ filename:'actual-compiled-scenarioOperations.js' })
   docs.set(prefix,{ id:scenarioId,ownerId,question:'Synthetic what-if',activeBranchId:'br_a' })
@@ -44,9 +44,11 @@ function privateEvidenceFixture(kind='autobiographical-memory') {
   const f=fixture()
   f.docs.set(prefix+'/basis/current',{
     ownerId,assumptionOnly:false,
-    evidenceRefs:[{truthKind:kind,sourceRevision:4,id:'evr_synthetic_ref'}],
+    evidenceRefs:[{truthKind:kind,sourceRevision:4,id:'evr_synthetic_ref',purpose:'scenario.explore',sourceId:'users/'+ownerId+(kind==='autobiographical-memory'?'/memories/memory_a':'/lifeEntities/person_a'),truthRecordId:kind==='autobiographical-memory'?'memory:memory_a':'life-entity:person_a',...(kind==='interpretation'?{sourceEntityKind:'person'}:{})}],
   })
   f.docs.set('users/'+ownerId+'/privacyPolicy/current',currentPolicy())
+  f.docs.set('users/'+ownerId+'/memories/memory_a',{ownerId,deleted:false,demo:false,synthetic:false,consentState:'granted'})
+  f.docs.set('users/'+ownerId+'/lifeEntities/person_a',{ownerId,kind:'person',revoked:false,synthetic:false})
   return f
 }
 test('actual compiled source-backed Council bundle requires current canonical consent',async()=>{
