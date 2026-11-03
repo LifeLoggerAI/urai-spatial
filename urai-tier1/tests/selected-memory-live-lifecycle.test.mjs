@@ -109,7 +109,7 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
   }, { window: browser, URLSearchParams, process: { env: { NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'governed-bucket' } } })
   const render = () => driver.render(owner.useSelectedMemory)
   render()
-  const data = (uid = 'account-a', id = 'memory-one') => ({ ...contract.buildExplicitDemoMemory(id), ownerId: uid, demo: false })
+  const data = (uid = 'account-a', id = 'memory-one') => ({ ...contract.buildExplicitDemoMemory(id), ownerId: uid, demo: false, consentState: 'authorized' })
   const snapshot = (value) => ({ exists: () => value !== null, data: () => value,
     metadata: { fromCache: false, hasPendingWrites: false } })
   let currentPolicy = null
