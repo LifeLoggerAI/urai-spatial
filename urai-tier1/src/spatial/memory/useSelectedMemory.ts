@@ -153,6 +153,9 @@ export function useSelectedMemory(): SelectedMemoryResult {
       let c1ReceiptHash = ''
       let deletionFenceReady = false
       let deletionFenceGeneration = -1
+      // The server increments this epoch when deletion begins and never resets it.
+      // Keep the highest observed epoch even while a deletion fence is pending.
+      let highestDeletionFenceGeneration = -1
       let deletionFenceListenerFailed = false
       const suspendForDeletion = (message: string, status: 'unauthorized' | 'unavailable' = 'unauthorized') => {
         deletionFenceReady = false
@@ -394,11 +397,23 @@ export function useSelectedMemory(): SelectedMemoryResult {
                 return
               }
               generation = value.generation
+              if (generation < highestDeletionFenceGeneration) {
+                suspendForDeletion('Private memory deletion authority has regressed.', 'unavailable')
+                return
+              }
+              highestDeletionFenceGeneration = generation
               if (Object.keys(pending).length > 0) {
                 suspendForDeletion('A private memory deletion is pending.')
                 return
               }
             }
+            // A missing document maps to generation zero for first-time owners,
+            // but must never erase a previously observed higher deletion epoch.
+            if (generation < highestDeletionFenceGeneration) {
+              suspendForDeletion('Private memory deletion authority has regressed.', 'unavailable')
+              return
+            }
+            highestDeletionFenceGeneration = generation
             if (deletionFenceReady && generation !== deletionFenceGeneration) {
               detachMemory()
               setResult(LOADING)
