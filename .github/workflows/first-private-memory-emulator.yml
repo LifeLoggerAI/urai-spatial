@@ -8,6 +8,16 @@ on:
       - 'scripts/run-first-private-memory-emulator.mjs'
       - 'urai-tier1/src/lib/privacy/importFirstPreparedMemory.ts'
       - 'urai-tier1/tests/import-first-prepared-memory.test.mjs'
+      - 'firebase/firestore.rules'
+      - 'firebase/storage.rules'
+      - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
+      - 'urai-tier1/src/spatial/memory/selectedMemoryContract.ts'
+      - 'urai-tier1/src/app/privacy-controls/consentModel.ts'
+      - 'urai-tier1/tests/selected-memory-*.test.mjs'
+      - 'urai-tier1/tests/first-private-memory-*.test.mjs'
+      - 'urai-tier1/tests/consent-policy-validation.test.mjs'
+      - 'urai-tier1/tests/private-file-integrity-cross-platform.test.mjs'
+      - 'urai-tier1/tests/prepare-first-private-memory.test.mjs'
       - 'package.json'
       - 'pnpm-lock.yaml'
   push:
@@ -20,6 +30,16 @@ on:
       - 'scripts/run-first-private-memory-emulator.mjs'
       - 'urai-tier1/src/lib/privacy/importFirstPreparedMemory.ts'
       - 'urai-tier1/tests/import-first-prepared-memory.test.mjs'
+      - 'firebase/firestore.rules'
+      - 'firebase/storage.rules'
+      - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
+      - 'urai-tier1/src/spatial/memory/selectedMemoryContract.ts'
+      - 'urai-tier1/src/app/privacy-controls/consentModel.ts'
+      - 'urai-tier1/tests/selected-memory-*.test.mjs'
+      - 'urai-tier1/tests/first-private-memory-*.test.mjs'
+      - 'urai-tier1/tests/consent-policy-validation.test.mjs'
+      - 'urai-tier1/tests/private-file-integrity-cross-platform.test.mjs'
+      - 'urai-tier1/tests/prepare-first-private-memory.test.mjs'
       - 'package.json'
       - 'pnpm-lock.yaml'
   workflow_dispatch:
@@ -57,7 +77,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/urai-first-memory"
           git rev-parse HEAD > "$RUNNER_TEMP/urai-first-memory/exact-head.txt"
           git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/urai-first-memory/exact-tree.txt"
-          sha256sum scripts/run-first-private-memory-emulator.mjs apps/functions/scripts/first-private-memory-emulator-proof.cjs apps/functions/src/createFirstPrivateMemory.ts urai-tier1/src/lib/privacy/importFirstPreparedMemory.ts > "$RUNNER_TEMP/urai-first-memory/source-files.sha256"
+          sha256sum scripts/run-first-private-memory-emulator.mjs apps/functions/scripts/first-private-memory-emulator-proof.cjs apps/functions/src/createFirstPrivateMemory.ts urai-tier1/src/lib/privacy/importFirstPreparedMemory.ts urai-tier1/src/spatial/memory/useSelectedMemory.ts urai-tier1/src/spatial/memory/selectedMemoryContract.ts urai-tier1/src/app/privacy-controls/consentModel.ts urai-tier1/tests/selected-memory-server-confirmation.test.mjs firebase/firestore.rules firebase/storage.rules > "$RUNNER_TEMP/urai-first-memory/source-files.sha256"
       - name: Set up Java 21
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
         with:
@@ -89,6 +109,11 @@ jobs:
           set -euo pipefail
           pnpm --dir urai-tier1 exec node --import tsx --test tests/import-first-prepared-memory.test.mjs 2>&1 | tee "$RUNNER_TEMP/urai-first-memory/importer-test.tap"
           pnpm --filter urai-functions test 2>&1 | tee "$RUNNER_TEMP/urai-first-memory/functions-test.tap"
+      - name: Run selected-memory C1 consent and private-source regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir urai-tier1 exec node --test tests/selected-memory-server-confirmation.test.mjs tests/selected-memory-canonical-route.test.mjs tests/selected-memory-live-lifecycle.test.mjs tests/selected-memory-runtime-bucket-guard.test.mjs tests/selected-memory-url-origin-fence.test.mjs tests/first-private-memory-activation-panel.contract.test.mjs tests/consent-policy-validation.test.mjs tests/private-file-integrity-cross-platform.test.mjs tests/prepare-first-private-memory.test.mjs 2>&1 | tee "$RUNNER_TEMP/urai-first-memory/selected-memory-c1-tests.tap"
       - name: Run local real Auth Firestore Functions emulator
         # Preserve the independent Firebase receipt even if a maintained test fails.
         # Neither failure is waived; the failing test step keeps the job red.
@@ -105,7 +130,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: first-memory-emulator-${{ github.sha }}-${{ github.run_id }}
+          name: first-memory-emulator-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}
           path: ${{ runner.temp }}/urai-first-memory
           if-no-files-found: warn
           retention-days: 14
