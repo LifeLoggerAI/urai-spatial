@@ -8,7 +8,7 @@ import ts from 'typescript'
 const code = fs.readFileSync(new URL('../src/spatial/memory/useSelectedMemory.ts', import.meta.url), 'utf8')
 const js = ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
 
-function fixture() {
+function fixture({ failPolicySubscribe = false, failMemorySubscribe = false } = {}) {
   const state = [], effects = [], listeners = []
   let cursor = 0, auth, dirty
   const react = {
@@ -33,6 +33,10 @@ function fixture() {
         assert.equal(options.includeMetadataChanges, true, 'metadata-only server confirmation is mandatory')
         const listener = { ref, receive, error, stopped: false }
         listeners.push(listener)
+        if ((ref.includes('privacyPolicy') && failPolicySubscribe) ||
+            (ref.includes('memories') && failMemorySubscribe)) {
+          throw new Error('synthetic subscriber initialization failure')
+        }
         return () => { listener.stopped = true }
       },
     },
@@ -210,5 +214,32 @@ test('terminal policy listener error never re-admits a stale grant callback', ()
       metadata: { fromCache: false, hasPendingWrites: false } })
     assert.equal(h.status().memory, null)
     assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
+  } finally { h.cleanup() }
+})
+
+
+test('synchronously failed policy subscription cannot admit a late queued consent grant', () => {
+  const h = fixture({ failPolicySubscribe: true })
+  try {
+    assert.equal(h.status().status, 'unavailable')
+    assert.equal(h.status().memory, null)
+    const policy = h.listeners.find(x => x.ref.includes('privacyPolicy'))
+    assert.ok(policy)
+    policy.receive({ exists: () => true, data: () => h.policy,
+      metadata: { fromCache: false, hasPendingWrites: false } })
+    assert.equal(h.status().memory, null)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
+  } finally { h.cleanup() }
+})
+
+test('synchronously failed memory subscription cannot display a late queued private source', () => {
+  const h = fixture({ failMemorySubscribe: true })
+  try {
+    assert.equal(h.send('privacyPolicy', h.policy).status, 'unavailable')
+    const old = h.listeners.find(x => x.ref.includes('memories'))
+    assert.ok(old)
+    old.receive({ exists: () => true, data: () => ({ title: 'stale private memory' }),
+      metadata: { fromCache: false, hasPendingWrites: false } })
+    assert.equal(h.status().memory, null)
   } finally { h.cleanup() }
 })
