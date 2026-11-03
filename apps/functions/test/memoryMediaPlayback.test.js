@@ -493,3 +493,13 @@ for (const status of ['granted', 'revoked']) test('canonical C7 ' + status + ' p
   const result = await f.handler.getMemoryMediaUploadAuthority({ memoryId }, f.context)
   assert.equal(result.ownerId, uid); const playback = await f.descriptor(); assert.equal(playback.memoryId, memoryId)
 })
+
+
+for (const consentState of ['denied','withdrawn','expired','blocked','rejected','unknown']) {
+  test('R426 explicit memory-level consent '+consentState+' must deny private media upload and playback', async () => {
+    const f=fixture(); f.docs.get(memoryPath).consentState=consentState
+    await assert.rejects(f.handler.getMemoryMediaUploadAuthority({memoryId},f.context), /CURRENT_AUTHORITY_REQUIRED/)
+    await assert.rejects(f.descriptor(), /CURRENT_AUTHORITY_REQUIRED/)
+    assert.equal(f.stats.streams,0)
+  })
+}
