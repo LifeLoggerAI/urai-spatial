@@ -111,6 +111,9 @@ export function useSelectedMemory(): SelectedMemoryResult {
       setResult(LOADING)
       let currentRevision = -1
       let deniedAtRevision: number | null = null
+      // Firestore's listener error callback is terminal. Even a late queued
+      // success must never re-establish authority on this dead stream.
+      let policyListenerFailed = false
       const attachMemory = () => {
         if (!isCurrentOwner() || unsubscribeMemory) return
         const boundEpoch = ++memoryEpoch
@@ -140,6 +143,9 @@ export function useSelectedMemory(): SelectedMemoryResult {
             },
             () => {
               if (!isCurrentMemory()) return
+              // Reject any later callback from the failed source generation.
+              // A future server-confirmed policy event may attach a new listener.
+              detachMemory()
               setResult(unavailable('Selected memory could not be loaded.'))
             },
           )
@@ -154,7 +160,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
           doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current'),
           { includeMetadataChanges: true },
           (snapshot) => {
-            if (!isCurrentOwner()) return
+            if (!isCurrentOwner() || policyListenerFailed) return
             // Firestore may replay an old granted policy from the browser cache or
             // expose an uncommitted local grant. Neither is current consent authority.
             // Subscribe to metadata changes so only a server-confirmed, committed
@@ -203,6 +209,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
           },
           () => {
             if (!isCurrentOwner()) return
+            policyListenerFailed = true
             detachMemory()
             setResult(unavailable('Private memory consent authority could not be loaded.'))
           },
