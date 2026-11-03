@@ -191,3 +191,59 @@ test('malformed tombstones and unreconciled planning leases block profile creati
     await clear()
   }
 })
+
+test('profile create and update reject forged embedded owner identities', async () => {
+  const own = env.authenticatedContext(ownerId).firestore()
+  const target = profile(own)
+  await clear()
+  try {
+    for (const key of ['uid', 'userId', 'ownerId']) {
+      await assertFails(setDoc(target, { displayName: 'Forged create', [key]: otherOwnerId }))
+    }
+    await assertSucceeds(setDoc(target, { displayName: 'Valid create', uid: ownerId,
+      userId: ownerId, ownerId }))
+    for (const key of ['uid', 'userId', 'ownerId']) {
+      await assertFails(updateDoc(target, { [key]: otherOwnerId }))
+      await assertFails(setDoc(target, { displayName: 'Forged replacement',
+        uid: ownerId, userId: ownerId, ownerId, [key]: otherOwnerId }))
+    }
+    await assertSucceeds(updateDoc(target, { displayName: 'Valid update' }))
+    await seed({ displayName: 'Historical corrupted profile', uid: otherOwnerId })
+    await assertFails(updateDoc(target, { displayName: 'Cannot modify foreign-bound record' }))
+  } finally {
+    await clear()
+  }
+})
+
+test('first-time missing C1 consent read succeeds without permitting foreign or forged consent records', async () => {
+  const uid = 'fictional-consent-read-' + Date.now()
+  const own = env.authenticatedContext(uid).firestore()
+  const other = env.authenticatedContext(otherOwnerId).firestore()
+  const path = ['consentRecords', uid + '_memory_storage']
+  const record = doc(own, ...path)
+  const seedConsent = value => env.withSecurityRulesDisabled(context =>
+    setDoc(doc(context.firestore(), ...path), value))
+  const clearConsent = () => env.withSecurityRulesDisabled(context =>
+    deleteDoc(doc(context.firestore(), ...path)))
+  try {
+    await clearConsent()
+    const missing = await assertSucceeds(getDoc(record))
+    assert.equal(missing.exists(), false)
+    await assertFails(getDoc(doc(other, ...path)))
+    await assertFails(setDoc(record, { uid, status: 'granted' }))
+    await seedConsent({ uid, purpose: 'memory.storage', consentTier: 'C1',
+      policyVersion: '1.0.0', status: 'granted' })
+    assert.equal((await assertSucceeds(getDoc(record))).exists(), true)
+    for (const data of [
+      { uid: otherOwnerId, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0' },
+      { uid, purpose: 'data.export', consentTier: 'C1', policyVersion: '1.0.0' },
+      { uid, purpose: 'memory.storage', consentTier: 'C7', policyVersion: '1.0.0' },
+      { uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '0.0.0' },
+    ]) {
+      await seedConsent(data)
+      await assertFails(getDoc(record))
+    }
+  } finally {
+    await clearConsent()
+  }
+})
