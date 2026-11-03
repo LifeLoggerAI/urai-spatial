@@ -66,7 +66,7 @@ test('privacy rules end in a default-deny boundary', () => {
 // User-profile authority mutation boundary.
 const userRuleBlock = rules.match(/match \/users\/\{uid\} \{([\s\S]*?)\n\s*match \/privacyPolicy\/\{docId\}/)?.[1]
 
-const protectedFields = ['entitlementTier', 'isAdmin', 'founderOverride', 'deleted', 'accountStatus']
+const protectedFields = ["role","admin","isAdmin","legalHold","markedForDeletion","deletionMarkedAt","entitlementTier","founderOverride","deleted","accountStatus"]
 
 test('user profile create must reject every privileged and server-owned lifecycle field', () => {
   assert.ok(userRuleBlock, 'must locate canonical users/{uid} rule')
