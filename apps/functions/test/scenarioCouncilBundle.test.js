@@ -126,6 +126,17 @@ test('actual compiled Council rejects a changed evidence basis',async()=>{
   await assert.rejects(f.call(),error=>error.code==='failed-precondition')
   f.docs.get=original
 })
+for (const status of ['discarded','revoked','archived']) test('actual compiled Council refuses Scenario '+status+' between initial read and revalidation',async()=>{
+  const f=privateEvidenceFixture()
+  const original=f.docs.get.bind(f.docs)
+  let reads=0
+  f.docs.get=(key)=>{
+    if (key===prefix && ++reads===2) return {...original(key),status}
+    return original(key)
+  }
+  await assert.rejects(f.call(),error=>error.code==='failed-precondition' &&
+    error.message==='SCENARIO_COUNCIL_BASIS_UNAVAILABLE')
+})
 test('actual compiled Council admits current owner-scoped person evidence',async()=>{
   const f=privateEvidenceFixture('interpretation')
   const out=await f.call()
