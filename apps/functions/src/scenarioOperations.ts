@@ -289,12 +289,17 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
       throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_SOURCE_REFERENCE_INVALID')
     }
     await db.runTransaction(async tx => {
-      const [currentBasis, policySnap, ...liveSources] = await Promise.all([
+      const [currentScenario, currentBasis, policySnap, ...liveSources] = await Promise.all([
+        tx.get(ref),
         tx.get(ref.collection('basis').doc('current')),
         tx.get(db.doc(`users/${ownerId}/privacyPolicy/current`)),
         ...sources.map(source => tx.get(db.doc(source.path))),
       ])
       const policy = policySnap.exists ? policySnap.data() : undefined
+      if (!currentScenario.exists || currentScenario.get('ownerId') !== ownerId
+        || ['discarded', 'revoked', 'archived'].includes(String(currentScenario.get('status') ?? ''))) {
+        throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_BASIS_UNAVAILABLE')
+      }
       if (!currentBasis.exists || JSON.stringify(currentBasis.get('evidenceRefs')) !== JSON.stringify(evidenceRefs)
         || currentBasis.get('ownerId') !== ownerId) {
         throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_BASIS_CHANGED')
