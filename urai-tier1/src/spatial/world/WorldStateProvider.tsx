@@ -10,6 +10,10 @@ import {
   type ReactNode,
 } from 'react'
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { httpsCallable } from 'firebase/functions'
+import { app, functions } from '@/lib/firebase/client'
+import { projectLifeGraphEvidence, type LifeGraphWorldProjection } from './lifeGraphWorldProjection'
 import {
   definitionForDestination,
   destinationForPathname,
@@ -32,6 +36,7 @@ type RuntimeState = {
   world: UraiWorldState
   phase: UraiTransitionPhase
   pendingTravel?: UraiWorldTravelRequest
+  graphView?: LifeGraphWorldProjection
 }
 
 type RuntimeAction =
@@ -39,11 +44,14 @@ type RuntimeAction =
   | { type: 'BEGIN_TRAVEL'; request: UraiWorldTravelRequest; phase: UraiTransitionPhase }
   | { type: 'CANCEL_TRANSITION' }
   | { type: 'PATCH_CONTEXT'; patch: UraiWorldContextPatch }
+  | { type: 'LOAD_GRAPH_VIEW'; view: LifeGraphWorldProjection }
+  | { type: 'CLEAR_GRAPH_VIEW' }
 
 type UraiWorldContextValue = RuntimeState & {
   beginTravel: (request: UraiWorldTravelRequest) => void
   cancelTransition: () => void
   patchContext: (patch: UraiWorldContextPatch) => void
+  loadGraphView: (snapshotId: string, entityIds: string[]) => Promise<LifeGraphWorldProjection>
 }
 
 const UraiWorldContext = createContext<UraiWorldContextValue | null>(null)
@@ -193,6 +201,12 @@ function reducer(state: RuntimeState, action: RuntimeAction): RuntimeState {
     }
   }
 
+  if (action.type === 'LOAD_GRAPH_VIEW') {
+    return { ...state, graphView: action.view }
+  }
+  if (action.type === 'CLEAR_GRAPH_VIEW') {
+    return { ...state, graphView: undefined }
+  }
   if (action.type === 'PATCH_CONTEXT') {
     return { ...state, world: { ...state.world, ...action.patch } }
   }
