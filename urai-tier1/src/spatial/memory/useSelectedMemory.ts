@@ -70,10 +70,10 @@ export function useSelectedMemory(): SelectedMemoryResult {
     : null
   const viewingReplay = location.split('?')[0].split('#')[0].replace(/\/+$/, '') === '/replay'
   const selectionKey = JSON.stringify([memoryId, manifestId, requestedDemoMemoryId, viewingReplay])
-  const [selection, setSelection] = useState<{ key: string; result: SelectedMemoryResult }>({ key: '', result: LOADING })
+  const [selection, setSelection] = useState<{ key: string; result: SelectedMemoryResult; privateExpiresAt?: number }>({ key: '', result: LOADING })
 
   useEffect(() => {
-    const setResult = (result: SelectedMemoryResult) => setSelection({ key: selectionKey, result })
+    const setResult = (result: SelectedMemoryResult, privateExpiresAt?: number) => setSelection({ key: selectionKey, result, privateExpiresAt })
     let cancelled = false
     let actorEpoch = 0
     let memoryEpoch = 0
@@ -200,7 +200,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
                 setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this memory.' })
                 return
               }
-              setResult(parsed)
+              setResult(parsed, parsed.status === 'ready' ? c1ExpiresAt : undefined)
             },
             () => {
               if (!isCurrentMemory()) return
@@ -344,5 +344,13 @@ export function useSelectedMemory(): SelectedMemoryResult {
 
   // Query navigation can reuse the mounted client. Never render the previous
   // selection during the frame before its subscription effect is replaced.
-  return selection.key === selectionKey ? selection.result : LOADING
+  if (selection.key !== selectionKey) return LOADING
+  // Background browsers may suspend timers. A render must never return a
+  // previously authorized private source after its C1 grant has expired.
+  // The subscription expiry timer still detaches the listener when it runs.
+  if (selection.result.status === 'ready' &&
+    (!selection.privateExpiresAt || selection.privateExpiresAt <= Date.now())) {
+    return { status: 'unauthorized', memory: null, message: 'Memory storage consent has expired or is unavailable.' }
+  }
+  return selection.result
 }
