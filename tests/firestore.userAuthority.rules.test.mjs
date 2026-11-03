@@ -156,3 +156,38 @@ test('canonical root deletion tombstone fences profile create and update and rem
     await clear()
   }
 })
+
+test('malformed tombstones and unreconciled planning leases block profile creation and updates', async () => {
+  const owner = env.authenticatedContext(ownerId).firestore()
+  const target = profile(owner)
+  const barrier = doc(owner, 'privacyDeletionTombstones', ownerId)
+  const setFence = (entry) => env.withSecurityRulesDisabled((context) =>
+    setDoc(doc(context.firestore(), 'privacyDeletionTombstones', ownerId), { uid: ownerId, ...entry }))
+  const removeFence = () => env.withSecurityRulesDisabled((context) =>
+    deleteDoc(doc(context.firestore(), 'privacyDeletionTombstones', ownerId)))
+  const invalid = [
+    {}, { active: null }, { active: 'false' }, { active: 0 }, { active: true },
+    { active: false, deletionPlanningLeaseToken: 'unresolved-lease' },
+    { active: false, deletionPlanningLeaseUntil: '2026-11-03T05:00:00.000Z' },
+    { active: false, deletionPlanningLeaseRequestId: 'request-pending' },
+    { active: false, deletionPlanningLeaseOperation: 'pending' },
+    { active: false, deletionPlanningLeaseBy: 'reviewer' },
+  ]
+  try {
+    for (const [index, tombstone] of invalid.entries()) {
+      await clear()
+      await setFence(tombstone)
+      await assertFails(setDoc(target, { displayName: 'Blocked create ' + index }))
+      await seed({ displayName: 'Server-established' })
+      await assertFails(updateDoc(target, { displayName: 'Blocked update ' + index }))
+      await assertFails(getDoc(barrier))
+    }
+    await setFence({ active: false })
+    await assertSucceeds(updateDoc(target, { displayName: 'Allowed only when explicitly inactive' }))
+    await removeFence()
+    await assertSucceeds(updateDoc(target, { displayName: 'Allowed with no tombstone' }))
+  } finally {
+    await removeFence()
+    await clear()
+  }
+})

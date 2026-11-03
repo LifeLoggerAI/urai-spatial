@@ -93,10 +93,7 @@ test('profile ownership, private-payload protection and default-deny remain in p
   assert.match(userRuleBlock, /allow delete: if false;/)
 })
 
-test('owner profile writes must obey canonical Privacy deletion tombstones', () => {
-  assert.match(rules, /function deletionFenceIsInactive\(uid\)/)
-  assert.match(rules, /!exists\(\/databases\/\$\(database\)\/documents\/privacyDeletionTombstones\/\$\(uid\)\)/)
-  assert.match(rules, /get\(\/databases\/\$\(database\)\/documents\/privacyDeletionTombstones\/\$\(uid\)\)\.data\.active != true/)
+test('owner profiles require explicitly inactive Privacy tombstones with no outstanding deletion leases', () => {
   assert.ok(userRuleBlock, 'canonical users/{uid} rule must exist')
   const create = userRuleBlock.match(/allow create: if ([\s\S]*?);/)?.[1]
   const update = userRuleBlock.match(/allow update: if ([\s\S]*?);/)?.[1]
@@ -105,4 +102,15 @@ test('owner profile writes must obey canonical Privacy deletion tombstones', () 
   assert.match(create, /&& deletionFenceIsInactive\(uid\)/)
   assert.match(update, /&& deletionFenceIsInactive\(uid\)/)
   assert.match(userRuleBlock, /allow delete: if false;/)
+
+  const fence = rules.match(/function deletionFenceIsInactive\(uid\)\s*\{([\s\S]*?)\n\s*\}/)?.[1] ?? ''
+  assert.ok(fence.includes('let tombstone = /databases/$(database)/documents/privacyDeletionTombstones/$(uid);'))
+  assert.ok(fence.includes('!exists(tombstone)'))
+  assert.ok(fence.includes("get(tombstone).data.get('active', null) == false"))
+  assert.ok(fence.includes('!get(tombstone).data.keys().hasAny(['))
+  assert.ok(!fence.includes('.data.active != true'), 'nonboolean tombstones must deny')
+  for (const key of ['deletionPlanningLeaseToken','deletionPlanningLeaseUntil',
+      'deletionPlanningLeaseRequestId','deletionPlanningLeaseOperation','deletionPlanningLeaseBy']) {
+    assert.ok(fence.includes("'" + key + "'"), 'missing deletion-planning lease: ' + key)
+  }
 })

@@ -7,8 +7,17 @@ service cloud.firestore {
     // Preserve Privacy's canonical root deletion fence for owner profile writes.
     // The marker is server-owned and not writable or readable by clients.
     function deletionFenceIsInactive(uid) {
-      return !exists(/databases/$(database)/documents/privacyDeletionTombstones/$(uid))
-        || get(/databases/$(database)/documents/privacyDeletionTombstones/$(uid)).data.active != true;
+      let tombstone = /databases/$(database)/documents/privacyDeletionTombstones/$(uid);
+      return !exists(tombstone) || (
+        get(tombstone).data.get('active', null) == false
+        && !get(tombstone).data.keys().hasAny([
+          'deletionPlanningLeaseToken',
+          'deletionPlanningLeaseUntil',
+          'deletionPlanningLeaseRequestId',
+          'deletionPlanningLeaseOperation',
+          'deletionPlanningLeaseBy'
+        ])
+      );
     }
     function isAdmin() {
       return isSignedIn() && (request.auth.token.admin == true || request.auth.token.founder == true);
