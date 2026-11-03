@@ -29,3 +29,14 @@ Date: 2026-11-03. Scope: one isolated, source-bound proof repair on the existing
 4. Keep public launch NO-GO / HOLD pending original release-controller review, private E2E, literal visual/device evidence, and protected production acceptance.
 
 This child must remain draft and must not be merged directly to production or used as approval to activate providers.
+
+
+## Continuation — source-admission repair (2026-11-03)
+- Reused the original `resolveAuthorizedScenarioEvidence` transactional reader. **No alternate evidence service or duplicate scenario API** was introduced.
+- Found that `memories/{id}` and `lifeEntities/{id}` were admitted for scenario use upon `exists` without consistent owner, deleted/demo/synthetic/revoked, or entity-kind checks.
+- Added fail-closed checks before references are added: memory `ownerId ?? userId`, `deleted`, `demo`, `synthetic`, `consentState` pending/revoked; entity `ownerId`, selected `kind`, `revoked`, `synthetic`, `status` superseded/revoked.
+- Repaired the existing compiled-VM test fixture to use current owned records (instead of previously synthetic records) and Firestore `get(key)` snapshot access.
+- Added a synthetic negative test matrix for revoked, deleted, demo, synthetic, foreign-owner, wrong-kind and superseded selections; one test forbids an explicit invalid record from silently falling back to assumption-only; one positive test preserves three admitted records.
+- Scope remains a **metadata filter**, not a full proof of graph fixity, private-source receipts, lineage, durable revocation propagation, provider calibration, or a live persistent-world release.
+- Node 22 typecheck, original compiled Functions VM tests and the full E2E/consent lifecycle remain **not run / not passing**. At prior PR head `1fff231763fa92c64dca7a91a4230bc4a3b699fc`, scenario workflow run 41603811770 returned failed with zero job steps, no retrievable log. This is unclassified infrastructure/test admission evidence, not proof of a source failure or success.
+- Next: verify exact new head in admitted Node22 environment; inspect new runner logs (do not bypass release gates); then integrate canonical graph snapshot provenance using the existing Life Graph authority, not a parallel store.
