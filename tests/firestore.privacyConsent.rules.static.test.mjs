@@ -92,3 +92,17 @@ test('profile ownership, private-payload protection and default-deny remain in p
   assert.equal((userRuleBlock.match(/&& isPrivateSpatialPayloadSafe\(\)/g) ?? []).length, 2)
   assert.match(userRuleBlock, /allow delete: if false;/)
 })
+
+test('owner profile writes must obey canonical Privacy deletion tombstones', () => {
+  assert.match(rules, /function deletionFenceIsInactive\(uid\)/)
+  assert.match(rules, /!exists\(\/databases\/\$\(database\)\/documents\/privacyDeletionTombstones\/\$\(uid\)\)/)
+  assert.match(rules, /get\(\/databases\/\$\(database\)\/documents\/privacyDeletionTombstones\/\$\(uid\)\)\.data\.active != true/)
+  assert.ok(userRuleBlock, 'canonical users/{uid} rule must exist')
+  const create = userRuleBlock.match(/allow create: if ([\s\S]*?);/)?.[1]
+  const update = userRuleBlock.match(/allow update: if ([\s\S]*?);/)?.[1]
+  assert.ok(create)
+  assert.ok(update)
+  assert.match(create, /&& deletionFenceIsInactive\(uid\)/)
+  assert.match(update, /&& deletionFenceIsInactive\(uid\)/)
+  assert.match(userRuleBlock, /allow delete: if false;/)
+})
