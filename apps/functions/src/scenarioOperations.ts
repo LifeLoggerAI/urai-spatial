@@ -149,7 +149,11 @@ export const createPossibleFuture = functions.https.onCall(async (data, context)
       truthKind: 'scenario', createdAt: now, updatedAt: now,
     })
     tx.create(ref.collection('basis').doc('current'), {
-      schemaVersion: 1, id: basisId, ownerId, revision: 1, worldRevision: String(data?.worldRevision ?? 'unknown'),
+      // The browser cannot attest a canonical world snapshot revision. Bind the evidence scope
+      // separately and keep world revision explicitly unverified until a trusted compiler supplies it.
+      schemaVersion: 1, id: basisId, ownerId, revision: 1, worldRevision: 'unverified',
+      worldRevisionVerified: false,
+      evidenceScopeDigest: createHash('sha256').update(JSON.stringify(evidenceRefs)).digest('hex'),
       capturedAt: now, evidenceRefs, excludedEvidence, permissionReceiptIds, assumptionOnly, immutable: true,
     })
     tx.create(receiptRef, { receiptId, ownerId, kind: 'scenario-create', domain: 'possible-futures', purpose: SCENARIO_PURPOSE, scenarioId, operationId: op, assumptionOnly, result: 'created', createdAt: now, updatedAt: now })
