@@ -8,7 +8,7 @@ import ts from 'typescript'
 const code = fs.readFileSync(new URL('../src/spatial/memory/useSelectedMemory.ts', import.meta.url), 'utf8')
 const js = ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
 
-function fixture({ failPolicySubscribe = false, failMemorySubscribe = false } = {}) {
+function fixture({ failPolicySubscribe = false, failMemorySubscribe = false, failC1Subscribe = false, seedC1 = true } = {}) {
   const state = [], effects = [], listeners = []
   let cursor = 0, auth, dirty
   const react = {
@@ -34,7 +34,8 @@ function fixture({ failPolicySubscribe = false, failMemorySubscribe = false } = 
         const listener = { ref, receive, error, stopped: false }
         listeners.push(listener)
         if ((ref.includes('privacyPolicy') && failPolicySubscribe) ||
-            (ref.includes('memories') && failMemorySubscribe)) {
+            (ref.includes('memories') && failMemorySubscribe) ||
+            (ref.includes('consentRecords') && failC1Subscribe)) {
           throw new Error('synthetic subscriber initialization failure')
         }
         return () => { listener.stopped = true }
@@ -60,6 +61,12 @@ function fixture({ failPolicySubscribe = false, failMemorySubscribe = false } = 
     exists: () => value !== null, data: () => value,
     metadata: { fromCache, hasPendingWrites: pending },
   })
+  const grant = { uid: 'synthetic-owner', purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: 'a'.repeat(64), expiresAt: new Date(Date.now() + 3600000).toISOString() }
+  if (seedC1) {
+    const c1 = listeners.find(x => x.ref.includes('consentRecords'))
+    assert.ok(c1)
+    c1.receive(snapshot(grant, false))
+  }
   const policy = { ownerId: 'synthetic-owner', revision: 1, domains: { memory: { mode: 'granted', lifeMapVisible: true, replayVisible: true } }, enforcement: { state: 'fully-enforced' } }
   const send = (name, value, fromCache = false, pending = false) => {
     const match = listeners.filter(x => x.ref.includes(name)).at(-1)
@@ -68,7 +75,7 @@ function fixture({ failPolicySubscribe = false, failMemorySubscribe = false } = 
     cursor = 0; dirty = false
     return module.exports.useSelectedMemory()
   }
-  return { listeners, policy, send, cleanup, status: () => { cursor = 0; return module.exports.useSelectedMemory() } }
+  return { listeners, policy, grant, send, cleanup, status: () => { cursor = 0; return module.exports.useSelectedMemory() } }
 }
 
 test('cache-only and locally pending consent grants never start private memory listeners', () => {
@@ -241,5 +248,97 @@ test('synchronously failed memory subscription cannot display a late queued priv
     old.receive({ exists: () => true, data: () => ({ title: 'stale private memory' }),
       metadata: { fromCache: false, hasPendingWrites: false } })
     assert.equal(h.status().memory, null)
+  } finally { h.cleanup() }
+})
+
+test('C1 must be separately confirmed before a granted policy starts private memory', () => {
+  const h = fixture({ seedC1: false })
+  try {
+    assert.equal(h.send('privacyPolicy', h.policy).status, 'loading')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
+    assert.equal(h.send('consentRecords', h.grant, true).status, 'unavailable')
+    assert.equal(h.send('consentRecords', h.grant, false, true).status, 'unavailable')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
+    assert.equal(h.send('consentRecords', h.grant).status, 'loading')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
+    assert.equal(h.send('memories', { title: 'authorized private source' }).status, 'ready')
+  } finally { h.cleanup() }
+})
+
+test('C1 withdrawal clears an already visible memory and fences queued private source callbacks', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    h.send('memories', { title: 'private original' })
+    const old = h.listeners.find(x => x.ref.includes('memories'))
+    assert.equal(h.send('consentRecords', { ...h.grant, status: 'revoked' }).status, 'unauthorized')
+    assert.equal(h.status().memory, null)
+    assert.equal(old.stopped, true)
+    old.receive({ exists: () => true, data: () => ({ title: 'late private callback' }),
+      metadata: { fromCache: false, hasPendingWrites: false } })
+    assert.equal(h.status().memory, null)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
+    assert.equal(h.send('privacyPolicy', h.policy).status, 'unauthorized')
+    assert.equal(h.send('consentRecords', { ...h.grant, receiptHash: 'b'.repeat(64) }).status, 'loading')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 2)
+    assert.equal(h.send('memories', { title: 'newly authorized source' }).status, 'ready')
+  } finally { h.cleanup() }
+})
+
+test('C1 cache downgrade immediately hides a previously server-confirmed private memory', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    assert.equal(h.send('memories', { title: 'private original' }).status, 'ready')
+    const old = h.listeners.find(x => x.ref.includes('memories'))
+    assert.equal(h.send('consentRecords', h.grant, true).status, 'unavailable')
+    assert.equal(h.status().memory, null)
+    assert.equal(old.stopped, true)
+  } finally { h.cleanup() }
+})
+
+test('malformed, foreign, missing, and expired C1 records cannot grant private memory', () => {
+  const bad = [
+    null, { ...fixture().grant, uid: 'another-owner' },
+    { ...fixture().grant, consentTier: 'C7' },
+    { ...fixture().grant, purpose: 'data.export' },
+    { ...fixture().grant, policyVersion: '0.9.0' },
+    { ...fixture().grant, receiptHash: 'invalid' },
+    { ...fixture().grant, expiresAt: new Date(Date.now() - 1000).toISOString() },
+    { ...fixture().grant, expiresAt: 'not-a-time' },
+  ]
+  for (const grant of bad) {
+    const h = fixture({ seedC1: false })
+    try {
+      h.send('privacyPolicy', h.policy)
+      const result = h.send('consentRecords', grant)
+      assert.equal(result.status, 'unauthorized')
+      assert.equal(result.memory, null)
+      assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
+    } finally { h.cleanup() }
+  }
+})
+
+test('limited memory policy cannot substitute for the protected backend granted mode', () => {
+  const h = fixture()
+  try {
+    const limited = { ...h.policy, domains: { memory: { ...h.policy.domains.memory, mode: 'limited' } } }
+    assert.equal(h.send('privacyPolicy', limited).status, 'unauthorized')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
+    assert.equal(h.send('privacyPolicy', { ...h.policy, revision: 2 }).status, 'loading')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
+  } finally { h.cleanup() }
+})
+
+test('failed C1 listener cannot reauthorize memory through a late success callback', () => {
+  const h = fixture({ failC1Subscribe: true, seedC1: false })
+  try {
+    assert.equal(h.status().status, 'unavailable')
+    h.send('privacyPolicy', h.policy)
+    const late = h.listeners.find(x => x.ref.includes('consentRecords'))
+    late.receive({ exists: () => true, data: () => h.grant,
+      metadata: { fromCache: false, hasPendingWrites: false } })
+    assert.equal(h.status().memory, null)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
   } finally { h.cleanup() }
 })
