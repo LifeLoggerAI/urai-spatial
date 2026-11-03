@@ -131,7 +131,7 @@ for (const status of ['discarded','revoked','archived']) test('actual compiled C
   const original=f.docs.get.bind(f.docs)
   let reads=0
   f.docs.get=(key)=>{
-    if (key===prefix && ++reads===2) return {...original(key),status}
+    if (key===prefix && ++reads===2) f.docs.set(key,{...original(key),status})
     return original(key)
   }
   await assert.rejects(f.call(),error=>error.code==='failed-precondition' &&
