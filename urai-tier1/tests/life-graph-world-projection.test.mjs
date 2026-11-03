@@ -20,6 +20,8 @@ for(const [label,patch] of Object.entries({
   anotherSnapshot:{snapshotId:'another'},
   mismatchedEntities:{entities:[{id:'different'},{id:'place_2'}]},
   tooManyEntities:{entities:[...verified.entities,{id:'extra'}]},
+  repeatedPersonInsteadOfPlace:{entities:[{id:'person_1'},{id:'person_1'}]},
+  repeatedPlaceInsteadOfPerson:{entities:[{id:'place_2'},{id:'place_2'}]},
 })) test('graph projection rejects '+label,()=>assert.throws(
   ()=>projectLifeGraphEvidence({...verified,...patch},snapshotId,entityIds),
   /LIFE_GRAPH_WORLD_PROJECTION_UNAVAILABLE/,
