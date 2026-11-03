@@ -568,3 +568,47 @@ test('terminal deletion fence listener failure permanently rejects late authorit
     assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
   } finally { h.cleanup() }
 })
+
+test('deletion fence must reject a rollback to an older generation even when server-tagged', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    h.send('memories', { title: 'private initial' })
+    assert.equal(h.send('privacyRuntime', { generation: 4, pendingDeletions: {} }).status, 'loading')
+    assert.equal(h.send('memories', { title: 'generation four' }).status, 'ready')
+    const current = h.listeners.filter(x => x.ref.includes('memories')).at(-1)
+    const rollback = h.send('privacyRuntime', { generation: 3, pendingDeletions: {} })
+    assert.equal(rollback.status, 'unavailable', 'a lower deletion generation must not grant authority')
+    assert.equal(rollback.memory, null)
+    assert.equal(current.stopped, true)
+    assert.equal(h.send('privacyRuntime', { generation: 5, pendingDeletions: {} }).status, 'loading')
+    assert.equal(h.send('memories', { title: 'generation five' }).status, 'ready')
+  } finally { h.cleanup() }
+})
+
+test('observed pending deletion generation cannot be undone by an earlier clear snapshot', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    h.send('memories', { title: 'private before deletion' })
+    assert.equal(h.send('privacyRuntime', { generation: 8, pendingDeletions: { j: true } }).status, 'unauthorized')
+    const staleClear = h.send('privacyRuntime', { generation: 7, pendingDeletions: {} })
+    assert.equal(staleClear.status, 'unavailable', 'pending generation eight must fence older clear events')
+    assert.equal(staleClear.memory, null)
+    assert.equal(h.send('privacyRuntime', { generation: 8, pendingDeletions: {} }).status, 'loading')
+    assert.equal(h.send('memories', { title: 'newly cleared source' }).status, 'ready')
+  } finally { h.cleanup() }
+})
+
+test('deleting an observed positive-generation deletion fence must not reopen private memory', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    h.send('memories', { title: 'private original' })
+    h.send('privacyRuntime', { generation: 2, pendingDeletions: {} })
+    h.send('memories', { title: 'positive-generation source' })
+    const gone = h.send('privacyRuntime', null)
+    assert.equal(gone.status, 'unavailable', 'missing fence must not reset an observed deletion epoch')
+    assert.equal(gone.memory, null)
+  } finally { h.cleanup() }
+})
