@@ -503,3 +503,19 @@ for (const consentState of ['denied','withdrawn','expired','blocked','rejected',
     assert.equal(f.stats.streams,0)
   })
 }
+
+test('R426 revoked memory flag denies media upload and playback independent of record consent state',async()=>{
+  const f=fixture()
+  f.docs.get(memoryPath).consentState='granted'
+  f.docs.get(memoryPath).revoked=true
+  await assert.rejects(f.handler.getMemoryMediaUploadAuthority({memoryId},f.context), /CURRENT_AUTHORITY_REQUIRED/)
+  await assert.rejects(f.descriptor(),/CURRENT_AUTHORITY_REQUIRED/)
+  assert.equal(f.stats.streams,0)
+})
+
+test('R426 legacy memory without local consent state remains eligible under current central C1 owner policy',async()=>{
+  const f=fixture()
+  const out=await f.descriptor()
+  assert.equal(out.memoryId,memoryId)
+  assert.equal(out.receiptId,receiptId)
+})
