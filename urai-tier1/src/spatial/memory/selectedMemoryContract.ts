@@ -215,6 +215,9 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
   if (raw.deleted === true) return { status: 'deleted', memory: null, message: 'This memory was deleted.' }
   if (raw.consentState === 'revoked') return { status: 'unauthorized', memory: null, message: 'Consent for this memory was revoked.' }
   if (raw.consentState === 'pending') return { status: 'unauthorized', memory: null, message: 'Consent for this memory is pending.' }
+  // A missing, legacy or unknown memory consent state is not affirmative owner authorization.
+  // The protected server media path requires this same explicit memory-level grant.
+  if (raw.consentState !== 'authorized') return { status: 'unauthorized', memory: null, message: 'Explicit consent for this memory is not confirmed.' }
   const ownerId = stringValue(raw.ownerId ?? raw.userId)
   if (!ownerId || ownerId !== expectedOwnerId) return { status: 'unauthorized', memory: null, message: 'This memory is not available to this account.' }
 
