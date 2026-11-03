@@ -23,7 +23,9 @@ export function projectLifeGraphEvidence(value: unknown, snapshotId: string, ent
     || !DIGEST.test(record.graphHash) || record.sourceChecked !== true
     || record.providerDispatchAuthorized !== false || !Array.isArray(record.entities)
     || record.entities.length !== entityIds.length
-    || record.entities.some(entity => !object(entity) || !entityIds.includes((entity as Record<string, unknown>).id as string))) {
+    || record.entities.some(entity => !object(entity) || !entityIds.includes((entity as Record<string, unknown>).id as string))
+    // A duplicated returned entity cannot stand in for a different requested ID.
+    || new Set(record.entities.map(entity => (entity as Record<string, unknown>).id)).size !== entityIds.length) {
     throw new Error('LIFE_GRAPH_WORLD_PROJECTION_UNAVAILABLE')
   }
   return Object.freeze({ snapshotId, graphHash: record.graphHash, entityIds: Object.freeze([...entityIds]),
