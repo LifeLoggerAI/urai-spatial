@@ -24,6 +24,28 @@ function unavailable(message: string): SelectedMemoryResult {
   return { status: 'unavailable', memory: null, message }
 }
 
+// The protected media backend requires this same canonical C1 grant. The client
+// must independently close Focus/Replay when C1 is missing or withdrawn, even
+// if a separate, previously granted privacyPolicy revision is still visible.
+function activeC1MemoryGrant(value: unknown, uid: string): { receiptHash: string; expiresAt: number } | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const record = value as Record<string, unknown>
+  if (record.uid !== uid || record.purpose !== 'memory.storage' || record.consentTier !== 'C1'
+    || record.policyVersion !== '1.0.0' || record.status !== 'granted'
+    || typeof record.receiptHash !== 'string' || !/^[a-f0-9]{64}$/.test(record.receiptHash)) return null
+  const rawExpiry = record.expiresAt
+  let expiresAt = Number.NaN
+  if (typeof rawExpiry === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(rawExpiry)) {
+    const time = Date.parse(rawExpiry)
+    if (Number.isFinite(time) && new Date(time).toISOString() === rawExpiry) expiresAt = time
+  } else if (rawExpiry && typeof rawExpiry === 'object'
+    && 'toMillis' in rawExpiry && typeof rawExpiry.toMillis === 'function') {
+    try { expiresAt = rawExpiry.toMillis() } catch { return null }
+  }
+  return Number.isSafeInteger(expiresAt) && expiresAt > Date.now()
+    ? { receiptHash: record.receiptHash, expiresAt } : null
+}
+
 function asDemoMemoryId(memoryId: string | null) {
   if (!memoryId) return null
   return memoryId.startsWith('demo:') ? memoryId : `demo:${memoryId}`
@@ -56,7 +78,9 @@ export function useSelectedMemory(): SelectedMemoryResult {
     let actorEpoch = 0
     let memoryEpoch = 0
     let unsubscribePolicy: (() => void) | undefined
+    let unsubscribeC1: (() => void) | undefined
     let unsubscribeMemory: (() => void) | undefined
+    let c1ExpiryTimer: ReturnType<typeof setTimeout> | undefined
 
     // Every detached source invalidates queued callbacks before unsubscribe.
     // Actor and policy generations are both checked before private content is
@@ -70,9 +94,14 @@ export function useSelectedMemory(): SelectedMemoryResult {
     const detachActor = () => {
       actorEpoch += 1
       detachMemory()
+      if (c1ExpiryTimer !== undefined) clearTimeout(c1ExpiryTimer)
+      c1ExpiryTimer = undefined
       const unsubscribe = unsubscribePolicy
+      const unsubscribeGrant = unsubscribeC1
       unsubscribePolicy = undefined
+      unsubscribeC1 = undefined
       unsubscribe?.()
+      unsubscribeGrant?.()
     }
 
     if (!memoryId) {
@@ -114,8 +143,36 @@ export function useSelectedMemory(): SelectedMemoryResult {
       // Firestore's listener error callback is terminal. Even a late queued
       // success must never re-establish authority on this dead stream.
       let policyListenerFailed = false
+      let c1ListenerFailed = false
+      let policyGranted = false
+      let c1ExpiresAt = 0
+      let c1ReceiptHash = ''
+      const revokeC1 = (message: string, status: 'unauthorized' | 'unavailable' = 'unauthorized') => {
+        c1ExpiresAt = 0
+        c1ReceiptHash = ''
+        if (c1ExpiryTimer !== undefined) clearTimeout(c1ExpiryTimer)
+        c1ExpiryTimer = undefined
+        detachMemory()
+        setResult({ status, memory: null, message })
+      }
+      const watchC1Expiry = () => {
+        if (c1ExpiryTimer !== undefined) clearTimeout(c1ExpiryTimer)
+        c1ExpiryTimer = undefined
+        if (c1ExpiresAt <= 0 || typeof setTimeout !== 'function') return
+        // Browsers clamp long timers; rearm until the actual expiry is reached.
+        c1ExpiryTimer = setTimeout(() => {
+          c1ExpiryTimer = undefined
+          if (!isCurrentOwner()) return
+          if (Date.now() >= c1ExpiresAt) revokeC1('Memory storage consent has expired.')
+          else watchC1Expiry()
+        }, Math.min(Math.max(1, c1ExpiresAt - Date.now() + 1), 2_147_483_647))
+      }
       const attachMemory = () => {
-        if (!isCurrentOwner() || unsubscribeMemory) return
+        if (!isCurrentOwner() || unsubscribeMemory || !policyGranted || !c1ReceiptHash) return
+        if (c1ExpiresAt <= Date.now()) {
+          revokeC1('Memory storage consent has expired.')
+          return
+        }
         const boundEpoch = ++memoryEpoch
         const isCurrentMemory = () => isCurrentOwner() && boundEpoch === memoryEpoch
         try {
@@ -124,6 +181,10 @@ export function useSelectedMemory(): SelectedMemoryResult {
             { includeMetadataChanges: true },
             (snapshot) => {
               if (!isCurrentMemory()) return
+              if (!policyGranted || !c1ReceiptHash || c1ExpiresAt <= Date.now()) {
+                revokeC1('Current memory storage authorization is required.')
+                return
+              }
               // Never display cached or locally optimistic private memory as verified source truth.
               // A metadata-only server acknowledgement can reopen the view after reconciliation.
               if (snapshot.metadata?.fromCache !== false || snapshot.metadata?.hasPendingWrites !== false) {
@@ -169,12 +230,14 @@ export function useSelectedMemory(): SelectedMemoryResult {
             // Subscribe to metadata changes so only a server-confirmed, committed
             // revision may authorize the private memory stream.
             if (snapshot.metadata?.fromCache !== false || snapshot.metadata?.hasPendingWrites !== false) {
+              policyGranted = false
               detachMemory()
               setResult(unavailable('Private memory consent authority is awaiting live verification.'))
               return
             }
             const raw = snapshot.exists() ? snapshot.data() : undefined
             if (!isConsentPolicy(raw, user.uid)) {
+              policyGranted = false
               detachMemory()
               setResult(unavailable('Private memory consent authority is unavailable.'))
               return
@@ -182,6 +245,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
             // Never recover a revoked source from an older (possibly cached)
             // policy snapshot. A new grant needs a later canonical revision.
             if (raw.revision < currentRevision) {
+              policyGranted = false
               detachMemory()
               setResult(unavailable('Private memory consent authority is stale.'))
               return
@@ -189,9 +253,10 @@ export function useSelectedMemory(): SelectedMemoryResult {
             const memory = raw.domains.memory
             const permissionVisible = viewingReplay ? memory.replayVisible : memory.lifeMapVisible
             const allowed = raw.enforcement.state === 'fully-enforced'
-              && (memory.mode === 'granted' || memory.mode === 'limited')
+              && memory.mode === 'granted'
               && permissionVisible
             if (!allowed) {
+              policyGranted = false
               deniedAtRevision = raw.revision
               currentRevision = Math.max(currentRevision, raw.revision)
               detachMemory()
@@ -199,6 +264,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
               return
             }
             if (deniedAtRevision !== null && raw.revision <= deniedAtRevision) {
+              policyGranted = false
               detachMemory()
               setResult({ status: 'unauthorized', memory: null, message: 'A newer consent authorization is required.' })
               return
@@ -208,10 +274,12 @@ export function useSelectedMemory(): SelectedMemoryResult {
               detachMemory()
               setResult(LOADING)
             }
+            policyGranted = true
             attachMemory()
           },
           () => {
             if (!isCurrentOwner()) return
+            policyGranted = false
             policyListenerFailed = true
             detachMemory()
             setResult(unavailable('Private memory consent authority could not be loaded.'))
@@ -221,9 +289,49 @@ export function useSelectedMemory(): SelectedMemoryResult {
         if (!isCurrentOwner()) return
         // A failed policy subscription cannot ever authorize memory through
         // a queued success callback, even without an unsubscribe handle.
+        policyGranted = false
         policyListenerFailed = true
         detachMemory()
         setResult(unavailable('Private memory consent authority could not be loaded.'))
+      }
+
+      // A policy grant alone is not a current memory-storage C1 authorization.
+      // Firestore rules allow this owner to GET only its canonical C1 record.
+      try {
+        unsubscribeC1 = onSnapshot(
+          doc(getFirebaseDb(), 'consentRecords', `${user.uid}_memory_storage`),
+          { includeMetadataChanges: true },
+          (snapshot) => {
+            if (!isCurrentOwner() || c1ListenerFailed) return
+            if (snapshot.metadata?.fromCache !== false || snapshot.metadata?.hasPendingWrites !== false) {
+              revokeC1('Memory storage consent is awaiting server verification.', 'unavailable')
+              return
+            }
+            const grant = snapshot.exists() ? activeC1MemoryGrant(snapshot.data(), user.uid) : null
+            if (!grant) {
+              revokeC1('Current C1 memory storage consent is required.')
+              return
+            }
+            if (c1ReceiptHash && (c1ReceiptHash !== grant.receiptHash || c1ExpiresAt !== grant.expiresAt)) {
+              detachMemory()
+              setResult(LOADING)
+            }
+            c1ReceiptHash = grant.receiptHash
+            c1ExpiresAt = grant.expiresAt
+            watchC1Expiry()
+            if (policyGranted && !unsubscribeMemory) setResult(LOADING)
+            attachMemory()
+          },
+          () => {
+            if (!isCurrentOwner()) return
+            c1ListenerFailed = true
+            revokeC1('Memory storage consent authority could not be loaded.', 'unavailable')
+          },
+        )
+      } catch {
+        if (!isCurrentOwner()) return
+        c1ListenerFailed = true
+        revokeC1('Memory storage consent authority could not be loaded.', 'unavailable')
       }
     })
 
