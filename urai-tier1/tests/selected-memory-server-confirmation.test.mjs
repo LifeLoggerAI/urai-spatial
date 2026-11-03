@@ -30,6 +30,10 @@ function fixture({ failPolicySubscribe = false, failMemorySubscribe = false, fai
       nowMs = target
     },
     pending: () => timers.size,
+    jumpWithoutCallbacks(milliseconds) {
+      assert.ok(virtualClock)
+      nowMs += milliseconds
+    },
   }
   const setVirtualTimeout = (callback, delay) => {
     const id = ++nextTimer
@@ -420,4 +424,20 @@ test('unmount cancels pending C1 expiry and fences all private callbacks', () =>
   old.receive({ exists: () => true, data: () => ({ title: 'late private memory' }),
     metadata: { fromCache: false, hasPendingWrites: false } })
   assert.equal(h.status().memory.title, 'must disappear', 'unmounted hook state is not updated by a detached callback')
+})
+
+
+test('suspended browser timers never expose expired private memory on next render', () => {
+  const h = fixture({ virtualClock: true, seedC1: false })
+  try {
+    h.send('privacyPolicy', h.policy)
+    h.send('consentRecords', { ...h.grant, expiresAt: new Date(h.clock.now() + 100).toISOString() })
+    assert.equal(h.send('memories', { title: 'private before suspension' }).status, 'ready')
+    h.clock.jumpWithoutCallbacks(1000)
+    // A background browser tab can freeze timers. The read path must fail closed
+    // at render time even if setTimeout has not resumed yet.
+    const view = h.status()
+    assert.equal(view.status, 'unauthorized')
+    assert.equal(view.memory, null)
+  } finally { h.cleanup() }
 })
