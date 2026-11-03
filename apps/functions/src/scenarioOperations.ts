@@ -250,6 +250,26 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
   if (requestedBranchId && !branch) throw new functions.https.HttpsError('not-found', 'Scenario branch not found.')
   const basis = basisSnap.data() ?? {}
   const evidenceRefs = Array.isArray(basis.evidenceRefs) ? basis.evidenceRefs : []
+  // A historical Scenario receipt is not perpetual consent to disclose its
+  // private basis to another model. The server checks current owner authority
+  // before returning even the bounded external-provider Council context.
+  if (evidenceRefs.length) {
+    const policySnapshot = await db.doc(`users/${ownerId}/privacyPolicy/current`).get()
+    const policy = policySnapshot.exists ? policySnapshot.data() : undefined
+    if (!isCanonicalStoredPolicy(policy, ownerId) || policy.enforcement.state !== 'fully-enforced') {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_CONSENT_NOT_CURRENT')
+    }
+    if (!evidenceRefs.every((item: unknown) => {
+      if (!item || typeof item !== 'object') return false
+      const ref = item as Record<string, unknown>
+      const domain = ref.truthKind === 'autobiographical-memory' ? policy.domains.memory : policy.domains.models
+      return ref.sourceRevision === policy.revision
+        && domain.modelContext === true
+        && ['granted', 'limited'].includes(domain.mode)
+    })) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_COUNCIL_EVIDENCE_REAUTHORIZATION_REQUIRED')
+    }
+  }
   const evidenceKinds = [...new Set(evidenceRefs.map((entry: unknown) =>
     entry && typeof entry === 'object' ? String((entry as Record<string, unknown>).truthKind ?? 'unknown') : 'unknown'
   ))].slice(0, 8)
