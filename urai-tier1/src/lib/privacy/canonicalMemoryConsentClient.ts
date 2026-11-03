@@ -58,26 +58,53 @@ export function watchCanonicalMemoryConsent(
   }
   let active = true
   let failed = false
+  let expiryTimer: ReturnType<typeof setTimeout> | undefined
+  const cancelExpiry = () => {
+    if (expiryTimer !== undefined) clearTimeout(expiryTimer)
+    expiryTimer = undefined
+  }
+  // A live Firestore snapshot does not guarantee another event at expiresAt.
+  // Recheck the wall clock, including after long browser timer clamps, so a
+  // previously authorized UI cannot continue reporting a stale C1 grant.
+  const scheduleExpiry = (state: CanonicalMemoryConsentState) => {
+    if (state.status !== 'granted' || !state.expiresAt) return
+    const expiresAt = Date.parse(state.expiresAt)
+    const tick = () => {
+      expiryTimer = undefined
+      if (!active || failed || !sameOwner(uid)) return
+      if (Date.now() >= expiresAt) {
+        onState({ ...state, status: 'expired' })
+      } else {
+        scheduleExpiry(state)
+      }
+    }
+    expiryTimer = setTimeout(tick, Math.min(Math.max(1, expiresAt - Date.now() + 1), 2_147_483_647))
+  }
+  const publish = (state: CanonicalMemoryConsentState) => {
+    cancelExpiry()
+    scheduleExpiry(state)
+    onState(state)
+  }
   try {
     const stop = onSnapshot(memoryConsentRef(uid), { includeMetadataChanges: true }, (snapshot) => {
       if (!active || failed || !sameOwner(uid)) return
       if (snapshot.metadata?.fromCache !== false || snapshot.metadata?.hasPendingWrites !== false) {
-        onState(UNKNOWN)
+        publish(UNKNOWN)
         return
       }
-      onState(snapshot.exists() ? parseCanonicalMemoryConsent(snapshot.data(), uid) : {
+      publish(snapshot.exists() ? parseCanonicalMemoryConsent(snapshot.data(), uid) : {
         status: 'missing', receiptHash: null, expiresAt: null,
       })
     }, () => {
       if (!active) return
       failed = true
-      onState(UNKNOWN)
+      publish(UNKNOWN)
     })
-    return () => { active = false; stop() }
+    return () => { active = false; cancelExpiry(); stop() }
   } catch {
     failed = true
-    onState(UNKNOWN)
-    return () => { active = false }
+    publish(UNKNOWN)
+    return () => { active = false; cancelExpiry() }
   }
 }
 
