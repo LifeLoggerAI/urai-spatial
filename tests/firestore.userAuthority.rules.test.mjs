@@ -127,3 +127,32 @@ test('setDoc merge cannot add or modify protected fields, but normal owner merge
   assert.equal(current.entitlementTier, 'free')
   assert.equal(current.accountStatus, 'active')
 })
+
+test('canonical root deletion tombstone fences profile create and update and remains unreadable', async () => {
+  const owner = env.authenticatedContext(ownerId).firestore()
+  const barrier = doc(owner, 'privacyDeletionTombstones', ownerId)
+  const adminBarrier = doc(env.unauthenticatedContext().firestore(), 'privacyDeletionTombstones', ownerId)
+  const seedFence = async (active) => env.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore()
+    await setDoc(doc(db, 'privacyDeletionTombstones', ownerId), { uid: ownerId, active })
+  })
+  const dropFence = async () => env.withSecurityRulesDisabled(async (context) =>
+    deleteDoc(doc(context.firestore(), 'privacyDeletionTombstones', ownerId)))
+  try {
+    await clear()
+    await seedFence(true)
+    await assertFails(setDoc(profile(owner), { displayName: 'Blocked create' }))
+    await seed({ displayName: 'Server established' })
+    await assertFails(updateDoc(profile(owner), { displayName: 'Blocked update' }))
+    await assertFails(getDoc(barrier))
+    await assertFails(getDoc(adminBarrier))
+    await assertFails(setDoc(barrier, { uid: ownerId, active: false }))
+    await seedFence(false)
+    await assertSucceeds(updateDoc(profile(owner), { displayName: 'Allowed after cleared fence' }))
+    await dropFence()
+    await assertSucceeds(updateDoc(profile(owner), { displayName: 'Allowed with missing fence' }))
+  } finally {
+    await dropFence()
+    await clear()
+  }
+})
