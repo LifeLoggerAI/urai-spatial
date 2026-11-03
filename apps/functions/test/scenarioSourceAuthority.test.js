@@ -49,3 +49,34 @@ test('legacy entity source without kind can only name a person or a place',()=>{
   assert.doesNotThrow(()=>assertCurrentScenarioSourceRecord(owner,parseScenarioSourceRef(owner,legacy),{ownerId:owner,kind:'place'}))
   assert.throws(()=>assertCurrentScenarioSourceRecord(owner,parseScenarioSourceRef(owner,legacy),{ownerId:owner,kind:'organization'}),/SCENARIO_SOURCE_UNAVAILABLE/)
 })
+
+for (const consentState of ['denied', 'expired', 'withdrawn', 'disabled', 'blocked', 'unknown']) test('rejects explicitly unavailable memory consent '+consentState,()=>{
+  assert.throws(()=>assertCurrentScenarioSourceRecord(owner,parseScenarioSourceRef(owner,refs[0]),
+    { ownerId:owner, consentState }),/SCENARIO_SOURCE_UNAVAILABLE/)
+})
+for (const status of ['deleted', 'archived', 'withdrawn', 'denied', 'pending', 'rejected']) test('rejects withdrawn person status '+status,()=>{
+  assert.throws(()=>assertCurrentScenarioSourceRecord(owner,parseScenarioSourceRef(owner,refs[1]),
+    { ownerId:owner, kind:'person', status }),/SCENARIO_SOURCE_UNAVAILABLE/)
+})
+test('rejects deleted person flag',()=>{
+  assert.throws(()=>assertCurrentScenarioSourceRecord(owner,parseScenarioSourceRef(owner,refs[1]),
+    { ownerId:owner, kind:'person', deleted:true }),/SCENARIO_SOURCE_UNAVAILABLE/)
+})
+test('rejects memory explicitly denied despite granted record-level consent',()=>{
+  assert.throws(()=>assertCurrentScenarioSourceRecord(owner,parseScenarioSourceRef(owner,refs[0]),
+    { ownerId:owner, consentState:'granted', status:'denied' }),/SCENARIO_SOURCE_UNAVAILABLE/)
+})
+test('current owner-scoped granted and limited memory records remain admitted',()=>{
+  const source=parseScenarioSourceRef(owner,refs[0])
+  assert.doesNotThrow(()=>assertCurrentScenarioSourceRecord(owner,source,{ownerId:owner,consentState:'granted'}))
+  assert.doesNotThrow(()=>assertCurrentScenarioSourceRecord(owner,source,{ownerId:owner,consentState:'limited'}))
+})
+test('create and read callables use one shared source validator, not different consent lists',()=>{
+  const fs=require('node:fs')
+  const path=require('node:path')
+  const source=fs.readFileSync(path.resolve(__dirname,'../src/scenarioOperations.ts'),'utf8')
+  const create=source.slice(source.indexOf('async function resolveAuthorizedScenarioEvidence'),source.indexOf('function evidenceIdsFromBasis'))
+  const read=source.slice(source.indexOf('export const getPossibleFutureCouncilBundle'),source.indexOf('export const savePossibleFuture'))
+  assert.equal((create.match(/assertCurrentScenarioSourceRecord\(/g)||[]).length,2)
+  assert.equal((read.match(/assertCurrentScenarioSourceRecord\(/g)||[]).length,1)
+})
