@@ -312,7 +312,7 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
                 setStatus('Source-checked Life Graph view loaded privately in this session. No external provider was contacted.')
               }).catch(() => setStatus('Current Life Graph authority could not be verified. World context was not loaded.'))
             }}>
-            Load verified graph into world
+            Load source-checked graph into world
           </button>
           {graphView?.snapshotId === graphSnapshotId.trim() ? <small>World graph view is held privately for this session.</small> : null}
           </> : null}
