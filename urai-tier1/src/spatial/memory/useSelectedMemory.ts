@@ -79,6 +79,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
     let memoryEpoch = 0
     let unsubscribePolicy: (() => void) | undefined
     let unsubscribeC1: (() => void) | undefined
+    let unsubscribeDeletionFence: (() => void) | undefined
     let unsubscribeMemory: (() => void) | undefined
     let c1ExpiryTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -98,10 +99,13 @@ export function useSelectedMemory(): SelectedMemoryResult {
       c1ExpiryTimer = undefined
       const unsubscribe = unsubscribePolicy
       const unsubscribeGrant = unsubscribeC1
+      const unsubscribeFence = unsubscribeDeletionFence
       unsubscribePolicy = undefined
       unsubscribeC1 = undefined
+      unsubscribeDeletionFence = undefined
       unsubscribe?.()
       unsubscribeGrant?.()
+      unsubscribeFence?.()
     }
 
     if (!memoryId) {
@@ -147,6 +151,17 @@ export function useSelectedMemory(): SelectedMemoryResult {
       let policyGranted = false
       let c1ExpiresAt = 0
       let c1ReceiptHash = ''
+      let deletionFenceReady = false
+      let deletionFenceGeneration = -1
+      // The server increments this epoch when deletion begins and never resets it.
+      // Keep the highest observed epoch even while a deletion fence is pending.
+      let highestDeletionFenceGeneration = -1
+      let deletionFenceListenerFailed = false
+      const suspendForDeletion = (message: string, status: 'unauthorized' | 'unavailable' = 'unauthorized') => {
+        deletionFenceReady = false
+        detachMemory()
+        setResult({ status, memory: null, message })
+      }
       // A server-observed withdrawal/expiry retires the old consent receipt.
       // A queued grant carrying that same receipt must not reopen private content.
       const retiredC1Receipts = new Set<string>()
@@ -175,7 +190,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
         }, Math.min(Math.max(1, c1ExpiresAt - Date.now() + 1), 2_147_483_647))
       }
       const attachMemory = () => {
-        if (!isCurrentOwner() || unsubscribeMemory || !policyGranted || !c1ReceiptHash) return
+        if (!isCurrentOwner() || unsubscribeMemory || !policyGranted || !c1ReceiptHash || !deletionFenceReady) return
         if (c1ExpiresAt <= Date.now()) {
           retireC1Receipt()
           revokeC1('Memory storage consent has expired.')
@@ -189,6 +204,10 @@ export function useSelectedMemory(): SelectedMemoryResult {
             { includeMetadataChanges: true },
             (snapshot) => {
               if (!isCurrentMemory()) return
+              if (!deletionFenceReady) {
+                suspendForDeletion('Private memory deletion authority is not current.', 'unavailable')
+                return
+              }
               if (!policyGranted || !c1ReceiptHash || c1ExpiresAt <= Date.now()) {
                 if (c1ExpiresAt <= Date.now()) retireC1Receipt()
                 revokeC1('Current memory storage authorization is required.')
@@ -353,6 +372,67 @@ export function useSelectedMemory(): SelectedMemoryResult {
         if (!isCurrentOwner()) return
         c1ListenerFailed = true
         revokeC1('Memory storage consent authority could not be loaded.', 'unavailable')
+      }
+
+      // The backend uses this owner-readable document as a deletion-generation
+      // fence. The top-level, server-only deletion barriers are NOT readable
+      // here and remain independently enforced by the protected media backend.
+      try {
+        unsubscribeDeletionFence = onSnapshot(
+          doc(getFirebaseDb(), 'users', user.uid, 'privacyRuntime', 'exportAuthority'),
+          { includeMetadataChanges: true },
+          (snapshot) => {
+            if (!isCurrentOwner() || deletionFenceListenerFailed) return
+            if (snapshot.metadata?.fromCache !== false || snapshot.metadata?.hasPendingWrites !== false) {
+              suspendForDeletion('Private memory deletion authority is awaiting server confirmation.', 'unavailable')
+              return
+            }
+            let generation = 0
+            if (snapshot.exists()) {
+              const value = snapshot.data()
+              const pending = value?.pendingDeletions
+              if (!Number.isSafeInteger(value?.generation) || value.generation < 0
+                || !pending || typeof pending !== 'object' || Array.isArray(pending)) {
+                suspendForDeletion('Private memory deletion authority is invalid.', 'unavailable')
+                return
+              }
+              generation = value.generation
+              if (generation < highestDeletionFenceGeneration) {
+                suspendForDeletion('Private memory deletion authority has regressed.', 'unavailable')
+                return
+              }
+              highestDeletionFenceGeneration = generation
+              if (Object.keys(pending).length > 0) {
+                suspendForDeletion('A private memory deletion is pending.')
+                return
+              }
+            }
+            // A missing document maps to generation zero for first-time owners,
+            // but must never erase a previously observed higher deletion epoch.
+            if (generation < highestDeletionFenceGeneration) {
+              suspendForDeletion('Private memory deletion authority has regressed.', 'unavailable')
+              return
+            }
+            highestDeletionFenceGeneration = generation
+            if (deletionFenceReady && generation !== deletionFenceGeneration) {
+              detachMemory()
+              setResult(LOADING)
+            }
+            deletionFenceGeneration = generation
+            deletionFenceReady = true
+            if (policyGranted && c1ReceiptHash && !unsubscribeMemory) setResult(LOADING)
+            attachMemory()
+          },
+          () => {
+            if (!isCurrentOwner()) return
+            deletionFenceListenerFailed = true
+            suspendForDeletion('Private memory deletion authority could not be loaded.', 'unavailable')
+          },
+        )
+      } catch {
+        if (!isCurrentOwner()) return
+        deletionFenceListenerFailed = true
+        suspendForDeletion('Private memory deletion authority could not be loaded.', 'unavailable')
       }
     })
 

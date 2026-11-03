@@ -65,6 +65,7 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
   const subscriptions = []
   const policySubscriptions = []
   const c1Subscriptions = []
+  const deletionFenceSubscriptions = []
   let authCallback
   let authStopped = false
   const listeners = new Map()
@@ -99,6 +100,7 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
         const subscription = { ref, receive, error, stopped: false }
         if (ref.includes('privacyPolicy')) policySubscriptions.push(subscription)
         else if (ref.includes('consentRecords')) c1Subscriptions.push(subscription)
+        else if (ref.includes('privacyRuntime')) deletionFenceSubscriptions.push(subscription)
         else subscriptions.push(subscription)
         return () => { subscription.stopped = true }
       },
@@ -119,7 +121,7 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
   const policySnapshot = value => ({ exists: () => value !== null, data: () => value,
     metadata: { fromCache: false, hasPendingWrites: false } })
   return {
-    render, subscriptions, policySubscriptions, c1Subscriptions, data,
+    render, subscriptions, policySubscriptions, c1Subscriptions, deletionFenceSubscriptions, data,
     policy: () => currentPolicy,
     emitPolicy(value, index = policySubscriptions.length - 1) {
       currentPolicy = value
@@ -134,6 +136,7 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
     signIn(uid) {
       authCallback(uid ? { uid } : null)
       if (uid) {
+        deletionFenceSubscriptions.at(-1).receive(snapshot(null))
         c1Subscriptions.at(-1).receive(snapshot({ uid: uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: 'a'.repeat(64), expiresAt: new Date(Date.now() + 3600000).toISOString() }))
         currentPolicy = seededPolicy(uid)
         policySubscriptions.at(-1).receive(policySnapshot(currentPolicy))
