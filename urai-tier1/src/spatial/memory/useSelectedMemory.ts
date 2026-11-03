@@ -316,6 +316,13 @@ export function useSelectedMemory(): SelectedMemoryResult {
               revokeC1('Memory storage consent is awaiting server verification.', 'unavailable')
               return
             }
+            // If a background tab missed its expiry timer, retire the expired
+            // receipt before processing a later event, even one that presents a
+            // newly extended deadline for the exact same consent receipt.
+            if (c1ReceiptHash && c1ExpiresAt <= Date.now()) {
+              retireC1Receipt()
+              revokeC1('Memory storage consent has expired.')
+            }
             const grant = snapshot.exists() ? activeC1MemoryGrant(snapshot.data(), user.uid) : null
             if (!grant) {
               retireC1Receipt()
