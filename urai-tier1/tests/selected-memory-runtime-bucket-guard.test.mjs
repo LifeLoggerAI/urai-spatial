@@ -62,6 +62,9 @@ function mount(bucket) {
   const unmount = registeredEffect()
   assert.equal(typeof authListener, 'function')
   authListener({ uid: 'synthetic-owner' })
+  const c1 = subscriptions.find(({ ref }) => ref.includes('consentRecords'))
+  assert.ok(c1)
+  c1.receive({ exists: () => true, metadata: { fromCache: false, hasPendingWrites: false }, data: () => ({ uid: 'synthetic-owner', purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: 'a'.repeat(64), expiresAt: new Date(Date.now() + 3600000).toISOString() }) })
   const policy = subscriptions.find(({ ref }) => ref.includes('privacyPolicy'))
   assert.ok(policy)
   policy.receive({ exists: () => true, metadata: { fromCache: false, hasPendingWrites: false }, data: () => ({ ownerId: 'synthetic-owner', revision: 1,
