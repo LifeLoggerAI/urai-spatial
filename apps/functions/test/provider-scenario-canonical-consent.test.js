@@ -14,9 +14,9 @@ function policy(){return{version:2,revision:4,ownerId:owner,domains:{memory:doma
 const clone=v=>v===undefined?undefined:JSON.parse(JSON.stringify(v))
 class Timestamp{constructor(value){this.value=value}toMillis(){return this.value}static fromMillis(value){return new Timestamp(value)}}
 function database(options={}){
- const records=new Map([[policyPath,policy()],['users/'+owner+'/providerConnections/openai',{processingAllowed:true,revocationState:'not-required'}],['users/'+owner+'/providerConnections/elevenlabs',{processingAllowed:true,revocationState:'not-required'}],['users/'+owner+'/memories/memory-fixture',{synthetic:true}],['users/'+owner+'/lifeEntities/person-fixture',{synthetic:true}],['users/'+owner+'/lifeEntities/place-fixture',{synthetic:true}]])
+ const records=new Map([[policyPath,policy()],['users/'+owner+'/providerConnections/openai',{processingAllowed:true,revocationState:'not-required'}],['users/'+owner+'/providerConnections/elevenlabs',{processingAllowed:true,revocationState:'not-required'}],['users/'+owner+'/memories/memory-fixture',{ownerId:owner,synthetic:false,deleted:false,demo:false,consentState:'granted'}],['users/'+owner+'/lifeEntities/person-fixture',{ownerId:owner,kind:'person',synthetic:false,revoked:false}],['users/'+owner+'/lifeEntities/place-fixture',{ownerId:owner,kind:'place',synthetic:false,revoked:false}]])
  const stats={reads:[],transactionReads:[],committed:[],attempts:0,stagedBeforeRetry:[],paidCalls:[],outputChecks:0,authChecks:0,bytes:0,chunks:[],status:null,body:null,ended:false,destroyed:false,cancelled:0}
- const snapshot=ref=>({exists:records.has(ref.path),id:ref.path.split('/').at(-1),ref,data:()=>clone(records.get(ref.path))})
+ const snapshot=ref=>({exists:records.has(ref.path),id:ref.path.split('/').at(-1),ref,data:()=>clone(records.get(ref.path)),get:key=>clone(records.get(ref.path))?.[key]})
  const doc=location=>({path:location,id:location.split('/').at(-1),collection:name=>({doc:id=>doc(location+'/'+name+'/'+id)}),
   async get(){stats.reads.push(location);return snapshot(this)},
   async set(value,settings){records.set(location,settings?.merge?{...records.get(location),...value}:value);stats.committed.push({path:location,value})},
@@ -148,6 +148,36 @@ test('actual assumption-only Scenario never asserts a verified world revision',a
   assert.equal(f.basis().worldRevision,'unverified')
   assert.equal(f.basis().worldRevisionVerified,false)
   assert.equal(f.basis().evidenceRefs.length,0)
+})
+for(const [kind,fields] of [
+ ['memory', {deleted:true}], ['memory', {synthetic:true}], ['memory', {demo:true}],
+ ['memory', {ownerId:'foreign-owner'}], ['memory', {consentState:'revoked'}],
+ ['memory', {consentState:'pending'}],
+ ['person', {revoked:true}], ['person', {synthetic:true}], ['person', {ownerId:'foreign-owner'}],
+ ['person', {kind:'place'}], ['person', {status:'superseded'}],
+ ['place', {revoked:true}], ['place', {synthetic:true}], ['place', {ownerId:'foreign-owner'}],
+ ['place', {kind:'person'}],
+]) test('actual Scenario rejects invalid '+kind+' source '+JSON.stringify(fields)+' without persisting an evidence basis',async()=>{
+ const f=scenarioFixture()
+ const path=kind==='memory'?'users/'+owner+'/memories/memory-fixture':'users/'+owner+'/lifeEntities/'+kind+'-fixture'
+ f.records.set(path,{...f.records.get(path),...fields})
+ await assert.rejects(f.call(),error=>error.code==='failed-precondition')
+ assert.equal(f.stats.committed.length,0)
+})
+test('actual Scenario rejects withdrawn record even when client requests assumptionOnly fallback',async()=>{
+ const f=scenarioFixture()
+ const key='users/'+owner+'/memories/memory-fixture'
+ f.records.set(key,{...f.records.get(key),consentState:'revoked'})
+ await assert.rejects(f.call({assumptionOnly:true}),error=>error.code==='failed-precondition')
+ assert.equal(f.stats.committed.length,0)
+})
+test('actual Scenario accepts current owned non-synthetic memory and typed life entities',async()=>{
+ const f=scenarioFixture()
+ const outcome=await f.call()
+ assert.equal(outcome.assumptionOnly,false)
+ assert.equal(f.basis().evidenceRefs.length,3)
+ assert.ok(f.basis().evidenceRefs.every(row=>row.purpose==='scenario.explore'))
+ assert.equal(f.basis().worldRevisionVerified,false)
 })
 test('actual Scenario canonical revision zero keeps exact source revision zero',async()=>{
  const f=scenarioFixture();f.records.get(policyPath).revision=0;await f.call();assert.ok(f.basis().evidenceRefs.every(row=>row.sourceRevision===0))
