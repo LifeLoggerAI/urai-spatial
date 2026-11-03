@@ -122,6 +122,33 @@ test('actual Scenario excludes only the denied domain and does not manufacture p
 test('actual Scenario explicit assumption-only without source context reads no policy or private source',async()=>{
  const f=scenarioFixture();f.records.delete(policyPath);const result=await f.call({sourceContext:undefined,assumptionOnly:true});assert.equal(result.assumptionOnly,true);assert.equal(f.basis().evidenceRefs.length,0);assert.equal(f.stats.transactionReads.includes(policyPath),false)
 })
+test('actual Scenario cannot promote a browser worldRevision hint into canonical world authority',async()=>{
+  const a=scenarioFixture(),b=scenarioFixture()
+  await a.call({worldRevision:'client-claimed-final-world'})
+  await b.call({worldRevision:'different-unverified-client-hint'})
+  assert.equal(a.basis().worldRevision,'unverified')
+  assert.equal(a.basis().worldRevisionVerified,false)
+  assert.match(a.basis().evidenceScopeDigest,/^[0-9a-f]{64}$/)
+  assert.equal(a.basis().evidenceScopeDigest,b.basis().evidenceScopeDigest)
+  assert.equal(a.basis().worldRevision,b.basis().worldRevision)
+})
+test('actual Scenario evidence scope changes independently of unverified world revision',async()=>{
+  const a=scenarioFixture(),b=scenarioFixture()
+  b.records.get(policyPath).domains.memory.mode='denied'
+  await a.call()
+  await b.call()
+  assert.notEqual(a.basis().evidenceScopeDigest,b.basis().evidenceScopeDigest)
+  assert.equal(a.basis().worldRevision,'unverified')
+  assert.equal(b.basis().worldRevisionVerified,false)
+})
+test('actual assumption-only Scenario never asserts a verified world revision',async()=>{
+  const f=scenarioFixture()
+  await f.call({sourceContext:undefined,assumptionOnly:true,worldRevision:'forged-world-snapshot'})
+  assert.equal(f.basis().assumptionOnly,true)
+  assert.equal(f.basis().worldRevision,'unverified')
+  assert.equal(f.basis().worldRevisionVerified,false)
+  assert.equal(f.basis().evidenceRefs.length,0)
+})
 test('actual Scenario canonical revision zero keeps exact source revision zero',async()=>{
  const f=scenarioFixture();f.records.get(policyPath).revision=0;await f.call();assert.ok(f.basis().evidenceRefs.every(row=>row.sourceRevision===0))
 })
