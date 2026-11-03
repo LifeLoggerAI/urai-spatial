@@ -17,6 +17,9 @@ if (javaCheck.status === 0) {
     'firestore',
     'node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs tests/firestore.userAuthority.rules.test.mjs',
   ])
+  if (result.error) {
+    console.error('[URAI] Firestore emulator command failed before tests:', result.error.message)
+  }
   process.exit(result.status ?? 1)
 }
 
