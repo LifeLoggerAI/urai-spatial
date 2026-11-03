@@ -66,6 +66,9 @@ function harness(href='/focus?node=memory-one') {
     authorize(owner='owner-1'){
       assert.ok(authCallback,'auth listener expected')
       authCallback({uid:owner});render()
+      const c1=subscriptions.findLast(s=>s.ref.includes('consentRecords'))
+      assert.ok(c1,'C1 consent listener expected')
+      c1.receive({exists:()=>true,metadata:{fromCache:false,hasPendingWrites:false},data:()=>({ uid: owner, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: 'a'.repeat(64), expiresAt: new Date(Date.now() + 3600000).toISOString() })})
       const policy=subscriptions.findLast(s=>s.ref.includes('privacyPolicy'))
       assert.ok(policy,'policy must subscribe')
       policy.receive({exists:()=>true,metadata:{fromCache:false,hasPendingWrites:false},data:()=>({ownerId:owner,revision:1,
