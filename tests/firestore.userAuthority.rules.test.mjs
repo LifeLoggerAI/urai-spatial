@@ -90,3 +90,40 @@ test('owner, foreign users, signed-out clients, and token-only admins cannot del
     await assertFails(deleteDoc(reference))
   }
 })
+
+test('full-document setDoc overwrite cannot strip an established server authority field', async () => {
+  await seed({ displayName: 'Server-established', entitlementTier: 'pro', isAdmin: false,
+    founderOverride: false, deleted: false, accountStatus: 'active' })
+  const reference = profile(env.authenticatedContext(ownerId).firestore())
+  for (const field of Object.keys(protectedValues)) {
+    const retained = { displayName: 'Attempted overwrite', entitlementTier: 'pro',
+      isAdmin: false, founderOverride: false, deleted: false, accountStatus: 'active' }
+    delete retained[field]
+    await assertFails(setDoc(reference, retained))
+  }
+  await assertSucceeds(setDoc(reference, { displayName: 'Legitimate overwrite',
+    entitlementTier: 'pro', isAdmin: false, founderOverride: false, deleted: false,
+    accountStatus: 'active' }))
+  const current = (await assertSucceeds(getDoc(reference))).data()
+  assert.equal(current.displayName, 'Legitimate overwrite')
+  assert.equal(current.accountStatus, 'active')
+})
+
+test('setDoc merge cannot add or modify protected fields, but normal owner merge remains available', async () => {
+  const reference = profile(env.authenticatedContext(ownerId).firestore())
+  await seed({ displayName: 'Legacy' })
+  for (const [field, value] of Object.entries(protectedValues)) {
+    await assertFails(setDoc(reference, { [field]: value }, { merge: true }))
+  }
+  await seed({ displayName: 'Verified', entitlementTier: 'free', isAdmin: false,
+    founderOverride: false, deleted: false, accountStatus: 'active' })
+  for (const [field, value] of Object.entries(protectedValues)) {
+    const changed = field === 'accountStatus' ? 'disabled' : value
+    await assertFails(setDoc(reference, { [field]: changed }, { merge: true }))
+  }
+  await assertSucceeds(setDoc(reference, { displayName: 'Permitted merge' }, { merge: true }))
+  const current = (await assertSucceeds(getDoc(reference))).data()
+  assert.equal(current.displayName, 'Permitted merge')
+  assert.equal(current.entitlementTier, 'free')
+  assert.equal(current.accountStatus, 'active')
+})
