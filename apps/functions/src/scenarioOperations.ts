@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 import { createHash, randomUUID } from 'node:crypto'
 import { scenarioProviderState } from './scenarioProvider'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
+import { parseScenarioSourceRef, assertCurrentScenarioSourceRecord, ScenarioSourceAuthorityError } from './scenarioSourceAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 const db = admin.firestore()
@@ -113,6 +114,7 @@ async function resolveAuthorizedScenarioEvidence(ownerId: string, value: unknown
         truthKind: 'interpretation',
         purpose: SCENARIO_PURPOSE,
         sourceRevision: revision,
+        sourceEntityKind: kind,
         transformations: ['reference-only', 'life-model-entity'],
       })
     }
