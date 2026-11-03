@@ -26,6 +26,61 @@ function fixture() {
   docs.set(prefix+'/branches/br_b',{ id:'br_b',ownerId,label:'Branch B',summary:'Synthetic B',uncertainty:[] })
   return { docs,reads,limits,call:(data={},context={auth:{uid:ownerId}})=>module.exports.getPossibleFutureCouncilBundle({ scenarioId,...data },context) }
 }
+function currentPolicy() {
+  const domain=(mode='denied',modelContext=false)=>({
+    mode,retentionDays:null,precise:false,replayVisible:false,lifeMapVisible:false,
+    modelContext,sharingEnabled:false,automationEnabled:false,likenessEnabled:false,
+  })
+  return {
+    version:2,revision:4,ownerId,
+    domains:{
+      memory:domain('granted',true),location:domain(),models:domain('granted',true),
+      exports:domain(),workforce:domain(),identity:domain(),
+    },
+    enforcement:{state:'fully-enforced',jobId:null,affectedTargets:[],providerState:'not-applicable'},
+  }
+}
+function privateEvidenceFixture(kind='autobiographical-memory') {
+  const f=fixture()
+  f.docs.set(prefix+'/basis/current',{
+    ownerId,assumptionOnly:false,
+    evidenceRefs:[{truthKind:kind,sourceRevision:4,id:'evr_synthetic_ref'}],
+  })
+  f.docs.set('users/'+ownerId+'/privacyPolicy/current',currentPolicy())
+  return f
+}
+test('actual compiled source-backed Council bundle requires current canonical consent',async()=>{
+  const f=privateEvidenceFixture()
+  const result=await f.call()
+  assert.equal(result.evidenceCount,1)
+  assert.equal(result.truthKind,'scenario')
+  assert.equal(result.evidenceKinds[0],'autobiographical-memory')
+  assert.ok(f.reads.includes('users/'+ownerId+'/privacyPolicy/current'))
+})
+for(const [label,change] of [
+  ['revoked memory domain',p=>{p.domains.memory.mode='denied'}],
+  ['revoked model context',p=>{p.domains.memory.modelContext=false}],
+  ['new policy revision',p=>{p.revision=5}],
+  ['pending policy enforcement',p=>{p.enforcement.state='pending'}],
+  ['foreign policy owner',p=>{p.ownerId='other-owner'}],
+  ['malformed policy',p=>{delete p.domains.identity}],
+]) test('actual compiled Council fails closed on '+label,async()=>{
+  const f=privateEvidenceFixture()
+  const key='users/'+ownerId+'/privacyPolicy/current'
+  const p=f.docs.get(key);change(p);f.docs.set(key,p)
+  await assert.rejects(f.call(),e=>e.code==='failed-precondition')
+})
+test('actual compiled Council refuses absent policy for private basis',async()=>{
+  const f=privateEvidenceFixture()
+  f.docs.delete('users/'+ownerId+'/privacyPolicy/current')
+  await assert.rejects(f.call(),e=>e.code==='failed-precondition')
+})
+test('actual compiled Council denies a source-backed model entity after model consent withdrawal',async()=>{
+  const f=privateEvidenceFixture('interpretation')
+  const key='users/'+ownerId+'/privacyPolicy/current'
+  f.docs.get(key).domains.models.mode='denied'
+  await assert.rejects(f.call(),e=>e.code==='failed-precondition')
+})
 test('actual compiled bundle selects the exact requested branch and remains hypothetical',async()=>{
   const f=fixture(),result=await f.call({ branchId:'br_b' });assert.equal(result.branchId,'br_b');assert.equal(result.branchLabel,'Branch B');assert.equal(result.branchSummary,'Synthetic B');assert.equal(result.scenarioId,scenarioId);assert.equal(result.truthKind,'scenario');assert.match(result.disclosure,/Not a memory, prediction/);assert.deepEqual(f.limits,[3])
 })
