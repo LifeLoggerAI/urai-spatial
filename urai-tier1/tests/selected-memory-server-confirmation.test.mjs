@@ -8,7 +8,7 @@ import ts from 'typescript'
 const code = fs.readFileSync(new URL('../src/spatial/memory/useSelectedMemory.ts', import.meta.url), 'utf8')
 const js = ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
 
-function fixture({ failPolicySubscribe = false, failMemorySubscribe = false, failC1Subscribe = false, seedC1 = true, virtualClock = false } = {}) {
+function fixture({ failPolicySubscribe = false, failMemorySubscribe = false, failC1Subscribe = false, seedC1 = true, virtualClock = false, seedFence = true, failFenceSubscribe = false } = {}) {
   const state = [], effects = [], listeners = []
   let cursor = 0, auth, dirty
   let nowMs = Date.now(), nextTimer = 0
@@ -66,7 +66,8 @@ function fixture({ failPolicySubscribe = false, failMemorySubscribe = false, fai
         listeners.push(listener)
         if ((ref.includes('privacyPolicy') && failPolicySubscribe) ||
             (ref.includes('memories') && failMemorySubscribe) ||
-            (ref.includes('consentRecords') && failC1Subscribe)) {
+            (ref.includes('consentRecords') && failC1Subscribe) ||
+            (ref.includes('privacyRuntime') && failFenceSubscribe)) {
           throw new Error('synthetic subscriber initialization failure')
         }
         return () => { listener.stopped = true }
@@ -92,6 +93,11 @@ function fixture({ failPolicySubscribe = false, failMemorySubscribe = false, fai
     exists: () => value !== null, data: () => value,
     metadata: { fromCache, hasPendingWrites: pending },
   })
+  if (seedFence) {
+    const fence = listeners.find(x => x.ref.includes('privacyRuntime'))
+    assert.ok(fence, 'owner-visible deletion fence subscription required')
+    fence.receive(snapshot(null, false))
+  }
   const grant = { uid: 'synthetic-owner', purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: 'a'.repeat(64), expiresAt: new Date(nowMs + 3600000).toISOString() }
   if (seedC1) {
     const c1 = listeners.find(x => x.ref.includes('consentRecords'))
@@ -482,5 +488,83 @@ test('a frozen expired C1 receipt cannot be revived by rewriting its expiry with
     const newReceipt = { ...h.grant, receiptHash: 'c'.repeat(64), expiresAt: new Date(h.clock.now() + 3600000).toISOString() }
     assert.equal(h.send('consentRecords', newReceipt).status, 'loading')
     assert.equal(h.send('memories', { title: 'new owner-granted memory' }).status, 'ready')
+  } finally { h.cleanup() }
+})
+
+
+test('owner-visible deletion fence prevents selected memory while deletion is pending', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    assert.equal(h.send('memories', { title: 'private before deletion' }).status, 'ready')
+    const old = h.listeners.find(x => x.ref.includes('memories'))
+    assert.ok(h.listeners.some(x => x.ref.includes('privacyRuntime') && x.ref.includes('exportAuthority')), 'must listen to owner-readable deletion fence')
+    assert.equal(h.send('privacyRuntime', { generation: 1, pendingDeletions: { 'job-1': true } }).status, 'unauthorized')
+    assert.equal(h.status().memory, null)
+    assert.equal(old.stopped, true)
+    old.receive({ exists: () => true, data: () => ({ title: 'late leaked private source' }), metadata: { fromCache: false, hasPendingWrites: false } })
+    assert.equal(h.status().memory, null)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
+    assert.equal(h.send('privacyRuntime', { generation: 2, pendingDeletions: {} }).status, 'loading')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 2)
+    assert.equal(h.send('memories', { title: 'new server-confirmed source' }).status, 'ready')
+  } finally { h.cleanup() }
+})
+
+test('deletion fence cached or locally pending status cannot authorize private memory', () => {
+  const h = fixture({ seedFence: false })
+  try {
+    h.send('privacyPolicy', h.policy)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
+    assert.equal(h.send('privacyRuntime', null, true).status, 'unavailable')
+    assert.equal(h.send('privacyRuntime', null, false, true).status, 'unavailable')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
+    assert.equal(h.send('privacyRuntime', null).status, 'loading')
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 1)
+  } finally { h.cleanup() }
+})
+
+test('malformed deletion fence fails closed even when policy and C1 are granted', () => {
+  const cases = [
+    { generation: -1, pendingDeletions: {} },
+    { generation: '1', pendingDeletions: {} },
+    { generation: 2 },
+    { generation: 2, pendingDeletions: [] },
+    { generation: 2, pendingDeletions: null },
+  ]
+  for (const row of cases) {
+    const h = fixture({ seedFence: false })
+    try {
+      h.send('privacyPolicy', h.policy)
+      assert.equal(h.send('privacyRuntime', row).status, 'unavailable')
+      assert.equal(h.status().memory, null)
+      assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
+    } finally { h.cleanup() }
+  }
+})
+
+test('deletion generation change invalidates the previous private source', () => {
+  const h = fixture()
+  try {
+    h.send('privacyPolicy', h.policy)
+    assert.equal(h.send('memories', { title: 'before generation change' }).status, 'ready')
+    const old = h.listeners.find(x => x.ref.includes('memories'))
+    assert.equal(h.send('privacyRuntime', { generation: 1, pendingDeletions: {} }).status, 'loading')
+    assert.equal(old.stopped, true)
+    assert.equal(h.status().memory, null)
+    assert.equal(h.send('memories', { title: 'server-confirmed new generation' }).status, 'ready')
+  } finally { h.cleanup() }
+})
+
+test('terminal deletion fence listener failure permanently rejects late authority callbacks', () => {
+  const h = fixture({ failFenceSubscribe: true, seedFence: false })
+  try {
+    h.send('privacyPolicy', h.policy)
+    assert.equal(h.status().memory, null)
+    const fence = h.listeners.find(x => x.ref.includes('privacyRuntime'))
+    assert.ok(fence)
+    fence.receive({ exists: () => false, data: () => null, metadata: { fromCache: false, hasPendingWrites: false } })
+    assert.equal(h.status().memory, null)
+    assert.equal(h.listeners.filter(x => x.ref.includes('memories')).length, 0)
   } finally { h.cleanup() }
 })
