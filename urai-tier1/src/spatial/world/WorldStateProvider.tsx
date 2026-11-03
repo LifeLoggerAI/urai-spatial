@@ -249,12 +249,34 @@ export function UraiWorldStateProvider({ pathname, children }: { pathname: strin
   const cancelTransition = useCallback(() => dispatch({ type: 'CANCEL_TRANSITION' }), [])
   const patchContext = useCallback((patch: UraiWorldContextPatch) => dispatch({ type: 'PATCH_CONTEXT', patch }), [])
 
+  // Graph state is intentionally ephemeral. A route/account change unloads the
+  // old snapshot and never carries raw claims or person data between owners.
+  useEffect(() => {
+    const auth = getAuth(app)
+    return onAuthStateChanged(auth, () => dispatch({ type: 'CLEAR_GRAPH_VIEW' }))
+  }, [])
+
+  const loadGraphView = useCallback(async (snapshotId: string, entityIds: string[]) => {
+    const auth = getAuth(app)
+    const owner = auth.currentUser
+    if (!owner) throw new Error('LIFE_GRAPH_WORLD_AUTH_REQUIRED')
+    const readGraph = httpsCallable<{ snapshotId: string; entityIds: string[] }, unknown>(functions, 'getCouncilLifeGraphEvidence')
+    const response = await readGraph({ snapshotId, entityIds })
+    if (auth.currentUser !== owner) throw new Error('LIFE_GRAPH_WORLD_OWNER_CHANGED')
+    // Only the protected callable verifies current C1 sources and snapshot
+    // graph hash. The client projection is display state, not authorization.
+    const view = projectLifeGraphEvidence(response.data, snapshotId, entityIds)
+    dispatch({ type: 'LOAD_GRAPH_VIEW', view })
+    return view
+  }, [])
+
   const value = useMemo<UraiWorldContextValue>(() => ({
     ...runtime,
     beginTravel,
     cancelTransition,
     patchContext,
-  }), [beginTravel, cancelTransition, patchContext, runtime])
+    loadGraphView,
+  }), [beginTravel, cancelTransition, patchContext, loadGraphView, runtime])
 
   return <UraiWorldContext.Provider value={value}>{children}</UraiWorldContext.Provider>
 }
