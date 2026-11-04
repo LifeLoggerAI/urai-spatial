@@ -34,13 +34,22 @@ for (const key of ['URAI_SPATIAL_FIREBASE_PROJECT_ID', 'FIREBASE_PROJECT_ID']) {
 }
 
 const authDomain = value('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN')
-if (authDomain.endsWith('.firebaseapp.com') && authDomain !== `${expectedProject}.firebaseapp.com`) {
-  errors.push('Firebase Auth domain points at a different project')
+// Until provider-backed custom-domain approval is recorded, accept only the
+// selected project's canonical Firebase Auth domain. Unrecognized custom
+// domains are not evidence of ownership of this Firebase project.
+if (authDomain && authDomain !== `${expectedProject}.firebaseapp.com`) {
+  errors.push('Firebase Auth domain is not approved for the selected target')
 }
 const storageBucket = value('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET')
-const otherProject = target === 'production' ? TARGETS.staging : TARGETS.production
-if (storageBucket === `${otherProject}.appspot.com` || storageBucket === `${otherProject}.firebasestorage.app`) {
-  errors.push('Firebase Storage bucket points at the opposite environment')
+// A blacklist of only the opposite project admits arbitrary third-party
+// buckets. Fail closed to the two documented Firebase default naming forms;
+// any custom bucket needs a separately reviewed, explicit source allowlist.
+const approvedBuckets = new Set([
+  `${expectedProject}.firebasestorage.app`,
+  `${expectedProject}.appspot.com`,
+])
+if (storageBucket && !approvedBuckets.has(storageBucket)) {
+  errors.push('Firebase Storage bucket is not approved for the selected target')
 }
 
 const sender = value('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID')
