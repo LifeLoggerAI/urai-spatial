@@ -9,6 +9,7 @@ import { performance } from 'node:perf_hooks'
 import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
+import { founderVoiceIssuerReadiness } from '../src/adamFounderVoiceReceiptContract.mjs'
 
 const SOURCE = 'd'.repeat(40), GATEWAY = 'a'.repeat(40), UID = 'synthetic-owner'
 const gatewayUrl = 'https://spend.example.invalid/api/worker/production-spend'
@@ -443,6 +444,7 @@ function leafFixture(leaf, change = {}) {
     if (id === './consentPolicyAuthority') return policyAuthority
     if (id === './councilGraphEvidenceAuthority') return graphEvidenceAuthority
     if (id === './protectedProviderSpend') return { ...f.helper, paidSpatialFetch:f.paidFetch }
+    if (id === './adamFounderVoiceReceiptContract.mjs') return { founderVoiceIssuerReadiness }
     if (id === './personPresenceAuthority') return { PersonPresenceAuthorityError, loadPersonPresenceAuthority:requireAuthority, requirePersonPresenceRenderBinding:async () => { await requireAuthority(); return { get:key => ({ provider:'elevenlabs',bindingHash:'e'.repeat(64),providerResourceId:'SYNTHETIC_VOICE',providerModelId:'synthetic-model' })[key] } } }
     throw new Error(`Unexpected paid-leaf dependency ${id}`)
   }, { process:{ env:f.env }, fetch:f.fakeFetch })
@@ -471,8 +473,17 @@ for (const leaf of leaves) {
   test(`actual paid leaf ${leaf[1]} denies absent authentic admission before any external POST`, async () => {
     const f=leafFixture(leaf,{ missingBinding:true }); await f.invoke(); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.filter(x => x.action === 'reserve').length,0)
   })
-  test(`actual paid leaf ${leaf[1]} uses protected exact request and retains stream charges`, async () => {
-    const f=leafFixture(leaf), result=await f.invoke(); assert.equal(result.code,200,JSON.stringify(result.json)); assert.equal(f.providerCalls.length,leaf[3] === 'openai' ? 2 : 1)
+  test(`actual paid leaf ${leaf[1]} ${leaf[1]==='adamFounderVoiceProvider' ? 'denies unapproved voice before paid provider dispatch' : 'uses protected exact request and retains stream charges'}`, async () => {
+    const f=leafFixture(leaf), result=await f.invoke()
+    if(leaf[1] === 'adamFounderVoiceProvider') {
+      assert.equal(founderVoiceIssuerReadiness().ready,false,'Real Founder issuer remains unapproved')
+      assert.equal(result.code,409,JSON.stringify(result.json))
+      assert.equal(result.json?.error,'FOUNDER_PLAYBACK_AUTHORITY_NOT_READY')
+      assert.equal(f.providerCalls.length,0,'Unapproved Founder voice cannot call paid provider')
+      assert.equal(f.calls.length,0,'Unapproved Founder voice cannot reserve spend')
+      return
+    }
+    assert.equal(result.code,200,JSON.stringify(result.json)); assert.equal(f.providerCalls.length,leaf[3] === 'openai' ? 2 : 1)
     for (const row of f.rows.values()) { assert.equal(row.attempt.status,'RECONCILIATION_REQUIRED'); assert.equal(row.attempt.charges_reconciled,false); assert.equal(row.hold,2500000) }
     assert.equal(f.calls.some(x => x.action === 'reconcile'),false)
   })

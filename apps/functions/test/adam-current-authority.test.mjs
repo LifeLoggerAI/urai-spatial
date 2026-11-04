@@ -5,6 +5,7 @@ import vm from 'node:vm'
 import { createHash } from 'node:crypto'
 import test from 'node:test'
 import ts from 'typescript'
+import { founderVoiceIssuerReadiness } from '../src/adamFounderVoiceReceiptContract.mjs'
 
 const uid='synthetic-adam-owner',answer='Synthetic private answer.',audio='synthetic-private-audio'
 const sourceRoot=process.env.URAI_ADAM_AUTHORITY_SOURCE_ROOT
@@ -38,15 +39,18 @@ function fixture(lane,controls={}){
   'node:crypto':{createHash},'firebase-admin':{apps:[{}],firestore,initializeApp(){assert.fail('No SDK initialization')},auth:()=>({async verifyIdToken(_token,checkRevoked){assert.equal(checkRevoked,true);state.authReads++;return{uid:state.uid}}})},
   'firebase-functions/params':{defineSecret:()=>({value:()=> 'synthetic-not-a-key'})},'firebase-functions/v2/https':{onRequest:(_options,handler)=>handler},
   '../../../packages/localization/src/contentLanguage':{contentLanguage:tag=>tag==='en-US'?{speechTag:'en-US'}:null,URAI_CONTENT_LANGUAGE_TAGS:['en-US']},
+  './adamFounderVoiceReceiptContract.mjs':{founderVoiceIssuerReadiness},
   './consentPolicyAuthority':policyAuthority,
   './protectedProviderSpend':{paidSpatialFetch,assertSpatialPaidOutputCurrent(upstream){assert.ok(upstream);state.outputChecks++;if(state.expired)throw new SpatialSpendError()},SpatialSpendError,SPATIAL_SPEND_WORKER_TOKENS_JSON:{}},
  },{process:{env:{ADAM_PRESENCE_ENABLED:controls.disabled?'false':'true',FOUNDER_VOICE_ENABLED:'true',FOUNDER_ELEVENLABS_VOICE_ID:'synthetic-voice'}},setTimeout:(fn,ms)=>setTimeout(fn,controls.timeoutMs??ms)})
  const response={statusCode:200,headersSent:false,writableEnded:false,chunks:[],body:null,headers:{},status(code){this.statusCode=code;return this},setHeader(key,value){this.headers[key]=value},on(){},write(value){this.headersSent=true;this.chunks.push(Buffer.from(value))},end(value){if(value)this.write(value);this.writableEnded=true},json(value){this.body=value;this.headersSent=true;this.writableEnded=true}}
- const run=async()=>{await module[lane==='voice'?'adamFounderVoiceProvider':'adamPresenceProvider']({method:'POST',headers:{authorization:'Bearer synthetic-token'},body:{message:'Disclosed synthetic question',text:'Disclosed synthetic text',context:[],locale:'en-US',surface:'home',requestId:'a'.repeat(64),aiProcessingConsent:true,externalProcessingConsent:true}},response);return response}
+ const run=async()=>{await module[lane==='voice'?'adamFounderVoiceProvider':'adamPresenceProvider']({method:'POST',headers:{authorization:'Bearer synthetic-token'},body:{message:'Disclosed synthetic question',text:'Disclosed synthetic text',context:[],locale:'en-US',surface:'home',requestId:'a'.repeat(64),aiProcessingConsent:true,externalProcessingConsent:true,...(controls.bodyOverrides??{})}},response);return response}
  const output=()=>Buffer.concat(response.chunks).toString()
  return{state,run,response,output}
 }
-for(const lane of ['reasoning','voice']){
+// The Founder voice endpoint is intentionally hard-off until trusted issuance exists.
+// Positive, in-flight provider tests are valid only for admitted reasoning.
+for(const lane of ['reasoning']){
  test(`actual Adam ${lane} retains guarded private success`,async()=>{
   const f=fixture(lane),response=await f.run();assert.equal(response.statusCode,200);assert.ok(f.output().includes(lane==='voice'?audio:answer))
   assert.ok(f.state.authReads>1);assert.ok(f.state.policyReads>1);assert.ok(f.state.outputChecks>0)
@@ -81,3 +85,33 @@ for(const moderation of [{},{results:[]},{results:[{flagged:'false'}]}])test('ac
  const f=fixture('reasoning',{moderation}),response=await f.run();assert.equal(response.statusCode,503);assert.equal(response.body.error,'MODERATION_UNAVAILABLE')
  assert.equal(f.state.paid.length,1);assert.equal(f.output(),'')
 })
+
+// R524: exercise the REAL checked-in Founder issuer readiness, never a mocked
+// positive grant. Client-supplied consent, flags or fabricated receipt fields
+// cannot turn the hard-off voice endpoint into a billable provider call.
+const founderVoiceDenialCases=[
+  ['normal signed-in input',{}],
+  ['caller issuerApproved flag',{bodyOverrides:{issuerApproved:true}}],
+  ['caller founderVoiceAuthorized flag',{bodyOverrides:{founderVoiceAuthorized:true}}],
+  ['caller lifeMovie authority hash',{bodyOverrides:{authorityHash:'a'.repeat(64)}}],
+  ['caller supplied voice receipt',{bodyOverrides:{voiceReceipt:{ready:true,issuer:'client'}}}],
+  ['caller chosen voice ID',{bodyOverrides:{voiceId:'FAKE-APPROVED-VOICE'}}],
+  ['external processing consent withheld',{bodyOverrides:{externalProcessingConsent:false}}],
+  ['AI processing consent withheld',{bodyOverrides:{aiProcessingConsent:false}}],
+  ['changed request digest',{bodyOverrides:{requestId:'b'.repeat(64)}}],
+  ['empty spoken text',{bodyOverrides:{text:''}}],
+  ['nondefault locale',{bodyOverrides:{locale:'de-DE'}}],
+  ['service disabled',{disabled:true}],
+]
+for(const [label,controls] of founderVoiceDenialCases){
+ test('actual Adam Founder voice remains hard-off: '+label,async()=>{
+  assert.equal(founderVoiceIssuerReadiness().ready,false,'Checked-in issuer is not approved')
+  const f=fixture('voice',controls)
+  const response=await f.run()
+  assert.equal(response.statusCode,controls.disabled?503:409)
+  assert.equal(response.body?.error,controls.disabled?'ADAM_PRESENCE_DISABLED':'FOUNDER_PLAYBACK_AUTHORITY_NOT_READY')
+  assert.equal(f.state.paid.length,0,'No paid Founder provider dispatch')
+  assert.equal(f.state.outputChecks,0)
+  assert.equal(f.output(),'','No private audio bytes')
+ })
+}
