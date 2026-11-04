@@ -42,7 +42,7 @@
     "check:production-routes": "node scripts/check-production-route-exposure.mjs",
     "check:spatial-copy": "node scripts/check-spatial-copy.mjs",
     "check:public-copy": "node scripts/run-pnpm.mjs check:spatial-copy",
-    "check:production-claims": "node scripts/run-pnpm.mjs check:launch-boundary-contract && node scripts/run-pnpm.mjs check:spatial-copy",
+    "check:production-claims": "node scripts/run-pnpm.mjs check:launch-boundary-contract && node scripts/run-pnpm.mjs check:spatial-copy && node --test tests/exact-deploy-source-check.test.mjs",
     "check:firebase": "node scripts/xr-firebase-preflight.mjs",
     "check:onboarding": "node scripts/run-pnpm.mjs check:spatial-copy",
     "check:system-registry": "node scripts/run-pnpm.mjs check:runtime-boundary && node scripts/run-pnpm.mjs runtime:authority",
