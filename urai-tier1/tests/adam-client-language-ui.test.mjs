@@ -49,7 +49,7 @@ function fixture(){
     if(name==='./adamSurfaceContext')return {resolveAdamSurface:()=>({id:'home',label:'Home'})}
     // The real runtime has no trusted per-turn Founder voice authority yet.
     // Mirror its unconfigured fail-closed bridge, never synthesize approval.
-    if(name==='./founderVoicePlaybackBridge.mjs')return {createAdamFounderVoicePlaybackBridge:()=>({ready:()=>false,interrupt(){},start:async()=>false})}
+    if(name==='./founderVoicePlaybackBridge.mjs')return {createAdamFounderVoicePlaybackBridge:()=>({ready:()=>false,isPlaying:()=>false,interrupt(){},start:async()=>false})}
     if(name.endsWith('.module.css'))return {__esModule:true,default:{}}
     throw Error('Unexpected Adam dependency '+name)
   },document:{body:portalBody},AbortController,crypto:{randomUUID:()=>String(cells.length)},URL:{createObjectURL:()=> 'blob:synthetic',revokeObjectURL:()=>{}},
