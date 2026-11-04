@@ -260,6 +260,8 @@ export default function ConsentSanctuaryClient() {
       setReceipts([])
       setExports([])
       setDeletions([])
+      setDeletionConfirmation('')
+      setOperationBusy(false)
       setUser(nextUser)
       if (!nextUser) {
         setLoadState('signed-out')
@@ -354,6 +356,9 @@ export default function ConsentSanctuaryClient() {
 
   const confirmChange = async () => {
     if (!pending || !user || loadState !== 'private') return
+    const uid = user?.uid
+    const epoch = ownerEpoch.current
+    if (!ownerCanDownload(uid, epoch)) return
     setMutationState('requested')
     setMessage('Requesting a revision-controlled policy change…')
     try {
@@ -362,10 +367,12 @@ export default function ConsentSanctuaryClient() {
         next: pending.next as unknown as Record<string, unknown>,
         expectedRevision: policy.revision,
       })
+      if (!ownerCanDownload(uid, epoch)) return
       setPending(null)
       setMutationState('pending')
       setMessage(`Request accepted. Enforcement job ${String(result.jobId ?? '').slice(0, 10)} is pending; no completion is claimed yet.`)
     } catch (error) {
+      if (!ownerCanDownload(uid, epoch)) return
       const code = errorCode(error)
       setMutationState(code === 'conflict' ? 'conflict' : 'failed')
       setMessage(code === 'conflict' ? 'Another session changed this policy first. Current server authority must be reloaded.' : 'The change was not accepted. The prior server policy remains authoritative.')
@@ -374,27 +381,37 @@ export default function ConsentSanctuaryClient() {
 
   const requestExport = async () => {
     if (loadState !== 'private' || exportScopes.length === 0) return
+    const uid = user?.uid
+    const epoch = ownerEpoch.current
+    if (!ownerCanDownload(uid, epoch)) return
     setOperationBusy(true)
     try {
       const result = await createOperationalExportRequest(exportScopes)
+      if (!ownerCanDownload(uid, epoch)) return
       setMessage(`Export ${String(result.jobId ?? '').slice(0, 10)} queued. It is not ready until the server reports ready.`)
     } catch (error) {
+      if (!ownerCanDownload(uid, epoch)) return
       setMessage(errorCode(error) === 'reauth' ? 'Recent reauthentication is required before an export can begin.' : 'Export request failed. No file was created or represented as ready.')
-    } finally { setOperationBusy(false) }
+    } finally { if (ownerCanDownload(uid, epoch)) setOperationBusy(false) }
   }
 
   const requestDeletion = async () => {
     if (loadState !== 'private') return
     const required = DELETION_SCOPES.find(([scope]) => scope === deletionScope)?.[2] ?? 'CONFIRM DELETE'
     if (deletionConfirmation !== required) { setMessage(`Type “${required}” exactly to confirm this scope.`); return }
+    const uid = user?.uid
+    const epoch = ownerEpoch.current
+    if (!ownerCanDownload(uid, epoch)) return
     setOperationBusy(true)
     try {
       const result = await createOperationalDeletionRequest({ scope: deletionScope, confirmation: deletionConfirmation })
+      if (!ownerCanDownload(uid, epoch)) return
       setDeletionConfirmation('')
       setMessage(`Deletion ${String(result.jobId ?? '').slice(0, 10)} entered ${String(result.state)}. Completion is not claimed until the trusted job reports completed.`)
     } catch (error) {
+      if (!ownerCanDownload(uid, epoch)) return
       setMessage(errorCode(error) === 'reauth' ? 'Recent reauthentication is required before deletion can begin.' : 'Deletion request failed. No data was represented as deleted.')
-    } finally { setOperationBusy(false) }
+    } finally { if (ownerCanDownload(uid, epoch)) setOperationBusy(false) }
   }
 
   const selected = policy.domains[selectedDomain]
