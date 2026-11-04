@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { initializeApp, getApps } from 'firebase/app'
-import { getFunctions, httpsCallable } from 'firebase/functions'
+import { httpsCallable } from 'firebase/functions'
+import { functions, firebasePublicEnvReady } from '../firebase/client'
 import { evaluateTierLock } from './evaluateTierLock'
 import type { SpatialFeatureId, TierLockDecision, TierLockContext, UraiTier } from './types'
 
@@ -27,14 +27,10 @@ function defaultContext(userTier: UraiTier): TierLockContext {
 }
 
 function getCallable() {
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-  const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID
-
-  if (!apiKey || !projectId || !appId) return null
-
-  const app = getApps()[0] ?? initializeApp({ apiKey, projectId, appId })
-  return httpsCallable(getFunctions(app), 'evaluateSpatialTierLock')
+  // The shared client has already validated all six Firebase identity fields
+  // and any pre-existing default app. Never initialize a second project here.
+  if (!firebasePublicEnvReady) return null
+  return httpsCallable(functions, 'evaluateSpatialTierLock')
 }
 
 export function useUserTier(): UraiTier {
