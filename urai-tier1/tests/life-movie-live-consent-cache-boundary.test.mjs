@@ -55,7 +55,7 @@ function runActualHook() {
       onSnapshot: (_doc, options, callback, _error) => {
         manifestOptions = options
         subscribed = callback
-        return () => { listenerStops += 1 },
+        return () => { listenerStops += 1 }
       },
     }
     if (name === '@/lib/firebase/client') return {
