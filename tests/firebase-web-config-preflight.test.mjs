@@ -301,3 +301,25 @@ test('canonical Firebase identity guard preserves the controller isolated emulat
   assert.match(client, /connectFunctionsEmulator/)
   assert.match(client, /if \(!firebasePublicEnvReady\) throw new Error/)
 })
+
+
+test('static Firebase preflight refuses padded public identity fields that runtime rejects', () => {
+  const required = [
+    'NEXT_PUBLIC_FIREBASE_API_KEY',
+    'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+    'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+    'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+    'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+    'NEXT_PUBLIC_FIREBASE_APP_ID',
+  ]
+  for (const [target, project] of [['production', 'urai-4dc1d'], ['staging', 'urai-staging']]) {
+    const valid = webEnv(project)
+    for (const key of required) {
+      const padded = check(target, { ...valid, [key]: ' ' + valid[key] + ' ' })
+      assert.equal(padded.status, 1, target + ':' + key)
+      assert.match(padded.stderr, /leading\/trailing whitespace/)
+      assert.match(padded.stderr, new RegExp(key))
+      assert.doesNotMatch(padded.stderr, /integration-check-public-config/)
+    }
+  }
+})
