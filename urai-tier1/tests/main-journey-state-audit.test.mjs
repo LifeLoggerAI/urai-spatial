@@ -43,6 +43,7 @@ for (const mutation of [
   {label:'committed disabled state', path:focusPath, before:'disabled={committed}', after:'disabled={false}', failure:'Focus Replay portal committed state'},
   {label:'travel click owner', path:focusPath, before:'onClick={enterReplay} {...locale.props', after:'onClick={unwind} {...locale.props', failure:'Focus Replay portal travel owner'},
   {label:'authorization guard', path:focusPath, before:'if (!memory || !replayHref || committed) return', after:'if (committed) return', failure:'Focus must fail closed without an authorized memory and Replay route.'},
+  {label:'unscoped star return-node promotion', path:focusPath, before:'const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id', after:'const returnNode = node!', failure:'Focus scopes return-node identity to current selected memory'},
   {label:'selected manifest travel identity', path:focusPath, before:'manifestId: memory.replayManifest.id, node:', after:"manifestId: 'foreign-manifest', node:", failure:'Focus forwards complete selected identity'},
   {label:'Replay authentication', path:replayPath, before:'useSelectedMemory()', after:'useFixtureMemory()', failure:'Replay authenticated memory authority'},
   {label:'Replay reduced motion', path:replayPath, before:'const reducedMotion = useReducedMotion()', after:'const reducedMotion = false', all:true, failure:'Replay honors reduced motion'},
