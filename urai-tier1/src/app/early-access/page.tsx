@@ -8,7 +8,7 @@ import { TierOneStaticShell } from "@/spatial/layout/TierOneStaticShell";
 
 export default function EarlyAccessPage() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "offline" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,7 +22,12 @@ export default function EarlyAccessPage() {
     trackLaunchEvent("early_access_signup_started");
 
     try {
-      await saveEarlyAccessSignup(email);
+      const saved = await saveEarlyAccessSignup(email);
+      if (!saved.persistedRemotely) {
+        setStatus("offline");
+        setMessage("Your email is saved only on this device. It has not reached the waitlist. Please retry when the connection is available.");
+        return;
+      }
       trackLaunchEvent("early_access_signup_completed");
       setStatus("success");
       setEmail("");
