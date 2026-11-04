@@ -73,13 +73,28 @@ export function defaultConsentPolicy(ownerId: string): ConsentPolicy {
 }
 
 export function isConsentPolicy(value: unknown, ownerId: string): value is ConsentPolicy {
-  if (!value || typeof value !== 'object') return false
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
   const candidate = value as Partial<ConsentPolicy>
-  if (candidate.version !== 2 || candidate.ownerId !== ownerId || typeof candidate.revision !== 'number') return false
-  if (!candidate.domains || typeof candidate.domains !== 'object' || !candidate.enforcement) return false
+  if (candidate.version !== 2 || candidate.ownerId !== ownerId ||
+      typeof candidate.revision !== 'number' || !Number.isSafeInteger(candidate.revision) || candidate.revision < 0) return false
+  if (!candidate.domains || typeof candidate.domains !== 'object' || Array.isArray(candidate.domains)) return false
+  const enforcement = candidate.enforcement
+  if (!enforcement || typeof enforcement !== 'object' ||
+      !['pending', 'partially-enforced', 'fully-enforced', 'failed', 'conflicted'].includes(enforcement.state) ||
+      !['not-applicable', 'pending', 'partial', 'complete', 'failed'].includes(enforcement.providerState) ||
+      (enforcement.jobId !== null && (typeof enforcement.jobId !== 'string' || !enforcement.jobId.trim())) ||
+      !Array.isArray(enforcement.affectedTargets) ||
+      !enforcement.affectedTargets.every((target) => typeof target === 'string' && target.length > 0)) return false
   return DOMAIN_ORDER.every((domain) => {
     const policy = candidate.domains?.[domain]
-    return Boolean(policy && ['granted', 'limited', 'paused', 'denied'].includes(policy.mode))
+    return Boolean(policy && typeof policy === 'object' &&
+      ['granted', 'limited', 'paused', 'denied'].includes(policy.mode) &&
+      (policy.retentionDays === null || (typeof policy.retentionDays === 'number' &&
+        Number.isSafeInteger(policy.retentionDays) && policy.retentionDays >= 0)) &&
+      typeof policy.precise === 'boolean' && typeof policy.replayVisible === 'boolean' &&
+      typeof policy.lifeMapVisible === 'boolean' && typeof policy.modelContext === 'boolean' &&
+      typeof policy.sharingEnabled === 'boolean' && typeof policy.automationEnabled === 'boolean' &&
+      typeof policy.likenessEnabled === 'boolean')
   })
 }
 
