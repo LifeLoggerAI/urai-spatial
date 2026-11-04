@@ -88,3 +88,9 @@ test('Consent first render and missing, malformed, or cached owner authority fai
   assert.match(client, /data-enforcement-state=\{displayedEnforcement\}/)
   assert.match(client, /No server-verified enforcement state available/)
 })
+
+test('Consent download capability cannot redirect after owner identity changes', () => {
+  const client = read('src/app/privacy-controls/ConsentSanctuaryClient.tsx')
+  assert.match(client, /loadState !== 'private' \|\| activeOwnerRef\.current !== ownerUid/)
+  assert.match(client, /if \(activeOwnerRef\.current === ownerUid\) window\.location\.assign/)
+})

@@ -94,3 +94,9 @@ test('Passport first render and owner transitions never inherit a sample or prio
   assert.match(client, /consent\.revision : 'unverified'/)
   assert.match(client, /if \(explicitDemo\) \{[\s\S]*?setSnapshot\(toDemoPayload\(\)\)/)
 })
+
+test('Passport owner export capability cannot redirect after a different owner signs in', () => {
+  const client = read('src/app/passport/PassportVaultClient.tsx')
+  assert.match(client, /state !== 'private' \|\| activeOwnerRef\.current !== ownerUid/)
+  assert.match(client, /if \(activeOwnerRef\.current === ownerUid\) window\.location\.assign/)
+})
