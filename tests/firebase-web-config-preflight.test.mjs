@@ -59,6 +59,46 @@ test('rejects app ID and sender mismatch without printing the public key value',
   assert.doesNotMatch(result.stderr + result.stdout, /integration-check-public-config/)
 })
 
+test('rejects foreign Auth hosts and unreviewed custom domains for either environment', () => {
+  for (const [target, project] of [['production', 'urai-4dc1d'], ['staging', 'urai-staging']]) {
+    for (const host of [
+      'project-not-urai.firebaseapp.com',
+      'urai-staging.web.app',
+      'login.unknown-company.example',
+      `${project}.firebaseapp.com.evil.example`,
+      `https://${project}.firebaseapp.com`,
+    ]) {
+      const result = check(target, {
+        ...webEnv(project),
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: host,
+      })
+      assert.equal(result.status, 1, `${target} accepted unreviewed Auth host ${host}`)
+      assert.match(result.stderr, /Firebase Auth domain is not the reviewed project default/)
+    }
+  }
+})
+
+test('rejects unrelated Storage buckets while accepting both default bucket naming eras', () => {
+  for (const [target, project] of [['production', 'urai-4dc1d'], ['staging', 'urai-staging']]) {
+    for (const bucket of [`${project}.appspot.com`, `${project}.firebasestorage.app`]) {
+      const result = check(target, { ...webEnv(project), NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: bucket })
+      assert.equal(result.status, 0, result.stderr)
+    }
+    for (const bucket of [
+      'other-tenant.appspot.com',
+      'urai-staging.firebasestorage.app',
+      'shared-public-assets.example',
+      'gs://private-unverified',
+      `${project}.appspot.com.evil.example`,
+    ]) {
+      if (bucket === `${project}.firebasestorage.app`) continue
+      const result = check(target, { ...webEnv(project), NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: bucket })
+      assert.equal(result.status, 1, `${target} accepted unreviewed bucket ${bucket}`)
+      assert.match(result.stderr, /Firebase Storage bucket is not a reviewed default/)
+    }
+  }
+})
+
 test('client readiness requires web app ID and compatibility helper shares canonical app', () => {
   const client = readFileSync(canonical, 'utf8')
   const old = readFileSync(compatibility, 'utf8')
