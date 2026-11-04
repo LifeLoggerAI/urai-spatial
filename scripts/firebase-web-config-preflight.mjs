@@ -19,7 +19,7 @@ const required = [
   'NEXT_PUBLIC_FIREBASE_APP_ID',
 ]
 const value = (key) => String(process.env[key] ?? '').trim()
-const placeholder = (input) => !input || /^(demo(?:[-_].*)?|test(?:[-_].*)?|placeholder|your[-_].*|replace[-_].*|changeme|undefined|null)$/i.test(input)
+const placeholder = (input) => !input || /^((demo|test|dev|fake|sample|local|ci)([-_].*)?|placeholder|your[-_].*|replace[-_].*|changeme|undefined|null|<.*>)$/i.test(input) || /(?:^|[-_])(?:demo|example|placeholder)(?:$|[-_])/i.test(input)
 const missing = required.filter((key) => placeholder(value(key)))
 const errors = []
 

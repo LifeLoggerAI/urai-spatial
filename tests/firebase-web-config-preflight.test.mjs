@@ -37,6 +37,13 @@ test('web config fails closed if missing or placeholder', () => {
   assert.equal(placeholder.status, 1)
 })
 
+test('rejects known CI and local placeholder API keys', () => {
+  for (const key of ['ci-firebase-api-key', 'urai-local-demo-api-key', 'dev-key', '<FIREBASE_API_KEY>']) {
+    const result = check('production', { ...webEnv('urai-4dc1d'), NEXT_PUBLIC_FIREBASE_API_KEY: key })
+    assert.equal(result.status, 1, key)
+  }
+})
+
 test('rejects production/staging cross-target project and auth domain', () => {
   assert.equal(check('production', webEnv('urai-staging')).status, 1)
   assert.equal(check('staging', webEnv('urai-4dc1d')).status, 1)
