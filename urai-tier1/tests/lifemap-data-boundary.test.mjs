@@ -105,16 +105,28 @@ test('a changed Firebase actor never renders previously cached private Life Map 
   assert.match(source, /setErasOwner\('demo-user'\)/)
 })
 
-test('private Life Map joins only explicit owner-verified canonical memory documents', () => {
+test('private Life Map joins only consent-current, visible and owner-verified canonical memories', () => {
   assert.match(source, /memoryId: sanitizeMemoryId\(typeof data\.memoryId === "string" \? data\.memoryId : null\)/)
   assert.match(source, /collection\(getFirebaseDb\(\), "users", resolvedUserId, "memories"\)/)
   assert.match(source, /parseSelectedMemory\(doc\.data\(\), resolvedUserId, doc\.id/)
-  assert.match(source, /if \(parsed\.status === 'ready'\) accepted\.set\(doc\.id, parsed\.memory\)/)
+  // Hidden memories are never admitted to the authoritative lookup.
+  assert.match(source, /if \(parsed\.status === 'ready' && parsed\.memory\.privacy !== 'hidden'\) accepted\.set\(doc\.id, parsed\.memory\)/)
   assert.match(source, /const memoryId = sanitizeMemoryId\(node\.memoryId\)/)
-  assert.match(source, /memoryId && node\.type === "memory" \? currentMemories\.get\(memoryId\)/)
-  assert.match(source, /if \(!authoritative\) return \{ \.\.\.node, authorizedMemory: false,/)
-  assert.match(source, /id: node\.id, memoryId: authoritative\.id/)
-  assert.match(source, /locked: node\.type === "memory" \? true : Boolean\(node\.locked\)/)
-  assert.match(source, /replayAvailable: false, replayManifestId: undefined/)
+  assert.match(source, /const authoritative = memoryId && node\.type === "memory" \? visibleMemories\.get\(memoryId\) : undefined/)
+  // The current consent revision must own all three private streams.
+  assert.match(source, /const visibleMemories = authorityKey !== null && memoriesAuthority === authorityKey \? currentMemories : new Map/)
+  assert.match(source, /if \(authorityKey === null \|\| nodesAuthority !== authorityKey \|\| erasAuthority !== authorityKey \|\| memoriesAuthority !== authorityKey\) return fromEvents/)
+  // A deleted, hidden or revoked memory must reveal no old Memory Star/coordinates.
+  assert.match(source, /if \(node\.privacyLevel === 'hidden'\) return \[\]/)
+  assert.match(source, /if \(node\.type === 'memory' && !authoritative\) return \[\]/)
+  // Nonmemory context never inherits a private memory ID or replay authority.
+  assert.match(source, /if \(!authoritative\) return \[\{ \.\.\.node, authorizedMemory: false,/)
+  assert.match(source, /memoryId: undefined, replayAvailable: false, replayManifestId: undefined/)
+  assert.match(source, /locked: Boolean\(node\.locked\)/)
+  // A visible, authorized Memory Star retains its original event ID, but uses
+  // only the separately verified canonical memory for personal content.
+  assert.match(source, /return \[\{ \.\.\.node, id: node\.id, memoryId: authoritative\.id,/)
   assert.match(source, /replayManifestId: authoritative\.replayManifest\.id/)
+  // Projection of a canonical star also respects owner, privacy and demo gates.
+  assert.match(source, /memory\.privacy === 'hidden' \|\| memory\.demo \|\| memory\.ownerId !== resolvedUserId/)
 })
