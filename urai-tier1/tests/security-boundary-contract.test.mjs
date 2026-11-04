@@ -140,3 +140,42 @@ test('R577: Consent keeps cached/pending data unverified and rejects late owner 
   assert.match(consentSanctuary, /getOperationalExportDownloadUrl\(\{ jobId: job\.id, file: 'runtime', assetId \}\); if \(!ownerCanDownload\(uid, epoch\)\) return; window\.location\.assign/);
   assert.doesNotMatch(consentSanctuary, /getOperationalExportDownloadUrl\([^\n]+\); window\.location\.assign/);
 });
+
+
+test('R584: Passport async export/deletion callbacks cannot update a different owner session', () => {
+  for (const [handler, service] of [
+    ['requestExport', 'createOperationalExportRequest'],
+    ['requestDeletion', 'createOperationalDeletionRequest'],
+  ]) {
+    const start = passportVault.indexOf('const ' + handler + ' = async () => {');
+    assert.ok(start >= 0, handler + ' must exist');
+    const next = passportVault.indexOf('\n  const ', start + 1);
+    const source = passportVault.slice(start, next > start ? next : undefined);
+    assert.match(source, /const uid = user\?\.uid;\s*|const uid = user\?\.uid/);
+    assert.match(source, /const epoch = authEpoch\.current/);
+    assert.match(source, /if \(!ownerCanDownload\(uid, epoch\)\) return/);
+    assert.match(source, new RegExp('await ' + service + '[\\s\\S]*?if \\(!ownerCanDownload\\(uid, epoch\\)\\) return'));
+    assert.match(source, /catch \{\s*if \(!ownerCanDownload\(uid, epoch\)\) return/);
+    assert.match(source, /finally \{ if \(ownerCanDownload\(uid, epoch\)\) setBusy\(false\) \}/);
+  }
+  assert.match(passportVault, /setConfirmation\(''\)\s*setBusy\(false\)\s*setUser\(nextUser\)/);
+});
+
+test('R584: Consent async writes and exports stay fenced across auth transitions', () => {
+  for (const [handler, service] of [
+    ['confirmChange', 'applyOperationalConsentPolicy'],
+    ['requestExport', 'createOperationalExportRequest'],
+    ['requestDeletion', 'createOperationalDeletionRequest'],
+  ]) {
+    const start = consentSanctuary.indexOf('const ' + handler + ' = async () => {');
+    assert.ok(start >= 0, handler + ' must exist');
+    const next = consentSanctuary.indexOf('\n  const ', start + 1);
+    const source = consentSanctuary.slice(start, next > start ? next : undefined);
+    assert.match(source, /const uid = user\?\.uid/);
+    assert.match(source, /const epoch = ownerEpoch\.current/);
+    assert.match(source, new RegExp('await ' + service + '[\\s\\S]*?if \\(!ownerCanDownload\\(uid, epoch\\)\\) return'));
+    assert.match(source, /catch \(error\) \{\s*if \(!ownerCanDownload\(uid, epoch\)\) return/);
+    if (handler !== 'confirmChange') assert.match(source, /finally \{ if \(ownerCanDownload\(uid, epoch\)\) setOperationBusy\(false\) \}/);
+  }
+  assert.match(consentSanctuary, /setDeletionConfirmation\(''\)\s*setOperationBusy\(false\)\s*setUser\(nextUser\)/);
+});
