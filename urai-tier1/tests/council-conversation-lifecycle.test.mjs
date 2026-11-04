@@ -94,6 +94,15 @@ const agents = [
 const answer = message => ({ message, caption: message, disclosure: 'Synthetic provider adapter; no external request.', provider: 'openai', model: 'fixture' })
 const deferred = () => { let resolve, reject; const promise = new Promise((a,b) => { resolve=a; reject=b }); return { promise, resolve, reject } }
 
+/** Council's lifecycle tests never grant source-backed World graph authority.
+ * The REAL WorldStateProvider is tested by its own source/owner-gated suites.
+ * A synthetic graph load must reject instead of inventing a successful read.
+ */
+const graphAuthorityDenied = Object.freeze({
+  graphView: null,
+  loadGraphView: async () => { throw new Error('COUNCIL_GRAPH_AUTHORITY_UNVERIFIED') },
+})
+
 function fixture(t) {
   // Keep individual scenarios independent even when earlier tests navigated
   // to a private Memory Star. Real route changes are exercised separately.
@@ -115,6 +124,9 @@ function fixture(t) {
     // the browser/Firebase subscriptions, not the Council's routing behavior.
     '@/hooks/useBrowserLocation': {
       useBrowserLocation: () => window.location.origin + '/council' + window.location.search,
+    },
+    '@/spatial/world/WorldStateProvider': {
+      useUraiWorldState: () => graphAuthorityDenied,
     },
     '@/spatial/memory/useSelectedMemory': {
       useSelectedMemory: () => {
@@ -335,4 +347,12 @@ test('same-route selected-memory correction aborts prior Council request and res
   await f.resolve(0, answer('Stale answer from before the correction'))
   assert.doesNotMatch(f.text(), /Stale answer from before the correction/)
   assert.equal(f.requests.length, 1, 'Revised memory must not dispatch another request without fresh grants')
+})
+
+test('synthetic Council world provider cannot manufacture private Life Graph authorization', async () => {
+  assert.equal(graphAuthorityDenied.graphView, null)
+  await assert.rejects(
+    graphAuthorityDenied.loadGraphView('not-an-authorized-snapshot', ['private-entity']),
+    /COUNCIL_GRAPH_AUTHORITY_UNVERIFIED/,
+  )
 })
