@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
+import { currentTierLockDecision } from '../urai-tier1/src/lib/tier-locks/tierLockDecisionOwner.mjs'
 import {
   hasCanonicalFirebaseWebIdentityShape,
   matchesConfiguredFirebaseAppIdentity,
@@ -179,7 +180,7 @@ test('tier-lock callable requires canonical Firebase readiness (no three-field p
     fileURLToPath(new URL('../urai-tier1/src/lib/tier-locks/client.ts', import.meta.url)),
     'utf8',
   )
-  assert.match(tierLocks, /import \{ functions, firebasePublicEnvReady \} from ['"]\.\.\/firebase\/client['"]/)
+  assert.match(tierLocks, /import \{ app, functions, firebasePublicEnvReady \} from ['"]\.\.\/firebase\/client['"]/)
   assert.match(tierLocks, /if \(!firebasePublicEnvReady\) return null/)
   assert.match(tierLocks, /return httpsCallable\(functions, ['"]evaluateSpatialTierLock['"]\)/)
   assert.doesNotMatch(tierLocks, /\b(?:initializeApp|getApps|getApp|getFunctions)\s*\(/)
@@ -189,6 +190,12 @@ test('tier-lock callable requires canonical Firebase readiness (no three-field p
   // Cached allowed decisions cannot be shared by different users at the same tier.
   assert.doesNotMatch(tierLocks, /\b(?:cache\.get|cache\.set|cache\.has)\s*\(/)
   assert.doesNotMatch(tierLocks, /new Map<string,\s*TierLockDecision>/)
+  assert.match(tierLocks, /onIdTokenChanged\(getAuth\(app\)/)
+  assert.match(tierLocks, /epoch: previous\.epoch \+ 1/)
+  assert.match(tierLocks, /return currentTierLockDecision\(resolved, identity, featureId, userTier\) \?\? fallback/)
+  assert.match(tierLocks, /\[featureId, userTier, identity\.uid, identity\.epoch\]/)
+  assert.match(tierLocks, /if \(!identity\.uid\) return/)
+
 })
 
 
@@ -248,4 +255,36 @@ test('waitlist confirmation must be backed by a successful remote write', () => 
   assert.match(page, /did not save your email on this device/)
   assert.match(page, /trackLaunchEvent\("early_access_signup_completed"\)/)
   assert.ok(page.indexOf('if (!saved.persistedRemotely)') < page.indexOf('trackLaunchEvent("early_access_signup_completed")'))
+})
+
+
+test('owner A allowed then sign-out and owner B same tier rejects stale grants', () => {
+  const feature = 'spatial.lifeMap.personal'
+  const a = { uid: 'owner-A', epoch: 1, featureId: feature, userTier: 'tier2', decision: { allowed: true } }
+  const b = { uid: 'owner-B', epoch: 3, featureId: feature, userTier: 'tier2', decision: { allowed: false } }
+  assert.equal(currentTierLockDecision(a, { uid: 'owner-A', epoch: 1 }, feature, 'tier2')?.allowed, true)
+  assert.equal(currentTierLockDecision(a, { uid: null, epoch: 2 }, feature, 'tier2'), null)
+  assert.equal(currentTierLockDecision(a, { uid: 'owner-B', epoch: 3 }, feature, 'tier2'), null)
+  assert.equal(currentTierLockDecision(b, { uid: 'owner-B', epoch: 3 }, feature, 'tier2')?.allowed, false)
+})
+
+test('same owner token refresh invalidates stale tier grants', () => {
+  const feature = 'spatial.lifeMap.personal'
+  const a = { uid: 'owner-A', epoch: 1, featureId: feature, userTier: 'tier2', decision: { allowed: true } }
+  assert.equal(currentTierLockDecision(a, { uid: 'owner-A', epoch: 2 }, feature, 'tier2'), null)
+})
+
+test('tier or feature switches reject prior grants', () => {
+  const feature = 'spatial.lifeMap.personal'
+  const a = { uid: 'owner-A', epoch: 1, featureId: feature, userTier: 'tier2', decision: { allowed: true } }
+  assert.equal(currentTierLockDecision(a, { uid: 'owner-A', epoch: 1 }, 'spatial.admin.inspectLocks', 'tier2'), null)
+  assert.equal(currentTierLockDecision(a, { uid: 'owner-A', epoch: 1 }, feature, 'tier3'), null)
+})
+
+test('malformed and unconfirmed Auth sessions reject cached tier decisions', () => {
+  const feature = 'spatial.lifeMap.personal'
+  const a = { uid: 'owner-A', epoch: 1, featureId: feature, userTier: 'tier2', decision: { allowed: true } }
+  for (const identity of [null, undefined, {}, { uid: 'owner-A', epoch: 0 }, { uid: 'owner-A', epoch: 1.5 }]) {
+    assert.equal(currentTierLockDecision(a, identity, feature, 'tier2'), null)
+  }
 })
