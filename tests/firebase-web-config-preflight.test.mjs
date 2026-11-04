@@ -215,3 +215,14 @@ test('Possible Future callable requires canonical Firebase identity before dispa
   assert.match(scenario, /httpsCallable<Record<string, unknown>, T>\(functions, name\)/)
   assert.doesNotMatch(scenario, /\b(?:getApp|getApps|initializeApp|getFunctions)\s*\(/)
 })
+
+
+test('launch analytics remote write is fenced by canonical Firebase identity', () => {
+  const analytics = readFileSync(
+    fileURLToPath(new URL('../urai-tier1/src/spatial/analytics/track.ts', import.meta.url)),
+    'utf8',
+  )
+  assert.match(analytics, /import \{ firebasePublicEnvReady, getFirebaseDb \} from ['"]\.\.\/\.\.\/lib\/firebase\/client['"]/)
+  assert.match(analytics, /if \(!firebasePublicEnvReady\) return payload/)
+  assert.doesNotMatch(analytics, /\b(?:getApp|getApps|initializeApp)\s*\(/)
+})
