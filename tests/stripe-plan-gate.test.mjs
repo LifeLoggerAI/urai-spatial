@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {registerHooks} from 'node:module';
+import {readFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import ts from 'typescript';
 const hooks=registerHooks({
   resolve(specifier, context, nextResolve) {
     if(specifier==='firebase/auth') return {url:'urai-plan-source-fixture:auth',shortCircuit:true};
@@ -8,6 +11,14 @@ const hooks=registerHooks({
   },
   load(url,context,nextLoad) {
     if(url==='urai-plan-source-fixture:auth') return {format:'module',source:'export const getAuth=()=>({currentUser:null});',shortCircuit:true};
+    // Load the original source with TypeScript syntax erased, not a mocked plan
+    // decision. This test must exercise actual paid-tier revocation behavior.
+    if(url===new URL('../src/components/spatial/stripePlanGate.ts',import.meta.url).href) {
+      const path=fileURLToPath(url);
+      return {format:'module',source:ts.transpileModule(readFileSync(path,'utf8'),{
+        fileName:path,compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022},
+      }).outputText,shortCircuit:true};
+    }
     return nextLoad(url,context);
   },
 });

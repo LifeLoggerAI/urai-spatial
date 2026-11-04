@@ -30,6 +30,7 @@ function harness() {
       return slots[index].value
     },
     useCallback(callback, deps) { return react.useMemo(() => callback, deps) },
+    useRef(initial) { const index = cursor++; slots[index] ??= { current: initial }; return slots[index] },
     useEffect(effect, deps) {
       const index = cursor++
       if (!slots[index] || changed(slots[index].deps, deps)) {
@@ -65,6 +66,14 @@ function harness() {
     '@/hooks/useBrowserLocation': hook,
     './destinationRegistry': destinations,
     './worldTypes': worldTypes,
+    // Synthetic route/navigation test has no real signed-in owner or graph receipt.
+    'firebase/auth': {
+      getAuth: () => ({ currentUser: null }),
+      onAuthStateChanged: (_auth, callback) => { callback(null); return () => {} },
+    },
+    'firebase/functions': { httpsCallable: () => { throw Error('ROUTE_TEST_GRAPH_CALL_DENIED') } },
+    '@/lib/firebase/client': { app: {}, functions: {} },
+    './lifeGraphWorldProjection': { projectLifeGraphEvidence: () => { throw Error('ROUTE_TEST_GRAPH_PROJECTION_DENIED') } },
   }, { window, URLSearchParams })
   const render = () => {
     for (let attempt = 0; attempt < 20; attempt++) {
@@ -115,7 +124,8 @@ test('same-path travel commit releases transition input instead of leaving the w
 test('the canonical world controller never aliases a visual node to memory authority', () => {
   const source = fs.readFileSync('src/spatial/world/WorldTransitionController.tsx', 'utf8')
   assert.match(source, /const sameMemory = Boolean\(selectedMemoryId && currentMemoryId && selectedMemoryId === currentMemoryId\)/)
-  assert.match(source, /if \(\(key === 'node' \|\| key === 'manifestId'\) && \(!memoryDestination \|\| !sameMemory\)\) continue/)
+  assert.match(source, /if \(\(key === 'node' \|\| key === 'manifestId' \|\| key === 'movieId' \|\| key === 'chapterId' \|\| key === 'demo'\) && \(!memoryDestination \|\| !sameMemory\)\) continue/)
+  assert.match(source, /if \(memoryDestination && context\?\.memoryId\) target\.searchParams\.set\('memoryId', context\.memoryId\)/)
   assert.match(source, /if \(!memoryDestination\) \{\s*target\.searchParams\.delete\('memoryId'\)/)
   assert.doesNotMatch(source, /target\.searchParams\.set\('memoryId', nodeId\)/)
   assert.doesNotMatch(source, /target\.searchParams\.set\('node', memoryId\)/)

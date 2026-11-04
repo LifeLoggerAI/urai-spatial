@@ -175,9 +175,13 @@ test('the rendered Council and Scenario selectors offer attempts without live cl
   for (const provider of providers) process.env[`NEXT_PUBLIC_URAI_COUNCIL_${provider.toUpperCase()}_ENABLED`] = 'false'
   requests = []
   const { default: CouncilConversationPanel } = await import('../src/spatial/council/CouncilConversationPanel.tsx')
+  const { UraiWorldStateProvider } = await import('../src/spatial/world/WorldStateProvider.tsx')
   const { ScenarioCouncilPanel } = await import('../src/spatial/scenario/ScenarioCouncilPanel.tsx')
   const agent = { id: 'synthetic-guardian', name: 'Synthetic Guardian', role: 'guardian', focus: 'Fictional permissions', tone: 'clear' }
-  const council = renderToStaticMarkup(React.createElement(CouncilConversationPanel, { agent }))
+  // The actual Council mounts under the real WorldStateProvider. On SSR no
+  // authenticated owner, graph fetch, or synthetic disclosure authorization exists.
+  const council = renderToStaticMarkup(React.createElement(UraiWorldStateProvider,
+    { pathname: '/council' }, React.createElement(CouncilConversationPanel, { agent })))
   const scenario = renderToStaticMarkup(React.createElement(ScenarioCouncilPanel, { scenarioId: 'synthetic-scenario' }))
   assert.match(council, /aria-label="Council conversation"/)
   assert.match(council, /data-live-council-providers=""/)
