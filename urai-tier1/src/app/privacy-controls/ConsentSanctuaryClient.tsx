@@ -29,7 +29,7 @@ import {
 } from './consentModel'
 import './consent-sanctuary.css'
 
-type LoadState = 'loading' | 'private' | 'demo' | 'signed-out' | 'unavailable' | 'offline'
+type LoadState = 'loading' | 'private' | 'demo' | 'signed-out' | 'unverified' | 'unavailable' | 'offline'
 type MutationState = 'idle' | 'previewing' | 'requested' | 'pending' | 'partial' | 'success' | 'failed' | 'conflict'
 type PendingChange = { domain: ConsentDomain; next: ConsentDomainPolicy }
 
@@ -193,15 +193,43 @@ export default function ConsentSanctuaryClient() {
   const [operationBusy, setOperationBusy] = useState(false)
   const confirmRef = useRef<HTMLButtonElement>(null)
   const ownerEpoch = useRef(0)
+  const [reconnectEpoch, setReconnectEpoch] = useState(0)
+  // Never let a late export URL navigate after its owner's session changes.
+  const ownerCanDownload = (uid: string | undefined, epoch: number) =>
+    Boolean(uid && navigator.onLine && ownerEpoch.current === epoch && getAuth(app).currentUser?.uid === uid)
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
-    const online = () => { setLoadState((state) => state === 'offline' ? 'loading' : state); setMessage('Connection restored. Rechecking server authority…') }
-    const offline = () => { setLoadState('offline'); setMessage('Offline. No change can be represented as saved or enforced.') }
+    const invalidateOwnerView = () => {
+      ownerEpoch.current += 1
+      setPolicy(unverifiedPolicy())
+      setPending(null)
+      setMutationState('idle')
+      setReceipts([])
+      setExports([])
+      setDeletions([])
+      setShowAudit(false)
+      setDeletionConfirmation('')
+      setOperationBusy(false)
+    }
+    const online = () => {
+      if (explicitDemo) return
+      invalidateOwnerView()
+      setReconnectEpoch((value) => value + 1)
+      setLoadState('loading')
+      setMessage('Connection restored. Rechecking server-backed owner authority…')
+    }
+    const offline = () => {
+      if (explicitDemo) return
+      invalidateOwnerView()
+      setReconnectEpoch((value) => value + 1)
+      setLoadState('offline')
+      setMessage('Offline. Owner consent and enforcement are unverified; changes remain locked.')
+    }
     window.addEventListener('online', online)
     window.addEventListener('offline', offline)
     return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline) }
-  }, [])
+  }, [explicitDemo])
 
   useEffect(() => {
     try {
@@ -249,13 +277,22 @@ export default function ConsentSanctuaryClient() {
     const policyRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current')
     return onSnapshot(policyRef, (snapshot) => {
       if (!sameOwner()) return
+      // Cache snapshots and pending client writes are not confirmed owner authority.
+      if (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites || !navigator.onLine) {
+        setPolicy(unverifiedPolicy())
+        setPending(null)
+        setMutationState('idle')
+        setLoadState('unverified')
+        setMessage('Waiting for fresh server-confirmed owner policy. Changes remain locked.')
+        return
+      }
       const rawPolicy = snapshot.data()
       // Missing/malformed records must not become invented fully-enforced owner consent.
       if (!snapshot.exists() || !isConsentPolicy(rawPolicy, user.uid)) {
         setPolicy(unverifiedPolicy())
         setPending(null)
         setMutationState('idle')
-        setLoadState('unavailable')
+        setLoadState('unverified')
         setMessage('No verified owner consent policy is available. Changes remain locked until trusted setup is completed.')
         return
       }
@@ -284,7 +321,7 @@ export default function ConsentSanctuaryClient() {
     if (!user || explicitDemo) return
     const epoch = ownerEpoch.current
     const ownerOnly = (setter: (rows: PrivacyRow[]) => void) => (rows: PrivacyRow[]) => {
-      if (ownerEpoch.current === epoch && getAuth(app).currentUser?.uid === user.uid) setter(rows)
+      if (ownerEpoch.current === epoch && getAuth(app).currentUser?.uid === user.uid && navigator.onLine) setter(rows)
     }
     const unsubscribers = [
       subscribeOperationalUserCollection('privacyReceipts', user.uid, ownerOnly(setReceipts), () => setMessage('Audit receipts are temporarily unavailable.')),
@@ -292,7 +329,7 @@ export default function ConsentSanctuaryClient() {
       subscribeOperationalUserCollection('deletionJobs', user.uid, ownerOnly(setDeletions), () => setMessage('Deletion status is temporarily unavailable.')),
     ]
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
-  }, [user, explicitDemo])
+  }, [user, explicitDemo, reconnectEpoch])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -404,7 +441,7 @@ export default function ConsentSanctuaryClient() {
         <p>Choose scope. Tokens, credentials, raw secret fields and legally excepted records are excluded.</p>
         <div className="consentToggleGrid">{EXPORT_SCOPES.map((scope) => <label key={scope}><input type="checkbox" disabled={loadState !== 'private' || operationBusy} checked={exportScopes.includes(scope)} onChange={(event) => setExportScopes((items) => event.target.checked ? [...new Set([...items, scope])] : items.filter((item) => item !== scope))} /><span>{scope}</span></label>)}</div>
         <div className="consentActions"><button type="button" disabled={loadState !== 'private' || operationBusy || exportScopes.length === 0} onClick={() => void requestExport()}>Request export</button></div>
-        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id }); window.location.assign(String(result.url)) } catch { setMessage('Secure download could not be authorized.') } }}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id, file: 'runtime', assetId }); window.location.assign(String(result.url)) } catch { setMessage('Secure runtime download could not be authorized.') } }}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
+        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { try { const uid = user?.uid; const epoch = ownerEpoch.current; if (loadState !== 'private' || !ownerCanDownload(uid, epoch)) return; const result = await getOperationalExportDownloadUrl({ jobId: job.id }); if (!ownerCanDownload(uid, epoch)) return; window.location.assign(String(result.url)) } catch { setMessage('Secure download could not be authorized.') } }}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" onClick={async () => { try { const uid = user?.uid; const epoch = ownerEpoch.current; if (loadState !== 'private' || !ownerCanDownload(uid, epoch)) return; const result = await getOperationalExportDownloadUrl({ jobId: job.id, file: 'runtime', assetId }); if (!ownerCanDownload(uid, epoch)) return; window.location.assign(String(result.url)) } catch { setMessage('Secure runtime download could not be authorized.') } }}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
 
         <hr />
         <h3>Scoped deletion</h3>
