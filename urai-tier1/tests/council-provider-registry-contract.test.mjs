@@ -36,12 +36,12 @@ async function registryFor(value = 'false') {
   return import(`../src/spatial/council/councilProviderRegistry.ts?fixture=${sequence++}`)
 }
 const defaultRegistry = await registryFor()
-const { getAuth } = await import('firebase/auth')
 const { deleteApp } = await import('firebase/app')
-const { app, firebasePublicEnvReady, uraiJourneyEmulatorEnabled } = await import('../src/lib/firebase/client.ts')
+const { app, firebasePublicEnvReady, uraiJourneyEmulatorEnabled, getUraiAuth } = await import('../src/lib/firebase/client.ts')
 assert.equal(firebasePublicEnvReady, true, 'fictional emulator app must be identity-checked before Council tests')
 assert.equal(uraiJourneyEmulatorEnabled, true, 'Council fixture must never claim a production Firebase project')
-const auth = getAuth(app)
+// Call the controller's guarded getter so the fictional SDK stays on its local emulator.
+const auth = getUraiAuth()
 const syntheticUser = { uid: 'synthetic-council-owner', getIdToken: async () => 'synthetic-council-id-token' }
 before(async () => {
   await auth.authStateReady()
