@@ -203,3 +203,15 @@ test('Life Map star writes require canonical Firebase identity, never arbitrary 
   assert.doesNotMatch(starWriter, /\b(?:getApp|getApps|initializeApp|getFunctions)\s*\(/)
   assert.doesNotMatch(starWriter, /process\.env\.NEXT_PUBLIC_FIREBASE_(?:API_KEY|APP_ID|PROJECT_ID)/)
 })
+
+
+test('Possible Future callable requires canonical Firebase identity before dispatch', () => {
+  const scenario = readFileSync(
+    fileURLToPath(new URL('../urai-tier1/src/lib/scenario/scenarioClient.ts', import.meta.url)),
+    'utf8',
+  )
+  assert.match(scenario, /import \{ functions, firebasePublicEnvReady \} from ['"]@\/lib\/firebase\/client['"]/)
+  assert.match(scenario, /if \(!firebasePublicEnvReady\) throw new Error/)
+  assert.match(scenario, /httpsCallable<Record<string, unknown>, T>\(functions, name\)/)
+  assert.doesNotMatch(scenario, /\b(?:getApp|getApps|initializeApp|getFunctions)\s*\(/)
+})
