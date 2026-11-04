@@ -10,7 +10,7 @@ const publicProof = fs.readFileSync(new URL('../../.github/workflows/public-inst
 const liveSmoke = fs.readFileSync(new URL('../../scripts/urai-live-smoke.mjs', import.meta.url), 'utf8')
 
 const publicRoutes = ['/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug']
-const fullVisionRoutes = ['/life-movie', '/council', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr']
+const fullVisionRoutes = ['/life-movie', '/council', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality']
 const directCriticalRoutes = ['/privacy', '/terms', '/login', '/account-deletion', '/privacy-policy', '/xr', '/settings', '/settings/communications', '/sms-opt-in', '/launch']
 
 test('post-deploy parity includes current Focus, Replay and institutional public owners', () => {
@@ -24,6 +24,13 @@ test('post-deploy parity includes current Focus, Replay and institutional public
     assert.ok(postDeploy.includes(`['${route}',`), `missing static post-deploy contract for ${route}`)
   }
 
+  // XR is NOT an ordinary 200-HTML route: it has a conditional status and a
+  // separate device/preview authority gate. Requiring it in the HTML matrix
+  // would bypass that stricter, source-governed smoke boundary.
+  assert.match(postDeploy, /for \(const route of conditionalXrRoutes\)/)
+  assert.match(postDeploy, /inspectConditionalXrResponse\(response, requested\.toString\(\), xrAuthority, html\)/)
+  assert.match(postDeploy, /expectedStatus: route === '\/spatial\/ar-vr' \? 200 : xrAuthority\.expectedStatus/)
+  assert.match(postDeploy, /if \(response\.status !== 200 \|\| sha === expectedSha\)/)
   assert.ok(postDeploy.includes("schemaVersion: 'urai-live-content-parity-6'"))
   const compatibilityRoutes = postDeploy.match(/browserCompatibilityRoutes:\s*\[([^\]]*)\]/)?.[1] || ''
   for (const route of ['/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind']) {
