@@ -115,3 +115,28 @@ test('Consent Sanctuary refuses unauthenticated or missing-policy positive grant
   assert.match(consentSanctuary, /ownerPolicyVisible \? policy\.enforcement\.state : 'unverified'/);
   assert.match(consentSanctuary, /if \(explicitDemo\) \{\s*setPolicy\(demoPolicy\(\)\)/);
 });
+
+
+test('R577: Passport drops offline owner evidence and fences late owner-bound export navigation', () => {
+  assert.match(passportVault, /const onOffline = \(\) => \{[\s\S]*?authEpoch\.current \+= 1[\s\S]*?setSnapshot\(\{\}\)[\s\S]*?setExports\(\[\]\)[\s\S]*?setDeletions\(\[\]\)[\s\S]*?setReceipts\(\[\]\)[\s\S]*?setState\('offline'\)/);
+  assert.match(passportVault, /setAuthorityEpoch\(\(value\) => value \+ 1\)/);
+  assert.match(passportVault, /\}, \[user, explicitDemo, authorityEpoch\]\)/);
+  assert.match(passportVault, /const ownerCanDownload = \(uid: string \| undefined, epoch: number\) =>/);
+  assert.match(passportVault, /authEpoch\.current === epoch && getAuth\(app\)\.currentUser\?\.uid === uid/);
+  assert.match(passportVault, /getOperationalExportDownloadUrl\(\{ jobId: job\.id \}\); if \(!ownerCanDownload\(uid, epoch\)\) return; window\.location\.assign/);
+  assert.match(passportVault, /getOperationalExportDownloadUrl\(\{ jobId: job\.id, file: 'runtime', assetId \}\); if \(!ownerCanDownload\(uid, epoch\)\) return; window\.location\.assign/);
+  assert.doesNotMatch(passportVault, /getOperationalExportDownloadUrl\([^\n]+\); window\.location\.assign/);
+});
+
+test('R577: Consent keeps cached/pending data unverified and rejects late owner download URLs', () => {
+  assert.match(consentSanctuary, /snapshot\.metadata\.fromCache \|\| snapshot\.metadata\.hasPendingWrites \|\| !navigator\.onLine/);
+  assert.match(consentSanctuary, /setLoadState\('unverified'\)/);
+  assert.match(consentSanctuary, /const invalidateOwnerView = \(\) => \{[\s\S]*?ownerEpoch\.current \+= 1[\s\S]*?setPolicy\(unverifiedPolicy\(\)\)[\s\S]*?setReceipts\(\[\]\)[\s\S]*?setExports\(\[\]\)[\s\S]*?setDeletions\(\[\]\)/);
+  assert.match(consentSanctuary, /setReconnectEpoch\(\(value\) => value \+ 1\)/);
+  assert.match(consentSanctuary, /\}, \[user, explicitDemo, reconnectEpoch\]\)/);
+  assert.match(consentSanctuary, /const ownerCanDownload = \(uid: string \| undefined, epoch: number\) =>/);
+  assert.match(consentSanctuary, /ownerEpoch\.current === epoch && getAuth\(app\)\.currentUser\?\.uid === uid/);
+  assert.match(consentSanctuary, /getOperationalExportDownloadUrl\(\{ jobId: job\.id \}\); if \(!ownerCanDownload\(uid, epoch\)\) return; window\.location\.assign/);
+  assert.match(consentSanctuary, /getOperationalExportDownloadUrl\(\{ jobId: job\.id, file: 'runtime', assetId \}\); if \(!ownerCanDownload\(uid, epoch\)\) return; window\.location\.assign/);
+  assert.doesNotMatch(consentSanctuary, /getOperationalExportDownloadUrl\([^\n]+\); window\.location\.assign/);
+});
