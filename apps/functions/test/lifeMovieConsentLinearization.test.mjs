@@ -28,7 +28,13 @@ const input = Object.freeze({
 })
 const context = Object.freeze({ auth: { uid: UID } })
 
-function environment({ consent = 'authorized', manifest = null, onTransactionStart, failAudit = false } = {}) {
+function environment(options = {}) {
+  // A supplied undefined value is an explicitly MISSING consent field, never
+  // the authorized default. Do not let JS parameter defaults hide this case.
+  const { manifest = null, onTransactionStart: hook, failAudit = false } = options
+  let onTransactionStart = hook
+  const consent = Object.prototype.hasOwnProperty.call(options, 'consent')
+    ? options.consent : 'authorized'
   const docs = new Map()
   docs.set(MEMORY, { ownerId: UID, consentState: consent, deleted: false })
   if (manifest) docs.set(MOVIE, { ownerId: UID, ...manifest })
