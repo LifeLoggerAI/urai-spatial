@@ -242,6 +242,10 @@ test('waitlist confirmation must be backed by a successful remote write', () => 
   assert.match(signup, /return \{ \.\.\.signup, persistedRemotely: false \};\s*\}/)
   assert.match(page, /if \(!saved\.persistedRemotely\)/)
   assert.match(page, /It has not reached the waitlist/)
+  // The approved Marketing-to-UrAi handoff never caches raw emails on the device.
+  assert.doesNotMatch(signup, /\b(?:localStorage|sessionStorage|writeLocal)\b/)
+  assert.doesNotMatch(page, /Your email is saved only on this device/)
+  assert.match(page, /did not save your email on this device/)
   assert.match(page, /trackLaunchEvent\("early_access_signup_completed"\)/)
   assert.ok(page.indexOf('if (!saved.persistedRemotely)') < page.indexOf('trackLaunchEvent("early_access_signup_completed")'))
 })
