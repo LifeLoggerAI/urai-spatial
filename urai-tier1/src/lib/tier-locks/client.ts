@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { getAuth, onIdTokenChanged } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
-import { functions, firebasePublicEnvReady } from '../firebase/client'
+import { app, functions, firebasePublicEnvReady } from '../firebase/client'
+import { currentTierLockDecision } from './tierLockDecisionOwner.mjs'
 import { evaluateTierLock } from './evaluateTierLock'
 import type { SpatialFeatureId, TierLockDecision, TierLockContext, UraiTier } from './types'
 
@@ -46,52 +48,69 @@ export function useUserTier(): UraiTier {
   return tier
 }
 
+type AuthIdentity = { uid: string | null; epoch: number }
+type BoundTierDecision = {
+  uid: string
+  epoch: number
+  featureId: SpatialFeatureId
+  userTier: UraiTier
+  decision: TierLockDecision
+}
+
 export function useSpatialTierLock(featureId: SpatialFeatureId): TierLockDecision {
   const userTier = useUserTier()
-  const [decision, setDecision] = useState<TierLockDecision>(() =>
-    evaluateTierLock(featureId, defaultContext(userTier))
-  )
+  const [identity, setIdentity] = useState<AuthIdentity>({ uid: null, epoch: 0 })
+  const [resolved, setResolved] = useState<BoundTierDecision | null>(null)
+
+  useEffect(() => {
+    if (!firebasePublicEnvReady) return
+    // Every sign-out, owner switch or token refresh creates a new generation.
+    // Until Firebase Auth reports a user, nonpublic grants remain unavailable.
+    return onIdTokenChanged(getAuth(app),
+      (user) => {
+        setResolved(null)
+        setIdentity((previous) => ({ uid: user?.uid ?? null, epoch: previous.epoch + 1 }))
+      },
+      () => {
+        setResolved(null)
+        setIdentity((previous) => ({ uid: null, epoch: previous.epoch + 1 }))
+      },
+    )
+  }, [])
 
   useEffect(() => {
     let active = true
     const fallback = evaluateTierLock(featureId, defaultContext(userTier))
-    setDecision(fallback)
-
+    if (!identity.uid) return () => { active = false }
     const callable = getCallable()
-
-    if (!callable) {
-      return () => {
-        active = false
-      }
-    }
+    if (!callable) return () => { active = false }
 
     callable({ featureId })
       .then((res: any) => {
         if (!active) return
-
         const data = res.data as TierLockDecision
-        setDecision(data)
-
+        if (!data || data.featureId !== featureId || typeof data.allowed !== 'boolean') return
+        setResolved({ uid: identity.uid!, epoch: identity.epoch, featureId, userTier, decision: data })
         telemetry(data.allowed ? 'spatial_lock_allowed' : 'spatial_lock_denied', {
           featureId: data.featureId,
-          reasons: data.reasons
+          reasons: data.reasons,
         })
       })
       .catch(() => {
         if (!active) return
-
         telemetry('spatial_lock_fallback_rendered', {
           featureId,
-          fallback: fallback.safeFallbackFeatureId
+          fallback: fallback.safeFallbackFeatureId,
         })
       })
 
-    return () => {
-      active = false
-    }
-  }, [featureId, userTier])
+    return () => { active = false }
+  }, [featureId, userTier, identity.uid, identity.epoch])
 
-  return decision
+  const fallback = evaluateTierLock(featureId, defaultContext(userTier))
+  // Epoch and UID are compared while rendering: previous grants cannot flash
+  // after an identity change while React awaits the effect cleanup.
+  return currentTierLockDecision(resolved, identity, featureId, userTier) ?? fallback
 }
 
 export function useSpatialFeatureEnabled(featureId: SpatialFeatureId): boolean {
