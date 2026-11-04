@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { currentXrReleaseAuthority, verifyConditionalXrRoutes, inspectXrDeployProof } from './lib/xr-release-authority.mjs'
 import { inspectExactDeploymentSource } from './lib/exact-deploy-source-check.mjs'
+import { inspectReleaseFingerprintParity } from './lib/release-fingerprint-parity.mjs'
 const xrAuthority = currentXrReleaseAuthority()
 const baseUrl = process.env.URAI_DEPLOY_URL
 const requireLiveCommitSha = process.env.REQUIRE_LIVE_COMMIT_SHA === 'true'
@@ -244,6 +245,37 @@ for (const { paths, markers, bundleMarkers = [], forbidden = [] } of routes) {
 
 failures.push(...await verifyConditionalXrRoutes(normalizedBase, xrAuthority))
 checkCount += 4
+
+// When exact deployment admission is requested, both public release records
+// must agree with the immutable reviewed SHA. Neither a valid self-reported
+// commit nor a hosting-only predecessor may independently prove live readiness.
+if (requireExactDeploySha) {
+  const loadReleaseJson = async (route) => {
+    const requested = new URL(route, parsedBase)
+    const response = await fetch(requested, {
+      method: 'GET', redirect: 'manual', cache: 'no-store',
+      headers: { accept: 'application/json', 'cache-control': 'no-cache', 'user-agent': 'urai-live-smoke/4.3' },
+    })
+    const final = new URL(response.url)
+    if (!response.ok || final.origin !== requested.origin || final.pathname !== requested.pathname ||
+        final.search || !response.headers.get('content-type')?.toLowerCase().includes('application/json')) {
+      throw new Error('release_resource_unavailable_or_redirected')
+    }
+    return await response.json()
+  }
+  try {
+    const [fingerprint, proof] = await Promise.all([
+      loadReleaseJson('/release-fingerprint.json'),
+      loadReleaseJson('/api/system/deploy-proof'),
+    ])
+    const verdict = inspectReleaseFingerprintParity(fingerprint, proof, expectedDeploySha)
+    if (!verdict.ok) failures.push(`public release fingerprint parity refused: ${verdict.reason}`)
+    else console.log('OK exact reviewed release fingerprint and server proof parity')
+  } catch {
+    failures.push('public release fingerprint parity could not be verified')
+  }
+  checkCount += 2
+}
 
 if (failures.length > 0) {
   console.error('URAI live smoke failed:')
