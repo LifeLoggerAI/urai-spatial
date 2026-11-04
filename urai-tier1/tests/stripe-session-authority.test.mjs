@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test, { beforeEach, after } from 'node:test';
 import { registerHooks } from 'node:module';
-import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import ts from 'typescript';
+import { mkdtempSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,6 +39,20 @@ const hooks = registerHooks({
     return nextResolve(specifier, context);
   },
   load(url, context, nextLoad) {
+    // Read the ACTUAL TS route/function implementation under test. GitHub
+    // ESM imports reach an explicit .ts URL, which native Node22 cannot load
+    // when this fixture's custom resolver short-circuits the tsx loader.
+    // Transpilation only removes type syntax; no source security checks are mocked.
+    if (url.startsWith(new URL('../src/', import.meta.url).href) && /\.tsx?$/.test(url)) {
+      const filepath = fileURLToPath(url);
+      const { outputText, diagnostics } = ts.transpileModule(readFileSync(filepath, 'utf8'), {
+        fileName: filepath, reportDiagnostics: true,
+        compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext,
+          jsx: ts.JsxEmit.ReactJSX },
+      });
+      assert.equal((diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error).length, 0);
+      return { format: 'module', source: outputText, shortCircuit: true };
+    }
     if (!url.startsWith('urai-stripe-authority-fixture:')) return nextLoad(url, context);
     const kind = url.slice('urai-stripe-authority-fixture:'.length);
     let source;
