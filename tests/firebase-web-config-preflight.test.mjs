@@ -172,3 +172,16 @@ test('existing Firebase default app must match every public identity field', () 
   assert.match(source, /matchesConfiguredFirebaseAppIdentity\(app.options, firebaseConfig\)/)
   assert.match(source, /const fallbackProjectId = 'urai-local'/)
 })
+
+
+test('tier-lock callable requires canonical Firebase readiness (no three-field project initialization)', () => {
+  const tierLocks = readFileSync(
+    fileURLToPath(new URL('../urai-tier1/src/lib/tier-locks/client.ts', import.meta.url)),
+    'utf8',
+  )
+  assert.match(tierLocks, /import \{ functions, firebasePublicEnvReady \} from ['"]\.\.\/firebase\/client['"]/)
+  assert.match(tierLocks, /if \(!firebasePublicEnvReady\) return null/)
+  assert.match(tierLocks, /return httpsCallable\(functions, ['"]evaluateSpatialTierLock['"]\)/)
+  assert.doesNotMatch(tierLocks, /\b(?:initializeApp|getApps|getApp|getFunctions)\s*\(/)
+  assert.doesNotMatch(tierLocks, /process\.env\.NEXT_PUBLIC_FIREBASE_(?:API_KEY|APP_ID|PROJECT_ID)/)
+})
