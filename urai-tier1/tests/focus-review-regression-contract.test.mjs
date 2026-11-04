@@ -52,10 +52,15 @@ test('hard travel fallback preserves canonical replay identity and context', () 
     "'placeId'",
     "'movieId'",
     "'chapterId'",
-    "target.searchParams.set('memoryId', nodeId)",
-    "target.searchParams.set('node', memoryId)",
+    "const selectedMemoryId = context?.memoryId ?? target.searchParams.get('memoryId')",
+    "const sameMemory = Boolean(selectedMemoryId && currentMemoryId && selectedMemoryId === currentMemoryId)",
+    "target.searchParams.set('memoryId', context.memoryId)",
+    "target.searchParams.set('manifestId', context.replayManifestId)",
   ]) assert.ok(worldEvents.includes(token), `world fallback missing ${token}`)
-  assert.match(worldEvents, /context\?\.demo\) target\.searchParams\.set\('demo', '1'\)/)
+  assert.match(worldEvents, /memoryDestination && context\?\.demo && \(!selectedMemoryId \|\| !currentMemoryId \|\| sameMemory\)/)
+  assert.match(worldEvents, /if \(\(key === 'node' \|\| key === 'manifestId' \|\| key === 'movieId' \|\| key === 'chapterId' \|\| key === 'demo'\)/)
+  assert.doesNotMatch(worldEvents, /target\.searchParams\.set\('memoryId', nodeId\)/)
+  assert.doesNotMatch(worldEvents, /target\.searchParams\.set\('node', memoryId\)/)
   const contextIndex = worldEvents.indexOf("if (context?.demo) target.searchParams.set('demo', '1')")
   const entryPortalIndex = worldEvents.indexOf("if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)")
   const cameraCheckpointIndex = worldEvents.indexOf("if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)")
