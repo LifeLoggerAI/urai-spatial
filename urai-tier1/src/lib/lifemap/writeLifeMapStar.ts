@@ -1,5 +1,5 @@
-import { getApp, getApps } from 'firebase/app'
-import { getFunctions, httpsCallable } from 'firebase/functions'
+import { httpsCallable } from 'firebase/functions'
+import { functions, firebasePublicEnvReady } from '../firebase/client'
 
 export type LifeMapStarWriteInput = {
   userId: string
@@ -10,11 +10,6 @@ export type LifeMapStarWriteInput = {
 export type LifeMapStarWriteResult = {
   ok: true
   id?: string
-}
-
-function getFunctionsInstance() {
-  const app = getApps().length ? getApp() : getApp()
-  return getFunctions(app)
 }
 
 export async function writeLifeMapStar(input: LifeMapStarWriteInput): Promise<LifeMapStarWriteResult> {
@@ -31,8 +26,14 @@ export async function writeLifeMapStar(input: LifeMapStarWriteInput): Promise<Li
     throw new Error('writeLifeMapStar: patch must be an object')
   }
 
+  // A public configuration or an unrelated default SDK app is not authority
+  // to write private Memory Stars to Firebase.
+  if (!firebasePublicEnvReady) {
+    throw new Error('writeLifeMapStar: Firebase identity is not ready')
+  }
+
   const fn = httpsCallable<LifeMapStarWriteInput, LifeMapStarWriteResult>(
-    getFunctionsInstance(),
+    functions,
     'writeLifeMapStar'
   )
 

@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { initializeApp, getApps } from 'firebase/app'
-import { getFunctions, httpsCallable } from 'firebase/functions'
+import { getAuth, onIdTokenChanged } from 'firebase/auth'
+import { httpsCallable } from 'firebase/functions'
+import { app, functions, firebasePublicEnvReady } from '../firebase/client'
+import { currentTierLockDecision } from './tierLockDecisionOwner.mjs'
 import { evaluateTierLock } from './evaluateTierLock'
 import type { SpatialFeatureId, TierLockDecision, TierLockContext, UraiTier } from './types'
-
-const cache = new Map<string, TierLockDecision>()
 
 function telemetry(event: string, payload: Record<string, unknown>) {
   if (process.env.NODE_ENV !== 'production') console.info('[spatial-telemetry]', event, payload)
@@ -14,7 +14,8 @@ function telemetry(event: string, payload: Record<string, unknown>) {
 
 function defaultContext(userTier: UraiTier): TierLockContext {
   return {
-    authenticated: userTier !== 'tier1',
+    // A public tier hint is not a verified signed-in session.
+    authenticated: false,
     userTier,
     featureFlags: {
       spatial_home_sky: true,
@@ -27,14 +28,10 @@ function defaultContext(userTier: UraiTier): TierLockContext {
 }
 
 function getCallable() {
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-  const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID
-
-  if (!apiKey || !projectId || !appId) return null
-
-  const app = getApps()[0] ?? initializeApp({ apiKey, projectId, appId })
-  return httpsCallable(getFunctions(app), 'evaluateSpatialTierLock')
+  // The shared client has already validated all six Firebase identity fields
+  // and any pre-existing default app. Never initialize a second project here.
+  if (!firebasePublicEnvReady) return null
+  return httpsCallable(functions, 'evaluateSpatialTierLock')
 }
 
 export function useUserTier(): UraiTier {
@@ -51,62 +48,69 @@ export function useUserTier(): UraiTier {
   return tier
 }
 
+type AuthIdentity = { uid: string | null; epoch: number }
+type BoundTierDecision = {
+  uid: string
+  epoch: number
+  featureId: SpatialFeatureId
+  userTier: UraiTier
+  decision: TierLockDecision
+}
+
 export function useSpatialTierLock(featureId: SpatialFeatureId): TierLockDecision {
   const userTier = useUserTier()
-  const [decision, setDecision] = useState<TierLockDecision>(() =>
-    evaluateTierLock(featureId, defaultContext(userTier))
-  )
+  const [identity, setIdentity] = useState<AuthIdentity>({ uid: null, epoch: 0 })
+  const [resolved, setResolved] = useState<BoundTierDecision | null>(null)
+
+  useEffect(() => {
+    if (!firebasePublicEnvReady) return
+    // Every sign-out, owner switch or token refresh creates a new generation.
+    // Until Firebase Auth reports a user, nonpublic grants remain unavailable.
+    return onIdTokenChanged(getAuth(app),
+      (user) => {
+        setResolved(null)
+        setIdentity((previous) => ({ uid: user?.uid ?? null, epoch: previous.epoch + 1 }))
+      },
+      () => {
+        setResolved(null)
+        setIdentity((previous) => ({ uid: null, epoch: previous.epoch + 1 }))
+      },
+    )
+  }, [])
 
   useEffect(() => {
     let active = true
-    const key = `${userTier}:${featureId}`
-
-    if (cache.has(key)) {
-      setDecision(cache.get(key)!)
-      return () => {
-        active = false
-      }
-    }
-
     const fallback = evaluateTierLock(featureId, defaultContext(userTier))
-    setDecision(fallback)
-
+    if (!identity.uid) return () => { active = false }
     const callable = getCallable()
-
-    if (!callable) {
-      return () => {
-        active = false
-      }
-    }
+    if (!callable) return () => { active = false }
 
     callable({ featureId })
       .then((res: any) => {
         if (!active) return
-
         const data = res.data as TierLockDecision
-        cache.set(key, data)
-        setDecision(data)
-
+        if (!data || data.featureId !== featureId || typeof data.allowed !== 'boolean') return
+        setResolved({ uid: identity.uid!, epoch: identity.epoch, featureId, userTier, decision: data })
         telemetry(data.allowed ? 'spatial_lock_allowed' : 'spatial_lock_denied', {
           featureId: data.featureId,
-          reasons: data.reasons
+          reasons: data.reasons,
         })
       })
       .catch(() => {
         if (!active) return
-
         telemetry('spatial_lock_fallback_rendered', {
           featureId,
-          fallback: fallback.safeFallbackFeatureId
+          fallback: fallback.safeFallbackFeatureId,
         })
       })
 
-    return () => {
-      active = false
-    }
-  }, [featureId, userTier])
+    return () => { active = false }
+  }, [featureId, userTier, identity.uid, identity.epoch])
 
-  return decision
+  const fallback = evaluateTierLock(featureId, defaultContext(userTier))
+  // Epoch and UID are compared while rendering: previous grants cannot flash
+  // after an identity change while React awaits the effect cleanup.
+  return currentTierLockDecision(resolved, identity, featureId, userTier) ?? fallback
 }
 
 export function useSpatialFeatureEnabled(featureId: SpatialFeatureId): boolean {

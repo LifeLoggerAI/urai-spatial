@@ -40,7 +40,15 @@ pnpm check:firebase:web:production
 Use the staging command only with staging web config and the production command
 only with production web config. The check is intentionally explicit and
 fails if required fields, project identity, web-app identity, or environment
-alignment are missing/invalid. It neither reveals key values nor contacts
+alignment are missing/invalid. For Storage this review-only preflight accepts only the selected project's
+canonical default bucket name (`<project>.firebasestorage.app` or
+`<project>.appspot.com`). An arbitrary third-party bucket, even with an otherwise
+correct project ID, fails closed. For Auth it accepts only the matching
+`<project>.firebaseapp.com` domain until any custom domain is verified and
+explicitly approved in source. Real existing custom buckets or Auth domains
+may therefore remain blocked; do not change them just to satisfy this static
+check. Review their exact provider-owned identifiers and add only approved
+names to a separately reviewed allowlist. This check neither reveals key values nor contacts
 Firebase. To verify actual connectivity, Auth, Rules, functions, and hosting,
 use the governed integration tests and protected deployment evidence workflow.
 

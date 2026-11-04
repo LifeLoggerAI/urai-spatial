@@ -1,5 +1,5 @@
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { getFirebaseDb } from "../../lib/firebase/client";
+import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 
 export type LaunchEventName =
   | "landing_viewed"
@@ -28,6 +28,8 @@ export async function trackLaunchEvent(name: LaunchEventName, properties: Record
     const current = JSON.parse(window.localStorage.getItem(key) ?? "[]");
     window.localStorage.setItem(key, JSON.stringify([payload, ...current].slice(0, 500)));
   }
+
+  if (!firebasePublicEnvReady) return payload;
 
   try {
     const db = getFirebaseDb();
