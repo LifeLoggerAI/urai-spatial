@@ -52,9 +52,14 @@ requireMatch('Selected-memory hook gates Life Map node identity', selectedMemory
 requireMatch('Selected-memory manifest identity check', selectedMemoryHook, /parsed\.memory\.replayManifest\.id !== manifestId/)
 
 requireMatch(
+  'Focus scopes return-node identity to current selected memory',
+  focusClient,
+  /const returnNode = sameMemory && validNode && \(originalSelection \|\| projectedSelection\) \? node! : memory\.star\.id/,
+)
+requireMatch(
   'Focus forwards complete selected identity',
   focusClient,
-  /new URLSearchParams\(\{\s*memoryId:\s*memory\.id,\s*manifestId:\s*memory\.replayManifest\.id,\s*node:\s*memory\.star\.id,\s*from:\s*'focus-artifact',?\s*\}\)/,
+  /new URLSearchParams\(\{\s*memoryId:\s*memory\.id,\s*manifestId:\s*memory\.replayManifest\.id,\s*node:\s*returnNode,\s*from:\s*'focus-artifact',?\s*\}\)/,
 )
 requireMatch('Focus enters Replay through world travel', focusClient, /requestUraiWorldTravel\(\{/)
 requireMatch('Focus Replay destination', focusClient, /destination: 'replay'/)
