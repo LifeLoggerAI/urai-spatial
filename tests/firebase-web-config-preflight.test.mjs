@@ -68,3 +68,54 @@ test('client readiness requires web app ID and compatibility helper shares canon
   assert.match(old, /from ['"]\.\/client['"]/)
   assert.doesNotMatch(old, /initializeApp/)
 })
+
+test('R591: accept only canonical same-project default Storage bucket forms', () => {
+  for (const [target, project] of [['production', 'urai-4dc1d'], ['staging', 'urai-staging']]) {
+    for (const bucket of [`${project}.appspot.com`, `${project}.firebasestorage.app`]) {
+      const result = check(target, { ...webEnv(project), NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: bucket })
+      assert.equal(result.status, 0, `${target}: ${bucket}: ${result.stderr}`)
+    }
+  }
+})
+
+test('R591: reject unknown, cross-project, malformed and self-declared Storage buckets', () => {
+  for (const [target, project, other] of [
+    ['production', 'urai-4dc1d', 'urai-staging'],
+    ['staging', 'urai-staging', 'urai-4dc1d'],
+  ]) {
+    for (const bucket of [
+      `${other}.appspot.com`,
+      `${other}.firebasestorage.app`,
+      'unrelated-enterprise.firebasestorage.app',
+      'my-company-custom-bucket',
+      `${project}.appspot.com.untrusted.example`,
+      `gs://${project}.firebasestorage.app`,
+      `${project}.appspot.com/`,
+    ]) {
+      const result = check(target, { ...webEnv(project), NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: bucket })
+      assert.equal(result.status, 1, `${target} incorrectly accepted ${bucket}`)
+      assert.match(result.stderr, /Storage bucket is not a reviewed default/)
+      assert.doesNotMatch(result.stdout, /configuration verified/)
+    }
+  }
+})
+
+test('R591: unknown Firebase Auth custom domains fail closed until independently reviewed', () => {
+  for (const [target, project, other] of [
+    ['production', 'urai-4dc1d', 'urai-staging'],
+    ['staging', 'urai-staging', 'urai-4dc1d'],
+  ]) {
+    for (const domain of [
+      `${other}.firebaseapp.com`,
+      'login.urai.app',
+      'unrelated-enterprise.example',
+      `${project}.firebaseapp.com.untrusted.example`,
+      `https://${project}.firebaseapp.com`,
+      `${project}.firebaseapp.com:443`,
+    ]) {
+      const result = check(target, { ...webEnv(project), NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: domain })
+      assert.equal(result.status, 1, `${target} incorrectly accepted ${domain}`)
+      assert.match(result.stderr, /Auth domain is not a reviewed default/)
+    }
+  }
+})
