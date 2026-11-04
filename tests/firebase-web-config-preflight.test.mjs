@@ -3,6 +3,10 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
+import {
+  hasCanonicalFirebaseWebIdentityShape,
+  matchesConfiguredFirebaseAppIdentity,
+} from '../urai-tier1/src/lib/firebase/firebaseWebIdentity.mjs'
 
 const script = fileURLToPath(new URL('../scripts/firebase-web-config-preflight.mjs', import.meta.url))
 const canonical = fileURLToPath(new URL('../urai-tier1/src/lib/firebase/client.ts', import.meta.url))
@@ -64,7 +68,9 @@ test('client readiness requires web app ID and compatibility helper shares canon
   const old = readFileSync(compatibility, 'utf8')
   const ready = client.match(/export const firebasePublicEnvReady = Boolean\(([\s\S]*?)\)/)?.[1]
   assert.ok(ready)
-  assert.match(ready, /NEXT_PUBLIC_FIREBASE_APP_ID/)
+  assert.match(ready, /configuredShapeIsCanonical/)
+  assert.match(ready, /matchesConfiguredFirebaseAppIdentity/)
+  assert.match(client, /appId: PUBLIC_FIREBASE_ENV\.NEXT_PUBLIC_FIREBASE_APP_ID/)
   assert.match(old, /from ['"]\.\/client['"]/)
   assert.doesNotMatch(old, /initializeApp/)
 })
@@ -109,4 +115,60 @@ test('legacy Tier1 Firebase entrypoint reuses canonical app and guards seeded fa
   assert.match(legacy, /export const firebaseApp = firebasePublicEnvReady \? app : null/)
   assert.match(legacy, /export const db = firebaseApp \? getFirebaseDb\(\) : null/)
   assert.doesNotMatch(legacy, /\b(?:initializeApp|getApps|getFirestore)\s*\(/)
+})
+
+
+const runtimeIdentity = (project, suffix = 'firebasestorage.app') => ({
+  apiKey: 'integration-check-public-config',
+  authDomain: project + '.firebaseapp.com',
+  projectId: project,
+  storageBucket: project + '.' + suffix,
+  messagingSenderId: '1234567890',
+  appId: '1:1234567890:web:abc123def456',
+})
+
+test('runtime accepts only URAI first-party canonical Firebase identity shapes', () => {
+  for (const project of ['urai-4dc1d', 'urai-staging']) {
+    for (const suffix of ['firebasestorage.app', 'appspot.com']) {
+      assert.equal(hasCanonicalFirebaseWebIdentityShape(runtimeIdentity(project, suffix)), true)
+    }
+  }
+})
+
+test('runtime rejects cross-project, foreign bucket, unknown Auth host, and inconsistent app ID', () => {
+  const config = runtimeIdentity('urai-4dc1d')
+  const mutations = {
+    projectId: 'other-company',
+    authDomain: 'evil.firebaseapp.com',
+    storageBucket: 'other-company.firebasestorage.app',
+    messagingSenderId: '234567890',
+    appId: '1:234567890:web:abc',
+    apiKey: 'ci-firebase-api-key',
+  }
+  for (const [key, bad] of Object.entries(mutations)) {
+    assert.equal(hasCanonicalFirebaseWebIdentityShape({ ...config, [key]: bad }), false, key)
+  }
+})
+
+test('runtime refuses missing or padded public values rather than initializing another project', () => {
+  const valid = runtimeIdentity('urai-staging')
+  for (const key of Object.keys(valid)) {
+    assert.equal(hasCanonicalFirebaseWebIdentityShape({ ...valid, [key]: '' }), false, key)
+    assert.equal(hasCanonicalFirebaseWebIdentityShape({ ...valid, [key]: ' ' + valid[key] }), false, key)
+  }
+  assert.equal(hasCanonicalFirebaseWebIdentityShape(null), false)
+  assert.equal(hasCanonicalFirebaseWebIdentityShape({ ...valid, appId: '1:1234567890:ios:abc' }), false)
+})
+
+test('existing Firebase default app must match every public identity field', () => {
+  const valid = runtimeIdentity('urai-4dc1d')
+  assert.equal(matchesConfiguredFirebaseAppIdentity(valid, { ...valid }), true)
+  for (const key of Object.keys(valid)) {
+    assert.equal(matchesConfiguredFirebaseAppIdentity({ ...valid, [key]: 'wrong' }, valid), false, key)
+  }
+  assert.equal(matchesConfiguredFirebaseAppIdentity(null, valid), false)
+  const source = readFileSync(canonical, 'utf8')
+  assert.match(source, /hasCanonicalFirebaseWebIdentityShape/)
+  assert.match(source, /matchesConfiguredFirebaseAppIdentity\(app.options, firebaseConfig\)/)
+  assert.match(source, /const fallbackProjectId = 'urai-local'/)
 })
