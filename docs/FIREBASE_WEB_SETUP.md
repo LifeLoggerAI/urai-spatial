@@ -47,3 +47,26 @@ use the governed integration tests and protected deployment evidence workflow.
 Do **not** commit `.env.local` or service-account JSON. Server-only Firebase
 Admin uses protected, short-lived external-account WIF/ADC credentials per
 `docs/PRODUCTION_SECRETS.md`. No production deploy is authorized by this setup.
+
+## R591: fail-closed default domain and bucket review (HOLD)
+
+The static preflight recognizes only the selected project's default Firebase Auth
+domain (`<project>.firebaseapp.com`) and its two possible default Storage
+bucket names (`<project>.appspot.com` or `<project>.firebasestorage.app`).
+These are allowed **naming patterns**, not a claim that either bucket exists,
+that the app is correctly registered, or that any IAM/Rules are secure.
+
+A custom Auth domain, a custom Storage bucket, or any unrelated bucket must
+FAIL the static preflight. Do not add environment-controlled bypasses. If a
+legitimate custom value is necessary, an independent reviewer must verify it
+against the **existing target Firebase project** in the provider console and
+approve an exact-source allowlist amendment and fresh negative tests. A custom
+domain or bucket is not authorized merely because it is present in an .env
+file, is accessible, or matches a syntactic pattern.
+
+Validation reads **public web config only**; it does not retrieve service
+account keys, ID documents, private IAM evidence, or live customer data.
+Even a successful check does not prove connectivity, signed-in account
+isolation, post-revocation GCS denial, owner deletion, production billing,
+protected GitHub checks, independent approval, or Genesis launch clearance.
+Keep all launch gates on HOLD.
