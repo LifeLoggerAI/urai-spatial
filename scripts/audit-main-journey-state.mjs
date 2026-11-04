@@ -53,8 +53,17 @@ requireMatch('Selected-memory manifest identity check', selectedMemoryHook, /par
 requireMatch(
   'Focus forwards complete selected identity',
   focusClient,
-  /new URLSearchParams\(\{\s*memoryId:\s*memory\.id,\s*manifestId:\s*memory\.replayManifest\.id,\s*node:\s*memory\.star\.id,\s*from:\s*'focus-artifact',?\s*\}\)/,
+  /new URLSearchParams\(\{\s*memoryId:\s*memory\.id,\s*manifestId:\s*memory\.replayManifest\.id,\s*node:\s*returnNode,\s*from:\s*'focus-artifact',?\s*\}\)/,
 )
+const approvedReturnNodeGuards = [
+  "const sameMemory = incoming.get('memoryId') === memory.id && incoming.get('manifestId') === memory.replayManifest.id",
+  "const validNode = Boolean(node && /^[A-Za-z0-9._:-]{1,120}$/.test(node))",
+  "const originalSelection = fromLifeMap && node === incoming.get('returnNode')",
+  "const projectedSelection = node === `canonical-memory:${memory.id}`",
+  "const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id",
+]
+requireCondition('Focus Replay return node remains bound to the selected memory and vetted visual star', approvedReturnNodeGuards.every((marker) => focusClient.includes(marker)))
+
 requireMatch('Focus enters Replay through world travel', focusClient, /requestUraiWorldTravel\(\{/)
 requireMatch('Focus Replay destination', focusClient, /destination: 'replay'/)
 requireMatch('Focus Replay manifest context', focusClient, /replayManifestId: memory\.replayManifest\.id/)
