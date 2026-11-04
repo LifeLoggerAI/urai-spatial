@@ -35,8 +35,10 @@ const hooks = registerHooks({
     // Read the ACTUAL TS route/function implementation under test. GitHub
     // ESM imports reach an explicit .ts URL, which native Node22 cannot load
     // when this fixture's custom resolver short-circuits the tsx loader.
-    // Transpilation only removes type syntax; no source security checks are mocked.
-    if (url.startsWith(new URL('../src/', import.meta.url).href) && /\.tsx?$/.test(url)) {
+    // Transpilation only removes type syntax for both the Next route and the
+    // original Functions stripeEntitlements source; no security checks are mocked.
+    if ((url.startsWith(new URL('../src/', import.meta.url).href)
+      || url.startsWith(new URL('../../apps/functions/src/', import.meta.url).href)) && /\.tsx?$/.test(url)) {
       const filepath = fileURLToPath(url);
       const { outputText, diagnostics } = ts.transpileModule(readFileSync(filepath, 'utf8'), {
         fileName: filepath, reportDiagnostics: true,
