@@ -1,9 +1,16 @@
 #!/usr/bin/env node
 import { currentXrReleaseAuthority, verifyConditionalXrRoutes, inspectXrDeployProof } from './lib/xr-release-authority.mjs'
+import { inspectExactDeploymentSource } from './lib/exact-deploy-source-check.mjs'
 const xrAuthority = currentXrReleaseAuthority()
 const baseUrl = process.env.URAI_DEPLOY_URL
 const requireLiveCommitSha = process.env.REQUIRE_LIVE_COMMIT_SHA === 'true'
 const requireCustomDomain = process.env.REQUIRE_CUSTOM_DOMAIN === 'true'
+const requireExactDeploySha = process.env.REQUIRE_EXACT_DEPLOY_SHA === 'true'
+const expectedDeploySha = process.env.URAI_EXPECT_DEPLOY_SHA
+if (requireExactDeploySha && !/^[0-9a-f]{40}$/.test(expectedDeploySha || '')) {
+  console.error('REQUIRE_EXACT_DEPLOY_SHA requires a pinned 40-character URAI_EXPECT_DEPLOY_SHA')
+  process.exit(1)
+}
 
 if (!baseUrl) {
   console.error('URAI_DEPLOY_URL is required, for example https://urai.app')
@@ -155,7 +162,8 @@ const inspectStaleCopy = (body, requestedPath) => {
   try {
     const proof = JSON.parse(body)
     const declaredForbiddenCopy = Array.isArray(proof?.forbiddenLiveCopy) ? proof.forbiddenLiveCopy : []
-    const deployProofContractInvalid = !inspectXrDeployProof(proof, xrAuthority) || staleFallbackPatterns.some(
+    const deployProofContractInvalid = !inspectXrDeployProof(proof, xrAuthority) ||
+      (requireExactDeploySha && !inspectExactDeploymentSource(proof, expectedDeploySha).ok) || staleFallbackPatterns.some(
       (pattern) => !declaredForbiddenCopy.some((value) => pattern.test(String(value))),
     )
     const staleScanProof = { ...proof, forbiddenLiveCopy: [] }
