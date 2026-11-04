@@ -6,15 +6,14 @@ import { functions, firebasePublicEnvReady } from '../firebase/client'
 import { evaluateTierLock } from './evaluateTierLock'
 import type { SpatialFeatureId, TierLockDecision, TierLockContext, UraiTier } from './types'
 
-const cache = new Map<string, TierLockDecision>()
-
 function telemetry(event: string, payload: Record<string, unknown>) {
   if (process.env.NODE_ENV !== 'production') console.info('[spatial-telemetry]', event, payload)
 }
 
 function defaultContext(userTier: UraiTier): TierLockContext {
   return {
-    authenticated: userTier !== 'tier1',
+    // A public tier hint is not a verified signed-in session.
+    authenticated: false,
     userTier,
     featureFlags: {
       spatial_home_sky: true,
@@ -55,15 +54,6 @@ export function useSpatialTierLock(featureId: SpatialFeatureId): TierLockDecisio
 
   useEffect(() => {
     let active = true
-    const key = `${userTier}:${featureId}`
-
-    if (cache.has(key)) {
-      setDecision(cache.get(key)!)
-      return () => {
-        active = false
-      }
-    }
-
     const fallback = evaluateTierLock(featureId, defaultContext(userTier))
     setDecision(fallback)
 
@@ -80,7 +70,6 @@ export function useSpatialTierLock(featureId: SpatialFeatureId): TierLockDecisio
         if (!active) return
 
         const data = res.data as TierLockDecision
-        cache.set(key, data)
         setDecision(data)
 
         telemetry(data.allowed ? 'spatial_lock_allowed' : 'spatial_lock_denied', {
