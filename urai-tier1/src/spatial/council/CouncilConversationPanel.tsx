@@ -33,7 +33,6 @@ import {
 import { requestCouncilSecondOpinion } from './councilSecondOpinion'
 
 export default function CouncilConversationPanel({ agent }: { agent: CouncilAgent }) {
-  const { loadGraphView, graphView } = useUraiWorldState()
   const actor = useSyncExternalStore(subscribeAIActor, getAIActorSnapshot, getServerAIActorSnapshot)
   const location = useBrowserLocation()
   const address = location.split('#')[0]
@@ -56,6 +55,10 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
 function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selectedMemory }: {
   agent: CouncilAgent; actor: AIActorSnapshot; memoryRouteId: string | null; selectedMemory: SelectedMemoryResult
 }) {
+  // This actor-bound child owns the graph controls. Keep the hook in the same
+  // component scope as its graph load handler and status, without bypassing the
+  // world provider's owner/route and source-revision invalidation checks.
+  const { loadGraphView, graphView } = useUraiWorldState()
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
   const [result, setResult] = useState<CouncilProviderResult | null>(null)
