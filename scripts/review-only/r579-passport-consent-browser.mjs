@@ -28,7 +28,10 @@ const server = http.createServer((req, res) => {
     if (!resolved.startsWith(outRoot + path.sep) && resolved !== outRoot) { res.writeHead(403); res.end(); return; }
     let file = resolved;
     if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-    else if (!fs.existsSync(file) && fs.existsSync(file + '.html')) file += '.html';
+    else if (!fs.existsSync(file)) {
+      const candidate = file.replace(/\/+$/, '') + '.html';
+      if (fs.existsSync(candidate)) file = candidate;
+    }
     if (!fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); res.end('Not found'); return; }
     res.writeHead(200, { 'content-type': mime[path.extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' });
     fs.createReadStream(file).pipe(res);
