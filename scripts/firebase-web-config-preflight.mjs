@@ -33,14 +33,21 @@ for (const key of ['URAI_SPATIAL_FIREBASE_PROJECT_ID', 'FIREBASE_PROJECT_ID']) {
   }
 }
 
+// R591: the env file cannot grant itself authorization by presenting an
+// unknown Firebase Auth domain or Storage bucket. Accept only the default
+// same-project identifiers. Alternate/custom values require a separately
+// reviewed source allowlist update grounded in Firebase Console evidence.
 const authDomain = value('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN')
-if (authDomain.endsWith('.firebaseapp.com') && authDomain !== `${expectedProject}.firebaseapp.com`) {
-  errors.push('Firebase Auth domain points at a different project')
+if (authDomain && authDomain !== `${expectedProject}.firebaseapp.com`) {
+  errors.push('Firebase Auth domain is not a reviewed default for the selected target')
 }
 const storageBucket = value('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET')
-const otherProject = target === 'production' ? TARGETS.staging : TARGETS.production
-if (storageBucket === `${otherProject}.appspot.com` || storageBucket === `${otherProject}.firebasestorage.app`) {
-  errors.push('Firebase Storage bucket points at the opposite environment')
+const defaultBuckets = new Set([
+  `${expectedProject}.appspot.com`,
+  `${expectedProject}.firebasestorage.app`,
+])
+if (storageBucket && !defaultBuckets.has(storageBucket)) {
+  errors.push('Firebase Storage bucket is not a reviewed default for the selected target')
 }
 
 const sender = value('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID')
