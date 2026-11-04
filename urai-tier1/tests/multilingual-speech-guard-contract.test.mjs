@@ -144,6 +144,19 @@ test('invalid multilingual span reconstruction cannot yield partial rewritten so
   const {decision}=await probe('CS03',i=>{i.utterance.language_spans.pop()})
   assert.deepEqual(decision.language_spans,[]);assert.deepEqual(decision.assertions,[]);assert.equal(decision.status,'unknown')
 })
+test('missing or malformed utterance context fails closed without promoting candidates',async()=>{
+  for(const context of [undefined,null,{},'not-an-array']) {
+    const {decision}=await probe('CF01',i=>{
+      if(context===undefined) delete i.utterance.context
+      else i.utterance.context=context
+    })
+    assert.equal(decision.status,'unknown')
+    assert.deepEqual(decision.assertions,[])
+    assert.deepEqual(decision.interpretations,[])
+    assert.deepEqual(decision.language_spans,[])
+    assert.ok(decision.evidence_flags.includes('invalid-utterance-context'))
+  }
+})
 test('nonfinite feature values are never emitted as observations',async()=>{
   const {decision}=await probe('CS01',i=>{i.acoustic_stub.mean_f0_hz=Infinity;i.acoustic_stub.pause_ratio=NaN})
   assert.ok(decision.observations.every(o=>Number.isFinite(o.value)))
