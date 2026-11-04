@@ -29,7 +29,7 @@ import {
 } from './consentModel'
 import './consent-sanctuary.css'
 
-type LoadState = 'loading' | 'private' | 'demo' | 'signed-out' | 'unavailable' | 'offline'
+type LoadState = 'loading' | 'private' | 'demo' | 'signed-out' | 'unverified' | 'unavailable' | 'offline'
 type MutationState = 'idle' | 'previewing' | 'requested' | 'pending' | 'partial' | 'success' | 'failed' | 'conflict'
 type PendingChange = { domain: ConsentDomain; next: ConsentDomainPolicy }
 
@@ -151,6 +151,43 @@ function demoPolicy() {
   return policy
 }
 
+// Neutral display state, never an inferred owner permission or enforcement receipt.
+function unverifiedPolicy(): ConsentPolicy {
+  const policy = defaultConsentPolicy('unverified')
+  for (const domain of DOMAIN_ORDER) {
+    policy.domains[domain] = {
+      ...policy.domains[domain],
+      mode: 'denied',
+      retentionDays: null,
+      precise: false,
+      replayVisible: false,
+      lifeMapVisible: false,
+      modelContext: false,
+      sharingEnabled: false,
+      automationEnabled: false,
+      likenessEnabled: false,
+    }
+  }
+  policy.enforcement = { state: 'pending', jobId: null, affectedTargets: [], providerState: 'not-applicable' }
+  return policy
+}
+
+function isAuthoritativePolicy(value: unknown, ownerId: string): value is ConsentPolicy {
+  if (!isConsentPolicy(value, ownerId)) return false
+  if (!Number.isSafeInteger(value.revision) || value.revision < 0) return false
+  const enforcement = value.enforcement
+  if (!['pending', 'partially-enforced', 'fully-enforced', 'failed', 'conflicted'].includes(enforcement.state)) return false
+  if (!['not-applicable', 'pending', 'partial', 'complete', 'failed'].includes(enforcement.providerState)) return false
+  if (!Array.isArray(enforcement.affectedTargets) || !enforcement.affectedTargets.every((target) => typeof target === 'string')) return false
+  if (enforcement.jobId !== null && typeof enforcement.jobId !== 'string') return false
+  return DOMAIN_ORDER.every((domain) => {
+    const entry = value.domains[domain]
+    return (entry.retentionDays === null || (Number.isSafeInteger(entry.retentionDays) && Number(entry.retentionDays) >= 0))
+      && ['precise', 'replayVisible', 'lifeMapVisible', 'modelContext', 'sharingEnabled', 'automationEnabled', 'likenessEnabled']
+        .every((flag) => typeof entry[flag as keyof ConsentDomainPolicy] === 'boolean')
+  })
+}
+
 function errorCode(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   if (message.includes('CONSENT_REVISION_CONFLICT') || message.includes('aborted')) return 'conflict'
@@ -163,7 +200,7 @@ export default function ConsentSanctuaryClient() {
   const explicitDemo = params.get('demo') === '1'
   const [user, setUser] = useState<User | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('loading')
-  const [policy, setPolicy] = useState<ConsentPolicy>(() => demoPolicy())
+  const [policy, setPolicy] = useState<ConsentPolicy>(() => unverifiedPolicy())
   const [selectedDomain, setSelectedDomain] = useState<ConsentDomain>('memory')
   const [pending, setPending] = useState<PendingChange | null>(null)
   const [mutationState, setMutationState] = useState<MutationState>('idle')
@@ -178,15 +215,46 @@ export default function ConsentSanctuaryClient() {
   const [deletionConfirmation, setDeletionConfirmation] = useState('')
   const [operationBusy, setOperationBusy] = useState(false)
   const confirmRef = useRef<HTMLButtonElement>(null)
+  const activeOwnerRef = useRef<string | null>(null)
+  const [reconnectEpoch, setReconnectEpoch] = useState(0)
+  const clearOwnerView = () => {
+    setPolicy(unverifiedPolicy())
+    setPending(null)
+    setMutationState('idle')
+    setReceipts([])
+    setExports([])
+    setDeletions([])
+    setShowAudit(false)
+    setDeletionConfirmation('')
+    setOperationBusy(false)
+  }
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
-    const online = () => { setLoadState((state) => state === 'offline' ? 'loading' : state); setMessage('Connection restored. Rechecking server authority…') }
-    const offline = () => { setLoadState('offline'); setMessage('Offline. No change can be represented as saved or enforced.') }
+    const online = () => {
+      clearOwnerView()
+      if (explicitDemo) {
+        setPolicy(demoPolicy())
+        setLoadState('demo')
+        setMessage('DEMONSTRATION — no personal data. Controls cannot write production state.')
+      } else if (activeOwnerRef.current) {
+        setLoadState('loading')
+        setMessage('Connection restored. Rechecking server authority…')
+        setReconnectEpoch((value) => value + 1)
+      } else {
+        setLoadState('signed-out')
+        setMessage('Sign in to inspect or change private consent state.')
+      }
+    }
+    const offline = () => {
+      clearOwnerView()
+      setLoadState('offline')
+      setMessage('Offline. No change can be represented as saved or enforced.')
+    }
     window.addEventListener('online', online)
     window.addEventListener('offline', offline)
     return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline) }
-  }, [])
+  }, [explicitDemo])
 
   useEffect(() => {
     try {
@@ -197,18 +265,26 @@ export default function ConsentSanctuaryClient() {
 
   useEffect(() => {
     if (explicitDemo) {
+      activeOwnerRef.current = null
+      setUser(null)
+      clearOwnerView()
       setPolicy(demoPolicy())
       setLoadState('demo')
       setMessage('DEMONSTRATION — no personal data. Controls cannot write production state.')
       return
     }
     if (!firebasePublicEnvReady) {
+      activeOwnerRef.current = null
+      setUser(null)
+      clearOwnerView()
       setLoadState('unavailable')
       setMessage('The permission service is not configured. Controls remain unavailable rather than pretending to save.')
       return
     }
     const auth = getAuth(app)
     return onAuthStateChanged(auth, (nextUser) => {
+      activeOwnerRef.current = nextUser?.uid ?? null
+      clearOwnerView()
       setUser(nextUser)
       if (!nextUser) {
         setLoadState('signed-out')
@@ -216,18 +292,33 @@ export default function ConsentSanctuaryClient() {
         return
       }
       setLoadState(navigator.onLine ? 'loading' : 'offline')
+      setMessage('Verifying owner consent authority…')
+    }, () => {
+      activeOwnerRef.current = null
+      setUser(null)
+      clearOwnerView()
+      setLoadState('unavailable')
+      setMessage('Authentication could not be verified; consent remains unverified.')
     })
   }, [explicitDemo])
 
   useEffect(() => {
-    if (!user || explicitDemo || loadState === 'signed-out' || loadState === 'unavailable') return
-    const policyRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current')
+    if (!user || explicitDemo || activeOwnerRef.current !== user.uid) return
+    const ownerUid = user.uid
+    const policyRef = doc(getFirebaseDb(), 'users', ownerUid, 'privacyPolicy', 'current')
     return onSnapshot(policyRef, (snapshot) => {
+      if (activeOwnerRef.current !== ownerUid) return
       const rawPolicy = snapshot.data()
-      const next = snapshot.exists() && isConsentPolicy(rawPolicy, user.uid) ? rawPolicy : defaultConsentPolicy(user.uid)
-      setPolicy(next)
+      const serverVerified = !snapshot.metadata.fromCache && !snapshot.metadata.hasPendingWrites && navigator.onLine
+      if (!serverVerified || !snapshot.exists() || !isAuthoritativePolicy(rawPolicy, ownerUid)) {
+        clearOwnerView()
+        setLoadState(navigator.onLine ? 'unverified' : 'offline')
+        setMessage('Owner consent is missing, malformed, cached, or not server-verified. No grant or enforcement is claimed.')
+        return
+      }
+      setPolicy(rawPolicy)
       setLoadState('private')
-      const state = next.enforcement.state
+      const state = rawPolicy.enforcement.state
       setMutationState(state === 'fully-enforced' ? 'success' : state === 'partially-enforced' ? 'partial' : state === 'failed' ? 'failed' : state === 'conflicted' ? 'conflict' : 'pending')
       setMessage(
         state === 'fully-enforced' ? 'Repository-controlled targets report full enforcement.' :
@@ -236,19 +327,26 @@ export default function ConsentSanctuaryClient() {
         'Policy persisted. Enforcement is still pending.',
       )
     }, () => {
+      if (activeOwnerRef.current !== ownerUid) return
+      clearOwnerView()
       setLoadState('unavailable')
       setMessage('The consent authority could not be read. No private state was replaced with demo data.')
     })
-  }, [user, explicitDemo, loadState])
+  }, [user, explicitDemo, reconnectEpoch])
 
   useEffect(() => {
-    if (!user || explicitDemo) return
+    if (!user || explicitDemo || activeOwnerRef.current !== user.uid) return
+    const ownerUid = user.uid
+    let active = true
+    const admit = (write: (rows: PrivacyRow[]) => void) => (rows: PrivacyRow[]) => {
+      if (active && activeOwnerRef.current === ownerUid) write(rows)
+    }
     const unsubscribers = [
-      subscribeOperationalUserCollection('privacyReceipts', user.uid, setReceipts, () => setMessage('Audit receipts are temporarily unavailable.')),
-      subscribeOperationalUserCollection('exportJobs', user.uid, setExports, () => setMessage('Export status is temporarily unavailable.')),
-      subscribeOperationalUserCollection('deletionJobs', user.uid, setDeletions, () => setMessage('Deletion status is temporarily unavailable.')),
+      subscribeOperationalUserCollection('privacyReceipts', ownerUid, admit(setReceipts), () => { if (activeOwnerRef.current === ownerUid) setMessage('Audit receipts are temporarily unavailable.') }),
+      subscribeOperationalUserCollection('exportJobs', ownerUid, admit(setExports), () => { if (activeOwnerRef.current === ownerUid) setMessage('Export status is temporarily unavailable.') }),
+      subscribeOperationalUserCollection('deletionJobs', ownerUid, admit(setDeletions), () => { if (activeOwnerRef.current === ownerUid) setMessage('Deletion status is temporarily unavailable.') }),
     ]
-    return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
+    return () => { active = false; unsubscribers.forEach((unsubscribe) => unsubscribe()) }
   }, [user, explicitDemo])
 
   useEffect(() => {
@@ -266,14 +364,14 @@ export default function ConsentSanctuaryClient() {
   useEffect(() => { if (pending) requestAnimationFrame(() => confirmRef.current?.focus()) }, [pending])
 
   const propose = (domain: ConsentDomain, patch: Partial<ConsentDomainPolicy>) => {
-    if (loadState !== 'private') return
+    if (!user || activeOwnerRef.current !== user.uid || loadState !== 'private') return
     setPending({ domain, next: { ...policy.domains[domain], ...patch } })
     setMutationState('previewing')
     setMessage(`Previewing ${DOMAIN_LABELS[domain]}. Nothing has changed yet.`)
   }
 
   const confirmChange = async () => {
-    if (!pending || !user || loadState !== 'private') return
+    if (!pending || !user || activeOwnerRef.current !== user.uid || loadState !== 'private') return
     setMutationState('requested')
     setMessage('Requesting a revision-controlled policy change…')
     try {
@@ -293,7 +391,7 @@ export default function ConsentSanctuaryClient() {
   }
 
   const requestExport = async () => {
-    if (loadState !== 'private' || exportScopes.length === 0) return
+    if (!user || activeOwnerRef.current !== user.uid || loadState !== 'private' || exportScopes.length === 0) return
     setOperationBusy(true)
     try {
       const result = await createOperationalExportRequest(exportScopes)
@@ -304,7 +402,7 @@ export default function ConsentSanctuaryClient() {
   }
 
   const requestDeletion = async () => {
-    if (loadState !== 'private') return
+    if (!user || activeOwnerRef.current !== user.uid || loadState !== 'private') return
     const required = DELETION_SCOPES.find(([scope]) => scope === deletionScope)?.[2] ?? 'CONFIRM DELETE'
     if (deletionConfirmation !== required) { setMessage(`Type “${required}” exactly to confirm this scope.`); return }
     setOperationBusy(true)
@@ -318,11 +416,19 @@ export default function ConsentSanctuaryClient() {
   }
 
   const selected = policy.domains[selectedDomain]
-  const canWrite = loadState === 'private' && mutationState !== 'requested'
+  const showPolicy = loadState === 'private' || loadState === 'demo'
+  const displayedMode = showPolicy ? selected.mode : 'unverified'
+  const displayedRevision = showPolicy ? String(policy.revision) : 'unverified'
+  const displayedEnforcement = showPolicy ? policy.enforcement.state : 'unverified'
+  const displayedProvider = showPolicy ? policy.enforcement.providerState : 'unverified'
+  const visibleExports = showPolicy && user ? exports : []
+  const visibleDeletions = showPolicy && user ? deletions : []
+  const visibleReceipts = showPolicy && user ? receipts : []
+  const canWrite = Boolean(user && activeOwnerRef.current === user.uid && loadState === 'private' && mutationState !== 'requested')
   const requiredDeletionText = DELETION_SCOPES.find(([scope]) => scope === deletionScope)?.[2] ?? 'CONFIRM DELETE'
 
   return (
-    <main className="consentSanctuary" data-route-owner="consent-sanctuary" data-privacy-source={loadState} data-enforcement-state={policy.enforcement.state}>
+    <main className="consentSanctuary" data-route-owner="consent-sanctuary" data-privacy-source={loadState} data-enforcement-state={displayedEnforcement}>
       <a className="consentSkip" href="#consent-controls">Skip to direct controls</a>
       <div className="consentWorld" aria-hidden="true">
         {webglAvailable ? <Suspense fallback={null}><SanctuaryWorld policy={policy} selectedDomain={selectedDomain} onSelect={setSelectedDomain} reducedMotion={reducedMotion} /></Suspense> : (
@@ -337,12 +443,12 @@ export default function ConsentSanctuaryClient() {
       </header>
 
       <nav className="consentRealmNav" aria-label="Consent domains">
-        {DOMAIN_ORDER.map((domain) => <button key={domain} type="button" aria-pressed={domain === selectedDomain} onClick={() => setSelectedDomain(domain)}><span>{DOMAIN_LABELS[domain]}</span><small>{policy.domains[domain].mode}</small></button>)}
+        {DOMAIN_ORDER.map((domain) => <button key={domain} type="button" aria-pressed={domain === selectedDomain} onClick={() => setSelectedDomain(domain)}><span>{DOMAIN_LABELS[domain]}</span><small>{showPolicy ? policy.domains[domain].mode : 'unverified'}</small></button>)}
       </nav>
 
       <section id="consent-controls" tabIndex={-1} className="consentPanel" aria-label={`${DOMAIN_LABELS[selectedDomain]} controls`}>
-        <div className="consentPanelHeading"><div><p>Revision {policy.revision}</p><h2>{DOMAIN_LABELS[selectedDomain]}</h2></div><span className="consentMode" data-mode={selected.mode}>{selected.mode}</span></div>
-        <p><strong>Enforcement:</strong> {policy.enforcement.state}; provider state: {policy.enforcement.providerState}.</p>
+        <div className="consentPanelHeading"><div><p>Revision {displayedRevision}</p><h2>{DOMAIN_LABELS[selectedDomain]}</h2></div><span className="consentMode" data-mode={displayedMode}>{displayedMode}</span></div>
+        <p><strong>Enforcement:</strong> {displayedEnforcement}; provider state: {displayedProvider}.</p>
         <fieldset disabled={!canWrite}><legend>Authority level</legend><div className="consentChoiceGrid">{MODE_OPTIONS.map((mode) => <button type="button" key={mode} aria-pressed={selected.mode === mode} onClick={() => propose(selectedDomain, { mode })}>{mode}</button>)}</div></fieldset>
         <div className="consentToggleGrid">
           {selectedDomain === 'location' && <label><input disabled={!canWrite} type="checkbox" checked={selected.precise} onChange={(event) => propose(selectedDomain, { precise: event.target.checked })} /><span>Allow precise private location</span></label>}
@@ -360,7 +466,7 @@ export default function ConsentSanctuaryClient() {
         <p>Choose scope. Tokens, credentials, raw secret fields and legally excepted records are excluded.</p>
         <div className="consentToggleGrid">{EXPORT_SCOPES.map((scope) => <label key={scope}><input type="checkbox" disabled={loadState !== 'private' || operationBusy} checked={exportScopes.includes(scope)} onChange={(event) => setExportScopes((items) => event.target.checked ? [...new Set([...items, scope])] : items.filter((item) => item !== scope))} /><span>{scope}</span></label>)}</div>
         <div className="consentActions"><button type="button" disabled={loadState !== 'private' || operationBusy || exportScopes.length === 0} onClick={() => void requestExport()}>Request export</button></div>
-        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id }); window.location.assign(String(result.url)) } catch { setMessage('Secure download could not be authorized.') } }}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id, file: 'runtime', assetId }); window.location.assign(String(result.url)) } catch { setMessage('Secure runtime download could not be authorized.') } }}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
+        <ol>{visibleExports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id }); window.location.assign(String(result.url)) } catch { setMessage('Secure download could not be authorized.') } }}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id, file: 'runtime', assetId }); window.location.assign(String(result.url)) } catch { setMessage('Secure runtime download could not be authorized.') } }}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
 
         <hr />
         <h3>Scoped deletion</h3>
@@ -368,12 +474,12 @@ export default function ConsentSanctuaryClient() {
         <label className="consentRetention"><span>Deletion scope</span><select value={deletionScope} disabled={loadState !== 'private' || operationBusy} onChange={(event) => { setDeletionScope(event.target.value); setDeletionConfirmation('') }}>{DELETION_SCOPES.map(([scope, label]) => <option key={scope} value={scope}>{label}</option>)}</select></label>
         <label><span>Type {requiredDeletionText}</span><input value={deletionConfirmation} disabled={loadState !== 'private' || operationBusy} onChange={(event) => setDeletionConfirmation(event.target.value)} /></label>
         <div className="consentActions"><button type="button" disabled={loadState !== 'private' || operationBusy} onClick={() => void requestDeletion()}>Create deletion request</button></div>
-        <ol>{deletions.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {String(job.scope)} {['queued', 'awaiting-grace'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalDeletionRequest(job.id)}>Cancel</button>}</li>)}</ol>
+        <ol>{visibleDeletions.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {String(job.scope)} {['queued', 'awaiting-grace'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalDeletionRequest(job.id)}>Cancel</button>}</li>)}</ol>
       </section>
 
-      <aside className="consentOrb" aria-label="Enforcement status"><strong>{policy.enforcement.state}</strong><p>{policy.enforcement.affectedTargets.length ? `${policy.enforcement.affectedTargets.length} connected targets` : 'No active propagation job'}</p><small>Animations reflect the server state; they never prove backend completion.</small></aside>
+      <aside className="consentOrb" aria-label="Enforcement status"><strong>{displayedEnforcement}</strong><p>{showPolicy ? (policy.enforcement.affectedTargets.length ? `${policy.enforcement.affectedTargets.length} connected targets` : 'No active propagation job') : 'No server-verified enforcement state available'}</p><small>Animations reflect the server state; they never prove backend completion.</small></aside>
 
-      {showAudit && <section className="consentAudit" aria-label="Privacy audit receipts"><div><h2>Append-only receipts</h2><button type="button" onClick={() => setShowAudit(false)}>Close</button></div><ol>{receipts.length ? receipts.map((entry) => <li key={entry.id}><strong>{String(entry.kind ?? 'privacy')}</strong><span>{String(entry.result ?? 'recorded')}</span><small>{entry.id.slice(0, 12)}</small></li>) : <li>No receipts exist for this owner.</li>}</ol></section>}
+      {showAudit && <section className="consentAudit" aria-label="Privacy audit receipts"><div><h2>Append-only receipts</h2><button type="button" onClick={() => setShowAudit(false)}>Close</button></div><ol>{visibleReceipts.length ? visibleReceipts.map((entry) => <li key={entry.id}><strong>{String(entry.kind ?? 'privacy')}</strong><span>{String(entry.result ?? 'recorded')}</span><small>{entry.id.slice(0, 12)}</small></li>) : <li>{showPolicy ? 'No receipts exist for this owner.' : 'Owner audit receipts are unavailable until authentication and server verification.'}</li>}</ol></section>}
 
       {pending && <div className="consentDialogBackdrop"><section className="consentDialog" role="dialog" aria-modal="true" aria-labelledby="consent-preview-title"><p>Consequence preview</p><h2 id="consent-preview-title">Confirm {DOMAIN_LABELS[pending.domain]}</h2><ul>{consequenceSummary(pending.domain, pending.next).map((effect) => <li key={effect}>{effect}</li>)}</ul><div><button type="button" onClick={() => { setPending(null); setMutationState('idle') }}>Cancel</button><button ref={confirmRef} type="button" onClick={() => void confirmChange()}>Confirm and request enforcement</button></div></section></div>}
     </main>

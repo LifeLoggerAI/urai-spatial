@@ -74,3 +74,17 @@ test('Client subscriptions remain inside the authenticated owner path', () => {
   assert.doesNotMatch(bridge, /where\('uid'/)
   assert.doesNotMatch(bridge, /collection\(getFirebaseDb\(\), collectionName\)/)
 })
+
+test('Consent first render and missing, malformed, or cached owner authority fail closed', () => {
+  const client = read('src/app/privacy-controls/ConsentSanctuaryClient.tsx')
+  assert.match(client, /useState<ConsentPolicy>\(\(\) => unverifiedPolicy\(\)\)/)
+  assert.doesNotMatch(client, /useState<ConsentPolicy>\(\(\) => demoPolicy\(\)\)/)
+  assert.doesNotMatch(client, /defaultConsentPolicy\(user\.uid\)/)
+  assert.match(client, /!snapshot\.metadata\.fromCache && !snapshot\.metadata\.hasPendingWrites/)
+  assert.match(client, /!snapshot\.exists\(\) \|\| !isAuthoritativePolicy\(rawPolicy, ownerUid\)/)
+  assert.match(client, /setLoadState\(navigator\.onLine \? 'unverified' : 'offline'\)/)
+  assert.match(client, /activeOwnerRef\.current = nextUser\?\.uid \?\? null/)
+  assert.match(client, /const canWrite = Boolean\(user && activeOwnerRef\.current === user\.uid/)
+  assert.match(client, /data-enforcement-state=\{displayedEnforcement\}/)
+  assert.match(client, /No server-verified enforcement state available/)
+})
