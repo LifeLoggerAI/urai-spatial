@@ -1,4 +1,5 @@
 import { sanitizeMemoryId } from '@/spatial/memory/selectedMemoryContract'
+import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 
 export type LifeMovieTruthClass =
   | 'RECORDED_SOURCE_TRUTH'
@@ -41,6 +42,40 @@ export type LifeMovieRuntimeManifest = {
 export type LifeMovieManifestResult =
   | { status: 'ready'; manifest: LifeMovieRuntimeManifest; message: string }
   | { status: 'unavailable' | 'unauthorized' | 'corrupt'; manifest: null; message: string }
+
+/**
+ * A cached document can carry a formerly authorized manifest after an owner
+ * withdraws consent. Only a server-confirmed, unmodified snapshot can expose
+ * private movie metadata. Metadata-only updates must be subscribed to.
+ */
+export function liveLifeMovieManifestAuthority(
+  metadata: { fromCache?: unknown; hasPendingWrites?: unknown } | null | undefined,
+  online: boolean,
+) {
+  return online === true && metadata?.fromCache === false && metadata?.hasPendingWrites === false
+}
+
+/**
+ * Synchronous presentation fence: old memories and blob URLs never remain
+ * selected while a manifest is loading, revoked, switched or for another owner.
+ * A one-render delay for an asynchronous React effect must not disclose media.
+ */
+export function scopedLifeMovieClientMemory(
+  candidate: SelectedMemory | null,
+  ownerUid: string | null,
+  requestedMovieId: string | null,
+  result: LifeMovieManifestResult | { status: 'loading'; manifest: null },
+): SelectedMemory | null {
+  if (!candidate || !ownerUid || candidate.ownerId !== ownerUid
+    || candidate.authorization !== 'owner' || candidate.deleted !== false
+    || candidate.privacy === 'hidden' || candidate.demo) return null
+  if (!requestedMovieId) return candidate
+  if (result.status !== 'ready' || !result.manifest) return null
+  const manifest = result.manifest
+  if (manifest.id !== requestedMovieId || manifest.ownerId !== ownerUid) return null
+  return manifest.chapters.some(chapter =>
+    chapter.memoryId === candidate.id && chapter.consentState === 'authorized') ? candidate : null
+}
 
 const SAFE_TOKEN = /^[A-Za-z0-9._:-]{1,160}$/
 const TRUTH_CLASSES: readonly LifeMovieTruthClass[] = [
