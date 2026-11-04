@@ -68,3 +68,37 @@ test('client readiness requires web app ID and compatibility helper shares canon
   assert.match(old, /from ['"]\.\/client['"]/)
   assert.doesNotMatch(old, /initializeApp/)
 })
+
+
+test('rejects arbitrary foreign Storage buckets for either target', () => {
+  for (const [target, project] of [['production', 'urai-4dc1d'], ['staging', 'urai-staging']]) {
+    for (const bucket of [
+      'another-company-prod.firebasestorage.app',
+      'unrelated.appspot.com',
+      target === 'production' ? 'urai-staging.firebasestorage.app' : 'urai-4dc1d.firebasestorage.app',
+    ]) {
+      const result = check(target, { ...webEnv(project), NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: bucket })
+      assert.equal(result.status, 1, target + ': ' + bucket)
+      assert.match(result.stderr, /Storage bucket is not approved/)
+    }
+  }
+})
+
+test('accepts only default bucket naming forms for the selected Firebase project', () => {
+  for (const [target, project] of [['production', 'urai-4dc1d'], ['staging', 'urai-staging']]) {
+    for (const bucket of [`${project}.firebasestorage.app`, `${project}.appspot.com`]) {
+      const result = check(target, { ...webEnv(project), NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: bucket })
+      assert.equal(result.status, 0, result.stderr)
+    }
+  }
+})
+
+test('unknown custom and cross-project Auth domains fail closed pending provider approval', () => {
+  for (const [target, project] of [['production', 'urai-4dc1d'], ['staging', 'urai-staging']]) {
+    for (const domain of ['login.other-company.com', 'unrelated.firebaseapp.com']) {
+      const result = check(target, { ...webEnv(project), NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: domain })
+      assert.equal(result.status, 1, target + ': ' + domain)
+      assert.match(result.stderr, /Auth domain is not approved/)
+    }
+  }
+})
