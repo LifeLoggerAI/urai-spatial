@@ -22,6 +22,13 @@ const value = (key) => String(process.env[key] ?? '').trim()
 const placeholder = (input) => !input || /^((demo|test|dev|fake|sample|local|ci)([-_].*)?|placeholder|your[-_].*|replace[-_].*|changeme|undefined|null|<.*>)$/i.test(input) || /(?:^|[-_])(?:demo|example|placeholder)(?:$|[-_])/i.test(input)
 const missing = required.filter((key) => placeholder(value(key)))
 const errors = []
+// Runtime refuses padded Firebase identity values. Preflight must not silently
+// trim them and report a configuration PASS that will fail when loaded.
+const padded = required.filter((key) => {
+  const raw = process.env[key]
+  return typeof raw === 'string' && raw !== raw.trim()
+})
+if (padded.length) errors.push(`Public web config contains leading/trailing whitespace: ${padded.join(', ')}`)
 
 if (missing.length) errors.push(`Missing or placeholder public web config: ${missing.join(', ')}`)
 if (value('NEXT_PUBLIC_FIREBASE_PROJECT_ID') && value('NEXT_PUBLIC_FIREBASE_PROJECT_ID') !== expectedProject) {
