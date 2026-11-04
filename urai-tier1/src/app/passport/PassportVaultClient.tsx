@@ -137,6 +137,10 @@ export default function PassportVaultClient() {
   const [confirmation, setConfirmation] = useState('')
   const [busy, setBusy] = useState(false)
   const authEpoch = useRef(0)
+  // Connectivity changes invalidate old owner callbacks and renew subscriptions.
+  const [authorityEpoch, setAuthorityEpoch] = useState(0)
+  const ownerCanDownload = (uid: string | undefined, epoch: number) =>
+    Boolean(uid && navigator.onLine && authEpoch.current === epoch && getAuth(app).currentUser?.uid === uid)
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
@@ -146,12 +150,34 @@ export default function PassportVaultClient() {
     } catch {
       setWebglAvailable(false)
     }
-    const onOffline = () => { setState('offline'); setMessage('Offline. The vault remains readable from its last server snapshot, but no sensitive action can begin.') }
-    const onOnline = () => { setState((current) => current === 'offline' ? 'loading' : current); setMessage('Connection restored. Refreshing owner authority…') }
+    const onOffline = () => {
+      if (explicitDemo) return
+      authEpoch.current += 1
+      setAuthorityEpoch((value) => value + 1)
+      setSnapshot({})
+      setExports([])
+      setDeletions([])
+      setReceipts([])
+      setConfirmation('')
+      setBusy(false)
+      setState('offline')
+      setMessage('Offline. Previous owner state is no longer verified; sensitive actions remain locked.')
+    }
+    const onOnline = () => {
+      if (explicitDemo) return
+      authEpoch.current += 1
+      setAuthorityEpoch((value) => value + 1)
+      setSnapshot({})
+      setExports([])
+      setDeletions([])
+      setReceipts([])
+      setState('loading')
+      setMessage('Connection restored. Reloading trusted owner authority…')
+    }
     window.addEventListener('offline', onOffline)
     window.addEventListener('online', onOnline)
     return () => { window.removeEventListener('offline', onOffline); window.removeEventListener('online', onOnline) }
-  }, [])
+  }, [explicitDemo])
 
   useEffect(() => {
     if (explicitDemo) {
@@ -168,6 +194,7 @@ export default function PassportVaultClient() {
     return onAuthStateChanged(getAuth(app), (nextUser) => {
       // Reject old account's asynchronous responses before replacing visible state.
       authEpoch.current += 1
+      setAuthorityEpoch((value) => value + 1)
       setSnapshot({})
       setExports([])
       setDeletions([])
@@ -209,7 +236,7 @@ export default function PassportVaultClient() {
     if (!user || explicitDemo) return
     const epoch = authEpoch.current
     const ownerOnly = (setter: (rows: PrivacyRow[]) => void) => (rows: PrivacyRow[]) => {
-      if (authEpoch.current === epoch && getAuth(app).currentUser?.uid === user.uid) setter(rows)
+      if (authEpoch.current === epoch && getAuth(app).currentUser?.uid === user.uid && navigator.onLine) setter(rows)
     }
     const unsubscribers = [
       subscribeOperationalUserCollection('exportJobs', user.uid, ownerOnly(setExports), () => setMessage('Export history is temporarily unavailable.')),
@@ -217,7 +244,7 @@ export default function PassportVaultClient() {
       subscribeOperationalUserCollection('privacyReceipts', user.uid, ownerOnly(setReceipts), () => setMessage('Audit receipts are temporarily unavailable.')),
     ]
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
-  }, [user, explicitDemo])
+  }, [user, explicitDemo, authorityEpoch])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -294,7 +321,7 @@ export default function PassportVaultClient() {
         <p><strong>Ownership:</strong> {String(owner.ownershipStatus ?? 'unavailable')}. <strong>Consent revision:</strong> {String(ownerContentAvailable ? (consent.revision ?? 'unavailable') : 'unavailable')}. <strong>Enforcement:</strong> {String(enforcement.state ?? 'unavailable')}.</p>
         <div className="passportRows">{(zoneRows[selectedZone] ?? []).length ? (zoneRows[selectedZone] ?? []).map((row, index) => <article key={String(row.id ?? index)}><h3>{String(row.label ?? row.kind ?? row.id ?? `Record ${index + 1}`)}</h3><dl>{Object.entries(row).filter(([key]) => !['id', 'ownerId', 'uid', 'token', 'secret'].includes(key)).slice(0, 8).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{Array.isArray(value) ? value.join(', ') : typeof value === 'object' && value ? 'Protected structured record' : String(value ?? 'not available')}</dd></div>)}</dl></article>) : <p>{state === 'private' || state === 'empty' ? 'No owner-scoped records exist in this zone.' : 'Private records are unavailable until your account is authorized.'}</p>}</div>
         <div className="passportActions"><a href="/privacy-controls">Enter Consent Sanctuary</a><a href="/mirror">Return to Mirror</a><a href="/ground">Return to Ground</a></div>
-        <section className="passportOperation"><h3>Export chamber</h3><p>Exports exclude credentials, provider secrets, raw secret fields, and legally excepted records. The ownership key must be authorized by a recent sign-in.</p><div className="passportCheckGrid">{['profile', 'consent', 'memories', 'spatial', 'audit'].map((scope) => <label key={scope}><input type="checkbox" checked={exportScopes.includes(scope)} disabled={state !== 'private' || busy} onChange={(event) => setExportScopes((items) => event.target.checked ? [...new Set([...items, scope])] : items.filter((item) => item !== scope))} />{scope}</label>)}</div><button type="button" disabled={state !== 'private' || busy || exportScopes.length === 0} onClick={() => void requestExport()}>Unlock and request export</button><ol>{exports.slice(0, 6).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id }); window.location.assign(String(result.url)) } catch { setMessage('Secure export download could not be authorized.') } }}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id, file: 'runtime', assetId }); window.location.assign(String(result.url)) } catch { setMessage('Secure runtime download could not be authorized.') } }}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol></section>
+        <section className="passportOperation"><h3>Export chamber</h3><p>Exports exclude credentials, provider secrets, raw secret fields, and legally excepted records. The ownership key must be authorized by a recent sign-in.</p><div className="passportCheckGrid">{['profile', 'consent', 'memories', 'spatial', 'audit'].map((scope) => <label key={scope}><input type="checkbox" checked={exportScopes.includes(scope)} disabled={state !== 'private' || busy} onChange={(event) => setExportScopes((items) => event.target.checked ? [...new Set([...items, scope])] : items.filter((item) => item !== scope))} />{scope}</label>)}</div><button type="button" disabled={state !== 'private' || busy || exportScopes.length === 0} onClick={() => void requestExport()}>Unlock and request export</button><ol>{exports.slice(0, 6).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { try { const uid = user?.uid; const epoch = authEpoch.current; if (state !== 'private' || !ownerCanDownload(uid, epoch)) return; const result = await getOperationalExportDownloadUrl({ jobId: job.id }); if (!ownerCanDownload(uid, epoch)) return; window.location.assign(String(result.url)) } catch { setMessage('Secure export download could not be authorized.') } }}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" onClick={async () => { try { const uid = user?.uid; const epoch = authEpoch.current; if (state !== 'private' || !ownerCanDownload(uid, epoch)) return; const result = await getOperationalExportDownloadUrl({ jobId: job.id, file: 'runtime', assetId }); if (!ownerCanDownload(uid, epoch)) return; window.location.assign(String(result.url)) } catch { setMessage('Secure runtime download could not be authorized.') } }}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol></section>
         <section className="passportOperation passportDanger"><h3>Deletion chamber</h3><p>Deletion is scoped, revision-safe, queued through the trusted backend, and leaves an append-only privacy-safe receipt. Provider and legal retention exceptions are disclosed rather than hidden.</p><label>Scope<select value={deletionScope} disabled={state !== 'private' || busy} onChange={(event) => { setDeletionScope(event.target.value); setConfirmation('') }}>{DELETION_SCOPES.map(([scope, label]) => <option key={scope} value={scope}>{label}</option>)}</select></label><label>Type {requiredText}<input value={confirmation} disabled={state !== 'private' || busy} onChange={(event) => setConfirmation(event.target.value)} /></label><button type="button" disabled={state !== 'private' || busy} onClick={() => void requestDeletion()}>Unlock and create deletion request</button><ol>{deletions.slice(0, 6).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {String(job.scope)} {['queued', 'awaiting-grace'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalDeletionRequest(job.id)}>Cancel</button>}</li>)}</ol></section>
       </section>
       <aside className="passportKey" aria-label="Ownership key status"><strong>Ownership key: {keyState}</strong><span>{keyState === 'authorized' ? 'Sensitive actions may proceed under the trusted recent-auth window.' : 'Sensitive actions remain locked until recent authentication is proven.'}</span></aside>
