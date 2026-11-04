@@ -11,7 +11,7 @@ import { useOwnedMemoryMediaPlayback } from '@/spatial/memory/useOwnedMemoryMedi
 import { useReplayMemoryVisibility } from '@/spatial/memory/useReplayMemoryVisibility'
 import { createReplayMediaSession, initialReplayVideoSnapshot, type ReplayVideoSession } from '../replay/replayMediaSession'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
-import { lifeMovieReplayHref, type LifeMovieRuntimeChapter } from '@/spatial/life-movie/lifeMovieRuntimeContract'
+import { lifeMovieReplayHref, scopedLifeMovieClientMemory, type LifeMovieRuntimeChapter } from '@/spatial/life-movie/lifeMovieRuntimeContract'
 import { useLifeMovieRuntimeManifest } from '@/spatial/life-movie/useLifeMovieRuntimeManifest'
 import { captionSegmentForMediaTime } from '@/spatial/life-movie/lifeMovieCaptionTimeline'
 import { revokeLifeMovieManifest, saveLifeMovieManifest } from '@/spatial/life-movie/lifeMovieManifestOperations'
@@ -144,7 +144,10 @@ export default function LifeMovieClient() {
     return () => { cancelled = true }
   }, [identityReady, requestedMemoryId, requestedMovieId, runtimeManifest, user])
 
-  const active = memories[activeIndex] ?? null
+  // Render-time authority fence: an old chapter and its media must disappear
+  // BEFORE useEffect clears stale memory state after a live consent withdrawal.
+  const active = scopedLifeMovieClientMemory(memories[activeIndex] ?? null,
+    user?.uid ?? null, requestedMovieId, runtimeManifest)
   const visibility = useReplayMemoryVisibility(active)
   const activeChapter = requestedMovieId && active && runtimeManifest.status === 'ready' && runtimeManifest.manifest
     ? runtimeManifest.manifest.chapters.find((chapter) => chapter.memoryId === active.id) ?? null
@@ -239,6 +242,13 @@ export default function LifeMovieClient() {
 
   if (!user || state.kind === 'unauthenticated') {
     return <main data-testid="life-movie-runtime" data-state="unauthenticated"><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Sign in to open a sequence of your own memories. No personal memory content is displayed here."><a href="/login?returnTo=%2Flife-movie">Continue securely</a><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-unavailable" as="div" /></MemoryExperienceState></main>
+  }
+  if (requestedMovieId && (runtimeManifest.status !== 'ready'
+    || runtimeManifest.manifest?.id !== requestedMovieId
+    || runtimeManifest.manifest.ownerId !== user.uid)) {
+    // Refuse old chapters during ID switches, revocation or cached authority.
+    const waiting = runtimeManifest.status === 'loading'
+    return <main data-testid="life-movie-runtime" data-state={waiting ? 'loading' : 'unavailable'}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={waiting ? 'Verifying current private Life Movie authority…' : runtimeManifest.message} guidance="The private sequence cannot open until live owner consent is confirmed."><a href="/life-map">Return to Life Map</a></MemoryExperienceState></main>
   }
   if (active && visibility !== 'visible') {
     return <main data-testid="life-movie-runtime" data-state={visibility === 'loading' ? 'loading' : 'unavailable'}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message="This Replay memory is currently unavailable." guidance="Return to Life Map to choose an available memory. This sequence cannot display the unavailable chapter."><a href="/life-map">Return to Life Map</a></MemoryExperienceState></main>
