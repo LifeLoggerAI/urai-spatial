@@ -30,7 +30,7 @@ test('post-deploy parity includes current Focus, Replay and institutional public
   assert.match(postDeploy, /for \(const route of conditionalXrRoutes\)/)
   assert.match(postDeploy, /inspectConditionalXrResponse\(response, requested\.toString\(\), xrAuthority, html\)/)
   assert.match(postDeploy, /expectedStatus: route === '\/spatial\/ar-vr' \? 200 : xrAuthority\.expectedStatus/)
-  assert.match(postDeploy, /if \(response\.status !== 200 \|\| sha === expectedSha\)/)
+  assert.match(postDeploy, /const passed = policyMatch && \(response\.status !== 200 \|\| sha === expectedSha\)/)
   assert.ok(postDeploy.includes("schemaVersion: 'urai-live-content-parity-6'"))
   const compatibilityRoutes = postDeploy.match(/browserCompatibilityRoutes:\s*\[([^\]]*)\]/)?.[1] || ''
   for (const route of ['/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind']) {
