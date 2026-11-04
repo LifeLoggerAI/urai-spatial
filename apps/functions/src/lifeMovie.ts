@@ -107,6 +107,10 @@ function trustedChapterFromMemory(requested: RequestedChapter, snapshot: Firebas
   if (consentState === 'pending') {
     throw new functions.https.HttpsError('failed-precondition', 'Life Movie memory consent is pending.')
   }
+  // Missing, legacy and unknown consent are NOT owner authorization.
+  if (consentState !== 'authorized') {
+    throw new functions.https.HttpsError('failed-precondition', 'Life Movie memory consent is not authorized.')
+  }
 
   const lifeMovie = snapshot.get('lifeMovie') as Record<string, unknown> | undefined
   const rawTruthClass = String(lifeMovie?.truthClass ?? snapshot.get('truthClass') ?? 'UNKNOWN_UNRESOLVED')
@@ -162,6 +166,7 @@ function trustedChapterFromMemory(requested: RequestedChapter, snapshot: Firebas
 async function requireReadyLifeModelAuthority(
   uid: string,
   chapters: ReturnType<typeof trustedChapterFromMemory>[],
+  transaction: FirebaseFirestore.Transaction,
 ) {
   const sceneIds = [...new Set(chapters.map((chapter) => chapter.sceneTruthPacketId).filter((value): value is string => Boolean(value)))]
   if (sceneIds.length !== chapters.length) {
@@ -169,8 +174,8 @@ async function requireReadyLifeModelAuthority(
   }
   const bundleIds = [...new Set(chapters.flatMap((chapter) => chapter.personModelBundleIds))]
   const [sceneSnapshots, bundleSnapshots] = await Promise.all([
-    sceneIds.length ? db.getAll(...sceneIds.map((id) => db.doc(`users/${uid}/sceneTruthPackets/${id}`))) : [],
-    bundleIds.length ? db.getAll(...bundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`))) : [],
+    sceneIds.length ? Promise.all(sceneIds.map((id) => transaction.get(db.doc(`users/${uid}/sceneTruthPackets/${id}`)))) : [],
+    bundleIds.length ? Promise.all(bundleIds.map((id) => transaction.get(db.doc(`users/${uid}/personModelBundles/${id}`)))) : [],
   ])
   const dependencyIds = new Set<string>(chapters.map((chapter) => chapter.memoryId))
 
@@ -216,15 +221,21 @@ export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
   const status = data?.status === 'ready' ? 'ready' : 'draft'
   const requested = requestedChapters(data?.chapters)
   const refs = requested.map((chapter) => db.doc(`users/${uid}/memories/${chapter.memoryId}`))
-  const snapshots = await db.getAll(...refs)
-  const chapters = requested.map((chapter, index) => trustedChapterFromMemory(chapter, snapshots[index]))
-  const dependencyIds = status === 'ready'
-    ? await requireReadyLifeModelAuthority(uid, chapters)
-    : [...new Set(chapters.map((chapter) => chapter.memoryId))]
-
   const ref = db.doc(`users/${uid}/lifeMovies/${movieId}`)
+  const auditRef = db.collection(`users/${uid}/privacyAudit`).doc()
   await db.runTransaction(async (transaction) => {
     const current = await transaction.get(ref)
+    // Revocation is terminal for this ID; a new authorization requires a new movie ID.
+    if (current.exists && current.get('consentState') === 'revoked') {
+      throw new functions.https.HttpsError('failed-precondition', 'Life Movie manifest was revoked.')
+    }
+    // Re-read selected source and SceneTruth authority in the SAME transaction
+    // that records the manifest, so withdrawal/deletion forces retry or denial.
+    const snapshots = await Promise.all(refs.map((sourceRef) => transaction.get(sourceRef)))
+    const chapters = requested.map((chapter, index) => trustedChapterFromMemory(chapter, snapshots[index]))
+    const dependencyIds = status === 'ready'
+      ? await requireReadyLifeModelAuthority(uid, chapters, transaction)
+      : [...new Set(chapters.map((chapter) => chapter.memoryId))]
     const version = Math.max(1, Number(current.get('version') ?? 0) + 1)
     transaction.set(ref, {
       id: movieId,
@@ -241,41 +252,40 @@ export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
         ? current.get('createdAt') ?? admin.firestore.FieldValue.serverTimestamp()
         : admin.firestore.FieldValue.serverTimestamp(),
     })
+    transaction.create(auditRef, {
+      ownerId: uid,
+      kind: 'life_movie.manifest_upserted',
+      movieId,
+      chapterCount: chapters.length,
+      recordedAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
   })
-
-  await db.collection(`users/${uid}/privacyAudit`).add({
-    ownerId: uid,
-    kind: 'life_movie.manifest_upserted',
-    movieId,
-    chapterCount: chapters.length,
-    recordedAt: admin.firestore.FieldValue.serverTimestamp(),
-  })
-
-  return { movieId, status, chapterCount: chapters.length }
+  return { movieId, status, chapterCount: requested.length }
 })
-
 export const revokeLifeMovieManifest = lifeMovieFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   const movieId = requireToken(data?.movieId, 'movieId')
   const ref = db.doc(`users/${uid}/lifeMovies/${movieId}`)
-  const snapshot = await ref.get()
-  if (!snapshot.exists || snapshot.get('ownerId') !== uid) {
-    throw new functions.https.HttpsError('not-found', 'Life Movie manifest was not found.')
-  }
-
-  await ref.set({
-    consentState: 'revoked',
-    status: 'draft',
-    revokedAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  }, { merge: true })
-
-  await db.collection(`users/${uid}/privacyAudit`).add({
-    ownerId: uid,
-    kind: 'life_movie.manifest_revoked',
-    movieId,
-    recordedAt: admin.firestore.FieldValue.serverTimestamp(),
+  const auditRef = db.collection(`users/${uid}/privacyAudit`).doc()
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref)
+    if (!snapshot.exists || snapshot.get('ownerId') !== uid) {
+      throw new functions.https.HttpsError('not-found', 'Life Movie manifest was not found.')
+    }
+    // Tombstone and audit are atomic; an audit failure cannot leave an
+    // unreceipted revocation, and concurrent upserts cannot revive it.
+    transaction.set(ref, {
+      consentState: 'revoked',
+      status: 'draft',
+      revokedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true })
+    transaction.create(auditRef, {
+      ownerId: uid,
+      kind: 'life_movie.manifest_revoked',
+      movieId,
+      recordedAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
   })
-
   return { movieId, revoked: true }
 })
