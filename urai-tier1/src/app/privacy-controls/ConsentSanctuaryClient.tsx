@@ -144,6 +144,20 @@ function SanctuaryWorld({ policy, selectedDomain, onSelect, reducedMotion }: {
   )
 }
 
+function unverifiedPolicy(): ConsentPolicy {
+  // A client placeholder is never evidence of owner consent or backend enforcement.
+  const policy = defaultConsentPolicy('unverified')
+  for (const domain of DOMAIN_ORDER) {
+    policy.domains[domain] = {
+      ...policy.domains[domain], mode: 'denied', precise: false,
+      replayVisible: false, lifeMapVisible: false, modelContext: false,
+      sharingEnabled: false, automationEnabled: false, likenessEnabled: false,
+    }
+  }
+  policy.enforcement = { state: 'pending', jobId: null, affectedTargets: [], providerState: 'pending' }
+  return policy
+}
+
 function demoPolicy() {
   const policy = defaultConsentPolicy('disclosed-demo')
   policy.domains.exports.mode = 'limited'
@@ -163,7 +177,7 @@ export default function ConsentSanctuaryClient() {
   const explicitDemo = params.get('demo') === '1'
   const [user, setUser] = useState<User | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('loading')
-  const [policy, setPolicy] = useState<ConsentPolicy>(() => demoPolicy())
+  const [policy, setPolicy] = useState<ConsentPolicy>(() => unverifiedPolicy())
   const [selectedDomain, setSelectedDomain] = useState<ConsentDomain>('memory')
   const [pending, setPending] = useState<PendingChange | null>(null)
   const [mutationState, setMutationState] = useState<MutationState>('idle')
@@ -178,6 +192,7 @@ export default function ConsentSanctuaryClient() {
   const [deletionConfirmation, setDeletionConfirmation] = useState('')
   const [operationBusy, setOperationBusy] = useState(false)
   const confirmRef = useRef<HTMLButtonElement>(null)
+  const ownerEpoch = useRef(0)
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
@@ -209,6 +224,14 @@ export default function ConsentSanctuaryClient() {
     }
     const auth = getAuth(app)
     return onAuthStateChanged(auth, (nextUser) => {
+      ownerEpoch.current += 1
+      setPolicy(unverifiedPolicy())
+      setPending(null)
+      setMutationState('idle')
+      setShowAudit(false)
+      setReceipts([])
+      setExports([])
+      setDeletions([])
       setUser(nextUser)
       if (!nextUser) {
         setLoadState('signed-out')
@@ -220,11 +243,23 @@ export default function ConsentSanctuaryClient() {
   }, [explicitDemo])
 
   useEffect(() => {
-    if (!user || explicitDemo || loadState === 'signed-out' || loadState === 'unavailable') return
+    if (!user || explicitDemo || loadState === 'signed-out' || loadState === 'unavailable' || loadState === 'offline') return
+    const epoch = ownerEpoch.current
+    const sameOwner = () => ownerEpoch.current === epoch && getAuth(app).currentUser?.uid === user.uid
     const policyRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current')
     return onSnapshot(policyRef, (snapshot) => {
+      if (!sameOwner()) return
       const rawPolicy = snapshot.data()
-      const next = snapshot.exists() && isConsentPolicy(rawPolicy, user.uid) ? rawPolicy : defaultConsentPolicy(user.uid)
+      // Missing/malformed records must not become invented fully-enforced owner consent.
+      if (!snapshot.exists() || !isConsentPolicy(rawPolicy, user.uid)) {
+        setPolicy(unverifiedPolicy())
+        setPending(null)
+        setMutationState('idle')
+        setLoadState('unavailable')
+        setMessage('No verified owner consent policy is available. Changes remain locked until trusted setup is completed.')
+        return
+      }
+      const next = rawPolicy
       setPolicy(next)
       setLoadState('private')
       const state = next.enforcement.state
@@ -236,6 +271,10 @@ export default function ConsentSanctuaryClient() {
         'Policy persisted. Enforcement is still pending.',
       )
     }, () => {
+      if (!sameOwner()) return
+      setPolicy(unverifiedPolicy())
+      setPending(null)
+      setMutationState('idle')
       setLoadState('unavailable')
       setMessage('The consent authority could not be read. No private state was replaced with demo data.')
     })
@@ -243,10 +282,14 @@ export default function ConsentSanctuaryClient() {
 
   useEffect(() => {
     if (!user || explicitDemo) return
+    const epoch = ownerEpoch.current
+    const ownerOnly = (setter: (rows: PrivacyRow[]) => void) => (rows: PrivacyRow[]) => {
+      if (ownerEpoch.current === epoch && getAuth(app).currentUser?.uid === user.uid) setter(rows)
+    }
     const unsubscribers = [
-      subscribeOperationalUserCollection('privacyReceipts', user.uid, setReceipts, () => setMessage('Audit receipts are temporarily unavailable.')),
-      subscribeOperationalUserCollection('exportJobs', user.uid, setExports, () => setMessage('Export status is temporarily unavailable.')),
-      subscribeOperationalUserCollection('deletionJobs', user.uid, setDeletions, () => setMessage('Deletion status is temporarily unavailable.')),
+      subscribeOperationalUserCollection('privacyReceipts', user.uid, ownerOnly(setReceipts), () => setMessage('Audit receipts are temporarily unavailable.')),
+      subscribeOperationalUserCollection('exportJobs', user.uid, ownerOnly(setExports), () => setMessage('Export status is temporarily unavailable.')),
+      subscribeOperationalUserCollection('deletionJobs', user.uid, ownerOnly(setDeletions), () => setMessage('Deletion status is temporarily unavailable.')),
     ]
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
   }, [user, explicitDemo])
@@ -319,13 +362,14 @@ export default function ConsentSanctuaryClient() {
 
   const selected = policy.domains[selectedDomain]
   const canWrite = loadState === 'private' && mutationState !== 'requested'
+  const ownerPolicyVisible = loadState === 'private' || loadState === 'demo'
   const requiredDeletionText = DELETION_SCOPES.find(([scope]) => scope === deletionScope)?.[2] ?? 'CONFIRM DELETE'
 
   return (
-    <main className="consentSanctuary" data-route-owner="consent-sanctuary" data-privacy-source={loadState} data-enforcement-state={policy.enforcement.state}>
+    <main className="consentSanctuary" data-route-owner="consent-sanctuary" data-privacy-source={loadState} data-enforcement-state={ownerPolicyVisible ? policy.enforcement.state : 'unverified'}>
       <a className="consentSkip" href="#consent-controls">Skip to direct controls</a>
       <div className="consentWorld" aria-hidden="true">
-        {webglAvailable ? <Suspense fallback={null}><SanctuaryWorld policy={policy} selectedDomain={selectedDomain} onSelect={setSelectedDomain} reducedMotion={reducedMotion} /></Suspense> : (
+        {webglAvailable && ownerPolicyVisible ? <Suspense fallback={null}><SanctuaryWorld policy={policy} selectedDomain={selectedDomain} onSelect={setSelectedDomain} reducedMotion={reducedMotion} /></Suspense> : (
           <div className="consentWorldFallback"><strong>Consent Sanctuary</strong><span>Semantic controls remain fully available without WebGL.</span></div>
         )}
       </div>
@@ -337,12 +381,12 @@ export default function ConsentSanctuaryClient() {
       </header>
 
       <nav className="consentRealmNav" aria-label="Consent domains">
-        {DOMAIN_ORDER.map((domain) => <button key={domain} type="button" aria-pressed={domain === selectedDomain} onClick={() => setSelectedDomain(domain)}><span>{DOMAIN_LABELS[domain]}</span><small>{policy.domains[domain].mode}</small></button>)}
+        {DOMAIN_ORDER.map((domain) => <button key={domain} type="button" aria-pressed={domain === selectedDomain} onClick={() => setSelectedDomain(domain)}><span>{DOMAIN_LABELS[domain]}</span><small>{ownerPolicyVisible ? policy.domains[domain].mode : 'unverified'}</small></button>)}
       </nav>
 
       <section id="consent-controls" tabIndex={-1} className="consentPanel" aria-label={`${DOMAIN_LABELS[selectedDomain]} controls`}>
-        <div className="consentPanelHeading"><div><p>Revision {policy.revision}</p><h2>{DOMAIN_LABELS[selectedDomain]}</h2></div><span className="consentMode" data-mode={selected.mode}>{selected.mode}</span></div>
-        <p><strong>Enforcement:</strong> {policy.enforcement.state}; provider state: {policy.enforcement.providerState}.</p>
+        <div className="consentPanelHeading"><div><p>Revision {ownerPolicyVisible ? policy.revision : 'unavailable'}</p><h2>{DOMAIN_LABELS[selectedDomain]}</h2></div><span className="consentMode" data-mode={ownerPolicyVisible ? selected.mode : 'unverified'}>{ownerPolicyVisible ? selected.mode : 'unverified'}</span></div>
+        <p><strong>Enforcement:</strong> {ownerPolicyVisible ? policy.enforcement.state : 'unverified'}; provider state: {ownerPolicyVisible ? policy.enforcement.providerState : 'unverified'}.</p>
         <fieldset disabled={!canWrite}><legend>Authority level</legend><div className="consentChoiceGrid">{MODE_OPTIONS.map((mode) => <button type="button" key={mode} aria-pressed={selected.mode === mode} onClick={() => propose(selectedDomain, { mode })}>{mode}</button>)}</div></fieldset>
         <div className="consentToggleGrid">
           {selectedDomain === 'location' && <label><input disabled={!canWrite} type="checkbox" checked={selected.precise} onChange={(event) => propose(selectedDomain, { precise: event.target.checked })} /><span>Allow precise private location</span></label>}
@@ -371,9 +415,9 @@ export default function ConsentSanctuaryClient() {
         <ol>{deletions.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {String(job.scope)} {['queued', 'awaiting-grace'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalDeletionRequest(job.id)}>Cancel</button>}</li>)}</ol>
       </section>
 
-      <aside className="consentOrb" aria-label="Enforcement status"><strong>{policy.enforcement.state}</strong><p>{policy.enforcement.affectedTargets.length ? `${policy.enforcement.affectedTargets.length} connected targets` : 'No active propagation job'}</p><small>Animations reflect the server state; they never prove backend completion.</small></aside>
+      <aside className="consentOrb" aria-label="Enforcement status"><strong>{ownerPolicyVisible ? policy.enforcement.state : 'unverified'}</strong><p>{!ownerPolicyVisible ? 'Owner authorization required' : policy.enforcement.affectedTargets.length ? `${policy.enforcement.affectedTargets.length} connected targets` : 'No active propagation job'}</p><small>Animations reflect the server state only after owner verification; they never prove backend completion.</small></aside>
 
-      {showAudit && <section className="consentAudit" aria-label="Privacy audit receipts"><div><h2>Append-only receipts</h2><button type="button" onClick={() => setShowAudit(false)}>Close</button></div><ol>{receipts.length ? receipts.map((entry) => <li key={entry.id}><strong>{String(entry.kind ?? 'privacy')}</strong><span>{String(entry.result ?? 'recorded')}</span><small>{entry.id.slice(0, 12)}</small></li>) : <li>No receipts exist for this owner.</li>}</ol></section>}
+      {showAudit && <section className="consentAudit" aria-label="Privacy audit receipts"><div><h2>Append-only receipts</h2><button type="button" onClick={() => setShowAudit(false)}>Close</button></div><ol>{receipts.length ? receipts.map((entry) => <li key={entry.id}><strong>{String(entry.kind ?? 'privacy')}</strong><span>{String(entry.result ?? 'recorded')}</span><small>{entry.id.slice(0, 12)}</small></li>) : <li>{loadState === 'private' ? 'No receipts exist for this owner.' : 'Verified owner receipts are unavailable.'}</li>}</ol></section>}
 
       {pending && <div className="consentDialogBackdrop"><section className="consentDialog" role="dialog" aria-modal="true" aria-labelledby="consent-preview-title"><p>Consequence preview</p><h2 id="consent-preview-title">Confirm {DOMAIN_LABELS[pending.domain]}</h2><ul>{consequenceSummary(pending.domain, pending.next).map((effect) => <li key={effect}>{effect}</li>)}</ul><div><button type="button" onClick={() => { setPending(null); setMutationState('idle') }}>Cancel</button><button ref={confirmRef} type="button" onClick={() => void confirmChange()}>Confirm and request enforcement</button></div></section></div>}
     </main>
