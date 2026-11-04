@@ -171,6 +171,7 @@ export default function PassportVaultClient() {
       setExports([])
       setDeletions([])
       setReceipts([])
+      setBusy(false)
       setState('loading')
       setMessage('Connection restored. Reloading trusted owner authority…')
     }
@@ -199,6 +200,8 @@ export default function PassportVaultClient() {
       setExports([])
       setDeletions([])
       setReceipts([])
+      setConfirmation('')
+      setBusy(false)
       setUser(nextUser)
       if (!nextUser) {
         setState('signed-out')
@@ -268,26 +271,36 @@ export default function PassportVaultClient() {
 
   const requestExport = async () => {
     if (!canOperate) { setMessage('Unlock the ownership key with a recent sign-in before exporting.'); return }
+    const uid = user?.uid
+    const epoch = authEpoch.current
+    if (!ownerCanDownload(uid, epoch)) return
     setBusy(true)
     try {
       const result = await createOperationalExportRequest(exportScopes)
+      if (!ownerCanDownload(uid, epoch)) return
       setMessage(`Export ${String(result.jobId ?? '').slice(0, 10)} queued. Ready state requires server completion.`)
     } catch {
+      if (!ownerCanDownload(uid, epoch)) return
       setMessage('Export was not authorized. A recent reauthentication may be required; no file was represented as ready.')
-    } finally { setBusy(false) }
+    } finally { if (ownerCanDownload(uid, epoch)) setBusy(false) }
   }
 
   const requestDeletion = async () => {
     if (!canOperate) { setMessage('Unlock the ownership key with a recent sign-in before deletion.'); return }
     if (confirmation !== requiredText) { setMessage(`Type “${requiredText}” exactly for this deletion scope.`); return }
+    const uid = user?.uid
+    const epoch = authEpoch.current
+    if (!ownerCanDownload(uid, epoch)) return
     setBusy(true)
     try {
       const result = await createOperationalDeletionRequest({ scope: deletionScope, confirmation })
+      if (!ownerCanDownload(uid, epoch)) return
       setConfirmation('')
       setMessage(`Deletion ${String(result.jobId ?? '').slice(0, 10)} entered ${String(result.state)}. Nothing is called deleted until the trusted job reports completed.`)
     } catch {
+      if (!ownerCanDownload(uid, epoch)) return
       setMessage('Deletion was not authorized. No data was represented as deleted.')
-    } finally { setBusy(false) }
+    } finally { if (ownerCanDownload(uid, epoch)) setBusy(false) }
   }
 
   const ownerContentAvailable = state === 'private' || state === 'empty' || state === 'demo'
