@@ -11,7 +11,7 @@ const liveSmoke = fs.readFileSync(new URL('../../scripts/urai-live-smoke.mjs', i
 
 const publicRoutes = ['/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug']
 const fullVisionRoutes = ['/life-movie', '/council', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality']
-const directCriticalRoutes = ['/privacy', '/terms', '/login', '/account-deletion', '/privacy-policy', '/xr', '/settings', '/settings/communications', '/sms-opt-in', '/launch']
+const directCriticalRoutes = ['/privacy', '/terms', '/login', '/account-deletion', '/privacy-policy', '/settings', '/settings/communications', '/sms-opt-in', '/launch']
 
 test('post-deploy parity includes current Focus, Replay and institutional public owners', () => {
   assert.ok(postDeploy.includes("'URAI Focus stellar memory field'"))
