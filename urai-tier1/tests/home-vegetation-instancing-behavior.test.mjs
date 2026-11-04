@@ -63,6 +63,8 @@ function mountVegetation(scene) {
     './HomeLivingOrbGeometry': { createLivingMemoryGeometry: unexpectedOrbWork, createMemoryFieldGeometry: unexpectedOrbWork, createMemoryFilamentGeometry: unexpectedOrbWork },
     './HomeAuthoredOrbLight': { createAuthoredOrbLightPresentation: unexpectedOrbWork, disposeAuthoredOrbLightPresentation: unexpectedOrbWork },
     './HomeSanctuaryPerimeterGrove': unexpectedPerimeterWork,
+    // Fern-only evidence must not manufacture nearby owner/threshold authority.
+    './HomeThresholdVisibility': { showHomeThresholdLabel: () => assert.fail('fern fixture must not evaluate Home threshold authority') },
     './HomeWorldProduction.module.css': {},
     './HomeSanctuaryMaterials': {}, './HomeSanctuaryAssetPolicy': {},
     '@/app/home/orbStateController': {}, '@/spatial/navigation/EmbodiedNavigation': {},
