@@ -156,3 +156,24 @@ test('offline transition is explicit and disables sensitive operations', async (
   expect(runtime.pageErrors.length).toBeLessThanOrEqual(1)
   expect(runtime.failedRequests.length).toBeLessThanOrEqual(1)
 })
+
+test('public anonymous Consent Sanctuary HTML never asserts an owner grant or enforcement', async ({ request }) => {
+  const response = await request.get(`${baseURL}/privacy-controls/`)
+  expect(response.ok()).toBeTruthy()
+  const html = await response.text()
+  expect(html).toContain('data-privacy-source="loading"')
+  expect(html).toContain('data-enforcement-state="unverified"')
+  expect(html).not.toContain('2 connected targets')
+  expect(html).not.toMatch(/Memory granted|Enforcement: partially-enforced|Enforcement: fully-enforced/)
+})
+
+test('public anonymous Passport HTML never claims sample owner or verified consent', async ({ request }) => {
+  const response = await request.get(`${baseURL}/passport/`)
+  expect(response.ok()).toBeTruthy()
+  const html = await response.text()
+  expect(html).toContain('data-passport-source="loading"')
+  expect(html).toContain('data-key-state="locked"')
+  expect(html).not.toContain('sample-owner')
+  expect(html).not.toContain('Disclosed sample owner')
+  expect(html).not.toMatch(/Ownership: verified|Enforcement: fully-enforced/)
+})

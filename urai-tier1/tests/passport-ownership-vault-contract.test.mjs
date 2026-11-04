@@ -80,3 +80,17 @@ test('desktop vault keeps long owner controls reachable instead of clipping at o
   assert.match(css, /\.passportVault\{[^}]*overflow-x:hidden;overflow-y:auto;/)
   assert.doesNotMatch(css, /\.passportVault\{[^}]*overflow:hidden;/)
 })
+
+test('Passport first render and owner transitions never inherit a sample or prior authenticated identity', () => {
+  const client = read('src/app/passport/PassportVaultClient.tsx')
+  assert.match(client, /useState<SnapshotPayload>\(\{\}\)/)
+  assert.doesNotMatch(client, /useState<SnapshotPayload>\(\(\) => toDemoPayload\(\)\)/)
+  assert.match(client, /activeOwnerRef\.current = nextUser\?\.uid \?\? null/)
+  assert.match(client, /activeOwnerRef\.current !== ownerUid/)
+  assert.match(client, /snapshotRequestRef\.current = null/)
+  assert.match(client, /clearOwnerView\(\)/)
+  assert.match(client, /ownerVisible \? record\(snapshot\.owner\) : \{\}/)
+  assert.match(client, /Owner records are unavailable until authentication and server verification/)
+  assert.match(client, /consent\.revision : 'unverified'/)
+  assert.match(client, /if \(explicitDemo\) \{[\s\S]*?setSnapshot\(toDemoPayload\(\)\)/)
+})
