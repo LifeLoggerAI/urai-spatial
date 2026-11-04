@@ -23,6 +23,14 @@ For local development, create `urai-tier1/.env.local` from
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
 - `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` (optional; only if Analytics is used)
 
+The static preflight allows only the selected project's default Firebase
+Storage bucket names (`<project>.firebasestorage.app` or
+`<project>.appspot.com`). An unrelated bucket must fail even if the project
+ID and Auth domain look correct. If the provider's web app uses an authorized
+custom Storage bucket, first verify its live project binding and add an
+independently reviewed, target-scoped allowlist and negative tests; do not
+silently accept arbitrary bucket names.
+
 The public web config is *not* a Firebase Admin credential. It does not grant
 privileged access; Authentication, App Check, Security Rules, and backend IAM
 remain mandatory.

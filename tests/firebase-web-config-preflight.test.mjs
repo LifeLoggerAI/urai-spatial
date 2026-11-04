@@ -51,6 +51,31 @@ test('rejects production/staging cross-target project and auth domain', () => {
   assert.equal(check('production', { ...webEnv('urai-4dc1d'), URAI_SPATIAL_FIREBASE_PROJECT_ID: 'urai-staging' }).status, 1)
 })
 
+test('Storage preflight refuses foreign and malformed buckets even when project and Auth look correct', () => {
+  for (const [target, project, foreign] of [
+    ['production', 'urai-4dc1d', 'urai-staging'],
+    ['staging', 'urai-staging', 'urai-4dc1d'],
+  ]) {
+    const env = webEnv(project)
+    for (const bucket of [
+      `${foreign}.firebasestorage.app`,
+      `${foreign}.appspot.com`,
+      'another-company-prod.firebasestorage.app',
+      'another-company-prod.appspot.com',
+      `${project}.firebasestorage.app.attacker.example`,
+      `${project}.storage.googleapis.com`,
+    ]) {
+      const result = check(target, { ...env, NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: bucket })
+      assert.equal(result.status, 1, `${target}: ${bucket} should fail`)
+      assert.match(result.stderr, /Storage bucket is not an approved default/)
+    }
+    for (const bucket of [`${project}.firebasestorage.app`, `${project}.appspot.com`]) {
+      const result = check(target, { ...env, NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: bucket })
+      assert.equal(result.status, 0, `${target}: ${bucket} should pass: ${result.stderr}`)
+    }
+  }
+})
+
 test('rejects app ID and sender mismatch without printing the public key value', () => {
   const env = { ...webEnv('urai-4dc1d'), NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '999' }
   const result = check('production', env)
