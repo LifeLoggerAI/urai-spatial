@@ -1,5 +1,5 @@
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { getFirebaseDb } from "../../lib/firebase/client";
+import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 
 export type EarlyAccessSignup = {
   email: string;
@@ -40,6 +40,10 @@ export async function saveEarlyAccessSignup(email: string, source: EarlyAccessSi
 
   writeLocal(signup);
 
+  // Local-only storage is not proof that the person reached the waitlist.
+  // Do not attempt writes through an unverified Firebase client.
+  if (!firebasePublicEnvReady) return { ...signup, persistedRemotely: false };
+
   try {
     const db = getFirebaseDb();
     const ref = doc(db, COLLECTION, emailToDocId(cleanEmail));
@@ -56,9 +60,10 @@ export async function saveEarlyAccessSignup(email: string, source: EarlyAccessSi
       },
       { merge: true },
     );
+    return { ...signup, persistedRemotely: true };
   } catch (error) {
     console.warn("[URAI] Firestore signup write failed; local fallback saved.", error);
   }
 
-  return signup;
+  return { ...signup, persistedRemotely: false };
 }
