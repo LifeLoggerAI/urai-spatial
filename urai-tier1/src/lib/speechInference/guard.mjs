@@ -100,8 +100,8 @@ export async function assessSpeechEvidence(request, ports, options={}) {
   const utterance=request.utterance
   if(!validateSpans(utterance)) { flags=['invalid-language-spans'];return result() }
   // Context evidence positions must come from an actual array. A malformed or
-  // missing context collection cannot mint usable context references or crash
-  // the policy guard after protected feature reads.
+  // missing context collection cannot mint usable context references, trigger
+  // protected feature reads, or crash the policy guard.
   if(!Array.isArray(utterance.context)) { flags=['invalid-utterance-context'];return result() }
   if(typeof ports.readFeatures!=='function') throw new Error('SPEECH_FEATURE_PORT_REQUIRED')
   const features=structuredClone(await ports.readFeatures())
