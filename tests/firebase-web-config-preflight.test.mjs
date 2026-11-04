@@ -226,3 +226,22 @@ test('launch analytics remote write is fenced by canonical Firebase identity', (
   assert.match(analytics, /if \(!firebasePublicEnvReady\) return payload/)
   assert.doesNotMatch(analytics, /\b(?:getApp|getApps|initializeApp)\s*\(/)
 })
+
+
+test('waitlist confirmation must be backed by a successful remote write', () => {
+  const signup = readFileSync(
+    fileURLToPath(new URL('../urai-tier1/src/spatial/landing/earlyAccessSignup.ts', import.meta.url)),
+    'utf8',
+  )
+  const page = readFileSync(
+    fileURLToPath(new URL('../urai-tier1/src/app/early-access/page.tsx', import.meta.url)),
+    'utf8',
+  )
+  assert.match(signup, /if \(!firebasePublicEnvReady\) return \{ \.\.\.signup, persistedRemotely: false \}/)
+  assert.match(signup, /await setDoc\([\s\S]*?return \{ \.\.\.signup, persistedRemotely: true \}/)
+  assert.match(signup, /return \{ \.\.\.signup, persistedRemotely: false \};\s*\}/)
+  assert.match(page, /if \(!saved\.persistedRemotely\)/)
+  assert.match(page, /It has not reached the waitlist/)
+  assert.match(page, /trackLaunchEvent\("early_access_signup_completed"\)/)
+  assert.ok(page.indexOf('if (!saved.persistedRemotely)') < page.indexOf('trackLaunchEvent("early_access_signup_completed")'))
+})
