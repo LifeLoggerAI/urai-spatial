@@ -43,7 +43,7 @@
     "check:spatial-copy": "node scripts/check-spatial-copy.mjs",
     "check:public-copy": "node scripts/run-pnpm.mjs check:spatial-copy",
     "check:production-claims": "node scripts/run-pnpm.mjs check:launch-boundary-contract && node scripts/run-pnpm.mjs check:spatial-copy",
-    "check:firebase": "node scripts/xr-firebase-preflight.mjs",
+    "check:firebase": "node scripts/xr-firebase-preflight.mjs && node --test tests/firebase-web-config-preflight.test.mjs",
     "check:onboarding": "node scripts/run-pnpm.mjs check:spatial-copy",
     "check:system-registry": "node scripts/run-pnpm.mjs check:runtime-boundary && node scripts/run-pnpm.mjs runtime:authority",
     "check:production-lock": "node scripts/run-pnpm.mjs verify:release",
@@ -139,7 +139,9 @@
     "verify:v1-v10:non-assets": "pnpm verify:v1-v6:non-assets && pnpm verify:v7-v10:non-assets",
     "lock:v11-v20:non-assets": "node scripts/check-v11-v20-non-asset-lock.mjs",
     "verify:v11-v20:non-assets": "pnpm lock:v11-v20:non-assets && pnpm verify:release:critical",
-    "verify:v1-v20:non-assets": "pnpm verify:v1-v10:non-assets && pnpm verify:v11-v20:non-assets"
+    "verify:v1-v20:non-assets": "pnpm verify:v1-v10:non-assets && pnpm verify:v11-v20:non-assets",
+    "check:firebase:web:production": "node scripts/firebase-web-config-preflight.mjs --target=production",
+    "check:firebase:web:staging": "node scripts/firebase-web-config-preflight.mjs --target=staging"
   },
   "devDependencies": {
     "firebase-tools": "^15.22.3"
