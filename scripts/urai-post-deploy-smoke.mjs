@@ -3,6 +3,7 @@
 import { createHash } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { conditionalXrRoutes, currentXrReleaseAuthority, inspectConditionalXrResponse, inspectXrDeployProof } from './lib/xr-release-authority.mjs'
 
 const baseUrl = (process.env.URAI_DEPLOY_URL || '').trim().replace(/\/$/, '')
 const expectedSha = (process.env.URAI_EXPECTED_DEPLOYED_SHA || '').trim()
@@ -14,6 +15,7 @@ const expectedFingerprintCertification = (process.env.URAI_EXPECTED_FINGERPRINT_
 const receiptPath = process.env.URAI_LIVE_RECEIPT_PATH || 'deployment-receipt/live-content-parity.json'
 const maxAttempts = Number.parseInt(process.env.URAI_SMOKE_FETCH_ATTEMPTS || '4', 10)
 const retryBaseMs = Number.parseInt(process.env.URAI_SMOKE_RETRY_BASE_MS || '750', 10)
+const xrAuthority = currentXrReleaseAuthority()
 
 if (!baseUrl) throw new Error('URAI_DEPLOY_URL is required')
 const canonicalOrigin = new URL(baseUrl).origin
@@ -40,8 +42,6 @@ const contracts = [
   ['/spatial/memory-world', ['memory-world-route'], []],
   ['/spatial/interpretive-world', ['interpretive-world-route'], []],
   ['/spatial/captured-reality', ['captured-reality-private-route'], []],
-  ['/spatial/ar-vr', ['urai-quest-explorable-world', 'URAI AR / VR / XR entry chamber'], []],
-  ['/xr', ['urai-quest-explorable-world', 'URAI XR World'], []],
   ['/settings', ['device-settings', 'How URAI meets you.'], []],
   ['/settings/communications', ['communication-settings', 'SMS preferences', 'Message and data rates may apply', 'Reply STOP to opt out or HELP for help'], []],
   ['/sms-opt-in', ['sms-opt-in-proof', 'SMS web-form opt-in', 'unchecked by default', 'Privacy Policy', 'Terms &amp; Conditions'], []],
@@ -223,6 +223,46 @@ for (const [route, required, forbidden] of contracts) {
   }
 }
 
+
+// Verify the canonical source-governed XR boundary independently of ordinary
+// 200-HTML public routes. Disabled immersive /xr MUST be 404; the separate
+// /spatial/ar-vr route MUST remain a clearly marked non-immersive preview.
+// No XR status may be inferred from a dashboard, environment toggle or claim.
+const xrResults = []
+for (const route of conditionalXrRoutes) {
+  for (const requested of variants(route)) {
+    const startedAt = new Date().toISOString()
+    try {
+      const { response, text: html, attemptsUsed } = await fetchTextWithRetries(requested, {
+        redirect: 'follow',
+        cache: 'no-store',
+        headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-governed-xr-postdeploy/1.0' },
+      })
+      const sha = deployedSha(response, html)
+      const policyMatch = inspectConditionalXrResponse(response, requested.toString(), xrAuthority, html)
+      // Any XR HTML that is actually served must identify this exact release.
+      // A deliberately disabled /xr 404 is a negative proof, not an HTML page.
+      const passed = policyMatch && (response.status !== 200 || sha === expectedSha)
+      xrResults.push({
+        route, requestedUrl: requested.toString(), finalUrl: response.url,
+        startedAt, completedAt: new Date().toISOString(),
+        status: response.status, expectedStatus: route === '/spatial/ar-vr' ? 200 : xrAuthority.expectedStatus,
+        sourceEnabled: xrAuthority.enabled, policyMatch, deployedSha: sha || null,
+        attemptsUsed, contentSha256: createHash('sha256').update(html).digest('hex'),
+        passed,
+      })
+    } catch (error) {
+      xrResults.push({
+        route, requestedUrl: requested.toString(), startedAt,
+        completedAt: new Date().toISOString(),
+        expectedStatus: route === '/spatial/ar-vr' ? 200 : xrAuthority.expectedStatus,
+        error: error instanceof Error ? error.message : String(error),
+        attemptsUsed: error?.attemptsUsed || maxAttempts, passed: false,
+      })
+    }
+  }
+}
+
 const serverResults = []
 for (const [method, route] of serverContracts) {
   const requested = new URL(route, `${baseUrl}/`)
@@ -290,7 +330,7 @@ for (const route of ['/api/system/deploy-proof', '/api/system/health', '/api/sys
     let payload = null
     try { payload = JSON.parse(text) } catch {}
     const identityMatches = route !== '/api/system/deploy-proof'
-      || (payload?.environment?.commitSha === expectedSha && payload?.environment?.firebaseProject === 'urai-4dc1d')
+      || (payload?.environment?.commitSha === expectedSha && payload?.environment?.firebaseProject === 'urai-4dc1d' && inspectXrDeployProof(payload, xrAuthority))
     systemProofResults.push({
       route,
       finalUrl: response.url,
@@ -321,8 +361,8 @@ try {
   }
 }
 
-const passed = results.every((result) => result.passed) && serverResults.every((result) => result.passed)
-  && systemProofResults.every((result) => result.passed) && fingerprint.passed
+const passed = results.every((result) => result.passed) && xrResults.every((result) => result.passed)
+  && serverResults.every((result) => result.passed) && systemProofResults.every((result) => result.passed) && fingerprint.passed
 const receipt = {
   schemaVersion: 'urai-live-content-parity-6',
   generatedAt: new Date().toISOString(),
@@ -332,6 +372,8 @@ const receipt = {
   expectedAuthoritySha,
   routeContracts: contracts.length,
   checkedVariants: results.length,
+  checkedXrVariants: xrResults.length,
+  xrSourceAuthority: { enabled: xrAuthority.enabled, expectedStatus: xrAuthority.expectedStatus, claim: xrAuthority.claim },
   serverContracts: serverContracts.length,
   checkedServerBoundaries: serverResults.length,
   expectedFunctionsTreeSha,
@@ -341,6 +383,7 @@ const receipt = {
   hydratedIdentityProof: 'scripts/urai-release-control-smoke.mjs',
   browserCompatibilityRoutes: ['/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind'],
   fingerprint,
+  xrResults,
   systemProofResults,
   serverResults,
   passed,
