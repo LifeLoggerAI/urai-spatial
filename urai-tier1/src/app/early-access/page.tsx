@@ -25,7 +25,7 @@ export default function EarlyAccessPage() {
       const saved = await saveEarlyAccessSignup(email);
       if (!saved.persistedRemotely) {
         setStatus("offline");
-        setMessage("Your email is saved only on this device. It has not reached the waitlist. Please retry when the connection is available.");
+        setMessage("Your signup was not confirmed. It has not reached the waitlist, and this page did not save your email on this device. Please retry later.");
         return;
       }
       trackLaunchEvent("early_access_signup_completed");
