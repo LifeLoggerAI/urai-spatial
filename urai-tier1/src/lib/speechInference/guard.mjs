@@ -101,6 +101,10 @@ export async function assessSpeechEvidence(request, ports, options={}) {
   inferenceEnabled=true
   const utterance=request.utterance
   if(!validateSpans(utterance)) { flags=['invalid-language-spans'];return result() }
+  // Context evidence positions must come from an actual array. A malformed or
+  // missing context collection cannot mint usable context references or crash
+  // the policy guard after protected feature reads.
+  if(!Array.isArray(utterance.context)) { flags=['invalid-utterance-context'];return result() }
   spans=utterance.language_spans.map(span=>({...span}))
   const languages=new Set(spans.map(span=>span.language.split('-')[0].toLowerCase()))
   if(languages.size>1) flags.push('code-switch')
