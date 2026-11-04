@@ -33,6 +33,16 @@ function check(name, mutate, ok) {
 check('matching source, fingerprints, project, rollback, and config accepted', () => {}, true);
 check('old predecessor release SHA denied', d => { d.fingerprint.releaseSha = 'e'.repeat(40); }, false);
 check('authority SHA disagrees denied', d => { d.fingerprint.authoritySha = 'e'.repeat(40); }, false);
+test('separately pinned governance main SHA is accepted only when exact', () => {
+  const data = base();
+  data.fingerprint.authoritySha = 'e'.repeat(40);
+  assert.equal(inspectReleaseFingerprintParity(data.fingerprint, data.proof, SHA, 'e'.repeat(40)).ok, true);
+  assert.equal(inspectReleaseFingerprintParity(data.fingerprint, data.proof, SHA).ok, false);
+});
+test('invalid separately pinned authority SHA is denied', () => {
+  const data = base();
+  assert.equal(inspectReleaseFingerprintParity(data.fingerprint, data.proof, SHA, 'unknown').ok, false);
+});
 check('server deploy proof SHA differs denied', d => { d.proof.deploymentFreshness.commitSha = 'e'.repeat(40); }, false);
 check('server environment SHA differs denied', d => { d.proof.environment.commitSha = 'e'.repeat(40); }, false);
 check('different Firebase project denied', d => { d.proof.environment.firebaseProject = 'other'; }, false);
