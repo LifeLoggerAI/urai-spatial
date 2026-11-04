@@ -190,3 +190,16 @@ test('tier-lock callable requires canonical Firebase readiness (no three-field p
   assert.doesNotMatch(tierLocks, /\b(?:cache\.get|cache\.set|cache\.has)\s*\(/)
   assert.doesNotMatch(tierLocks, /new Map<string,\s*TierLockDecision>/)
 })
+
+
+test('Life Map star writes require canonical Firebase identity, never arbitrary default app', () => {
+  const starWriter = readFileSync(
+    fileURLToPath(new URL('../urai-tier1/src/lib/lifemap/writeLifeMapStar.ts', import.meta.url)),
+    'utf8',
+  )
+  assert.match(starWriter, /import \{ functions, firebasePublicEnvReady \} from ['"]\.\.\/firebase\/client['"]/)
+  assert.match(starWriter, /if \(!firebasePublicEnvReady\)/)
+  assert.match(starWriter, /httpsCallable<LifeMapStarWriteInput, LifeMapStarWriteResult>\(\s*functions/)
+  assert.doesNotMatch(starWriter, /\b(?:getApp|getApps|initializeApp|getFunctions)\s*\(/)
+  assert.doesNotMatch(starWriter, /process\.env\.NEXT_PUBLIC_FIREBASE_(?:API_KEY|APP_ID|PROJECT_ID)/)
+})
