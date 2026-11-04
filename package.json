@@ -43,7 +43,7 @@
     "check:spatial-copy": "node scripts/check-spatial-copy.mjs",
     "check:public-copy": "node scripts/run-pnpm.mjs check:spatial-copy",
     "check:production-claims": "node scripts/run-pnpm.mjs check:launch-boundary-contract && node scripts/run-pnpm.mjs check:spatial-copy",
-    "check:firebase": "node scripts/xr-firebase-preflight.mjs",
+    "check:firebase": "node scripts/xr-firebase-preflight.mjs && node --test tests/firebase-web-config-preflight.test.mjs",
     "check:onboarding": "node scripts/run-pnpm.mjs check:spatial-copy",
     "check:system-registry": "node scripts/run-pnpm.mjs check:runtime-boundary && node scripts/run-pnpm.mjs runtime:authority",
     "check:production-lock": "node scripts/run-pnpm.mjs verify:release",
@@ -144,7 +144,9 @@
     "world001:preview:verify": "node scripts/world001-v3-preview-asset.mjs verify-source",
     "world001:preview:stage": "node scripts/world001-v3-preview-asset.mjs stage",
     "world001:preview:clean": "node scripts/world001-v3-preview-asset.mjs clean",
-    "world001:preview:assert-excluded": "node scripts/world001-v3-preview-asset.mjs assert-excluded"
+    "world001:preview:assert-excluded": "node scripts/world001-v3-preview-asset.mjs assert-excluded",
+    "check:firebase:web:production": "node scripts/firebase-web-config-preflight.mjs --target=production",
+    "check:firebase:web:staging": "node scripts/firebase-web-config-preflight.mjs --target=staging"
   },
   "devDependencies": {
     "firebase-tools": "15.32.1",
