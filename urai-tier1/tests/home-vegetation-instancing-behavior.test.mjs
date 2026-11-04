@@ -65,6 +65,10 @@ function mountVegetation(scene) {
     './HomeSanctuaryPerimeterGrove': unexpectedPerimeterWork,
     // Fern-only evidence must not manufacture nearby owner/threshold authority.
     './HomeThresholdVisibility': { showHomeThresholdLabel: () => assert.fail('fern fixture must not evaluate Home threshold authority') },
+    // The CC0 evaluation surfaces are never enabled by the fern-only fixture.
+    './HomeCC0ReviewMaterial': { HomeCC0ReviewMaterial: () => assert.fail('CC0 review is not active') },
+    './HomeCC0ReviewShrubs': { HomeCC0ReviewShrubs: () => assert.fail('CC0 review is not active') },
+    './HomeCC0ReviewRetainedGround': { HomeCC0ReviewRetainedGround: () => assert.fail('CC0 review is not active') },
     './HomeWorldProduction.module.css': {},
     './HomeSanctuaryMaterials': {}, './HomeSanctuaryAssetPolicy': {},
     '@/app/home/orbStateController': {}, '@/spatial/navigation/EmbodiedNavigation': {},
