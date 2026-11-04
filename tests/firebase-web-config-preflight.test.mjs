@@ -184,4 +184,9 @@ test('tier-lock callable requires canonical Firebase readiness (no three-field p
   assert.match(tierLocks, /return httpsCallable\(functions, ['"]evaluateSpatialTierLock['"]\)/)
   assert.doesNotMatch(tierLocks, /\b(?:initializeApp|getApps|getApp|getFunctions)\s*\(/)
   assert.doesNotMatch(tierLocks, /process\.env\.NEXT_PUBLIC_FIREBASE_(?:API_KEY|APP_ID|PROJECT_ID)/)
+  // A public NEXT_PUBLIC tier flag cannot imply an authenticated session.
+  assert.match(tierLocks, /authenticated:\s*false/)
+  // Cached allowed decisions cannot be shared by different users at the same tier.
+  assert.doesNotMatch(tierLocks, /\b(?:cache\.get|cache\.set|cache\.has)\s*\(/)
+  assert.doesNotMatch(tierLocks, /new Map<string,\s*TierLockDecision>/)
 })
