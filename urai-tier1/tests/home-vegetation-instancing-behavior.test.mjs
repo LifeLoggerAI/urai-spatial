@@ -63,6 +63,12 @@ function mountVegetation(scene) {
     './HomeLivingOrbGeometry': { createLivingMemoryGeometry: unexpectedOrbWork, createMemoryFieldGeometry: unexpectedOrbWork, createMemoryFilamentGeometry: unexpectedOrbWork },
     './HomeAuthoredOrbLight': { createAuthoredOrbLightPresentation: unexpectedOrbWork, disposeAuthoredOrbLightPresentation: unexpectedOrbWork },
     './HomeSanctuaryPerimeterGrove': unexpectedPerimeterWork,
+    // The fern-only test must resolve optional imports without constructing
+    // visual review assets or granting non-production preview access.
+    './HomeThresholdVisibility': { showHomeThresholdLabel: () => false },
+    './HomeCC0ReviewMaterial': { HomeCC0ReviewMaterial: unexpectedPerimeterWork },
+    './HomeCC0ReviewShrubs': { HomeCC0ReviewShrubs: unexpectedPerimeterWork },
+    './HomeCC0ReviewRetainedGround': { HomeCC0ReviewRetainedGround: unexpectedPerimeterWork },
     './HomeWorldProduction.module.css': {},
     './HomeSanctuaryMaterials': {}, './HomeSanctuaryAssetPolicy': {},
     '@/app/home/orbStateController': {}, '@/spatial/navigation/EmbodiedNavigation': {},
