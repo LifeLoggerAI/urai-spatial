@@ -33,14 +33,21 @@ for (const key of ['URAI_SPATIAL_FIREBASE_PROJECT_ID', 'FIREBASE_PROJECT_ID']) {
   }
 }
 
+// A syntactically plausible foreign host or bucket must never pass a
+// project-specific *static* release preflight. Custom domains and non-default
+// buckets require separate provider evidence and a reviewed allowlist change.
 const authDomain = value('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN')
-if (authDomain.endsWith('.firebaseapp.com') && authDomain !== `${expectedProject}.firebaseapp.com`) {
-  errors.push('Firebase Auth domain points at a different project')
+const expectedAuthDomain = `${expectedProject}.firebaseapp.com`
+if (authDomain && authDomain !== expectedAuthDomain) {
+  errors.push('Firebase Auth domain is not the reviewed project default')
 }
 const storageBucket = value('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET')
-const otherProject = target === 'production' ? TARGETS.staging : TARGETS.production
-if (storageBucket === `${otherProject}.appspot.com` || storageBucket === `${otherProject}.firebasestorage.app`) {
-  errors.push('Firebase Storage bucket points at the opposite environment')
+const allowedStorageBuckets = new Set([
+  `${expectedProject}.appspot.com`,
+  `${expectedProject}.firebasestorage.app`,
+])
+if (storageBucket && !allowedStorageBuckets.has(storageBucket)) {
+  errors.push('Firebase Storage bucket is not a reviewed default for this project')
 }
 
 const sender = value('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID')
