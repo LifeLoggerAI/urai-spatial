@@ -38,9 +38,15 @@ if (authDomain.endsWith('.firebaseapp.com') && authDomain !== `${expectedProject
   errors.push('Firebase Auth domain points at a different project')
 }
 const storageBucket = value('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET')
-const otherProject = target === 'production' ? TARGETS.staging : TARGETS.production
-if (storageBucket === `${otherProject}.appspot.com` || storageBucket === `${otherProject}.firebasestorage.app`) {
-  errors.push('Firebase Storage bucket points at the opposite environment')
+// Only project-named default buckets are approved at this review boundary.
+// A custom bucket needs a separately verified target-specific allowlist; merely
+// excluding the other environment lets unrelated third-party buckets pass.
+const approvedDefaultBuckets = new Set([
+  `${expectedProject}.firebasestorage.app`,
+  `${expectedProject}.appspot.com`,
+])
+if (storageBucket && !approvedDefaultBuckets.has(storageBucket)) {
+  errors.push('Firebase Storage bucket is not an approved default for the selected target')
 }
 
 const sender = value('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID')
