@@ -3,6 +3,8 @@ import fs from 'node:fs'
 
 const focusedContractTests = [
   'tests/stripe-session-authority.test.mjs',
+  'tests/multilingual-speech-evaluator-contract.test.mjs',
+  'tests/multilingual-speech-guard-contract.test.mjs',
   'tests/owned-memory-media-client.test.mjs',
   'tests/authorized-export-download.test.mjs',
   'tests/operational-export-client.test.mjs',

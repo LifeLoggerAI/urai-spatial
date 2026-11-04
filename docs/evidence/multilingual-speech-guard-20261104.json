@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "observed_on": "2026-11-04",
+  "base_candidate_sha": "a86e6743f94ada06be5c25afcd8d91357ec405ce",
+  "scope": "local-partial-source synthetic policy verification",
+  "runtime": "Node v24.22.1",
+  "loader": "native TypeScript loading plus scoped extensionless TS resolver; repository tsx bootstrap was not installed",
+  "fixture_revision": "1.1.0",
+  "fixture_sha256": "55c4c05c79316b31fa32b49d47a5e6d06d39e7abecc7bc8909b7b6fef0d80047",
+  "results": {
+    "actual_guard_fixture_cases": {
+      "passed": 30,
+      "failed": 0
+    },
+    "guard_tests_including_cases": {
+      "passed": 63,
+      "failed": 0
+    },
+    "checker_tests": {
+      "passed": 39,
+      "failed": 0
+    },
+    "runner_registration_tests": {
+      "passed": 1,
+      "failed": 0
+    },
+    "existing_weather_and_speaker_regressions": {
+      "passed": 12,
+      "failed": 0
+    },
+    "total": {
+      "passed": 115,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "verification_status": {
+    "new_guard_implemented": true,
+    "synthetic_adapter_executed": true,
+    "production_endpoint_wired": false,
+    "full_frozen_install": "not-run",
+    "full_typecheck": "not-run",
+    "full_application_build": "not-run",
+    "hosted_CI": "not-certified",
+    "deployed_parity": "not-certified",
+    "native_language_review": "not-performed",
+    "ASR_or_feature_extraction_validation": "not-performed",
+    "scientific_validation": false
+  },
+  "private_recordings_used": false,
+  "paid_processing_launched": false,
+  "baseline_consent_mapping": "unresolved; no production or persistent adaptation grant created",
+  "reviewed_proposal_files": [
+    {
+      "path": "docs/MULTILINGUAL_SPEECH_INFERENCE_EVALUATION_V1.md",
+      "blob_sha": "0b24ce37d84e65173e8a10fd98cd8eb637fab92b",
+      "sha256": "4390ae91cbd0bc7fa6c64aa7e06fd963ed5ed77d9ef93193c86a3aa20230b379"
+    },
+    {
+      "path": "urai-tier1/scripts/run-unit-contract-tests-compact.mjs",
+      "blob_sha": "33896315fbe85bfe1c78ae2508e9b8d9ca659f59",
+      "sha256": "f906325d9ad3486bf1a30bc163c0ce91def5a150b4b7b15f1995f9acd0e03f7c"
+    },
+    {
+      "path": "urai-tier1/scripts/run-unit-contract-tests.mjs",
+      "blob_sha": "c3bcb771b013d5920ff244ad2ab5e8b4109704e0",
+      "sha256": "e46304758bcb712f082ebacedb377d4e40bf6c260f32d65221c491fd856cadfa"
+    },
+    {
+      "path": "urai-tier1/src/lib/speechInference/baseline.mjs",
+      "blob_sha": "3de2c75878166bd9841c0bb0dd777a67e09ed0ea",
+      "sha256": "a65cb21200719902ba2617e10a10e5b7307aafde230707d5f93caa6e1ea730f2"
+    },
+    {
+      "path": "urai-tier1/src/lib/speechInference/guard.d.mts",
+      "blob_sha": "5d0f13f5fcd657c436aef8473def8921ca721e30",
+      "sha256": "ee5dc8d7c8dee72f6ed5e593fb870456c650637f868560e216abd83769ebf276"
+    },
+    {
+      "path": "urai-tier1/src/lib/speechInference/guard.mjs",
+      "blob_sha": "aa707999d31ecb4a7e09d41d6bc0eaaba3e717bd",
+      "sha256": "9cee8e7ed6326d9f78c179285fbac95954c8095181f6e9f8e774ee8193091f87"
+    },
+    {
+      "path": "urai-tier1/tests/fixtures/multilingual-speech-v1/cases.json",
+      "blob_sha": "c7d3dfd2423506b312d36ba930b8ce07d458b399",
+      "sha256": "55c4c05c79316b31fa32b49d47a5e6d06d39e7abecc7bc8909b7b6fef0d80047"
+    },
+    {
+      "path": "urai-tier1/tests/fixtures/multilingual-speech-v1/evaluate.mjs",
+      "blob_sha": "fbcb154f57da58c66976841dd74c0cc082968cdc",
+      "sha256": "33d6e72ba208c81c005a5c6e4d0749a180721726e24a4fe6db219dae4f1c2c22"
+    },
+    {
+      "path": "urai-tier1/tests/fixtures/multilingual-speech-v1/examples.json",
+      "blob_sha": "c1587d5f1bfec349da40ad9d7ea431214391dcbc",
+      "sha256": "19aa7505cbc320f29b943c4099b440449870ecdbb8e2331390f8befdb5b848e1"
+    },
+    {
+      "path": "urai-tier1/tests/fixtures/multilingual-speech-v1/result.schema.json",
+      "blob_sha": "65ef1e75acb1fcb5bff394b38f2841b46edacd11",
+      "sha256": "2709d270c984dcd765a6ede918730ca72a0e02c2c5918f300a92d605f506c43d"
+    },
+    {
+      "path": "urai-tier1/tests/helpers/multilingualSpeechEvaluationAdapter.mjs",
+      "blob_sha": "a8533583974150f2fcde8304a0d7d821dd583952",
+      "sha256": "04feb389afaf5ca6b4f1ba565082e612320a5ea9211874bec75db99036999f54"
+    },
+    {
+      "path": "urai-tier1/tests/multilingual-speech-evaluator-contract.test.mjs",
+      "blob_sha": "f7c5a27f67b9ced3615afa6151e58769eb6f94d2",
+      "sha256": "ab047e10da87e724e6956cb56e041ec087096f5c36b0cbfa3d7b9742358caa1c"
+    },
+    {
+      "path": "urai-tier1/tests/multilingual-speech-guard-contract.test.mjs",
+      "blob_sha": "03a9e4661d3b3614481558679dcb7dc5ab2a2203",
+      "sha256": "e02192718fb67c2e5def864af22d47367678ce92272c7aa96ef0ad5b1471c38b"
+    },
+    {
+      "path": "urai-tier1/tests/unit-runner-coverage.test.mjs",
+      "blob_sha": "03cdec78b5e50bdca14faf6c939077312e336e67",
+      "sha256": "c4336bbd867bb0f26e161e7cd26a5ec22cc5aad6415fa37e8fe3c63ec4a5fecd"
+    }
+  ]
+}
