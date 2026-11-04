@@ -8,6 +8,9 @@ const requireLiveCommitSha = process.env.REQUIRE_LIVE_COMMIT_SHA === 'true'
 const requireCustomDomain = process.env.REQUIRE_CUSTOM_DOMAIN === 'true'
 const requireExactDeploySha = process.env.REQUIRE_EXACT_DEPLOY_SHA === 'true'
 const expectedDeploySha = process.env.URAI_EXPECT_DEPLOY_SHA
+// The release authority SHA may differ from the deployment SHA. Match the
+// separately pinned main/governance authority used by post-deploy checks.
+const expectedAuthoritySha = process.env.URAI_EXPECTED_AUTHORITY_SHA || process.env.CURRENT_MAIN_SHA || expectedDeploySha
 if (requireExactDeploySha && !/^[0-9a-f]{40}$/.test(expectedDeploySha || '')) {
   console.error('REQUIRE_EXACT_DEPLOY_SHA requires a pinned 40-character URAI_EXPECT_DEPLOY_SHA')
   process.exit(1)
@@ -268,7 +271,7 @@ if (requireExactDeploySha) {
       loadReleaseJson('/release-fingerprint.json'),
       loadReleaseJson('/api/system/deploy-proof'),
     ])
-    const verdict = inspectReleaseFingerprintParity(fingerprint, proof, expectedDeploySha)
+    const verdict = inspectReleaseFingerprintParity(fingerprint, proof, expectedDeploySha, expectedAuthoritySha)
     if (!verdict.ok) failures.push(`public release fingerprint parity refused: ${verdict.reason}`)
     else console.log('OK exact reviewed release fingerprint and server proof parity')
   } catch {
