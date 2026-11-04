@@ -2,10 +2,13 @@
  * Strict read-only cross-check of the public release fingerprint and the
  * server deployment proof. This never grants deployment or user authorization.
  */
-export function inspectReleaseFingerprintParity(fingerprint, proof, expectedSha) {
+export function inspectReleaseFingerprintParity(fingerprint, proof, expectedSha, expectedAuthoritySha = expectedSha) {
   const failed = reason => Object.freeze({ ok: false, reason });
   if (typeof expectedSha !== 'string' || !/^[0-9a-f]{40}$/.test(expectedSha)) {
     return failed('invalid_expected_sha');
+  }
+  if (typeof expectedAuthoritySha !== 'string' || !/^[0-9a-f]{40}$/.test(expectedAuthoritySha)) {
+    return failed('invalid_expected_authority_sha');
   }
   try {
     if (!fingerprint || typeof fingerprint !== 'object' || Array.isArray(fingerprint) ||
@@ -14,7 +17,7 @@ export function inspectReleaseFingerprintParity(fingerprint, proof, expectedSha)
     }
     if (fingerprint.schemaVersion !== 'urai-release-fingerprint-1' ||
         fingerprint.releaseSha !== expectedSha ||
-        fingerprint.authoritySha !== expectedSha) {
+        fingerprint.authoritySha !== expectedAuthoritySha) {
       return failed('fingerprint_version_mismatch');
     }
     if (fingerprint.liveUrl !== 'https://urai.app' ||
