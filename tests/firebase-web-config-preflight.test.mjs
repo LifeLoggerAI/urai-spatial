@@ -102,3 +102,11 @@ test('unknown custom and cross-project Auth domains fail closed pending provider
     }
   }
 })
+
+test('legacy Tier1 Firebase entrypoint reuses canonical app and guards seeded fallback', () => {
+  const legacy = readFileSync(fileURLToPath(new URL('../urai-tier1/src/lib/firebase.ts', import.meta.url)), 'utf8')
+  assert.match(legacy, /from ['"]\.\/firebase\/client['"]/)
+  assert.match(legacy, /export const firebaseApp = firebasePublicEnvReady \? app : null/)
+  assert.match(legacy, /export const db = firebaseApp \? getFirebaseDb\(\) : null/)
+  assert.doesNotMatch(legacy, /\b(?:initializeApp|getApps|getFirestore)\s*\(/)
+})
