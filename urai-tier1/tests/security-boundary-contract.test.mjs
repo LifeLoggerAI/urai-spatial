@@ -179,3 +179,26 @@ test('R584: Consent async writes and exports stay fenced across auth transitions
   }
   assert.match(consentSanctuary, /setDeletionConfirmation\(''\)\s*setOperationBusy\(false\)\s*setUser\(nextUser\)/);
 });
+
+test('R585: late export download failures and cancel clicks must be tied to the initiating owner epoch', () => {
+  for (const [source, epochRef, stateRef, errors] of [
+    [passportVault, 'authEpoch', 'state', [
+      'Secure export download could not be authorized.',
+      'Secure runtime download could not be authorized.']],
+    [consentSanctuary, 'ownerEpoch', 'loadState', [
+      'Secure download could not be authorized.',
+      'Secure runtime download could not be authorized.']],
+  ]) {
+    const captured = 'onClick={async () => { const uid = user?.uid; const epoch = ' + epochRef + '.current; try {';
+    assert.equal(source.split(captured).length - 1, 2, 'both downloads must capture the session outside try');
+    for (const message of errors) {
+      const guarded = "catch { if (ownerCanDownload(uid, epoch)) setMessage('" + message + "') }";
+      assert.equal(source.split(guarded).length - 1, 1, 'late error must not mutate a new owner');
+      assert.equal(source.split("catch { setMessage('" + message + "') }").length - 1, 0);
+    }
+    for (const fn of ['cancelOperationalExportRequest', 'cancelOperationalDeletionRequest']) {
+      const guarded = 'if (' + stateRef + " !== 'private' || !ownerCanDownload(uid, epoch)) return; void " + fn + '(job.id)';
+      assert.equal(source.split(guarded).length - 1, 1, 'cancellation must require current owner at invocation');
+    }
+  }
+});
