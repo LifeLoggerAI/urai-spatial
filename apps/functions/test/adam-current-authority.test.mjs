@@ -5,6 +5,7 @@ import vm from 'node:vm'
 import { createHash } from 'node:crypto'
 import test from 'node:test'
 import ts from 'typescript'
+import { founderVoiceIssuerReadiness as productionFounderVoiceIssuerReadiness } from '../src/adamFounderVoiceReceiptContract.mjs'
 
 const uid='synthetic-adam-owner',answer='Synthetic private answer.',audio='synthetic-private-audio'
 const sourceRoot=process.env.URAI_ADAM_AUTHORITY_SOURCE_ROOT
@@ -39,6 +40,13 @@ function fixture(lane,controls={}){
   'firebase-functions/params':{defineSecret:()=>({value:()=> 'synthetic-not-a-key'})},'firebase-functions/v2/https':{onRequest:(_options,handler)=>handler},
   '../../../packages/localization/src/contentLanguage':{contentLanguage:tag=>tag==='en-US'?{speechTag:'en-US'}:null,URAI_CONTENT_LANGUAGE_TAGS:['en-US']},
   './consentPolicyAuthority':policyAuthority,
+  // Synthetic success exercises downstream revocation tests only; the real
+  // production Founder Voice issuer is still hard-off (asserted separately).
+  './adamFounderVoiceReceiptContract.mjs':{
+    founderVoiceIssuerReadiness:controls.useProductionVoiceIssuer === true
+      ? productionFounderVoiceIssuerReadiness
+      : ()=>({ready:true,syntheticFixtureOnly:true}),
+  },
   './protectedProviderSpend':{paidSpatialFetch,assertSpatialPaidOutputCurrent(upstream){assert.ok(upstream);state.outputChecks++;if(state.expired)throw new SpatialSpendError()},SpatialSpendError,SPATIAL_SPEND_WORKER_TOKENS_JSON:{}},
  },{process:{env:{ADAM_PRESENCE_ENABLED:controls.disabled?'false':'true',FOUNDER_VOICE_ENABLED:'true',FOUNDER_ELEVENLABS_VOICE_ID:'synthetic-voice'}},setTimeout:(fn,ms)=>setTimeout(fn,controls.timeoutMs??ms)})
  const response={statusCode:200,headersSent:false,writableEnded:false,chunks:[],body:null,headers:{},status(code){this.statusCode=code;return this},setHeader(key,value){this.headers[key]=value},on(){},write(value){this.headersSent=true;this.chunks.push(Buffer.from(value))},end(value){if(value)this.write(value);this.writableEnded=true},json(value){this.body=value;this.headersSent=true;this.writableEnded=true}}
@@ -46,6 +54,17 @@ function fixture(lane,controls={}){
  const output=()=>Buffer.concat(response.chunks).toString()
  return{state,run,response,output}
 }
+test('actual Founder Voice issuer hard-off denies provider dispatch despite feature flags',async()=>{
+ const gate=productionFounderVoiceIssuerReadiness()
+ assert.equal(gate.ready,false)
+ assert.equal(gate.code,'FOUNDER_PLAYBACK_AUTHORITY_NOT_READY')
+ const f=fixture('voice',{useProductionVoiceIssuer:true})
+ const response=await f.run()
+ assert.equal(response.statusCode,409)
+ assert.equal(response.body?.error,'FOUNDER_PLAYBACK_AUTHORITY_NOT_READY')
+ assert.equal(f.state.paid.length,0)
+ assert.equal(f.output(),'')
+})
 for(const lane of ['reasoning','voice']){
  test(`actual Adam ${lane} retains guarded private success`,async()=>{
   const f=fixture(lane),response=await f.run();assert.equal(response.statusCode,200);assert.ok(f.output().includes(lane==='voice'?audio:answer))
