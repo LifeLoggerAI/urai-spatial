@@ -75,6 +75,18 @@ function fixture() {
     '@/lib/i18n/contentLanguage': { contentLanguage: () => ({ speechTag: 'en-US' }), contentLanguageProps: () => ({ lang: 'en', dir: 'ltr' }) },
     '@/lib/i18n/useUraiLocale': { useUraiLocale: () => ({ text: () => 'Founder digital presence', props: () => ({ lang: 'en', dir: 'ltr' }) }) },
     './adamSurfaceContext': surfaces.exports,
+    // Original Founder voice remains denied unless per-turn server authority exists.
+    // This harness tests text/navigation privacy, never authorizes synthetic audio.
+    './founderVoicePlaybackBridge.mjs': {
+      createAdamFounderVoicePlaybackBridge: () => ({
+        ready: () => false,
+        isPlaying: () => false,
+        start: async () => false,
+        interrupt() {},
+        dispose() {},
+      }),
+    },
+
     './adamClient': {
       AdamProviderError,
       requestAdamPresence: (input) => { const result = deferred(); requests.push({ input, ...result }); return result.promise },
