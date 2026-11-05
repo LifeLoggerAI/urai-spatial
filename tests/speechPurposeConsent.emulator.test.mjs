@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import test from 'node:test'
@@ -32,6 +33,12 @@ const payload = (sessionId, overrides = {}) => ({
 })
 const leasePath = (sessionId, owner = uid) =>
   'users/' + owner + '/speechPurposeLeases/' + sessionId
+const purgePath = (sessionId, owner = uid) => {
+  const key = createHash('sha256')
+    .update('urai:speech-purge:v1\\0' + owner + '\\0' + sessionId)
+    .digest('hex')
+  return 'speechProviderPurgeQueue/' + key
+}
 const policyPath = (owner = uid) =>
   'users/' + owner + '/privacyPolicy/current'
 const baseDomain = {
@@ -185,4 +192,73 @@ test('revoked session is terminal: fresh consent must use a fresh session ID', a
   assert.equal(saved.get('revision'), 2)
   const separate = await grantSpeechPurposeLease.run(payload('new-session-after-revoke'), context())
   assert.equal(separate.revision, 1)
+})
+
+
+test('revocation atomically creates a pending, redacted provider cleanup obligation', async () => {
+  const sessionId = 'purge-atomically'
+  await grantSpeechPurposeLease.run(payload(sessionId, { sessionBaselineConsent: true }), context())
+  assert.equal((await db.doc(purgePath(sessionId)).get()).exists, false)
+  const result = await revokeSpeechPurposeLease.run({ sessionId }, context())
+  assert.equal(result.active, false)
+  assert.equal(result.revision, 2)
+  assert.equal(result.purgeState, 'requested')
+  assert.equal(result.providerPurgeVerified, false)
+  const job = await db.doc(purgePath(sessionId)).get()
+  assert.equal(job.exists, true)
+  assert.equal(job.id, result.purgeJobId)
+  assert.equal(job.get('schemaVersion'), 'urai-speech-purge-job-v1')
+  assert.equal(job.get('ownerId'), uid)
+  assert.equal(job.get('providerId'), providerId)
+  assert.equal(job.get('sourceId'), sourceId)
+  assert.equal(job.get('sessionId'), sessionId)
+  assert.equal(job.get('leaseRevision'), 2)
+  assert.equal(job.get('state'), 'requested')
+  assert.equal(job.get('providerState'), 'pending')
+  assert.equal(job.get('localCacheState'), 'pending')
+  assert.equal(job.get('providerPurgeVerified'), false)
+  assert.deepEqual(job.get('scopes'), [
+    'speech-transcript', 'acoustic-features', 'session-baseline', 'provider-session',
+  ])
+  for (const forbidden of ['rawAudio', 'transcript', 'audioBytes', 'featureValues', 'providerReceipt']) {
+    assert.equal(Object.hasOwn(job.data(), forbidden), false)
+  }
+  const originalUpdated = job.get('updatedAt').toMillis()
+  const repeated = await revokeSpeechPurposeLease.run({ sessionId }, context())
+  assert.equal(repeated.revision, 2)
+  assert.equal(repeated.purgeJobId, result.purgeJobId)
+  assert.equal(repeated.providerPurgeVerified, false)
+  assert.equal((await db.doc(purgePath(sessionId)).get()).get('updatedAt').toMillis(), originalUpdated)
+})
+
+test('conflicting provider cleanup queue prevents partial revocation', async () => {
+  const sessionId = 'purge-conflict'
+  await grantSpeechPurposeLease.run(payload(sessionId), context())
+  await db.doc(purgePath(sessionId)).set({
+    ownerId: uid, sessionId, sourceId, providerId: 'wrong-provider',
+    leaseRevision: 2, state: 'requested',
+  })
+  await expectCode(revokeSpeechPurposeLease.run({ sessionId }, context()), 'failed-precondition')
+  assert.equal((await db.doc(leasePath(sessionId)).get()).get('active'), true)
+  await db.doc(purgePath(sessionId)).delete()
+  const success = await revokeSpeechPurposeLease.run({ sessionId }, context())
+  assert.equal(success.revision, 2)
+  assert.equal((await db.doc(purgePath(sessionId)).get()).get('state'), 'requested')
+})
+
+test('simultaneous revocations are idempotent and create a single cleanup job', async () => {
+  const sessionId = 'purge-parallel'
+  await grantSpeechPurposeLease.run(payload(sessionId), context())
+  const outcomes = await Promise.all([
+    revokeSpeechPurposeLease.run({ sessionId }, context()),
+    revokeSpeechPurposeLease.run({ sessionId }, context()),
+  ])
+  assert.equal(outcomes[0].revision, 2)
+  assert.equal(outcomes[1].revision, 2)
+  assert.equal(outcomes[0].purgeJobId, outcomes[1].purgeJobId)
+  const lease = await db.doc(leasePath(sessionId)).get()
+  const job = await db.doc(purgePath(sessionId)).get()
+  assert.equal(lease.get('active'), false)
+  assert.equal(job.get('leaseRevision'), 2)
+  assert.equal(job.get('attempts'), 0)
 })
