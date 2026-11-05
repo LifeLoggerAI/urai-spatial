@@ -26,6 +26,7 @@ const strictlyOwnerReadOnlyCollections = [
 const trustedCollections = [
   'privacyEnforcementJobs',
   'providerRevocationQueue',
+  'speechProviderPurgeQueue',
   'deletionQueue',
   'deletionReceipts',
 ]
