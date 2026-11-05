@@ -66,5 +66,6 @@ test('production middleware serves only six audited public replay fixture SVGs a
   }
   assert.equal(simulated('/home').kind, 'rewrite', 'Home rewrite remains separate')
   assert.equal(simulated('/life-map').kind, 'next')
-  assert.equal(simulated('/demonstration').kind, 'next', 'unrelated routes stay unaffected')
+  assert.equal(simulated('/demonstration').kind, 'rewrite', 'legacy prefix deny remains fail-closed')
+  assert.equal(simulated('/ordinary').kind, 'next', 'unrelated routes stay unaffected')
 })
