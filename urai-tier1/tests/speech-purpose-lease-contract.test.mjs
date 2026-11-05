@@ -33,15 +33,23 @@ test('lease issuance checks canonical policy and active verified source/provider
     "providerSnap.get('ownerId') !== uid", "providerSnap.get('state') !== 'active'",
     "providerSnap.get('verified') !== true", "providerSnap.get('speechInferenceAuthorized') !== true"])
     assert.ok(policyLease.includes(expected), 'missing verified source/provider check: '+expected)
-  assert.match(policyLease, /if \(existing\.exists && previous\?\.active === true\)/)
+  assert.match(policyLease, /if \(existing\.exists\) \{\s*if \(previous\?\.active === true\)/)
+  assert.match(policyLease, /SPEECH_SESSION_ALREADY_ACTIVE/)
+  assert.match(policyLease, /SPEECH_SESSION_TERMINAL_NEW_ID_REQUIRED/)
+  assert.match(policyLease, /const revision = 1/)
 })
 
-test('lease is exact-owner/revision, bounded and revoked with incremented revision', () => {
+test('lease is exact-owner/revision, terminal and revoked atomically with an idempotent cleanup obligation', () => {
   assert.match(policyLease, /ownerId: uid, sessionId, sourceId, providerId, policyRevision/)
   assert.match(policyLease, /expiresAtMs = issuedAtMs \+ MAX_LEASE_MS/)
-  assert.match(policyLease, /const previousRevision = snapshot\.get\('revision'\) as number/)
-  assert.match(policyLease, /const revision = previousRevision \+ 1/)
-  assert.match(policyLease, /active: false, transcription: false, inference: false, sessionBaseline: false/)
+  assert.match(policyLease, /const currentRevision = lease\.get\('revision'\) as number/)
+  assert.match(policyLease, /const revision = wasActive \? currentRevision \+ 1 : currentRevision/)
+  assert.match(policyLease, /active: false, transcription: false, inference: false,\s*sessionBaseline: false/)
+  assert.match(policyLease, /tx\.get\(leaseRef\), tx\.get\(purgeRef\)/)
+  assert.match(policyLease, /if \(wasActive\) \{[\s\S]*tx\.update\(leaseRef/)
+  assert.match(policyLease, /if \(!existingPurge\.exists\) \{[\s\S]*tx\.create\(purgeRef/)
+  assert.match(policyLease, /SPEECH_PURGE_QUEUE_CONFLICT/)
+  assert.match(policyLease, /purgeJobId: purgeJobIdValue/)
   assert.match(policyLease, /providerPurgeVerified: false/)
 })
 
@@ -71,3 +79,4 @@ test('sample-world journey is not presented as authenticated private memory acce
   assert.match(browser, /data-memory-status','demo'/)
   assert.doesNotMatch(browser, /sourceClassification:'authenticated-private-user-memory'/)
 })
+
