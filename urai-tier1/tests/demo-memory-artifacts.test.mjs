@@ -55,15 +55,16 @@ test('production middleware serves only six audited public replay fixture SVGs a
   for (const pathname of requiredDemoAssets) {
     const assetPath = new URL('../public' + pathname, import.meta.url)
     const svg = readFileSync(assetPath, 'utf8')
-    assert.match(svg, /^<svg[\\s>]/)
-    assert.doesNotMatch(svg, /<script|<foreignObject|onload=|onclick=|<iframe|xlink:href|<!DOCTYPE|<image\\b/i)
+    assert.match(svg, /^<svg[\s>]/)
+    assert.doesNotMatch(svg, /<script|<foreignObject|onload=|onclick=|<iframe|xlink:href|<!DOCTYPE|<image\b/i)
     assert.equal(simulated(pathname).kind, 'next', pathname)
   }
-  for (const pathname of ['/demo', '/demo/', '/demo/replay-film', '/demo/memories/private.svg', '/demo/memories/recovery-bloom.svg/other', '/demo/../admin', '/demonstration']) {
+  for (const pathname of ['/demo', '/demo/', '/demo/replay-film', '/demo/memories/private.svg', '/demo/memories/recovery-bloom.svg/other', '/demo/../admin']) {
     const result = simulated(pathname)
     assert.equal(result.kind, 'rewrite', pathname)
     assert.equal(result.status, 404)
   }
   assert.equal(simulated('/home').kind, 'rewrite', 'Home rewrite remains separate')
   assert.equal(simulated('/life-map').kind, 'next')
+  assert.equal(simulated('/demonstration').kind, 'next', 'unrelated routes stay unaffected')
 })
