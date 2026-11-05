@@ -85,15 +85,22 @@ export function retainDisclosedHomeAscentDemo(sourcePathname: string, sourceSear
   destination: string
   entryPortal?: string
   cameraCheckpoint?: string
+  context?: { memoryId?: string; replayManifestId?: string }
 }, target: URL) {
   const home = sourcePathname.replace(/\/+$/, '') || '/'
   const lifeMap = target.pathname.replace(/\/+$/, '') || '/'
   const source = new URLSearchParams(sourceSearch)
   const flags = source.getAll('demo')
+  // Never convert selected private-memory context into a public demo fixture.
+  // Existing target demo declarations (including demo=0) must not be overwritten.
+  const selectedKeys = ['memoryId', 'node', 'manifestId', 'movieId', 'chapterId']
   if ((home !== '/' && home !== '/home') || lifeMap !== '/life-map'
     || request.destination !== 'life-map' || request.entryPortal !== 'home-sky'
     || request.cameraCheckpoint !== 'home-sky-ascent-complete'
-    || flags.length !== 1 || flags[0] !== '1' || source.has('memoryId')) return
+    || flags.length !== 1 || flags[0] !== '1'
+    || target.searchParams.has('demo')
+    || request.context?.memoryId || request.context?.replayManifestId
+    || selectedKeys.some((key) => source.has(key) || target.searchParams.has(key))) return
   target.searchParams.set('demo', '1')
 }
 
