@@ -128,7 +128,7 @@ test('Founder owns keyboard input above Search until its own dismissal completes
   assert.deepEqual(f.calls,initialCalls)
 })
 
-test('actual scene overview groups Founder with Return Home without changing its destination',()=>{
+test('actual scene overview groups Founder with Return Home and preserves only the disclosed demo flag',()=>{
   const f=fixture('?demo=1&overview=1',{component:'scene'})
   const group=descendants(f.render()).find(el=>el.type==='nav' && el.props['aria-label']==='Life Map overview controls')
   assert.ok(group)
@@ -138,8 +138,25 @@ test('actual scene overview groups Founder with Return Home without changing its
   assert.equal(founder.props.name,'life-map-overview-controls')
   returnHome.props.onClick()
   assert.equal(f.calls.at(-1).kind,'destination')
-  assert.equal(f.calls.at(-1).destination,'/home')
+  const target = new URL(f.calls.at(-1).destination,'http://localhost')
+  assert.equal(target.pathname,'/home')
+  assert.deepEqual([...target.searchParams.entries()],[['demo','1']])
 })
+
+for (const search of ['', '?demo=0', '?demo=1&demo=0', '?demo=1&memoryId=private-memory', '?demo=1&manifestId=private-manifest']) {
+  test('actual scene Home return rejects unapproved demo authority for '+(search||'no flag'),()=>{
+    const f=fixture(search,{component:'scene'})
+    const group=descendants(f.render()).find(el=>el.type==='nav' && el.props['aria-label']==='Life Map overview controls')
+    assert.ok(group)
+    const returnHome=descendants(group).find(el=>el.props['data-life-map-overview-home-return']==='true')
+    assert.ok(returnHome)
+    returnHome.props.onClick()
+    assert.equal(f.calls.at(-1).kind,'destination')
+    const target=new URL(f.calls.at(-1).destination,'http://localhost')
+    assert.equal(target.pathname,'/home')
+    assert.deepEqual([...target.searchParams.entries()],[])
+  })
+}
 
 for (const [activation,detail] of [['pointer',1],['keyboard',0],['touch',1]]) test('actual '+activation+' selection after disclosed Home Ascent binds the demo movie manifest',()=>{
   const f=fixture('?demo=1&from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete')
