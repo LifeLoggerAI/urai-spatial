@@ -104,7 +104,14 @@ export async function assessSpeechEvidence(request, ports, options={}) {
   // Context evidence positions must come from an actual array. A malformed or
   // missing context collection cannot mint usable context references or crash
   // the policy guard after protected feature reads.
-  if(!Array.isArray(utterance.context)) { flags=['invalid-utterance-context'];return result() }
+  // Context references represent evidence positions, not arbitrary caller values.
+  // Refuse malformed entries and unbounded collections before minting any refs.
+  if(!Array.isArray(utterance.context) || utterance.context.length>32
+      || !utterance.context.every(entry=>entry && typeof entry==='object' && !Array.isArray(entry)
+        && typeof entry.speaker==='string' && entry.speaker.trim().length>0 && entry.speaker.length<=128
+        && typeof entry.text==='string' && entry.text.trim().length>0 && entry.text.length<=4096)) {
+    flags=['invalid-utterance-context'];return result()
+  }
   spans=utterance.language_spans.map(span=>({...span}))
   const languages=new Set(spans.map(span=>span.language.split('-')[0].toLowerCase()))
   if(languages.size>1) flags.push('code-switch')
