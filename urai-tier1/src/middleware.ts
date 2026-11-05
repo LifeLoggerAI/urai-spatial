@@ -4,8 +4,21 @@ function enabled(...values: Array<string | undefined>) {
   return values.some((value) => value === 'true')
 }
 
+const APPROVED_DEMO_MEMORY_ASSETS = new Set([
+  '/demo/memories/recovery-bloom.svg',
+  '/demo/memories/threshold-storm.svg',
+  '/demo/memories/mirror-focus.svg',
+  '/demo/memories/ritual-echo.svg',
+  '/demo/memories/dream-signal.svg',
+  '/demo/memories/calm-return.svg',
+])
+
 function routeAllowed(pathname: string) {
   if (process.env.NODE_ENV !== 'production') return true
+
+  // Permit only reviewed, public, non-user-specific demo artwork used by
+  // Focus/Replay; keep every other /demo route behind the production gate.
+  if (APPROVED_DEMO_MEMORY_ASSETS.has(pathname)) return true
 
   if (pathname.startsWith('/admin')) {
     return enabled(process.env.NEXT_PUBLIC_ALLOW_ADMIN_ROUTES, process.env.URAI_ALLOW_ADMIN_ROUTES)
