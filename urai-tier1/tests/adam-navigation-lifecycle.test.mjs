@@ -126,7 +126,12 @@ function fixture() {
   const prepare = (message = 'private investor memory') => {
     let tree = render()
     find(tree, n => n.type === 'textarea').props.onChange({ target: { value: message } })
-    const ai = nodes(tree, n => n.type === 'input' && n.props.type === 'checkbox')[0]
+    const aiLabel = nodes(tree, n => n.type === 'label' && Array.isArray(n.props.children)
+      && n.props.children.some(child => typeof child === 'string'
+        && child.includes('Allow this message and bounded recent context')))[0]
+    assert.ok(aiLabel, 'provider consent must be selected by its disclosed purpose')
+    const ai = nodes(aiLabel, n => n.type === 'input' && n.props.type === 'checkbox')[0]
+    assert.ok(ai)
     ai.props.onChange({ target: { checked: true } })
     return render()
   }
@@ -181,11 +186,22 @@ test('old rejection and finally cannot stop or alter a new surface request', asy
 })
 
 test('speech callbacks delivered after navigation cannot repopulate context', () => {
-  const f = fixture(); const tree = f.open()
-  const voice = nodes(tree, n => n.type === 'button' && n.props.children.includes('Talk'))[0]
+  const f = fixture(); f.open()
+  const tree = f.render()
+  const microphoneLabel = nodes(tree, n => n.type === 'label' && Array.isArray(n.props.children)
+    && n.props.children.some(child => typeof child === 'string'
+      && child.includes('Allow browser speech recognition only when I tap Talk')))[0]
+  assert.ok(microphoneLabel, 'speech consent must be explicitly visible')
+  const microphone = nodes(microphoneLabel, n => n.type === 'input' && n.props.type === 'checkbox')[0]
+  assert.ok(microphone)
+  assert.equal(microphone.props.checked, false)
+  microphone.props.onChange({ target: { checked: true } })
+  const voice = nodes(f.render(), n => n.type === 'button' && n.props.children.includes('Talk'))[0]
   assert.ok(voice)
+  assert.equal(voice.props.disabled, false)
   voice.props.onClick()
   const recognition = f.recognitions[0]
+  assert.ok(recognition, 'synthetic browser recognition started only after separate consent')
   f.navigate('/adam', 'foundation')
   assert.equal(recognition.aborted, true)
   const cleared = f.snapshot()
