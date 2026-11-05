@@ -1,0 +1,55 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import test from 'node:test'
+import {evaluateRun,validateFixturePack,sha256} from './fixtures/multilingual-speech-v1/evaluate.mjs'
+
+const bytes=fs.readFileSync(new URL('./fixtures/multilingual-speech-v1/cases.json',import.meta.url))
+const pack=JSON.parse(bytes),reference=JSON.parse(fs.readFileSync(new URL('./fixtures/multilingual-speech-v1/examples.json',import.meta.url)))
+const options={fixtureHash:sha256(bytes),allowExample:true}
+const clone=()=>structuredClone(reference)
+function altered(id,edit){const run=clone();edit(run.results.find(r=>r.case_id===id),run);return evaluateRun(pack,run,options)}
+function denies(name,id,edit){test(name,()=>assert.equal(altered(id,edit).contract_passed,false))}
+
+test('fixture pack has 30 synthetic cases and lossless multilingual spans',()=>assert.deepEqual(validateFixturePack(pack),[]))
+test('all reference envelopes pass only as example evidence',()=>{
+  const report=evaluateRun(pack,reference,options)
+  assert.equal(report.contract_passed,true);assert.equal(report.passed_cases,30)
+  assert.equal(report.production_speech_validated,false);assert.equal(report.asr_or_acoustic_model_validated,false)
+})
+test('example output cannot masquerade as repository integration evidence',()=>assert.equal(evaluateRun(pack,reference,{...options,allowExample:false}).contract_passed,false))
+test('missing output never passes as an unrun case',()=>{const r=clone();r.results.pop();assert.equal(evaluateRun(pack,r,options).contract_passed,false)})
+test('duplicate success cannot cover a different case',()=>{const r=clone();r.results[1]=structuredClone(r.results[0]);assert.equal(evaluateRun(pack,r,options).contract_passed,false)})
+test('changed fixtures invalidate stale receipts',()=>{const r=clone();r.meta.fixture_sha256='0'.repeat(64);assert.equal(evaluateRun(pack,r,options).contract_passed,false)})
+test('missing repository adapter SHA cannot certify integration',()=>{const r=clone();r.meta.evidence_scope='repository-adapter';assert.equal(evaluateRun(pack,r,{...options,allowExample:false}).contract_passed,false)})
+denies('a pitch measurement cannot turn into an anger observation','CS03',r=>{r.observations[0].feature='anger';r.observations[0].value=.99})
+denies('an attributed self-report cannot promote itself to emotional fact','CF01',r=>{r.assertions[0].truth_kind='observation'})
+denies('empathetic wording cannot become a proven speaker trait','CX04',r=>{r.interpretations[0].truth_kind='user-assertion';r.interpretations[0].scope='speaker-personality'})
+denies('unscored free-form text cannot bypass safe structured claims','CS01',r=>{r.presentation.rendered_text='You are secretly angry.'})
+denies('visible tentative qualifier cannot be omitted','CX02',r=>{r.presentation.qualifier='none'})
+denies('a declared emotional fact fails even when the structured label is absent','CS01',r=>{r.presentation.emotion_is_fact=true})
+denies('silence cannot be filled with an invented calm feeling','UN02',r=>{r.status='reported';r.assertions=[{label:'calm',truth_kind:'user-assertion',source_ref:'utterance:current',attribution:'speaker-self-report',actor_id:'synthetic-owner-a',scope:'utterance:current'}]})
+denies('Hindi or Spanish spans cannot disappear during normalization','CS03',r=>{r.language_spans=[r.language_spans[0]]})
+denies('a second owner baseline cannot be read','PR04',r=>{r.effects.baseline_read_owner='synthetic-owner-b'})
+denies('speaker A baseline cannot be assigned to speaker B','SA02',r=>{r.baseline.speaker_key='session-speaker-a'})
+denies('unknown speakers cannot receive fabricated normalization','SA03',r=>{r.baseline={scope:'session-only',speaker_key:'session-speaker-a',z_f0:0}})
+denies('incorrect speaker normalization fails numerically','SA02',r=>{r.baseline.z_f0=0})
+denies('manual weather cannot silently activate inference','MW02',r=>{r.presentation.inference_enabled=true})
+denies('off-by-default manual state cannot invent a selection','MW01',r=>{r.presentation.manual_weather='Heavy'})
+denies('manual choice cannot be replaced by an acoustic prediction','MW02',r=>{r.assertions[0].label='anger';r.presentation.manual_weather='Heavy'})
+denies('late pre-correction reply cannot regain authority','UC02',r=>{r.lifecycle.stale_reply_dropped=false;r.lifecycle.applied_revision=1})
+denies('owner correction must supersede the prior inference','UC01',r=>{r.lifecycle.superseded_claim_ids=[]})
+denies('foreign-owner correction cannot become owner testimony','UC03',r=>{r.assertions=[{label:'joy',truth_kind:'user-assertion',source_ref:'correction:current',attribution:'typed-owner-correction',actor_id:'synthetic-owner-b',scope:'utterance:current'}]})
+denies('quoting anger cannot assign anger to the owner','CX03',r=>{r.assertions=[{label:'anger',truth_kind:'user-assertion',source_ref:'utterance:current',attribution:'speaker-self-report',actor_id:'synthetic-owner-a',scope:'utterance:current'}]})
+denies('uncalibrated confidence cannot be attached to a tentative interpretation','CX04',r=>{r.interpretations[0].confidence=.99})
+denies('a private source mutation is observable and fails','UC01',r=>{r.lifecycle.source_unchanged=false})
+denies('any paid or external processing attempt fails','CS01',r=>{r.effects.provider_calls=1})
+denies('persistent biometric writes fail','SA01',r=>{r.effects.biometric_template_writes=1})
+denies('retained voice or sensitive log output fails','CS01',r=>{r.effects.raw_audio_bytes_retained=16;r.effects.sensitive_log_entries=1})
+denies('revocation must purge in-flight results','PR03',r=>{r.effects.purged_inflight=false})
+denies('transcription-only consent cannot yield acoustic observations','PR01',r=>{r.observations=[{feature:'mean_f0_hz',value:180,unit:'Hz',truth_kind:'observation',origin:'synthetic-feature-stub',source_ref:'feature:mean_f0_hz'}]})
+denies('invalid feature values cannot become measurements','CS01',r=>{r.observations[0].value=NaN})
+denies('measurement units must match their features','CS01',r=>{r.observations[0].unit='emotion-percent'})
+denies('model invocation count cannot be hidden by zero per-case counters','CS01',(_r,run)=>{run.meta.model_calls=1})
+denies('loss of ambiguous-ASR flag fails even without an emotional label','UN01',r=>{r.evidence_flags=[]})
+denies('conflicting classifier candidates must retain their specific evidence references','CF03',r=>{r.conflict_refs=[]})
+denies('different code-switch outcomes break paired invariance','CS03',r=>{r.status='disputed'})

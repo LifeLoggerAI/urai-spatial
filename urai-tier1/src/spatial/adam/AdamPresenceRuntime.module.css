@@ -166,6 +166,8 @@
   margin: 0;
   box-sizing: border-box;
   width: 100%;
+  /* A 64px slot with 18px side padding clips the visible Adam label. */
+  padding-inline: 10px !important;
 }
 /* Route typography and spatial header transforms do not own founder controls. */
 .launcher[data-urai-adam-launcher][data-adam-launcher-placement] {
