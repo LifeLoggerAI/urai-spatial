@@ -35,7 +35,7 @@ const leasePath = (sessionId, owner = uid) =>
   'users/' + owner + '/speechPurposeLeases/' + sessionId
 const purgePath = (sessionId, owner = uid) => {
   const key = createHash('sha256')
-    .update('urai:speech-purge:v1\\0' + owner + '\\0' + sessionId)
+    .update('urai:speech-purge:v1\0' + owner + '\0' + sessionId)
     .digest('hex')
   return 'speechProviderPurgeQueue/' + key
 }
