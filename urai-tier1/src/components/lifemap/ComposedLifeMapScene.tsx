@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
-import { homeJourneyHref } from "@/spatial/navigation/homeSkyInteraction";
+import { lifeMapHomeHref } from "@/spatial/navigation/homeSkyInteraction";
 import { withLifeMapSelectionIdentity } from "@/spatial/memory/lifeMapSelectionJourney";
 import { forwardPrivateMovieRouteSelection } from "@/spatial/life-movie/privateLifeMovieRouteSelection";
 import { useLifeMapEvents, type LifeMapSourceMode } from "./useLifeMapEvents";
@@ -260,7 +260,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const withIdentity = useCallback((next: URLSearchParams, memoryId?: string) => withLifeMapSelectionIdentity(params, next, memoryId), [params]);
 
   const returnHome = useCallback(() => {
-    router.push(homeJourneyHref("/home", params.toString(), '/life-map'));
+    router.push(lifeMapHomeHref(params.toString()));
   }, [params, router]);
 
   useEffect(() => {

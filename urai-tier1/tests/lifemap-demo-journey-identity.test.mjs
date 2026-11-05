@@ -14,6 +14,7 @@ import { canonicalLifeMapDemoNodes } from '../src/components/lifemap/canonicalLi
 import { DEMO_MEMORY_STAR_NODES } from '../src/spatial/memory/memoryStarSchema.ts'
 import { definitionForDestination } from '../src/spatial/world/destinationRegistry.ts'
 import { previousDestinationForReturn } from '../src/spatial/world/worldTypes.ts'
+import { lifeMapHomeHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
 
 const source = fs.readFileSync(process.env.URAI_LIFEMAP_NAVIGATOR_SOURCE ?? 'src/components/lifemap/LifeMapSemanticNavigator.tsx', 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
@@ -61,7 +62,7 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     '@/spatial/memory/lifeMapSelectionJourney':{withLifeMapSelectionIdentity},
     '@react-three/fiber':{Canvas:'synthetic-Canvas'},three:{},
     '@/spatial/performance/useAdaptiveSpatialQuality':{useAdaptiveSpatialQuality:()=>({tier:'low',pixelRatioMax:1,reducedMotion:true,documentVisible:true})},
-    '@/spatial/navigation/homeSkyInteraction':{homeJourneyHref:()=>'/home'},
+    '@/spatial/navigation/homeSkyInteraction':{lifeMapHomeHref},
     './LifeMapProductionWorld':{LifeMapProductionWorld:'synthetic-production-world-boundary'},
     './lifeMapVisualSystem':{artifactFamilyLabel:()=> 'Visual memory',resolveArtifactFamily:()=> 'visual'},
     'firebase/auth':{getAuth:()=>{throw Error('No private source access belongs to a disclosed sample')}},

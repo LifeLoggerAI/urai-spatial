@@ -119,16 +119,11 @@ export function retainDisclosedHomeAscentDemo(sourcePathname: string, sourceSear
 
 // Carry only an explicitly disclosed demo through the direct accessible link.
 // Absence, demo=0, and other query fields never manufacture demo authority.
-export function homeJourneyHref(href: string, search: string, sourcePathname = '/home') {
+export function homeJourneyHref(href: string, search: string) {
   const source = new URLSearchParams(search)
   const demo = source.getAll('demo')
   if (demo.length !== 1 || demo[0] !== '1') return href
   const target = new URL(href, 'https://urai.invalid')
-  if (sourcePathname.replace(/\/+$/, '') === '/life-map'
-    && ['/', '/home'].includes(target.pathname.replace(/\/+$/, '') || '/')) {
-    retainDisclosedHomeReturnDemo(sourcePathname, search, { destination:'home', href }, target)
-    return `${target.pathname}${target.search}${target.hash}`
-  }
   // Direct accessible links must honor the same private selection fence as
   // physical Home sky Ascent. A private memory ID cannot grant demo authority.
   const selectedKeys = ['memoryId', 'node', 'manifestId', 'movieId', 'chapterId']
@@ -162,5 +157,13 @@ export function retainDisclosedHomeReturnDemo(sourcePathname: string, sourceSear
     || (request.context?.memoryId && request.context.memoryId !== memories[0])
     || request.context?.replayManifestId) return
   target.searchParams.set('demo', '1')
+}
+
+// Life Map owns this return link; Home's two-argument Ascent helper retains its
+// independent source-authority contract and private-selection fence.
+export function lifeMapHomeHref(search: string) {
+  const target = new URL('/home', 'https://urai.invalid')
+  retainDisclosedHomeReturnDemo('/life-map', search, { destination:'home', href:'/home' }, target)
+  return `${target.pathname}${target.search}`
 }
 
