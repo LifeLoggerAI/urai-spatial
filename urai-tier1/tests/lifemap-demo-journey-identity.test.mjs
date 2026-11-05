@@ -274,6 +274,9 @@ function returnDestination(memory,destination,previousDestination,current) {
   let request
   const owner=execute(returnDependencies+'\nexports.buildTravelHref=buildTravelHref;\n('+returnCallback+')();',{
     window:{location:current},definitionForDestination,previousDestinationForReturn,
+    // The real Home-sky helper only admits a user-disclosed fixture from Home;
+    // this isolated Life Map callback test checks return semantics, not sky taps.
+    retainDisclosedHomeAscentDemo: () => {},
     worldRef:{current:{destination,previousDestination,memoryId:memory.id,replayManifestId:memory.replayManifest.id,demo:memory.demo}},
     phaseRef:{current:'idle'},executeTravel:value=>{request=value},
   })
