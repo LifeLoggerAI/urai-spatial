@@ -20,6 +20,7 @@ const tests = [
   'tests/next-static-icon-route-contract.test.mjs',
   'tests/demo-memory-public-route-policy.test.mjs',
   '../tests/replay-http-response-evidence.test.mjs',
+  '../tests/home-ascent-demo-continuity.test.mjs',
   'tests/home-sky-interaction.test.mjs',
   'tests/home-ascent-camera-clock.test.mjs',
   'tests/camera-motion-behavior.test.mjs',
