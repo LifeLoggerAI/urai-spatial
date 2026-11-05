@@ -240,19 +240,26 @@ export function WorldTransitionController() {
       ? destinationFromOriginRealm(currentWorld.scenarioOrigin)
       : previousDestinationForReturn(currentWorld) ?? fallbackReturnDestination(currentWorld.destination)
     const definition = definitionForDestination(destination)
+    // Returning out of a memory realm is not an explicit request to disclose
+    // that memory's relationship identifiers to Home or another nonmemory realm.
+    // Keep selected-memory continuity only within the existing memory realms.
+    const returningToMemoryRealm = destination === 'life-map' || destination === 'focus'
+      || destination === 'replay' || destination === 'council' || destination === 'life-movie'
     executeTravel({
       destination,
       href: definition.href,
       entryPortal: currentWorld.entryPortal ?? definition.entryPortal,
       cameraCheckpoint: destination === 'home' ? 'home-threshold' : definition.cameraCheckpoint,
       context: {
-        memoryId: currentWorld.memoryId,
-        threadId: currentWorld.threadId,
-        personId: currentWorld.personId,
-        placeId: currentWorld.placeId,
-        replayManifestId: currentWorld.replayManifestId,
-        movieId: currentWorld.movieId,
-        chapterId: currentWorld.chapterId,
+        ...(returningToMemoryRealm ? {
+          memoryId: currentWorld.memoryId,
+          threadId: currentWorld.threadId,
+          personId: currentWorld.personId,
+          placeId: currentWorld.placeId,
+          replayManifestId: currentWorld.replayManifestId,
+          movieId: currentWorld.movieId,
+          chapterId: currentWorld.chapterId,
+        } : {}),
         privacyMode: currentWorld.privacyMode,
         originRealm: currentWorld.originRealm,
         returnToken: currentWorld.returnToken,
