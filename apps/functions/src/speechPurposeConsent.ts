@@ -78,11 +78,16 @@ export const grantSpeechPurposeLease = speechRegion.https.onCall(async (data, co
     if (existing.exists && (previous?.ownerId !== uid || previous?.sessionId !== sessionId
         || !validCounter(previous?.revision)))
       throw new functions.https.HttpsError('permission-denied', 'SPEECH_LEASE_INVALID')
-    if (existing.exists && previous?.active === true)
-      throw new functions.https.HttpsError('already-exists', 'SPEECH_SESSION_ALREADY_ACTIVE')
-    const revision = existing.exists ? (previous!.revision as number) + 1 : 1
-    if (!Number.isSafeInteger(revision))
-      throw new functions.https.HttpsError('failed-precondition', 'SPEECH_REVISION_EXHAUSTED')
+    // A session ID is single-use. Revocation is terminal: allowing a grant
+    // to revive an inactive lease could admit delayed callbacks from the
+    // previously revoked provider/source revision into a new session.
+    // Reauthorization must create a fresh session ID and consent record.
+    if (existing.exists) {
+      if (previous?.active === true)
+        throw new functions.https.HttpsError('already-exists', 'SPEECH_SESSION_ALREADY_ACTIVE')
+      throw new functions.https.HttpsError('failed-precondition', 'SPEECH_SESSION_TERMINAL_NEW_ID_REQUIRED')
+    }
+    const revision = 1
     const issuedAtMs = Date.now()
     const expiresAtMs = issuedAtMs + MAX_LEASE_MS
     tx.set(leaseRef, {
