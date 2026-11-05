@@ -217,3 +217,21 @@ test('real Home sky Ascent retains only one disclosed demo flag, no private memo
   const target = build('/home', '?demo=1&patient=someone')
   assert.deepEqual([...target.searchParams.keys()].sort(), ['demo', 'from'])
 })
+
+test('Home sky demo handoff rejects private selections and cannot override explicit target demo authority', () => {
+  const canonical = { destination:'life-map', entryPortal:'home-sky', cameraCheckpoint:'home-sky-ascent-complete' }
+  const build = (start, request=canonical, target='/life-map/?from=home-sky') => {
+    const url = new URL(target, 'https://urai.invalid')
+    retainDisclosedHomeAscentDemo('/home', start, request, url)
+    return url
+  }
+  for (const key of ['memoryId', 'node', 'manifestId', 'movieId', 'chapterId']) {
+    assert.equal(build(`?demo=1&${key}=private-selected`).searchParams.has('demo'), false, key)
+    assert.equal(build('?demo=1', canonical, `/life-map/?${key}=private-selected`).searchParams.has('demo'), false, 'target '+key)
+  }
+  for (const context of [{memoryId:'private-selected'}, {replayManifestId:'private-selected'}])
+    assert.equal(build('?demo=1', {...canonical, context}).searchParams.has('demo'), false)
+  assert.deepEqual(build('?demo=1', canonical, '/life-map/?demo=0').searchParams.getAll('demo'), ['0'])
+  assert.deepEqual(build('?demo=1', canonical, '/life-map/?demo=1&demo=1').searchParams.getAll('demo'), ['1','1'])
+  assert.deepEqual(build('?demo=1').searchParams.getAll('demo'), ['1'])
+})
