@@ -323,7 +323,11 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     if (retainedId) {
       const retainedNode = nodes.find((node) => node.id === retainedId);
       next.set("node", retainedId);
-      if (explicitDemoRequested) next.set("memoryId", retainedId);
+      // Keep the canonical disclosed-sample namespace through Overview so
+      // Life Map -> Home can retain *only* demo=1, without carrying a selected
+      // memory or an unrelated private identifier into Home.
+      if (explicitDemoRequested && retainedNode) next.set("memoryId", retainedId.startsWith("demo:") ? retainedId : `demo:${retainedId}`);
+      else if (explicitDemoRequested) next.delete("memoryId");
       else if (retainedNode?.authorizedMemory && retainedNode.memoryId) next.set("memoryId", retainedNode.memoryId);
       else next.delete("memoryId");
     }
