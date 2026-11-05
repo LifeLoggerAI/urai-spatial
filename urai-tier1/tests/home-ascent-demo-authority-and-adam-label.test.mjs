@@ -7,18 +7,17 @@ const controller = source('../src/spatial/world/WorldTransitionController.tsx')
 const fallback = source('../src/spatial/world/worldEvents.ts')
 const launcherStyles = source('../src/spatial/adam/AdamPresenceRuntime.module.css')
 
-test('both Home ascent route paths retain only the exact disclosed public demo marker', () => {
+test('both Home ascent route paths delegate to shared disclosed public demo authority', () => {
   for (const [name, text] of [['client router', controller], ['hard fallback', fallback]]) {
-    assert.match(text, /request\.destination === 'life-map'/, name)
-    assert.match(text, /request\.entryPortal === 'home-sky'/, name)
-    assert.match(text, /request\.cameraCheckpoint === 'home-sky-ascent-complete'/, name)
-    assert.match(text, /current\.getAll\('demo'\)\.length === 1/, name)
-    assert.match(text, /current\.get\('demo'\) === '1'/, name)
-    assert.match(text, /!current\.has\('memoryId'\)/, name)
-    assert.match(text, /!target\.searchParams\.has\('memoryId'\)/, name)
-    assert.match(text, /if \(homeDemoAscent\) target\.searchParams\.set\('demo', '1'\)/, name)
-    assert.match(text, /if \(!memoryDestination\) \{/, name)
+    assert.match(text, /retainDisclosedHomeAscentDemo\(window\.location\.pathname, window\.location\.search, request, target\)/, name)
+    assert.doesNotMatch(text, /const homeDemoAscent =/, 'do not fork authorization rules')
   }
+  const helper = source('../src/spatial/navigation/homeSkyInteraction.ts')
+  assert.match(helper, /export function retainDisclosedHomeAscentDemo/)
+  assert.match(helper, /flags\.length !== 1/)
+  assert.match(helper, /source\.has\('memoryId'\)/)
+  assert.match(helper, /target\.searchParams\.has\('memoryId'\)/)
+  assert.match(helper, /target\.searchParams\.set\('demo', '1'\)/)
 })
 
 test('Adam inline launcher retains 48px target without clipping its visible label', () => {
