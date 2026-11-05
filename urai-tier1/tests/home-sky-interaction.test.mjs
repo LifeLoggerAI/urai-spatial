@@ -6,7 +6,7 @@ import test from 'node:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import ts from 'typescript'
 import * as THREE from 'three'
-import { createHomeSkyTapGate, homeJourneyHref, isUpwardHomeSkyRay, subscribeHomeSkyTaps } from '../src/spatial/navigation/homeSkyInteraction.ts'
+import { createHomeSkyTapGate, homeJourneyHref, retainDisclosedHomeAscentDemo, isUpwardHomeSkyRay, subscribeHomeSkyTaps } from '../src/spatial/navigation/homeSkyInteraction.ts'
 import { assertHomeAscentArrival, proveHomeSkyAscent } from '../../scripts/home-sky-ascent-proof.mjs'
 import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
@@ -194,4 +194,26 @@ test('canonical source uses same existing scene/action/motion and current physic
   assert.match(proof,/proveHomeSkyAscent\(page, home/);assert.match(proof,/journey.ascentProven = journey.ascentEvidence.ascentProven/)
   assert.match(proof,/identityStable/);assert.match(proof,/expectedAborts/);assert.match(proof,/timeout: 90_000/)
   assert.match(proof,/journey.ascentFailure = error.proof/)
+})
+
+
+test('real Home sky Ascent retains only one disclosed demo flag, no private memory or unrelated authority', () => {
+  const canonical = { destination:'life-map', entryPortal:'home-sky', cameraCheckpoint:'home-sky-ascent-complete' }
+  const build = (pathname, search, request=canonical, to='/life-map/?from=home-sky') => {
+    const target = new URL(to, 'https://urai.invalid')
+    retainDisclosedHomeAscentDemo(pathname, search, request, target)
+    return target
+  }
+  assert.equal(build('/home/', '?demo=1').searchParams.get('demo'), '1')
+  assert.equal(build('/', '?demo=1').searchParams.get('demo'), '1')
+  for (const invalid of ['', '?demo=0', '?demo=true', '?demo=1&demo=1', '?demo=1&memoryId=private', '?demo=1&demo=0']) {
+    assert.equal(build('/home', invalid).searchParams.has('demo'), false, invalid)
+  }
+  assert.equal(build('/focus', '?demo=1').searchParams.has('demo'), false)
+  assert.equal(build('/home', '?demo=1', {...canonical, entryPortal:'other'}).searchParams.has('demo'), false)
+  assert.equal(build('/home', '?demo=1', {...canonical, cameraCheckpoint:'home-sky-ascent'}).searchParams.has('demo'), false)
+  assert.equal(build('/home', '?demo=1', {...canonical, destination:'replay'}).searchParams.has('demo'), false)
+  assert.equal(build('/home', '?demo=1', canonical, '/replay/').searchParams.has('demo'), false)
+  const target = build('/home', '?demo=1&patient=someone')
+  assert.deepEqual([...target.searchParams.keys()].sort(), ['demo', 'from'])
 })
