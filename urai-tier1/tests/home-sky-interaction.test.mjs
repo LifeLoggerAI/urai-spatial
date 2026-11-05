@@ -6,7 +6,7 @@ import test from 'node:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import ts from 'typescript'
 import * as THREE from 'three'
-import { createHomeSkyTapGate, homeJourneyHref, isUpwardHomeSkyRay, subscribeHomeSkyTaps } from '../src/spatial/navigation/homeSkyInteraction.ts'
+import { createHomeSkyTapGate, homeJourneyHref, retainDisclosedHomeAscentDemo, isHomeSkyAscentTravel, isUpwardHomeSkyRay, subscribeHomeSkyTaps } from '../src/spatial/navigation/homeSkyInteraction.ts'
 import { assertHomeAscentArrival, proveHomeSkyAscent } from '../../scripts/home-sky-ascent-proof.mjs'
 import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
@@ -32,7 +32,7 @@ for (const [name,down,up] of [
   ['invalid pointer ID',{pointerId:NaN},{}],['long hold',{}, {timeStamp:1600}],['time reversal',{}, {timeStamp:1}],
   ['release displacement',{}, {clientX:107}],['nonprimary release',{}, {isPrimary:false}],
 ]) test(`gesture rejects ${name}`,()=>{const f=fixture();f.tap(down,up);assert.equal(f.state.calls,0)})
-test('drag excursion remains a drag after returning to the start',()=>{const f=fixture();f.gate.down(pointer());f.gate.move(pointer({clientX:150}));f.gate.move(pointer());f.gate.up(pointer({timeStamp:50}));assert.equal(f.state.calls,0);assert.equal(f.state.rayCalls,0)})
+test('drag excursion remains a drag after returning to the start',()=>{const f=fixture();f.gate.down(pointer());const initialSkyChecks=f.state.rayCalls;f.gate.move(pointer({clientX:150}));f.gate.move(pointer());f.gate.up(pointer({timeStamp:50}));assert.equal(f.state.calls,0);assert.equal(f.state.rayCalls,initialSkyChecks,'release after drag must not raycast the sky again')})
 test('secondary touch cancels primary tap',()=>{const f=fixture();f.gate.down(pointer());f.gate.down(pointer({pointerId:2,isPrimary:false}));f.gate.up(pointer({timeStamp:50}));assert.equal(f.state.calls,0)})
 test('cancellation and unmatched release never enter',()=>{const f=fixture();f.gate.up(pointer());f.gate.down(pointer());f.gate.cancel();f.gate.up(pointer());assert.equal(f.state.calls,0)})
 test('locked or descending readiness blocks before geometry work',()=>{const f=fixture({ready:false});f.tap();assert.equal(f.state.calls,0);assert.equal(f.state.rayCalls,0)})
@@ -124,10 +124,15 @@ test('synthetic primary touch and pen use the actual same guarded camera path',(
 
 test('direct Home href retains only explicit disclosed demo and existing route authority',()=>{
   const base='/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete'
-  const target=new URL(homeJourneyHref(base,'?demo=1&memoryId=private-source&token=secret'),'https://urai.example')
+  const target=new URL(homeJourneyHref(base,'?demo=1&token=secret'),'https://urai.example')
   assert.equal(target.searchParams.get('demo'),'1');assert.equal(target.searchParams.get('entryPortal'),'home-sky');assert.equal(target.searchParams.get('cameraCheckpoint'),'home-sky-ascent-complete');assert.equal(target.searchParams.has('memoryId'),false);assert.equal(target.searchParams.has('token'),false)
   for(const search of ['', '?demo=0','?demo=true','?demo=1&demo=0','?demo=1&demo=1','?memoryId=private-source'])assert.equal(homeJourneyHref(base,search),base)
+  for(const key of ['memoryId','node','manifestId','movieId','chapterId']) {
+    assert.equal(homeJourneyHref(base,`?demo=1&${key}=private-source`),base,`private source ${key}`)
+    assert.equal(homeJourneyHref(base+`&${key}=private-target`,'?demo=1'),base+`&${key}=private-target`,`private target ${key}`)
+  }
   assert.equal(new URL(homeJourneyHref(base+'&demo=0','?demo=1'),'https://urai.example').searchParams.get('demo'),'0')
+  assert.equal(homeJourneyHref(base,'?demo=1&memoryId=private-source&token=secret'),base,'private Home selection never grants public fixture')
   const ground=new URL(homeJourneyHref('/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent','?demo=1&token=secret'),'https://urai.example')
   assert.equal(ground.pathname,'/ground/');assert.deepEqual([...ground.searchParams.entries()],[['entryPortal','home-ground'],['cameraCheckpoint','home-ground-descent'],['demo','1']])
 })
@@ -137,7 +142,7 @@ test('actual hydrated direct navigation retains disclosed demo without changing 
   let search='',effects=[]
   const locale={text:id=>URAI_SOURCE_MESSAGES[id].source,props:()=>({lang:'en',dir:'ltr'})}
   const module={exports:{}}
-  vm.runInNewContext(code,{module,exports:module.exports,window:{location:{search:'?demo=1&memoryId=private-source&token=secret'}},require:id=>{
+  vm.runInNewContext(code,{module,exports:module.exports,window:{location:{search:'?demo=1&token=secret'}},require:id=>{
     if(id==='react')return {useState:()=>[search,next=>{search=next}],useEffect:fn=>effects.push(fn)}
     if(id==='react/jsx-runtime')return require(id)
     if(id==='next/link')return require(id)
@@ -194,4 +199,65 @@ test('canonical source uses same existing scene/action/motion and current physic
   assert.match(proof,/proveHomeSkyAscent\(page, home/);assert.match(proof,/journey.ascentProven = journey.ascentEvidence.ascentProven/)
   assert.match(proof,/identityStable/);assert.match(proof,/expectedAborts/);assert.match(proof,/timeout: 90_000/)
   assert.match(proof,/journey.ascentFailure = error.proof/)
+})
+
+
+test('real Home sky Ascent retains only one disclosed demo flag, no private memory or unrelated authority', () => {
+  const canonical = { destination:'life-map', entryPortal:'home-sky', cameraCheckpoint:'home-sky-ascent-complete' }
+  const build = (pathname, search, request=canonical, to='/life-map/?from=home-sky') => {
+    const target = new URL(to, 'https://urai.invalid')
+    retainDisclosedHomeAscentDemo(pathname, search, request, target)
+    return target
+  }
+  assert.equal(build('/home/', '?demo=1').searchParams.get('demo'), '1')
+  assert.equal(build('/', '?demo=1').searchParams.get('demo'), '1')
+  for (const invalid of ['', '?demo=0', '?demo=true', '?demo=1&demo=1', '?demo=1&memoryId=private', '?demo=1&demo=0']) {
+    assert.equal(build('/home', invalid).searchParams.has('demo'), false, invalid)
+  }
+  assert.equal(build('/focus', '?demo=1').searchParams.has('demo'), false)
+  assert.equal(build('/home', '?demo=1', {...canonical, entryPortal:'other'}).searchParams.has('demo'), false)
+  assert.equal(build('/home', '?demo=1', {...canonical, cameraCheckpoint:'home-sky-ascent'}).searchParams.has('demo'), false)
+  assert.equal(build('/home', '?demo=1', {...canonical, destination:'replay'}).searchParams.has('demo'), false)
+  assert.equal(build('/home', '?demo=1', canonical, '/replay/').searchParams.has('demo'), false)
+  const target = build('/home', '?demo=1&patient=someone')
+  assert.deepEqual([...target.searchParams.keys()].sort(), ['demo', 'from'])
+})
+
+test('Home sky demo handoff rejects private selections and cannot override explicit target demo authority', () => {
+  const canonical = { destination:'life-map', entryPortal:'home-sky', cameraCheckpoint:'home-sky-ascent-complete' }
+  const build = (start, request=canonical, target='/life-map/?from=home-sky') => {
+    const url = new URL(target, 'https://urai.invalid')
+    retainDisclosedHomeAscentDemo('/home', start, request, url)
+    return url
+  }
+  for (const key of ['memoryId', 'node', 'manifestId', 'movieId', 'chapterId']) {
+    assert.equal(build(`?demo=1&${key}=private-selected`).searchParams.has('demo'), false, key)
+    assert.equal(build('?demo=1', canonical, `/life-map/?${key}=private-selected`).searchParams.has('demo'), false, 'target '+key)
+  }
+  for (const context of [{memoryId:'private-selected'}, {replayManifestId:'private-selected'}])
+    assert.equal(build('?demo=1', {...canonical, context}).searchParams.has('demo'), false)
+  assert.deepEqual(build('?demo=1', canonical, '/life-map/?demo=0').searchParams.getAll('demo'), ['0'])
+  assert.deepEqual(build('?demo=1', canonical, '/life-map/?demo=1&demo=1').searchParams.getAll('demo'), ['1','1'])
+  assert.deepEqual(build('?demo=1').searchParams.getAll('demo'), ['1'])
+})
+
+test('Home sky client router and hard fallback never let context.demo bypass explicit source disclosure', () => {
+  const exact = {destination:'life-map',entryPortal:'home-sky',cameraCheckpoint:'home-sky-ascent-complete'}
+  assert.equal(isHomeSkyAscentTravel(exact), true)
+  for (const bad of [
+    {...exact,destination:'replay'},
+    {...exact,entryPortal:'home-ground'},
+    {...exact,cameraCheckpoint:'home-sky-ascent'},
+  ]) assert.equal(isHomeSkyAscentTravel(bad), false)
+  for (const path of ['../src/spatial/world/WorldTransitionController.tsx','../src/spatial/world/worldEvents.ts']) {
+    const source = fs.readFileSync(new URL(path, import.meta.url), 'utf8')
+    assert.match(source,/request\.destination === 'life-map' && request\.entryPortal === 'home-sky'/, path)
+    assert.match(source,/if \(memoryDestination && context\?\.demo[\s\S]*?&& !\(request\.destination === 'life-map' && request\.entryPortal === 'home-sky'\)/, path)
+    assert.match(source,/retainDisclosedHomeAscentDemo\(window\.location\.pathname, window\.location\.search, request, target\)/, path)
+  }
+  const target = new URL('/life-map/?from=home-sky', 'https://urai.invalid')
+  retainDisclosedHomeAscentDemo('/home','', {...exact, context:{demo:true}}, target)
+  assert.equal(target.searchParams.has('demo'),false)
+  retainDisclosedHomeAscentDemo('/home','?demo=1', {...exact, context:{demo:true}}, target)
+  assert.equal(target.searchParams.get('demo'),'1')
 })

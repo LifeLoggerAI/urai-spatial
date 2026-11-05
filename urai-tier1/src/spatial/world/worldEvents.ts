@@ -1,3 +1,4 @@
+import { retainDisclosedHomeAscentDemo } from '@/spatial/navigation/homeSkyInteraction'
 import { useSceneStore } from '../store/useSceneStore'
 import type { UraiWorldTravelRequest } from './worldTypes'
 
@@ -44,6 +45,9 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   for (const key of WORLD_TRAVEL_CONTEXT_KEYS) {
     if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
     if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
+    // No anonymous/unselected Home or stale memory may import private relationship hints.
+    // Explicit request.context fields are handled separately after this inheritance loop.
+    if ((key === 'thread' || key === 'personId' || key === 'placeId') && !sameMemory) continue
     // Relationship hints from an old memory never scope a different selection.
     if ((key === 'thread' || key === 'personId' || key === 'placeId') && selectedMemoryId && currentMemoryId && !sameMemory) continue
     if (!target.searchParams.has(key) && current.has(key)) {
@@ -74,9 +78,13 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.scenarioBasisRevision !== undefined) target.searchParams.set('basisRevision', String(context.scenarioBasisRevision))
   if (context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
   if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
-  if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
+  // For physical Home sky ascent, context.demo alone never grants fixture disclosure.
+  if (memoryDestination && context?.demo
+    && !(request.destination === 'life-map' && request.entryPortal === 'home-sky')
+    && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+  retainDisclosedHomeAscentDemo(window.location.pathname, window.location.search, request, target)
 
   return `${target.pathname}${target.search}${target.hash}`
 }

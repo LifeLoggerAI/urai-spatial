@@ -1,21 +1,7 @@
-import { getApps, initializeApp, type FirebaseApp } from "firebase/app";
-import { getFirestore, type Firestore } from "firebase/firestore";
+// Compatibility imports share the same canonical Firebase app and Firestore.
+// Do not initialize a second app or invent another project in this module.
+import { app, firebasePublicEnvReady, getFirebaseDb } from './client'
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "demo",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "demo.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "urai-spatial-demo",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "urai-spatial-demo.appspot.com",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "000000000000",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:000000000000:web:urai-spatial-demo",
-};
-
-export function getFirebaseApp(): FirebaseApp {
-  return getApps()[0] ?? initializeApp(firebaseConfig);
-}
-
-export function getFirebaseDb(): Firestore {
-  return getFirestore(getFirebaseApp());
-}
-
-export const isFirebaseConfigured = Boolean(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+export const getFirebaseApp = () => app
+export { getFirebaseDb }
+export const isFirebaseConfigured = firebasePublicEnvReady

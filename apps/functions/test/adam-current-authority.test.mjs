@@ -5,6 +5,7 @@ import vm from 'node:vm'
 import { createHash } from 'node:crypto'
 import test from 'node:test'
 import ts from 'typescript'
+import { founderVoiceIssuerReadiness, FOUNDER_VOICE_RECEIPT_DENIED } from '../src/adamFounderVoiceReceiptContract.mjs'
 
 const uid='synthetic-adam-owner',answer='Synthetic private answer.',audio='synthetic-private-audio'
 const sourceRoot=process.env.URAI_ADAM_AUTHORITY_SOURCE_ROOT
@@ -39,14 +40,17 @@ function fixture(lane,controls={}){
   'firebase-functions/params':{defineSecret:()=>({value:()=> 'synthetic-not-a-key'})},'firebase-functions/v2/https':{onRequest:(_options,handler)=>handler},
   '../../../packages/localization/src/contentLanguage':{contentLanguage:tag=>tag==='en-US'?{speechTag:'en-US'}:null,URAI_CONTENT_LANGUAGE_TAGS:['en-US']},
   './consentPolicyAuthority':policyAuthority,
+  './adamFounderVoiceReceiptContract.mjs':{founderVoiceIssuerReadiness},
   './protectedProviderSpend':{paidSpatialFetch,assertSpatialPaidOutputCurrent(upstream){assert.ok(upstream);state.outputChecks++;if(state.expired)throw new SpatialSpendError()},SpatialSpendError,SPATIAL_SPEND_WORKER_TOKENS_JSON:{}},
- },{process:{env:{ADAM_PRESENCE_ENABLED:controls.disabled?'false':'true',FOUNDER_VOICE_ENABLED:'true',FOUNDER_ELEVENLABS_VOICE_ID:'synthetic-voice'}},setTimeout:(fn,ms)=>setTimeout(fn,controls.timeoutMs??ms)})
+ },{process:{env:{ADAM_PRESENCE_ENABLED:controls.disabled?'false':'true',FOUNDER_VOICE_ENABLED:controls.voiceDisabled?'false':'true',FOUNDER_ELEVENLABS_VOICE_ID:'synthetic-voice'}},setTimeout:(fn,ms)=>setTimeout(fn,controls.timeoutMs??ms)})
  const response={statusCode:200,headersSent:false,writableEnded:false,chunks:[],body:null,headers:{},status(code){this.statusCode=code;return this},setHeader(key,value){this.headers[key]=value},on(){},write(value){this.headersSent=true;this.chunks.push(Buffer.from(value))},end(value){if(value)this.write(value);this.writableEnded=true},json(value){this.body=value;this.headersSent=true;this.writableEnded=true}}
  const run=async()=>{await module[lane==='voice'?'adamFounderVoiceProvider':'adamPresenceProvider']({method:'POST',headers:{authorization:'Bearer synthetic-token'},body:{message:'Disclosed synthetic question',text:'Disclosed synthetic text',context:[],locale:'en-US',surface:'home',requestId:'a'.repeat(64),aiProcessingConsent:true,externalProcessingConsent:true}},response);return response}
  const output=()=>Buffer.concat(response.chunks).toString()
  return{state,run,response,output}
 }
-for(const lane of ['reasoning','voice']){
+// Reasoning remains fully available under owner, consent, and paid-dispatch proof.
+// Founder voice is a separate fail-closed issuer boundary below.
+for(const lane of ['reasoning']){
  test(`actual Adam ${lane} retains guarded private success`,async()=>{
   const f=fixture(lane),response=await f.run();assert.equal(response.statusCode,200);assert.ok(f.output().includes(lane==='voice'?audio:answer))
   assert.ok(f.state.authReads>1);assert.ok(f.state.policyReads>1);assert.ok(f.state.outputChecks>0)
@@ -77,6 +81,33 @@ for(const lane of ['reasoning','voice']){
   const f=fixture(lane,{disabled:true}),response=await f.run();assert.equal(response.statusCode,503);assert.equal(f.state.paid.length,0)
  })
 }
+// Production has no trusted founder-model/voice issuer or single-use receipt service.
+// Exercise the actual issuer contract; never mock it as ready just to recover
+// historical synthetic audio-success assumptions.
+test('actual Founder voice issuer rejects a fully enabled and consent-looking request before paid processing',async()=>{
+ const f=fixture('voice',{afterRate(){assert.fail('No rate-write before issuer approval')},onPaid(){assert.fail('No paid provider dispatch before issuer approval')}})
+ const response=await f.run()
+ assert.equal(response.statusCode,409)
+ assert.equal(response.body?.error,FOUNDER_VOICE_RECEIPT_DENIED)
+ assert.equal(f.state.authReads,1)
+ assert.equal(f.state.policyReads,0)
+ assert.equal(f.state.paid.length,0)
+ assert.equal(f.output(),'')
+})
+test('actual Founder voice feature hard-off rejects without paid dispatch',async()=>{
+ const f=fixture('voice',{voiceDisabled:true}),response=await f.run()
+ assert.equal(response.statusCode,409)
+ assert.equal(response.body?.error,'FOUNDER_VOICE_NOT_READY')
+ assert.equal(f.state.paid.length,0)
+ assert.equal(f.output(),'')
+})
+test('actual Adam global hard-off rejects Founder voice without paid dispatch',async()=>{
+ const f=fixture('voice',{disabled:true}),response=await f.run()
+ assert.equal(response.statusCode,503)
+ assert.equal(response.body?.error,'ADAM_PRESENCE_DISABLED')
+ assert.equal(f.state.paid.length,0)
+ assert.equal(f.output(),'')
+})
 for(const moderation of [{},{results:[]},{results:[{flagged:'false'}]}])test('actual Adam missing moderation decision cannot start reasoning: '+JSON.stringify(moderation),async()=>{
  const f=fixture('reasoning',{moderation}),response=await f.run();assert.equal(response.statusCode,503);assert.equal(response.body.error,'MODERATION_UNAVAILABLE')
  assert.equal(f.state.paid.length,1);assert.equal(f.output(),'')

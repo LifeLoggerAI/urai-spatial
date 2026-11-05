@@ -1,0 +1,2216 @@
+{
+  "meta": {
+    "evidence_scope": "example-only",
+    "fixture_sha256": "55c4c05c79316b31fa32b49d47a5e6d06d39e7abecc7bc8909b7b6fef0d80047",
+    "adapter_sha": null,
+    "model_calls": 0
+  },
+  "results": [
+    {
+      "case_id": "CS01",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "We can meet tomorrow."
+        }
+      ],
+      "evidence_flags": [],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "CS02",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "es",
+          "text": "Podemos reunirnos mañana."
+        }
+      ],
+      "evidence_flags": [],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "CS03",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 208,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -29,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.24,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "We can meet "
+        },
+        {
+          "language": "es",
+          "text": "mañana."
+        }
+      ],
+      "evidence_flags": [
+        "code-switch"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "CS04",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "zh-Hans",
+          "text": "明天见, "
+        },
+        {
+          "language": "en",
+          "text": "see you tomorrow."
+        }
+      ],
+      "evidence_flags": [
+        "code-switch"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "CS05",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "hi-Latn",
+          "text": "Kal milte hain, "
+        },
+        {
+          "language": "en",
+          "text": "see you tomorrow."
+        }
+      ],
+      "evidence_flags": [
+        "code-switch"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "CS06",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "hi-Deva",
+          "text": "कल मिलते हैं, "
+        },
+        {
+          "language": "en",
+          "text": "see you tomorrow."
+        }
+      ],
+      "evidence_flags": [
+        "code-switch"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "SA01",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 240,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "We can meet tomorrow."
+        }
+      ],
+      "evidence_flags": [],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "session-only",
+        "speaker_key": "session-speaker-a",
+        "z_f0": 0
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": "synthetic-owner-a"
+      }
+    },
+    {
+      "case_id": "SA02",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 240,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "We can meet tomorrow."
+        }
+      ],
+      "evidence_flags": [],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "session-only",
+        "speaker_key": "session-speaker-b",
+        "z_f0": 6
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": "synthetic-owner-a"
+      }
+    },
+    {
+      "case_id": "SA03",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "We can meet tomorrow."
+        }
+      ],
+      "evidence_flags": [
+        "speaker-unknown",
+        "baseline-unavailable"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "SA04",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "We can meet tomorrow."
+        }
+      ],
+      "evidence_flags": [
+        "speaker-uncertain",
+        "baseline-rejected"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "CX01",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "I'm fine."
+        }
+      ],
+      "evidence_flags": [],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "CX02",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.5,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "I'm fine."
+        }
+      ],
+      "evidence_flags": [
+        "context-ambiguous"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "CX03",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "My colleague said, \"I am furious.\""
+        }
+      ],
+      "evidence_flags": [
+        "quoted-other"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "CX04",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [
+        {
+          "label": "empathetic-language",
+          "truth_kind": "interpretation",
+          "qualifier": "possible",
+          "scope": "utterance-style",
+          "evidence_refs": [
+            "utterance:current"
+          ]
+        }
+      ],
+      "language_spans": [
+        {
+          "language": "es",
+          "text": "Lo siento, "
+        },
+        {
+          "language": "en",
+          "text": "I'm here for you."
+        }
+      ],
+      "evidence_flags": [
+        "code-switch"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "CF01",
+      "status": "reported",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 110,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -38,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 1.6,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [
+        {
+          "label": "joy",
+          "attribution": "speaker-self-report",
+          "source_ref": "utterance:current",
+          "truth_kind": "user-assertion",
+          "actor_id": "synthetic-owner-a",
+          "scope": "utterance:current"
+        }
+      ],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "I'm happy."
+        }
+      ],
+      "evidence_flags": [
+        "lexical-acoustic-conflict"
+      ],
+      "conflict_refs": [
+        "utterance:current",
+        "candidate:acoustic"
+      ],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.you_said",
+        "qualifier": "you-said",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "CF02",
+      "status": "reported",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 265,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -7,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 5.8,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [
+        {
+          "label": "calm",
+          "attribution": "speaker-self-report",
+          "source_ref": "utterance:current",
+          "truth_kind": "user-assertion",
+          "actor_id": "synthetic-owner-a",
+          "scope": "utterance:current"
+        }
+      ],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "es",
+          "text": "Estoy tranquilo, "
+        },
+        {
+          "language": "en",
+          "text": "I'm calm."
+        }
+      ],
+      "evidence_flags": [
+        "code-switch",
+        "lexical-acoustic-conflict"
+      ],
+      "conflict_refs": [
+        "utterance:current",
+        "candidate:acoustic"
+      ],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.you_said",
+        "qualifier": "you-said",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "CF03",
+      "status": "disputed",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 250,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.42,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "Great, just great."
+        }
+      ],
+      "evidence_flags": [
+        "lexical-acoustic-conflict",
+        "context-ambiguous"
+      ],
+      "conflict_refs": [
+        "candidate:lexical",
+        "candidate:acoustic"
+      ],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unresolved",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "UN01",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "I am [not?] upset."
+        }
+      ],
+      "evidence_flags": [
+        "asr-ambiguous"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "UN02",
+      "status": "unknown",
+      "observations": [],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [],
+      "evidence_flags": [
+        "no-signal"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "UN03",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "bn",
+          "text": "কাল দেখা হবে, "
+        },
+        {
+          "language": "en",
+          "text": "see you tomorrow."
+        }
+      ],
+      "evidence_flags": [
+        "code-switch",
+        "unsupported-language-pair"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "UN04",
+      "status": "unknown",
+      "observations": [],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "We can meet tomorrow."
+        }
+      ],
+      "evidence_flags": [
+        "acoustic-unreliable"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "UC01",
+      "status": "reported",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [
+        {
+          "label": "joy",
+          "attribution": "typed-owner-correction",
+          "source_ref": "correction:current",
+          "truth_kind": "user-assertion",
+          "actor_id": "synthetic-owner-a",
+          "scope": "utterance:current"
+        }
+      ],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "I wasn't angry. I was excited."
+        }
+      ],
+      "evidence_flags": [],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.you_said",
+        "qualifier": "you-said",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [
+          "prior-emotion"
+        ],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "UC02",
+      "status": "reported",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [
+        {
+          "label": "joy",
+          "attribution": "typed-owner-correction",
+          "source_ref": "correction:current",
+          "truth_kind": "user-assertion",
+          "actor_id": "synthetic-owner-a",
+          "scope": "utterance:current"
+        }
+      ],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "I wasn't angry. I was excited."
+        }
+      ],
+      "evidence_flags": [
+        "stale-reply"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.you_said",
+        "qualifier": "you-said",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [
+          "prior-emotion"
+        ],
+        "stale_reply_dropped": true
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "UC03",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "I was excited."
+        }
+      ],
+      "evidence_flags": [
+        "correction-owner-mismatch"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "PR01",
+      "status": "disabled",
+      "observations": [],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [],
+      "evidence_flags": [
+        "inference-consent-required"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.disabled",
+        "qualifier": "none",
+        "emotion_is_fact": false,
+        "inference_enabled": false,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "PR02",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "We can meet tomorrow."
+        }
+      ],
+      "evidence_flags": [
+        "baseline-consent-required"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "PR03",
+      "status": "revoked",
+      "observations": [],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [],
+      "evidence_flags": [
+        "authority-revoked"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.revoked",
+        "qualifier": "none",
+        "emotion_is_fact": false,
+        "inference_enabled": false,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 3,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": true
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": true,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "PR04",
+      "status": "unknown",
+      "observations": [
+        {
+          "feature": "mean_f0_hz",
+          "value": 180,
+          "unit": "Hz",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:mean_f0_hz"
+        },
+        {
+          "feature": "energy_dbfs",
+          "value": -24,
+          "unit": "dBFS",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:energy_dbfs"
+        },
+        {
+          "feature": "syllables_per_second",
+          "value": 3.2,
+          "unit": "syllables/s",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:syllables_per_second"
+        },
+        {
+          "feature": "pause_ratio",
+          "value": 0.15,
+          "unit": "ratio",
+          "truth_kind": "observation",
+          "origin": "synthetic-feature-stub",
+          "source_ref": "feature:pause_ratio"
+        }
+      ],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [
+        {
+          "language": "en",
+          "text": "We can meet tomorrow."
+        }
+      ],
+      "evidence_flags": [
+        "baseline-owner-mismatch"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.unknown",
+        "qualifier": "uncertain",
+        "emotion_is_fact": false,
+        "inference_enabled": true,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "MW01",
+      "status": "disabled",
+      "observations": [],
+      "assertions": [],
+      "interpretations": [],
+      "language_spans": [],
+      "evidence_flags": [
+        "inference-off"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.disabled",
+        "qualifier": "none",
+        "emotion_is_fact": false,
+        "inference_enabled": false,
+        "manual_weather": null
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    },
+    {
+      "case_id": "MW02",
+      "status": "reported",
+      "observations": [],
+      "assertions": [
+        {
+          "label": "Calm",
+          "attribution": "manual-choice",
+          "source_ref": "manual:current",
+          "truth_kind": "user-assertion",
+          "actor_id": "synthetic-owner-a",
+          "scope": "utterance:current"
+        }
+      ],
+      "interpretations": [],
+      "language_spans": [],
+      "evidence_flags": [
+        "inference-off"
+      ],
+      "conflict_refs": [],
+      "baseline": {
+        "scope": "none",
+        "speaker_key": null,
+        "z_f0": null
+      },
+      "presentation": {
+        "key": "speech.you_said",
+        "qualifier": "you-said",
+        "emotion_is_fact": false,
+        "inference_enabled": false,
+        "manual_weather": "Calm"
+      },
+      "lifecycle": {
+        "source_unchanged": true,
+        "applied_revision": 2,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false
+      },
+      "effects": {
+        "provider_calls": 0,
+        "persistence_writes": 0,
+        "raw_audio_bytes_retained": 0,
+        "biometric_template_writes": 0,
+        "training_writes": 0,
+        "sensitive_log_entries": 0,
+        "purged_inflight": false,
+        "baseline_read_owner": null
+      }
+    }
+  ]
+}

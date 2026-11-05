@@ -14,6 +14,7 @@ import { canonicalLifeMapDemoNodes } from '../src/components/lifemap/canonicalLi
 import { DEMO_MEMORY_STAR_NODES } from '../src/spatial/memory/memoryStarSchema.ts'
 import { definitionForDestination } from '../src/spatial/world/destinationRegistry.ts'
 import { previousDestinationForReturn } from '../src/spatial/world/worldTypes.ts'
+import { lifeMapHomeHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
 
 const source = fs.readFileSync(process.env.URAI_LIFEMAP_NAVIGATOR_SOURCE ?? 'src/components/lifemap/LifeMapSemanticNavigator.tsx', 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
@@ -61,7 +62,7 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     '@/spatial/memory/lifeMapSelectionJourney':{withLifeMapSelectionIdentity},
     '@react-three/fiber':{Canvas:'synthetic-Canvas'},three:{},
     '@/spatial/performance/useAdaptiveSpatialQuality':{useAdaptiveSpatialQuality:()=>({tier:'low',pixelRatioMax:1,reducedMotion:true,documentVisible:true})},
-    '@/spatial/navigation/homeSkyInteraction':{homeJourneyHref:()=>'/home'},
+    '@/spatial/navigation/homeSkyInteraction':{lifeMapHomeHref},
     './LifeMapProductionWorld':{LifeMapProductionWorld:'synthetic-production-world-boundary'},
     './lifeMapVisualSystem':{artifactFamilyLabel:()=> 'Visual memory',resolveArtifactFamily:()=> 'visual'},
     'firebase/auth':{getAuth:()=>{throw Error('No private source access belongs to a disclosed sample')}},
@@ -127,7 +128,7 @@ test('Founder owns keyboard input above Search until its own dismissal completes
   assert.deepEqual(f.calls,initialCalls)
 })
 
-test('actual scene overview groups Founder with Return Home without changing its destination',()=>{
+test('actual scene overview groups Founder with Return Home and preserves only the disclosed demo flag',()=>{
   const f=fixture('?demo=1&overview=1',{component:'scene'})
   const group=descendants(f.render()).find(el=>el.type==='nav' && el.props['aria-label']==='Life Map overview controls')
   assert.ok(group)
@@ -137,8 +138,25 @@ test('actual scene overview groups Founder with Return Home without changing its
   assert.equal(founder.props.name,'life-map-overview-controls')
   returnHome.props.onClick()
   assert.equal(f.calls.at(-1).kind,'destination')
-  assert.equal(f.calls.at(-1).destination,'/home')
+  const target = new URL(f.calls.at(-1).destination,'http://localhost')
+  assert.equal(target.pathname,'/home')
+  assert.deepEqual([...target.searchParams.entries()],[['demo','1']])
 })
+
+for (const search of ['', '?demo=0', '?demo=1&demo=0', '?demo=1&memoryId=private-memory', '?demo=1&manifestId=private-manifest']) {
+  test('actual scene Home return rejects unapproved demo authority for '+(search||'no flag'),()=>{
+    const f=fixture(search,{component:'scene'})
+    const group=descendants(f.render()).find(el=>el.type==='nav' && el.props['aria-label']==='Life Map overview controls')
+    assert.ok(group)
+    const returnHome=descendants(group).find(el=>el.props['data-life-map-overview-home-return']==='true')
+    assert.ok(returnHome)
+    returnHome.props.onClick()
+    assert.equal(f.calls.at(-1).kind,'destination')
+    const target=new URL(f.calls.at(-1).destination,'http://localhost')
+    assert.equal(target.pathname,'/home')
+    assert.deepEqual([...target.searchParams.entries()],[])
+  })
+}
 
 for (const [activation,detail] of [['pointer',1],['keyboard',0],['touch',1]]) test('actual '+activation+' selection after disclosed Home Ascent binds the demo movie manifest',()=>{
   const f=fixture('?demo=1&from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete')
@@ -199,8 +217,12 @@ for(const id of sceneNodes.map(sample=>sample.id)) test('canonical scene selecti
   }
   const returned=f.overview()
   assert.equal(returned.get('overview'),'1');assert.equal(returned.get('node'),id)
+  assert.equal(returned.get('memoryId'),'demo:'+id,'Overview retains an explicitly disclosed sample namespace')
   assert.equal(returned.get('manifestId'),expected.replayManifest.id)
   for(const flag of ['onboarding','firstRun']) assert.equal(returned.get(flag),'1')
+  const returnedHome=new URL(lifeMapHomeHref(returned.toString()),'http://localhost')
+  assert.equal(returnedHome.pathname,'/home')
+  assert.deepEqual([...returnedHome.searchParams.entries()],[['demo','1']],'Home must carry no selected memory, manifest or private query')
 })
 
 test('canonical scene repairs the supplied legacy-thread arrival manifest without changing selection',()=>{
@@ -255,8 +277,12 @@ const print=(file,node)=>printer.printNode(ts.EmitHint.Unspecified,node,file)
 const focusFile=parse('src/app/focus/FocusChamberClient.tsx')
 const replayHrefCallback=print(focusFile,declaration(focusFile,'replayHref').initializer.arguments[0])
 const returnFile=parse('src/spatial/world/WorldTransitionController.tsx')
+const homeSkyFile=parse('src/spatial/navigation/homeSkyInteraction.ts')
 const returnDependencies=[
   'const '+print(returnFile,declaration(returnFile,'CONTEXT_KEYS'))+';',
+  // The extracted real production builder imports these pure Home-sky helpers.
+  // Include their actual source in this isolated VM, never a reimplementation.
+  ...['isHomeSkyAscentTravel','retainDisclosedHomeReturnDemo','retainDisclosedHomeAscentDemo'].map(name=>print(homeSkyFile,declaration(homeSkyFile,name))),
   ...['buildTravelHref','destinationFromOriginRealm','fallbackReturnDestination'].map(name=>print(returnFile,declaration(returnFile,name))),
 ].join('\n')
 const returnCallback=print(returnFile,declaration(returnFile,'reverseTravel').initializer.arguments[0])
@@ -337,3 +363,4 @@ test('a declared sample ID does not open a demo without the exact disclosure fla
     assert.equal(result.memory,null);assert.equal(result.status,'unavailable')
   }
 })
+

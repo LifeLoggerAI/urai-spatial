@@ -4,11 +4,16 @@ import test, { after, before } from 'node:test'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-// Fictional public Firebase configuration permits the actual clients to run.
-// Every HTTP request is intercepted before the SDK or provider modules load.
+// Never relax production Firebase identity to test Council providers.
+// Use the controller's exact fictional development-only emulator identity.
+// Synthetic Council HTTP still goes through the intercepted in-process fetch.
+const originalNodeEnv = process.env.NODE_ENV
+const originalEmulatorFlag = process.env.NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR
+process.env.NODE_ENV = 'development'
+process.env.NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR = 'true'
 process.env.NEXT_PUBLIC_FIREBASE_API_KEY = 'synthetic-council-api-key'
-process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = 'synthetic-council.invalid'
-process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'synthetic-council'
+process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = 'demo-urai-auth-journey.firebaseapp.com'
+process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'demo-urai-auth-journey'
 process.env.NEXT_PUBLIC_URAI_API_ORIGIN = ''
 const providers = ['anthropic', 'gemini', 'xai', 'mistral']
 const allProviders = ['openai', ...providers]
@@ -31,10 +36,12 @@ async function registryFor(value = 'false') {
   return import(`../src/spatial/council/councilProviderRegistry.ts?fixture=${sequence++}`)
 }
 const defaultRegistry = await registryFor()
-const { getAuth } = await import('firebase/auth')
 const { deleteApp } = await import('firebase/app')
-const { app } = await import('../src/lib/firebase/client.ts')
-const auth = getAuth(app)
+const { app, firebasePublicEnvReady, uraiJourneyEmulatorEnabled, getUraiAuth } = await import('../src/lib/firebase/client.ts')
+assert.equal(firebasePublicEnvReady, true, 'fictional emulator app must be identity-checked before Council tests')
+assert.equal(uraiJourneyEmulatorEnabled, true, 'Council fixture must never claim a production Firebase project')
+// Call the controller's guarded getter so the fictional SDK stays on its local emulator.
+const auth = getUraiAuth()
 const syntheticUser = { uid: 'synthetic-council-owner', getIdToken: async () => 'synthetic-council-id-token' }
 before(async () => {
   await auth.authStateReady()
@@ -44,6 +51,10 @@ after(async () => {
   await deleteApp(app)
   globalThis.fetch = originalFetch
   globalThis.React = originalReact
+  if (originalNodeEnv === undefined) delete process.env.NODE_ENV
+  else process.env.NODE_ENV = originalNodeEnv
+  if (originalEmulatorFlag === undefined) delete process.env.NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR
+  else process.env.NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR = originalEmulatorFlag
 })
 
 function input(provider, overrides = {}) {

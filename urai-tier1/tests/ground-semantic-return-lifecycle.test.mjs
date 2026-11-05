@@ -10,6 +10,7 @@ const three = require('three')
 const componentPath = new URL('../src/app/GroundSpatialWorldClean.tsx', import.meta.url)
 const movementPath = new URL('../src/spatial/navigation/EmbodiedNavigation.tsx', import.meta.url)
 const eventsPath = new URL('../src/spatial/world/worldEvents.ts', import.meta.url)
+const homeSkyPath = new URL('../src/spatial/navigation/homeSkyInteraction.ts', import.meta.url)
 
 // Exercise the actual component callbacks and the actual movement hook against
 // DOM event semantics. No source-string assertions or copied return callbacks.
@@ -103,6 +104,7 @@ function mount({ webgl = false } = {}) {
     }, module, module.exports)
     return module.exports
   }
+  modules.set('@/spatial/navigation/homeSkyInteraction', load(homeSkyPath))
   const events = load(eventsPath)
   modules.set('@/spatial/world/worldEvents', events)
   const movement = load(movementPath)
@@ -223,3 +225,4 @@ test('actual movement hook removes captured listeners on unmount', () => {
   assert.equal(page.returns, 0)
   assert.deepEqual(page.routerCalls, [])
 })
+

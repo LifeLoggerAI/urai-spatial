@@ -79,12 +79,91 @@ export function subscribeHomeSkyTaps({ owner, canvas, gate, lifecycleTarget }: {
   }
 }
 
+// Context.demo never authorizes the physical Home sky Ascent on its own.
+// Only the exact, explicitly disclosed source query may carry that fixture.
+export function isHomeSkyAscentTravel(request: {
+  destination: string
+  entryPortal?: string
+  cameraCheckpoint?: string
+}): boolean {
+  return request.destination === 'life-map'
+    && request.entryPortal === 'home-sky'
+    && request.cameraCheckpoint === 'home-sky-ascent-complete'
+}
+
+// A real Home sky ascent may retain only an explicitly disclosed local fixture
+// context. Never carry memory, tenant, or unrelated query authority across realms.
+export function retainDisclosedHomeAscentDemo(sourcePathname: string, sourceSearch: string, request: {
+  destination: string
+  href?: string
+  entryPortal?: string
+  cameraCheckpoint?: string
+  context?: { memoryId?: string; replayManifestId?: string }
+}, target: URL) {
+  retainDisclosedHomeReturnDemo(sourcePathname, sourceSearch, request, target)
+  const home = sourcePathname.replace(/\/+$/, '') || '/'
+  const lifeMap = target.pathname.replace(/\/+$/, '') || '/'
+  const source = new URLSearchParams(sourceSearch)
+  const flags = source.getAll('demo')
+  // Never convert selected private-memory context into a public demo fixture.
+  // Existing target demo declarations (including demo=0) must not be overwritten.
+  const selectedKeys = ['memoryId', 'node', 'manifestId', 'movieId', 'chapterId']
+  if ((home !== '/' && home !== '/home') || lifeMap !== '/life-map'
+    || !isHomeSkyAscentTravel(request)
+    || flags.length !== 1 || flags[0] !== '1'
+    || target.searchParams.has('demo')
+    || request.context?.memoryId || request.context?.replayManifestId
+    || selectedKeys.some((key) => source.has(key) || target.searchParams.has(key))) return
+  target.searchParams.set('demo', '1')
+}
+
 // Carry only an explicitly disclosed demo through the direct accessible link.
 // Absence, demo=0, and other query fields never manufacture demo authority.
 export function homeJourneyHref(href: string, search: string) {
-  const demo = new URLSearchParams(search).getAll('demo')
+  const source = new URLSearchParams(search)
+  const demo = source.getAll('demo')
   if (demo.length !== 1 || demo[0] !== '1') return href
   const target = new URL(href, 'https://urai.invalid')
+  // Direct accessible links must honor the same private selection fence as
+  // physical Home sky Ascent. A private memory ID cannot grant demo authority.
+  const selectedKeys = ['memoryId', 'node', 'manifestId', 'movieId', 'chapterId']
+  if (selectedKeys.some((key) => source.has(key) || target.searchParams.has(key))) return href
   if (!target.searchParams.has('demo')) target.searchParams.set('demo', '1')
   return `${target.pathname}${target.search}${target.hash}`
 }
+
+// Returning from an explicitly disclosed Life Map demo preserves only its
+// disclosure flag. It never carries a selected memory or grants private access.
+export function retainDisclosedHomeReturnDemo(sourcePathname: string, sourceSearch: string, request: {
+  destination: string
+  href?: string
+  context?: { memoryId?: string; replayManifestId?: string }
+}, target: URL) {
+  const source = new URLSearchParams(sourceSearch)
+  const flags = source.getAll('demo')
+  const memories = source.getAll('memoryId')
+  const demoMemory = memories.length === 1 && /^demo:[^\s:]+$/.test(memories[0])
+  const selectedKeys = ['memoryId', 'node', 'manifestId', 'movieId', 'chapterId']
+  const destination = target.pathname.replace(/\/+$/, '') || '/'
+  const originalTarget = request.href ? new URL(request.href, target.origin).searchParams : target.searchParams
+  if (sourcePathname.replace(/\/+$/, '') !== '/life-map'
+    || request.destination !== 'home' || (destination !== '/' && destination !== '/home')
+    || flags.length !== 1 || flags[0] !== '1'
+    || target.searchParams.has('demo')
+    || originalTarget.has('demo') || selectedKeys.some(key => originalTarget.has(key))
+    || selectedKeys.some(key => target.searchParams.has(key))
+    || source.has('movieId') || source.has('chapterId')
+    || (selectedKeys.some(key => source.has(key)) && !demoMemory)
+    || (request.context?.memoryId && request.context.memoryId !== memories[0])
+    || request.context?.replayManifestId) return
+  target.searchParams.set('demo', '1')
+}
+
+// Life Map owns this return link; Home's two-argument Ascent helper retains its
+// independent source-authority contract and private-selection fence.
+export function lifeMapHomeHref(search: string) {
+  const target = new URL('/home', 'https://urai.invalid')
+  retainDisclosedHomeReturnDemo('/life-map', search, { destination:'home', href:'/home' }, target)
+  return `${target.pathname}${target.search}`
+}
+

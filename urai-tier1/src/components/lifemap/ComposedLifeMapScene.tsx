@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
-import { homeJourneyHref } from "@/spatial/navigation/homeSkyInteraction";
+import { lifeMapHomeHref } from "@/spatial/navigation/homeSkyInteraction";
 import { withLifeMapSelectionIdentity } from "@/spatial/memory/lifeMapSelectionJourney";
 import { forwardPrivateMovieRouteSelection } from "@/spatial/life-movie/privateLifeMovieRouteSelection";
 import { useLifeMapEvents, type LifeMapSourceMode } from "./useLifeMapEvents";
@@ -260,7 +260,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const withIdentity = useCallback((next: URLSearchParams, memoryId?: string) => withLifeMapSelectionIdentity(params, next, memoryId), [params]);
 
   const returnHome = useCallback(() => {
-    router.push(homeJourneyHref("/home", params.toString()));
+    router.push(lifeMapHomeHref(params.toString()));
   }, [params, router]);
 
   useEffect(() => {
@@ -323,7 +323,11 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     if (retainedId) {
       const retainedNode = nodes.find((node) => node.id === retainedId);
       next.set("node", retainedId);
-      if (explicitDemoRequested) next.set("memoryId", retainedId);
+      // Keep the canonical disclosed-sample namespace through Overview so
+      // Life Map -> Home can retain *only* demo=1, without carrying a selected
+      // memory or an unrelated private identifier into Home.
+      if (explicitDemoRequested && retainedNode) next.set("memoryId", retainedId.startsWith("demo:") ? retainedId : `demo:${retainedId}`);
+      else if (explicitDemoRequested) next.delete("memoryId");
       else if (retainedNode?.authorizedMemory && retainedNode.memoryId) next.set("memoryId", retainedNode.memoryId);
       else next.delete("memoryId");
     }
@@ -528,3 +532,4 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     `}</style>
   </main>;
 }
+

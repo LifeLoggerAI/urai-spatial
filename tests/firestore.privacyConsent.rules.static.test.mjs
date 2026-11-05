@@ -17,6 +17,7 @@ const ownerReadOnlyCollections = [
 ]
 
 const strictlyOwnerReadOnlyCollections = [
+  'speechPurposeLeases',
   'capturedRealityAssets',
   'memories',
   'lifeMovies',
@@ -25,6 +26,7 @@ const strictlyOwnerReadOnlyCollections = [
 const trustedCollections = [
   'privacyEnforcementJobs',
   'providerRevocationQueue',
+  'speechProviderPurgeQueue',
   'deletionQueue',
   'deletionReceipts',
 ]

@@ -1,20 +1,8 @@
-import { getApps, initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+// Legacy V1 consumers must share the canonical Tier1 Firebase client.
+// An incomplete public web config is not enough to enable Firestore reads;
+// keep the seeded/offline fallback instead of initializing a second app.
+import { app, firebasePublicEnvReady, getFirebaseDb } from './firebase/client'
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
-
-const hasFirebaseConfig = Boolean(
-  firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId
-);
-
-export const firebaseApp = hasFirebaseConfig
-  ? getApps()[0] ?? initializeApp(firebaseConfig)
-  : null;
-
-export const db = firebaseApp ? getFirestore(firebaseApp) : null;
-export const firebaseReady = Boolean(firebaseApp && db);
+export const firebaseApp = firebasePublicEnvReady ? app : null
+export const db = firebaseApp ? getFirebaseDb() : null
+export const firebaseReady = Boolean(firebaseApp && db)

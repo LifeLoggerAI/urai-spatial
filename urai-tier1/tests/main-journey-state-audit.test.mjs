@@ -44,9 +44,14 @@ for (const mutation of [
   {label:'travel click owner', path:focusPath, before:'onClick={enterReplay} {...locale.props', after:'onClick={unwind} {...locale.props', failure:'Focus Replay portal travel owner'},
   {label:'authorization guard', path:focusPath, before:'if (!memory || !replayHref || committed) return', after:'if (committed) return', failure:'Focus must fail closed without an authorized memory and Replay route.'},
   {label:'selected manifest travel identity', path:focusPath, before:'manifestId: memory.replayManifest.id, node:', after:"manifestId: 'foreign-manifest', node:", failure:'Focus forwards complete selected identity'},
+  {label:'untrusted return-node bypass', path:focusPath, before:'const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id', after:'const returnNode = node || memory.star.id', failure:'Focus Replay return node remains bound to the selected memory and vetted visual star'},
+  {label:'unbound memory context for visual return node', path:focusPath, before:"const sameMemory = incoming.get('memoryId') === memory.id && incoming.get('manifestId') === memory.replayManifest.id", after:'const sameMemory = true', failure:'Focus Replay return node remains bound to the selected memory and vetted visual star'},
+  {label:'unvalidated return-node shape', path:focusPath, before:'const validNode = Boolean(node && /^[A-Za-z0-9._:-]{1,120}$/.test(node))', after:'const validNode = Boolean(node)', failure:'Focus Replay return node remains bound to the selected memory and vetted visual star'},
   {label:'Replay authentication', path:replayPath, before:'useSelectedMemory()', after:'useFixtureMemory()', failure:'Replay authenticated memory authority'},
   {label:'Replay reduced motion', path:replayPath, before:'const reducedMotion = useReducedMotion()', after:'const reducedMotion = false', all:true, failure:'Replay honors reduced motion'},
   {label:'manifest mismatch denial', path:'urai-tier1/src/spatial/memory/useSelectedMemory.ts', before:'parsed.memory.replayManifest.id !== manifestId', after:'false', failure:'Selected-memory manifest identity check'},
+  {label:'node query implicit private-memory authority', path:'urai-tier1/src/spatial/memory/useSelectedMemory.ts', before:"params.get('memoryId') ?? (demoRequested ? params.get('node') : null)", after:"params.get('memoryId') ?? params.get('node')", failure:'Selected-memory hook limits node-only fallback to disclosed demo'},
+
   {label:'movie travel identity', path:'urai-tier1/src/app/life-movie/LifeMovieClient.tsx', before:'movieId: requestedMovieId', after:"movieId: 'other-movie'", failure:'Life Movie preserves movie identity'},
   {label:'Replay hard navigation', path:replayPath, before:'requestUraiWorldReturn()', after:'window.location.assign("/home")', failure:'Replay client: forbidden hardcoded pattern'},
 ]) {

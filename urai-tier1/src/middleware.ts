@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+
+// Six audited, static, privacy-safe fixture SVGs required for explicit local
+// replay acceptance. This never enables public demo pages or arbitrary assets.
+const PUBLIC_REPLAY_FIXTURE_SVGS = new Set([
+  '/demo/memories/recovery-bloom.svg',
+  '/demo/memories/threshold-storm.svg',
+  '/demo/memories/mirror-focus.svg',
+  '/demo/memories/ritual-echo.svg',
+  '/demo/memories/dream-signal.svg',
+  '/demo/memories/calm-return.svg',
+])
+
 function enabled(...values: Array<string | undefined>) {
   return values.some((value) => value === 'true')
 }
@@ -7,15 +19,17 @@ function enabled(...values: Array<string | undefined>) {
 function routeAllowed(pathname: string) {
   if (process.env.NODE_ENV !== 'production') return true
 
-  if (pathname.startsWith('/admin')) {
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     return enabled(process.env.NEXT_PUBLIC_ALLOW_ADMIN_ROUTES, process.env.URAI_ALLOW_ADMIN_ROUTES)
   }
 
-  if (pathname.startsWith('/demo')) {
+  if (pathname === '/demo' || pathname.startsWith('/demo/')) {
+    if (PUBLIC_REPLAY_FIXTURE_SVGS.has(pathname)) return true
     return enabled(process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES, process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES)
   }
 
-  if (pathname.startsWith('/internal') || pathname.startsWith('/brand-system')) {
+  if (pathname === '/internal' || pathname.startsWith('/internal/')
+    || pathname === '/brand-system' || pathname.startsWith('/brand-system/')) {
     return enabled(process.env.NEXT_PUBLIC_ALLOW_INTERNAL_ROUTES, process.env.URAI_ALLOW_INTERNAL_ROUTES)
   }
 

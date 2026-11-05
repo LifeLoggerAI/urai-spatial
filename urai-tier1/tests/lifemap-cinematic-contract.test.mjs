@@ -63,10 +63,11 @@ test('Life Map keeps deterministic camera travel, Escape recovery, reduced motio
     'THREE.MathUtils.damp',
     'event.key !== "Escape"',
     'profile.reducedMotion',
-    'router.push(homeJourneyHref("/home", params.toString()))',
+    'router.push(lifeMapHomeHref(params.toString()))',
     'webglcontextlost',
     'webglcontextrestored',
   ])
+  assert.match(scene, /import \{ lifeMapHomeHref \} from "@\/spatial\/navigation\/homeSkyInteraction";/)
   assert.match(scene, /setPhase\("departure"\)/)
   assert.match(scene, /setPhase\("travel"\)/)
   assert.match(scene, /setPhase\("approach"\)/)
