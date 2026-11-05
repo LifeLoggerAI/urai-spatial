@@ -75,12 +75,13 @@ test('production middleware blocks the /demo segment, not unrelated public paths
       url: 'https://urai.invalid' + pathname,
     })
   }
-  for (const path of ['/demo', '/demo/', '/demo/private', '/demo/memories/secret.svg']) {
+  for (const path of ['/demo', '/demo/', '/demo/private', '/demo/memories/secret.svg',
+    '/admin', '/admin/settings', '/internal', '/internal/secret', '/brand-system', '/brand-system/private']) {
     const outcome = invoke(path)
     assert.equal(outcome.kind, 'rewrite', path)
     assert.equal(outcome.status, 404, path)
   }
-  for (const path of ['/demonstration', '/demographics', '/life-map']) {
+  for (const path of ['/demonstration', '/demographics', '/life-map', '/administration', '/internalization', '/brand-systematic']) {
     assert.equal(invoke(path).kind, 'next', path)
   }
   for (const name of assetNames)
