@@ -391,6 +391,7 @@ service cloud.firestore {
     // Trusted queues and durable receipts are never client-readable or client-writable.
     match /privacyEnforcementJobs/{docId} { allow read, write: if false; }
     match /providerRevocationQueue/{docId} { allow read, write: if false; }
+    match /speechProviderPurgeQueue/{docId} { allow read, write: if false; }
     match /deletionQueue/{docId} { allow read, write: if false; }
     match /deletionReceipts/{docId} { allow read, write: if false; }
     match /spatial/{doc=**} { allow read, write: if isAdmin(); }

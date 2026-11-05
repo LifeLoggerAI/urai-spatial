@@ -33,6 +33,7 @@ export { getInterpretiveWorldAsset, getInterpretiveWorldRuntimeUrl, getInterpret
 
 export { recordPassiveSignal } from './passiveSignals'
 export { grantSpeechPurposeLease, revokeSpeechPurposeLease } from './speechPurposeConsent'
+export { processSpeechPurgeQueueItem, retrySpeechPurgeQueue } from './speechPurgeWorker'
 
 export { upsertLifeMovieManifest, revokeLifeMovieManifest } from './lifeMovie'
 
