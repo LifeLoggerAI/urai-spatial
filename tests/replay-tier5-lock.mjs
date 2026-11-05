@@ -220,7 +220,26 @@ async function validateReplay(page, report, screenshotName) {
 
   const pause = page.getByRole('button', { name: 'Pause memory' }).first();
   await expectVisible(pause, 'Pause memory control');
-  await pause.click();
+  try {
+    // Preserve genuine pointer hit-testing; a forced or synthetic click would
+    // hide real overlay and main-thread failures in the cinematic Replay.
+    await pause.click();
+  } catch (error) {
+    // Record only UI state and a local screenshot, not transcript or private memory.
+    report.pauseInteraction = {
+      stage: 'real-pointer-click',
+      failure: error instanceof Error ? error.message : String(error),
+      urlPath: (() => { try { return new URL(page.url()).pathname; } catch { return null; } })(),
+      buttonCount: await page.getByRole('button', { name: 'Pause memory' }).count().catch(() => null),
+      isVisible: await pause.isVisible().catch(() => null),
+      isEnabled: await pause.isEnabled().catch(() => null),
+      pressed: await pause.getAttribute('aria-pressed', { timeout: 2000 }).catch(() => null),
+      playing: await client.getAttribute('data-playing', { timeout: 2000 }).catch(() => null),
+    };
+    await page.screenshot({ path: `${ARTIFACT_DIR}/failure-pause-memory-hit-target.png`, fullPage: true, timeout: 5000 })
+      .then(() => report.screenshots.push('failure-pause-memory-hit-target.png')).catch(() => {});
+    throw error;
+  }
   await expectAttribute(client, 'data-playing', 'false');
 
   report.audits.push('route proof exposes replay_playing while authenticated demo client play and pause states are independently verified');
