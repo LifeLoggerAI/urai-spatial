@@ -220,3 +220,8 @@ test('the actual adapter rejects direct sensitive console logging and restores c
   await assert.rejects(evaluateSpeechFixture(input('CS01'),{afterFeatures:()=>console.log('synthetic text only')}),/SPEECH_SENSITIVE_LOG_FORBIDDEN/)
   assert.equal(console.log,before)
 })
+
+test('bounded language spans reject nonempty unsegmented, excessive and overlong input before acoustic reads',async()=>{
+  const mutations=[i=>{i.utterance.text='hello';i.utterance.language_spans=[]},i=>{i.utterance.text='hello';i.utterance.language_spans=[{language:'en',text:'hello'},...Array.from({length:64},()=>({language:'en',text:''}))]},i=>{const text='x'.repeat(8193);i.utterance.text=text;i.utterance.language_spans=[{language:'en',text}]}];
+  for(const mutate of mutations){const {decision,fixture}=await probe('CF01',mutate);assert.equal(decision.status,'unknown');assert.ok(decision.evidence_flags.includes('invalid-language-spans'));assert.equal(fixture.featureReads,0);assert.equal(fixture.baselineReads,0);assert.equal(decision.presentation.inference_enabled,false);assert.deepEqual(decision.assertions,[]);assert.deepEqual(decision.interpretations,[])}
+})

@@ -35,9 +35,11 @@ function validFeature(name, value) {
   return value>=0
 }
 function validateSpans(utterance) {
-  return typeof utterance?.text==='string' && Array.isArray(utterance.language_spans)
+  return typeof utterance?.text==='string' && utterance.text.length<=8192
+    && Array.isArray(utterance.language_spans) && utterance.language_spans.length<=64
+    && (utterance.text.length===0 || utterance.language_spans.length>0)
     && utterance.language_spans.every(span=>span && typeof span.language==='string'
-      && /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/.test(span.language) && typeof span.text==='string')
+      && /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/.test(span.language) && typeof span.text==='string' && span.text.length<=8192)
     && utterance.language_spans.map(span=>span.text).join('')===utterance.text
 }
 
