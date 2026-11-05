@@ -326,6 +326,8 @@ export default function AdamPresenceRuntime() {
     const locale = contentLanguage(currentSpeechTag())?.speechTag
     if (!locale) { setStatus('Choose a supported content language.'); return }
 
+    // Revoke the microphone lease before any AI-provider transport.
+    revokeSpeechInput()
     stopVoice()
     const controller = new AbortController()
     conversationAborter.current = controller
