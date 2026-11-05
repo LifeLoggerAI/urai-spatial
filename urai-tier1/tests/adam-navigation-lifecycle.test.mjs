@@ -4,6 +4,7 @@ import { createRequire } from 'node:module'
 import vm from 'node:vm'
 import { webcrypto } from 'node:crypto'
 import test from 'node:test'
+import { createSpeechRecognitionSession } from '../src/spatial/adam/speechRecognitionSession.mjs'
 
 const require = createRequire(import.meta.url)
 const ts = require('typescript')
@@ -75,6 +76,7 @@ function fixture() {
     '@/lib/i18n/contentLanguage': { contentLanguage: () => ({ speechTag: 'en-US' }), contentLanguageProps: () => ({ lang: 'en', dir: 'ltr' }) },
     '@/lib/i18n/useUraiLocale': { useUraiLocale: () => ({ text: () => 'Founder digital presence', props: () => ({ lang: 'en', dir: 'ltr' }) }) },
     './adamSurfaceContext': surfaces.exports,
+    './speechRecognitionSession.mjs': { createSpeechRecognitionSession },
     // Original Founder voice remains denied unless per-turn server authority exists.
     // This harness tests text/navigation privacy, never authorizes synthetic audio.
     './founderVoicePlaybackBridge.mjs': {
