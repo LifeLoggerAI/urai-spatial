@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { retainDisclosedHomeAscentDemo } from '@/spatial/navigation/homeSkyInteraction'
 import { subscribeBrowserLocation } from '@/lib/browserLocationStore'
 import { definitionForDestination } from './destinationRegistry'
 import { persistHomeWorldCheckpoint } from './homeWorldCheckpointPersistence'
@@ -64,18 +65,6 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     }
   }
 
-  // Preserve only explicitly disclosed demo=1 on the real Home sky
-  // Ascent. Do not reuse any selected/private memory or relationship scope.
-  const homeDemoAscent = request.destination === 'life-map'
-    && request.entryPortal === 'home-sky'
-    && request.cameraCheckpoint === 'home-sky-ascent-complete'
-    && ['/', '/home', '/home/'].includes(window.location.pathname)
-    && current.getAll('demo').length === 1
-    && current.get('demo') === '1'
-    && !current.has('memoryId')
-    && !target.searchParams.has('memoryId')
-  if (homeDemoAscent) target.searchParams.set('demo', '1')
-
   if (!memoryDestination) {
     target.searchParams.delete('memoryId')
     target.searchParams.delete('node')
@@ -104,6 +93,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+  retainDisclosedHomeAscentDemo(window.location.pathname, window.location.search, request, target)
 
   // No node-to-memory or memory-to-node inference: these are separate
   // identities, and each consumer must independently validate access.
