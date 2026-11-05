@@ -145,6 +145,7 @@ test('invalid multilingual span reconstruction cannot yield partial rewritten so
   assert.deepEqual(decision.language_spans,[]);assert.deepEqual(decision.assertions,[]);assert.equal(decision.status,'unknown')
   assert.equal(fixture.featureReads,0)
   assert.equal(fixture.baselineReads,0)
+  assert.equal(decision.presentation.inference_enabled,false)
 })
 test('missing or malformed utterance context fails closed without promoting candidates',async()=>{
   for(const context of [undefined,null,{},'not-an-array']) {
@@ -159,6 +160,7 @@ test('missing or malformed utterance context fails closed without promoting cand
     assert.ok(decision.evidence_flags.includes('invalid-utterance-context'))
     assert.equal(fixture.featureReads,0)
     assert.equal(fixture.baselineReads,0)
+    assert.equal(decision.presentation.inference_enabled,false)
   }
 })
 test('nonfinite feature values are never emitted as observations',async()=>{
