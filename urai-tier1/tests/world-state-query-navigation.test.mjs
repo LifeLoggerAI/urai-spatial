@@ -123,3 +123,42 @@ test('the canonical world controller never aliases a visual node to memory autho
   assert.doesNotMatch(source, /target\.searchParams\.set\('memoryId', nodeId\)/)
   assert.doesNotMatch(source, /target\.searchParams\.set\('node', memoryId\)/)
 })
+
+test('non-memory travel does not inherit private relationship hints from a selected memory', () => {
+  const source = fs.readFileSync('src/spatial/world/WorldTransitionController.tsx', 'utf8')
+  const start = source.indexOf('const CONTEXT_KEYS = [')
+  const end = source.indexOf('function normalizedPathname(', start)
+  assert.ok(start >= 0 && end > start, 'real world navigation helper must exist')
+  const snippet = source.slice(start, end) + '\nexports.buildTravelHref = buildTravelHref'
+  const { outputText } = ts.transpileModule(snippet, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  })
+  const module = { exports: {} }
+  vm.runInNewContext(outputText, {
+    module, exports: module.exports, URL, URLSearchParams,
+    window: { location: {
+      origin: 'https://urai.app',
+      search: '?memoryId=private-memory&thread=private-thread&personId=private-person&placeId=private-place&privacyMode=private',
+    } },
+    definitionForDestination: destination => ({ href: '/' + destination }),
+  })
+  const build = module.exports.buildTravelHref
+  const parsed = request => new URL(build(request), 'https://urai.app')
+  const home = parsed({ destination: 'home' })
+  for (const key of ['memoryId', 'thread', 'personId', 'placeId']) {
+    assert.equal(home.searchParams.has(key), false, key + ' leaked from private memory into Home')
+  }
+  assert.equal(home.searchParams.get('privacyMode'), 'private')
+  const intentional = parsed({ destination: 'home', href: '/home?personId=explicit-person' })
+  assert.equal(intentional.searchParams.get('personId'), 'explicit-person')
+  const explicitContext = parsed({ destination: 'home', context: { personId: 'requested-person' } })
+  assert.equal(explicitContext.searchParams.get('personId'), 'requested-person')
+  const sameMemoryReplay = parsed({ destination: 'replay', href: '/replay?memoryId=private-memory' })
+  for (const [key, value] of [['thread', 'private-thread'], ['personId', 'private-person'], ['placeId', 'private-place']]) {
+    assert.equal(sameMemoryReplay.searchParams.get(key), value, key + ' continuity lost in selected memory Replay')
+  }
+  const differentReplay = parsed({ destination: 'replay', href: '/replay?memoryId=other-memory' })
+  for (const key of ['thread', 'personId', 'placeId']) {
+    assert.equal(differentReplay.searchParams.has(key), false, key + ' leaked across memories')
+  }
+})
