@@ -4,6 +4,8 @@ import { createRequire } from 'node:module'
 import vm from 'node:vm'
 import { webcrypto } from 'node:crypto'
 import test from 'node:test'
+import { createSpeechRecognitionSession } from '../src/spatial/adam/speechRecognitionSession.mjs'
+import { createAdamFounderVoicePlaybackBridge } from '../src/spatial/adam/founderVoicePlaybackBridge.mjs'
 
 const require = createRequire(import.meta.url)
 const ts = require('typescript')
@@ -25,6 +27,16 @@ function nodes(tree, predicate, found = []) {
   if (predicate(tree)) found.push(tree)
   for (const child of [tree.props?.children].flat(Infinity)) nodes(child, predicate, found)
   return found
+}
+
+function consentCheckbox(tree, phrase) {
+  const labels = nodes(tree, n => n.type === 'label'
+    && Array.isArray(n.props?.children)
+    && n.props.children.some(child => typeof child === 'string' && child.includes(phrase)))
+  assert.equal(labels.length, 1, 'expected exactly one named consent: ' + phrase)
+  const inputs = nodes(labels[0], n => n.type === 'input' && n.props.type === 'checkbox')
+  assert.equal(inputs.length, 1, 'named consent must have exactly one checkbox')
+  return inputs[0]
 }
 
 function fixture() {
@@ -75,6 +87,9 @@ function fixture() {
     '@/lib/i18n/contentLanguage': { contentLanguage: () => ({ speechTag: 'en-US' }), contentLanguageProps: () => ({ lang: 'en', dir: 'ltr' }) },
     '@/lib/i18n/useUraiLocale': { useUraiLocale: () => ({ text: () => 'Founder digital presence', props: () => ({ lang: 'en', dir: 'ltr' }) }) },
     './adamSurfaceContext': surfaces.exports,
+    // Use actual fail-closed speech and Founder voice modules, not permissive stubs.
+    './speechRecognitionSession.mjs': { createSpeechRecognitionSession },
+    './founderVoicePlaybackBridge.mjs': { createAdamFounderVoicePlaybackBridge },
     './adamClient': {
       AdamProviderError,
       requestAdamPresence: (input) => { const result = deferred(); requests.push({ input, ...result }); return result.promise },
@@ -110,9 +125,11 @@ function fixture() {
     return render()
   }
   const prepare = (message = 'private investor memory') => {
-    let tree = render()
+    const tree = render()
     find(tree, n => n.type === 'textarea').props.onChange({ target: { value: message } })
-    const ai = nodes(tree, n => n.type === 'input' && n.props.type === 'checkbox')[0]
+    // Browser microphone and AI-provider consent are independent. Select the
+    // named AI-provider consent, not the first checkbox (which is microphone).
+    const ai = consentCheckbox(tree, 'Allow this message and bounded recent context')
     ai.props.onChange({ target: { checked: true } })
     return render()
   }
@@ -167,11 +184,19 @@ test('old rejection and finally cannot stop or alter a new surface request', asy
 })
 
 test('speech callbacks delivered after navigation cannot repopulate context', () => {
-  const f = fixture(); const tree = f.open()
+  const f = fixture()
+  let tree = f.open()
+  // Browser speech consent must be granted explicitly; AI consent alone
+  // does not authorize microphone access.
+  const microphone = consentCheckbox(tree, 'Allow browser speech recognition only when I tap Talk')
+  microphone.props.onChange({ target: { checked: true } })
+  tree = f.render()
   const voice = nodes(tree, n => n.type === 'button' && n.props.children.includes('Talk'))[0]
   assert.ok(voice)
+  assert.equal(voice.props.disabled, false)
   voice.props.onClick()
   const recognition = f.recognitions[0]
+  assert.ok(recognition, 'explicit speech permission must create a browser recognition session')
   f.navigate('/adam', 'foundation')
   assert.equal(recognition.aborted, true)
   const cleared = f.snapshot()

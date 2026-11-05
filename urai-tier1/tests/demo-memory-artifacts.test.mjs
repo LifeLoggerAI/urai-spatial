@@ -66,6 +66,14 @@ test('production middleware serves only six audited public replay fixture SVGs a
   }
   assert.equal(simulated('/home').kind, 'rewrite', 'Home rewrite remains separate')
   assert.equal(simulated('/life-map').kind, 'next')
-  assert.equal(simulated('/demonstration').kind, 'rewrite', 'legacy prefix deny remains fail-closed')
+  assert.equal(simulated('/demonstration').kind, 'next', 'unrelated demonstration route must not be captured by /demo')
+  for (const pathname of ['/demographics', '/administration', '/internalization', '/brand-systematic']) {
+    assert.equal(simulated(pathname).kind, 'next', `unrelated sibling route was captured: ${pathname}`)
+  }
+  for (const pathname of ['/admin', '/admin/private', '/internal', '/internal/private', '/brand-system', '/brand-system/private']) {
+    const result = simulated(pathname)
+    assert.equal(result.kind, 'rewrite', `protected route must remain gated: ${pathname}`)
+    assert.equal(result.status, 404)
+  }
   assert.equal(simulated('/ordinary').kind, 'next', 'unrelated routes stay unaffected')
 })
