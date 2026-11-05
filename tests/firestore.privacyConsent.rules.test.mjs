@@ -46,6 +46,7 @@ test.before(async () => {
       })
     }
     await setDoc(doc(db, 'privacyEnforcementJobs', 'job-a'), { uid: ownerId, state: 'requested' })
+    await setDoc(doc(db, 'speechProviderPurgeQueue', 'purge-a'), { ownerId, state: 'requested' })
     await setDoc(doc(db, 'providerRevocationQueue', 'provider-a'), { uid: ownerId, state: 'requested' })
     await setDoc(doc(db, 'deletionQueue', 'deletion-a'), { uid: ownerId, state: 'queued' })
     await setDoc(doc(db, 'deletionReceipts', 'receipt-a'), { ownerDigest: 'digest', result: 'completed' })
@@ -98,6 +99,7 @@ test('trusted queues and durable deletion receipts are never client-accessible',
     for (const [collectionName, documentId] of [
       ['privacyEnforcementJobs', 'job-a'],
       ['providerRevocationQueue', 'provider-a'],
+      ['speechProviderPurgeQueue', 'purge-a'],
       ['deletionQueue', 'deletion-a'],
       ['deletionReceipts', 'receipt-a'],
     ]) {
