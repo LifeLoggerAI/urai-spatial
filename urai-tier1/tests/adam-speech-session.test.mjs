@@ -60,3 +60,17 @@ test('transcript stays editable, bounded, and cannot be sent without independent
   assert.match(runtime, /!aiConsent \|\| activeSurfaceKey\.current !== surfaceKey/)
   assert.match(runtime, /disabled=\{busy \|\| !message\.trim\(\) \|\| !aiConsent\}/)
 })
+
+test('Send revokes browser microphone capture after snapshotting text and before provider transport', () => {
+  const start = runtime.indexOf('  const submit = async (event: FormEvent) => {')
+  const end = runtime.indexOf('\n  if (!surface) return null', start)
+  assert.ok(start >= 0 && end > start, 'submission handler must exist')
+  const submit = runtime.slice(start, end)
+  const snapshot = submit.indexOf('const text = message.trim()')
+  const revoke = submit.indexOf('revokeSpeechInput()')
+  const outbound = submit.indexOf('await requestAdamPresence(')
+  assert.ok(snapshot >= 0 && revoke > snapshot,
+    'capture the user's chosen message before revoking browser recognition')
+  assert.ok(outbound > revoke,
+    'abort/revoke the microphone lease before dispatching any AI-provider request')
+})
