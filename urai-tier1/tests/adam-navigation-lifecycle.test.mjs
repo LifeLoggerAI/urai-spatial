@@ -126,7 +126,7 @@ function fixture() {
   const prepare = (message = 'private investor memory') => {
     let tree = render()
     find(tree, n => n.type === 'textarea').props.onChange({ target: { value: message } })
-    const ai = nodes(tree, n => n.type === 'input' && n.props.type === 'checkbox')[0]
+    const ai = nodes(tree, n => n.type === 'input' && n.props.type === 'checkbox')[1]
     ai.props.onChange({ target: { checked: true } })
     return render()
   }
@@ -184,7 +184,10 @@ test('speech callbacks delivered after navigation cannot repopulate context', ()
   const f = fixture(); const tree = f.open()
   const voice = nodes(tree, n => n.type === 'button' && n.props.children.includes('Talk'))[0]
   assert.ok(voice)
-  voice.props.onClick()
+  const speechConsent = nodes(tree, n => n.type === 'input' && n.props.type === 'checkbox')[0]
+  speechConsent.props.onChange({ target: { checked: true } })
+  f.render()
+  f.find(f.render(), n => n.type === 'button' && n.props.children.includes('Talk')).props.onClick()
   const recognition = f.recognitions[0]
   f.navigate('/adam', 'foundation')
   assert.equal(recognition.aborted, true)
