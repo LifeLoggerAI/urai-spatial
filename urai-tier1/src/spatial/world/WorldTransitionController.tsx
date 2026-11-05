@@ -59,6 +59,9 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
     // Relationship hints from an old memory never scope a different selection.
     if ((key === 'thread' || key === 'personId' || key === 'placeId') && selectedMemoryId && currentMemoryId && !sameMemory) continue
+    // Cross-realm navigation must not inherit private relationship identifiers
+    // from the old memory URL. Explicit destination/context hints remain intact.
+    if (!memoryDestination && (key === 'thread' || key === 'personId' || key === 'placeId')) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
     }
