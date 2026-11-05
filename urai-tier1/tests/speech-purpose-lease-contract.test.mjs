@@ -33,23 +33,21 @@ test('lease issuance checks canonical policy and active verified source/provider
     "providerSnap.get('ownerId') !== uid", "providerSnap.get('state') !== 'active'",
     "providerSnap.get('verified') !== true", "providerSnap.get('speechInferenceAuthorized') !== true"])
     assert.ok(policyLease.includes(expected), 'missing verified source/provider check: '+expected)
-  assert.match(policyLease, /if \(existing\.exists\) \{\s*if \(previous\?\.active === true\)/)
-  assert.match(policyLease, /SPEECH_SESSION_ALREADY_ACTIVE/)
-  assert.match(policyLease, /SPEECH_SESSION_TERMINAL_NEW_ID_REQUIRED/)
+  assert.match(policyLease, /if \(existing\.exists\) \{\s*if \(previous\?\.active === true\)\s*throw new functions\.https\.HttpsError\('already-exists', 'SPEECH_SESSION_ALREADY_ACTIVE'\)\s*throw new functions\.https\.HttpsError\('failed-precondition', 'SPEECH_SESSION_TERMINAL_NEW_ID_REQUIRED'\)/)
   assert.match(policyLease, /const revision = 1/)
 })
 
-test('lease is exact-owner/revision, terminal and revoked atomically with an idempotent cleanup obligation', () => {
+test('lease is exact-owner/revision, bounded and atomically revoked once with durable cleanup', () => {
   assert.match(policyLease, /ownerId: uid, sessionId, sourceId, providerId, policyRevision/)
   assert.match(policyLease, /expiresAtMs = issuedAtMs \+ MAX_LEASE_MS/)
   assert.match(policyLease, /const currentRevision = lease\.get\('revision'\) as number/)
+  assert.match(policyLease, /const wasActive = lease\.get\('active'\) === true/)
   assert.match(policyLease, /const revision = wasActive \? currentRevision \+ 1 : currentRevision/)
   assert.match(policyLease, /active: false, transcription: false, inference: false,\s*sessionBaseline: false/)
-  assert.match(policyLease, /tx\.get\(leaseRef\), tx\.get\(purgeRef\)/)
-  assert.match(policyLease, /if \(wasActive\) \{[\s\S]*tx\.update\(leaseRef/)
-  assert.match(policyLease, /if \(!existingPurge\.exists\) \{[\s\S]*tx\.create\(purgeRef/)
-  assert.match(policyLease, /SPEECH_PURGE_QUEUE_CONFLICT/)
-  assert.match(policyLease, /purgeJobId: purgeJobIdValue/)
+  assert.match(policyLease, /const \[lease, existingPurge\] = await Promise\.all\(\[\s*tx\.get\(leaseRef\), tx\.get\(purgeRef\)/)
+  assert.match(policyLease, /if \(wasActive\) \{[\s\S]*?tx\.update\(leaseRef,/)
+  assert.match(policyLease, /if \(!existingPurge\.exists\) \{[\s\S]*?tx\.create\(purgeRef,/)
+  assert.match(policyLease, /schemaVersion: 'urai-speech-purge-job-v1'/)
   assert.match(policyLease, /providerPurgeVerified: false/)
 })
 
@@ -79,4 +77,3 @@ test('sample-world journey is not presented as authenticated private memory acce
   assert.match(browser, /data-memory-status','demo'/)
   assert.doesNotMatch(browser, /sourceClassification:'authenticated-private-user-memory'/)
 })
-
