@@ -11,6 +11,11 @@ export function preserveExplicitHomeAscentDemo(target, request, startingLocation
   if (request.destination !== 'life-map' || request.entryPortal !== 'home-sky'
       || request.cameraCheckpoint !== 'home-sky-ascent-complete') return target
   if (target.searchParams.has('demo')) return target
+  // A prior selected/private memory is never an implicit demo admission.
+  if (request.context?.memoryId || request.context?.replayManifestId) return target
+  for (const key of ['memoryId', 'node', 'manifestId', 'movieId', 'chapterId']) {
+    if (starting.searchParams.has(key) || target.searchParams.has(key)) return target
+  }
   const disclosed = starting.searchParams.getAll('demo')
   if (disclosed.length === 1 && disclosed[0] === '1') target.searchParams.set('demo', '1')
   return target
