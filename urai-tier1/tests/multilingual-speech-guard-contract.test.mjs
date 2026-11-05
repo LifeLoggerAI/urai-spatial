@@ -141,12 +141,14 @@ test('a stale classifier reply cannot add a new style interpretation after corre
   assert.deepEqual(decision.interpretations,[]);assert.equal(decision.assertions[0].attribution,'typed-owner-correction')
 })
 test('invalid multilingual span reconstruction cannot yield partial rewritten source claims',async()=>{
-  const {decision}=await probe('CS03',i=>{i.utterance.language_spans.pop()})
+  const {decision,fixture}=await probe('CS03',i=>{i.utterance.language_spans.pop()})
   assert.deepEqual(decision.language_spans,[]);assert.deepEqual(decision.assertions,[]);assert.equal(decision.status,'unknown')
+  assert.equal(fixture.featureReads,0);assert.equal(fixture.baselineReads,0)
+  assert.equal(decision.presentation.inference_enabled,false)
 })
 test('missing or malformed utterance context fails closed without promoting candidates',async()=>{
   for(const context of [undefined,null,{},'not-an-array']) {
-    const {decision}=await probe('CF01',i=>{
+    const {decision,fixture}=await probe('CF01',i=>{
       if(context===undefined) delete i.utterance.context
       else i.utterance.context=context
     })
@@ -155,6 +157,8 @@ test('missing or malformed utterance context fails closed without promoting cand
     assert.deepEqual(decision.interpretations,[])
     assert.deepEqual(decision.language_spans,[])
     assert.ok(decision.evidence_flags.includes('invalid-utterance-context'))
+    assert.equal(fixture.featureReads,0);assert.equal(fixture.baselineReads,0)
+    assert.equal(decision.presentation.inference_enabled,false)
   }
 })
 test('malformed or oversized context entries never mint evidence references',async()=>{
@@ -168,12 +172,14 @@ test('malformed or oversized context entries never mint evidence references',asy
     Array.from({length:33},()=>({speaker:'owner',text:'synthetic evidence'})),
   ]
   for(const context of invalid) {
-    const {decision}=await probe('CF01',i=>{i.utterance.context=context})
+    const {decision,fixture}=await probe('CF01',i=>{i.utterance.context=context})
     assert.equal(decision.status,'unknown')
     assert.deepEqual(decision.assertions,[])
     assert.deepEqual(decision.interpretations,[])
     assert.deepEqual(decision.language_spans,[])
     assert.ok(decision.evidence_flags.includes('invalid-utterance-context'))
+    assert.equal(fixture.featureReads,0);assert.equal(fixture.baselineReads,0)
+    assert.equal(decision.presentation.inference_enabled,false)
   }
 })
 test('nonfinite feature values are never emitted as observations',async()=>{
