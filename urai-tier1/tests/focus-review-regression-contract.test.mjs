@@ -64,9 +64,10 @@ test('hard travel fallback preserves only the selected memory identity and safe 
   ]) assert.ok(worldEvents.includes(token), 'world fallback missing ' + token)
   assert.match(worldEvents, /if \(\(key === 'node' \|\| key === 'manifestId' \|\| key === 'movieId' \|\| key === 'chapterId' \|\| key === 'demo'\) && \(!memoryDestination \|\| !sameMemory\)\) continue/)
   assert.match(worldEvents, /if \(\(key === 'thread' \|\| key === 'personId' \|\| key === 'placeId'\) && selectedMemoryId && currentMemoryId && !sameMemory\) continue/)
-  assert.match(worldEvents, /if \(memoryDestination && context\?\.demo && \(!selectedMemoryId \|\| !currentMemoryId \|\| sameMemory\)\) target\.searchParams\.set\('demo', '1'\)/)
-  const contextIndex = worldEvents.indexOf("if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')")
+  assert.match(worldEvents, /if \(memoryDestination && context\?\.demo\s+&& !\(request\.destination === 'life-map' && request\.entryPortal === 'home-sky'\)\s+&& \(!selectedMemoryId \|\| !currentMemoryId \|\| sameMemory\)\) target\.searchParams\.set\('demo', '1'\)/)
+  const contextIndex = worldEvents.indexOf('if (memoryDestination && context?.demo')
   const entryPortalIndex = worldEvents.indexOf("if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)")
   const cameraCheckpointIndex = worldEvents.indexOf("if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)")
   assert.ok(contextIndex > -1 && entryPortalIndex > contextIndex && cameraCheckpointIndex > entryPortalIndex)
 })
+

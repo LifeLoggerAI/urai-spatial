@@ -5,6 +5,46 @@ import vm from 'node:vm'
 import ts from 'typescript'
 import * as destinations from '../src/spatial/world/destinationRegistry.ts'
 import * as worldTypes from '../src/spatial/world/worldTypes.ts'
+import { retainDisclosedHomeAscentDemo, retainDisclosedHomeReturnDemo } from '../src/spatial/navigation/homeSkyInteraction.ts'
+for (const [name, path, begin, end, exported] of [
+  ['controller', 'src/spatial/world/WorldTransitionController.tsx', 'const CONTEXT_KEYS = [', 'function normalizedPathname(', 'buildTravelHref'],
+  ['hard fallback', 'src/spatial/world/worldEvents.ts', 'const WORLD_TRAVEL_CONTEXT_KEYS = [', 'function commitHardFallback(', 'buildFallbackHref'],
+]) {
+  test(`actual ${name} preserves only explicitly disclosed Life Map demo on Home return`, () => {
+    const source = fs.readFileSync(path, 'utf8')
+    const start = source.indexOf(begin), stop = source.indexOf(end, start)
+    assert.ok(start >= 0 && stop > start)
+    const code = source.slice(start, stop) + '\nexports.build = ' + exported
+    const { outputText } = ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } })
+    const location = { origin: 'https://urai.app', pathname: '/life-map/', search: '?demo=1' }
+    const module = { exports: {} }
+    vm.runInNewContext(outputText, {
+      module, exports: module.exports, URL, URLSearchParams, window: { location },
+      definitionForDestination: destination => ({ href: '/' + destination }),
+      retainDisclosedHomeAscentDemo, retainDisclosedHomeReturnDemo,
+    })
+    const home = (search, request = {}) => {
+      location.search = search
+      return new URL(module.exports.build({ destination: 'home', href: '/home/', ...request }), location.origin)
+    }
+    for (const search of ['?demo=1', '?demo=1&memoryId=demo:quiet-reset&node=public-node&manifestId=public-manifest']) {
+      const target = home(search)
+      assert.deepEqual([...target.searchParams.getAll('demo')], ['1'])
+      for (const key of ['memoryId', 'node', 'manifestId', 'movieId', 'chapterId', 'thread', 'personId', 'placeId'])
+        assert.equal(target.searchParams.has(key), false, key + ' escaped onto Home')
+    }
+    for (const search of ['', '?demo=0', '?demo=true', '?demo=1&demo=0', '?demo=1&demo=1',
+      '?demo=1&memoryId=private-memory', '?demo=1&manifestId=private-manifest',
+      '?demo=1&memoryId=demo:quiet-reset&memoryId=private-memory',
+      '?demo=1&memoryId=demo:quiet-reset&movieId=private-movie']) {
+      assert.equal(home(search, {context:{demo:true}}).searchParams.has('demo'), false, search)
+    }
+    assert.equal(home('?demo=1', { context:{memoryId:'private-memory',demo:true} }).searchParams.has('demo'), false)
+    assert.equal(home('?demo=1', { href:'/home/?demo=0' }).searchParams.has('demo'), false)
+    location.pathname = '/focus/'
+    assert.equal(home('?demo=1').searchParams.has('demo'), false)
+  })
+}
 
 function load(path, imports, globals = {}) {
   const source = fs.readFileSync(path, 'utf8')
@@ -137,12 +177,11 @@ test('non-memory travel does not inherit private relationship hints from a selec
   vm.runInNewContext(outputText, {
     module, exports: module.exports, URL, URLSearchParams,
     window: { location: {
-      origin: 'https://urai.app',
+      origin: 'https://urai.app', pathname: '/focus',
       search: '?memoryId=private-memory&thread=private-thread&personId=private-person&placeId=private-place&privacyMode=private',
     } },
     definitionForDestination: destination => ({ href: '/' + destination }),
-    // The real Home-ascent helper is separately exercised by the source's own maintained gesture suite.
-    retainDisclosedHomeAscentDemo: () => {},
+    retainDisclosedHomeAscentDemo, retainDisclosedHomeReturnDemo,
   })
   const build = module.exports.buildTravelHref
   const parsed = request => new URL(build(request), 'https://urai.app')
@@ -194,13 +233,13 @@ function actualReverseTravelHref(currentWorld, search) {
   const module = { exports: {} }
   vm.runInNewContext(outputText, {
     module, exports: module.exports, currentWorld,
-    window: { location: { origin: 'https://urai.app', search } },
+    window: { location: { origin: 'https://urai.app', pathname: '/focus', search } },
     URL, URLSearchParams,
     definitionForDestination: destination => ({
       href: '/' + destination, entryPortal: 'portal-' + destination, cameraCheckpoint: 'cam-' + destination,
     }),
     previousDestinationForReturn: worldTypes.previousDestinationForReturn,
-    retainDisclosedHomeAscentDemo: () => {},
+    retainDisclosedHomeAscentDemo, retainDisclosedHomeReturnDemo,
   })
   return {
     request: module.exports.request,
@@ -266,7 +305,7 @@ test('real hard-fallback navigation neither leaks selected-memory relationships 
       origin: 'https://urai.app', pathname: '/replay',
       search: '?memoryId=private-memory&thread=private-thread&personId=private-person&placeId=private-place&manifestId=secret-manifest',
     } },
-    retainDisclosedHomeAscentDemo: () => {},
+    retainDisclosedHomeAscentDemo, retainDisclosedHomeReturnDemo,
   })
   const build = module.exports.buildFallbackHref
   const parsed = request => new URL(build(request), 'https://urai.app')
@@ -283,3 +322,4 @@ test('real hard-fallback navigation neither leaks selected-memory relationships 
     assert.equal(other.searchParams.has(key), false, key + ' escaped onto a different selected memory')
   }
 })
+
