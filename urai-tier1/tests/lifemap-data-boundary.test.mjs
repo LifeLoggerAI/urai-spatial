@@ -111,6 +111,7 @@ test('private Life Map joins only consent-current, visible and owner-verified ca
   assert.match(source, /parseSelectedMemory\(doc\.data\(\), resolvedUserId, doc\.id/)
   // Hidden memories are never admitted to the authoritative lookup.
   assert.match(source, /if \(parsed\.status === 'ready' && parsed\.memory\.privacy !== 'hidden'\) accepted\.set\(doc\.id, parsed\.memory\)/)
+  assert.doesNotMatch(source, /if \(parsed\.status === 'ready'\) accepted\.set\(doc\.id, parsed\.memory\)/)
   assert.match(source, /const memoryId = sanitizeMemoryId\(node\.memoryId\)/)
   assert.match(source, /const authoritative = memoryId && node\.type === "memory" \? visibleMemories\.get\(memoryId\) : undefined/)
   // The current consent revision must own all three private streams.
