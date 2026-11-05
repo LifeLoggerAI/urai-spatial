@@ -96,7 +96,6 @@ export async function assessSpeechEvidence(request, ports, options={}) {
   if(first.revision!==request.request_revision) return revoke(first)
   // Validate untrusted utterance evidence before reading protected acoustic
   // features. Invalid inputs must not trigger passive-sensor source reads.
-  inferenceEnabled=true
   const utterance=request.utterance
   if(!validateSpans(utterance)) { flags=['invalid-language-spans'];return result() }
   // Context evidence positions must come from an actual array. A malformed or
@@ -107,6 +106,7 @@ export async function assessSpeechEvidence(request, ports, options={}) {
   const features=structuredClone(await ports.readFeatures())
   let current=await ports.readAuthority()
   if(!sameAuthority(current,first,ownerId)) return revoke(current)
+  inferenceEnabled=true
   spans=utterance.language_spans.map(span=>({...span}))
   const languages=new Set(spans.map(span=>span.language.split('-')[0].toLowerCase()))
   if(languages.size>1) flags.push('code-switch')
