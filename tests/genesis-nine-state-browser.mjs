@@ -124,10 +124,14 @@ try {
   const starId=await star.getAttribute('data-life-map-node-id')
   if(!starId)throw Error('MEMORY_STAR_ID_REQUIRED')
   await star.click()
-  const inspector=page.locator('.life-map-semantic-inspector').first()
-  await inspector.waitFor({state:'visible',timeout:20000})
+  await page.waitForURL(url => url.searchParams.get('node') === starId, {timeout:20000})
   report.interactions.push({action:'real-semantic-memory-star-selection',starId,source:'disclosed-sample'})
-  await inspector.locator('nav.semantic-thresholds button').first().click()
+  // The selected Memory Star owns a visible action dock in the R3F realm.
+  // The semantic inspector may be present but intentionally hidden while this
+  // selected-state dock is active; never treat its DOM presence as visibility.
+  const focusAction=page.getByRole('button',{name:/Enter Focus/i}).first()
+  await focusAction.waitFor({state:'visible',timeout:20000})
+  await focusAction.click()
   await assertDestination(page,'focus','[data-testid="urai-final-focus-chamber"]')
   const focus=page.getByTestId('urai-final-focus-chamber')
   await expectAttribute(focus,'data-memory-status','demo',30000)
