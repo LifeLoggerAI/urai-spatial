@@ -108,7 +108,7 @@ function blockingRequests(requests) {
   })
 }
 
-async function activate(page, locator, mode) {
+async function activate(page, locator, mode, { inPlace = false } = {}) {
   assert.equal(await locator.count(), 1, 'activation must identify exactly one canonical control')
   await locator.waitFor({ state: 'visible', timeout: 45_000 })
   if (mode === 'touch') {
@@ -127,7 +127,10 @@ async function activate(page, locator, mode) {
     await locator.focus()
     return locator.press('Enter')
   }
-  return locator.click()
+  // A non-navigation Replay control must not inherit a pending framework
+  // navigation wait after the pointer click has actually been dispatched.
+  // The caller still proves the resulting state through data-playing=false.
+  return inPlace ? locator.click({ noWaitAfter: true }) : locator.click()
 }
 
 async function openHome(page, journey) {
@@ -266,7 +269,7 @@ async function enterReplay(page, journey, mode, identity) {
   await waitAttr(canvas, 'data-replay-first-frame', 'true', 60_000)
   await activate(page, replay.getByRole('button', { name: 'Continue memory', exact: true }), mode)
   await waitAttr(replay, 'data-playing', 'true', 20_000)
-  await activate(page, replay.getByRole('button', { name: 'Pause memory', exact: true }), mode)
+  await activate(page, replay.getByRole('button', { name: 'Pause memory', exact: true }), mode, { inPlace: true })
   await waitAttr(replay, 'data-playing', 'false', 20_000)
   await assertAdamLauncherLabel(replay, journey, 'replay')
   await capture(page, journey, 'replay')
