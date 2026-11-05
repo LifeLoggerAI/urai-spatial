@@ -141,6 +141,8 @@ test('non-memory travel does not inherit private relationship hints from a selec
       search: '?memoryId=private-memory&thread=private-thread&personId=private-person&placeId=private-place&privacyMode=private',
     } },
     definitionForDestination: destination => ({ href: '/' + destination }),
+    // The real Home-ascent helper is separately exercised by the source's own maintained gesture suite.
+    retainDisclosedHomeAscentDemo: () => {},
   })
   const build = module.exports.buildTravelHref
   const parsed = request => new URL(build(request), 'https://urai.app')
@@ -198,6 +200,7 @@ function actualReverseTravelHref(currentWorld, search) {
       href: '/' + destination, entryPortal: 'portal-' + destination, cameraCheckpoint: 'cam-' + destination,
     }),
     previousDestinationForReturn: worldTypes.previousDestinationForReturn,
+    retainDisclosedHomeAscentDemo: () => {},
   })
   return {
     request: module.exports.request,
@@ -244,4 +247,39 @@ test('actual reverse-travel controller preserves same-memory Replay to Focus con
     ['memoryId', 'private-memory'], ['thread', 'private-thread'], ['personId', 'private-person'],
     ['placeId', 'private-place'], ['manifestId', 'secret-manifest'],
   ]) assert.equal(url.searchParams.get(key), value)
+})
+
+
+test('real hard-fallback navigation neither leaks selected-memory relationships nor loses same-memory continuity', () => {
+  const source = fs.readFileSync('src/spatial/world/worldEvents.ts', 'utf8')
+  const begin = source.indexOf('const WORLD_TRAVEL_CONTEXT_KEYS = [')
+  const end = source.indexOf('function commitHardFallback(', begin)
+  assert.ok(begin >= 0 && end > begin, 'the actual hard-fallback implementation must exist')
+  const { outputText } = ts.transpileModule(
+    source.slice(begin, end) + '\nexports.buildFallbackHref = buildFallbackHref',
+    { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
+  )
+  const module = { exports: {} }
+  vm.runInNewContext(outputText, {
+    module, exports: module.exports, URL, URLSearchParams,
+    window: { location: {
+      origin: 'https://urai.app', pathname: '/replay',
+      search: '?memoryId=private-memory&thread=private-thread&personId=private-person&placeId=private-place&manifestId=secret-manifest',
+    } },
+    retainDisclosedHomeAscentDemo: () => {},
+  })
+  const build = module.exports.buildFallbackHref
+  const parsed = request => new URL(build(request), 'https://urai.app')
+  const home = parsed({ destination: 'home', href: '/home/' })
+  for (const key of ['memoryId', 'thread', 'personId', 'placeId', 'manifestId']) {
+    assert.equal(home.searchParams.has(key), false, key + ' escaped private memory on Home hard fallback')
+  }
+  const replay = parsed({ destination: 'replay', href: '/replay/?memoryId=private-memory' })
+  for (const [key, value] of [
+    ['memoryId', 'private-memory'], ['thread','private-thread'], ['personId','private-person'], ['placeId','private-place'],
+  ]) assert.equal(replay.searchParams.get(key), value)
+  const other = parsed({ destination: 'replay', href: '/replay/?memoryId=other-memory' })
+  for (const key of ['thread', 'personId', 'placeId']) {
+    assert.equal(other.searchParams.has(key), false, key + ' escaped onto a different selected memory')
+  }
 })

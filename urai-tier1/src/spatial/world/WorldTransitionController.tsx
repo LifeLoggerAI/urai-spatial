@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { retainDisclosedHomeAscentDemo } from '@/spatial/navigation/homeSkyInteraction'
 import { subscribeBrowserLocation } from '@/lib/browserLocationStore'
 import { definitionForDestination } from './destinationRegistry'
 import { persistHomeWorldCheckpoint } from './homeWorldCheckpointPersistence'
@@ -57,6 +58,9 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     // matches the current memory. Cross-realm travel must not leak it.
     if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
     if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
+    // No anonymous/unselected Home or stale memory may import private relationship hints.
+    // Explicit request.context fields are handled separately after this inheritance loop.
+    if ((key === 'thread' || key === 'personId' || key === 'placeId') && !sameMemory) continue
     // Relationship hints from an old memory never scope a different selection.
     if ((key === 'thread' || key === 'personId' || key === 'placeId') && selectedMemoryId && currentMemoryId && !sameMemory) continue
     // Cross-realm navigation must not inherit private relationship identifiers
@@ -95,6 +99,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+  retainDisclosedHomeAscentDemo(window.location.pathname, window.location.search, request, target)
 
   // No node-to-memory or memory-to-node inference: these are separate
   // identities, and each consumer must independently validate access.

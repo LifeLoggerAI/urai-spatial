@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+
+// Six audited, static, privacy-safe fixture SVGs required for explicit local
+// replay acceptance. This never enables public demo pages or arbitrary assets.
+const PUBLIC_REPLAY_FIXTURE_SVGS = new Set([
+  '/demo/memories/recovery-bloom.svg',
+  '/demo/memories/threshold-storm.svg',
+  '/demo/memories/mirror-focus.svg',
+  '/demo/memories/ritual-echo.svg',
+  '/demo/memories/dream-signal.svg',
+  '/demo/memories/calm-return.svg',
+])
+
 function enabled(...values: Array<string | undefined>) {
   return values.some((value) => value === 'true')
 }
@@ -12,6 +24,7 @@ function routeAllowed(pathname: string) {
   }
 
   if (pathname.startsWith('/demo')) {
+    if (PUBLIC_REPLAY_FIXTURE_SVGS.has(pathname)) return true
     return enabled(process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES, process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES)
   }
 
