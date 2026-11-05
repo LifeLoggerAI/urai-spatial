@@ -326,6 +326,9 @@ export default function AdamPresenceRuntime() {
     const locale = contentLanguage(currentSpeechTag())?.speechTag
     if (!locale) { setStatus('Choose a supported content language.'); return }
 
+    // Send ends microphone capture before provider transport. Revoking the
+    // local generation rejects abort-triggered or delayed recognition callbacks.
+    revokeSpeechInput()
     stopVoice()
     const controller = new AbortController()
     conversationAborter.current = controller
