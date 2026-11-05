@@ -8,6 +8,10 @@ import ts from 'typescript'
 // Execute the production component with explicit hook/Auth/callable adapters.
 // These are synthetic component tests: no Firebase SDK, network, or private data.
 const source = fs.readFileSync(path.resolve(import.meta.dirname, '../src/app/passport/PassportVaultClient.tsx'), 'utf8')
+const ownerFenceSource = fs.readFileSync(path.resolve(import.meta.dirname, '../src/lib/privacy/ownerSessionFence.ts'), 'utf8')
+const ownerFence = { exports: {} }
+vm.runInNewContext(ts.transpileModule(ownerFenceSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText,
+  { module: ownerFence, exports: ownerFence.exports, Number })
 const code = ts.transpileModule(source, { compilerOptions: {
   target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
   jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
@@ -26,7 +30,7 @@ function fixture({ owner = { uid: 'synthetic-owner' }, demo = false, configured 
   let cursor = 0, dirty = true, mounted = true, tree
   const slots = [], queued = [], authListeners = new Set(), listeners = new Map(), subscriptions = new Map()
   const state = { owner, online, keyState, sources, snapshotResult }
-  const calls = { snapshots: 0, exports: [], deletions: [], downloads: [], stops: 0, focuses: 0, navigation: [] }
+  const calls = { snapshots: 0, exports: [], deletions: [], downloads: [], cancels: [], stops: 0, focuses: 0, navigation: [] }
   const auth = { get currentUser() { return state.owner } }
   const changed = (a, b) => !a || !b || a.length !== b.length || a.some((v, i) => !Object.is(v, b[i]))
   const react = {
@@ -52,12 +56,13 @@ function fixture({ owner = { uid: 'synthetic-owner' }, demo = false, configured 
     '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: configured },
     '@/spatial/assets/uraiAssets': { assetCssStack: () => '', passportAssets: { primary: [] } },
     '@/lib/privacy/authorizedExportDownload': { OperationalExportDownloadSession: DownloadSession },
+    '@/lib/privacy/ownerSessionFence': ownerFence.exports,
     '@/lib/privacy/operationalPrivacyClient': {
       getOperationalPassportSnapshot: async () => { calls.snapshots++; return state.snapshotResult ? state.snapshotResult() : snapshot() },
       subscribeOperationalUserCollection: (name, _uid, callback) => { subscriptions.set(name, callback); return () => subscriptions.delete(name) },
       createOperationalExportRequest: async scopes => { calls.exports.push([...scopes]); return state.exportResult ? state.exportResult() : { jobId: 'synthetic-export' } },
       createOperationalDeletionRequest: async request => { calls.deletions.push({ ...request }); return { jobId: 'synthetic-deletion', state: 'queued' } },
-      cancelOperationalDeletionRequest: async () => {}, cancelOperationalExportRequest: async () => {}, downloadOperationalExportBytes: async () => {},
+      cancelOperationalDeletionRequest: async id => { calls.cancels.push(['deletion', id]) }, cancelOperationalExportRequest: async id => { calls.cancels.push(['export', id]) }, downloadOperationalExportBytes: async () => {},
     },
     './passportModel': { demoPassportSnapshot: () => payload, redactPassportSnapshot: value => value },
     './passportZones': { ZONES: [['identity', 'Identity core'], ['exports', 'Export chamber'], ['deletion', 'Deletion chamber']] },
@@ -84,6 +89,7 @@ function fixture({ owner = { uid: 'synthetic-owner' }, demo = false, configured 
     async click(label) { const button = this.button(label); assert.equal(Boolean(button.props.disabled), false, `${label} must be available`); button.props.onClick(); await flush() },
     updateOwner(owner) { state.owner = owner; for (const listener of authListeners) listener(owner); render() },
     offline() { state.online = false; for (const listener of listeners.get('offline') ?? []) listener(); render() },
+    online() { state.online = true; for (const listener of listeners.get('online') ?? []) listener(); render() },
     exportRows(rows) { subscriptions.get('exportJobs')?.(rows); render() },
     keydown(key, options = {}) {
       const event = { key, defaultPrevented: false, target: null, preventDefault() { this.defaultPrevented = true }, ...options }
@@ -219,5 +225,41 @@ test('a pending empty-owner export cannot report its old job in the next account
   f.updateOwner({ uid: 'synthetic-next-owner' }); await f.flush()
   pending.resolve({ jobId: 'synthetic-stale-private-job' }); await f.flush()
   assert.doesNotMatch(text(f.tree), /synthetic-stale/)
+  f.unmount()
+})
+
+
+test('R655: offline hides stale Passport ownership evidence and restores only via fresh snapshot', async () => {
+  const f = fixture({ sources: [{ id: 'private-source' }] }); await f.flush()
+  assert.match(text(f.tree), /synthetic-reference/)
+  const oldFetches = f.calls.snapshots
+  f.offline(); await f.flush()
+  assert.equal(f.tree.props['data-passport-source'], 'offline')
+  assert.doesNotMatch(text(f.tree), /synthetic-reference|private-source/)
+  f.online(); await f.flush()
+  assert.ok(f.calls.snapshots > oldFetches)
+  assert.match(text(f.tree), /synthetic-reference/)
+  f.unmount()
+})
+
+test('R655: a queued export cancel button captured by owner A cannot operate in owner B', async () => {
+  const f = fixture(); await f.flush()
+  f.exportRows([{ id: 'owner-a-export', state: 'queued', scopes: ['profile'] }])
+  const oldClick = f.button('Cancel').props.onClick
+  f.updateOwner({ uid: 'owner-b' }); await f.flush()
+  oldClick()
+  await f.flush()
+  assert.deepEqual(f.calls.cancels, [])
+  f.unmount()
+})
+
+test('R655: disconnected in-flight export cannot claim completion after reconnect', async () => {
+  const pending = deferred(), f = fixture(); await f.flush()
+  f.state.exportResult = () => pending.promise
+  await f.click('Unlock and request export')
+  f.offline(); await f.flush()
+  f.online(); await f.flush()
+  pending.resolve({ jobId: 'stale-account-epoch-export' }); await f.flush()
+  assert.doesNotMatch(text(f.tree), /stale-account-epoch-export/)
   f.unmount()
 })
