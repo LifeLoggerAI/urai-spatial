@@ -70,7 +70,7 @@ test('Send revokes browser microphone capture after snapshotting text and before
   const revoke = submit.indexOf('revokeSpeechInput()')
   const outbound = submit.indexOf('await requestAdamPresence(')
   assert.ok(snapshot >= 0 && revoke > snapshot,
-    'capture the user's chosen message before revoking browser recognition')
+    "capture the user's chosen message before revoking browser recognition")
   assert.ok(outbound > revoke,
     'abort/revoke the microphone lease before dispatching any AI-provider request')
 })
