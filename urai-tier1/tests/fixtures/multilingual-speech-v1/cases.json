@@ -1,0 +1,2781 @@
+{
+  "schema_version": "urai.multilingual-speech-eval.v1",
+  "origin": "synthetic-authored",
+  "audio_assets": [],
+  "private_recordings_used": false,
+  "default_response_locale": "en-US",
+  "native_language_review": "not-performed",
+  "emotion_ground_truth": "not-established",
+  "notes": [
+    "Feature values are numerical stubs, not measured voice recordings.",
+    "Expected labels describe policy and attribution, not verified internal emotions.",
+    "All thresholds and expected behaviors are UrAi engineering proposals.",
+    "Revision 1.1 supplies explicit upstream context/style hypotheses; this tests their handling, not a language model."
+  ],
+  "invariance_groups": [
+    {
+      "id": "neutral-equivalents",
+      "case_ids": [
+        "CS01",
+        "CS02",
+        "CS03"
+      ],
+      "equal_fields": [
+        "status",
+        "assertions",
+        "interpretations"
+      ]
+    },
+    {
+      "id": "speaker-baseline-safety",
+      "case_ids": [
+        "SA01",
+        "SA02"
+      ],
+      "equal_fields": [
+        "status",
+        "assertions",
+        "interpretations"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "CS01",
+      "family": "code-switching",
+      "title": "English neutral control",
+      "research_basis": [
+        "R2026"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "We can meet tomorrow.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "We can meet tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "CS02",
+      "family": "code-switching",
+      "title": "Spanish neutral control",
+      "research_basis": [
+        "R2026"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "Podemos reunirnos mañana.",
+          "language_spans": [
+            {
+              "language": "es",
+              "text": "Podemos reunirnos mañana."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "CS03",
+      "family": "code-switching",
+      "title": "Spanish-English switch changes features, not emotional authority",
+      "research_basis": [
+        "R2026"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "We can meet mañana.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "We can meet "
+            },
+            {
+              "language": "es",
+              "text": "mañana."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 208,
+          "energy_dbfs": -29,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.24,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "code-switch"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "CS04",
+      "family": "code-switching",
+      "title": "Mandarin-English neutral switch",
+      "research_basis": [
+        "R2026"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "明天见, see you tomorrow.",
+          "language_spans": [
+            {
+              "language": "zh-Hans",
+              "text": "明天见, "
+            },
+            {
+              "language": "en",
+              "text": "see you tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "code-switch"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "CS05",
+      "family": "code-switching",
+      "title": "Romanized Hindi-English stays multilingual",
+      "research_basis": [
+        "R2026"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "Kal milte hain, see you tomorrow.",
+          "language_spans": [
+            {
+              "language": "hi-Latn",
+              "text": "Kal milte hain, "
+            },
+            {
+              "language": "en",
+              "text": "see you tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "code-switch"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "CS06",
+      "family": "code-switching",
+      "title": "Devanagari Hindi-English neutral switch",
+      "research_basis": [
+        "R2026"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "कल मिलते हैं, see you tomorrow.",
+          "language_spans": [
+            {
+              "language": "hi-Deva",
+              "text": "कल मिलते हैं, "
+            },
+            {
+              "language": "en",
+              "text": "see you tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "code-switch"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "SA01",
+      "family": "speaker-adaptation",
+      "title": "240 Hz matches this session speaker baseline",
+      "research_basis": [
+        "R2026"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "We can meet tomorrow.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "We can meet tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 240,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": {
+          "origin": "synthetic-session-stub",
+          "owner_id": "synthetic-owner-a",
+          "speaker_key": "session-speaker-a",
+          "median_f0_hz": 240,
+          "scale_f0_hz": 20,
+          "samples": 5,
+          "language_scope": [
+            "en",
+            "es"
+          ]
+        },
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": 0,
+        "baseline_speaker_key": "session-speaker-a",
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "SA02",
+      "family": "speaker-adaptation",
+      "title": "Same 240 Hz differs from a second speaker baseline; no emotion asserted",
+      "research_basis": [
+        "R2026"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "We can meet tomorrow.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "We can meet tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 240,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-b"
+        },
+        "baseline": {
+          "origin": "synthetic-session-stub",
+          "owner_id": "synthetic-owner-a",
+          "speaker_key": "session-speaker-b",
+          "median_f0_hz": 120,
+          "scale_f0_hz": 20,
+          "samples": 5,
+          "language_scope": [
+            "en",
+            "es"
+          ]
+        },
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": 6,
+        "baseline_speaker_key": "session-speaker-b",
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "SA03",
+      "family": "speaker-adaptation",
+      "title": "Cold start has no speaker normalization",
+      "research_basis": [
+        "R2026"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "We can meet tomorrow.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "We can meet tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "unknown",
+          "session_key": null
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "speaker-unknown",
+          "baseline-unavailable"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "SA04",
+      "family": "speaker-adaptation",
+      "title": "Ambiguous speaker cannot borrow a known baseline",
+      "research_basis": [
+        "R2026"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "We can meet tomorrow.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "We can meet tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "uncertain",
+          "session_key": null
+        },
+        "baseline": {
+          "origin": "synthetic-session-stub",
+          "owner_id": "synthetic-owner-a",
+          "speaker_key": "session-speaker-a",
+          "median_f0_hz": 240,
+          "scale_f0_hz": 20,
+          "samples": 5,
+          "language_scope": [
+            "en",
+            "es"
+          ]
+        },
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "speaker-uncertain",
+          "baseline-rejected"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "CX01",
+      "family": "context",
+      "title": "Routine context does not establish a feeling",
+      "research_basis": [
+        "R2024"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "I'm fine.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "I'm fine."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [
+            {
+              "speaker": "other",
+              "text": "Does tomorrow at noon work for you?"
+            }
+          ],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "CX02",
+      "family": "context",
+      "title": "Same words after disappointment remain unknown without inventing a contradiction",
+      "research_basis": [
+        "R2024"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "I'm fine.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "I'm fine."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [
+            {
+              "speaker": "other",
+              "text": "The event you wanted to attend was cancelled."
+            }
+          ],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.5,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": true,
+          "evidence_refs": [
+            "context:0"
+          ]
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "context-ambiguous"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "CX03",
+      "family": "context",
+      "title": "Quoted anger belongs to the quoted speaker, not the owner",
+      "research_basis": [
+        "R2024"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "My colleague said, \"I am furious.\"",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "My colleague said, \"I am furious.\""
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "quoted-other",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "quoted-other"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "CX04",
+      "family": "context",
+      "title": "Supportive wording may support a tentative style interpretation only",
+      "research_basis": [
+        "R2024"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "Lo siento, I'm here for you.",
+          "language_spans": [
+            {
+              "language": "es",
+              "text": "Lo siento, "
+            },
+            {
+              "language": "en",
+              "text": "I'm here for you."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [
+            {
+              "speaker": "other",
+              "text": "I had a difficult day."
+            }
+          ],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": {
+          "id": "candidate:lexical",
+          "label": "empathetic-language",
+          "truth_kind": "interpretation",
+          "origin": "synthetic-classifier-stub",
+          "evidence_refs": [
+            "utterance:current"
+          ]
+        },
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": "empathetic-language",
+        "flags": [
+          "code-switch"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "CF01",
+      "family": "signal-conflict",
+      "title": "Happy self-report is preserved despite a conflicting stub classifier label",
+      "research_basis": [
+        "R2024"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "I'm happy.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "I'm happy."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": {
+            "label": "joy",
+            "evidence_text": "I'm happy.",
+            "source": "speaker-self-report",
+            "actor_id": "synthetic-owner-a"
+          },
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 110,
+          "energy_dbfs": -38,
+          "syllables_per_second": 1.6,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": {
+          "id": "candidate:acoustic",
+          "label": "grief",
+          "truth_kind": "interpretation",
+          "origin": "synthetic-classifier-stub",
+          "uncalibrated_score": 0.91,
+          "evidence_refs": [
+            "feature:mean_f0_hz",
+            "feature:energy_dbfs"
+          ]
+        },
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "reported",
+        "assertion": {
+          "label": "joy",
+          "attribution": "speaker-self-report",
+          "source_ref": "utterance:current"
+        },
+        "interpretation": null,
+        "flags": [
+          "lexical-acoustic-conflict"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [
+          "utterance:current",
+          "candidate:acoustic"
+        ],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "CF02",
+      "family": "signal-conflict",
+      "title": "Calm self-report is not overwritten by a stub anger prediction",
+      "research_basis": [
+        "R2024"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "Estoy tranquilo, I'm calm.",
+          "language_spans": [
+            {
+              "language": "es",
+              "text": "Estoy tranquilo, "
+            },
+            {
+              "language": "en",
+              "text": "I'm calm."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": {
+            "label": "calm",
+            "evidence_text": "I'm calm.",
+            "source": "speaker-self-report",
+            "actor_id": "synthetic-owner-a"
+          },
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 265,
+          "energy_dbfs": -7,
+          "syllables_per_second": 5.8,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": {
+          "id": "candidate:acoustic",
+          "label": "anger",
+          "truth_kind": "interpretation",
+          "origin": "synthetic-classifier-stub",
+          "uncalibrated_score": 0.91,
+          "evidence_refs": [
+            "feature:mean_f0_hz",
+            "feature:energy_dbfs"
+          ]
+        },
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "reported",
+        "assertion": {
+          "label": "calm",
+          "attribution": "speaker-self-report",
+          "source_ref": "utterance:current"
+        },
+        "interpretation": null,
+        "flags": [
+          "code-switch",
+          "lexical-acoustic-conflict"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [
+          "utterance:current",
+          "candidate:acoustic"
+        ],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "CF03",
+      "family": "signal-conflict",
+      "title": "Conflicting stub predictions remain disputed; sarcasm is not an established intent",
+      "research_basis": [
+        "R2024"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "Great, just great.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "Great, just great."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [
+            {
+              "speaker": "other",
+              "text": "The train is delayed again."
+            }
+          ],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 250,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.42,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": {
+          "id": "candidate:acoustic",
+          "label": "anger",
+          "truth_kind": "interpretation",
+          "origin": "synthetic-classifier-stub",
+          "uncalibrated_score": 0.91,
+          "evidence_refs": [
+            "feature:mean_f0_hz",
+            "feature:energy_dbfs"
+          ]
+        },
+        "lexical_candidate": {
+          "id": "candidate:lexical",
+          "label": "positive-appraisal",
+          "truth_kind": "interpretation",
+          "origin": "synthetic-classifier-stub",
+          "uncalibrated_score": 0.91,
+          "evidence_refs": [
+            "utterance:current"
+          ]
+        },
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": true,
+          "evidence_refs": [
+            "context:0"
+          ]
+        }
+      },
+      "expected": {
+        "status": "disputed",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "lexical-acoustic-conflict",
+          "context-ambiguous"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [
+          "candidate:lexical",
+          "candidate:acoustic"
+        ],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "UN01",
+      "family": "uncertainty",
+      "title": "Ambiguous ASR negation cannot become an emotion claim",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "I am [not?] upset.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "I am [not?] upset."
+            }
+          ],
+          "transcript_quality": "ambiguous",
+          "asr_alternatives": [
+            {
+              "text": "I am not upset.",
+              "score": 0.48
+            },
+            {
+              "text": "I am upset.",
+              "score": 0.52
+            }
+          ],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "asr-ambiguous"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "UN02",
+      "family": "uncertainty",
+      "title": "No signal does not become calm, neutral feeling, or a confident default",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "",
+          "language_spans": [],
+          "transcript_quality": "missing",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": null,
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "no-signal"
+        ],
+        "observation_fields": [],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "UN03",
+      "family": "uncertainty",
+      "title": "Unsupported inference pair remains unknown even if UI locale exists",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "কাল দেখা হবে, see you tomorrow.",
+          "language_spans": [
+            {
+              "language": "bn",
+              "text": "কাল দেখা হবে, "
+            },
+            {
+              "language": "en",
+              "text": "see you tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": false,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "code-switch",
+          "unsupported-language-pair"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "UN04",
+      "family": "uncertainty",
+      "title": "Unreliable or missing features stay missing",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "We can meet tomorrow.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "We can meet tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": null,
+          "energy_dbfs": null,
+          "syllables_per_second": null,
+          "pause_ratio": null,
+          "reliability": 0.1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "acoustic-unreliable"
+        ],
+        "observation_fields": [],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "UC01",
+      "family": "correction",
+      "title": "Authenticated owner correction supersedes the prior interpretation",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "I wasn't angry. I was excited.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "I wasn't angry. I was excited."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": {
+          "actor_id": "synthetic-owner-a",
+          "target_claim_id": "prior-emotion",
+          "from_revision": 1,
+          "to_revision": 2,
+          "label": "joy",
+          "text": "I wasn't angry. I was excited."
+        },
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": {
+          "claim_id": "prior-emotion",
+          "label": "anger",
+          "revision": 1,
+          "owner_id": "synthetic-owner-a"
+        },
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "reported",
+        "assertion": {
+          "label": "joy",
+          "attribution": "typed-owner-correction",
+          "source_ref": "correction:current"
+        },
+        "interpretation": null,
+        "flags": [],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [
+          "prior-emotion"
+        ],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "UC02",
+      "family": "correction",
+      "title": "Late pre-correction reply cannot replace the current owner assertion",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "I wasn't angry. I was excited.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "I wasn't angry. I was excited."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": {
+          "actor_id": "synthetic-owner-a",
+          "target_claim_id": "prior-emotion",
+          "from_revision": 1,
+          "to_revision": 2,
+          "label": "joy",
+          "text": "I wasn't angry. I was excited."
+        },
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": {
+          "claim_id": "prior-emotion",
+          "label": "anger",
+          "revision": 1,
+          "owner_id": "synthetic-owner-a"
+        },
+        "async_reply_revision": 1,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "reported",
+        "assertion": {
+          "label": "joy",
+          "attribution": "typed-owner-correction",
+          "source_ref": "correction:current"
+        },
+        "interpretation": null,
+        "flags": [
+          "stale-reply"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [
+          "prior-emotion"
+        ],
+        "stale_reply_dropped": true,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "UC03",
+      "family": "correction",
+      "title": "Another owner cannot author the current owner correction",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "I was excited.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "I was excited."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": {
+          "actor_id": "synthetic-owner-b",
+          "target_claim_id": "prior-emotion",
+          "from_revision": 1,
+          "to_revision": 2,
+          "label": "joy",
+          "text": "I was excited."
+        },
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "correction-owner-mismatch"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "PR01",
+      "family": "privacy",
+      "title": "Transcription permission alone grants no sensitive inference",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": false,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "We can meet tomorrow.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "We can meet tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "disabled",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "inference-consent-required"
+        ],
+        "observation_fields": [],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": false
+      }
+    },
+    {
+      "id": "PR02",
+      "family": "privacy",
+      "title": "Baseline consent revoked while other processing remains authorized",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": false,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "We can meet tomorrow.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "We can meet tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": {
+          "origin": "synthetic-session-stub",
+          "owner_id": "synthetic-owner-a",
+          "speaker_key": "session-speaker-a",
+          "median_f0_hz": 240,
+          "scale_f0_hz": 20,
+          "samples": 5,
+          "language_scope": [
+            "en",
+            "es"
+          ]
+        },
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "baseline-consent-required"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "PR03",
+      "family": "privacy",
+      "title": "Revocation during work purges the in-flight result before presentation",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": true,
+          "request_revision": 2,
+          "current_revision": 3
+        },
+        "utterance": {
+          "text": "We can meet tomorrow.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "We can meet tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "revoked",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "authority-revoked"
+        ],
+        "observation_fields": [],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": true,
+        "conflict_refs": [],
+        "purged_inflight": true,
+        "inference_enabled": false
+      }
+    },
+    {
+      "id": "PR04",
+      "family": "privacy",
+      "title": "Foreign-owner baseline is rejected before use",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "offline-guard",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "We can meet tomorrow.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "We can meet tomorrow."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": {
+          "origin": "synthetic-session-stub",
+          "owner_id": "synthetic-owner-b",
+          "speaker_key": "session-speaker-a",
+          "median_f0_hz": 240,
+          "scale_f0_hz": 20,
+          "samples": 5,
+          "language_scope": [
+            "en",
+            "es"
+          ]
+        },
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "unknown",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "baseline-owner-mismatch"
+        ],
+        "observation_fields": [
+          "mean_f0_hz",
+          "energy_dbfs",
+          "syllables_per_second",
+          "pause_ratio"
+        ],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": true
+      }
+    },
+    {
+      "id": "MW01",
+      "family": "current-manual",
+      "title": "Current manual-only runtime remains off despite supplied speech signals",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "current-manual",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "I'm angry.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "I'm angry."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": {
+            "label": "anger",
+            "evidence_text": "I'm angry.",
+            "source": "speaker-self-report",
+            "actor_id": "synthetic-owner-a"
+          },
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": null,
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": false,
+          "choice": null
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "disabled",
+        "assertion": null,
+        "interpretation": null,
+        "flags": [
+          "inference-off"
+        ],
+        "observation_fields": [],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": null,
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": false
+      }
+    },
+    {
+      "id": "MW02",
+      "family": "current-manual",
+      "title": "Explicit manual Calm choice is authoritative and is not an emotion probability",
+      "research_basis": [
+        "URAI_TRUTH",
+        "DESIGN_PROPOSAL"
+      ],
+      "input": {
+        "profile": "current-manual",
+        "owner_id": "synthetic-owner-a",
+        "authority": {
+          "transcription": true,
+          "inference": true,
+          "session_baseline": true,
+          "revoked_during_request": false,
+          "request_revision": 2,
+          "current_revision": 2
+        },
+        "utterance": {
+          "text": "I'm angry.",
+          "language_spans": [
+            {
+              "language": "en",
+              "text": "I'm angry."
+            }
+          ],
+          "transcript_quality": "clear",
+          "asr_alternatives": [],
+          "role": "owner",
+          "context": [],
+          "reported_emotion": null,
+          "response_locale": "en-US"
+        },
+        "acoustic_stub": {
+          "origin": "synthetic-feature-stub",
+          "mean_f0_hz": 180,
+          "energy_dbfs": -24,
+          "syllables_per_second": 3.2,
+          "pause_ratio": 0.15,
+          "reliability": 1
+        },
+        "speaker": {
+          "status": "session-local",
+          "session_key": "session-speaker-a"
+        },
+        "baseline": null,
+        "language_pair_supported": true,
+        "correction": null,
+        "acoustic_candidate": {
+          "id": "candidate:acoustic",
+          "label": "anger",
+          "truth_kind": "interpretation",
+          "origin": "synthetic-classifier-stub",
+          "uncalibrated_score": 0.91,
+          "evidence_refs": [
+            "feature:mean_f0_hz",
+            "feature:energy_dbfs"
+          ]
+        },
+        "lexical_candidate": null,
+        "prior_inference": null,
+        "async_reply_revision": 2,
+        "manual": {
+          "enabled": true,
+          "choice": "Calm"
+        },
+        "context_assessment": {
+          "ambiguous": false,
+          "evidence_refs": []
+        }
+      },
+      "expected": {
+        "status": "reported",
+        "assertion": {
+          "label": "Calm",
+          "attribution": "manual-choice",
+          "source_ref": "manual:current"
+        },
+        "interpretation": null,
+        "flags": [
+          "inference-off"
+        ],
+        "observation_fields": [],
+        "baseline_z": null,
+        "baseline_speaker_key": null,
+        "manual_weather": "Calm",
+        "superseded_claim_ids": [],
+        "stale_reply_dropped": false,
+        "conflict_refs": [],
+        "purged_inflight": false,
+        "inference_enabled": false
+      }
+    }
+  ],
+  "fixture_revision": "1.1.0"
+}
