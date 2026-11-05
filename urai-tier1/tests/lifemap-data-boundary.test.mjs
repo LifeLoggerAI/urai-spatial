@@ -114,7 +114,7 @@ test('private Life Map joins only explicit owner-verified canonical memory docum
   assert.doesNotMatch(source, /if \(parsed\.status === 'ready'\) accepted\.set\(doc\.id, parsed\.memory\)/)
   assert.match(source, /const memoryId = sanitizeMemoryId\(node\.memoryId\)/)
   assert.match(source, /memoryId && node\.type === "memory" \? visibleMemories\.get\(memoryId\)/)
-  assert.match(source, /if \(!authoritative\) return \{ \.\.\.node, authorizedMemory: false,/)
+  assert.match(source, /if \(!authoritative\) return \[\{ \.\.\.node, authorizedMemory: false,/)
   assert.match(source, /id: node\.id, memoryId: authoritative\.id/)
   assert.match(source, /if \(node\.type === 'memory' && !authoritative\) return \[\];/)
   assert.match(source, /if \(node\.privacyLevel === 'hidden'\) return \[\];/)
