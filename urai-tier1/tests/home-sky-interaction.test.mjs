@@ -6,7 +6,7 @@ import test from 'node:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import ts from 'typescript'
 import * as THREE from 'three'
-import { createHomeSkyTapGate, homeJourneyHref, retainDisclosedHomeAscentDemo, isUpwardHomeSkyRay, subscribeHomeSkyTaps } from '../src/spatial/navigation/homeSkyInteraction.ts'
+import { createHomeSkyTapGate, homeJourneyHref, retainDisclosedHomeAscentDemo, isHomeSkyAscentTravel, isUpwardHomeSkyRay, subscribeHomeSkyTaps } from '../src/spatial/navigation/homeSkyInteraction.ts'
 import { assertHomeAscentArrival, proveHomeSkyAscent } from '../../scripts/home-sky-ascent-proof.mjs'
 import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
@@ -234,4 +234,24 @@ test('Home sky demo handoff rejects private selections and cannot override expli
   assert.deepEqual(build('?demo=1', canonical, '/life-map/?demo=0').searchParams.getAll('demo'), ['0'])
   assert.deepEqual(build('?demo=1', canonical, '/life-map/?demo=1&demo=1').searchParams.getAll('demo'), ['1','1'])
   assert.deepEqual(build('?demo=1').searchParams.getAll('demo'), ['1'])
+})
+
+test('Home sky client router and hard fallback never let context.demo bypass explicit source disclosure', () => {
+  const exact = {destination:'life-map',entryPortal:'home-sky',cameraCheckpoint:'home-sky-ascent-complete'}
+  assert.equal(isHomeSkyAscentTravel(exact), true)
+  for (const bad of [
+    {...exact,destination:'replay'},
+    {...exact,entryPortal:'home-ground'},
+    {...exact,cameraCheckpoint:'home-sky-ascent'},
+  ]) assert.equal(isHomeSkyAscentTravel(bad), false)
+  for (const path of ['../src/spatial/world/WorldTransitionController.tsx','../src/spatial/world/worldEvents.ts']) {
+    const source = fs.readFileSync(new URL(path, import.meta.url), 'utf8')
+    assert.match(source,/context\?\.demo && !isHomeSkyAscentTravel\(request\)/, path)
+    assert.match(source,/retainDisclosedHomeAscentDemo\(window\.location\.pathname, window\.location\.search, request, target\)/, path)
+  }
+  const target = new URL('/life-map/?from=home-sky', 'https://urai.invalid')
+  retainDisclosedHomeAscentDemo('/home','', {...exact, context:{demo:true}}, target)
+  assert.equal(target.searchParams.has('demo'),false)
+  retainDisclosedHomeAscentDemo('/home','?demo=1', {...exact, context:{demo:true}}, target)
+  assert.equal(target.searchParams.get('demo'),'1')
 })
