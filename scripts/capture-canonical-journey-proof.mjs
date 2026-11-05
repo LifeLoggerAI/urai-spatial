@@ -108,7 +108,7 @@ function blockingRequests(requests) {
   })
 }
 
-async function activate(page, locator, mode) {
+async function activate(page, locator, mode, { inPlace = false } = {}) {
   assert.equal(await locator.count(), 1, 'activation must identify exactly one canonical control')
   await locator.waitFor({ state: 'visible', timeout: 45_000 })
   if (mode === 'touch') {
@@ -126,6 +126,24 @@ async function activate(page, locator, mode) {
     assert.equal(focusable, true, 'keyboard activation target must be focusable')
     await locator.focus()
     return locator.press('Enter')
+  }
+  if (inPlace) {
+    // Replay Pause changes in-place state; Playwright's locator click can wait
+    // for an unrelated scheduled navigation after the physical click completes.
+    // Use an actual browser pointer at the verified hit target, then the caller
+    // still requires data-playing=false. Never use a synthetic DOM click here.
+    await locator.scrollIntoViewIfNeeded()
+    assert.equal(await locator.isEnabled(), true, 'in-place action must remain enabled')
+    const box = await locator.boundingBox()
+    assert.ok(box && box.width >= 1 && box.height >= 1, 'in-place pointer target must be measurable')
+    const x = box.x + box.width / 2, y = box.y + box.height / 2
+    const hit = await locator.evaluate((button) => {
+      const rect = button.getBoundingClientRect()
+      const element = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+      return Boolean(element && (element === button || button.contains(element)))
+    })
+    assert.equal(hit, true, 'in-place pointer must hit the real enabled button')
+    return page.mouse.click(x, y)
   }
   return locator.click()
 }
@@ -266,7 +284,7 @@ async function enterReplay(page, journey, mode, identity) {
   await waitAttr(canvas, 'data-replay-first-frame', 'true', 60_000)
   await activate(page, replay.getByRole('button', { name: 'Continue memory', exact: true }), mode)
   await waitAttr(replay, 'data-playing', 'true', 20_000)
-  await activate(page, replay.getByRole('button', { name: 'Pause memory', exact: true }), mode)
+  await activate(page, replay.getByRole('button', { name: 'Pause memory', exact: true }), mode, { inPlace: true })
   await waitAttr(replay, 'data-playing', 'false', 20_000)
   await assertAdamLauncherLabel(replay, journey, 'replay')
   await capture(page, journey, 'replay')
