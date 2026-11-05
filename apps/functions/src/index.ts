@@ -32,6 +32,8 @@ export { getCapturedRealityAsset, getCapturedRealityRuntimeUrl, streamCapturedRe
 export { getInterpretiveWorldAsset, getInterpretiveWorldRuntimeUrl, getInterpretiveWorldReplayEntry } from './interpretiveWorld'
 
 export { recordPassiveSignal } from './passiveSignals'
+export { grantSpeechPurposeLease, revokeSpeechPurposeLease } from './speechPurposeConsent'
+export { processSpeechPurgeQueueItem, retrySpeechPurgeQueue } from './speechPurgeWorker'
 
 export { upsertLifeMovieManifest, revokeLifeMovieManifest } from './lifeMovie'
 

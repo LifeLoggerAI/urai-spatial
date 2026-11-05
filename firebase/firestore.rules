@@ -125,6 +125,13 @@ service cloud.firestore {
         allow read: if isSelf(uid) || isAdmin();
         allow write: if false;
       }
+      // Speech purpose leases are server-issued and revision-controlled.
+      // Owners can inspect consent state but cannot mint or revive a lease
+      // through a direct Firestore client write.
+      match /speechPurposeLeases/{sessionId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
       match /privacyAudit/{auditId} {
         allow read: if isSelf(uid) || isAdmin();
         allow write: if false;
@@ -384,6 +391,7 @@ service cloud.firestore {
     // Trusted queues and durable receipts are never client-readable or client-writable.
     match /privacyEnforcementJobs/{docId} { allow read, write: if false; }
     match /providerRevocationQueue/{docId} { allow read, write: if false; }
+    match /speechProviderPurgeQueue/{docId} { allow read, write: if false; }
     match /deletionQueue/{docId} { allow read, write: if false; }
     match /deletionReceipts/{docId} { allow read, write: if false; }
     match /spatial/{doc=**} { allow read, write: if isAdmin(); }
