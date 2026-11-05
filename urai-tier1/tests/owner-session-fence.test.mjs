@@ -27,3 +27,35 @@ test('an epoch change prevents account A re-login callbacks from reviving accoun
   assert.equal(ownerSessionMatches({ ...source, currentEpoch: 5 }), false)
   assert.equal(ownerSessionMatches({ ...source, initiatingEpoch: 5, currentEpoch: 5 }), true)
 })
+
+test('R655: Passport and Consent both deny stale-owner actions and clear private state on offline', async () => {
+  const { readFileSync } = await import('node:fs')
+  const root = new URL('../src/app/', import.meta.url)
+  const passport = readFileSync(new URL('passport/PassportVaultClient.tsx', root), 'utf8')
+  const consent = readFileSync(new URL('privacy-controls/ConsentSanctuaryClient.tsx', root), 'utf8')
+  for (const source of [passport, consent]) {
+    assert.match(source, /import \{ ownerSessionMatches \} from '@\/lib\/privacy\/ownerSessionFence'/)
+    assert.match(source, /currentUid: getAuth\(app\)\.currentUser\?\.uid/)
+    assert.match(source, /initiatingEpoch: epoch, currentEpoch: authEpoch\.current, online: navigator\.onLine/)
+    assert.match(source, /const \[connectionEpoch, setConnectionEpoch\] = useState\(0\)/)
+    assert.match(source, /setConnectionEpoch\(value => value \+ 1\)/)
+    assert.match(source, /ownerSessionCurrent\(user\.uid, epoch\)/)
+    assert.match(source, /ownerSessionCurrent\(user\?\.uid, authEpoch\.current\)/)
+    assert.match(source, /\[user, explicitDemo, connectionEpoch\]/)
+    assert.match(source, /authEpoch\.current \+= 1[\s\S]*?setExportDownloading\(false\)/)
+  }
+  assert.match(passport, /setSnapshot\(\{\}\); setExports\(\[\]\); setDeletions\(\[\]\); setReceipts\(\[\]\)/)
+  assert.match(consent, /setPolicy\(unresolvedPolicy\(\)\); setReceipts\(\[\]\); setExports\(\[\]\); setDeletions\(\[\]\)/)
+})
+
+test('R655: cancel and download handlers check the live owner, not only a captured epoch', async () => {
+  const { readFileSync } = await import('node:fs')
+  const root = new URL('../src/app/', import.meta.url)
+  const passport = readFileSync(new URL('passport/PassportVaultClient.tsx', root), 'utf8')
+  const consent = readFileSync(new URL('privacy-controls/ConsentSanctuaryClient.tsx', root), 'utf8')
+  for (const source of [passport, consent]) {
+    assert.match(source, /onClick=\{\(\) => \{ if \([^\n]*ownerSessionCurrent\(user\?\.uid, authEpoch\.current\)\) void cancelOperationalExportRequest\(job\.id\)/)
+    assert.match(source, /onClick=\{\(\) => \{ if \([^\n]*ownerSessionCurrent\(user\?\.uid, authEpoch\.current\)\) void cancelOperationalDeletionRequest\(job\.id\)/)
+    assert.match(source, /session\.download\(request, \(\) => ownerSessionCurrent\(user\.uid, epoch\), downloadOperationalExportBytes\)/)
+  }
+})
