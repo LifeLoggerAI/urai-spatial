@@ -1,3 +1,4 @@
+import { retainDisclosedHomeAscentDemo } from '@/spatial/navigation/homeSkyInteraction'
 import { useSceneStore } from '../store/useSceneStore'
 import type { UraiWorldTravelRequest } from './worldTypes'
 
@@ -77,6 +78,7 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+  retainDisclosedHomeAscentDemo(window.location.pathname, window.location.search, request, target)
 
   return `${target.pathname}${target.search}${target.hash}`
 }

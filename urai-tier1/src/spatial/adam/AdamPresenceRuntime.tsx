@@ -15,6 +15,7 @@ import {
 } from './adamClient'
 import { resolveAdamSurface } from './adamSurfaceContext'
 import { createAdamFounderVoicePlaybackBridge } from './founderVoicePlaybackBridge.mjs'
+import { createSpeechRecognitionSession } from './speechRecognitionSession.mjs'
 import styles from './AdamPresenceRuntime.module.css'
 
 type DisplayMessage = AdamConversationMessage & {
@@ -109,10 +110,13 @@ export default function AdamPresenceRuntime() {
   const [listening, setListening] = useState(false)
   const [aiConsent, setAiConsent] = useState(false)
   const [voiceConsent, setVoiceConsent] = useState(false)
+  const [speechInputConsent, setSpeechInputConsent] = useState(false)
   const [voiceMuted, setVoiceMuted] = useState(false)
   const [status, setStatus] = useState('Adam is ready when you are.')
   const conversationAborter = useRef<AbortController | null>(null)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
+  const speechInputLeaseRef = useRef(createSpeechRecognitionSession())
+  const recognizedDraftRef = useRef('')
   const founderVoiceBridge = useRef<ReturnType<typeof createAdamFounderVoicePlaybackBridge> | null>(null)
   if (!founderVoiceBridge.current) {
     // Until the server provides trusted per-turn authority, Founder voice stays unavailable.
@@ -122,6 +126,18 @@ export default function AdamPresenceRuntime() {
   const voiceQueue = useRef(Promise.resolve())
   const voiceGeneration = useRef(0)
   const streamingSpeechBuffer = useRef('')
+
+  const revokeSpeechInput = useCallback(() => {
+    // A revoked generation cannot be revived by queued browser speech callbacks.
+    speechInputLeaseRef.current.revoke()
+    recognitionRef.current?.abort()
+    recognitionRef.current = null
+    setSpeechInputConsent(false)
+    setListening(false)
+    const captured = recognizedDraftRef.current
+    if (captured) setMessage(current => current === captured ? '' : current)
+    recognizedDraftRef.current = ''
+  }, [])
 
   const stopVoice = useCallback(() => {
     voiceGeneration.current += 1
@@ -136,13 +152,11 @@ export default function AdamPresenceRuntime() {
     conversationGeneration.current += 1
     conversationAborter.current?.abort()
     conversationAborter.current = null
-    recognitionRef.current?.abort()
-    recognitionRef.current = null
-    setListening(false)
+    revokeSpeechInput()
     stopVoice()
     setBusy(false)
     setStatus('Stopped.')
-  }, [stopVoice])
+  }, [stopVoice, revokeSpeechInput])
 
   const closePresence = useCallback(() => {
     restoreLauncherFocus.current = true
@@ -250,7 +264,7 @@ export default function AdamPresenceRuntime() {
   }, [enqueueSpeech, voiceConsent, voiceMuted])
 
   const startListening = useCallback(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || !speechInputConsent || !speechInputLeaseRef.current.active) return
     stopVoice()
     const speechWindow = window as unknown as {
       SpeechRecognition?: SpeechRecognitionConstructor
@@ -265,9 +279,11 @@ export default function AdamPresenceRuntime() {
     const recognition = new Constructor()
     const generation = conversationGeneration.current
     const recognitionSurfaceKey = surfaceKey
+    const speechInputRevision = speechInputLeaseRef.current.revision
     const isCurrentRecognition = () => recognitionRef.current === recognition
       && conversationGeneration.current === generation
       && renderedSurfaceKey.current === recognitionSurfaceKey
+      && speechInputLeaseRef.current.isCurrent(speechInputRevision)
     recognition.continuous = false
     recognition.interimResults = true
     recognition.lang = currentSpeechTag()
@@ -275,7 +291,9 @@ export default function AdamPresenceRuntime() {
       if (!isCurrentRecognition()) return
       let text = ''
       for (let index = 0; index < event.results.length; index += 1) text += event.results[index][0]?.transcript ?? ''
-      setMessage(text.trimStart())
+      const transcript = text.trimStart().slice(0, 2500)
+      recognizedDraftRef.current = transcript
+      setMessage(transcript)
     }
     recognition.onend = () => {
       if (!isCurrentRecognition()) return
@@ -299,7 +317,7 @@ export default function AdamPresenceRuntime() {
       setListening(false)
       setStatus('Voice input is not available in this browser. Type to Adam instead.')
     }
-  }, [stopVoice, surfaceKey])
+  }, [stopVoice, surfaceKey, speechInputConsent])
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -308,6 +326,8 @@ export default function AdamPresenceRuntime() {
     const locale = contentLanguage(currentSpeechTag())?.speechTag
     if (!locale) { setStatus('Choose a supported content language.'); return }
 
+    // Revoke the microphone lease before any AI-provider transport.
+    revokeSpeechInput()
     stopVoice()
     const controller = new AbortController()
     conversationAborter.current = controller
@@ -327,6 +347,7 @@ export default function AdamPresenceRuntime() {
     const userMessage: DisplayMessage = { id: uid(), role: 'user', content: text, locale }
     setMessages((current) => [...current, userMessage])
     setMessage('')
+    recognizedDraftRef.current = ''
 
     try {
       const result = await requestAdamPresence({
@@ -445,7 +466,7 @@ export default function AdamPresenceRuntime() {
           value={contextCurrent ? message : ''}
           rows={3}
           maxLength={2500}
-          onChange={(event) => setMessage(event.target.value)}
+          onChange={(event) => { recognizedDraftRef.current = ''; setMessage(event.target.value) }}
           onFocus={() => {
             if (founderVoiceBridge.current?.isPlaying()) stopVoice()
           }}
@@ -453,6 +474,15 @@ export default function AdamPresenceRuntime() {
           aria-label="Message Adam"
         />
         <div className={styles.options}>
+          <label>
+            <input type="checkbox" checked={speechInputConsent} onChange={(event) => {
+              if (event.target.checked) {
+                speechInputLeaseRef.current.grant()
+                setSpeechInputConsent(true)
+              } else revokeSpeechInput()
+            }} />
+            Allow browser speech recognition only when I tap Talk. My browser may use an external service to process microphone audio. UrAi puts the returned words in this composer and only sends them when I choose Send. No emotional inference is enabled.
+          </label>
           <label>
             <input type="checkbox" checked={aiConsent} onChange={(event) => setAiConsent(event.target.checked)} />
             Allow this message and bounded recent context to use the configured AI provider.
@@ -472,7 +502,7 @@ export default function AdamPresenceRuntime() {
         </div>
         <div className={styles.controls}>
           <button type="submit" disabled={busy || !message.trim() || !aiConsent}>Send</button>
-          <button type="button" onClick={startListening} disabled={busy || listening}>{listening ? 'Listening…' : 'Talk'}</button>
+          <button type="button" onClick={startListening} disabled={busy || listening || !speechInputConsent}>{listening ? 'Listening…' : 'Talk'}</button>
           <button
             type="button"
             aria-pressed={voiceMuted}

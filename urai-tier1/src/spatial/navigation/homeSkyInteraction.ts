@@ -79,6 +79,25 @@ export function subscribeHomeSkyTaps({ owner, canvas, gate, lifecycleTarget }: {
   }
 }
 
+// A real Home sky ascent may retain only an explicitly disclosed local fixture
+// context. Never carry memory, tenant, or unrelated query authority across realms.
+export function retainDisclosedHomeAscentDemo(sourcePathname: string, sourceSearch: string, request: {
+  destination: string
+  entryPortal?: string
+  cameraCheckpoint?: string
+}, target: URL) {
+  const home = sourcePathname.replace(/\/+$/, '') || '/'
+  const lifeMap = target.pathname.replace(/\/+$/, '') || '/'
+  const source = new URLSearchParams(sourceSearch)
+  const flags = source.getAll('demo')
+  if ((home !== '/' && home !== '/home') || lifeMap !== '/life-map'
+    || request.destination !== 'life-map' || request.entryPortal !== 'home-sky'
+    || request.cameraCheckpoint !== 'home-sky-ascent-complete'
+    || flags.length !== 1 || flags[0] !== '1' || source.has('memoryId')
+    || target.searchParams.has('memoryId')) return
+  target.searchParams.set('demo', '1')
+}
+
 // Carry only an explicitly disclosed demo through the direct accessible link.
 // Absence, demo=0, and other query fields never manufacture demo authority.
 export function homeJourneyHref(href: string, search: string) {
