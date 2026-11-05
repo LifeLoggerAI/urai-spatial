@@ -51,6 +51,13 @@ export function isOrbState(value: unknown): value is OrbState {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(outputs, value)
 }
 
+export function resolveAuthorizedHomeReviewOrbState(search: string): OrbState | null {
+  const params = new URLSearchParams(search)
+  if (params.get('homeAssetReview') !== '1' || params.get('homePrivateFixture') !== '1') return null
+  const requestedState = params.get('homeOrbState')
+  return isOrbState(requestedState) ? requestedState : null
+}
+
 export function resolveOrbSensoryOutput(state: OrbState, reducedMotion: boolean, muted: boolean, reducedStimulation = false): OrbSensoryOutput {
   const output = outputs[isOrbState(state) ? state : 'idle']
   const staticPresentation = reducedMotion || reducedStimulation

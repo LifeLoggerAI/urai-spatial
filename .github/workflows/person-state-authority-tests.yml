@@ -1,0 +1,32 @@
+name: Person temporal protected authority
+on:
+  pull_request:
+    paths:
+      - 'apps/functions/src/lifeModelFunctions.ts'
+      - 'apps/functions/src/lifeGraphAuthority.ts'
+      - 'apps/functions/src/consentPolicyAuthority.ts'
+      - 'urai-tier1/tests/person-state-authority-behavior.test.mjs'
+      - 'urai-tier1/tests/life-graph-authority-behavior.test.mjs'
+      - '.github/workflows/person-state-authority-tests.yml'
+permissions:
+  contents: read
+jobs:
+  person-state-transactions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: test -z "$(git status --porcelain --untracked-files=all)"
+      - run: node --test urai-tier1/tests/person-state-authority-behavior.test.mjs urai-tier1/tests/life-graph-authority-behavior.test.mjs
+      - run: pnpm --dir apps/functions build

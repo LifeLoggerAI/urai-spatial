@@ -1,5 +1,6 @@
 import type { NarratorLine } from "./narratorTypes";
 import { requestNarratorAudio } from "./elevenlabsClient";
+import { contentLanguage } from '../../lib/i18n/contentLanguage'
 
 type Listener = (line: NarratorLine | null, visible: boolean) => void;
 
@@ -58,6 +59,7 @@ class NarratorPlaybackController {
     const generation = this.generation;
     const controller = new AbortController();
     const externalProcessingConsent = this.externalVoiceConsent;
+    const language = contentLanguage(line.locale);
     this.aborter = controller;
     this.externalLine = externalProcessingConsent;
     this.lastSpokenId = line.id;
@@ -70,6 +72,10 @@ class NarratorPlaybackController {
     this.delayTimer = setTimeout(async () => {
       if (!this.owns(generation, controller)) return;
       this.delayTimer = null;
+      if (!language) {
+        this.cutoffTimer = setTimeout(() => this.stopLine("unsupported-content-language"), line.durationMs);
+        return;
+      }
       let blob: Blob | null = null;
       try {
         if (externalProcessingConsent) blob = await requestNarratorAudio(line, controller.signal, true);
@@ -77,7 +83,7 @@ class NarratorPlaybackController {
       if (!this.owns(generation, controller)) return;
       this.cutoffTimer = setTimeout(() => this.stopLine("duration-cutoff"), line.durationMs);
       if (!blob?.size) {
-        void this.fallbackSpeech(line, generation, controller);
+        void this.fallbackSpeech(line, generation, controller, language.speechTag);
         return;
       }
 
@@ -92,7 +98,7 @@ class NarratorPlaybackController {
         audio.onerror = () => {
           if (!ownsAudio()) return;
           this.clearAudio();
-          void this.fallbackSpeech(line, generation, controller);
+          void this.fallbackSpeech(line, generation, controller, language.speechTag);
         };
         await audio.play();
       } catch {
@@ -100,7 +106,7 @@ class NarratorPlaybackController {
         // An error event may already have transferred this line to native voice.
         if (audio && this.audio !== audio) return;
         this.clearAudio();
-        void this.fallbackSpeech(line, generation, controller);
+        void this.fallbackSpeech(line, generation, controller, language.speechTag);
       }
     }, line.delayMs + jitter);
   }
@@ -135,17 +141,16 @@ class NarratorPlaybackController {
     if (cancel && typeof window !== "undefined") window.speechSynthesis?.cancel();
   }
 
-  private localVoice() {
+  private localVoice(language: string) {
     const voices = window.speechSynthesis.getVoices().filter((voice) => voice.localService);
-    const language = typeof navigator === "undefined" ? "en-US" : navigator.language.toLowerCase();
+    language = language.toLowerCase();
     return voices.find((voice) => voice.lang.toLowerCase() === language)
       ?? voices.find((voice) => voice.lang.toLowerCase().split("-")[0] === language.split("-")[0])
-      ?? voices[0]
       ?? null;
   }
 
-  private async waitForLocalVoice(signal: AbortSignal) {
-    const available = this.localVoice();
+  private async waitForLocalVoice(signal: AbortSignal, language: string) {
+    const available = this.localVoice(language);
     if (available || signal.aborted) return available;
     const speech = window.speechSynthesis;
     return new Promise<SpeechSynthesisVoice | null>((resolve) => {
@@ -158,7 +163,7 @@ class NarratorPlaybackController {
         signal.removeEventListener("abort", onAbort);
         resolve(voice);
       };
-      const onVoices = () => { const voice = this.localVoice(); if (voice) finish(voice); };
+      const onVoices = () => { const voice = this.localVoice(language); if (voice) finish(voice); };
       const onAbort = () => finish(null);
       const timer = setTimeout(() => finish(null), 1500);
       speech.addEventListener("voiceschanged", onVoices);
@@ -179,7 +184,7 @@ class NarratorPlaybackController {
     this.emit(null, false);
   }
 
-  private async fallbackSpeech(line: NarratorLine, generation: number, controller: AbortController) {
+  private async fallbackSpeech(line: NarratorLine, generation: number, controller: AbortController, language: string) {
     if (!this.owns(generation, controller)) return;
     const mode = process.env.NEXT_PUBLIC_URAI_NARRATOR_FALLBACK || "speech";
     if (mode === "silent" || typeof window === "undefined" || !("speechSynthesis" in window)) {
@@ -187,7 +192,7 @@ class NarratorPlaybackController {
       return;
     }
     try {
-      const voice = await this.waitForLocalVoice(controller.signal);
+      const voice = await this.waitForLocalVoice(controller.signal, language);
       if (!this.owns(generation, controller)) return;
       if (!voice) { this.finishLine(generation, controller); return; }
       const utterance = new SpeechSynthesisUtterance(line.text);

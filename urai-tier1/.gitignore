@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-home-cc0-review/
 /out/
 
 # production
@@ -51,3 +52,10 @@ _backup/
 _audit/
 _backup/
 .next/
+
+# Disposable nonproduction preview copy; canonical modeled GLB is in dev-preview-sources/.
+public/assets/urai/world001-preview/URAI_WORLD001_FOUNDER_HOME_ARCHITECTURE_v3.glb
+
+# Nonproduction CC0 source transfers and staged preview files are never committed.
+/dev-preview-sources/home-polyhaven-cc0/
+/public/assets/urai/home-production/cc0-review/

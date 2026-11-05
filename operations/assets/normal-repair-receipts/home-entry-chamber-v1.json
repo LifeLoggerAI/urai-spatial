@@ -1,0 +1,420 @@
+{
+  "schema": "urai.home-normal-repair-proof.v1",
+  "predecessor": {
+    "bytes": 184160,
+    "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "sourceSha": "51db7b3ba77a657659da34ca5e146e049dd03d31",
+    "gitBlob": "dd757954937009d2ee54a52df6f56792528356f4",
+    "archivePath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb"
+  },
+  "candidate": {
+    "bytes": 186040,
+    "sha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17"
+  },
+  "codec": {
+    "decoderSha256": "97901fb3d2d296eeea2a57348a734ef0a17e35f2d4aea5a65223635d3f0e1709",
+    "encoderSha256": "e79ba4a73a758f315ab153dc50c389c7b0bea2b5c1fdcfcaa62ad6d0c27cb25c",
+    "version": "meshoptimizer 1.0; ATTRIBUTES level2 version0 filterNONE"
+  },
+  "method": "Exact same-position valid donor normals for14zero vectors used only by degenerate triangles; append reencoded NORMAL streams and preserve original BIN prefix",
+  "repairs": [
+    {
+      "accessor": 119,
+      "bufferView": 92,
+      "vertex": 3,
+      "donorVertex": 0,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        32767
+      ],
+      "degenerateReferences": 16,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 119,
+      "bufferView": 92,
+      "vertex": 4,
+      "donorVertex": 5,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        -32767
+      ],
+      "degenerateReferences": 24,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 121,
+      "bufferView": 94,
+      "vertex": 3,
+      "donorVertex": 0,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        32767
+      ],
+      "degenerateReferences": 16,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 121,
+      "bufferView": 94,
+      "vertex": 4,
+      "donorVertex": 5,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        -32767
+      ],
+      "degenerateReferences": 24,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 185,
+      "bufferView": 158,
+      "vertex": 3,
+      "donorVertex": 0,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        32767
+      ],
+      "degenerateReferences": 4,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 185,
+      "bufferView": 158,
+      "vertex": 4,
+      "donorVertex": 5,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        -32767
+      ],
+      "degenerateReferences": 6,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 195,
+      "bufferView": 168,
+      "vertex": 3,
+      "donorVertex": 0,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        32767
+      ],
+      "degenerateReferences": 10,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 195,
+      "bufferView": 168,
+      "vertex": 4,
+      "donorVertex": 5,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        -32767
+      ],
+      "degenerateReferences": 15,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 197,
+      "bufferView": 170,
+      "vertex": 3,
+      "donorVertex": 0,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        32767
+      ],
+      "degenerateReferences": 10,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 197,
+      "bufferView": 170,
+      "vertex": 4,
+      "donorVertex": 5,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        -32767
+      ],
+      "degenerateReferences": 15,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 199,
+      "bufferView": 172,
+      "vertex": 3,
+      "donorVertex": 0,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        32767
+      ],
+      "degenerateReferences": 8,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 199,
+      "bufferView": 172,
+      "vertex": 4,
+      "donorVertex": 5,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        -32767
+      ],
+      "degenerateReferences": 12,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 201,
+      "bufferView": 174,
+      "vertex": 3,
+      "donorVertex": 0,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        32767
+      ],
+      "degenerateReferences": 8,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    },
+    {
+      "accessor": 201,
+      "bufferView": 174,
+      "vertex": 4,
+      "donorVertex": 5,
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        -32767
+      ],
+      "degenerateReferences": 12,
+      "adjacentNondegenerateTriangles": 0,
+      "samePositionExact": true
+    }
+  ],
+  "decodedByteChanges": [
+    {
+      "bufferView": 92,
+      "byteOffsets": [
+        28,
+        29,
+        36,
+        37
+      ],
+      "beforeSha256": "e7ceeda17df8f50c7f003fcba39245b3fad4a2cb31e684f7e9413c2ca83030fb",
+      "afterSha256": "86fa7ea0085a7a917c5760fb7bbfb8e3fc35a8f1bde8a9553e70f893b430e700"
+    },
+    {
+      "bufferView": 94,
+      "byteOffsets": [
+        28,
+        29,
+        36,
+        37
+      ],
+      "beforeSha256": "58fe280ee94f1ce294d0c8ca63539566d4a11d13265f59d86b698ec4bfc7e248",
+      "afterSha256": "de35bf94c4ef21a56bed248d99ef360a19404c18b3cee3571f8961288d456c1b"
+    },
+    {
+      "bufferView": 158,
+      "byteOffsets": [
+        28,
+        29,
+        36,
+        37
+      ],
+      "beforeSha256": "f33960ada11d372f9c16f1675361efa3d423dc254e2f11eed6ae945f2367e2b5",
+      "afterSha256": "5563bd9740fcba2af88c9349900cf0702bca4ed00b7364753b289c0359cb4c5a"
+    },
+    {
+      "bufferView": 168,
+      "byteOffsets": [
+        28,
+        29,
+        36,
+        37
+      ],
+      "beforeSha256": "8cb5c87eed664bf8e034e6fbcb4a71526786dbe32034457d24eccefd85fce0c6",
+      "afterSha256": "912a99c44917423f3982f33c166e54d50bc807d22734f33b52abd6750f9c806f"
+    },
+    {
+      "bufferView": 170,
+      "byteOffsets": [
+        28,
+        29,
+        36,
+        37
+      ],
+      "beforeSha256": "7c3495cba1dffddb47ab5e402c8a370d186637975ee1034a0ed973d5d4eea6f0",
+      "afterSha256": "5ea8fd4983501c58372fcd8ed4eed1843d1925102425dd6adf2e03c163daccd4"
+    },
+    {
+      "bufferView": 172,
+      "byteOffsets": [
+        28,
+        29,
+        36,
+        37
+      ],
+      "beforeSha256": "dffdeb0dff8e9f1573fc0cc52435b5d0867d55324da924947bdb6ecaa53fe981",
+      "afterSha256": "72512385869b02b623a7392bbdb97c18811f4cc90a811156693c0ff40ff96893"
+    },
+    {
+      "bufferView": 174,
+      "byteOffsets": [
+        28,
+        29,
+        36,
+        37
+      ],
+      "beforeSha256": "c3ee91970f4dd6c1284d97dae8393dc11460a44b52c453d586b98536fc82776a",
+      "afterSha256": "47a2a12d55f96917e4e2beaec46941960ef5c0bf739d24b5c1b59995fdd91053"
+    }
+  ],
+  "changedNormalVectors": 14,
+  "changedNormalBufferViews": 7,
+  "allBufferViewsDecoded": 177,
+  "allAccessorsVerified": 204,
+  "decodedBytes": 107304,
+  "originalBinPrefixBytesPreserved": 59876,
+  "geometryTopologyMaterialsNodesSkinsAnimationsUntouched": true,
+  "jsonChangesLimitedToCompressionOffsetsLengthsAndEmbeddedBufferLength": true,
+  "visualAcceptance": false,
+  "humanReviewApproved": false,
+  "deviceAcceptance": false,
+  "productionPromotion": false,
+  "exactHeadChecksPassed": false,
+  "normalIntegrity": {
+    "scope": "all-base-mesh-normal-accessors",
+    "accessorCount": 85,
+    "checkedVectors": 4236,
+    "quantizedVectors": 4236,
+    "maxQuantizedRawUnitDeviation": 0.0015013226050308859,
+    "quantizedLightingRenormalizationRequired": true,
+    "compressedBufferViews": 85,
+    "decodedBytes": 33888,
+    "floatAndLightingUnitTolerance": 1e-05,
+    "decoderSha256": "97901fb3d2d296eeea2a57348a734ef0a17e35f2d4aea5a65223635d3f0e1709"
+  },
+  "sourceReadSha": "5b3e121306b9974bb69831e3dd37a8945067bcc4",
+  "observedAt": "2026-10-08T01:05:50.484508+00:00",
+  "primarySources": [
+    "https://github.com/zeux/meshoptimizer/blob/v1.0/js/meshopt_encoder.js",
+    "https://github.com/mrdoob/three.js/blob/r183/examples/jsm/libs/meshopt_decoder.module.js",
+    "https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Vendor/EXT_meshopt_compression/README.md",
+    "https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_mesh_quantization/README.md"
+  ],
+  "baselineNormalIntegrity": {
+    "status": "FAIL",
+    "zeroVectors": 14,
+    "normalAccessorIndices": [
+      119,
+      121,
+      185,
+      195,
+      197,
+      199,
+      201
+    ],
+    "verticesPerAccessor": [
+      3,
+      4
+    ],
+    "firstError": "Home successor normal integrity: zero quantized NORMAL119:3",
+    "acceptanceTransferred": false
+  },
+  "lightingPrerequisite": "KHR_mesh_quantization explicitly requires normalization before lighting; raw vectors are not claimed unit. No visual/renderer/device/human acceptance."
+}

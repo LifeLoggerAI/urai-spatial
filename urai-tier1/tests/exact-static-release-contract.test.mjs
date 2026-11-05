@@ -1,8 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawn } from 'node:child_process'
+import { enforceStaticLaunchBoundary } from '../../scripts/enforce-static-launch-boundary.mjs'
 
 const normalize = (source) => source.replace(/\r\n?/g, '\n')
 const testDir = path.dirname(fileURLToPath(import.meta.url))
@@ -114,4 +117,124 @@ test('manual trigger remains verification-only and exposes no deploy or rollback
   assert.doesNotMatch(workflow, /rollback_sha:|release_sha:|confirm:/)
   assert.doesNotMatch(workflow, /build-release-output:|attest-release-bundle:|rollback-verify:|\n  deploy:\n/)
   assert.doesNotMatch(workflow, /gh workflow run spatial-live-deploy\.yml/)
+})
+
+
+test('authority bundle requires public login, privacy policy, and support pages in static export', () => {
+  for (const routePage of ['login/index.html', 'privacy-policy/index.html', 'support/index.html']) {
+    assert.ok(bundleBuilder.includes(`'${routePage}'`), `bundle builder must require ${routePage}`)
+  }
+  assert.ok(bundleBuilder.includes('Static output is missing required public route'))
+})
+
+function withConditionalExport(routes, inspect) {
+  const output = mkdtempSync(path.join(os.tmpdir(), 'urai-static-boundary-'))
+  try {
+    mkdirSync(path.join(output, 'api/system'), {recursive:true})
+    writeFileSync(path.join(output, 'api/system/deploy-proof'), JSON.stringify({service:'urai-spatial-deploy-proof',repository:'LifeLoggerAI/urai-spatial',conditionalRoutes:routes,deploymentFreshness:{commitSha:'a'.repeat(40)}}))
+    for (const route of ['xr', 'spatial/ar-vr', 'home']) {
+      mkdirSync(path.join(output, route), {recursive:true})
+      writeFileSync(path.join(output, route, 'index.html'), route === 'spatial/ar-vr' ? '<main data-xr-release-state="technical-preview" data-xr-immersive-authority="disabled"><h1>URAI AR / VR / XR entry chamber</h1>Live WebXR headset sessions remain disabled</main>' : `<main>${route}</main>`)
+      writeFileSync(path.join(output, `${route}.html`), route === 'spatial/ar-vr' ? '<main data-xr-release-state="technical-preview" data-xr-immersive-authority="disabled"><h1>URAI AR / VR / XR entry chamber</h1>Live WebXR headset sessions remain disabled</main>' : `<main>${route}</main>`)
+    }
+    mkdirSync(path.join(output,'xr/navmeshes'),{recursive:true})
+    writeFileSync(path.join(output,'xr/navmeshes/home-platform-v1.json'),'verified-existing-navmesh')
+    inspect(output)
+  } finally { rmSync(output, {recursive:true,force:true}) }
+}
+
+test('static export removes disabled immersive XR but preserves audited technical preview and unrelated Home bytes', () => {
+  withConditionalExport(['/xr','/spatial/ar-vr'].map(route=>({route,enabled:false,expectedStatus:route==='/xr'?404:200,previewOnly:route==='/spatial/ar-vr'})), output=>{
+    const before=readFileSync(path.join(output,'home/index.html'))
+    const receipt=enforceStaticLaunchBoundary(output)
+    assert.equal(existsSync(path.join(output,'xr/index.html')),false)
+    assert.equal(existsSync(path.join(output,'xr.html')),false)
+    assert.equal(existsSync(path.join(output,'spatial/ar-vr/index.html')),true)
+    assert.equal(existsSync(path.join(output,'spatial/ar-vr.html')),true)
+    assert.deepEqual(readFileSync(path.join(output,'home/index.html')),before)
+    assert.equal(readFileSync(path.join(output,'xr/navmeshes/home-platform-v1.json'),'utf8'),'verified-existing-navmesh')
+    assert.equal(receipt.sourceSha,'a'.repeat(40))
+    assert.equal(receipt.deviceAcceptance,false)
+    assert.equal(enforceStaticLaunchBoundary(output).routes.every(route=>route.artifactsRemoved.length===0),true)
+  })
+})
+
+test('static export preserves explicitly enabled XR artifacts without granting device acceptance', () => {
+  withConditionalExport(['/xr','/spatial/ar-vr'].map(route=>({route,enabled:false,expectedStatus:route==='/xr'?404:200,previewOnly:route==='/spatial/ar-vr'})), output=>{
+    const receipt=enforceStaticLaunchBoundary(output)
+    assert.equal(existsSync(path.join(output,'xr/index.html')),false)
+    assert.equal(existsSync(path.join(output,'spatial/ar-vr/index.html')),true)
+    assert.equal(receipt.deviceAcceptance,false)
+  })
+})
+
+test('inconsistent, duplicate, or incomplete conditional authority fails before removing exports', () => {
+  for (const routes of [
+    [{route:'/xr',enabled:false,expectedStatus:200},{route:'/spatial/ar-vr',enabled:false,expectedStatus:404}],
+    [{route:'/xr',enabled:false,expectedStatus:404},{route:'/xr',enabled:false,expectedStatus:404}],
+    [{route:'/xr',enabled:false,expectedStatus:404}],
+  ]) withConditionalExport(routes,output=>{
+    assert.throws(()=>enforceStaticLaunchBoundary(output),/authority/)
+    assert.equal(existsSync(path.join(output,'xr/index.html')),true)
+  })
+})
+
+test('both native static-build entry points enforce compiled conditional launch boundaries', () => {
+  const scripts=JSON.parse(readRepo('package.json')).scripts
+  for(const key of ['build:static','next-export']) assert.ok(scripts[key].endsWith('&& node scripts/enforce-static-launch-boundary.mjs'))
+})
+
+test('actual local preview serves canonical 404s and retained navmesh bytes without directory listings', async () => {
+  const output=mkdtempSync(path.join(os.tmpdir(),'urai-preview-status-'))
+  let server
+  try {
+    mkdirSync(path.join(output,'api/system'),{recursive:true})
+    mkdirSync(path.join(output,'xr/navmeshes'),{recursive:true})
+    mkdirSync(path.join(output,'home'),{recursive:true})
+    writeFileSync(path.join(output,'api/system/deploy-proof'),JSON.stringify({conditionalRoutes:['/xr','/spatial/ar-vr'].map(route=>({route,enabled:false,expectedStatus:route==='/xr'?404:200,previewOnly:route==='/spatial/ar-vr'}))}))
+    writeFileSync(path.join(output,'404.html'),'<main><h1>This destination is unavailable.</h1><a href="/home/">Return Home</a></main>')
+    writeFileSync(path.join(output,'home/index.html'),'<main>Existing Home</main>')
+    mkdirSync(path.join(output,'spatial/ar-vr'),{recursive:true})
+    writeFileSync(path.join(output,'spatial/ar-vr/index.html'),'<main data-xr-release-state="technical-preview" data-xr-immersive-authority="disabled">URAI AR / VR / XR entry chamber - Live WebXR headset sessions remain disabled</main>')
+    writeFileSync(path.join(output,'xr/navmeshes/home-platform-v1.json'),'existing-navmesh')
+    server=spawn('python3',[path.join(repoRoot,'scripts/serve-static-preview.py'),'--directory',output,'--port','4179'],{stdio:'ignore'})
+    const base='http://127.0.0.1:4179'
+    let ready=false
+    for(let attempt=0;attempt<100;attempt++) {
+      try {if((await fetch(`${base}/home/`)).ok){ready=true;break}} catch {}
+      await new Promise(resolve=>setTimeout(resolve,20))
+    }
+    assert.equal(ready,true,'owned preview server must start')
+    for(const route of ['/xr','/xr/','/xr/navmeshes/']) {
+      const response=await fetch(base+route,{redirect:'manual'})
+      assert.equal(response.status,404,route)
+      assert.match(await response.text(),/This destination is unavailable/)
+      assert.equal(response.headers.get('x-content-type-options'),'nosniff')
+    }
+    // The finite static server canonicalizes directory URLs before serving
+    // the real exported preview. Neither the intermediate 301 nor final 200
+    // may authorize immersive WebXR; /xr itself must remain a strict 404.
+    const canonical=await fetch(base+'/spatial/ar-vr',{redirect:'manual'})
+    assert.equal(canonical.status,301,'unslashed directory must only redirect locally')
+    assert.equal(new URL(canonical.headers.get('location'),base).pathname,'/spatial/ar-vr/')
+    for(const route of ['/spatial/ar-vr','/spatial/ar-vr/']) {
+      const response=await fetch(base+route,{redirect:'follow'})
+      assert.equal(response.status,200,route)
+      assert.equal(new URL(response.url).pathname,'/spatial/ar-vr/')
+      const html=await response.text()
+      assert.match(html,/data-xr-release-state=["']technical-preview["']/)
+      assert.match(html,/data-xr-immersive-authority=["']disabled["']/)
+      assert.match(html,/Live WebXR headset sessions remain disabled/)
+    }
+    const mesh=await fetch(`${base}/xr/navmeshes/home-platform-v1.json`)
+    assert.equal(mesh.status,200)
+    assert.equal(await mesh.text(),'existing-navmesh')
+    assert.match(await (await fetch(`${base}/home/`)).text(),/Existing Home/)
+  } finally {
+    if(server&&!server.killed) {
+      server.kill('SIGTERM')
+      await new Promise(resolve=>{server.once('close',resolve);setTimeout(resolve,2000).unref()})
+    }
+    rmSync(output,{recursive:true,force:true})
+  }
 })

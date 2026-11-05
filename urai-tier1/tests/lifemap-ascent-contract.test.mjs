@@ -52,6 +52,6 @@ test('destination becomes interactive through canonical Life Map-owned controls'
   assert.match(sceneSource, /Enter Focus/)
   assert.match(sceneSource, /Replay/)
   assert.match(sceneSource, /Overview/)
-  assert.match(sceneSource, /router\.push\("\/home"\)/)
+  assert.match(sceneSource, /router\.push\(homeJourneyHref\("\/home", params\.toString\(\)\)\)/)
   assert.doesNotMatch(sceneSource, /Orb companion|life-map-embodied-controls/)
 })

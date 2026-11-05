@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import * as THREE from 'three'
 
 export type MovementBounds = {
@@ -23,6 +23,7 @@ export type MovementInput = {
 }
 
 export type DragLookHandlers = {
+  onClickCapture: (event: ReactMouseEvent<HTMLElement>) => void
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void
   onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void
   onPointerUp: (event: ReactPointerEvent<HTMLElement>) => void
@@ -34,6 +35,12 @@ const MOVEMENT_KEYS = new Set([
   'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight',
 ])
 
+export const URAI_EMBODIED_MOVEMENT_INPUT_EVENT = 'urai:embodied-movement-input'
+
+function notifyMovementInputChanged() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(URAI_EMBODIED_MOVEMENT_INPUT_EVENT))
+}
+
 // The motion kernel is called once per rendered frame. Reusing scratch vectors keeps
 // locomotion allocation-free while the active realm owns the only motion call.
 const MOTION_REQUESTED = new THREE.Vector3()
@@ -42,7 +49,10 @@ const MOTION_RIGHT = new THREE.Vector3()
 const MOTION_NEXT = new THREE.Vector3()
 
 function isEditableTarget(target: EventTarget | null) {
-  return target instanceof Element && Boolean(target.closest('input,textarea,select,[contenteditable="true"],button,a,summary'))
+  return target instanceof Element && (
+    (target instanceof HTMLElement && target.isContentEditable) ||
+    Boolean(target.closest('input,textarea,select,[role="textbox"],[contenteditable="true"],button,a,summary'))
+  )
 }
 
 export function useMovementInput({
@@ -68,11 +78,13 @@ export function useMovementInput({
   useEffect(() => {
     if (!enabled) return
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return
       const editableTarget = isEditableTarget(event.target)
       const movementControl = event.target instanceof Element && Boolean(event.target.closest('[data-movement-ui="true"]'))
       if (MOVEMENT_KEYS.has(event.code)) {
         if (editableTarget && !movementControl) return
         keys.current.add(event.code)
+        notifyMovementInputChanged()
         event.preventDefault()
         return
       }
@@ -94,12 +106,14 @@ export function useMovementInput({
       }
     }
     const onKeyUp = (event: KeyboardEvent) => {
-      keys.current.delete(event.code)
+      if (keys.current.delete(event.code)) notifyMovementInputChanged()
     }
     const clear = () => {
+      const hadMovement = keys.current.size > 0 || virtualX.current !== 0 || virtualZ.current !== 0
       keys.current.clear()
       virtualX.current = 0
       virtualZ.current = 0
+      if (hadMovement) notifyMovementInputChanged()
     }
     window.addEventListener('keydown', onKeyDown, { passive: false, capture: true })
     window.addEventListener('keyup', onKeyUp)
@@ -134,13 +148,17 @@ export function useDragLook({
   maxPitch?: number
   onDragState?: (dragging: boolean) => void
 }): DragLookHandlers {
-  const drag = useRef<{ pointerId: number; x: number; y: number } | null>(null)
+  const drag = useRef<{ pointerId: number; x: number; y: number; startX: number; startY: number; moved: boolean; captureTarget: Element } | null>(null)
+  const completedLook = useRef<Element | null>(null)
 
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    completedLook.current = null
     if (!enabled || event.button !== 0) return
     if (event.target instanceof Element && event.target.closest('button,a,input,textarea,select,summary,[data-movement-ui="true"]')) return
-    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
-    try { event.currentTarget.setPointerCapture(event.pointerId) } catch { /* pointer capture is best effort */ }
+    // Keep canvas-origin clicks on the canvas so scene interactions survive drag capture.
+    const captureTarget = event.target instanceof Element ? event.target : event.currentTarget
+    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, moved: false, captureTarget }
+    try { captureTarget.setPointerCapture(event.pointerId) } catch { /* pointer capture is best effort */ }
     onDragState?.(true)
   }, [enabled, onDragState])
 
@@ -148,6 +166,7 @@ export function useDragLook({
     if (!drag.current || drag.current.pointerId !== event.pointerId) return
     const dx = event.clientX - drag.current.x
     const dy = event.clientY - drag.current.y
+    drag.current.moved ||= Math.hypot(event.clientX - drag.current.startX, event.clientY - drag.current.startY) > 2
     drag.current.x = event.clientX
     drag.current.y = event.clientY
     yaw.current -= dx * sensitivity
@@ -156,22 +175,39 @@ export function useDragLook({
 
   const end = useCallback((event: ReactPointerEvent<HTMLElement>) => {
     if (!drag.current || drag.current.pointerId !== event.pointerId) return
+    const { captureTarget, moved } = drag.current
+    completedLook.current = moved ? captureTarget : null
     drag.current = null
-    try { event.currentTarget.releasePointerCapture(event.pointerId) } catch { /* browser may already release */ }
+    try { captureTarget.releasePointerCapture(event.pointerId) } catch { /* browser may already release */ }
     onDragState?.(false)
   }, [onDragState])
 
-  return { onPointerDown, onPointerMove, onPointerUp: end, onPointerCancel: end }
+  const onClickCapture = useCallback((event: ReactMouseEvent<HTMLElement>) => {
+    const target = completedLook.current
+    completedLook.current = null
+    // A browser can synthesize a click after a small touch look gesture. Stop
+    // that one scene click before it reaches Orb, travel, or walk handlers.
+    // Stationary taps and keyboard-generated clicks retain their own behavior.
+    if (target && event.detail !== 0 && event.target === target) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+  }, [])
+
+  return { onClickCapture, onPointerDown, onPointerMove, onPointerUp: end, onPointerCancel: end }
 }
 
 export function setVirtualMovement(input: MovementInput, x: number, z: number) {
   input.virtualX.current = THREE.MathUtils.clamp(x, -1, 1)
   input.virtualZ.current = THREE.MathUtils.clamp(z, -1, 1)
+  notifyMovementInputChanged()
 }
 
 export function clearVirtualMovement(input: MovementInput) {
+  const hadMovement = input.virtualX.current !== 0 || input.virtualZ.current !== 0
   input.virtualX.current = 0
   input.virtualZ.current = 0
+  if (hadMovement) notifyMovementInputChanged()
 }
 
 export function stepEmbodiedMotion({
@@ -257,25 +293,30 @@ export function stepEmbodiedMotion({
     if (owner) {
       const spawnX = -0.85
       const spawnZ = 8.4
-      owner.dataset.homeInputOwner = 'window-capture-movement'
-      owner.dataset.homeTelemetryOwner = 'embodied-motion-kernel'
-      owner.dataset.homeInputReady = 'true'
+      const publish = (key: string, value: string) => {
+        if (owner.dataset[key] !== value) owner.dataset[key] = value
+      }
+      publish('homeInputOwner', 'window-capture-movement')
+      publish('homeTelemetryOwner', 'embodied-motion-kernel')
+      publish('homeInputReady', 'true')
       const assetsReady = owner.dataset.homeAssetsReady === 'true'
-      owner.dataset.homeInteractionReady = assetsReady ? 'true' : 'false'
-      owner.dataset.homeReady = 'false'
-      owner.dataset.homePlayerX = position.x.toFixed(3)
-      owner.dataset.homePlayerZ = position.z.toFixed(3)
-      owner.dataset.homeDistance = Math.hypot(position.x - spawnX, position.z - spawnZ).toFixed(3)
-      owner.dataset.homeDistanceOrb = Math.hypot(position.x, position.z + 4.25).toFixed(3)
-      owner.dataset.homeDistanceGround = Math.hypot(position.x + 5.4, position.z + 10.8).toFixed(3)
-      owner.dataset.homeDistanceLifeMap = Math.hypot(position.x - 5.4, position.z + 10.8).toFixed(3)
-      owner.dataset.homeMoving = moving ? 'true' : 'false'
-      owner.dataset.homePressedKeys = [...input.keys.current].sort().join(',')
-      owner.dataset.homeMovementVector = `${strafeInput.toFixed(3)},${forwardInput.toFixed(3)}`
+      publish('homeInteractionReady', assetsReady ? 'true' : 'false')
+      // Preserve settled Home telemetry without rounding its physics vectors.
+      const playerX = position.x.toFixed(4), playerZ = position.z.toFixed(4)
+      const telemetryX = Number(playerX), telemetryZ = Number(playerZ)
+      publish('homePlayerX', playerX)
+      publish('homePlayerZ', playerZ)
+      publish('homeDistance', Math.hypot(telemetryX - spawnX, telemetryZ - spawnZ).toFixed(3))
+      publish('homeDistanceOrb', Math.hypot(telemetryX - 1.8, telemetryZ + 9.5).toFixed(3))
+      publish('homeDistanceGround', Math.hypot(telemetryX + 5.4, telemetryZ + 10.8).toFixed(3))
+      publish('homeDistanceLifeMap', Math.hypot(telemetryX - 5.4, telemetryZ + 10.8).toFixed(3))
+      publish('homeMoving', moving ? 'true' : 'false')
+      publish('homePressedKeys', [...input.keys.current].sort().join(','))
+      publish('homeMovementVector', `${strafeInput.toFixed(3)},${forwardInput.toFixed(3)}`)
       const renderedFrames = Number.parseInt(owner.dataset.homeRenderedFrames || '0', 10)
       const nextRenderedFrames = Number.isFinite(renderedFrames) ? renderedFrames + 1 : 1
-      owner.dataset.homeRenderedFrames = String(nextRenderedFrames)
-      owner.dataset.homeReady = assetsReady && nextRenderedFrames >= 3 ? 'true' : 'false'
+      publish('homeRenderedFrames', String(nextRenderedFrames))
+      publish('homeReady', assetsReady && nextRenderedFrames >= 3 ? 'true' : 'false')
     }
   }
 
@@ -330,8 +371,8 @@ export function MobileMovementPad({ input, label }: { input: MovementInput; labe
       <button type="button" aria-label="Move backward" data-active={active === 'back'} onPointerDown={() => press('back')} onPointerUp={release} onPointerCancel={release} onPointerLeave={release}>↓</button>
       <button type="button" aria-label="Move right" data-active={active === 'right'} onPointerDown={() => press('right')} onPointerUp={release} onPointerCancel={release} onPointerLeave={release}>→</button>
       <style jsx>{`
-        .urai-mobile-movement{display:none;position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(82px,calc(env(safe-area-inset-bottom) + 72px));z-index:28;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:5px;touch-action:none}
-        button{width:48px;height:48px;border:1px solid rgba(207,250,254,.25);border-radius:16px;background:rgba(2,12,26,.68);backdrop-filter:blur(14px);color:#fff;font:800 20px/1 system-ui;box-shadow:0 10px 30px rgba(0,0,0,.28)}button:first-child{grid-column:2}.urai-mobile-movement button:nth-child(2){grid-column:1;grid-row:2}.urai-mobile-movement button:nth-child(3){grid-column:2;grid-row:2}.urai-mobile-movement button:nth-child(4){grid-column:3;grid-row:2}button[data-active="true"],button:focus-visible{background:rgba(35,103,130,.9);outline:3px solid #fff;outline-offset:2px}
+        .urai-mobile-movement{display:none;position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(82px,calc(env(safe-area-inset-bottom) + 72px));z-index:28;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:5px;pointer-events:none}
+        button{width:48px;height:48px;pointer-events:auto;touch-action:none;border:1px solid rgba(207,250,254,.25);border-radius:16px;background:rgba(2,12,26,.68);backdrop-filter:blur(14px);color:#fff;font:800 20px/1 system-ui;box-shadow:0 10px 30px rgba(0,0,0,.28)}button:first-child{grid-column:2}.urai-mobile-movement button:nth-child(2){grid-column:1;grid-row:2}.urai-mobile-movement button:nth-child(3){grid-column:2;grid-row:2}.urai-mobile-movement button:nth-child(4){grid-column:3;grid-row:2}button[data-active="true"],button:focus-visible{background:rgba(35,103,130,.9);outline:3px solid #fff;outline-offset:2px}
         @media(max-width:900px),(pointer:coarse){.urai-mobile-movement{display:grid}}
       `}</style>
     </div>

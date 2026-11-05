@@ -1,0 +1,61 @@
+name: Production Asset Receipt Bindings
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'operations/assets/**'
+      - 'urai-tier1/public/assets/urai/generated/**'
+      - 'urai-tier1/src/spatial/**'
+      - 'scripts/lib/production-asset-receipt-bindings.mjs'
+      - 'scripts/verify-production-asset-receipt-bindings.mjs'
+      - 'scripts/production-asset-receipt-bindings.test.mjs'
+      - '.github/workflows/production-asset-receipt-bindings.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'operations/assets/**'
+      - 'urai-tier1/public/assets/urai/generated/**'
+      - 'urai-tier1/src/spatial/**'
+      - 'scripts/lib/production-asset-receipt-bindings.mjs'
+      - 'scripts/verify-production-asset-receipt-bindings.mjs'
+      - 'scripts/production-asset-receipt-bindings.test.mjs'
+      - '.github/workflows/production-asset-receipt-bindings.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact committed candidate before any asset forge
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify clean exact candidate source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain)"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Test immutable identity and authority rejection cases
+        run: node --test scripts/production-asset-receipt-bindings.test.mjs
+      - name: Reject production authority that differs from committed bytes
+        run: node scripts/verify-production-asset-receipt-bindings.mjs --report artifacts/production-asset-receipt-bindings.json
+      - name: Retain exact-head receipt binding evidence on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: production-asset-receipt-bindings-${{ env.CANDIDATE_SHA }}
+          path: artifacts/production-asset-receipt-bindings.json
+          if-no-files-found: error
+          retention-days: 90

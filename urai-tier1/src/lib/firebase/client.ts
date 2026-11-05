@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp, type FirebaseOptions } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
-import { getFunctions } from 'firebase/functions'
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
+import { connectAuthEmulator, getAuth } from 'firebase/auth'
+import { connectFunctionsEmulator, getFunctions } from 'firebase/functions'
 
 const PUBLIC_FIREBASE_ENV = {
   NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -36,4 +37,35 @@ const firebaseConfig: FirebaseOptions = {
 
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
 export const functions = getFunctions(app)
-export const getFirebaseDb = () => getFirestore(app)
+const emulatorRequested = process.env.NEXT_PUBLIC_URAI_AUTH_JOURNEY_EMULATOR === 'true'
+// Fail closed even if someone accidentally provides the test flag to a live build.
+export const uraiJourneyEmulatorEnabled = emulatorRequested &&
+  process.env.NODE_ENV === 'development' &&
+  projectId === 'demo-urai-auth-journey' && firebasePublicEnvReady
+if (emulatorRequested && !uraiJourneyEmulatorEnabled)
+  throw new Error('Refusing UrAi journey emulator outside isolated development project')
+if (uraiJourneyEmulatorEnabled && app.options.projectId !== 'demo-urai-auth-journey')
+  throw new Error('Refusing non-isolated Firebase app for journey emulator')
+// Same isolated fictional project and local emulator guard as Auth/Firestore.
+// A production build can never route callable consent changes to localhost.
+if (uraiJourneyEmulatorEnabled) {
+  connectFunctionsEmulator(functions, '127.0.0.1', 5001)
+}
+let authEmulatorConnected = false
+let firestoreEmulatorConnected = false
+export function getUraiAuth() {
+  const auth = getAuth(app)
+  if (uraiJourneyEmulatorEnabled && !authEmulatorConnected) {
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+    authEmulatorConnected = true
+  }
+  return auth
+}
+export const getFirebaseDb = () => {
+  const db = getFirestore(app)
+  if (uraiJourneyEmulatorEnabled && !firestoreEmulatorConnected) {
+    connectFirestoreEmulator(db, '127.0.0.1', 8080)
+    firestoreEmulatorConnected = true
+  }
+  return db
+}

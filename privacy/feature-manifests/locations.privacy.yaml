@@ -2,15 +2,24 @@ feature: locations
 repo: LifeLoggerAI/urai-spatial
 owner: TBD
 privacyGovernanceVersion: 0.1.0-draft
-status: blocked_stubbed_from_repo_audit
+status: blocked_runtime_acceptance_pending
 lastReviewed: 2026-09-25
 sourceEvidence:
   - URAI_ECOSYSTEM_AUDIT.md
+  - privacy/data-inventory.yaml
+  - apps/functions/src/passiveSignals.ts
+  - apps/functions/src/index.ts
+  - urai-tier1/src/spatial/signals/PassiveSignalRuntime.tsx
+  - urai-tier1/src/spatial/places/geographicLocationVault.ts
+  - urai-tier1/src/app/location-map/geographic/GeographicLocationClient.tsx
+  - urai-tier1/tests/geographic-location-vault.test.mjs
+  - urai-tier1/tests/geographic-location-client-contract.test.mjs
+  - urai-tier1/tests/geographic-maps-launch-policy.test.mjs
 
 summary:
   purpose: Store location context associated with memories.
   userBenefit: Helps users organize and revisit memories by place.
-  implementationStatus: stubbed_per_repo_audit
+  implementationStatus: partial_browser_and_transactional_server_source_present_acceptance_unverified
 
 dataProcessing:
   collectedFields:
@@ -63,5 +72,5 @@ monetization:
 
 review:
   reviewer: TBD
-  decision: blocked_until_implemented_and_reviewed
-  notes: Repo audit marks locations as stubbed. Location context is governed by canonical C3 location.context authority. Exact-location use remains explicit opt-in and must preserve revocation, export, deletion, and audit behavior.
+  decision: blocked_until_privacy_runtime_and_consumer_acceptance_verified
+  notes: Current source includes authenticated consent-controlled transactional location ingestion and browser/location-vault callsites; the historical audit stub label does not describe these implementations. Source presence and scoped handler/contract tests do not establish end-to-end GPS acquisition, geographic/server integration, export/deletion/revocation consumer acceptance, physical-device behavior or production deployment. Existing draft collection, consent-tier, retention, rights, admin and sharing fields are preserved; their alignment with canonical C3 location.context authority remains unresolved and does not authorize collection or provider activation.

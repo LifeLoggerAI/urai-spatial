@@ -86,7 +86,8 @@ test('shared world runtime owns explicit consent, mute, route ambience and acces
   assert.match(runtime, /destination\s*===\s*'infrastructure-hub'[\s\S]*return\s*'GROUND'/)
   assert.match(runtime, /destination\s*===\s*'life-map'[\s\S]*return\s*'LIFEMAP'/)
   assert.match(runtime, /destination\s*===\s*'focus'[\s\S]*return\s*'FOCUS'/)
-  assert.match(runtime, /destination\s*===\s*'replay'[\s\S]*return\s*'REPLAY'/)
+  assert.match(runtime, /destination\s*===\s*'replay'\s*\|\|\s*destination\s*===\s*'life-movie'\)\s*return null/)
+  assert.match(runtime, /SILENT_DESTINATION_CAPTIONS\[world\.destination\]/)
   assert.match(runtime, /urai:audio-consent/)
   assert.match(runtime, /urai:audio-mute/)
   assert.match(runtime, /urai:audio-cue/)
@@ -112,3 +113,4 @@ test('Orb provider success and failure paths emit production confirmation and er
   assert.match(orbConversation, /emitAudioCue\('error'\)/)
   assert.match(orbConversation, /catch \(error\)[\s\S]*emitAudioCue\('error'\)/)
 })
+

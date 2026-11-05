@@ -1,5 +1,5 @@
-import { getAuth } from 'firebase/auth'
-import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { beginAIActorRequest, cancelAIResponse } from '@/lib/privacy/aiActorBoundary'
+import { firebasePublicEnvReady } from '@/lib/firebase/client'
 import { clientApiUrl } from '@/lib/clientApiUrl'
 import { buildOrbCompanionResponse } from '@/lib/orb-companion-contract'
 import type { OrbConversationMessage, OrbProviderResult } from '@/spatial/orb/openaiClient'
@@ -31,6 +31,9 @@ const PRE_EXTERNAL_FAILURE_CODES = new Set([
   'INVALID_MESSAGE',
   'INVALID_CONTEXT',
   'INVALID_REQUEST_ID',
+  'COUNCIL_GRAPH_DISCLOSURE_CONSENT_REQUIRED',
+  'COUNCIL_GRAPH_AUTHORITY_DENIED',
+  'COUNCIL_GRAPH_CHANGED',
 ])
 
 const DEFINITE_EXTERNAL_FAILURE_CODES = new Set([
@@ -69,6 +72,7 @@ function councilFallback(message: string, disclosure: string): OrbProviderResult
     disclosure,
     suggestedActions: fallback.routeHint ? [`Open ${fallback.routeHint}`, 'Review privacy controls'] : ['Pause here', 'Review privacy controls'],
     provider: 'fallback',
+    locale: 'en-US',
   }
 }
 
@@ -93,9 +97,9 @@ const ENDPOINTS: Record<ExternalCouncilProviderId, string> = {
   mistral: '/api/urai/council/mistral',
 }
 
-async function stableCouncilRequestId(provider: ExternalCouncilProviderId, message: string, context: OrbConversationMessage[]) {
+async function stableCouncilRequestId(provider: ExternalCouncilProviderId, message: string, context: OrbConversationMessage[], graphSelection?: { snapshotId: string; entityIds: string[] }, graphShareConsent?: boolean, memorySelection?: string) {
   if (!globalThis.crypto?.subtle) return null
-  const intent = JSON.stringify({ provider, message, context: context.slice(-8) })
+  const intent = JSON.stringify({ provider, message, context: context.slice(-8), graphSelection, graphShareConsent, memorySelection })
   const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(intent))
   return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('')
 }
@@ -105,43 +109,51 @@ export async function requestExternalCouncilProvider(input: {
   message: string
   context: OrbConversationMessage[]
   aiProcessingConsent: boolean
+  graphSelection?: { snapshotId: string; entityIds: string[] }
+  graphShareConsent?: boolean
+  memorySelection?: string
   signal: AbortSignal
 }): Promise<ExternalCouncilProviderResult | null> {
   if (!input.aiProcessingConsent || !firebasePublicEnvReady || input.signal.aborted) return null
-  const user = getAuth(app).currentUser
-  if (!user) return null
-  const token = await user.getIdToken()
-  const requestId = await stableCouncilRequestId(input.provider, input.message, input.context)
-  if (!token || !requestId || input.signal.aborted) return null
+  if ((input.graphSelection || input.memorySelection) && input.graphShareConsent !== true) return null
+  // Do not transmit Council chat history to the backend for a selected Memory
+  // Star. Server-side memory grounding also strips prior turns before any
+  // external provider call, but minimize sensitive data at the first hop.
+  const context = input.memorySelection ? [] : input.context.slice(-8)
+  const actor = beginAIActorRequest(input.signal)
+  if (!actor) return null
+  try {
+  const token = await actor.wait(actor.actor.getIdToken())
+  const requestId = await actor.wait(stableCouncilRequestId(input.provider, input.message, context, input.graphSelection, input.graphShareConsent, input.memorySelection))
+  if (!token || !requestId) return null
+  actor.check()
+  const body = JSON.stringify({ message: input.message, context, aiProcessingConsent: true, requestId, ...(input.graphSelection ? { graphSelection: input.graphSelection, graphShareConsent: true } : {}), ...(input.memorySelection ? { memorySelection: input.memorySelection, graphShareConsent: true } : {}) })
+  actor.check()
 
   let response: Response
   try {
-    response = await fetch(clientApiUrl(ENDPOINTS[input.provider]), {
+    response = await actor.wait(fetch(clientApiUrl(ENDPOINTS[input.provider]), {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       cache: 'no-store',
-      signal: input.signal,
-      body: JSON.stringify({
-        message: input.message,
-        context: input.context.slice(-8),
-        aiProcessingConsent: true,
-        requestId,
-      }),
-    })
+      signal: actor.signal,
+      body,
+    }), cancelAIResponse)
   } catch (error) {
-    if (input.signal.aborted) throw error
+    if (!actor.isCurrent()) throw error
     throw new CouncilExternalProviderAttemptUncertainError(input.provider)
   }
 
   if (!response.ok) {
     let code = 'COUNCIL_PROVIDER_BOUNDARY_FAILURE'
     try {
-      const body = await response.json() as { error?: unknown }
+      const body = await actor.wait(response.json()) as { error?: unknown }
       if (body.error) code = String(body.error)
-    } catch {
+    } catch (error) {
+      if (!actor.isCurrent()) throw error
       // Preserve generic provider boundary.
     }
     if (PRE_EXTERNAL_FAILURE_CODES.has(code)) return null
@@ -151,7 +163,8 @@ export async function requestExternalCouncilProvider(input: {
     throw new CouncilExternalProviderAttemptUncertainError(input.provider)
   }
 
-  const result = await response.json() as Partial<ExternalCouncilProviderResult>
+  const result = await actor.wait(response.json()) as Partial<ExternalCouncilProviderResult>
+  actor.check()
   if (result.provider !== input.provider || !result.message || !result.caption || !result.disclosure || !result.model) {
     throw new Error('INVALID_COUNCIL_PROVIDER_RESPONSE')
   }
@@ -163,4 +176,5 @@ export async function requestExternalCouncilProvider(input: {
     provider: input.provider,
     model: String(result.model),
   }
+  } finally { actor.dispose() }
 }

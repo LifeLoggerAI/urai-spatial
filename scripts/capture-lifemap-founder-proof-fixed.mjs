@@ -13,7 +13,7 @@ const pr = rawPr ? Number.parseInt(rawPr, 10) : null
 if (pr !== null && (!Number.isInteger(pr) || pr <= 0)) throw new Error(`Invalid URAI_PR_NUMBER: ${rawPr}`)
 
 const receipt = {
-  schemaVersion: 'urai-lifemap-founder-proof-13',
+  schemaVersion: 'urai-lifemap-founder-proof-14',
   repository: 'LifeLoggerAI/urai-spatial',
   pr,
   exactHead,
@@ -143,9 +143,25 @@ async function poll(label, sample, predicate, timeout = 30_000, interval = 75) {
   throw new Error(`${label} timed out after ${timeout}ms; last=${JSON.stringify(last)}`)
 }
 
+async function waitForDocumentStylesheets(page, timeout = 60_000) {
+  await page.waitForLoadState('load', { timeout })
+  return poll('complete document stylesheets', () => page.evaluate(() => {
+    const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+    return {
+      readyState: document.readyState,
+      stylesheets: links.map((link) => ({ href: link.href, loaded: link.sheet !== null })),
+    }
+  }), (state) => state?.readyState === 'complete'
+    && state.stylesheets.length > 0
+    && state.stylesheets.every((sheet) => sheet.loaded), timeout)
+}
+
 async function goto(page, route, selector = ROOT) {
+  // Complete the current document before deliberate navigation can cancel its CSS.
+  if (page.url() !== 'about:blank') await waitForDocumentStylesheets(page)
   const response = await page.goto(new URL(route, base).toString(), { waitUntil: 'domcontentloaded', timeout: 60_000 })
   if (!response || response.status() !== 200) throw new Error(`${route} returned ${response?.status()}`)
+  await waitForDocumentStylesheets(page)
   if (selector === ROOT) {
     await page.locator('[data-testid="urai-r3f-canonical-lifemap"]').first().waitFor({ state: 'visible', timeout: 45_000 })
     const scene = page.locator(selector).first()
@@ -328,16 +344,16 @@ async function canvasSignal(page, screenshotBuffer) {
   }, { dataUrl })
 }
 
-async function captureScreenshot(page, file) {
+async function captureScreenshot(page, file, animations = 'disabled') {
   const buffer = await page.screenshot({
     path: path.join(outputDir, file),
     fullPage: false,
-    animations: 'disabled',
+    animations,
     caret: 'hide',
     scale: 'device',
     timeout: 120_000,
   })
-  return { buffer, hash: createHash('sha256').update(buffer).digest('hex'), bytes: buffer.length }
+  return { buffer, hash: createHash('sha256').update(buffer).digest('hex'), bytes: buffer.length, animations }
 }
 
 async function readRootState(root) {
@@ -358,11 +374,11 @@ async function readRootState(root) {
   return Object.fromEntries(entries)
 }
 
-async function shot(page, id, captureState, extra = {}) {
+async function shot(page, id, captureState, extra = {}, animations = 'disabled') {
   const file = `${String(receipt.captures.length + 1).padStart(2, '0')}-${id}-${exactHead.slice(0, 12)}.png`
   const root = page.locator(`${ROOT}, [data-testid="urai-life-map-signed-out-threshold"], [data-testid="urai-life-map-authored-fallback"]`).first()
   const state = await root.count() ? await readRootState(root) : {}
-  const { buffer, ...screenshot } = await captureScreenshot(page, file)
+  const { buffer, ...screenshot } = await captureScreenshot(page, file, animations)
   const signal = await canvasSignal(page, buffer)
   receipt.captures.push({
     order: receipt.captures.length + 1,
@@ -474,16 +490,23 @@ async function selectQuietReset(page, options = {}) {
   const triggerSelector = 'button.life-map-search-trigger[aria-label="Search and navigate Life Map"]'
   const trigger = await canonicalControlGeometry(page, triggerSelector, 'canonical Life Map search trigger')
   if (trigger.ariaLabel !== 'Search and navigate Life Map') throw new Error(`Life Map search trigger semantic label drifted: ${trigger.ariaLabel}`)
-  await activateCanonicalControl(page, triggerSelector, trigger, options.touch ? 'touch' : options.keyboard ? 'keyboard' : 'pointer')
+  if (options.narrow) await narrowActivate(page, triggerSelector, options.keyboard ? 'keyboard' : 'touch')
+  else await activateCanonicalControl(page, triggerSelector, trigger, options.touch ? 'touch' : options.keyboard ? 'keyboard' : 'pointer')
 
-  const navigatorSelector = 'section.life-map-navigator[aria-label="Search and filter Life Map"]'
-  await poll('canonical Life Map semantic navigator', () => page.evaluate((selector) => Boolean(document.querySelector(selector)), navigatorSelector), Boolean, 20_000, 50)
+  const navigatorSelector = 'section.life-map-navigator[aria-labelledby="life-map-navigator-label"]'
+  await poll('canonical Life Map semantic navigator', () => page.evaluate((selector) => {
+    const region = document.querySelector(selector)
+    const labelId = region?.getAttribute('aria-labelledby')
+    const label = labelId ? document.getElementById(labelId) : null
+    return Boolean(region && label && region.contains(label) && label.textContent === 'Search and filter Life Map')
+  }, navigatorSelector), Boolean, 20_000, 50)
 
   const resultSelector = `${navigatorSelector} button[data-life-map-semantic-result][data-life-map-node-id="quiet-reset"]`
   const result = await canonicalControlGeometry(page, resultSelector, 'canonical Quiet Reset semantic result')
   if (!/The Quiet Reset/i.test(result.text)) throw new Error(`Quiet Reset semantic result text drifted: ${result.text}`)
   if (options.targetPhase) await armJourneyPhaseWatch(page, options.targetPhase)
-  await activateCanonicalControl(page, resultSelector, result, options.keyboard ? 'keyboard' : options.touch ? 'touch' : 'pointer')
+  if (options.narrow) await narrowActivate(page, resultSelector, options.keyboard ? 'keyboard' : 'touch')
+  else await activateCanonicalControl(page, resultSelector, result, options.keyboard ? 'keyboard' : options.touch ? 'touch' : 'pointer')
 
   const observedPhase = options.targetPhase ? await readJourneyPhaseWatch(page, options.targetPhase) : null
   await poll('selected Quiet Reset identity', async () => {
@@ -511,8 +534,41 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
   if (!geometry.text.includes(name)) throw new Error(`${name} action text drifted: ${geometry.text}`)
   await activateCanonicalControl(page, selector, geometry, 'pointer')
   await waitForPath(page, destinationPath)
+  await waitForDocumentStylesheets(page)
   await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
   await stable(page)
+}
+
+async function waitForReplayRenderedWorld(page, timeout = 60_000) {
+  const destination = new URL(page.url())
+  const memoryId = destination.searchParams.get('memoryId') || destination.searchParams.get('node')
+  const manifestId = destination.searchParams.get('manifestId')
+  if (destination.pathname.replace(/\/$/, '') !== '/replay' || destination.searchParams.get('demo') !== '1' || !memoryId || !manifestId) {
+    throw new Error('Replay rendered proof requires the selected memory and manifest route identity')
+  }
+  // Match useSelectedMemory's exact disclosed-fixture namespace, not the public route token.
+  const resolvedMemoryId = memoryId.startsWith('demo:') ? memoryId : `demo:${memoryId}`
+  return poll('selected Replay media and first rendered frame', () => page.evaluate(() => {
+    const root = document.querySelector('[data-testid="cinematic-replay-client"]')
+    if (!(root instanceof HTMLElement)) return null
+    const canvas = root.querySelector('canvas')
+    return {
+      memoryId: root.dataset.memoryId,
+      manifestId: root.dataset.manifestId,
+      mediaStatus: root.dataset.replayMediaStatus,
+      mediaReady: root.dataset.replayMediaReady,
+      webgl: root.dataset.webglState,
+      admission: root.dataset.replayEnvironmentFallback,
+      firstFrame: canvas instanceof HTMLCanvasElement && canvas.dataset.replayFirstFrame === 'true',
+    }
+  }), (state) => Boolean(state
+    && state.memoryId === resolvedMemoryId
+    && state.manifestId === manifestId
+    && state.mediaStatus === 'ready'
+    && state.mediaReady === 'true'
+    && state.webgl === 'ready'
+    && state.admission === 'disclosed-demo'
+    && state.firstFrame), timeout, 75)
 }
 
 function assertVisualSanity() {
@@ -540,6 +596,8 @@ function assertVisualSanity() {
     'keyboard-selection', 'portrait-mobile-overview', 'portrait-mobile-travel',
     'portrait-mobile-selected', 'portrait-tall-overview', 'portrait-tall-selected',
     'reduced-motion-arrival',
+    'narrow-touch-arrival', 'narrow-touch-lifemap-return',
+    'narrow-keyboard-reduced-arrival', 'narrow-keyboard-reduced-lifemap-return',
   ]
   for (const id of required) {
     const capture = byId.get(id)
@@ -570,6 +628,17 @@ function assertVisualSanity() {
     const observed = byId.get(id)?.observedPhase
     if (observed?.phase !== expectedPhase || observed?.mode !== 'selected') {
       throw new Error(`${id} did not observe the authoritative ${expectedPhase} phase: ${JSON.stringify(observed)}`)
+    }
+  }
+
+  for (const prefix of ['narrow-touch', 'narrow-keyboard-reduced']) {
+    for (const state of ['arrival', 'focus', 'replay', 'focus-return', 'lifemap-return']) {
+      const capture = byId.get(`${prefix}-${state}`)
+      if (!capture || capture.viewport?.width !== 320 || capture.viewport?.height !== 700) throw new Error(`missing narrow journey capture ${prefix}-${state}`)
+      if (!capture.routeIdentity || !capture.controlGeometry?.length) throw new Error(`missing narrow journey identity or control geometry ${prefix}-${state}`)
+      if (capture.motion !== (prefix === 'narrow-touch' ? 'no-preference' : 'reduce')) throw new Error(`narrow journey motion mode drifted for ${prefix}-${state}`)
+      if (capture.screenshot.animations !== 'allow') throw new Error(`narrow screenshot masked motion for ${prefix}-${state}`)
+      assertNarrowMotion(capture.motionEvidence, capture.motion, state === 'arrival' || state === 'lifemap-return')
     }
   }
 
@@ -745,7 +814,8 @@ async function desktopActionsAndKeyboard() {
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
     await clickRouteAction(page, 'Replay', '/replay', 'main')
-    await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset' })
+    const replayRenderProof = await waitForReplayRenderedWorld(page)
+    await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset', replayRenderProof })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
@@ -763,6 +833,10 @@ async function desktopActionsAndKeyboard() {
     await waitForRenderedWorld(page)
     await selectQuietReset(page, { keyboard: true })
     await shot(page, 'keyboard-selection', 'keyboard-selection', { memoryId: 'quiet-reset', interaction: 'keyboard' })
+    // First Escape dismisses the open search inspector; second leaves selected arrival.
+    await page.locator('#life-map-navigator').waitFor({ state: 'visible' })
+    await page.keyboard.press('Escape')
+    await page.locator('#life-map-navigator').waitFor({ state: 'hidden' })
     await page.keyboard.press('Escape')
     await waitForOverviewState(page)
     await shot(page, 'escape-unwind', 'escape-unwind')
@@ -884,7 +958,220 @@ async function privacyAndRecovery() {
   }
 }
 
+function assertNarrowControlGeometry(controls, viewport) {
+  if (!controls.length || viewport?.width !== 320 || viewport?.height !== 700) throw new Error('narrow control proof requires the 320x700 viewport and actual controls')
+  for (const control of controls) {
+    const { x, y, width, height } = control
+    if (![x, y, width, height].every(Number.isFinite) || width < 48 || height < 48
+      || x < 0 || y < 0 || x + width > viewport.width + 0.5 || y + height > viewport.height + 0.5
+      || control.disabled || !control.visible || !control.centerOwned) {
+      throw new Error(`narrow control is clipped, undersized, disabled or intercepted: ${JSON.stringify(control)}`)
+    }
+  }
+  for (let left = 0; left < controls.length; left += 1) {
+    for (let right = left + 1; right < controls.length; right += 1) {
+      const a = controls[left], b = controls[right]
+      if (Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x) > 0.5
+        && Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y) > 0.5) {
+        throw new Error(`narrow controls overlap: ${a.selector} and ${b.selector}`)
+      }
+    }
+  }
+  return controls
+}
+
+async function narrowControlGeometry(page, selectors) {
+  const controls = await page.evaluate((controlSelectors) => controlSelectors.map((selector) => {
+    const element = document.querySelector(selector)
+    if (!(element instanceof HTMLElement)) return { selector, visible: false }
+    const rect = element.getBoundingClientRect()
+    const style = getComputedStyle(element)
+    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)
+    return {
+      selector, x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+      disabled: element instanceof HTMLButtonElement && element.disabled,
+      visible: style.display !== 'none' && style.visibility !== 'hidden' && style.pointerEvents !== 'none' && Number(style.opacity) > 0,
+      centerOwned: Boolean(hit && (hit === element || element.contains(hit))),
+      hitTag: hit?.tagName || null,
+    }
+  }), selectors)
+  return assertNarrowControlGeometry(controls, page.viewportSize())
+}
+
+function assertNarrowRouteIdentity(url, expectedPath, rendered) {
+  const route = new URL(url)
+  const memoryId = route.searchParams.get('memoryId')
+  const manifestId = route.searchParams.get('manifestId')
+  const node = route.searchParams.get('node')
+  if (route.pathname.replace(/\/$/, '') !== expectedPath || route.searchParams.get('demo') !== '1'
+    || !['quiet-reset', 'demo:quiet-reset'].includes(memoryId) || manifestId !== 'replay-recovery-thread' || node !== 'quiet-reset') {
+    throw new Error(`narrow journey route identity drifted: ${url}`)
+  }
+  if (expectedPath === '/life-map') {
+    if (rendered?.source !== 'explicit-demo' || rendered?.phase !== 'arrival' || rendered?.mode !== 'selected'
+      || rendered?.scale !== 'intimate' || rendered?.title !== 'The Quiet Reset') throw new Error(`narrow Life Map identity drifted: ${JSON.stringify(rendered)}`)
+  } else if (rendered?.memoryId !== 'demo:quiet-reset' || rendered?.manifestId !== manifestId
+    || rendered?.starId !== node || rendered?.memoryStatus !== 'demo') {
+    throw new Error(`narrow resolved memory identity drifted: ${JSON.stringify(rendered)}`)
+  }
+  return { path: expectedPath, memoryId, manifestId, node, demo: true, rendered }
+}
+
+async function narrowRouteIdentity(page, expectedPath) {
+  const rendered = await page.evaluate((routePath) => {
+    const root = document.querySelector(routePath === '/life-map' ? '[data-testid="urai-true-3d-life-map"]'
+      : routePath === '/focus' ? '[data-testid="urai-final-focus-chamber"]' : '[data-testid="cinematic-replay-client"]')
+    if (!(root instanceof HTMLElement)) return null
+    return routePath === '/life-map' ? {
+      source: root.dataset.lifeMapSource, phase: root.dataset.lifeMapPhase, mode: root.dataset.lifeMapMode,
+      scale: root.dataset.lifeMapScale, title: root.querySelector('.life-map-title strong')?.textContent?.trim(),
+    } : { memoryId: root.dataset.memoryId, manifestId: root.dataset.manifestId, starId: root.dataset.starId, memoryStatus: root.dataset.memoryStatus }
+  }, expectedPath)
+  return assertNarrowRouteIdentity(page.url(), expectedPath, rendered)
+}
+
+async function waitForFocusRenderedWorld(page, timeout = 60_000) {
+  return poll('selected Focus memory and first rendered frame', () => page.evaluate(() => {
+    const root = document.querySelector('[data-testid="urai-final-focus-chamber"]')
+    if (!(root instanceof HTMLElement)) return null
+    const canvas = root.querySelector('.focusCanvas canvas')
+    return {
+      memoryId: root.dataset.memoryId, manifestId: root.dataset.manifestId, starId: root.dataset.starId,
+      memoryStatus: root.dataset.memoryStatus, inputReady: root.dataset.focusInputReady,
+      renderReady: root.dataset.focusRenderReady, reveal: root.dataset.focusMemoryRevealState,
+      webgl: root.dataset.webglState, firstFrame: canvas instanceof HTMLCanvasElement && canvas.dataset.focusFirstFrame === 'true',
+    }
+  }), (state) => Boolean(state && state.memoryId === 'demo:quiet-reset' && state.manifestId === 'replay-recovery-thread'
+    && state.starId === 'quiet-reset' && state.memoryStatus === 'demo' && state.inputReady === 'true'
+    && state.renderReady === 'true' && state.reveal === 'ready' && state.webgl === 'ready' && state.firstFrame), timeout, 75)
+}
+
+async function narrowActivate(page, selector, interaction) {
+  const [geometry] = await narrowControlGeometry(page, [selector])
+  if (interaction === 'keyboard') {
+    await narrowTabTo(page, selector)
+    await page.keyboard.press('Enter')
+  } else await activateCanonicalControl(page, selector, geometry, interaction)
+}
+
+async function narrowTabTo(page, selector, maximumTabs = 80) {
+  const visited = []
+  for (let tabs = 0; tabs <= maximumTabs; tabs += 1) {
+    const focus = await page.evaluate((controlSelector) => {
+      const target = document.querySelector(controlSelector)
+      const active = document.activeElement
+      return { reached: Boolean(target && active === target), active: active instanceof HTMLElement ? `${active.tagName}#${active.id}.${active.className}` : null }
+    }, selector)
+    if (focus.reached) return { tabs, visited }
+    visited.push(focus.active)
+    if (tabs < maximumTabs) await page.keyboard.press('Tab')
+  }
+  throw new Error(`narrow keyboard Tab traversal could not reach ${selector}: ${JSON.stringify(visited)}`)
+}
+
+function assertNarrowMotion(evidence, motion, arrival) {
+  if (!evidence || evidence.mediaQueryMatches !== (motion === 'reduce')) throw new Error('narrow motion preference was not observed in the browser')
+  if (motion !== 'reduce' || !arrival) return evidence
+  const samples = evidence.arrivalSamples
+  if (!Array.isArray(samples) || samples.length < 3 || samples.at(-1).elapsedMs < 250) throw new Error('reduced arrival requires a bounded camera stability observation')
+  for (const sample of samples) {
+    if (sample.phase !== 'arrival' || !Array.isArray(sample.camera) || sample.camera.length !== 7 || !sample.camera.every(Number.isFinite)
+      || sample.camera.some((value, i) => Math.abs(value - samples[0].camera[i]) > (i === 6 ? 0.001 : 0.0001) + Number.EPSILON)) {
+      throw new Error(`reduced arrival camera or phase moved without input: ${JSON.stringify(samples)}`)
+    }
+  }
+  return evidence
+}
+
+async function narrowMotionEvidence(page, motion, routePath) {
+  const evidence = { mediaQueryMatches: await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches) }
+  if (motion === 'reduce' && routePath === '/life-map') {
+    const start = Date.now()
+    evidence.arrivalSamples = []
+    for (let index = 0; index < 3; index += 1) {
+      if (index) await page.waitForTimeout(125)
+      const sample = await page.evaluate(() => {
+        const root = document.querySelector('[data-testid="urai-true-3d-life-map"]')
+        const data = root instanceof HTMLElement ? root.dataset : {}
+        return { phase: data.lifeMapPhase, camera: ['lifeMapCameraX', 'lifeMapCameraY', 'lifeMapCameraZ', 'lifeMapTargetX', 'lifeMapTargetY', 'lifeMapTargetZ', 'lifeMapFov'].map(key => Number(data[key])) }
+      })
+      evidence.arrivalSamples.push({ ...sample, elapsedMs: Date.now() - start })
+    }
+  }
+  return assertNarrowMotion(evidence, motion, routePath === '/life-map')
+}
+
+async function narrowFocusRestoration(page, interaction) {
+  const search = 'button.life-map-search-trigger[aria-label="Search and navigate Life Map"]'
+  await narrowActivate(page, search, interaction)
+  await page.locator('#life-map-search').waitFor({ state: 'visible' })
+  await poll('narrow Search input focus', () => page.evaluate(() => document.activeElement?.id === 'life-map-search'), Boolean)
+  if (interaction === 'keyboard') await page.keyboard.press('Escape')
+  else await narrowActivate(page, 'button[aria-label="Close Life Map search"]', interaction)
+  const searchRestored = await poll('narrow Search trigger focus restoration', () => page.evaluate((selector) => document.activeElement === document.querySelector(selector), search), Boolean)
+  const launcher = '[data-urai-adam-launcher]'
+  await page.locator(launcher).waitFor({ state: 'visible' })
+  await narrowActivate(page, launcher, interaction)
+  const close = '[data-urai-adam-presence] button[aria-label="Close Adam"]'
+  await page.locator(close).waitFor({ state: 'visible' })
+  await poll('narrow Founder Close focus', () => page.evaluate((selector) => document.activeElement === document.querySelector(selector), close), Boolean)
+  await narrowActivate(page, close, interaction)
+  const founderRestored = await poll('narrow Founder launcher focus restoration', () => page.evaluate((selector) => document.activeElement === document.querySelector(selector), launcher), Boolean)
+  return { searchRestored, founderRestored }
+}
+
+async function narrowMobileJourney() {
+  for (const profile of [
+    { prefix: 'narrow-touch', interaction: 'touch', motion: 'no-preference' },
+    { prefix: 'narrow-keyboard-reduced', interaction: 'keyboard', motion: 'reduce' },
+  ]) {
+    const { context, page } = await openPage({ label: profile.prefix, viewport: { width: 320, height: 700 }, hasTouch: true, isMobile: true, reducedMotion: profile.motion })
+    try {
+      await goto(page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
+      await waitForOverviewState(page)
+      await waitForRenderedWorld(page)
+      const focusRestoration = await narrowFocusRestoration(page, profile.interaction)
+      await selectQuietReset(page, { touch: profile.interaction === 'touch', keyboard: profile.interaction === 'keyboard', narrow: true })
+      await waitForState(page, 'data-life-map-phase', 'arrival')
+      await waitForRenderedWorld(page)
+      await stable(page)
+      const lifeMapControls = [selectedActionSelector('Enter Focus'), selectedActionSelector('Replay'), selectedActionSelector('Overview'), 'button.life-map-search-trigger', '[data-urai-adam-launcher]']
+      const focusControls = ['.focusControls button.primary', '.focusControls button.unwind', '.focusHelp summary', '[data-urai-adam-launcher]']
+      const replayControls = ['.replayWorld button.unwind', '.memoryPulse', '[data-urai-adam-launcher]']
+      const retain = async (state, routePath, controls, renderProof) => {
+        const routeIdentity = await narrowRouteIdentity(page, routePath)
+        const controlGeometry = await narrowControlGeometry(page, controls)
+        const motionEvidence = await narrowMotionEvidence(page, profile.motion, routePath)
+        await shot(page, `${profile.prefix}-${state}`, `narrow-${state}`, { memoryId: 'quiet-reset', motion: profile.motion, motionEvidence, interaction: profile.interaction, routeIdentity, controlGeometry, focusRestoration, renderProof }, 'allow')
+      }
+      await retain('arrival', '/life-map', lifeMapControls, await waitForRenderedWorld(page))
+      await narrowActivate(page, selectedActionSelector('Enter Focus'), profile.interaction)
+      await waitForPath(page, '/focus')
+      await waitForDocumentStylesheets(page)
+      await retain('focus', '/focus', focusControls, await waitForFocusRenderedWorld(page))
+      await narrowActivate(page, '.focusControls button.primary', profile.interaction)
+      await waitForPath(page, '/replay')
+      await waitForDocumentStylesheets(page)
+      await retain('replay', '/replay', replayControls, await waitForReplayRenderedWorld(page))
+      await narrowActivate(page, '.replayWorld button.unwind', profile.interaction)
+      await waitForPath(page, '/focus')
+      await waitForDocumentStylesheets(page)
+      await retain('focus-return', '/focus', focusControls, await waitForFocusRenderedWorld(page))
+      await narrowActivate(page, '.focusControls button.unwind', profile.interaction)
+      await waitForPath(page, '/life-map')
+      await waitForDocumentStylesheets(page)
+      await waitForState(page, 'data-life-map-phase', 'arrival')
+      await waitForRenderedWorld(page)
+      await stable(page)
+      await retain('lifemap-return', '/life-map', lifeMapControls, await waitForRenderedWorld(page))
+    } finally {
+      await context.close()
+    }
+  }
+}
+
 try {
+  await narrowMobileJourney()
   await highResolutionOverview()
   await desktopJourney()
   await desktopArrivalEvidence()
@@ -899,7 +1186,7 @@ try {
 } finally {
   await browser.close()
   receipt.completedAt = new Date().toISOString()
-  receipt.passed = !failed && receipt.captures.length >= 28
+  receipt.passed = !failed && receipt.captures.length >= 38
   await writeFile(path.join(outputDir, 'browser-events.json'), JSON.stringify(receipt.browserEvents, null, 2))
   await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))
   if (!receipt.passed) process.exitCode = 1

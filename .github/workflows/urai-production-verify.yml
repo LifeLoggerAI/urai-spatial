@@ -57,6 +57,10 @@ jobs:
 
       - name: Capture bounded production verification
         id: verify
+        # This invocation explicitly exercises bundled demo memories on next start.
+        # Keep normal production middleware denial and deployment environments unchanged.
+        env:
+          URAI_ALLOW_PUBLIC_DEMO_ROUTES: 'true'
         shell: bash
         run: |
           set +e

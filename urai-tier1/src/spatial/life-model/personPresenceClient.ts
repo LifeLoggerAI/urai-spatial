@@ -3,10 +3,13 @@
 import { getAuth } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { clientApiUrl } from '@/lib/clientApiUrl'
+import { contentLanguage, type UraiContentLanguageTag } from '@/lib/i18n/contentLanguage'
+import { readPresenceContentStream } from '@/lib/i18n/presenceContentStream'
 
-export type PersonPresenceMessage = { role:'user'|'assistant'; content:string }
+export type PersonPresenceMessage = { role:'user'|'assistant'; content:string; locale?:UraiContentLanguageTag }
 
 export type PersonPresenceResult = {
+  locale:UraiContentLanguageTag
   message:string
   caption:string
   evidenceClaimIds:string[]
@@ -18,8 +21,8 @@ export type PersonPresenceResult = {
 }
 
 export type PersonPresenceEvent =
-  | { type:'status'; status:string; sessionId?:string; mode?:string }
-  | { type:'delta'; text:string }
+  | { type:'status'; status:string; sessionId?:string; mode?:string; locale:UraiContentLanguageTag }
+  | { type:'delta'; text:string; locale:UraiContentLanguageTag }
   | ({ type:'done' } & PersonPresenceResult)
   | { type:'error'; code:string; message:string }
 
@@ -63,8 +66,10 @@ export async function requestPersonPresence(input:{
   signal:AbortSignal
   onEvent?:(event:PersonPresenceEvent)=>void
 }):Promise<PersonPresenceResult>{
+  const locale=typeof input.locale==='string'?contentLanguage(input.locale)?.speechTag:null
+  if(!locale)throw new PersonPresenceError('INVALID_LOCALE','Choose a supported content language.')
   const token = await bearerToken()
-  const requestId = await stablePersonPresenceRequestId(input)
+  const requestId = await stablePersonPresenceRequestId({...input,locale})
   if(!requestId || input.signal.aborted) throw new PersonPresenceError('REQUEST_ID_UNAVAILABLE','Person presence could not establish a stable request identity.')
   const response = await fetch(clientApiUrl('/api/urai/person-presence/conversation'),{
     method:'POST',
@@ -75,7 +80,7 @@ export async function requestPersonPresence(input:{
       sessionId:input.sessionId,
       message:input.message,
       context:input.context.slice(-10),
-      locale:input.locale,
+      locale,
       aiProcessingConsent:input.aiProcessingConsent,
       requestId,
     }),
@@ -93,27 +98,19 @@ export async function requestPersonPresence(input:{
     throw new PersonPresenceError(code,message)
   }
 
-  const reader=response.body.getReader()
-  const decoder=new TextDecoder()
-  let buffer='', finalResult:PersonPresenceResult|null=null
-  while(true){
-    const {value,done}=await reader.read()
-    if(done) break
-    buffer+=decoder.decode(value,{stream:true})
-    const lines=buffer.split('\n')
-    buffer=lines.pop()??''
-    for(const line of lines){
-      if(!line.trim()) continue
-      let event:PersonPresenceEvent
-      try{event=JSON.parse(line) as PersonPresenceEvent}catch{continue}
-      input.onEvent?.(event)
-      if(event.type==='done') finalResult=event
-      if(event.type==='error') throw new PersonPresenceError(event.code,event.message)
-    }
-  }
-  if(!finalResult) throw new PersonPresenceError('PERSON_PRESENCE_INCOMPLETE','Person presence returned an incomplete response.')
-  if(finalResult.historicalSourceAuthority!==false || finalResult.syntheticOutputMayBecomeHistoricalSource!==false){
-    throw new PersonPresenceError('PERSON_PRESENCE_TRUTH_BOUNDARY_FAILED','Person presence truth boundary failed.')
-  }
-  return finalResult
+  return readPresenceContentStream<PersonPresenceResult,PersonPresenceEvent>(response,{
+    locale,signal:input.signal,onEvent:input.onEvent,incompleteCode:'PERSON_PRESENCE_INCOMPLETE',
+    error:(code,message)=>new PersonPresenceError(code,message),
+    validateDone:(event)=>{
+      if(event.historicalSourceAuthority!==false || event.syntheticOutputMayBecomeHistoricalSource!==false){
+        throw new PersonPresenceError('PERSON_PRESENCE_TRUTH_BOUNDARY_FAILED','Person presence truth boundary failed.')
+      }
+      if(event.provider!=='openai' || !Array.isArray(event.evidenceClaimIds) || event.evidenceClaimIds.length>12
+        || event.evidenceClaimIds.some((id)=>typeof id!=='string' || !id || id.length>160)
+        || typeof event.uncertainty!=='string' || event.uncertainty.length>320
+        || typeof event.simulationLabel!=='string' || !event.simulationLabel.trim() || event.simulationLabel.length>120){
+        throw new PersonPresenceError('INVALID_PROVIDER_RESPONSE','Person presence returned invalid response metadata.')
+      }
+    },
+  })
 }

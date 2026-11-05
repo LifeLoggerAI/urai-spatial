@@ -45,3 +45,9 @@ result-*
 
 # Generated Firebase Functions build output
 apps/functions/lib/
+
+# Runner-generated native configuration and Android project
+distribution/android-shell/android/
+distribution/ios-shell/ios/
+**/google-services.json
+**/GoogleService-Info.plist

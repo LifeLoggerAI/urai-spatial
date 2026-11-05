@@ -3,8 +3,11 @@
 import { getAuth } from 'firebase/auth'
 import { app,firebasePublicEnvReady } from '@/lib/firebase/client'
 import { clientApiUrl } from '@/lib/clientApiUrl'
+import { contentLanguage,type UraiContentLanguageTag } from '@/lib/i18n/contentLanguage'
 
-export async function requestPersonPresenceVoice(input:{sessionId:string;text:string;externalProcessingConsent:boolean;signal:AbortSignal}){
+export async function requestPersonPresenceVoice(input:{sessionId:string;text:string;locale:UraiContentLanguageTag;externalProcessingConsent:boolean;signal:AbortSignal}){
+  const locale=typeof input.locale==='string'?contentLanguage(input.locale)?.speechTag:null
+  if(!locale)return {blob:null,errorCode:'INVALID_LOCALE'}
   if(!firebasePublicEnvReady)return {blob:null,errorCode:'FIREBASE_NOT_READY'}
   const user=getAuth(app).currentUser
   if(!user)return {blob:null,errorCode:'AUTH_REQUIRED'}
@@ -15,7 +18,7 @@ export async function requestPersonPresenceVoice(input:{sessionId:string;text:st
       method:'POST',
       headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
       cache:'no-store',signal:input.signal,
-      body:JSON.stringify({sessionId:input.sessionId,text:input.text,externalProcessingConsent:input.externalProcessingConsent}),
+      body:JSON.stringify({sessionId:input.sessionId,text:input.text,locale,externalProcessingConsent:input.externalProcessingConsent}),
     })
   }catch(error){if(input.signal.aborted)throw error;return {blob:null,errorCode:'VOICE_NETWORK_UNAVAILABLE'}}
   if(!response.ok){

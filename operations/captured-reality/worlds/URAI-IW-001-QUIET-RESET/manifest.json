@@ -3,7 +3,7 @@
   "id": "URAI-IW-001-QUIET-RESET",
   "name": "Quiet Reset Sanctuary",
   "truthClass": "interpretive",
-  "truthLabel": "Interpretive generated world — not camera-recorded history.",
+  "truthLabel": "Interpretive generated world \u2014 not camera-recorded history.",
   "autobiographical": false,
   "generatedOnly": true,
   "sourceTruthEligible": false,
@@ -76,7 +76,7 @@
       "taskId": "77a33ac6-f598-4b56-98fd-0386e4e4719b",
       "seconds": 7,
       "state": "generated",
-      "acceptance": "pending"
+      "acceptance": "rejected"
     },
     {
       "id": "S07_ELEVATION",
@@ -182,13 +182,14 @@
     "independent-review"
   ],
   "generationSet": {
-    "state": "complete-awaiting-literal-visual-review",
+    "state": "complete-motion-review-rejected",
     "surveyPassCount": 8,
     "anchorCount": 3,
     "allSurveyTasksTerminalSuccess": true,
     "literalVisualAcceptance": "pending"
   },
   "blockers": [
+    "S06-duplicated-sun-motion-rejection-requires-reviewed-replacement",
     "literal-visual-review-of-H00-A01-A02-A03-and-S01-S08",
     "accepted-frame-extraction",
     "colmap-camera-solve",
@@ -197,5 +198,6 @@
     "collision-proxy",
     "desktop-mobile-performance-receipts",
     "xr-separate-physical-device-certification"
-  ]
+  ],
+  "surveyInspectionReceiptRef": "survey-inspection.current.json"
 }

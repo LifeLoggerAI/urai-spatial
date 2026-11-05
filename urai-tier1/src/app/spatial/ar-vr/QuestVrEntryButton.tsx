@@ -17,7 +17,7 @@ type Props = {
   disabled?: boolean
 }
 
-const idleCopy = 'On Quest Browser, enter the live 3D chamber. Desktop and mobile keep the truthful interactive fallback visible.'
+const idleCopy = 'Use Quest Browser to explore in VR. You can also explore this space with a mouse, keyboard, or touch.'
 
 export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded, disabled = false }: Props) {
   const [copy, setCopy] = useState(idleCopy)
@@ -27,11 +27,11 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded,
 
   async function enterQuestVr() {
     if (disabled) {
-      setCopy('Immersive VR entry is unavailable until the real-time renderer is ready. Accessible portals remain available.')
+      setCopy('VR will be available when the space finishes loading. You can still use the destination links.')
       return
     }
     if (!sessionConsent) {
-      setCopy('Choose the session-consent checkbox before starting immersive VR.')
+      setCopy('Check the consent box before starting VR.')
       return
     }
     setBusy(true)
@@ -39,7 +39,7 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded,
     const xr = (navigator as QuestXrNavigator).xr
     if (!xr?.requestSession) {
       setBusy(false)
-      setCopy('No WebXR VR session API here. The desktop and touch world remains explorable.')
+      setCopy('This browser cannot enter VR. You can still explore with a mouse, keyboard, or touch.')
       return
     }
 
@@ -61,7 +61,7 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded,
         sessionEnded = true
         setActive(false)
         setSessionConsent(false)
-        setCopy('Immersive session ended safely. Session consent was cleared; the chamber remains available.')
+        setCopy('Your VR session has ended. You can keep exploring here, or give consent to start another session.')
         onSessionEnded?.()
       }, { once: true })
       await onSessionRequested?.(session)
@@ -74,7 +74,7 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded,
     } catch {
       await requestedSession?.end?.().catch(() => undefined)
       setActive(false)
-      setCopy('VR entry was cancelled or rejected. The non-XR world is still active.')
+      setCopy('VR did not start. You can try again or keep exploring here.')
     } finally {
       setBusy(false)
     }
@@ -89,7 +89,7 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded,
           onChange={(event) => setSessionConsent(event.currentTarget.checked)}
           disabled={disabled || busy || active}
         />
-        I consent to start this browser-local immersive VR session. Headset pose and input remain session-scoped on this entry path; provider-backed recording or persistence is not enabled here.
+        I agree to use my headset movement and controls for this VR session. This page does not record or save them.
       </label>
       <button type="button" onClick={enterQuestVr} disabled={disabled || busy || active}>
         {busy ? 'Entering VR…' : active ? 'VR active' : 'Enter VR in Quest'}

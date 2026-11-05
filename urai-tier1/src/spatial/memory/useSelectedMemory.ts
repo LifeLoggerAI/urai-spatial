@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
+import { useBrowserLocation } from '@/hooks/useBrowserLocation'
+import { isConsentPolicy } from '@/app/privacy-controls/consentModel'
 import { buildNamedExplicitDemoMemory } from './explicitDemoMemory'
 import {
   isExplicitDemoRequest,
@@ -28,37 +30,49 @@ function asDemoMemoryId(memoryId: string | null) {
 }
 
 export function useSelectedMemory(): SelectedMemoryResult {
-  const [search, setSearch] = useState('')
-  useEffect(() => {
-    const hydrateSelection = () => setSearch(window.location.search)
-    hydrateSelection()
-    window.addEventListener('popstate', hydrateSelection)
-    return () => window.removeEventListener('popstate', hydrateSelection)
-  }, [])
+  const location = useBrowserLocation()
   const params = useMemo(
-    () => new URLSearchParams(search),
-    [search],
+    () => {
+      const address = location.split('#')[0]
+      return new URLSearchParams(address.includes('?') ? address.slice(address.indexOf('?') + 1) : '')
+    },
+    [location],
   )
-  const memoryId = sanitizeMemoryId(params.get('memoryId') ?? params.get('node'))
+  // The Life Map node identifies a constellation event, never private memory authority.
+  // Only an explicitly disclosed demo may use the legacy node-only navigation.
+  const demoRequested = isExplicitDemoRequest(params)
+  const memoryId = sanitizeMemoryId(params.get('memoryId') ?? (demoRequested ? params.get('node') : null))
   const manifestId = sanitizeMemoryId(params.get('manifestId'))
-  const requestedDemoMemoryId = isExplicitDemoRequest(params)
+  const requestedDemoMemoryId = demoRequested
     ? asDemoMemoryId(memoryId)
     : null
-  const selectionKey = JSON.stringify([memoryId, manifestId, requestedDemoMemoryId])
+  const viewingReplay = location.split('?')[0].split('#')[0].replace(/\/+$/, '') === '/replay'
+  const selectionKey = JSON.stringify([memoryId, manifestId, requestedDemoMemoryId, viewingReplay])
   const [selection, setSelection] = useState<{ key: string; result: SelectedMemoryResult }>({ key: '', result: LOADING })
 
   useEffect(() => {
     const setResult = (result: SelectedMemoryResult) => setSelection({ key: selectionKey, result })
     let cancelled = false
-    let generation = 0
+    let actorEpoch = 0
+    let memoryEpoch = 0
+    let unsubscribePolicy: (() => void) | undefined
     let unsubscribeMemory: (() => void) | undefined
 
-    // Invalidate callbacks before detaching their source. A queued Firestore
-    // callback must never restore a previous account or revoked memory.
+    // Every detached source invalidates queued callbacks before unsubscribe.
+    // Actor and policy generations are both checked before private content is
+    // allowed into React state, including after a prior granted revision.
     const detachMemory = () => {
-      generation += 1
-      unsubscribeMemory?.()
+      memoryEpoch += 1
+      const unsubscribe = unsubscribeMemory
       unsubscribeMemory = undefined
+      unsubscribe?.()
+    }
+    const detachActor = () => {
+      actorEpoch += 1
+      detachMemory()
+      const unsubscribe = unsubscribePolicy
+      unsubscribePolicy = undefined
+      unsubscribe?.()
     }
 
     if (!memoryId) {
@@ -82,50 +96,113 @@ export function useSelectedMemory(): SelectedMemoryResult {
     }
 
     const auth = getAuth(app)
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (cancelled) return
-      detachMemory()
-      const activeGeneration = generation
-      const isCurrent = () => !cancelled && generation === activeGeneration
+      detachActor()
+      const ownerEpoch = actorEpoch
+      const isCurrentOwner = () => !cancelled && actorEpoch === ownerEpoch
       if (!user) {
         setResult({ status: 'unauthorized', memory: null, message: 'Sign in to open this private memory.' })
         return
       }
 
+      // No memory data is subscribed or admitted until the canonical account
+      // policy has been checked for this exact owner and consumer.
       setResult(LOADING)
+      let currentRevision = -1
+      let deniedAtRevision: number | null = null
+      const attachMemory = () => {
+        if (!isCurrentOwner() || unsubscribeMemory) return
+        const boundEpoch = ++memoryEpoch
+        const isCurrentMemory = () => isCurrentOwner() && boundEpoch === memoryEpoch
+        try {
+          unsubscribeMemory = onSnapshot(
+            doc(getFirebaseDb(), 'users', user.uid, 'memories', memoryId),
+            (snapshot) => {
+              if (!isCurrentMemory()) return
+              if (!snapshot.exists()) {
+                setResult(unavailable('Selected memory could not be found.'))
+                return
+              }
+              const parsed = parseSelectedMemory(snapshot.data(), user.uid, memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
+              if (parsed.memory && manifestId && parsed.memory.replayManifest.id !== manifestId) {
+                setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this memory.' })
+                return
+              }
+              setResult(parsed)
+            },
+            () => {
+              if (!isCurrentMemory()) return
+              setResult(unavailable('Selected memory could not be loaded.'))
+            },
+          )
+        } catch {
+          if (!isCurrentMemory()) return
+          setResult(unavailable('Selected memory could not be loaded.'))
+        }
+      }
+
       try {
-        unsubscribeMemory = onSnapshot(
-          doc(getFirebaseDb(), 'users', user.uid, 'memories', memoryId),
+        unsubscribePolicy = onSnapshot(
+          doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current'),
           (snapshot) => {
-            if (!isCurrent()) return
-            if (!snapshot.exists()) {
-              setResult(unavailable('Selected memory could not be found.'))
+            if (!isCurrentOwner()) return
+            const raw = snapshot.exists() ? snapshot.data() : undefined
+            if (!isConsentPolicy(raw, user.uid)) {
+              detachMemory()
+              setResult(unavailable('Private memory consent authority is unavailable.'))
               return
             }
-            const parsed = parseSelectedMemory(snapshot.data(), user.uid, memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
-            if (parsed.memory && manifestId && parsed.memory.replayManifest.id !== manifestId) {
-              setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this memory.' })
+            // Never recover a revoked source from an older (possibly cached)
+            // policy snapshot. A new grant needs a later canonical revision.
+            if (raw.revision < currentRevision) {
+              detachMemory()
+              setResult(unavailable('Private memory consent authority is stale.'))
               return
             }
-            setResult(parsed)
+            const memory = raw.domains.memory
+            const permissionVisible = viewingReplay ? memory.replayVisible : memory.lifeMapVisible
+            const allowed = raw.enforcement.state === 'fully-enforced'
+              && (memory.mode === 'granted' || memory.mode === 'limited')
+              && permissionVisible
+            if (!allowed) {
+              deniedAtRevision = raw.revision
+              currentRevision = Math.max(currentRevision, raw.revision)
+              detachMemory()
+              setResult({ status: 'unauthorized', memory: null, message: 'Memory access is not currently permitted.' })
+              return
+            }
+            if (deniedAtRevision !== null && raw.revision <= deniedAtRevision) {
+              detachMemory()
+              setResult({ status: 'unauthorized', memory: null, message: 'A newer consent authorization is required.' })
+              return
+            }
+            if (raw.revision !== currentRevision) {
+              currentRevision = raw.revision
+              detachMemory()
+              setResult(LOADING)
+            }
+            attachMemory()
           },
           () => {
-            if (!isCurrent()) return
-            setResult(unavailable('Selected memory could not be loaded.'))
+            if (!isCurrentOwner()) return
+            detachMemory()
+            setResult(unavailable('Private memory consent authority could not be loaded.'))
           },
         )
       } catch {
-        if (!isCurrent()) return
-        setResult(unavailable('Selected memory could not be loaded.'))
+        if (!isCurrentOwner()) return
+        detachMemory()
+        setResult(unavailable('Private memory consent authority could not be loaded.'))
       }
     })
 
     return () => {
       cancelled = true
-      detachMemory()
-      unsubscribe()
+      detachActor()
+      unsubscribeAuth()
     }
-  }, [manifestId, memoryId, requestedDemoMemoryId, selectionKey])
+  }, [manifestId, memoryId, requestedDemoMemoryId, selectionKey, viewingReplay])
 
   // Query navigation can reuse the mounted client. Never render the previous
   // selection during the frame before its subscription effect is replaced.

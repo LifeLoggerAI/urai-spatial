@@ -2,16 +2,50 @@
   "schemaVersion": 1,
   "id": "council-builder-human-rig-v3",
   "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-builder-human-rigged-v3.glb",
-  "targetRoutes": ["/council"],
+  "targetRoutes": [
+    "/council"
+  ],
   "bytes": 2231980,
   "sha256": "a202b042e75fcaa69443c6e224121b0e5e7f7978f008e8fa4e60cda0a8b66567",
-  "measured": {"triangleCount":54316,"boundsMeters":[0.76,1.97,0.36],"nodeCount":25,"meshCount":7,"materialCount":8,"skinCount":1,"animationClips":["idle_breath","listen_acknowledge","speak_calm","gesture_open","gaze_shift"]},
-  "compressionStatus": "candidate-uncompressed-v3",
+  "measured": {
+    "format": "glb",
+    "version": 2,
+    "generator": "URAI Human Rig Forge V3",
+    "nodes": 25,
+    "meshes": 7,
+    "materials": 8,
+    "triangleCount": 54316,
+    "boundsMin": [
+      -0.3799765110015869,
+      -0.0902400016784668,
+      -0.14603807032108307
+    ],
+    "boundsMax": [
+      0.3799765408039093,
+      1.8799999952316284,
+      0.2143135964870453
+    ],
+    "boundsMeters": [
+      0.76,
+      1.97,
+      0.36
+    ],
+    "extensionsUsed": [],
+    "extensionsRequired": []
+  },
+  "compressionStatus": "uncompressed-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "council-semantic-presence-without-rigged-human",
   "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
   "license": "URAI Labs internally generated production candidate asset",
   "generatedBy": "URAI Human Rig Forge V3",
   "generatedAt": "2026-08-11T00:00:00.000Z",
-  "releaseState": "candidate-not-production-ready"
+  "releaseState": "candidate-not-production-ready",
+  "measurementReconciliation": {
+    "sourceSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
+    "observedAt": "2026-10-06T17:20:57.485944+00:00",
+    "method": "audit-launch-critical-artifact.mjs actual-byte inspection",
+    "assetBytesChanged": false,
+    "finalReviewGranted": false
+  }
 }

@@ -14,7 +14,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (process.env.URAI_STRIPE_COMMERCE_ENABLED !== 'true') {
+    return NextResponse.json({ error: 'Stripe commerce is not enabled.' }, { status: 503, headers: { 'Cache-Control': 'private, no-store' } });
+  }
+
   const { returnUrl } = await request.json() as { returnUrl?: string };
+  if (await verifyFirebaseUser(request) !== uid) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const secretKey = process.env.STRIPE_SECRET_KEY;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   const stripeMode = parseStripeRuntimeMode(process.env.URAI_STRIPE_MODE);
@@ -28,6 +35,9 @@ export async function POST(request: Request) {
   }
 
   const entitlement = await readEntitlement(uid);
+  if (await verifyFirebaseUser(request) !== uid) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   if (!entitlement.stripeCustomerId) {
     return NextResponse.json({ error: 'No Stripe customer is associated with this user.' }, { status: 409 });
   }
@@ -60,11 +70,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Stripe customer mode mismatch.' }, { status: 500 });
   }
 
+  if (await verifyFirebaseUser(request) !== uid) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (configuration) {
+    let portalConfiguration;
+    try {
+      portalConfiguration = await stripe.billingPortal.configurations.retrieve(configuration);
+    } catch {
+      return NextResponse.json({ error: 'Stripe portal configuration could not be verified.' }, { status: 502 });
+    }
+    if (await verifyFirebaseUser(request) !== uid) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (portalConfiguration.id !== configuration || portalConfiguration.active !== true
+      || !stripeLivemodeMatchesRuntime(portalConfiguration.livemode, stripeMode)) {
+      return NextResponse.json({ error: 'Stripe portal configuration authority mismatch.' }, { status: 500 });
+    }
+  }
+
   const session = await stripe.billingPortal.sessions.create({
     customer: customer.id,
     return_url: redirectBase.toString(),
     configuration: configuration || undefined,
   });
 
-  return NextResponse.json({ url: session.url, environment: stripeMode });
+  if (await verifyFirebaseUser(request) !== uid) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  return NextResponse.json({ url: session.url, environment: stripeMode }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

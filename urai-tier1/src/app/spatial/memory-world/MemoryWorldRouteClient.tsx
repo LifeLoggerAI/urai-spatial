@@ -1,5 +1,7 @@
 'use client'
 
+import MemoryExperienceState from '@/spatial/memory/MemoryExperienceState'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
@@ -23,7 +25,7 @@ export default function MemoryWorldRouteClient() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.key !== 'Escape') return
       const target = event.target
-      if (target instanceof HTMLElement && (target.isContentEditable || target.matches('input,textarea,select,[role="textbox"]'))) return
+      if (target instanceof HTMLElement && (target.closest('[data-urai-adam-presence]') || target.isContentEditable || target.matches('input,textarea,select,[role="textbox"]'))) return
       event.preventDefault()
       event.stopPropagation()
       exit()
@@ -33,7 +35,7 @@ export default function MemoryWorldRouteClient() {
   }, [exit])
 
   if (!world) {
-    return <main data-testid="memory-world-route" data-memory-world-state={result.status} style={{minHeight:'100svh',display:'grid',placeItems:'center',padding:24,background:'#05070b',color:'#fff'}}><section><h1>Memory World</h1><p>{result.message}</p><button type="button" onClick={exit}>Return to Replay</button></section></main>
+    return <main data-testid="memory-world-route" data-memory-world-state={result.status}><MemoryExperienceState title="Memory World" journey="Replay · Memory World" message={result.message} guidance="This world needs an available selected memory. Return to Replay to choose its context; a memory world is not a recording of the past."><button type="button" onClick={exit}>Return to Replay</button><a href="/life-map">Open Life Map</a><AdamLauncherSlot name="memory-world-unavailable" as="div" /></MemoryExperienceState></main>
   }
 
   return <><MemoryWorldRuntime world={world} onExit={exit} />{memory ? <MemoryWorldAuthoringTools memory={memory} world={world} onWorldChange={setWorld} /> : null}</>

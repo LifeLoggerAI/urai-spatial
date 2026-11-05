@@ -1,0 +1,43 @@
+{
+  "package": "chokidar",
+  "upstreamVersion": "3.6.0",
+  "license": "MIT",
+  "source": "Actual installed package from Spatial current dependency graph; original lock retains registry tarball integrity.",
+  "sourcePath": "/workspace/scratch/6271b7f14f2d/lanes/spatial/repo/node_modules/chokidar",
+  "files": {
+    "README.md": {
+      "bytes": 14392,
+      "sha256": "e71f8aad356aba33718eb96086856d55a488d345c3b090142c4d32333c3893c4"
+    },
+    "package.json": {
+      "bytes": 1648,
+      "sha256": "24c7edf8c0127eb1bd257da726983a9aed172a0a1cd5454607a040021675f50e"
+    },
+    "LICENSE": {
+      "bytes": 1129,
+      "sha256": "db9ba183d4cbfbaf6c27db2effddbb84b46340c33ed32a066bc0b144a3ea1298"
+    },
+    "index.js": {
+      "bytes": 28379,
+      "sha256": "18ce2effe87d6379aa1d3756e5694c57c72cf97804056d688499a2bffcec66fd"
+    },
+    "lib/fsevents-handler.js": {
+      "bytes": 16368,
+      "sha256": "c2e15baebf066bf8531cbf82a324631a40b218d073274429edb50b4bdbbb0265"
+    },
+    "lib/constants.js": {
+      "bytes": 1878,
+      "sha256": "bedb4f916d3da3804e20eef822ce0ad7f7879b890655d77db019e37eb5f388fb"
+    },
+    "lib/nodefs-handler.js": {
+      "bytes": 20067,
+      "sha256": "60be035e7ea64858a0144230d5073b18a69f3b0eefba62a9b032c6d2f179d807"
+    },
+    "types/index.d.ts": {
+      "bytes": 6339,
+      "sha256": "0744807211f8cd16343fb1a796f53a8f7b7f95d4bd278c48febf657679bf28e6"
+    }
+  },
+  "change": "Only index.js NodeFs and FSEvents promise rejection handlers and local package identity; original upstream source hashes/license/README/types retained. Retained nonproduction source only; no raw advisory waiver or upstream fixed-release claim.",
+  "originalRegistryIntegrity": "sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw=="
+}

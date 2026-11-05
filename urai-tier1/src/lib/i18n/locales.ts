@@ -1,7 +1,22 @@
+import { URAI_POLISH_PREPARED_MESSAGES } from './polishPrepared'
+import { URAI_CORE_CATALOGS, URAI_CORE_MESSAGES } from './coreMessages'
+import { URAI_JOURNEY_CATALOGS, URAI_JOURNEY_MESSAGES } from './journeyMessages'
+import { URAI_JOURNEY_CONTROL_CATALOGS, URAI_JOURNEY_CONTROL_MESSAGES } from './journeyControlMessages'
+import { URAI_GEOGRAPHIC_CATALOGS, URAI_GEOGRAPHIC_MESSAGES } from './geographicMessages'
+import { URAI_FOUNDER_CATALOGS, URAI_FOUNDER_MESSAGES } from './founderMessages'
+import { URAI_FOCUS_COMPATIBILITY_CATALOGS, URAI_FOCUS_COMPATIBILITY_MESSAGES } from './focusCompatibilityMessages'
+
 export const URAI_LAUNCH_LOCALES = [
   'en','zh-Hans','hi','es','fr','ar','bn','pt-BR','ru','ur',
-  'id','de','ja','sw','tr','vi','fil','ko','it','fa',
+  'id','de','ja','sw','tr','vi','fil','ko','it','fa','pl',
 ] as const
+
+// These are distinct LANGUAGE targets, not language variants counted twice.
+// A target is not a prepared catalog or a launch-admitted locale. New languages
+// enter URAI_LAUNCH_LOCALES only after substantive translation preparation.
+export const URAI_GLOBAL_LANGUAGE_TARGETS = [...URAI_LAUNCH_LOCALES] as const
+export type UraiGlobalLanguageTarget = typeof URAI_GLOBAL_LANGUAGE_TARGETS[number]
+export const URAI_UNPREPARED_LANGUAGE_TARGETS = [] as const
 
 export type UraiLaunchLocale = typeof URAI_LAUNCH_LOCALES[number]
 export type UraiTextDirection = 'ltr' | 'rtl'
@@ -24,11 +39,15 @@ export function isUraiLaunchLocale(value: string | null | undefined): value is U
 
 export function normalizeUraiLocale(value: string | null | undefined): UraiLaunchLocale | null {
   if (!value) return null
-  const candidate = value.trim().replace('_','-')
+  const candidate = value.trim().replace(/_/g,'-')
   if (isUraiLaunchLocale(candidate)) return candidate
   const lower = candidate.toLowerCase()
   const exact = URAI_LAUNCH_LOCALES.find(locale => locale.toLowerCase() === lower)
   if (exact) return exact
+  // Traditional-script Chinese has no admitted launch catalog yet. Do not
+  // silently coerce zh-Hant, zh-TW, zh-HK or zh-MO to Simplified Chinese.
+  // Leave the preference unresolved so negotiation can check the next choice.
+  if (/^zh-(?:hant|tw|hk|mo)(?:-|$)/.test(lower)) return null
   const base = lower.split('-')[0]
   if (BASE_LANGUAGE[base]) return BASE_LANGUAGE[base]!
   const launchBase = URAI_LAUNCH_LOCALES.find(locale => locale.toLowerCase() === base)
@@ -61,6 +80,12 @@ export type UraiMessageDefinition = {
 }
 
 export const URAI_SOURCE_MESSAGES = {
+  ...URAI_CORE_MESSAGES,
+  ...URAI_JOURNEY_MESSAGES,
+  ...URAI_JOURNEY_CONTROL_MESSAGES,
+  ...URAI_GEOGRAPHIC_MESSAGES,
+  ...URAI_FOUNDER_MESSAGES,
+  ...URAI_FOCUS_COMPATIBILITY_MESSAGES,
   'nav.home': { id:'nav.home', source:'Home', sensitivity:'general', description:'Canonical Home navigation label' },
   'nav.lifeMap': { id:'nav.lifeMap', source:'Life Map', sensitivity:'general', description:'Canonical Life Map navigation label' },
   'nav.focus': { id:'nav.focus', source:'Focus', sensitivity:'general', description:'Canonical Focus navigation label' },
@@ -78,6 +103,7 @@ export type UraiCatalog = Partial<Record<UraiMessageId,string>>
 // review a complete string set instead of an empty shell. They are NOT runtime
 // eligible until the locale is explicitly added to URAI_NATIVE_REVIEWED_LOCALES.
 export const URAI_CATALOGS: Record<UraiLaunchLocale,UraiCatalog> = {
+  pl: Object.fromEntries((['nav.home','nav.lifeMap','nav.focus','nav.replay','common.loading','common.unavailable','privacy.reviewRequired'] as const).map(id => [id, URAI_POLISH_PREPARED_MESSAGES[id]])) as UraiCatalog,
   en: {
     'nav.home': 'Home',
     'nav.lifeMap': 'Life Map',
@@ -260,6 +286,8 @@ export const URAI_CATALOGS: Record<UraiLaunchLocale,UraiCatalog> = {
   },
 }
 
+for (const locale of URAI_LAUNCH_LOCALES) Object.assign(URAI_CATALOGS[locale], URAI_CORE_CATALOGS[locale], URAI_JOURNEY_CATALOGS[locale], URAI_JOURNEY_CONTROL_CATALOGS[locale], URAI_GEOGRAPHIC_CATALOGS[locale], URAI_FOUNDER_CATALOGS[locale], URAI_FOCUS_COMPATIBILITY_CATALOGS[locale])
+
 export function messageFor(locale: UraiLaunchLocale, id: UraiMessageId) {
   const admittedLocale = runtimeUraiLocale(locale)
   return URAI_CATALOGS[admittedLocale][id] ?? URAI_CATALOGS.en[id] ?? URAI_SOURCE_MESSAGES[id].source
@@ -267,11 +295,13 @@ export function messageFor(locale: UraiLaunchLocale, id: UraiMessageId) {
 
 export function localizationCompleteness(locale: UraiLaunchLocale) {
   const total = Object.keys(URAI_SOURCE_MESSAGES).length
-  const translated = Object.keys(URAI_CATALOGS[locale]).length
+  const missingMessageIds = (Object.keys(URAI_SOURCE_MESSAGES) as UraiMessageId[]).filter(id => !URAI_CATALOGS[locale][id]?.trim())
+  const translated = total - missingMessageIds.length
   return {
     locale,
     translated,
     total,
+    missingMessageIds,
     complete: translated === total,
     nativeReviewRequired: !URAI_NATIVE_REVIEWED_LOCALES.has(locale),
   }
@@ -288,6 +318,14 @@ export function formatUraiDate(locale: UraiLaunchLocale, value: Date | number | 
 
 export function formatUraiNumber(locale: UraiLaunchLocale, value: number, options: Intl.NumberFormatOptions = {}) {
   return new Intl.NumberFormat(locale, options).format(value)
+}
+
+export function formatUraiCurrency(locale: UraiLaunchLocale, value: number, currency: string, options: Intl.NumberFormatOptions = {}) {
+  return new Intl.NumberFormat(locale, { ...options, style: 'currency', currency }).format(value)
+}
+
+export function formatUraiRelativeTime(locale: UraiLaunchLocale, value: number, unit: Intl.RelativeTimeFormatUnit, options: Intl.RelativeTimeFormatOptions = {}) {
+  return new Intl.RelativeTimeFormat(locale, options).format(value, unit)
 }
 
 export function formatUraiList(locale: UraiLaunchLocale, values: string[], options: Intl.ListFormatOptions = {}) {

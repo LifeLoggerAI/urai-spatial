@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, onSnapshot } from 'firebase/firestore'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import { parseLifeMovieRuntimeManifest, type LifeMovieManifestResult } from './lifeMovieRuntimeContract'
 
@@ -17,6 +17,9 @@ export function useLifeMovieRuntimeManifest(movieId: string | null) {
 
   useEffect(() => {
     let cancelled = false
+    let generation = 0
+    let detachManifest: (() => void) | undefined
+    const detach = () => { generation += 1; detachManifest?.(); detachManifest = undefined }
 
     if (!movieId) {
       setResult({ status: 'unavailable', manifest: null, message: 'No Life Movie manifest was requested.' })
@@ -29,8 +32,11 @@ export function useLifeMovieRuntimeManifest(movieId: string | null) {
     }
 
     const auth = getAuth(app)
-    const stop = onAuthStateChanged(auth, async (user) => {
+    const stop = onAuthStateChanged(auth, user => {
       if (cancelled) return
+      detach()
+      const version = generation
+      const current = () => !cancelled && generation === version && auth.currentUser === user
       if (!user) {
         setResult({ status: 'unauthorized', manifest: null, message: 'Sign in to open this private Life Movie.' })
         return
@@ -38,15 +44,16 @@ export function useLifeMovieRuntimeManifest(movieId: string | null) {
 
       setResult(LOADING)
       try {
-        const snapshot = await getDoc(doc(getFirebaseDb(), 'users', user.uid, 'lifeMovies', movieId))
-        if (cancelled) return
-        if (!snapshot.exists()) {
-          setResult({ status: 'unavailable', manifest: null, message: 'Life Movie manifest could not be found.' })
-          return
-        }
-        setResult(parseLifeMovieRuntimeManifest(snapshot.data(), user.uid))
+        detachManifest = onSnapshot(doc(getFirebaseDb(), 'users', user.uid, 'lifeMovies', movieId), snapshot => {
+          if (!current()) return
+          if (!snapshot.exists()) {
+            setResult({ status: 'unavailable', manifest: null, message: 'Life Movie manifest could not be found.' })
+            return
+          }
+          setResult(parseLifeMovieRuntimeManifest(snapshot.data(), user.uid))
+        }, () => { if (current()) setResult({ status: 'unavailable', manifest: null, message: 'Life Movie manifest could not be loaded.' }) })
       } catch (error) {
-        if (cancelled) return
+        if (!current()) return
         setResult({
           status: 'unavailable',
           manifest: null,
@@ -57,6 +64,7 @@ export function useLifeMovieRuntimeManifest(movieId: string | null) {
 
     return () => {
       cancelled = true
+      detach()
       stop()
     }
   }, [movieId])

@@ -15,7 +15,7 @@ if (javaCheck.status === 0) {
     'emulators:exec',
     '--only',
     'firestore',
-    'node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs',
+    'node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs',
   ])
   process.exit(result.status ?? 1)
 }
@@ -27,5 +27,6 @@ const fallback = run('node', [
   '--test',
   'tests/firestore.assetManifests.rules.static.test.mjs',
   'tests/firestore.privacyConsent.rules.static.test.mjs',
+  'tests/firestore.lifeModel.rules.static.test.mjs',
 ])
 process.exit(fallback.status ?? 1)

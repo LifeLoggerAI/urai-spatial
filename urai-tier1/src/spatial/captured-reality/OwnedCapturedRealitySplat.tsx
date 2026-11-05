@@ -7,6 +7,7 @@ import { Color, Vector4 } from 'three'
 import { createCapturedRealitySplatSession } from './capturedRealitySplatSession'
 import type { CapturedSplatResources } from './capturedRealitySplatResources'
 import { capturedRealityFrameHasMeaningfulPixels } from './capturedRealityRenderProof'
+import type { CapturedRealityStreamAuthority } from './capturedRealityDelivery'
 
 /** Private splat renderer: every mount owns and releases its complete session.
  * Readiness is emitted only after a completed splat draw produces meaningful
@@ -17,6 +18,7 @@ export function OwnedCapturedRealitySplat({
   src, maxBytes, chunkSize = 25_000, alphaHash = true, onRenderReady,
   loadingLabel = 'Loading captured place',
   failureMessage = 'Captured place rendering stopped.',
+  authority,
 }: {
   src: string
   maxBytes: number
@@ -25,6 +27,7 @@ export function OwnedCapturedRealitySplat({
   onRenderReady?: (src: string) => void
   loadingLabel?: string
   failureMessage?: string
+  authority?: CapturedRealityStreamAuthority
 }) {
   const gl = useThree((state) => state.gl)
   const [loaded, setLoaded] = useState<{ src: string; resource: CapturedSplatResources } | null>(null)
@@ -45,7 +48,7 @@ export function OwnedCapturedRealitySplat({
     setProgress(0)
     renderReadySent.current = false
     const session = createCapturedRealitySplatSession({
-      url: src, maxBytes, chunkSize, alphaHash, maxTextureSize: gl.capabilities.maxTextureSize,
+      url: src, maxBytes, chunkSize, alphaHash, maxTextureSize: gl.capabilities.maxTextureSize, authority,
       onResource(resource) { if (active) setLoaded({ src, resource }) },
       onProgress(bytes, total) { if (active) setProgress(Math.floor(bytes / total * 100)) },
       onFailure() { if (active) setFailure({ src, error: new Error(failureMessage) }) },
@@ -59,7 +62,7 @@ export function OwnedCapturedRealitySplat({
       active = false
       session.dispose()
     }
-  }, [src, maxBytes, chunkSize, alphaHash, gl, failureMessage])
+  }, [src, maxBytes, chunkSize, alphaHash, gl, failureMessage, authority])
 
   useFrame(({ camera }) => {
     if (loaded?.src === src && !loaded.resource.disposed) {

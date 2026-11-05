@@ -2,6 +2,10 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { CANVAS_EVIDENCE_SAMPLE_POINTS, captureVisibleCanvasPng } from './capture-visible-canvas-png.mjs'
+import { inspectHomeOrbCanvasSamples, inspectVisibleHomeNavigation } from './home-orb-canvas-sampling.mjs'
+import { attachHomeOrbFailureProbe, captureHomeOrbFailure } from './home-orb-failure-diagnostics.mjs'
+import { dismissHomeFirstRunGuide } from './dismiss-home-first-run-guide.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -10,6 +14,9 @@ const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/portal-orb-proof')
 const orbPath = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const portalPath = '/assets/urai/generated/models/portal-ring-master-v1.glb'
+const semanticNavigationEvaluationTimeout = 90_000
+const paintedHomeEvaluationTimeout = 90_000
+const worldCanvasSelector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"] canvas'
 const finalPackReceiptPath = path.resolve('operations/assets/generated-receipts/urai-final-glb-pack-v1.json')
 const finalPackReceipt = JSON.parse(await readFile(finalPackReceiptPath, 'utf8'))
 const orbReceipt = finalPackReceipt.assets?.find((asset) => asset.fileName === path.basename(orbPath))
@@ -21,12 +28,13 @@ if (orbBytes.length !== orbReceipt.bytes || orbSha256 !== orbReceipt.sha256) thr
 const cases = [
   { id: 'desktop', viewport: { width: 1440, height: 900 } },
   { id: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+  { id: 'mobile-narrow', viewport: { width: 320, height: 900 }, isMobile: true, hasTouch: true },
   { id: 'reduced-motion', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' },
 ]
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-sacred-home-orb-proof-3',
+  schemaVersion: 'urai-sacred-home-orb-proof-4',
   exactHead,
   capturedAt: new Date().toISOString(),
   runtimeContract: 'natural-home-real-glb-orb-environmental-threshold-semantic-and-visual-proof',
@@ -44,34 +52,70 @@ async function frames(page, count = 8) {
   }), count)
 }
 
-async function imageEvidence(page) {
-  const buffer = await page.screenshot({ fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
-  const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
-  const sample = await page.evaluate(async (url) => {
-    const image = new Image()
-    await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = url })
-    const canvas = document.createElement('canvas')
-    canvas.width = image.naturalWidth
-    canvas.height = image.naturalHeight
-    const context = canvas.getContext('2d', { willReadFrequently: true })
-    if (!context) return { luminanceRange: 0, visibleSamples: 0 }
-    context.drawImage(image, 0, 0)
-    const points = [[.12,.18],[.36,.18],[.64,.18],[.88,.18],[.12,.5],[.36,.5],[.64,.5],[.88,.5],[.12,.82],[.36,.82],[.64,.82],[.88,.82]]
-    const values = points.map(([xr, yr]) => {
-      const x = Math.min(canvas.width - 1, Math.max(0, Math.floor(canvas.width * xr)))
-      const y = Math.min(canvas.height - 1, Math.max(0, Math.floor(canvas.height * yr)))
-      const pixel = context.getImageData(x, y, 1, 1).data
-      return Math.round(pixel[0] * .2126 + pixel[1] * .7152 + pixel[2] * .0722)
+async function inspectCanvasSamplingFromPage(page) {
+  // Preserve the selector-input sampler's direct page transport while bounding
+  // both its exact-one canvas guard and the unchanged occlusion predicate.
+  const inspectCanvasSamples = async () => {
+    if (await page.evaluate((selector) => document.querySelectorAll(selector).length, worldCanvasSelector) !== 1) {
+      throw new Error('Home/Orb visual proof requires exactly one world canvas')
+    }
+    return page.evaluate(inspectHomeOrbCanvasSamples, {
+      selector: worldCanvasSelector,
+      points: CANVAS_EVIDENCE_SAMPLE_POINTS,
     })
-    return { luminanceRange: Math.max(...values) - Math.min(...values), visibleSamples: values.filter((value) => value >= 10).length }
-  }, dataUrl)
-  return { buffer, ...sample }
+  }
+  let timeout
+  try {
+    return await Promise.race([
+      inspectCanvasSamples(),
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error('Home canvas sampling exceeded its bounded painted-home deadline')), paintedHomeEvaluationTimeout)
+      }),
+    ])
+  } finally { clearTimeout(timeout) }
+}
+
+async function imageEvidence(page, canvas, samplePoints, selector) {
+  const readEvidence = async () => {
+    const { buffer, capture } = await captureVisibleCanvasPng(page, canvas, 90_000, samplePoints, selector)
+    const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
+    const sample = await page.evaluate(async ({ url, points }) => {
+      const image = new Image()
+      await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = url })
+      const canvas = document.createElement('canvas')
+      canvas.width = image.naturalWidth
+      canvas.height = image.naturalHeight
+      const context = canvas.getContext('2d', { willReadFrequently: true })
+      if (!context) return { luminanceRange: 0, visibleSamples: 0 }
+      context.drawImage(image, 0, 0)
+      const values = points.map(([xr, yr]) => {
+        const x = Math.min(canvas.width - 1, Math.max(0, Math.floor(canvas.width * xr)))
+        const y = Math.min(canvas.height - 1, Math.max(0, Math.floor(canvas.height * yr)))
+        const pixel = context.getImageData(x, y, 1, 1).data
+        return Math.round(pixel[0] * .2126 + pixel[1] * .7152 + pixel[2] * .0722)
+      })
+      return { luminanceRange: Math.max(...values) - Math.min(...values), visibleSamples: values.filter((value) => value >= 10).length }
+    }, { url: dataUrl, points: samplePoints })
+    return { buffer, capture, ...sample }
+  }
+  // Page DOM evaluations have no native timeout. Bound the whole guarded
+  // capture and PNG inspection, including both pre/post-capture DOM reads.
+  let timeout
+  try {
+    return await Promise.race([
+      readEvidence(),
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error('Home canvas image evidence exceeded its bounded painted-home deadline')), paintedHomeEvaluationTimeout)
+      }),
+    ])
+  } finally { clearTimeout(timeout) }
 }
 
 for (const spec of cases) {
   const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
   const context = await browser.newContext({ viewport: spec.viewport, isMobile: spec.isMobile, hasTouch: spec.hasTouch, reducedMotion: spec.reducedMotion })
   const page = await context.newPage()
+  const diagnosticProbe = await attachHomeOrbFailureProbe(page)
   const pageErrors = []
   const failedRequests = []
   const portalRequests = []
@@ -79,11 +123,17 @@ for (const spec of cases) {
   page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), failure: request.failure()?.errorText || 'unknown' }))
   page.on('request', (request) => { if (request.url().includes(path.basename(portalPath))) portalRequests.push(request.url()) })
   const record = { id: spec.id, viewport: spec.viewport, pageErrors, failedRequests, portalRequests, passed: false }
+  let stage = 'navigation'
   try {
     const response = await page.goto(`${base}/home/?homeAssetReview=1&homePrivateFixture=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+    stage = 'visible-home-owner'
     await owner.waitFor({ state: 'visible', timeout: 45_000 })
+    stage = 'home-assets-ready'
     await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45_000 })
+    stage = 'dismiss-first-run-guide'
+    record.onboardingDismissal = await dismissHomeFirstRunGuide(page)
+    stage = 'painted-home-proof'
     await frames(page)
     record.status = response?.status()
     record.visibleWorld = await owner.getAttribute('data-home-visible-world')
@@ -112,11 +162,20 @@ for (const spec of cases) {
     }).length)
     record.semanticOwner = await semanticNav.getAttribute('data-home-navigation-owner')
     record.semanticNonDominant = await semanticNav.getAttribute('data-home-navigation-non-dominant')
+    record.semanticVisual = await semanticNav.evaluate(inspectVisibleHomeNavigation, undefined, { timeout: semanticNavigationEvaluationTimeout })
     record.semanticOpacity = await page.evaluate(() => {
       const element = document.querySelector('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
       return element ? Number.parseFloat(getComputedStyle(element).opacity || '1') : null
     })
-    const visual = await imageEvidence(page)
+    const worldCanvas = owner.locator('canvas')
+    record.canvasSamplingBefore = await inspectCanvasSamplingFromPage(page)
+    if (!record.canvasSamplingBefore.accepted) throw new Error(`Home world sampling rejected an occlusion: ${JSON.stringify(record.canvasSamplingBefore)}`)
+    const visual = await imageEvidence(page, worldCanvas, record.canvasSamplingBefore.samplePoints, worldCanvasSelector)
+    record.canvasSamplingAfter = await inspectCanvasSamplingFromPage(page)
+    if (!record.canvasSamplingAfter.accepted || JSON.stringify(record.canvasSamplingAfter) !== JSON.stringify(record.canvasSamplingBefore)) {
+      throw new Error('Home world sampling or its exact Ground HUD exception changed during capture')
+    }
+    record.canvasCapture = visual.capture
     record.screenshot = `${spec.id}-${exactHead.slice(0, 12)}.png`
     await writeFile(path.join(outputDir, record.screenshot), visual.buffer)
     record.screenshotBytes = visual.buffer.length
@@ -148,9 +207,14 @@ for (const spec of cases) {
       && record.semanticVisibleActions === 3
       && record.semanticOwner === 'runtime-boundary'
       && record.semanticNonDominant === 'true'
-      && Number.isFinite(record.semanticOpacity) && record.semanticOpacity <= .02
+      && Number.isFinite(record.semanticOpacity) && record.semanticOpacity > 0 && record.semanticOpacity <= .02
+      && record.semanticVisual?.passed === true
       && record.visiblePortals === 'false'
       && record.portalRequests.length === 0
+      && record.canvasCapture?.source === 'visible-canvas-viewport-clip'
+      && record.canvasCapture?.boundsUnchanged === true
+      && record.canvasCapture?.canvasTopmostAtSamplePoints === true
+      && record.canvasCapture?.canvasTopmostAfterCapture === true
       && record.screenshotBytes > 12000
       && record.luminanceRange >= 16
       && record.visibleSamples >= 5
@@ -158,7 +222,14 @@ for (const spec of cases) {
       && failedRequests.length === 0
   } catch (error) {
     record.error = String(error)
+    record.failureStage = stage
+    try {
+      record.failureDiagnostics = await captureHomeOrbFailure(page, {
+        outputDir, prefix: `${spec.id}-${exactHead.slice(0, 12)}`, stage, probe: diagnosticProbe,
+      })
+    } catch { record.failureDiagnosticsUnavailable = true }
   }
+  diagnosticProbe.stop()
   receipt.cases.push(record)
   if (!record.passed) receipt.errors.push(record)
   await context.close().catch(() => {})

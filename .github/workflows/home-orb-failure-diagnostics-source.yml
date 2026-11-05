@@ -1,0 +1,34 @@
+name: Home Orb failure diagnostic source
+on:
+  pull_request:
+    paths:
+      - 'scripts/capture-natural-home-orb-proof.mjs'
+      - 'scripts/home-orb-failure-diagnostics.mjs'
+      - 'scripts/test-home-orb-failure-diagnostics.mjs'
+      - '.github/workflows/home-orb-failure-diagnostics-source.yml'
+permissions:
+  contents: read
+jobs:
+  diagnostic-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify exact clean source
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+      - name: Verify bounded failure diagnostics
+        run: |
+          node --check scripts/capture-natural-home-orb-proof.mjs
+          node --check scripts/home-orb-failure-diagnostics.mjs
+          node --test scripts/test-home-orb-failure-diagnostics.mjs

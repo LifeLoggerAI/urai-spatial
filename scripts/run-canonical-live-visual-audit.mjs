@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { focusVisualReady } from './focus-visual-readiness.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -45,6 +46,9 @@ async function stable(page, frames = 3) {
 }
 
 async function settleSpatialRoute(page, route) {
+  if (route.id === 'focus') {
+    await page.waitForFunction(focusVisualReady, null, { timeout: 90_000, polling: 50 })
+  }
   if (route.id === 'home') {
     await page.waitForFunction(() => {
       const webglOwner = document.querySelector('.urai-final-home-world[data-home-spatial-renderer="webgl"]')

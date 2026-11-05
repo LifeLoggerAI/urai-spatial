@@ -4,13 +4,13 @@
   "candidateOnly": true,
   "normalized": true,
   "assetCount": 12,
-  "totalBytes": 2263087,
+  "totalBytes": 2264967,
   "assets": [
     {
       "id": "home-entry-chamber-v1",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
-      "bytes": 184160,
-      "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+      "bytes": 186040,
+      "sha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
       "measured": {
         "triangleCount": 12934,
         "boundsMeters": {
@@ -39,7 +39,22 @@
           "Presence_Privacy",
           "Presence_Forming"
         ]
-      }
+      },
+      "normalRepair": {
+        "receiptPath": "operations/assets/normal-repair-receipts/home-entry-chamber-v1.json",
+        "receiptSha256": "5f57bbee1123e418456d13e240fdf5dc9812b2fd017d10292c46fae975d221e4",
+        "predecessorPath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+        "predecessorBytes": 184160,
+        "predecessorSha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+        "candidateBytes": 186040,
+        "candidateSha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+        "visualAcceptance": false,
+        "humanReviewApproved": false,
+        "deviceAcceptance": false,
+        "productionPromotion": false,
+        "exactHeadChecksPassed": false
+      },
+      "measurementStatus": "historical geometry report retained; exact unchanged geometry is proven by separate NORMAL-only repair receipt"
     },
     {
       "id": "ground-world-terrain-v1",
@@ -286,5 +301,62 @@
   ],
   "authoredHomeAssets": true,
   "authoredSourceReceipt": "operations/assets/sources/home-finalization-authored-source-v2.json",
-  "authoredSourceId": "urai-home-authored-sanctuary-source-v3"
+  "authoredSourceId": "urai-home-authored-sanctuary-source-v3",
+  "historicalHomeEntry": {
+    "id": "home-entry-chamber-v1",
+    "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+    "bytes": 184160,
+    "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "measured": {
+      "triangleCount": 12934,
+      "boundsMeters": {
+        "min": [
+          -9.345,
+          -1.83,
+          -9.238
+        ],
+        "max": [
+          9.345,
+          5.0844,
+          7.452
+        ],
+        "size": [
+          18.69,
+          6.9144,
+          16.69
+        ]
+      },
+      "repairedEulerRotations": 2,
+      "nodeCount": 160,
+      "materialCount": 13,
+      "animationClips": [
+        "Home_Breathing",
+        "Presence_Idle",
+        "Presence_Privacy",
+        "Presence_Forming"
+      ]
+    }
+  },
+  "historicalRunSemantics": "generatedAt and original summary measurements describe historical candidate generation; no current exact-head approval or provider/deployment authorization.",
+  "currentReconciliation": {
+    "observedAt": "2026-10-08T01:05:50.484508+00:00",
+    "normalRepair": {
+      "receiptPath": "operations/assets/normal-repair-receipts/home-entry-chamber-v1.json",
+      "receiptSha256": "5f57bbee1123e418456d13e240fdf5dc9812b2fd017d10292c46fae975d221e4",
+      "predecessorPath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+      "predecessorBytes": 184160,
+      "predecessorSha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+      "candidateBytes": 186040,
+      "candidateSha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+      "visualAcceptance": false,
+      "humanReviewApproved": false,
+      "deviceAcceptance": false,
+      "productionPromotion": false,
+      "exactHeadChecksPassed": false
+    },
+    "providerCalls": 0,
+    "paidExecutionAuthorized": false,
+    "visualApproval": false,
+    "exactHeadChecksPassed": false
+  }
 }

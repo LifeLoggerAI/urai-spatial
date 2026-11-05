@@ -29,9 +29,9 @@ test('private selected-memory state and truth boundaries remain inside the route
 test('memory identity is deterministic and explicit-demo safe', () => {
   assert.ok(sceneSource.includes('safeToken(params.get("node") || params.get("memoryId"))'))
   assert.ok(sceneSource.includes('next.set("memoryId", node.id)'))
-  assert.ok(sceneSource.includes('next.set("manifestId", manifestId)'))
+  assert.ok(sceneSource.includes('withLifeMapSelectionIdentity(params, next, memoryId)'))
   assert.ok(sceneSource.includes('next.set("node", node.id)'))
-  assert.ok(sceneSource.includes('if (explicitDemoRequested) next.set("demo", "1")'))
+  assert.ok(sceneSource.includes('const explicitDemoRequested = params.get("demo") === "1"'))
   assert.ok(universeSource.includes("privacyLevel: 'private'"))
 })
 
@@ -48,7 +48,8 @@ test('selected-memory travel and recenter remain user controlled', () => {
   assert.ok(sceneSource.includes('setPhase("arrival")'))
   assert.ok(sceneSource.includes('setSelectedId(null)'))
   assert.ok(sceneSource.includes('Overview'))
-  assert.ok(sceneSource.includes('if (selectedId) overview(); else router.push("/home")'))
+  assert.ok(sceneSource.includes('if (selectedId) overview(); else returnHome()'))
+  assert.ok(sceneSource.includes('router.push(homeJourneyHref("/home", params.toString()))'))
 })
 
 test('mobile controls retain safe areas and 48px touch targets', () => {

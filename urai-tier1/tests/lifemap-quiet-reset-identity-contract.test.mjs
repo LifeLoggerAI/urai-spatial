@@ -8,6 +8,7 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'u
 const demoNodes = read('src/components/lifemap/canonicalLifeMapDemoNodes.ts')
 const events = read('src/components/lifemap/useLifeMapEvents.ts')
 const adaptive = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
+const selectionJourney = read('src/spatial/memory/lifeMapSelectionJourney.ts')
 
 test('Quiet Reset is an exact replayable canonical Life Map node', () => {
   assert.match(demoNodes, /id: "quiet-reset"/)
@@ -36,7 +37,10 @@ test('selected Life Map mode resolves exact node identity into Focus and Replay'
   assert.match(adaptive, /setSelectedId\(node\.id\)/)
   assert.match(adaptive, /goalForNode\(selected\)/)
   assert.match(adaptive, /next\.set\("memoryId", selected\.id\)/)
-  assert.match(adaptive, /next\.set\("manifestId", manifestId\)/)
+  assert.match(adaptive, /withLifeMapSelectionIdentity\(params, next, memoryId\)/)
+  assert.match(adaptive, /withIdentity\(new URLSearchParams\(\), selected\.id\)/)
+  assert.match(selectionJourney, /next\.set\('manifestId', buildNamedExplicitDemoMemory\(demoId\)\.replayManifest\.id\)/)
+  assert.match(selectionJourney, /targetMemoryId === currentMemoryId/)
   assert.match(adaptive, /next\.set\("node", selected\.id\)/)
   assert.match(adaptive, /next\.set\("returnNode", selected\.id\)/)
   assert.match(adaptive, /router\.push\(destinationHref\("focus"\)\)/)

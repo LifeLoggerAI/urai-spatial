@@ -21,13 +21,22 @@ test('world 001 remains hard-off until literal review and reconstruction gates a
   assert.equal(manifest.runtime.promotionState, 'hard-off')
 })
 
-test('all synthetic survey passes retain explicit pending acceptance', () => {
+test('all synthetic survey passes remain unaccepted and S06 retains its literal motion rejection', () => {
   assert.equal(manifest.surveyPasses.length, 8)
   for (const pass of manifest.surveyPasses) {
     assert.match(pass.taskId, /^[0-9a-f-]{36}$/)
-    assert.equal(pass.acceptance, 'pending')
+    assert.equal(pass.acceptance, pass.id === 'S06_CCW_ARC' ? 'rejected' : 'pending')
     assert.ok(pass.seconds >= 6)
   }
+  const inspection = JSON.parse(fs.readFileSync(new URL('../../operations/captured-reality/worlds/URAI-IW-001-QUIET-RESET/survey-inspection.current.json', import.meta.url), 'utf8'))
+  const rejected = manifest.surveyPasses.find(pass => pass.id === 'S06_CCW_ARC')
+  assert.equal(inspection.inspection.rejectedTaskId, rejected.taskId)
+  assert.equal(inspection.inspection.reconstructionAuthorized, false)
+  assert.equal(inspection.independentAcceptance, false)
+  assert.equal(inspection.generationPerformed, false)
+  assert.match(inspection.inspection.rejection, /two simultaneous distinct bright sun discs/)
+  assert.equal(inspection.media.find(media => media.taskId === rejected.taskId).sha256,
+    '7c441028172c52b2ab57e26ec525628915be44e475fa3affd7c5d7295a367f0f')
 })
 
 test('generated interpretive lane contains no exact private-location claim', () => {

@@ -267,8 +267,46 @@ body:has(.urai-asset-home-world) .urai-home-spatial-world-final .urai-genesis-ho
   filter: brightness(1.28) saturate(1.16) contrast(1.04);
 }
 
-[data-testid="urai-r3f-canonical-lifemap"] > div[aria-hidden="true"] {
-  opacity: .012 !important;
+/* Keep the signed-out landmark inside its floating control footprint. */
+[data-testid="urai-r3f-canonical-lifemap"] > main[data-testid="urai-life-map-signed-out-disclosure"] {
+  height: auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  max-height: calc(100svh - 32px) !important;
+  overflow-y: auto;
+}
+
+@media (max-width: 480px) {
+  [data-testid="urai-r3f-canonical-lifemap"] > main[data-testid="urai-life-map-signed-out-disclosure"] {
+    left: max(10px, env(safe-area-inset-left)) !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    width: calc(100vw - 20px) !important;
+    padding: 10px !important;
+    border-radius: 14px !important;
+  }
+
+  [data-testid="urai-r3f-canonical-lifemap"] > main[data-testid="urai-life-map-signed-out-disclosure"] > strong {
+    font-size: 10px !important;
+    letter-spacing: .08em !important;
+  }
+
+  [data-testid="urai-r3f-canonical-lifemap"] > main[data-testid="urai-life-map-signed-out-disclosure"] > span {
+    margin-top: 4px !important;
+    font-size: 11px !important;
+    line-height: 1.32 !important;
+  }
+
+  [data-testid="urai-r3f-canonical-lifemap"] > main[data-testid="urai-life-map-signed-out-disclosure"] > div {
+    gap: 6px !important;
+    margin-top: 8px !important;
+  }
+
+  [data-testid="urai-r3f-canonical-lifemap"] > main[data-testid="urai-life-map-signed-out-disclosure"] button {
+    min-height: 48px !important;
+    padding: 0 10px !important;
+    font-size: 10px !important;
+    white-space: nowrap !important;
+  }
 }
 
 [data-testid="urai-true-3d-life-map"] canvas {

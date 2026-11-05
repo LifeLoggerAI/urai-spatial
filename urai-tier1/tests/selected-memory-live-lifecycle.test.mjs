@@ -38,6 +38,11 @@ function hooks() {
         queued.push(() => { slots[index].cleanup?.(); slots[index].cleanup = effect() })
       }
     },
+    useSyncExternalStore(subscribe, snapshot) {
+      const index = cursor++
+      if (!slots[index]) slots[index] = { cleanup: subscribe(() => { dirty = true }) }
+      return snapshot()
+    },
   }
   return {
     react,
@@ -55,18 +60,34 @@ function hooks() {
   }
 }
 
-function harness(search = '?memoryId=memory-one') {
+function harness(search = '?memoryId=memory-one', pathname = '/focus') {
   const driver = hooks()
   const subscriptions = []
+  const policySubscriptions = []
   let authCallback
   let authStopped = false
   const listeners = new Map()
   const browser = {
-    location: { search }, localStorage: { getItem: () => null },
+    location: { pathname, search, hash: '' }, localStorage: { getItem: () => null },
     addEventListener(name, listener) { listeners.set(name, listener) },
     removeEventListener(name, listener) { if (listeners.get(name) === listener) listeners.delete(name) },
   }
+  const commit = (url) => {
+    const target = new URL(url, 'http://localhost' + pathname)
+    Object.assign(browser.location, { pathname: target.pathname, search: target.search, hash: target.hash })
+  }
+  browser.history = {
+    length: 1,
+    pushState(_state, _title, url) { commit(url); this.length += 1 },
+    replaceState(_state, _title, url) { commit(url) },
+  }
+  const locationStore = load('../../lib/browserLocationStore.ts', {}, { window: browser })
+  const locationHook = load('../../hooks/useBrowserLocation.ts', {
+    react: driver.react,
+    '@/lib/browserLocationStore': locationStore,
+  })
   const contract = load('selectedMemoryContract.ts', {}, { URL })
+  const consentModel = load('../../app/privacy-controls/consentModel.ts', {})
   const owner = load('useSelectedMemory.ts', {
     react: driver.react,
     'firebase/auth': { getAuth: () => ({}), onAuthStateChanged(_auth, callback) { authCallback = callback; return () => { authStopped = true } } },
@@ -74,24 +95,51 @@ function harness(search = '?memoryId=memory-one') {
       doc: (...parts) => parts,
       onSnapshot(ref, receive, error) {
         const subscription = { ref, receive, error, stopped: false }
-        subscriptions.push(subscription)
+        if (ref.includes('privacyPolicy')) policySubscriptions.push(subscription)
+        else subscriptions.push(subscription)
         return () => { subscription.stopped = true }
       },
     },
     '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true, getFirebaseDb: () => ({}) },
     './selectedMemoryContract': contract,
+    '@/app/privacy-controls/consentModel': consentModel,
     './explicitDemoMemory': { buildNamedExplicitDemoMemory: contract.buildExplicitDemoMemory },
+    '@/hooks/useBrowserLocation': locationHook,
   }, { window: browser, URLSearchParams, process: { env: { NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'governed-bucket' } } })
   const render = () => driver.render(owner.useSelectedMemory)
   render()
   const data = (uid = 'account-a', id = 'memory-one') => ({ ...contract.buildExplicitDemoMemory(id), ownerId: uid, demo: false })
   const snapshot = (value) => ({ exists: () => value !== null, data: () => value })
+  let currentPolicy = null
+  const seededPolicy = uid => ({ ...consentModel.defaultConsentPolicy(uid), revision: 1 })
+  const policySnapshot = value => ({ exists: () => value !== null, data: () => value })
   return {
-    render, subscriptions, data,
-    signIn(uid) { authCallback(uid ? { uid } : null); return render() },
+    render, subscriptions, policySubscriptions, data,
+    policy: () => currentPolicy,
+    emitPolicy(value, index = policySubscriptions.length - 1) {
+      currentPolicy = value
+      policySubscriptions[index].receive(policySnapshot(value))
+      return render()
+    },
+    errorPolicy(index = policySubscriptions.length - 1) {
+      policySubscriptions[index].error(new Error('private-Firestore-details'))
+      return render()
+    },
+    signInWithoutPolicy(uid) { authCallback({ uid }); return render() },
+    signIn(uid) {
+      authCallback(uid ? { uid } : null)
+      if (uid) {
+        currentPolicy = seededPolicy(uid)
+        policySubscriptions.at(-1).receive(policySnapshot(currentPolicy))
+      }
+      return render()
+    },
     emit(index, value) { subscriptions[index].receive(snapshot(value)); return render() },
     error(index) { subscriptions[index].error(new Error('provider-private-details')); return render() },
     navigate(nextSearch) { browser.location.search = nextSearch; listeners.get('popstate')?.(); return render() },
+    push(nextSearch) { browser.history.pushState({}, '', nextSearch); return render() },
+    replace(nextSearch) { browser.history.replaceState({}, '', nextSearch); return render() },
+    historyLength: () => browser.history.length,
     unmount: () => driver.unmount(), authStopped: () => authStopped, listeners,
   }
 }
@@ -152,6 +200,45 @@ test('same-path Back/Forward query changes detach the old selection before new d
   assert.equal(h.emit(0, h.data()).memory.id, 'memory-two')
 })
 
+for (const operation of ['push', 'replace']) {
+  test(`same-path client ${operation} detaches old memory without relying on popstate`, () => {
+    const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+    assert.equal(h[operation]('?memoryId=memory-two').memory, null)
+    assert.equal(h.subscriptions[0].stopped, true)
+    assert.equal(h.historyLength(), operation === 'push' ? 2 : 1)
+    h.signIn('account-a')
+    assert.deepEqual(h.subscriptions[1].ref.slice(1), ['users', 'account-a', 'memories', 'memory-two'])
+    h.emit(1, h.data('account-a', 'memory-two'))
+    assert.equal(h.emit(0, h.data()).memory.id, 'memory-two')
+  })
+}
+
+test('same-path client manifest replacement cannot reuse the old accepted source', () => {
+  const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+  assert.equal(h.replace('?memoryId=memory-one&manifestId=wrong-manifest').memory, null)
+  assert.equal(h.subscriptions[0].stopped, true)
+  h.signIn('account-a')
+  const result = h.emit(1, h.data())
+  assert.equal(result.status, 'corrupt')
+  assert.equal(result.memory, null)
+})
+
+test('clearing selection in client navigation removes the previously loaded private memory', () => {
+  const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+  const result = h.push('/focus')
+  assert.equal(result.status, 'unavailable')
+  assert.equal(result.memory, null)
+  assert.equal(h.subscriptions[0].stopped, true)
+})
+
+test('a memory-looking fragment cannot substitute for an authoritative selection query', () => {
+  const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+  const result = h.push('/focus#?memoryId=memory-one')
+  assert.equal(result.status, 'unavailable')
+  assert.equal(result.memory, null)
+  assert.equal(h.subscriptions[0].stopped, true)
+})
+
 test('manifest mismatch fails closed even on a previously loaded source', () => {
   const h = harness('?memoryId=memory-one&manifestId=wrong-manifest'); h.signIn('account-a')
   const result = h.emit(0, h.data())
@@ -174,4 +261,99 @@ test('explicitly disclosed demo never starts a private source subscription', () 
   assert.equal(result.memory.id, 'demo:sample')
   assert.equal(result.memory.demo, true)
   assert.equal(h.subscriptions.length, 0)
+})
+
+
+test('global Memory withdrawal clears mounted Focus without changing the memory record', () => {
+  const h = harness()
+  assert.equal(h.signIn('account-a').status, 'loading')
+  const previousMemory = h.data()
+  const previousMemoryContents = JSON.stringify(previousMemory)
+  assert.equal(h.emit(0, previousMemory).status, 'ready')
+  const previousPolicy = h.policy()
+  const denied = h.emitPolicy({
+    ...previousPolicy, revision: 2,
+    domains: { ...previousPolicy.domains, memory: { ...previousPolicy.domains.memory, mode: 'denied' } },
+  })
+  assert.equal(denied.status, 'unauthorized')
+  assert.equal(denied.memory, null)
+  assert.equal(h.subscriptions[0].stopped, true)
+  assert.deepEqual(h.data(), previousMemory, 'Current source Memory document remains unchanged')
+  assert.equal(JSON.stringify(previousMemory), previousMemoryContents, 'Captured original Memory document remains unchanged')
+  assert.equal(h.emit(0, previousMemory).memory, null, 'Queued memory data must not restore a revoked selection')
+})
+
+test('mounted Replay rejects global withdrawal and independent Replay visibility changes', () => {
+  const h = harness('?memoryId=memory-one', '/replay')
+  h.signIn('account-a')
+  assert.equal(h.emit(0, h.data()).status, 'ready')
+  const p = h.policy()
+  const blocked = h.emitPolicy({ ...p, revision: 2,
+    domains: { ...p.domains, memory: { ...p.domains.memory, replayVisible: false } } })
+  assert.equal(blocked.status, 'unauthorized')
+  assert.equal(blocked.memory, null)
+  assert.equal(h.emit(0, h.data()).memory, null)
+})
+
+test('selected memory remains closed without an owner-matched canonical policy', () => {
+  const h = harness()
+  assert.equal(h.signInWithoutPolicy('account-a').status, 'loading')
+  assert.equal(h.subscriptions.length, 0, 'No private memory listener until canonical authority arrives')
+  const wrongOwner = { ...harness().policy(), ownerId: 'account-b' }
+  // A partial/malformed policy is never a grant.
+  assert.equal(h.emitPolicy({ ownerId: 'account-b', revision: 1 }).status, 'unavailable')
+  assert.equal(h.subscriptions.length, 0)
+  assert.equal(h.emitPolicy(null).status, 'unavailable')
+  assert.equal(h.subscriptions.length, 0)
+})
+
+test('policy revision and stale callback races require a newly granted subscription', () => {
+  const h = harness()
+  h.signIn('account-a')
+  assert.equal(h.emit(0, h.data()).status, 'ready')
+  const p = h.policy()
+  const advancing = h.emitPolicy({ ...p, revision: 2 })
+  assert.equal(advancing.status, 'loading')
+  assert.equal(h.subscriptions[0].stopped, true)
+  assert.equal(h.subscriptions.length, 2)
+  assert.equal(h.emit(0, h.data()).status, 'loading')
+  assert.equal(h.emit(1, h.data()).status, 'ready')
+  const denied = h.emitPolicy({ ...p, revision: 3, enforcement: { ...p.enforcement, state: 'pending' } })
+  assert.equal(denied.status, 'unauthorized')
+  assert.equal(h.emit(1, h.data()).memory, null)
+  const stale = h.emitPolicy({ ...p, revision: 2 })
+  assert.equal(stale.status, 'unavailable')
+  assert.equal(stale.memory, null)
+  const reauthorized = h.emitPolicy({ ...p, revision: 4 })
+  assert.equal(reauthorized.status, 'loading')
+  assert.equal(h.subscriptions.length, 3, 'Fresh grant must create a fresh data subscription')
+  assert.equal(h.emit(2, h.data()).status, 'ready')
+})
+
+test('actor change invalidates prior policy and memory subscriptions and late events', () => {
+  const h = harness()
+  h.signIn('account-a')
+  assert.equal(h.emit(0, h.data()).status, 'ready')
+  const priorA = h.policy()
+  assert.equal(h.signIn('account-b').status, 'loading')
+  assert.equal(h.subscriptions[0].stopped, true)
+  assert.equal(h.policySubscriptions[0].stopped, true)
+  assert.equal(h.emit(0, h.data('account-a')).memory, null)
+  const staleGrant = { ...priorA, revision: 15 }
+  h.policySubscriptions[0].receive({ exists: () => true, data: () => staleGrant })
+  assert.equal(h.render().memory, null)
+  assert.equal(h.emit(1, h.data('account-b')).memory.ownerId, 'account-b')
+  assert.equal(h.emit(0, h.data('account-a')).memory.ownerId, 'account-b')
+})
+
+test('consent policy listener error fails closed, and unmount detaches policy owner', () => {
+  const h = harness()
+  h.signIn('account-a')
+  assert.equal(h.emit(0, h.data()).status, 'ready')
+  const error = h.errorPolicy()
+  assert.equal(error.status, 'unavailable')
+  assert.equal(error.memory, null)
+  assert.equal(h.subscriptions[0].stopped, true)
+  h.unmount()
+  assert.equal(h.policySubscriptions[0].stopped, true)
 })

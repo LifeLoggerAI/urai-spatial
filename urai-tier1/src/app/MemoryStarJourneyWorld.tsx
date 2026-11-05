@@ -30,7 +30,7 @@ function copyFor(mode: JourneyMode) {
     return {
       eyebrow: 'URAI Focus',
       title: 'Inside the selected star',
-      body: 'The camera has crossed the Life Map shell. The selected memory opens as a private Focus chamber.',
+      body: 'The camera has crossed the Life Map shell. The selected memory opens inside its stellar Memory Star.',
       status: 'Focus layer inside star',
     }
   }

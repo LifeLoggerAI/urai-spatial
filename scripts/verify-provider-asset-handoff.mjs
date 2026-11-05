@@ -2,13 +2,16 @@
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { homeNavigationSourceFailures } from './lib/home-navigation-source-authority.mjs'
 
 const root = process.cwd()
 const assetRoot = path.join(root, 'urai-tier1', 'public', 'assets', 'urai')
 const handoffPath = path.join(assetRoot, 'final', 'manifests', 'asset-factory-spatial-handoff.json')
 const registryPath = path.join(root, 'urai-tier1', 'src', 'spatial', 'assets', 'uraiAssets.ts')
-const evidenceDirectory = path.join(root, 'release-control-evidence')
-const evidencePath = path.join(evidenceDirectory, 'provider-asset-verification.json')
+const evidencePath = process.env.URAI_PROVIDER_ASSET_EVIDENCE_PATH
+  ? path.resolve(root, process.env.URAI_PROVIDER_ASSET_EVIDENCE_PATH)
+  : path.join(root, 'release-control-evidence', 'provider-asset-verification.json')
+const evidenceDirectory = path.dirname(evidencePath)
 
 const corePaths = new Set([
   'home/home-threshold-main.webp',
@@ -71,9 +74,29 @@ const routeOwnerChecks = [
       'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
       'urai-tier1/src/app/AssetDrivenHomeWorld.tsx',
       'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx',
-      'urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx',
+      'urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx',
+      'urai-tier1/src/lib/i18n/coreMessages.ts',
+      'urai-tier1/src/lib/i18n/journeyMessages.ts',
+      'urai-tier1/src/spatial/navigation/homeSkyInteraction.ts',
     ],
     renderMode: 'asset-driven-spatial',
+    // Check the actual mounting edges in their owning files, not just names in
+    // an aggregate of retired and active source. This remains source evidence;
+    // literal rendered-pixel acceptance is a separate release gate.
+    requiredByFile: {
+      'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx': [
+        '<AssetDrivenHomeWorld', '<HomeSemanticNavigation />',
+      ],
+      'urai-tier1/src/app/AssetDrivenHomeWorld.tsx': [
+        '<HomeWorldProduction',
+        'data-home-route-owner="asset-driven-natural-home"',
+        'data-home-visible-world="moonlit-natural-inhabited-sanctuary"',
+      ],
+      'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx': [
+        'export { HomeWorldProductionPolished as HomeWorldProduction } from "./HomeWorldProductionPolished"',
+      ],
+      'urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx': ['<Canvas ', '<Scene ', '<Terrain ', '<Orb ', '<Thresholds '],
+    },
     required: [
       'AssetDrivenHomeWorld',
       'HomeWorldProduction',
@@ -81,7 +104,7 @@ const routeOwnerChecks = [
       'data-home-visual-owner="asset-driven-personalized-sanctuary"',
       'data-home-primary-owner="asset-driven"',
       'data-home-real-world-first="true"',
-      'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
+      'data-home-visible-world="moonlit-natural-inhabited-sanctuary"',
       'data-home-visible-portals="false"',
       'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
       'data-home-embodied-self="privacy-preserving-shadow"',
@@ -94,8 +117,6 @@ const routeOwnerChecks = [
       'home-orb-sanctuary',
       'home-ground-environmental-threshold',
       'home-life-map-sky-lookout',
-      'aria-label="Open Ground directly"',
-      'aria-label="Open Life Map directly"',
     ],
     forbidden: [
       'EmbodiedHomeSpatialCanvas',
@@ -134,7 +155,22 @@ const routeOwnerChecks = [
   },
   { routes: ['/life-map'], files: ['urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx'], renderMode: 'provider', assetSet: 'lifeMapAssets' },
   { routes: ['/focus'], files: ['urai-tier1/src/app/focus/FocusChamberClient.tsx'], renderMode: 'provider', assetSet: 'focusAssets' },
-  { routes: ['/replay'], files: ['urai-tier1/src/app/replay/CinematicReplayClient.tsx'], renderMode: 'provider', assetSet: 'replayAssets' },
+  {
+    routes: ['/replay'],
+    files: ['urai-tier1/src/app/replay/CinematicReplayClient.tsx'],
+    renderMode: 'provider-disclosed-demo-and-recorded-source',
+    assetSet: 'replayAssets',
+    assetConsumption: 'memory-media-dome',
+    required: [
+      "import { replayAssets } from '@/spatial/assets/uraiAssets'",
+      'memory.demo ? <MemoryMediaDome url={replayAssets.primary.src}',
+      'new THREE.TextureLoader().load(url,',
+      '<meshBasicMaterial map={texture}',
+      'demoEnvironment && webgl.state !== \'ready\' ? <ReplayRecordedSource',
+      "media={{ kind: 'image', url: replayAssets.primary.src, caption: 'Disclosed demonstration memory environment' }}",
+      'recorded-source-original-framing',
+    ],
+  },
   { routes: ['/passport'], files: ['urai-tier1/src/app/FinalPassportVault.tsx'], renderMode: 'provider', assetSet: 'passportAssets' },
   {
     routes: ['/privacy-controls'],
@@ -306,17 +342,35 @@ if (coreRecords.length !== corePaths.size) failures.push(`Expected ${corePaths.s
 const routeOwners = routeOwnerChecks.map((check) => {
   const ownerFailures = []
   const sources = []
+  const sourcesByFile = new Map()
 
   for (const file of check.files) {
     const absolute = path.join(root, file)
     if (!existsSync(absolute)) ownerFailures.push(`${file}: active owner file is missing`)
-    else sources.push(readFileSync(absolute, 'utf8'))
+    else {
+      const source = readFileSync(absolute, 'utf8')
+      sources.push(source)
+      sourcesByFile.set(file, source)
+    }
   }
 
   const sourceGraph = sources.join('\n')
+  if (check.routes.includes('/home')) {
+    ownerFailures.push(...homeNavigationSourceFailures(
+      sourcesByFile.get('urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx') ?? '',
+      ['coreMessages', 'journeyMessages'].map(name => sourcesByFile.get(`urai-tier1/src/lib/i18n/${name}.ts`) ?? ''),
+      sourcesByFile.get('urai-tier1/src/spatial/navigation/homeSkyInteraction.ts') ?? '',
+    ))
+  }
   if (check.assetSet) {
     if (!sourceGraph.includes(check.assetSet)) ownerFailures.push(`does not import ${check.assetSet}`)
-    if (!sourceGraph.includes(`assetCssStack(${check.assetSet}.`)) ownerFailures.push(`does not render ${check.assetSet} through assetCssStack`)
+    if (check.assetConsumption !== 'memory-media-dome' && !sourceGraph.includes(`assetCssStack(${check.assetSet}.`)) ownerFailures.push(`does not render ${check.assetSet} through assetCssStack`)
+  }
+
+  for (const [file, markers] of Object.entries(check.requiredByFile || {})) {
+    for (const marker of markers) {
+      if (!(sourcesByFile.get(file) || '').includes(marker)) ownerFailures.push(`${file}: missing active-owner binding: ${marker}`)
+    }
   }
 
   for (const marker of check.required || []) {

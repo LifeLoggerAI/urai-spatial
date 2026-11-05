@@ -90,7 +90,7 @@ let finalAssetReceipt = { present: false, result: 'missing', placeholderFinalCou
 if (fs.existsSync(finalAssetReceiptPath)) {
   const receipt = fs.readFileSync(finalAssetReceiptPath, 'utf8')
   const result = receipt.match(/^Result:\s*(.+)$/m)?.[1]?.trim() || 'unknown'
-  const placeholderFinalCount = (receipt.match(/placeholder-final/g) || []).length
+  const placeholderFinalCount = Number(receipt.match(/^Placeholder-final core assets:\s*(\d+)$/m)?.[1] || 0)
   finalAssetReceipt = { present: true, result, placeholderFinalCount }
 }
 

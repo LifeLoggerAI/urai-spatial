@@ -7,7 +7,8 @@
     "candidateArtifactId": 8577690093,
     "candidateArtifactDigest": "sha256:6c0c5b0e0207086e0f254434e7310f5c2fdaebfb3f969dae9a58a281ef477ca0",
     "legacyArtifactId": 8577690575,
-    "legacyArtifactDigest": "sha256:849af9ddbe2d0245e29154eb1013ca4088f0115a4c2ed8aecdc62013639a2c27"
+    "legacyArtifactDigest": "sha256:849af9ddbe2d0245e29154eb1013ca4088f0115a4c2ed8aecdc62013639a2c27",
+    "semantics": "Historical source/run/artifact authority only; it does not bind the current NORMAL-only candidate."
   },
   "truthBoundary": {
     "manifestPromotion": false,
@@ -18,8 +19,8 @@
   "decisions": [
     {
       "id": "home-entry-chamber-current",
-      "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
-      "bytes": 184160,
+      "sha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+      "bytes": 186040,
       "triangleCount": 12934,
       "boundsMeters": {
         "min": [
@@ -44,14 +45,29 @@
       "animations": 4,
       "compression": "meshopt",
       "validation": "authored source lock, exact receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and delegated founder visual acceptance still required",
-      "classification": "authored compressed review candidate",
-      "reason": "Authored sanctuary v3 with open mobile-safe sightline, grounded terrain, masonry vaults, natural paths, portal alcoves, environmental growth, authored embodied presence, personalized-place anchors and four Home/presence clips. Remains review-only until exact-head visual acceptance.",
+      "classification": "NORMAL-only derived candidate; no current artistic or release acceptance",
+      "reason": "Deterministic repair of fourteen zero normals on the immutable authored predecessor. All geometry, topology, materials, nodes, skin and animations are unchanged. Historical run and acceptance are retained separately; current rendered inspection and independent review remain required.",
       "animationClips": [
         "Home_Breathing",
         "Presence_Idle",
         "Presence_Privacy",
         "Presence_Forming"
-      ]
+      ],
+      "normalRepair": {
+        "receiptPath": "operations/assets/normal-repair-receipts/home-entry-chamber-v1.json",
+        "receiptSha256": "5f57bbee1123e418456d13e240fdf5dc9812b2fd017d10292c46fae975d221e4",
+        "predecessorPath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+        "predecessorBytes": 184160,
+        "predecessorSha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+        "candidateBytes": 186040,
+        "candidateSha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+        "visualAcceptance": false,
+        "humanReviewApproved": false,
+        "deviceAcceptance": false,
+        "productionPromotion": false,
+        "exactHeadChecksPassed": false
+      },
+      "measurementStatus": "historical geometry measurements retained as historical; actual unchanged geometry and exact successor identity are bound by separate NORMAL-only repair proof"
     },
     {
       "id": "home-entry-chamber-legacy",
@@ -210,5 +226,42 @@
       "classification": "review candidate",
       "reason": "Valid internal PCM candidate with silent fallback; final mix and production compression remain required."
     }
-  ]
+  ],
+  "historicalHomeDecision": {
+    "id": "home-entry-chamber-current",
+    "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "bytes": 184160,
+    "triangleCount": 12934,
+    "boundsMeters": {
+      "min": [
+        -9.345,
+        -1.83,
+        -9.238
+      ],
+      "max": [
+        9.345,
+        5.0844,
+        7.452
+      ],
+      "size": [
+        18.69,
+        6.9144,
+        16.69
+      ]
+    },
+    "nodes": 160,
+    "materials": 13,
+    "textures": 0,
+    "animations": 4,
+    "compression": "meshopt",
+    "validation": "authored source lock, exact receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and delegated founder visual acceptance still required",
+    "classification": "authored compressed review candidate",
+    "reason": "Authored sanctuary v3 with open mobile-safe sightline, grounded terrain, masonry vaults, natural paths, portal alcoves, environmental growth, authored embodied presence, personalized-place anchors and four Home/presence clips. Remains review-only until exact-head visual acceptance.",
+    "animationClips": [
+      "Home_Breathing",
+      "Presence_Idle",
+      "Presence_Privacy",
+      "Presence_Forming"
+    ]
+  }
 }

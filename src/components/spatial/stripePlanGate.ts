@@ -54,7 +54,7 @@ export function canAccessPlan(user: UserEntitlement | null | undefined, requeste
   if (requestedPlan === 'free') return true;
   if (!user) return false;
   const paidStatus = user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing';
-  if (!paidStatus && user.planId !== 'founder') return false;
+  if (!paidStatus) return false;
   return PLAN_RANK[user.planId] >= PLAN_RANK[requestedPlan];
 }
 
@@ -96,3 +96,4 @@ export const LOCAL_FREE_ENTITLEMENT: UserEntitlement = {
   subscriptionStatus: 'none',
   stripeCustomerId: null,
 };
+

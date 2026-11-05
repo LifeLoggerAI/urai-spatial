@@ -1,0 +1,51 @@
+name: V9 Source Presence Boundary
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/ecosystem/report.mjs'
+      - 'scripts/ecosystem/report.test.mjs'
+      - 'scripts/ecosystem/collect-evidence.mjs'
+      - '.github/workflows/v9-presence-not-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  presence-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bind source and runtime identity
+        shell: bash
+        run: |
+          mkdir -p artifacts/v9-presence-boundary
+          node --version > artifacts/v9-presence-boundary/node-version.txt
+          git rev-parse HEAD > artifacts/v9-presence-boundary/source-sha.txt
+          sha256sum scripts/ecosystem/report.mjs scripts/ecosystem/report.test.mjs .github/workflows/v9-presence-not-acceptance.yml > artifacts/v9-presence-boundary/source-sha256.txt
+      - name: Verify actual reporter behavior
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test --test-reporter=tap scripts/ecosystem/report.test.mjs | tee artifacts/v9-presence-boundary/tests.tap
+      - name: Record current source presence without ship authorization
+        shell: bash
+        run: |
+          node scripts/ecosystem/collect-evidence.mjs > artifacts/v9-presence-boundary/source-presence.json
+          node scripts/ecosystem/report.mjs > artifacts/v9-presence-boundary/presence-report.json
+          cp audit/v9/ecosystem-intelligence-report.json artifacts/v9-presence-boundary/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v9-presence-boundary-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/v9-presence-boundary
+          if-no-files-found: error
+          retention-days: 14

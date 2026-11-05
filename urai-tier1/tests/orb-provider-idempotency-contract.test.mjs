@@ -8,7 +8,7 @@ const provider = fs.readFileSync(new URL('../../apps/functions/src/providerFunct
 test('Orb derives a stable request identity from unchanged intent before provider dispatch', () => {
   assert.match(client, /stableIntentRequestId/)
   assert.match(client, /crypto\.subtle\.digest\('SHA-256'/)
-  assert.match(client, /JSON\.stringify\(\{ message, context: context\.slice\(-8\) \}\)/)
+  assert.match(client, /JSON\.stringify\(\{ message, context: context\.slice\(-8\), locale \}\)/)
   assert.match(client, /requestId,/)
   assert.doesNotMatch(client, /randomUUID\(\)/)
 })
@@ -16,8 +16,8 @@ test('Orb derives a stable request identity from unchanged intent before provide
 test('server binds upstream idempotency to authenticated user and stable client identity', () => {
   assert.match(provider, /function requireRequestId/)
   assert.match(provider, /\^\[a-f0-9\]\{64\}\$/)
-  assert.match(provider, /providerIdempotencyKey\(uid, requestId\)/)
-  assert.match(provider, /urai-openai-provider:\$\{uid\}:\$\{requestId\}/)
+  assert.match(provider, /providerIdempotencyKey\(uid, requestId, locale\)/)
+  assert.match(provider, /urai-openai-provider:\$\{uid\}:\$\{requestId\}:\$\{locale\}/)
   assert.match(provider, /'Idempotency-Key': upstreamIdempotencyKey/)
   assert.doesNotMatch(provider, /'Idempotency-Key': randomUUID\(\)/)
 })

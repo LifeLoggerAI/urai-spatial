@@ -1,7 +1,7 @@
+// Home's reviewed source may render in its current review composition; current-head promotion remains pending.
 export const uraiPromotedAssetIds = new Set<string>([
   'portal-ring-master-glb-v1',
   'urai-orb-avatar-glb-v1',
-  'home-entry-chamber-model-v1',
   'ground-world-terrain-glb-v1',
   'life-map-memory-star-glb-v1',
   'focus-memory-chamber-glb-v1',

@@ -24,11 +24,11 @@ export function initialReplayVideoSnapshot(): ReplayVideoSnapshot {
   return { status: 'loading', ready: false, playing: false, muted: true, audioAllowed: true, currentTimeMs: 0, durationMs: null, error: null }
 }
 
-function finiteDurationMs(video: HTMLVideoElement) {
+function finiteDurationMs(video: HTMLMediaElement) {
   return Number.isFinite(video.duration) && video.duration > 0 ? Math.round(video.duration * 1000) : null
 }
 
-function mediaFailure(video: HTMLVideoElement) {
+function mediaFailure(video: HTMLMediaElement) {
   switch (video.error?.code) {
     case 2: return 'The recorded video could not be downloaded. Retry when the connection is available.'
     case 3: return 'The recorded video could not be decoded. Retry or choose another memory.'
@@ -38,15 +38,18 @@ function mediaFailure(video: HTMLVideoElement) {
 }
 
 /** The decoded source video, rather than a separate animation timer, owns video time. */
-export function createReplayVideoSession(
-  video: HTMLVideoElement,
+export function createReplayMediaSession(
+  video: HTMLMediaElement,
   url: string,
   onSnapshot: (snapshot: ReplayVideoSnapshot) => void,
-  options: { audioAllowed?: () => boolean } = {},
+  options: { audioAllowed?: () => boolean; nativeControls?: boolean; initialSeekMs?: number } = {},
 ): ReplayVideoSession {
   let disposed = false
   let requestVersion = 0
   let wantsPlayback = false
+  // This offset belongs to this decoded media session, not to a parent render.
+  let pendingInitialSeekMs: number | null = options.initialSeekMs ?? null
+  let initialSeekIssued = false
   let snapshot = initialReplayVideoSnapshot()
   const listeners = new Map<string, EventListener>()
 
@@ -79,35 +82,68 @@ export function createReplayVideoSession(
     publish({ status: 'error', ready: false, playing: false, error })
   }
   const updateReadiness = () => {
-    if (!finiteDurationMs(video)) {
+    const durationMs = finiteDurationMs(video)
+    if (!durationMs) {
       fail('The recorded video has no usable duration. Retry or choose another memory.')
       return
     }
-    if (snapshot.status === 'error' || snapshot.status === 'blocked') return
+    // Decoder readiness can arrive after the media reached its natural end.
+    // Keep the terminal state until an explicit play() or seek() requests a restart.
+    if (snapshot.status === 'error' || snapshot.status === 'blocked' || snapshot.status === 'ended') return
+    if (pendingInitialSeekMs !== null) {
+      const target = pendingInitialSeekMs
+      if (!Number.isSafeInteger(target) || target < 0 || target >= durationMs) {
+        fail('The recorded video has an invalid initial seek. Retry the recorded source.')
+        return
+      }
+      if (target > 0 && !initialSeekIssued) {
+        initialSeekIssued = true
+        try { video.currentTime = target / 1000 }
+        catch {
+          fail('The recorded video could not seek to this time. Retry the recorded source.')
+          return
+        }
+      }
+      // Assigning currentTime is not proof it was restored. Wait for the
+      // decoded replacement video's own observed clock and seeked event.
+      const actual = Number.isFinite(video.currentTime) ? Math.round(video.currentTime * 1000) : -1
+      if (video.seeking || !decoded() || Math.abs(actual - target) > 100) {
+        publish({ status: 'loading', ready: false, playing: false })
+        return
+      }
+      pendingInitialSeekMs = null
+    }
     publish({ ready: decoded(), status: decoded() ? 'ready' : 'loading', error: null })
   }
 
   listen('loadedmetadata', updateReadiness)
-  listen('durationchange', () => publish())
+  listen('durationchange', () => { if (pendingInitialSeekMs !== null) updateReadiness(); else publish() })
   listen('loadeddata', updateReadiness)
   listen('canplay', updateReadiness)
   listen('playing', () => {
     if (!wantsPlayback) { video.pause(); return }
     publish({ status: 'ready', ready: decoded(), playing: true, error: null })
   })
+  listen('play', () => { if (options.nativeControls) wantsPlayback = true })
   listen('pause', () => publish({ playing: false }))
   listen('waiting', () => publish({ status: 'buffering', ready: false }))
   listen('seeking', () => publish({ status: 'buffering', ready: false }))
-  listen('seeked', () => publish({ status: video.ended ? 'ended' : 'ready', ready: decoded() }))
+  listen('seeked', () => {
+    if (pendingInitialSeekMs !== null) updateReadiness()
+    else publish({ status: video.ended ? 'ended' : 'ready', ready: decoded() })
+  })
   listen('timeupdate', () => publish())
   listen('volumechange', () => publish())
   listen('ended', () => {
     wantsPlayback = false
+    // A natural end must invalidate any unresolved play() fulfillment.
+    // Explicit user playback after ending receives a new request version.
+    requestVersion += 1
     publish({ status: 'ended', ready: decoded(), playing: false })
   })
   listen('error', () => fail(mediaFailure(video)))
 
-  video.playsInline = true
+  if ('playsInline' in video) (video as HTMLVideoElement).playsInline = true
   video.muted = true
   video.loop = false
   video.preload = 'auto'
@@ -125,7 +161,12 @@ export function createReplayVideoSession(
         if (video.ended || (snapshot.durationMs && snapshot.currentTimeMs >= snapshot.durationMs)) video.currentTime = 0
         // Call play in the originating user gesture; do not route it through a render effect.
         await video.play()
-        if (disposed || version !== requestVersion) return
+        if (disposed || version !== requestVersion) {
+          // A delayed play fulfillment must never restart an owner-stopped decoder.
+          // Do not interrupt a newer explicit play request that still wants playback.
+          if (disposed || !wantsPlayback) video.pause()
+          return
+        }
         publish({ status: 'ready', ready: decoded(), playing: !video.paused, error: null })
       } catch (error) {
         if (disposed || version !== requestVersion) return
@@ -168,12 +209,26 @@ export function createReplayVideoSession(
     dispose() {
       if (disposed) return
       disposed = true
+      pendingInitialSeekMs = null
       wantsPlayback = false
       requestVersion += 1
-      for (const [event, listener] of listeners) video.removeEventListener(event, listener)
-      video.pause()
-      video.removeAttribute('src')
-      video.load()
+      // Stop and detach protected source media before invoking potentially
+      // throwing event-listener cleanup. Every teardown step is independent.
+      try { video.muted = true } catch { /* fail closed where supported */ }
+      try { video.pause() } catch { /* source detachment still required */ }
+      try { video.removeAttribute('src') } catch {
+        try { video.src = '' } catch { /* attempt decoder release below */ }
+      }
+      try { video.load() } catch { /* listener cleanup must still run */ }
+      for (const [event, listener] of listeners) {
+        try { video.removeEventListener(event, listener) } catch { /* terminal disposal */ }
+      }
+      listeners.clear()
     },
   }
+}
+
+export function createReplayVideoSession(video: HTMLVideoElement, url: string,
+  onSnapshot: (snapshot: ReplayVideoSnapshot) => void, options: { audioAllowed?: () => boolean } = {}): ReplayVideoSession {
+  return createReplayMediaSession(video, url, onSnapshot, options)
 }

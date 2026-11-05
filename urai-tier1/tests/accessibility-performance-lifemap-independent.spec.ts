@@ -206,6 +206,29 @@ test.describe('Life Map independent realm runtime evidence', () => {
       expect(layout.title!.left).toBeGreaterThanOrEqual(0)
       expect(layout.title!.right).toBeLessThanOrEqual(viewport.width)
 
+      if (viewport.width <= 760) {
+        const helper = page.locator('[data-urai-adam-launcher]')
+        await expect(helper).toBeVisible()
+        const helperGeometry = await helper.evaluate(element => {
+          const r = element.getBoundingClientRect()
+          const title = document.querySelector('.life-map-title')!.getBoundingClientRect()
+          const search = document.querySelector('.life-map-search-trigger')!.getBoundingClientRect()
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+          const clear = (other: DOMRect) => r.right + 8 <= other.left || other.right + 8 <= r.left || r.bottom + 8 <= other.top || other.bottom + 8 <= r.top
+          return { x: r.left, y: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height, titleClear: clear(title), searchClear: clear(search), reachable: hit === element || element.contains(hit) }
+        })
+        expect(helperGeometry.width).toBeGreaterThanOrEqual(48)
+        expect(helperGeometry.height).toBeGreaterThanOrEqual(48)
+        expect(helperGeometry.x).toBeGreaterThanOrEqual(0)
+        expect(helperGeometry.right).toBeLessThanOrEqual(viewport.width)
+        expect(helperGeometry.bottom).toBeLessThanOrEqual(viewport.height)
+        expect(helperGeometry.y).toBeGreaterThan(viewport.height / 2)
+        expect(helperGeometry.titleClear).toBe(true)
+        expect(helperGeometry.searchClear).toBe(true)
+        expect(helperGeometry.reachable).toBe(true)
+        await test.info().attach(`life-map-helper-${viewport.width}x${viewport.height}.json`, { body: JSON.stringify(helperGeometry), contentType: 'application/json' })
+      }
+
       const explorer = await openSemanticExplorer(page)
       const explorerBox = await explorer.boundingBox()
       expect(explorerBox).not.toBeNull()
@@ -315,9 +338,17 @@ test.describe('Supporting route responsive and accessible runtime evidence', () 
     const reports = []
     for (const viewport of [{ width: 320, height: 568 }, { width: 568, height: 320 }, { width: 1280, height: 720 }]) {
       await page.setViewportSize(viewport)
-      for (const route of ['/login', '/settings', '/support']) {
+      for (const route of ['/login', '/settings', '/support'] as const) {
         await page.goto(route, { waitUntil: 'domcontentloaded' })
-        const main = page.locator('main').first()
+        // Read the mounted destination, never the transient world-opening shell.
+        const heading = {
+          '/login': 'Enter your world.',
+          '/settings': 'How URAI meets you.',
+          '/support': 'Help when you need it.',
+        }[route]
+        const main = page.locator('main').filter({
+          has: page.getByRole('heading', { level: 1, name: heading, exact: true }),
+        })
         await expect(main).toBeVisible()
         const layout = await main.evaluate((element) => ({ overflowY: getComputedStyle(element).overflowY, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth, scrollHeight: element.scrollHeight, clientHeight: element.clientHeight }))
         expect(layout.overflowY).toBe('auto')
@@ -330,7 +361,8 @@ test.describe('Supporting route responsive and accessible runtime evidence', () 
           await expect(main.getByRole('checkbox', { name: 'Haptics', exact: true })).toBeVisible()
         }
         if (layout.scrollHeight > layout.clientHeight + 1) {
-          await main.evaluate((element) => { element.scrollTop = element.scrollHeight })
+          await main.hover()
+          await page.mouse.wheel(0, layout.scrollHeight)
           await expect.poll(() => main.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
         }
         const lastLink = main.locator('a[href]').last()
@@ -365,19 +397,61 @@ test.describe('Supporting route responsive and accessible runtime evidence', () 
       await page.goto('/onboarding', { waitUntil: 'domcontentloaded' })
       await expect.poll(() => normalizedPathname(page.url())).toBe('/')
       expect(new URL(page.url()).searchParams.get('onboarding')).toBe('1')
-      const guide = page.locator('.uraiV2OnboardingCard[data-first-run="guided"]')
-      await expect(guide).toBeVisible()
-      const geometry = await expectViewportContained(page, guide)
-      const targets = await measureTargets(guide.locator('a[href],button'))
+      const guideSelector = '.uraiV2OnboardingCard[data-first-run="guided"]'
+      await expect(page.locator(guideSelector)).toBeVisible()
+      const proof = await page.evaluate((selector) => {
+        const guide = document.querySelector<HTMLElement>(selector)
+        if (!guide) return null
+        const guideRect = guide.getBoundingClientRect()
+        const targets = [...guide.querySelectorAll<HTMLElement>('a[href],button')].map((element) => {
+          const rect = element.getBoundingClientRect()
+          const style = getComputedStyle(element)
+          return {
+            html: element.outerHTML.slice(0, 180),
+            width: rect.width,
+            height: rect.height,
+            visible: style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0,
+          }
+        }).filter((target) => target.visible)
+        const dismiss = [...guide.querySelectorAll<HTMLButtonElement>('button')].find((button) => button.textContent?.trim() === 'Skip') ?? null
+        dismiss?.focus({ preventScroll: true })
+        const dismissRect = dismiss?.getBoundingClientRect() ?? null
+        return {
+          geometry: {
+            left: guideRect.left,
+            top: guideRect.top,
+            right: guideRect.right,
+            bottom: guideRect.bottom,
+            width: innerWidth,
+            height: innerHeight,
+          },
+          dismissGeometry: dismissRect ? {
+            left: dismissRect.left,
+            top: dismissRect.top,
+            right: dismissRect.right,
+            bottom: dismissRect.bottom,
+            width: innerWidth,
+            height: innerHeight,
+          } : null,
+          targets,
+          focused: Boolean(dismiss && document.activeElement === dismiss),
+        }
+      }, guideSelector)
+      expect(proof).not.toBeNull()
+      const { geometry, dismissGeometry, targets, focused } = proof!
+      for (const bounds of [geometry, dismissGeometry]) {
+        expect(bounds).not.toBeNull()
+        expect(bounds!.left).toBeGreaterThanOrEqual(-1)
+        expect(bounds!.top).toBeGreaterThanOrEqual(-1)
+        expect(bounds!.right).toBeLessThanOrEqual(bounds!.width + 1)
+        expect(bounds!.bottom).toBeLessThanOrEqual(bounds!.height + 1)
+      }
       expect(targets.length).toBe(2)
       expect(targets.filter((target) => target.width < 48 || target.height < 48)).toEqual([])
-      const dismiss = guide.getByRole('button', { name: 'Skip', exact: true })
-      await dismiss.focus()
-      await expect(dismiss).toBeFocused()
-      await expectViewportContained(page, dismiss)
+      expect(focused).toBe(true)
       await test.info().attach(`onboarding-${viewport.width}x${viewport.height}.png`, { body: await page.screenshot(), contentType: 'image/png' })
-      await dismiss.press('Enter')
-      await expect(guide).toHaveCount(0)
+      await page.keyboard.press('Enter')
+      await page.waitForFunction((selector) => !document.querySelector(selector), guideSelector, { timeout: 15_000 })
       await test.info().attach(`onboarding-${viewport.width}x${viewport.height}-report.json`, {
         body: JSON.stringify({ viewport, geometry, targets }, null, 2),
         contentType: 'application/json',

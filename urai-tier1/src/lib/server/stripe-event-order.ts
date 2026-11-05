@@ -5,13 +5,15 @@ export type StripeOrderingDecision = {
   reason: 'applied' | 'stale-event' | 'equal-time-precedence';
 };
 
+// Stripe events can share a second and arrive out of order. In that tie,
+// denial wins; a later event is required to restore paid access.
 const STATUS_PRECEDENCE: Record<StripeOrderingStatus, number> = {
-  none: 0,
-  incomplete: 10,
-  past_due: 20,
-  trialing: 30,
-  active: 40,
-  canceled: 50,
+  trialing: 20,
+  active: 30,
+  none: 40,
+  incomplete: 50,
+  past_due: 60,
+  canceled: 70,
 };
 
 export function decideStripeEventApplication(input: {

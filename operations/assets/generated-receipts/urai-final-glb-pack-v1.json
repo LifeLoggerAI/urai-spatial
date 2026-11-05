@@ -3,23 +3,44 @@
   "packId": "urai-final-glb-production-pack-v1",
   "generatedAt": "2026-08-08T04:10:38Z",
   "generator": "URAI Labs Final GLB Forge 1.0",
-  "authorship": "Original non-primitive authored mesh surfaces with embedded UV-mapped PBR texture sets; no visible basic primitive stand-ins.",
+  "authorship": "Committed source artifacts with per-asset provenance. Technical validation does not certify final visual suitability.",
   "assets": [
     {
       "fileName": "home-entry-chamber-v1.glb",
-      "bytes": 1786808,
-      "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
-      "triangleCount": 57352,
-      "nodes": 322,
+      "bytes": 186040,
+      "sha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+      "triangleCount": 12934,
+      "nodes": 160,
       "animations": [
         "Home_Breathing",
         "Presence_Idle",
         "Presence_Privacy",
         "Presence_Forming"
       ],
-      "materials": 8,
-      "embeddedTextures": 4,
-      "uvMapped": true
+      "materials": 13,
+      "embeddedTextures": 0,
+      "uvMapped": false,
+      "sourceHead": "51db7b3ba77a657659da34ca5e146e049dd03d31",
+      "generator": "glTF-Transform v4.4.2",
+      "sourceRestoration": false,
+      "currentVisualAcceptance": false,
+      "normalRepair": {
+        "receiptPath": "operations/assets/normal-repair-receipts/home-entry-chamber-v1.json",
+        "receiptSha256": "5f57bbee1123e418456d13e240fdf5dc9812b2fd017d10292c46fae975d221e4",
+        "predecessorPath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+        "predecessorBytes": 184160,
+        "predecessorSha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+        "candidateBytes": 186040,
+        "candidateSha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+        "visualAcceptance": false,
+        "humanReviewApproved": false,
+        "deviceAcceptance": false,
+        "productionPromotion": false,
+        "exactHeadChecksPassed": false
+      },
+      "measurementReconciliation": "Geometry unchanged from immutable51db/b7bd predecessor;14NORMAL-only corrections bound to separate exact repair proof; no current visual or final exact-head acceptance",
+      "geometrySourceRestoration": true,
+      "derivedNormalRepair": true
     },
     {
       "fileName": "portal-ring-master-v1.glb",
@@ -141,5 +162,12 @@
       "embeddedTextures": 4,
       "uvMapped": true
     }
-  ]
+  ],
+  "sourceRestoration": {
+    "fileName": "home-entry-chamber-v1.glb",
+    "gitBlob": "dd757954937009d2ee54a52df6f56792528356f4",
+    "priorAcceptedSourceHead": "51db7b3ba77a657659da34ca5e146e049dd03d31",
+    "bytesChangedFromAcceptedSource": false,
+    "currentReleaseAccepted": false
+  }
 }

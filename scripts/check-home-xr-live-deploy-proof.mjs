@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { currentXrReleaseAuthority, verifyConditionalXrRoutes, inspectXrDeployProof } from './lib/xr-release-authority.mjs'
+const xrAuthority = currentXrReleaseAuthority()
 const baseUrl = (process.env.URAI_DEPLOY_URL || process.env.LIVE_URL || 'https://urai-4dc1d.web.app').replace(/\/$/, '')
 const requireLiveCommitSha = process.env.REQUIRE_LIVE_COMMIT_SHA === 'true'
 
@@ -8,7 +10,6 @@ const endpoints = [
   '/ground',
   '/life-map',
   '/status',
-  '/spatial/ar-vr',
   '/api/system/urai-spatial-lock',
   '/api/system/deploy-proof',
 ]
@@ -43,10 +44,15 @@ for (const endpoint of endpoints) {
     })
     const body = await response.text()
     const hasUraiMarker = /urai|spatial|life map|xr|home|deploy-proof/i.test(body)
-    const forbidden = forbiddenPatterns.find((marker) => marker.test(body))
+    const proofBody = endpoint === '/api/system/deploy-proof' ? JSON.parse(body) : null
+    const declaredForbiddenCopyInvalid = proofBody !== null && (!Array.isArray(proofBody.forbiddenLiveCopy) ||
+      forbiddenPatterns.some((marker) => !proofBody.forbiddenLiveCopy.some((value) => marker.test(String(value)))))
+    // Scan live fields, while separately validating the declaration of forbidden phrases.
+    const scanBody = proofBody === null ? body : JSON.stringify({ ...proofBody, forbiddenLiveCopy: [] })
+    const forbidden = forbiddenPatterns.find((marker) => marker.test(scanBody))
     const deployProofMissing =
       endpoint === '/api/system/deploy-proof' &&
-      requiredDeployProofPatterns.some((pattern) => !pattern.test(body))
+      (requiredDeployProofPatterns.some((pattern) => !pattern.test(body)) || !inspectXrDeployProof(JSON.parse(body), xrAuthority))
     const liveCommitShaMissing =
       endpoint === '/api/system/deploy-proof' &&
       requireLiveCommitSha &&
@@ -58,17 +64,20 @@ for (const endpoint of endpoints) {
       ok: response.ok,
       hasUraiMarker,
       deployProofMissing,
+      declaredForbiddenCopyInvalid,
       liveCommitShaMissing,
       forbidden: forbidden?.source || null,
     })
 
-    if (!response.ok || !hasUraiMarker || forbidden || deployProofMissing || liveCommitShaMissing) {
+    if (!response.ok || !hasUraiMarker || forbidden || deployProofMissing || declaredForbiddenCopyInvalid || liveCommitShaMissing) {
       failures.push(`${url} status=${response.status} marker=${hasUraiMarker} deployProofMissing=${deployProofMissing} liveCommitShaMissing=${liveCommitShaMissing} forbidden=${forbidden?.source || 'none'}`)
     }
   } catch (error) {
     failures.push(`${url} failed: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
+
+failures.push(...await verifyConditionalXrRoutes(baseUrl, xrAuthority))
 
 if (failures.length > 0) {
   console.error('[check-home-xr-live-deploy-proof] failed:')
@@ -81,5 +90,6 @@ console.log(JSON.stringify({
   service: 'urai-home-xr-live-deploy-proof',
   baseUrl,
   requireLiveCommitSha,
+  xrAuthority,
   results,
 }, null, 2))

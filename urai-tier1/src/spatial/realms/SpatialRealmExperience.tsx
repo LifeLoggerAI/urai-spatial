@@ -1,5 +1,6 @@
 'use client'
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { Float, Sparkles, Stars } from '@react-three/drei'
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
@@ -204,8 +205,8 @@ function ShadowRealmEnvironment({ reducedMotion }: { reducedMotion: boolean }) {
 
   return (
     <group name="shadow-realm-environment">
-      <ambientLight intensity={0.26} />
-      <hemisphereLight intensity={0.4} color="#756dff" groundColor="#09030f" />
+      <ambientLight intensity={0.44} color="#c7c8da" />
+      <hemisphereLight intensity={0.65} color="#a8a6d2" groundColor="#171321" />
       <directionalLight position={[4, 10, 5]} intensity={1.1} color="#9ba8ff" castShadow />
       <pointLight position={[0, 2.8, -7]} intensity={5.2} distance={18} color="#9f73ff" />
       <pointLight position={[0, -0.4, -14]} intensity={3.2} distance={16} color="#ff806f" />
@@ -214,21 +215,21 @@ function ShadowRealmEnvironment({ reducedMotion }: { reducedMotion: boolean }) {
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.14, -4.5]} receiveShadow>
         <planeGeometry args={[24, 38, 18, 22]} />
-        <meshStandardMaterial color="#070811" emissive="#3a174d" emissiveIntensity={0.08} metalness={0.52} roughness={0.48} />
+        <meshStandardMaterial color="#262738" emissive="#3a174d" emissiveIntensity={0.035} metalness={0.25} roughness={0.72} />
       </mesh>
 
       {Array.from({ length: 18 }, (_, index) => (
         <mesh key={`path-${index}`} position={[Math.sin(index * 0.72) * 0.72, -0.04 - index * 0.012, 7.2 - index * 1.28]} rotation={[0, index * 0.21, 0]} castShadow receiveShadow>
           <boxGeometry args={[1.2 + (index % 3) * 0.22, 0.18, 0.92]} />
-          <meshStandardMaterial color="#101324" emissive={index % 4 === 0 ? '#ff806f' : '#6f63ff'} emissiveIntensity={0.12} metalness={0.38} roughness={0.48} />
+          <meshStandardMaterial color="#42404e" emissive={index % 4 === 0 ? '#d39889' : '#9490c7'} emissiveIntensity={0.05} metalness={0.2} roughness={0.7} />
         </mesh>
       ))}
 
       {shards.map((shard, index) => (
         <Float key={index} speed={reducedMotion ? 0 : 0.25 + (index % 4) * 0.05} floatIntensity={reducedMotion ? 0 : 0.25} rotationIntensity={reducedMotion ? 0 : 0.06}>
           <mesh position={shard.position} rotation={shard.rotation} scale={shard.scale} castShadow>
-            <octahedronGeometry args={[0.72, 0]} />
-            <meshPhysicalMaterial color="#16112d" emissive={index % 3 === 0 ? '#ff806f' : '#775cff'} emissiveIntensity={0.22} metalness={0.52} roughness={0.28} transmission={0.12} />
+            <octahedronGeometry args={[0.72, 1]} />
+            <meshPhysicalMaterial color={index % 3 === 0 ? '#675052' : '#4b4667'} emissive={index % 3 === 0 ? '#bb8177' : '#827ca6'} emissiveIntensity={0.06} metalness={0.35} roughness={0.42} clearcoat={.3} />
           </mesh>
         </Float>
       ))}
@@ -236,7 +237,7 @@ function ShadowRealmEnvironment({ reducedMotion }: { reducedMotion: boolean }) {
       <group position={[0, 1.25, -7.2]}>
         <mesh castShadow>
           <dodecahedronGeometry args={[1.3, 2]} />
-          <meshPhysicalMaterial color="#120d24" emissive="#9d72ff" emissiveIntensity={0.5} metalness={0.48} roughness={0.18} transmission={0.22} />
+          <meshPhysicalMaterial color="#514360" emissive="#aa96c4" emissiveIntensity={0.16} metalness={0.4} roughness={0.3} clearcoat={.6} />
         </mesh>
         {[1.8, 2.35, 2.95].map((radius, index) => (
           <mesh key={radius} rotation={[Math.PI / 2, index * 0.5, index * 0.28]}>
@@ -408,6 +409,7 @@ export default function SpatialRealmExperience({ realm }: { realm: SpatialRealmK
         <h1>{definition.title}</h1>
         <span>{definition.subtitle}</span>
       </header>
+      {realm === 'shadow' ? <div className="shadowFounderSlot"><AdamLauncherSlot name="shadow-world" /></div> : null}
 
       <section className="urai-spatial-realm-prompt" role="status" aria-live="polite">
         <strong>{nearby ? `${nearby.label} threshold within reach` : `Walking through ${definition.title}`}</strong>
@@ -425,6 +427,22 @@ export default function SpatialRealmExperience({ realm }: { realm: SpatialRealmK
 
       <MovementHelp realm={definition.title} summary={definition.subtitle} controls="WASD or arrows move. Drag to look. Enter activates a nearby portal. R resets. Escape returns." />
       <MobileMovementPad input={input} label={`${definition.title} movement controls`} />
+
+      <style jsx global>{`
+        html.urai-v5-assets-ready [data-spatial-realm='shadow'][data-realm-ready='true']::after{display:none}
+        .urai-spatial-realm-experience[data-spatial-realm='shadow'] .shadowFounderSlot{position:absolute;right:max(14px,env(safe-area-inset-right));top:max(14px,env(safe-area-inset-top));z-index:35}
+        .urai-spatial-realm-experience[data-spatial-realm='shadow'] .urai-movement-help{top:76px;right:14px;max-width:230px}
+        @media(max-width:700px){
+          .urai-spatial-realm-experience[data-spatial-realm='shadow'] .urai-spatial-realm-header{top:80px;left:16px;max-width:calc(100vw - 32px)}
+          .urai-spatial-realm-experience[data-spatial-realm='shadow'] .urai-spatial-realm-header h1{font-size:32px;line-height:1.02}
+          .urai-spatial-realm-experience[data-spatial-realm='shadow'] .urai-spatial-realm-header span{max-width:32ch;font-size:11px;margin-top:8px}
+          .urai-spatial-realm-experience[data-spatial-realm='shadow'] .urai-movement-help{top:12px;left:12px;right:auto;max-width:calc(100vw - 100px)}
+          .urai-spatial-realm-experience[data-spatial-realm='shadow'] .urai-movement-help summary{font-size:10px;padding:0 12px}
+          .urai-spatial-realm-experience[data-spatial-realm='shadow'] .urai-mobile-movement{bottom:max(140px,calc(env(safe-area-inset-bottom) + 132px));left:12px}
+          .urai-spatial-realm-experience[data-spatial-realm='shadow'] .urai-spatial-realm-prompt{bottom:max(256px,calc(env(safe-area-inset-bottom) + 248px));padding:9px 12px;box-sizing:border-box}
+          .urai-spatial-realm-experience[data-spatial-realm='shadow'] .urai-spatial-realm-portals{bottom:max(72px,calc(env(safe-area-inset-bottom) + 64px));box-sizing:border-box}
+        }
+      `}</style>
 
       <style jsx>{`
         .urai-spatial-realm-experience{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:${definition.background};color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:grab;font-family:Inter,ui-sans-serif,system-ui}.urai-spatial-realm-experience[data-camera-mode='look']{cursor:grabbing}.urai-spatial-realm-experience canvas{position:absolute!important;inset:0;width:100%!important;height:100%!important;display:block;touch-action:none}.urai-spatial-realm-header{position:absolute;z-index:4;left:max(20px,env(safe-area-inset-left));top:max(20px,env(safe-area-inset-top));max-width:min(460px,calc(100vw - 40px));pointer-events:none;text-shadow:0 8px 38px rgba(0,0,0,.8)}.urai-spatial-realm-header p{margin:0;color:#a9efff;font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.urai-spatial-realm-header h1{margin:8px 0 0;font-size:clamp(32px,6vw,72px);line-height:.9;letter-spacing:-.06em}.urai-spatial-realm-header span{display:block;margin-top:12px;max-width:440px;color:rgba(235,246,255,.72);font-size:13px;line-height:1.5}.urai-spatial-realm-prompt{position:absolute;z-index:5;left:50%;bottom:max(100px,calc(env(safe-area-inset-bottom) + 88px));transform:translateX(-50%);display:grid;gap:3px;width:min(520px,calc(100vw - 32px));padding:11px 16px;border:1px solid rgba(210,244,255,.2);border-radius:18px;background:rgba(2,8,18,.72);backdrop-filter:blur(16px);text-align:center;pointer-events:none}.urai-spatial-realm-prompt strong{font-size:11px;letter-spacing:.09em;text-transform:uppercase}.urai-spatial-realm-prompt span{font-size:10px;color:rgba(218,240,255,.7)}.urai-spatial-realm-portals{position:absolute;z-index:6;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:8px;max-width:calc(100vw - 32px);overflow-x:auto;padding:5px}.urai-spatial-realm-portals button{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:0 16px;border:1px solid rgba(216,246,255,.2);border-radius:999px;background:rgba(3,10,22,.82);color:#fff;font-weight:800;cursor:pointer;white-space:nowrap}.urai-spatial-realm-portals button span{width:8px;height:8px;border-radius:50%;box-shadow:0 0 16px currentColor}.urai-spatial-realm-portals button:focus-visible{outline:3px solid #fff;outline-offset:3px}@media(max-width:700px){.urai-spatial-realm-header{max-width:300px}.urai-spatial-realm-header h1{font-size:42px}.urai-spatial-realm-header span{font-size:12px}.urai-spatial-realm-prompt{bottom:max(152px,calc(env(safe-area-inset-bottom) + 140px));width:calc(100vw - 24px)}.urai-spatial-realm-portals{bottom:max(88px,calc(env(safe-area-inset-bottom) + 78px));width:calc(100vw - 24px);justify-content:flex-start}}@media(prefers-reduced-motion:reduce){.urai-spatial-realm-prompt{backdrop-filter:none}}

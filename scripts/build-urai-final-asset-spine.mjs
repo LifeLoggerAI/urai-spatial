@@ -61,7 +61,7 @@ const routes = [
   {
     tier: "tier2",
     route: "focus",
-    canon: "Focus Chamber",
+    canon: "Focus Memory Star",
     mood: "selected memory chamber, image inside star, replay entry",
     assets: [
       "focus-memory-chamber-desktop",
@@ -74,7 +74,7 @@ const routes = [
   {
     tier: "tier2",
     route: "replay",
-    canon: "Replay Realm",
+    canon: "Replay",
     mood: "cinematic memory film, inside the memory, emotional beat stage",
     assets: [
       "replay-cinematic-stage-desktop",

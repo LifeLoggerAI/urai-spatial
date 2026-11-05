@@ -98,7 +98,9 @@ async function moveToNearby(page, destination, method, timeout = 40_000) {
       const dx = target.x - before.playerX
       const dz = target.z - before.playerZ
       let direction = null
-      if (destination !== 'orb' && Math.abs(dx) > lateralTolerance) {
+      if (destination !== 'orb' && Math.abs(dz) > depthTolerance && Math.abs(dz) >= Math.abs(dx)) {
+        direction = dz < 0 ? 'forward' : 'back'
+      } else if (destination !== 'orb' && Math.abs(dx) > lateralTolerance) {
         direction = dx < 0 ? 'left' : 'right'
       } else if (Math.abs(dz) > depthTolerance) {
         direction = dz < 0 ? 'forward' : 'back'
