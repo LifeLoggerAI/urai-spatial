@@ -5,7 +5,18 @@ import vm from 'node:vm'
 import ts from 'typescript'
 import * as destinations from '../src/spatial/world/destinationRegistry.ts'
 import * as worldTypes from '../src/spatial/world/worldTypes.ts'
-import { retainDisclosedHomeAscentDemo, retainDisclosedHomeReturnDemo } from '../src/spatial/navigation/homeSkyInteraction.ts'
+import { homeJourneyHref, retainDisclosedHomeAscentDemo, retainDisclosedHomeReturnDemo } from '../src/spatial/navigation/homeSkyInteraction.ts'
+
+test('direct Life Map Home href preserves disclosed demo and discards selected identity', () => {
+  const explicit = '?demo=1&memoryId=demo:quiet-reset&node=quiet-reset&manifestId=replay-recovery-thread'
+  const target = new URL(homeJourneyHref('/home', explicit, '/life-map'), 'https://urai.app')
+  assert.deepEqual([...target.searchParams.entries()], [['demo', '1']])
+  for (const search of ['', '?demo=0', '?demo=1&demo=0', '?demo=1&memoryId=private-memory', '?demo=1&manifestId=private-manifest']) {
+    assert.equal(new URL(homeJourneyHref('/home', search, '/life-map'), 'https://urai.app').searchParams.has('demo'), false)
+  }
+  const component = fs.readFileSync('src/components/lifemap/ComposedLifeMapScene.tsx', 'utf8')
+  assert.match(component, /homeJourneyHref\("\/home", params\.toString\(\), '\/life-map'\)/)
+})
 for (const [name, path, begin, end, exported] of [
   ['controller', 'src/spatial/world/WorldTransitionController.tsx', 'const CONTEXT_KEYS = [', 'function normalizedPathname(', 'buildTravelHref'],
   ['hard fallback', 'src/spatial/world/worldEvents.ts', 'const WORLD_TRAVEL_CONTEXT_KEYS = [', 'function commitHardFallback(', 'buildFallbackHref'],

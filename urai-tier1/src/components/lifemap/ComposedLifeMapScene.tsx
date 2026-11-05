@@ -260,7 +260,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
   const withIdentity = useCallback((next: URLSearchParams, memoryId?: string) => withLifeMapSelectionIdentity(params, next, memoryId), [params]);
 
   const returnHome = useCallback(() => {
-    router.push(homeJourneyHref("/home", params.toString()));
+    router.push(homeJourneyHref("/home", params.toString(), '/life-map'));
   }, [params, router]);
 
   useEffect(() => {
@@ -528,3 +528,4 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     `}</style>
   </main>;
 }
+
