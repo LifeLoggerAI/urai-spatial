@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { createHash } from 'node:crypto'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -7,6 +8,12 @@ const db = admin.firestore()
 const speechRegion = functions.region('us-central1')
 const ID = /^[A-Za-z0-9_-]{1,128}$/
 const MAX_LEASE_MS = 30 * 60 * 1000
+
+// Deterministic per-owner/session queue identity is not based on raw speech,
+// transcript, or provider content. Queue records must never contain those.
+function purgeJobId(uid: string, sessionId: string): string {
+  return createHash('sha256').update('urai:speech-purge:v1\0' + uid + '\0' + sessionId).digest('hex')
+}
 
 function uidOf(context: functions.https.CallableContext): string {
   const uid = context.auth?.uid
@@ -114,22 +121,74 @@ export const grantSpeechPurposeLease = speechRegion.https.onCall(async (data, co
 export const revokeSpeechPurposeLease = speechRegion.https.onCall(async (data, context) => {
   const uid = uidOf(context)
   const sessionId = idOf(data?.sessionId, 'SESSION_ID')
-  const ref = db.doc(`users/${uid}/speechPurposeLeases/${sessionId}`)
+  const leaseRef = db.doc(`users/${uid}/speechPurposeLeases/${sessionId}`)
+  const purgeJobIdValue = purgeJobId(uid, sessionId)
+  const purgeRef = db.doc(`speechProviderPurgeQueue/${purgeJobIdValue}`)
+
+  // Read both records BEFORE any write, then update lease and create the
+  // durable cleanup obligation atomically. Firestore transaction retries
+  // serialize simultaneous revocations. Purge is NEVER marked verified here.
   return db.runTransaction(async tx => {
-    const snapshot = await tx.get(ref)
-    if (!snapshot.exists || snapshot.get('ownerId') !== uid
-        || snapshot.get('sessionId') !== sessionId
-        || !validCounter(snapshot.get('revision')))
+    const [lease, existingPurge] = await Promise.all([
+      tx.get(leaseRef), tx.get(purgeRef),
+    ])
+    if (!lease.exists || lease.get('ownerId') !== uid
+        || lease.get('sessionId') !== sessionId
+        || lease.get('schemaVersion') !== 'urai-speech-lease-v1'
+        || !validCounter(lease.get('revision'))
+        || !ID.test(String(lease.get('providerId') ?? ''))
+        || !ID.test(String(lease.get('sourceId') ?? ''))) {
       throw new functions.https.HttpsError('not-found', 'SPEECH_LEASE_NOT_FOUND')
-    const previousRevision = snapshot.get('revision') as number
-    if (previousRevision >= Number.MAX_SAFE_INTEGER)
+    }
+    const currentRevision = lease.get('revision') as number
+    const wasActive = lease.get('active') === true
+    if (wasActive && currentRevision >= Number.MAX_SAFE_INTEGER)
       throw new functions.https.HttpsError('failed-precondition', 'SPEECH_REVISION_EXHAUSTED')
-    const revision = previousRevision + 1
-    tx.update(ref, {
-      active: false, transcription: false, inference: false, sessionBaseline: false,
-      revision, updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      revokedAt: admin.firestore.FieldValue.serverTimestamp(),
-    })
-    return { sessionId, revision, active: false, providerPurgeVerified: false }
+    const revision = wasActive ? currentRevision + 1 : currentRevision
+    const providerId = lease.get('providerId') as string
+    const sourceId = lease.get('sourceId') as string
+    if (existingPurge.exists
+        && (existingPurge.get('ownerId') !== uid
+          || existingPurge.get('sessionId') !== sessionId
+          || existingPurge.get('providerId') !== providerId
+          || existingPurge.get('sourceId') !== sourceId
+          || existingPurge.get('leaseRevision') !== revision
+          || typeof existingPurge.get('state') !== 'string'
+          || !['requested', 'in-progress', 'pending-acknowledgement', 'verified', 'failed'].includes(existingPurge.get('state')))) {
+      throw new functions.https.HttpsError('failed-precondition', 'SPEECH_PURGE_QUEUE_CONFLICT')
+    }
+    if (wasActive) {
+      const now = admin.firestore.FieldValue.serverTimestamp()
+      tx.update(leaseRef, {
+        active: false, transcription: false, inference: false,
+        sessionBaseline: false, revision, revokedAt: now, updatedAt: now,
+      })
+    }
+
+    // If a previously inactive lease has no cleanup record, reconcile it
+    // without reviving its source permissions. A repeat revocation with an
+    // existing queue leaves both records untouched (idempotent).
+    if (!existingPurge.exists) {
+      const now = admin.firestore.FieldValue.serverTimestamp()
+      tx.create(purgeRef, {
+        schemaVersion: 'urai-speech-purge-job-v1',
+        purgeJobId: purgeJobIdValue,
+        ownerId: uid, sessionId, sourceId, providerId,
+        leaseRevision: revision,
+        state: 'requested',
+        localCacheState: 'pending',
+        providerState: 'pending',
+        scopes: ['speech-transcript', 'acoustic-features', 'session-baseline', 'provider-session'],
+        attempts: 0,
+        // No provider-verified receipt or claimant-controlled success here.
+        providerPurgeVerified: false, createdAt: now, updatedAt: now,
+      })
+    }
+    return {
+      sessionId, revision, active: false,
+      purgeJobId: purgeJobIdValue,
+      purgeState: existingPurge.exists ? existingPurge.get('state') : 'requested',
+      providerPurgeVerified: false,
+    }
   })
 })
