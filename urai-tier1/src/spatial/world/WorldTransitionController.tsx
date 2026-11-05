@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
-import { retainDisclosedHomeAscentDemo } from '@/spatial/navigation/homeSkyInteraction'
+import { retainDisclosedHomeAscentDemo, isHomeSkyAscentTravel } from '@/spatial/navigation/homeSkyInteraction'
 import { subscribeBrowserLocation } from '@/lib/browserLocationStore'
 import { definitionForDestination } from './destinationRegistry'
 import { persistHomeWorldCheckpoint } from './homeWorldCheckpointPersistence'
@@ -90,7 +90,8 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (context?.scenarioBasisRevision !== undefined) target.searchParams.set('basisRevision', String(context.scenarioBasisRevision))
   if (context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
   if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
-  if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
+  // A Home sky demo must originate from its exact disclosed query, never an arbitrary context flag.
+  if (memoryDestination && context?.demo && !isHomeSkyAscentTravel(request) && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
   retainDisclosedHomeAscentDemo(window.location.pathname, window.location.search, request, target)
