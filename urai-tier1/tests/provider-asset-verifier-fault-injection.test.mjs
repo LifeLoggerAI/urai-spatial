@@ -88,6 +88,25 @@ test('a destination-shaped call cannot substitute an unowned helper import', t =
   assert.ok(failed.failures.some(failure => failure.includes('home-semantic-life-map destination')))
 })
 
+test('Home journey helper must retain its safe /home default source context', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/spatial/navigation/homeSkyInteraction.ts',
+    "sourcePathname = '/home'", "sourcePathname = '/private'"))
+  assert.ok(failed.failures.some(failure => failure.includes('home-semantic-ground destination')))
+  assert.ok(failed.failures.some(failure => failure.includes('home-semantic-life-map destination')))
+})
+
+test('Home journey helper cannot drop its safe third-argument default', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/spatial/navigation/homeSkyInteraction.ts',
+    "sourcePathname = '/home'", 'sourcePathname'))
+  assert.ok(failed.failures.some(failure => failure.includes('home-semantic-ground destination')))
+})
+
+test('Home journey helper cannot silently add another positional parameter', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/spatial/navigation/homeSkyInteraction.ts',
+    "sourcePathname = '/home')", "sourcePathname = '/home', extra = true)"))
+  assert.ok(failed.failures.some(failure => failure.includes('home-semantic-life-map destination')))
+})
+
 test('a detached helper declaration cannot satisfy the actual exported destination helper', t => {
   const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/spatial/navigation/homeSkyInteraction.ts',
     'export function homeJourneyHref(', 'function homeJourneyHref('))
