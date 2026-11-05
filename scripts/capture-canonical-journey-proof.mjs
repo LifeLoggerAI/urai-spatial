@@ -127,10 +127,25 @@ async function activate(page, locator, mode, { inPlace = false } = {}) {
     await locator.focus()
     return locator.press('Enter')
   }
-  // A non-navigation Replay control must not inherit a pending framework
-  // navigation wait after the pointer click has actually been dispatched.
-  // The caller still proves the resulting state through data-playing=false.
-  return inPlace ? locator.click({ noWaitAfter: true }) : locator.click()
+  if (inPlace) {
+    // Replay Pause changes in-place state; Playwright's locator click can wait
+    // for an unrelated scheduled navigation after the physical click completes.
+    // Use an actual browser pointer at the verified hit target, then the caller
+    // still requires data-playing=false. Never use a synthetic DOM click here.
+    await locator.scrollIntoViewIfNeeded()
+    assert.equal(await locator.isEnabled(), true, 'in-place action must remain enabled')
+    const box = await locator.boundingBox()
+    assert.ok(box && box.width >= 1 && box.height >= 1, 'in-place pointer target must be measurable')
+    const x = box.x + box.width / 2, y = box.y + box.height / 2
+    const hit = await locator.evaluate((button) => {
+      const rect = button.getBoundingClientRect()
+      const element = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+      return Boolean(element && (element === button || button.contains(element)))
+    })
+    assert.equal(hit, true, 'in-place pointer must hit the real enabled button')
+    return page.mouse.click(x, y)
+  }
+  return locator.click()
 }
 
 async function openHome(page, journey) {
