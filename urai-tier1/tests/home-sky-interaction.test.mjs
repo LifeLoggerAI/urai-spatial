@@ -124,10 +124,15 @@ test('synthetic primary touch and pen use the actual same guarded camera path',(
 
 test('direct Home href retains only explicit disclosed demo and existing route authority',()=>{
   const base='/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete'
-  const target=new URL(homeJourneyHref(base,'?demo=1&memoryId=private-source&token=secret'),'https://urai.example')
+  const target=new URL(homeJourneyHref(base,'?demo=1&token=secret'),'https://urai.example')
   assert.equal(target.searchParams.get('demo'),'1');assert.equal(target.searchParams.get('entryPortal'),'home-sky');assert.equal(target.searchParams.get('cameraCheckpoint'),'home-sky-ascent-complete');assert.equal(target.searchParams.has('memoryId'),false);assert.equal(target.searchParams.has('token'),false)
   for(const search of ['', '?demo=0','?demo=true','?demo=1&demo=0','?demo=1&demo=1','?memoryId=private-source'])assert.equal(homeJourneyHref(base,search),base)
+  for(const key of ['memoryId','node','manifestId','movieId','chapterId']) {
+    assert.equal(homeJourneyHref(base,`?demo=1&${key}=private-source`),base,`private source ${key}`)
+    assert.equal(homeJourneyHref(base+`&${key}=private-target`,'?demo=1'),base+`&${key}=private-target`,`private target ${key}`)
+  }
   assert.equal(new URL(homeJourneyHref(base+'&demo=0','?demo=1'),'https://urai.example').searchParams.get('demo'),'0')
+  assert.equal(homeJourneyHref(base,'?demo=1&memoryId=private-source&token=secret'),base,'private Home selection never grants public fixture')
   const ground=new URL(homeJourneyHref('/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent','?demo=1&token=secret'),'https://urai.example')
   assert.equal(ground.pathname,'/ground/');assert.deepEqual([...ground.searchParams.entries()],[['entryPortal','home-ground'],['cameraCheckpoint','home-ground-descent'],['demo','1']])
 })
@@ -137,7 +142,7 @@ test('actual hydrated direct navigation retains disclosed demo without changing 
   let search='',effects=[]
   const locale={text:id=>URAI_SOURCE_MESSAGES[id].source,props:()=>({lang:'en',dir:'ltr'})}
   const module={exports:{}}
-  vm.runInNewContext(code,{module,exports:module.exports,window:{location:{search:'?demo=1&memoryId=private-source&token=secret'}},require:id=>{
+  vm.runInNewContext(code,{module,exports:module.exports,window:{location:{search:'?demo=1&token=secret'}},require:id=>{
     if(id==='react')return {useState:()=>[search,next=>{search=next}],useEffect:fn=>effects.push(fn)}
     if(id==='react/jsx-runtime')return require(id)
     if(id==='next/link')return require(id)
