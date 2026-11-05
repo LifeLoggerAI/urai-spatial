@@ -5,6 +5,8 @@ const focusedContractTests = [
   'tests/stripe-session-authority.test.mjs',
   'tests/multilingual-speech-evaluator-contract.test.mjs',
   'tests/multilingual-speech-guard-contract.test.mjs',
+  'tests/trusted-speech-source-ports.test.mjs',
+  'tests/speech-purpose-lease-contract.test.mjs',
   'tests/owned-memory-media-client.test.mjs',
   'tests/authorized-export-download.test.mjs',
   'tests/operational-export-client.test.mjs',

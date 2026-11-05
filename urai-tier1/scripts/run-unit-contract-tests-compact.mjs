@@ -127,6 +127,8 @@ const tests = [
   'tests/emotional-weather-contract.test.mjs',
   'tests/multilingual-speech-evaluator-contract.test.mjs',
   'tests/multilingual-speech-guard-contract.test.mjs',
+  'tests/trusted-speech-source-ports.test.mjs',
+  'tests/speech-purpose-lease-contract.test.mjs',
   'tests/exact-static-release-contract.test.mjs',
   'tests/field-reconstruction-phase5-contract.test.mjs',
   'tests/final-aaa-world-convergence-contract.test.mjs',

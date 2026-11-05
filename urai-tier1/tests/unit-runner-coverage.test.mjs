@@ -8,6 +8,8 @@ const compactRunnerSource = fs.readFileSync(new URL('../scripts/run-unit-contrac
 const requiredFocusedTests = [
   'tests/multilingual-speech-evaluator-contract.test.mjs',
   'tests/multilingual-speech-guard-contract.test.mjs',
+  'tests/trusted-speech-source-ports.test.mjs',
+  'tests/speech-purpose-lease-contract.test.mjs',
   'tests/lifemap-founder-harness-contract.test.mjs',
   'tests/authorized-export-download.test.mjs',
   'tests/operational-export-client.test.mjs',
