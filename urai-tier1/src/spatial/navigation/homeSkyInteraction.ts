@@ -79,6 +79,18 @@ export function subscribeHomeSkyTaps({ owner, canvas, gate, lifecycleTarget }: {
   }
 }
 
+// Context.demo never authorizes the physical Home sky Ascent on its own.
+// Only the exact, explicitly disclosed source query may carry that fixture.
+export function isHomeSkyAscentTravel(request: {
+  destination: string
+  entryPortal?: string
+  cameraCheckpoint?: string
+}): boolean {
+  return request.destination === 'life-map'
+    && request.entryPortal === 'home-sky'
+    && request.cameraCheckpoint === 'home-sky-ascent-complete'
+}
+
 // A real Home sky ascent may retain only an explicitly disclosed local fixture
 // context. Never carry memory, tenant, or unrelated query authority across realms.
 export function retainDisclosedHomeAscentDemo(sourcePathname: string, sourceSearch: string, request: {
@@ -95,8 +107,7 @@ export function retainDisclosedHomeAscentDemo(sourcePathname: string, sourceSear
   // Existing target demo declarations (including demo=0) must not be overwritten.
   const selectedKeys = ['memoryId', 'node', 'manifestId', 'movieId', 'chapterId']
   if ((home !== '/' && home !== '/home') || lifeMap !== '/life-map'
-    || request.destination !== 'life-map' || request.entryPortal !== 'home-sky'
-    || request.cameraCheckpoint !== 'home-sky-ascent-complete'
+    || !isHomeSkyAscentTravel(request)
     || flags.length !== 1 || flags[0] !== '1'
     || target.searchParams.has('demo')
     || request.context?.memoryId || request.context?.replayManifestId
