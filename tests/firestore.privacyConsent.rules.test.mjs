@@ -20,6 +20,7 @@ let env
 const ownerDocuments = [
   ['privacyPolicy', 'current', { ownerId, version: 2, revision: 3 }],
   ['privacyRuntime', 'location-precision', { ownerId, enabled: false }],
+  ['speechPurposeLeases', 'speech-session-a', { ownerId, sessionId: 'speech-session-a', schemaVersion: 'urai-speech-lease-v1', revision: 2, active: true, transcription: true, inference: true, sessionBaseline: false }],
   ['privacyAudit', 'audit-a', { ownerId, result: 'fully-enforced' }],
   ['privacyReceipts', 'receipt-a', { ownerId, result: 'fully-enforced' }],
   ['capturedRealityAssets', 'asset-a', { ownerId, state: 'ready', releaseState: 'private-pilot', revocationState: 'active' }],
@@ -196,4 +197,36 @@ test('owners, anonymous, foreign and administrative clients cannot create, updat
   // Also test owner creation at the exact canonical path, not only noncanonical writes.
   await env.withSecurityRulesDisabled(context => deleteDoc(doc(context.firestore(), 'consentRecords', ownerId + '_memory_storage')))
   await assertFails(setDoc(doc(env.authenticatedContext(ownerId).firestore(), 'consentRecords', ownerId + '_memory_storage'), canonicalConsent(ownerId)))
+})
+
+test('speech purpose leases are not readable through cross-user or privileged client claims', async () => {
+  const refFor = context => doc(context.firestore(), 'users', ownerId, 'speechPurposeLeases', 'speech-session-a')
+  const ownerRef = refFor(env.authenticatedContext(ownerId))
+  const ownerSnapshot = await assertSucceeds(getDoc(ownerRef))
+  assert.equal(ownerSnapshot.data().ownerId, ownerId)
+  assert.equal(ownerSnapshot.data().revision, 2)
+  await assertFails(getDoc(refFor(env.unauthenticatedContext())))
+  await assertFails(getDoc(refFor(env.authenticatedContext(otherOwnerId))))
+  await assertFails(getDoc(refFor(env.authenticatedContext('admin-a', { admin: true }))))
+  await assertFails(getDoc(refFor(env.authenticatedContext('founder-a', { founder: true }))))
+})
+
+test('direct Firestore clients cannot forge, extend, revive or delete a speech purpose lease', async () => {
+  const actors = [
+    env.authenticatedContext(ownerId),
+    env.authenticatedContext(otherOwnerId),
+    env.authenticatedContext('admin-a', { admin: true }),
+    env.unauthenticatedContext(),
+  ]
+  for (const actor of actors) {
+    const db = actor.firestore()
+    const lease = doc(db, 'users', ownerId, 'speechPurposeLeases', 'speech-session-a')
+    await assertFails(updateDoc(lease, { active: true, revision: 9000, expiresAtMs: Date.now() + 86400000 }))
+    await assertFails(updateDoc(lease, { active: false, transcription: false }))
+    await assertFails(deleteDoc(lease))
+    await assertFails(setDoc(doc(db, 'users', ownerId, 'speechPurposeLeases', 'forged-session'), {
+      ownerId, sessionId: 'forged-session', revision: 1, active: true,
+      transcription: true, inference: true, sessionBaseline: true,
+    }))
+  }
 })
