@@ -217,8 +217,12 @@ for(const id of sceneNodes.map(sample=>sample.id)) test('canonical scene selecti
   }
   const returned=f.overview()
   assert.equal(returned.get('overview'),'1');assert.equal(returned.get('node'),id)
+  assert.equal(returned.get('memoryId'),'demo:'+id,'Overview retains an explicitly disclosed sample namespace')
   assert.equal(returned.get('manifestId'),expected.replayManifest.id)
   for(const flag of ['onboarding','firstRun']) assert.equal(returned.get(flag),'1')
+  const returnedHome=new URL(lifeMapHomeHref(returned.toString()),'http://localhost')
+  assert.equal(returnedHome.pathname,'/home')
+  assert.deepEqual([...returnedHome.searchParams.entries()],[['demo','1']],'Home must carry no selected memory, manifest or private query')
 })
 
 test('canonical scene repairs the supplied legacy-thread arrival manifest without changing selection',()=>{
