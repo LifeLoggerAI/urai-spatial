@@ -101,7 +101,12 @@ export async function assessSpeechEvidence(request, ports, options={}) {
   // Context evidence positions must come from an actual array. A malformed or
   // missing context collection cannot mint usable context references, trigger
   // protected feature reads, or crash the policy guard.
-  if(!Array.isArray(utterance.context)) { flags=['invalid-utterance-context'];return result() }
+  if(!Array.isArray(utterance.context) || utterance.context.length>32
+      || !utterance.context.every(entry=>entry && typeof entry==='object' && !Array.isArray(entry)
+        && typeof entry.speaker==='string' && entry.speaker.trim().length>0 && entry.speaker.length<=128
+        && typeof entry.text==='string' && entry.text.trim().length>0 && entry.text.length<=4096)) {
+    flags=['invalid-utterance-context'];return result()
+  }
   if(typeof ports.readFeatures!=='function') throw new Error('SPEECH_FEATURE_PORT_REQUIRED')
   const features=structuredClone(await ports.readFeatures())
   let current=await ports.readAuthority()

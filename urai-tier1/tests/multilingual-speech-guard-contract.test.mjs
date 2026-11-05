@@ -163,6 +163,28 @@ test('missing or malformed utterance context fails closed without promoting cand
     assert.equal(decision.presentation.inference_enabled,false)
   }
 })
+test('malformed or oversized context entries never mint evidence references',async()=>{
+  const invalid=[
+    [null], ['text-only'], [42], [{}], [{speaker:'owner'}],
+    [{text:'unattributed'}], [{speaker:'',text:'context'}],
+    [{speaker:'owner',text:''}], [{speaker:'owner',text:'   '}],
+    [{speaker:7,text:'context'}], [{speaker:'owner',text:123}],
+    [{speaker:'owner',text:'x'.repeat(4097)}],
+    [{speaker:'x'.repeat(129),text:'context'}],
+    Array.from({length:33},()=>({speaker:'owner',text:'synthetic evidence'})),
+  ]
+  for(const context of invalid) {
+    const {decision,fixture}=await probe('CF01',i=>{i.utterance.context=context})
+    assert.equal(decision.status,'unknown')
+    assert.deepEqual(decision.assertions,[])
+    assert.deepEqual(decision.interpretations,[])
+    assert.deepEqual(decision.language_spans,[])
+    assert.ok(decision.evidence_flags.includes('invalid-utterance-context'))
+    assert.equal(fixture.featureReads,0)
+    assert.equal(fixture.baselineReads,0)
+    assert.equal(decision.presentation.inference_enabled,false)
+  }
+})
 test('nonfinite feature values are never emitted as observations',async()=>{
   const {decision}=await probe('CS01',i=>{i.acoustic_stub.mean_f0_hz=Infinity;i.acoustic_stub.pause_ratio=NaN})
   assert.ok(decision.observations.every(o=>Number.isFinite(o.value)))
