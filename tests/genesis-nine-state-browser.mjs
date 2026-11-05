@@ -147,8 +147,15 @@ try {
   report.interactions.push({action:'Escape',from:'focus'})
   await page.keyboard.press('Escape')
   await assertDestination(page,'life-map','[data-testid="urai-r3f-canonical-lifemap"]')
-  report.interactions.push({action:'Escape',from:'life-map'})
+  // The canonical selected Life Map intentionally unwinds to Overview
+  // on Escape. The visible Return Home action completes the realm journey.
+  // Do not bypass this interaction by injecting a router event or URL.
+  report.interactions.push({action:'Escape',from:'life-map-selected',expected:'overview'})
   await page.keyboard.press('Escape')
+  const overviewReturn=page.locator('[data-life-map-overview-home-return="true"]').first()
+  await overviewReturn.waitFor({state:'visible',timeout:25000})
+  report.interactions.push({action:'real-overview-return-home-click'})
+  await overviewReturn.click()
   await assertDestination(page,'home','[data-testid="home-visible-navigable-sanctuary-world"]')
 
   if(JSON.stringify(report.states.map(x=>x.state))!==JSON.stringify(EXPECTED))
