@@ -48,3 +48,16 @@ test('client and fallback navigation both apply the identical narrow demo contin
     assert.match(source, /preserveExplicitHomeAscentDemo\(target, request, window\.location\.href\)/)
   }
 })
+
+test('Adam inline launcher gives its text sufficient content width without changing floating launchers', () => {
+  const css = readFileSync(new URL('../urai-tier1/src/spatial/adam/AdamPresenceRuntime.module.css', import.meta.url), 'utf8')
+  const start = css.indexOf('.inlineLauncher {')
+  const end = css.indexOf('\n}', start)
+  assert.ok(start >= 0 && end > start, 'inline launcher CSS rule must exist')
+  const rule = css.slice(start, end)
+  assert.match(rule, /box-sizing:\s*border-box/)
+  assert.match(rule, /width:\s*100%/)
+  assert.match(rule, /padding-inline:\s*8px !important/)
+  const minimumContentWidth = 64 - 2 * 8 - 2
+  assert.ok(minimumContentWidth >= 42, '64px launcher must leave room for Adam text and font metrics')
+})
