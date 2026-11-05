@@ -118,9 +118,14 @@ export function retainDisclosedHomeAscentDemo(sourcePathname: string, sourceSear
 // Carry only an explicitly disclosed demo through the direct accessible link.
 // Absence, demo=0, and other query fields never manufacture demo authority.
 export function homeJourneyHref(href: string, search: string) {
-  const demo = new URLSearchParams(search).getAll('demo')
+  const source = new URLSearchParams(search)
+  const demo = source.getAll('demo')
   if (demo.length !== 1 || demo[0] !== '1') return href
   const target = new URL(href, 'https://urai.invalid')
+  // Direct accessible links must honor the same private selection fence as
+  // physical Home sky Ascent. A private memory ID cannot grant demo authority.
+  const selectedKeys = ['memoryId', 'node', 'manifestId', 'movieId', 'chapterId']
+  if (selectedKeys.some((key) => source.has(key) || target.searchParams.has(key))) return href
   if (!target.searchParams.has('demo')) target.searchParams.set('demo', '1')
   return `${target.pathname}${target.search}${target.hash}`
 }
