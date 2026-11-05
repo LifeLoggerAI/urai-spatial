@@ -74,7 +74,15 @@ export function homeNavigationSourceFailures(runtimeSource, catalogSources, jour
   const journeyFile = ts.createSourceFile('homeSkyInteraction.ts', journeySource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
   const journeyDeclarations = journeyFile.statements.filter(node => ts.isFunctionDeclaration(node)
     && node.name?.text === 'homeJourneyHref' && node.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)
-    && node.parameters.length === 2 && node.parameters[0].name.getText() === 'href' && node.parameters[1].name.getText() === 'search'
+    && node.parameters.length === 3
+    && node.parameters[0].name.getText() === 'href' && node.parameters[1].name.getText() === 'search'
+    // The live helper takes an optional third parameter to distinguish a
+    // Life Map return from a direct Home journey. Keep the safe Home default
+    // and reject missing, altered, rest, or additional positional parameters.
+    && node.parameters[2].name.getText() === 'sourcePathname'
+    && node.parameters.every(parameter => !parameter.dotDotDotToken)
+    && node.parameters[2].initializer && ts.isStringLiteral(node.parameters[2].initializer)
+    && node.parameters[2].initializer.text === '/home'
     && node.body)
   const journeyBindingAvailable = journeyImports.length === 1 && !journeyFile.parseDiagnostics.length && journeyDeclarations.length === 1
   const owners = file.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === 'HomeSemanticNavigation')
