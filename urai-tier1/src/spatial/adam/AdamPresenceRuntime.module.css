@@ -168,7 +168,7 @@
   width: 100%;
   /* The 64px inline slot must fit the actual localized label glyph bounds.
      A 10px inset clipped Adam by 4px in real desktop/mobile Playwright. */
-  padding-inline: 5px;
+  padding-inline: 5px !important;
   white-space: nowrap;
 }
 /* Route typography and spatial header transforms do not own founder controls. */

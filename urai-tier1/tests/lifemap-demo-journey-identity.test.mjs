@@ -255,8 +255,12 @@ const print=(file,node)=>printer.printNode(ts.EmitHint.Unspecified,node,file)
 const focusFile=parse('src/app/focus/FocusChamberClient.tsx')
 const replayHrefCallback=print(focusFile,declaration(focusFile,'replayHref').initializer.arguments[0])
 const returnFile=parse('src/spatial/world/WorldTransitionController.tsx')
+const homeSkyFile=parse('src/spatial/navigation/homeSkyInteraction.ts')
 const returnDependencies=[
   'const '+print(returnFile,declaration(returnFile,'CONTEXT_KEYS'))+';',
+  // The extracted real production builder imports these pure Home-sky helpers.
+  // Include their actual source in this isolated VM, never a reimplementation.
+  ...['isHomeSkyAscentTravel','retainDisclosedHomeAscentDemo'].map(name=>print(homeSkyFile,declaration(homeSkyFile,name))),
   ...['buildTravelHref','destinationFromOriginRealm','fallbackReturnDestination'].map(name=>print(returnFile,declaration(returnFile,name))),
 ].join('\n')
 const returnCallback=print(returnFile,declaration(returnFile,'reverseTravel').initializer.arguments[0])
@@ -274,9 +278,6 @@ function returnDestination(memory,destination,previousDestination,current) {
   let request
   const owner=execute(returnDependencies+'\nexports.buildTravelHref=buildTravelHref;\n('+returnCallback+')();',{
     window:{location:current},definitionForDestination,previousDestinationForReturn,
-    // The real Home-sky helper only admits a user-disclosed fixture from Home;
-    // this isolated Life Map callback test checks return semantics, not sky taps.
-    retainDisclosedHomeAscentDemo: () => {},
     worldRef:{current:{destination,previousDestination,memoryId:memory.id,replayManifestId:memory.replayManifest.id,demo:memory.demo}},
     phaseRef:{current:'idle'},executeTravel:value=>{request=value},
   })
