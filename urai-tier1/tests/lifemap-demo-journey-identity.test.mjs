@@ -260,7 +260,7 @@ const returnDependencies=[
   'const '+print(returnFile,declaration(returnFile,'CONTEXT_KEYS'))+';',
   // The extracted real production builder imports these pure Home-sky helpers.
   // Include their actual source in this isolated VM, never a reimplementation.
-  ...['isHomeSkyAscentTravel','retainDisclosedHomeAscentDemo'].map(name=>print(homeSkyFile,declaration(homeSkyFile,name))),
+  ...['isHomeSkyAscentTravel','retainDisclosedHomeReturnDemo','retainDisclosedHomeAscentDemo'].map(name=>print(homeSkyFile,declaration(homeSkyFile,name))),
   ...['buildTravelHref','destinationFromOriginRealm','fallbackReturnDestination'].map(name=>print(returnFile,declaration(returnFile,name))),
 ].join('\n')
 const returnCallback=print(returnFile,declaration(returnFile,'reverseTravel').initializer.arguments[0])
@@ -341,3 +341,4 @@ test('a declared sample ID does not open a demo without the exact disclosure fla
     assert.equal(result.memory,null);assert.equal(result.status,'unavailable')
   }
 })
+
