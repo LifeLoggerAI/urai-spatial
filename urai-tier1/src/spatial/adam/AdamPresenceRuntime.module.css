@@ -166,6 +166,8 @@
   margin: 0;
   box-sizing: border-box;
   width: 100%;
+  /* A 64px inline slot leaves insufficient content width with 18px padding. */
+  padding-inline: 8px !important;
 }
 /* Route typography and spatial header transforms do not own founder controls. */
 .launcher[data-urai-adam-launcher][data-adam-launcher-placement] {

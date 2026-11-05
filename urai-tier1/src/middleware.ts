@@ -12,17 +12,19 @@ function enabled(...values: Array<string | undefined>) {
 function routeAllowed(pathname: string) {
   if (process.env.NODE_ENV !== 'production') return true
 
-  if (pathname.startsWith('/admin')) {
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     return enabled(process.env.NEXT_PUBLIC_ALLOW_ADMIN_ROUTES, process.env.URAI_ALLOW_ADMIN_ROUTES)
   }
 
   if (PUBLIC_DEMO_MEMORY_ARTIFACT.test(pathname)) return true
 
-  if (pathname.startsWith('/demo')) {
+  // Guard the /demo path segment, not unrelated /demonstration-style routes.
+  if (pathname === '/demo' || pathname.startsWith('/demo/')) {
     return enabled(process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES, process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES)
   }
 
-  if (pathname.startsWith('/internal') || pathname.startsWith('/brand-system')) {
+  if (pathname === '/internal' || pathname.startsWith('/internal/')
+    || pathname === '/brand-system' || pathname.startsWith('/brand-system/')) {
     return enabled(process.env.NEXT_PUBLIC_ALLOW_INTERNAL_ROUTES, process.env.URAI_ALLOW_INTERNAL_ROUTES)
   }
 

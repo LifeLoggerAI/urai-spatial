@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { subscribeBrowserLocation } from '@/lib/browserLocationStore'
 import { definitionForDestination } from './destinationRegistry'
 import { persistHomeWorldCheckpoint } from './homeWorldCheckpointPersistence'
+import { preserveExplicitHomeAscentDemo } from './homeAscentDemoContinuity.mjs'
 import { useUraiWorldState } from './WorldStateProvider'
 import {
   URAI_WORLD_RETURN_EVENT,
@@ -90,6 +91,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
   if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
   if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
+  preserveExplicitHomeAscentDemo(target, request, window.location.href)
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
