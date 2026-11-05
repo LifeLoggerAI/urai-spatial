@@ -94,17 +94,19 @@ export async function assessSpeechEvidence(request, ports, options={}) {
     status='disabled';flags=[first.transcription!==true?'transcription-consent-required':'inference-consent-required'];return result()
   }
   if(first.revision!==request.request_revision) return revoke(first)
+  // Validate untrusted utterance evidence before reading protected acoustic
+  // features. Invalid inputs must not trigger passive-sensor source reads.
+  const utterance=request.utterance
+  if(!validateSpans(utterance)) { flags=['invalid-language-spans'];return result() }
+  // Context evidence positions must come from an actual array. A malformed or
+  // missing context collection cannot mint usable context references, trigger
+  // protected feature reads, or crash the policy guard.
+  if(!Array.isArray(utterance.context)) { flags=['invalid-utterance-context'];return result() }
   if(typeof ports.readFeatures!=='function') throw new Error('SPEECH_FEATURE_PORT_REQUIRED')
   const features=structuredClone(await ports.readFeatures())
   let current=await ports.readAuthority()
   if(!sameAuthority(current,first,ownerId)) return revoke(current)
   inferenceEnabled=true
-  const utterance=request.utterance
-  if(!validateSpans(utterance)) { flags=['invalid-language-spans'];return result() }
-  // Context evidence positions must come from an actual array. A malformed or
-  // missing context collection cannot mint usable context references or crash
-  // the policy guard after protected feature reads.
-  if(!Array.isArray(utterance.context)) { flags=['invalid-utterance-context'];return result() }
   spans=utterance.language_spans.map(span=>({...span}))
   const languages=new Set(spans.map(span=>span.language.split('-')[0].toLowerCase()))
   if(languages.size>1) flags.push('code-switch')
