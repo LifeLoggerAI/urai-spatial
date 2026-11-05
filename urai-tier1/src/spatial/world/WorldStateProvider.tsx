@@ -7,9 +7,14 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   type ReactNode,
 } from 'react'
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { httpsCallable } from 'firebase/functions'
+import { app, functions } from '@/lib/firebase/client'
+import { projectLifeGraphEvidence, type LifeGraphWorldProjection } from './lifeGraphWorldProjection'
 import {
   definitionForDestination,
   destinationForPathname,
@@ -32,6 +37,7 @@ type RuntimeState = {
   world: UraiWorldState
   phase: UraiTransitionPhase
   pendingTravel?: UraiWorldTravelRequest
+  graphView?: LifeGraphWorldProjection
 }
 
 type RuntimeAction =
@@ -39,11 +45,14 @@ type RuntimeAction =
   | { type: 'BEGIN_TRAVEL'; request: UraiWorldTravelRequest; phase: UraiTransitionPhase }
   | { type: 'CANCEL_TRANSITION' }
   | { type: 'PATCH_CONTEXT'; patch: UraiWorldContextPatch }
+  | { type: 'LOAD_GRAPH_VIEW'; view: LifeGraphWorldProjection }
+  | { type: 'CLEAR_GRAPH_VIEW' }
 
 type UraiWorldContextValue = RuntimeState & {
   beginTravel: (request: UraiWorldTravelRequest) => void
   cancelTransition: () => void
   patchContext: (patch: UraiWorldContextPatch) => void
+  loadGraphView: (snapshotId: string, entityIds: string[]) => Promise<LifeGraphWorldProjection>
 }
 
 const UraiWorldContext = createContext<UraiWorldContextValue | null>(null)
@@ -193,6 +202,12 @@ function reducer(state: RuntimeState, action: RuntimeAction): RuntimeState {
     }
   }
 
+  if (action.type === 'LOAD_GRAPH_VIEW') {
+    return { ...state, graphView: action.view }
+  }
+  if (action.type === 'CLEAR_GRAPH_VIEW') {
+    return { ...state, graphView: undefined }
+  }
   if (action.type === 'PATCH_CONTEXT') {
     return { ...state, world: { ...state.world, ...action.patch } }
   }
@@ -217,10 +232,16 @@ function transitionPhaseFor(state: UraiWorldState, destination: UraiDestination)
 export function UraiWorldStateProvider({ pathname, children }: { pathname: string; children: ReactNode }) {
   const [runtime, dispatch] = useReducer(reducer, pathname, initialRuntimeState)
   const location = useBrowserLocation()
+  const graphReadGeneration = useRef(0)
 
   useEffect(() => {
+    // Invalidate pending graph fetches before a route can display a stale result.
+    graphReadGeneration.current += 1
     const destination = destinationForPathname(pathname)
-    if (!destination) return
+    if (!destination) {
+      dispatch({ type: 'CLEAR_GRAPH_VIEW' })
+      return
+    }
     dispatch({ type: 'SYNC_ROUTE', destination, context: contextFromLocation() })
   }, [pathname, location])
 
@@ -235,12 +256,44 @@ export function UraiWorldStateProvider({ pathname, children }: { pathname: strin
   const cancelTransition = useCallback(() => dispatch({ type: 'CANCEL_TRANSITION' }), [])
   const patchContext = useCallback((patch: UraiWorldContextPatch) => dispatch({ type: 'PATCH_CONTEXT', patch }), [])
 
+  // Graph state is intentionally ephemeral. A route/account change unloads the
+  // old snapshot and never carries raw claims or person data between owners.
+  useEffect(() => {
+    const auth = getAuth(app)
+    const unsubscribe = onAuthStateChanged(auth, () => {
+      graphReadGeneration.current += 1
+      dispatch({ type: 'CLEAR_GRAPH_VIEW' })
+    })
+    return () => {
+      graphReadGeneration.current += 1
+      unsubscribe()
+    }
+  }, [])
+
+  const loadGraphView = useCallback(async (snapshotId: string, entityIds: string[]) => {
+    const auth = getAuth(app)
+    const owner = auth.currentUser
+    if (!owner) throw new Error('LIFE_GRAPH_WORLD_AUTH_REQUIRED')
+    // Only the newest in-flight request for this owner and route may publish.
+    const generation = ++graphReadGeneration.current
+    const readGraph = httpsCallable<{ snapshotId: string; entityIds: string[] }, unknown>(functions, 'getCouncilLifeGraphEvidence')
+    const response = await readGraph({ snapshotId, entityIds })
+    if (auth.currentUser !== owner) throw new Error('LIFE_GRAPH_WORLD_OWNER_CHANGED')
+    if (generation !== graphReadGeneration.current) throw new Error('LIFE_GRAPH_WORLD_CONTEXT_CHANGED')
+    // Only the protected callable verifies current C1 sources and snapshot
+    // graph hash. The client projection is display state, not authorization.
+    const view = projectLifeGraphEvidence(response.data, snapshotId, entityIds)
+    dispatch({ type: 'LOAD_GRAPH_VIEW', view })
+    return view
+  }, [])
+
   const value = useMemo<UraiWorldContextValue>(() => ({
     ...runtime,
     beginTravel,
     cancelTransition,
     patchContext,
-  }), [beginTravel, cancelTransition, patchContext, runtime])
+    loadGraphView,
+  }), [beginTravel, cancelTransition, patchContext, loadGraphView, runtime])
 
   return <UraiWorldContext.Provider value={value}>{children}</UraiWorldContext.Provider>
 }

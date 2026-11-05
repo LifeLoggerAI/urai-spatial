@@ -5,6 +5,7 @@ import { getAIActorSnapshot, getServerAIActorSnapshot, isCurrentAIActorSnapshot,
 import type { CouncilAgent } from './councilAgentSchema'
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
 import { sanitizeMemoryId, type SelectedMemoryResult } from '@/spatial/memory/selectedMemoryContract'
 import {
   attemptedExternalOrbFallback,
@@ -54,6 +55,10 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
 function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selectedMemory }: {
   agent: CouncilAgent; actor: AIActorSnapshot; memoryRouteId: string | null; selectedMemory: SelectedMemoryResult
 }) {
+  // This actor-bound child owns the graph controls. Keep the hook in the same
+  // component scope as its graph load handler and status, without bypassing the
+  // world provider's owner/route and source-revision invalidation checks.
+  const { loadGraphView, graphView } = useUraiWorldState()
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
   const [result, setResult] = useState<CouncilProviderResult | null>(null)
@@ -297,6 +302,22 @@ function ActorBoundCouncilConversationPanel({ agent, actor, memoryRouteId, selec
           <label htmlFor="urai-council-graph-entities">Selected graph entity IDs (comma-separated, maximum eight)</label>
           <input id="urai-council-graph-entities" type="text" value={graphEntityIds} maxLength={800} disabled={busy} onChange={(event) => { setGraphEntityIds(event.currentTarget.value); setGraphShareConsent(false) }} />
           <small>Advanced graph identifiers are not proof of ownership; the server independently checks them.</small>
+          <button type="button" disabled={busy || !graphSnapshotId.trim() || !graphEntityIds.trim()}
+            onClick={() => {
+              const snapshotId = graphSnapshotId.trim()
+              const entityIds = graphEntityIds.split(',').map(id => id.trim()).filter(Boolean)
+              if (!entityIds.length || entityIds.length > 8 || new Set(entityIds).size !== entityIds.length) {
+                setStatus('Select up to eight unique Life Graph entity IDs.')
+                return
+              }
+              setStatus('Checking source-backed Life Graph authority for this world…')
+              void loadGraphView(snapshotId, entityIds).then(() => {
+                setStatus('Source-checked Life Graph view loaded privately in this session. No external provider was contacted.')
+              }).catch(() => setStatus('Current Life Graph authority could not be verified. World context was not loaded.'))
+            }}>
+            Load source-checked graph into world
+          </button>
+          {graphView?.snapshotId === graphSnapshotId.trim() ? <small>World graph view is held privately for this session.</small> : null}
           </> : null}
           <label className="councilConsent">
             <input type="checkbox" checked={graphShareConsent} disabled={busy || providerId === 'openai' || (Boolean(memoryRouteId) && useSelectedMemoryGraph && !validMemoryId)} onChange={(event) => setGraphShareConsent(event.currentTarget.checked)} />

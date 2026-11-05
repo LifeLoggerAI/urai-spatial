@@ -23,6 +23,7 @@ const requiredFocusedTests = [
   'tests/replay-person-presence-lifecycle.test.mjs',
   'tests/replay-media-teardown-faults.test.mjs',
   'tests/life-model-functions-contract.test.mjs',
+  'tests/life-graph-world-projection.test.mjs',
   'tests/life-model-data-rights-contract.test.mjs',
   'tests/life-model-privacy-boundary.test.mjs',
   'tests/life-model-kernel.test.mjs',

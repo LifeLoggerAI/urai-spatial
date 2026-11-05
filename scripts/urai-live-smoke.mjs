@@ -1,9 +1,20 @@
 #!/usr/bin/env node
 import { currentXrReleaseAuthority, verifyConditionalXrRoutes, inspectXrDeployProof } from './lib/xr-release-authority.mjs'
+import { inspectExactDeploymentSource } from './lib/exact-deploy-source-check.mjs'
+import { inspectReleaseFingerprintParity } from './lib/release-fingerprint-parity.mjs'
 const xrAuthority = currentXrReleaseAuthority()
 const baseUrl = process.env.URAI_DEPLOY_URL
 const requireLiveCommitSha = process.env.REQUIRE_LIVE_COMMIT_SHA === 'true'
 const requireCustomDomain = process.env.REQUIRE_CUSTOM_DOMAIN === 'true'
+const requireExactDeploySha = process.env.REQUIRE_EXACT_DEPLOY_SHA === 'true'
+const expectedDeploySha = process.env.URAI_EXPECT_DEPLOY_SHA
+// The release authority SHA may differ from the deployment SHA. Match the
+// separately pinned main/governance authority used by post-deploy checks.
+const expectedAuthoritySha = process.env.URAI_EXPECTED_AUTHORITY_SHA || process.env.CURRENT_MAIN_SHA || expectedDeploySha
+if (requireExactDeploySha && !/^[0-9a-f]{40}$/.test(expectedDeploySha || '')) {
+  console.error('REQUIRE_EXACT_DEPLOY_SHA requires a pinned 40-character URAI_EXPECT_DEPLOY_SHA')
+  process.exit(1)
+}
 
 if (!baseUrl) {
   console.error('URAI_DEPLOY_URL is required, for example https://urai.app')
@@ -155,7 +166,8 @@ const inspectStaleCopy = (body, requestedPath) => {
   try {
     const proof = JSON.parse(body)
     const declaredForbiddenCopy = Array.isArray(proof?.forbiddenLiveCopy) ? proof.forbiddenLiveCopy : []
-    const deployProofContractInvalid = !inspectXrDeployProof(proof, xrAuthority) || staleFallbackPatterns.some(
+    const deployProofContractInvalid = !inspectXrDeployProof(proof, xrAuthority) ||
+      (requireExactDeploySha && !inspectExactDeploymentSource(proof, expectedDeploySha).ok) || staleFallbackPatterns.some(
       (pattern) => !declaredForbiddenCopy.some((value) => pattern.test(String(value))),
     )
     const staleScanProof = { ...proof, forbiddenLiveCopy: [] }
@@ -236,6 +248,37 @@ for (const { paths, markers, bundleMarkers = [], forbidden = [] } of routes) {
 
 failures.push(...await verifyConditionalXrRoutes(normalizedBase, xrAuthority))
 checkCount += 4
+
+// When exact deployment admission is requested, both public release records
+// must agree with the immutable reviewed SHA. Neither a valid self-reported
+// commit nor a hosting-only predecessor may independently prove live readiness.
+if (requireExactDeploySha) {
+  const loadReleaseJson = async (route) => {
+    const requested = new URL(route, parsedBase)
+    const response = await fetch(requested, {
+      method: 'GET', redirect: 'manual', cache: 'no-store',
+      headers: { accept: 'application/json', 'cache-control': 'no-cache', 'user-agent': 'urai-live-smoke/4.3' },
+    })
+    const final = new URL(response.url)
+    if (!response.ok || final.origin !== requested.origin || final.pathname !== requested.pathname ||
+        final.search || !response.headers.get('content-type')?.toLowerCase().includes('application/json')) {
+      throw new Error('release_resource_unavailable_or_redirected')
+    }
+    return await response.json()
+  }
+  try {
+    const [fingerprint, proof] = await Promise.all([
+      loadReleaseJson('/release-fingerprint.json'),
+      loadReleaseJson('/api/system/deploy-proof'),
+    ])
+    const verdict = inspectReleaseFingerprintParity(fingerprint, proof, expectedDeploySha, expectedAuthoritySha)
+    if (!verdict.ok) failures.push(`public release fingerprint parity refused: ${verdict.reason}`)
+    else console.log('OK exact reviewed release fingerprint and server proof parity')
+  } catch {
+    failures.push('public release fingerprint parity could not be verified')
+  }
+  checkCount += 2
+}
 
 if (failures.length > 0) {
   console.error('URAI live smoke failed:')

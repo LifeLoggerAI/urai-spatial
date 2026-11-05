@@ -67,7 +67,8 @@ async function readOwner(transaction: FirebaseFirestore.Transaction, uid: string
   const pending = local.get('pendingDeletions'), expiresAt = millis(c?.expiresAt)
   if (!user.exists || user.get('deleted') === true || ['deleting', 'deleted', 'disabled'].includes(String(user.get('accountStatus')))
     || !memory.exists || (memory.get('ownerId') ?? memory.get('userId')) !== uid || memory.get('deleted') === true
-    || ['pending', 'revoked'].includes(String(memory.get('consentState')))
+    || memory.get('revoked') === true
+    || (memory.get('consentState') != null && !['granted', 'limited'].includes(memory.get('consentState')))
     || !policy.exists || !isCanonicalStoredPolicy(p, uid) || p.revision < 1
     || p.domains.memory.mode !== 'granted' || p.enforcement.state !== 'fully-enforced'
     || !consent.exists || c?.uid !== uid || c.purpose !== 'memory.storage' || c.consentTier !== 'C1' || c.policyVersion !== '1.0.0'

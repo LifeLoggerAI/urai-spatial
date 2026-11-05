@@ -179,7 +179,7 @@ export default function PossibleFuturesClient() {
     if (!question.trim()) return
     setSetup('creating'); setMessage('Building a governed Scenario basis…')
     try {
-      const created = await createPossibleFutureClient({ question:question.trim(), originRealm:params.get('scenarioOrigin') ?? 'home', returnToken:`possible-futures-${Date.now()}`, worldRevision:'client-context-v1', sourceContext:{
+      const created = await createPossibleFutureClient({ question:question.trim(), originRealm:params.get('scenarioOrigin') ?? 'home', returnToken:`possible-futures-${Date.now()}`, sourceContext:{
         memoryId: params.get('memoryId') ?? undefined,
         personId: params.get('personId') ?? undefined,
         placeId: params.get('placeId') ?? undefined,

@@ -40,6 +40,7 @@ const focusedContractTests = [
   'tests/replay-person-presence-ui.test.mjs',
   'tests/replay-person-presence-lifecycle.test.mjs',
   'tests/life-model-functions-contract.test.mjs',
+  'tests/life-graph-world-projection.test.mjs',
   'tests/life-model-data-rights-contract.test.mjs',
   'tests/scenario-council-session-behavior.test.mjs',
   'tests/geographic-location-request.test.mjs',

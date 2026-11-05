@@ -12,12 +12,12 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
 function fixture() {
   const docs = new Map(), reads = [], limits = []
   const ref = location => ({ path:location, id:location.split('/').at(-1), get:async()=>snapshot(location), collection:name=>query(location+'/'+name) })
-  const snapshot = location => { reads.push(location);return { id:location.split('/').at(-1),exists:docs.has(location),data:()=>docs.get(location),ref:ref(location) } }
+  const snapshot = location => { reads.push(location);return { id:location.split('/').at(-1),exists:docs.has(location),data:()=>docs.get(location),get:key=>docs.get(location)?.[key],ref:ref(location) } }
   const query = location => { let limit=Infinity;return { doc:id=>ref(location+'/'+id),limit(count){limit=count;limits.push(count);return this},get:async()=>({ docs:[...docs.keys()].filter(key=>key.startsWith(location+'/') && !key.slice(location.length+1).includes('/')).slice(0,limit).map(snapshot) }) } }
-  const db = { doc:ref }
+  const db = { doc:ref,runTransaction:async work=>work({get:async reference=>snapshot(reference.path)}) }
   const firestore = () => db
   firestore.FieldValue = { serverTimestamp:()=>({ synthetic:true }) }
-  const imports = { 'firebase-functions/v1':{ https:{ onCall:handler=>handler,HttpsError } },'firebase-admin':{ apps:[{}],firestore },'node:crypto':crypto,'./scenarioProvider':{ scenarioProviderState:'provider-unavailable' },'./consentPolicyAuthority':require(path.resolve(__dirname,'../lib/apps/functions/src/consentPolicyAuthority.js')) }
+  const imports = { 'firebase-functions/v1':{ https:{ onCall:handler=>handler,HttpsError } },'firebase-admin':{ apps:[{}],firestore },'node:crypto':crypto,'./scenarioProvider':{ scenarioProviderState:'provider-unavailable' },'./consentPolicyAuthority':require(path.resolve(__dirname,'../lib/apps/functions/src/consentPolicyAuthority.js')),'./scenarioSourceAuthority':require(path.resolve(__dirname,'../lib/apps/functions/src/scenarioSourceAuthority.js')) }
   const module = { exports:{} }
   vm.runInNewContext(code,{ module,exports:module.exports,require:name=>{ assert.ok(name in imports,'Unexpected import '+name);return imports[name] } },{ filename:'actual-compiled-scenarioOperations.js' })
   docs.set(prefix,{ id:scenarioId,ownerId,question:'Synthetic what-if',activeBranchId:'br_a' })
@@ -26,6 +26,123 @@ function fixture() {
   docs.set(prefix+'/branches/br_b',{ id:'br_b',ownerId,label:'Branch B',summary:'Synthetic B',uncertainty:[] })
   return { docs,reads,limits,call:(data={},context={auth:{uid:ownerId}})=>module.exports.getPossibleFutureCouncilBundle({ scenarioId,...data },context) }
 }
+function currentPolicy() {
+  const domain=(mode='denied',modelContext=false)=>({
+    mode,retentionDays:null,precise:false,replayVisible:false,lifeMapVisible:false,
+    modelContext,sharingEnabled:false,automationEnabled:false,likenessEnabled:false,
+  })
+  return {
+    version:2,revision:4,ownerId,
+    domains:{
+      memory:domain('granted',true),location:domain(),models:domain('granted',true),
+      exports:domain(),workforce:domain(),identity:domain(),
+    },
+    enforcement:{state:'fully-enforced',jobId:null,affectedTargets:[],providerState:'not-applicable'},
+  }
+}
+function privateEvidenceFixture(kind='autobiographical-memory') {
+  const f=fixture()
+  f.docs.set(prefix+'/basis/current',{
+    ownerId,assumptionOnly:false,
+    evidenceRefs:[{truthKind:kind,sourceRevision:4,id:'evr_synthetic_ref',purpose:'scenario.explore',sourceId:'users/'+ownerId+(kind==='autobiographical-memory'?'/memories/memory_a':'/lifeEntities/person_a'),truthRecordId:kind==='autobiographical-memory'?'memory:memory_a':'life-entity:person_a',...(kind==='interpretation'?{sourceEntityKind:'person'}:{})}],
+  })
+  f.docs.set('users/'+ownerId+'/privacyPolicy/current',currentPolicy())
+  f.docs.set('users/'+ownerId+'/memories/memory_a',{ownerId,deleted:false,demo:false,synthetic:false,consentState:'granted'})
+  f.docs.set('users/'+ownerId+'/lifeEntities/person_a',{ownerId,kind:'person',revoked:false,synthetic:false})
+  return f
+}
+test('actual compiled source-backed Council bundle requires current canonical consent',async()=>{
+  const f=privateEvidenceFixture()
+  const result=await f.call()
+  assert.equal(result.evidenceCount,1)
+  assert.equal(result.truthKind,'scenario')
+  assert.equal(result.evidenceKinds[0],'autobiographical-memory')
+  assert.ok(f.reads.includes('users/'+ownerId+'/privacyPolicy/current'))
+})
+for(const [label,change] of [
+  ['revoked memory domain',p=>{p.domains.memory.mode='denied'}],
+  ['revoked model context',p=>{p.domains.memory.modelContext=false}],
+  ['new policy revision',p=>{p.revision=5}],
+  ['pending policy enforcement',p=>{p.enforcement.state='pending'}],
+  ['foreign policy owner',p=>{p.ownerId='other-owner'}],
+  ['malformed policy',p=>{delete p.domains.identity}],
+]) test('actual compiled Council fails closed on '+label,async()=>{
+  const f=privateEvidenceFixture()
+  const key='users/'+ownerId+'/privacyPolicy/current'
+  const p=f.docs.get(key);change(p);f.docs.set(key,p)
+  await assert.rejects(f.call(),e=>e.code==='failed-precondition')
+})
+test('actual compiled Council refuses absent policy for private basis',async()=>{
+  const f=privateEvidenceFixture()
+  f.docs.delete('users/'+ownerId+'/privacyPolicy/current')
+  await assert.rejects(f.call(),e=>e.code==='failed-precondition')
+})
+test('actual compiled Council denies a source-backed model entity after model consent withdrawal',async()=>{
+  const f=privateEvidenceFixture('interpretation')
+  const key='users/'+ownerId+'/privacyPolicy/current'
+  f.docs.get(key).domains.models.mode='denied'
+  await assert.rejects(f.call(),e=>e.code==='failed-precondition')
+})
+for(const [label,recordPath,patch] of [
+  ['revoked memory','users/'+ownerId+'/memories/memory_a',{consentState:'revoked'}],
+  ['deleted memory','users/'+ownerId+'/memories/memory_a',{deleted:true}],
+  ['synthetic memory','users/'+ownerId+'/memories/memory_a',{synthetic:true}],
+  ['foreign-owned memory','users/'+ownerId+'/memories/memory_a',{ownerId:'another-owner'}],
+]) test('actual compiled Council blocks stale '+label,async()=>{
+  const f=privateEvidenceFixture()
+  f.docs.set(recordPath,{...f.docs.get(recordPath),...patch})
+  await assert.rejects(f.call(),error=>error.code==='failed-precondition')
+})
+for(const [label,patch] of [
+  ['revoked entity',{revoked:true}],
+  ['synthetic entity',{synthetic:true}],
+  ['foreign owner',{ownerId:'another-owner'}],
+  ['wrong entity kind',{kind:'place'}],
+  ['superseded entity',{status:'superseded'}],
+]) test('actual compiled Council blocks stale '+label,async()=>{
+  const f=privateEvidenceFixture('interpretation')
+  const key='users/'+ownerId+'/lifeEntities/person_a'
+  f.docs.set(key,{...f.docs.get(key),...patch})
+  await assert.rejects(f.call(),error=>error.code==='failed-precondition')
+})
+test('actual compiled Council rejects missing source without falling back to assumptions',async()=>{
+  const f=privateEvidenceFixture()
+  f.docs.delete('users/'+ownerId+'/memories/memory_a')
+  await assert.rejects(f.call(),error=>error.code==='failed-precondition')
+})
+test('actual compiled Council rejects a forged source path outside owner scope',async()=>{
+  const f=privateEvidenceFixture()
+  f.docs.get(prefix+'/basis/current').evidenceRefs[0].sourceId='users/another-owner/memories/memory_a'
+  await assert.rejects(f.call(),error=>error.code==='failed-precondition')
+})
+test('actual compiled Council rejects a changed evidence basis',async()=>{
+  const f=privateEvidenceFixture()
+  const key=prefix+'/basis/current'
+  const old=f.docs.get(key)
+  const existing=f.docs.get('users/'+ownerId+'/privacyPolicy/current')
+  let count=0
+  const original=f.docs.get.bind(f.docs)
+  f.docs.get=(path)=>{if(path===key){count++;if(count===2)return {...old,evidenceRefs:[]}}return original(path)}
+  await assert.rejects(f.call(),error=>error.code==='failed-precondition')
+  f.docs.get=original
+})
+for (const status of ['discarded','revoked','archived']) test('actual compiled Council refuses Scenario '+status+' between initial read and revalidation',async()=>{
+  const f=privateEvidenceFixture()
+  const original=f.docs.get.bind(f.docs)
+  let reads=0
+  f.docs.get=(key)=>{
+    if (key===prefix && ++reads===2) f.docs.set(key,{...original(key),status})
+    return original(key)
+  }
+  await assert.rejects(f.call(),error=>error.code==='failed-precondition' &&
+    error.message==='SCENARIO_COUNCIL_BASIS_UNAVAILABLE')
+})
+test('actual compiled Council admits current owner-scoped person evidence',async()=>{
+  const f=privateEvidenceFixture('interpretation')
+  const out=await f.call()
+  assert.equal(out.evidenceCount,1)
+  assert.equal(out.evidenceKinds[0],'interpretation')
+})
 test('actual compiled bundle selects the exact requested branch and remains hypothetical',async()=>{
   const f=fixture(),result=await f.call({ branchId:'br_b' });assert.equal(result.branchId,'br_b');assert.equal(result.branchLabel,'Branch B');assert.equal(result.branchSummary,'Synthetic B');assert.equal(result.scenarioId,scenarioId);assert.equal(result.truthKind,'scenario');assert.match(result.disclosure,/Not a memory, prediction/);assert.deepEqual(f.limits,[3])
 })

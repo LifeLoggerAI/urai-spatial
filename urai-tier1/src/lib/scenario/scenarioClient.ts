@@ -24,7 +24,6 @@ export function createPossibleFutureClient(payload: {
     placeId?: string
   }
   excludedEvidence?: readonly Record<string, unknown>[]
-  worldRevision?: string
   timeHorizon?: { amount: number; unit: 'day' | 'week' | 'month' | 'year' }
   assumptionOnly?: boolean
 }) {
