@@ -246,7 +246,8 @@ test('Home sky client router and hard fallback never let context.demo bypass exp
   ]) assert.equal(isHomeSkyAscentTravel(bad), false)
   for (const path of ['../src/spatial/world/WorldTransitionController.tsx','../src/spatial/world/worldEvents.ts']) {
     const source = fs.readFileSync(new URL(path, import.meta.url), 'utf8')
-    assert.match(source,/context\?\.demo && !isHomeSkyAscentTravel\(request\)/, path)
+    assert.match(source,/request\.destination === 'life-map' && request\.entryPortal === 'home-sky'/, path)
+    assert.match(source,/if \(memoryDestination && context\?\.demo[\s\S]*?&& !\(request\.destination === 'life-map' && request\.entryPortal === 'home-sky'\)/, path)
     assert.match(source,/retainDisclosedHomeAscentDemo\(window\.location\.pathname, window\.location\.search, request, target\)/, path)
   }
   const target = new URL('/life-map/?from=home-sky', 'https://urai.invalid')
