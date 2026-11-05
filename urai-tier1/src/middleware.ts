@@ -18,7 +18,8 @@ function routeAllowed(pathname: string) {
 
   if (PUBLIC_DEMO_MEMORY_ARTIFACT.test(pathname)) return true
 
-  if (pathname.startsWith('/demo')) {
+  // Guard the /demo path segment, not unrelated /demonstration-style routes.
+  if (pathname === '/demo' || pathname.startsWith('/demo/')) {
     return enabled(process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES, process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES)
   }
 
