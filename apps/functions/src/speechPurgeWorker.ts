@@ -122,7 +122,19 @@ async function claim(jobId: string, now: number): Promise<JobBinding | null> {
     if (!positiveCounter(revision) || !matchesJobIdentity(job, binding)
       || noAuthority(lease, binding)) fatal('SPEECH_PURGE_AUTHORITY_INVALID')
     const state = job.get('state')
-    if (state === 'verified') return false
+    // A fully verified job is immutable and must not call its provider again.
+    // Never interpret an isolated claimant-controlled state string as proof.
+    if (state === 'verified') {
+      if (job.get('providerPurgeVerified') !== true
+          || job.get('providerState') !== 'verified'
+          || job.get('localCacheState') !== 'verified'
+          || typeof job.get('providerEvidenceDigest') !== 'string'
+          || !HEX64.test(job.get('providerEvidenceDigest')))
+        fatal('SPEECH_PURGE_FORGED_VERIFIED_STATE')
+      return false
+    }
+    if (job.get('providerPurgeVerified') !== false)
+      fatal('SPEECH_PURGE_UNVERIFIED_STATE_CONFLICT')
     if (!['requested', 'failed', 'pending-acknowledgement', 'in-progress'].includes(state))
       fatal('SPEECH_PURGE_UNKNOWN_STATE')
     const leaseUntil = job.get('lockExpiresAtMs')
@@ -152,7 +164,6 @@ function matchesJobIdentity(job: FirebaseFirestore.DocumentSnapshot, b: JobBindi
     && job.get('leaseRevision') === b.leaseRevision
     && Array.isArray(job.get('scopes'))
     && SCOPES.every((s, i) => job.get('scopes')[i] === s)
-    && job.get('providerPurgeVerified') === false
 }
 
 /**
