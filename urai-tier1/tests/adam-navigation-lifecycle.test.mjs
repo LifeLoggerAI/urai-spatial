@@ -4,6 +4,8 @@ import { createRequire } from 'node:module'
 import vm from 'node:vm'
 import { webcrypto } from 'node:crypto'
 import test from 'node:test'
+import { createSpeechRecognitionSession } from '../src/spatial/adam/speechRecognitionSession.mjs'
+import { createAdamFounderVoicePlaybackBridge } from '../src/spatial/adam/founderVoicePlaybackBridge.mjs'
 
 const require = createRequire(import.meta.url)
 const ts = require('typescript')
@@ -75,6 +77,9 @@ function fixture() {
     '@/lib/i18n/contentLanguage': { contentLanguage: () => ({ speechTag: 'en-US' }), contentLanguageProps: () => ({ lang: 'en', dir: 'ltr' }) },
     '@/lib/i18n/useUraiLocale': { useUraiLocale: () => ({ text: () => 'Founder digital presence', props: () => ({ lang: 'en', dir: 'ltr' }) }) },
     './adamSurfaceContext': surfaces.exports,
+    // Use actual fail-closed speech and Founder voice modules, not permissive stubs.
+    './speechRecognitionSession.mjs': { createSpeechRecognitionSession },
+    './founderVoicePlaybackBridge.mjs': { createAdamFounderVoicePlaybackBridge },
     './adamClient': {
       AdamProviderError,
       requestAdamPresence: (input) => { const result = deferred(); requests.push({ input, ...result }); return result.promise },
