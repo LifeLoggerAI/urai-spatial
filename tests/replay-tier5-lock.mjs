@@ -1,6 +1,7 @@
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { describeReplayHttpError } from './replay-http-response-evidence.mjs';
 import process from 'node:process';
 
 const REQUESTED_BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
@@ -238,6 +239,7 @@ async function run() {
     console: [],
     pageErrors: [],
     requestFailures: [],
+    httpResponses: [],
     audits: [],
     selectors: {},
     bodyHtml: '',
@@ -263,6 +265,11 @@ async function run() {
       const message = error.stack || error.message;
       report.pageErrors.push(message);
       consoleErrors.push(message);
+    });
+    // Playwright requestfailed excludes HTTP 404/403 responses; retain source-path evidence.
+    page.on('response', (response) => {
+      const diagnosis = describeReplayHttpError(response);
+      if (diagnosis) report.httpResponses.push(diagnosis);
     });
     page.on('requestfailed', (request) => {
       report.requestFailures.push({ url: request.url(), error: request.failure()?.errorText || null });
@@ -302,10 +309,12 @@ async function run() {
       }
       report.audits.push('production Replay proof owned a next start server and observed no Fast Refresh, React development tooling, or hot-update request failures');
     }
-    if (consoleErrors.length) throw new Error(`Console errors detected:\n${consoleErrors.join('\n')}`);
+    if (consoleErrors.length) throw new Error(`Console errors detected:\n${consoleErrors.join('\n')}\nHTTP error responses:\n${JSON.stringify(report.httpResponses.slice(-32))}`);
     console.log(`URAI Replay Tier 5 Memory Theater validation passed at ${server.baseUrl} in ${SERVER_MODE} mode.`);
   } catch (error) {
     report.failure = error instanceof Error ? error.stack || error.message : String(error);
+    // Print only token-redacted resource paths before the temporary worker exits.
+    if (report.httpResponses.length) console.error('URAI_REPLAY_HTTP_RESPONSE_EVIDENCE ' + JSON.stringify(report.httpResponses.slice(-32)));
     if (page) {
       report.finalUrl = page.url();
       report.bodyHtml = await page.locator('body').innerHTML().catch(() => '');
