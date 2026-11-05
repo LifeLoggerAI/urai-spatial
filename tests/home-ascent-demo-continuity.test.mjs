@@ -61,3 +61,15 @@ test('Adam inline launcher gives its text sufficient content width without chang
   const minimumContentWidth = 64 - 2 * 8 - 2
   assert.ok(minimumContentWidth >= 42, '64px launcher must leave room for Adam text and font metrics')
 })
+
+test('private memory identifiers never become public demo authority', () => {
+  for (const key of ['memoryId', 'node', 'manifestId', 'movieId', 'chapterId']) {
+    const from = apply(`https://urai.app/home?demo=1&${key}=private-id`)
+    assert.deepEqual(from.searchParams.getAll('demo'), [], 'source ' + key)
+    const to = apply('https://urai.app/home?demo=1', { target: `https://urai.app/life-map/?${key}=private-id` })
+    assert.deepEqual(to.searchParams.getAll('demo'), [], 'target ' + key)
+  }
+  for (const context of [{ memoryId: 'private-id' }, { replayManifestId: 'private-id' }]) {
+    assert.deepEqual(apply('https://urai.app/home?demo=1', { request: { context } }).searchParams.getAll('demo'), [])
+  }
+})
