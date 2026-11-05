@@ -18,8 +18,8 @@ function fixture(overrides = {}) {
     samples: 10, median_f0_hz: 201, scale_f0_hz: 12 }
   const ports = createTrustedSpeechSourcePorts({
     ownerId, sessionId, sourceId, providerId,
-    readPrivacyPolicy: async () => overrides.policy ?? policy,
-    readSpeechLease: async () => overrides.lease ?? lease,
+    readPrivacyPolicy: async () => Object.hasOwn(overrides, 'policy') ? overrides.policy : policy,
+    readSpeechLease: async () => Object.hasOwn(overrides, 'lease') ? overrides.lease : lease,
     readSourceFeatures: async () => { sourceReads++; return overrides.source ?? source },
     readSessionBaseline: async () => { baselineReads++; return overrides.baseline ?? baseline },
     purgeEphemeral: async () => { purges++; if (overrides.purgeError) throw Error('PURGE_FAILED') },
