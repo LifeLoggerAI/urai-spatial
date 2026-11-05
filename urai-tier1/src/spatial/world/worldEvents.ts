@@ -1,5 +1,6 @@
 import { useSceneStore } from '../store/useSceneStore'
 import type { UraiWorldTravelRequest } from './worldTypes'
+import { preserveExplicitHomeAscentDemo } from './homeAscentDemoContinuity.mjs'
 
 export const URAI_WORLD_TRAVEL_EVENT = 'urai:world-travel'
 export const URAI_WORLD_RETURN_EVENT = 'urai:world-return'
@@ -75,6 +76,7 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
   if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
   if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
+  preserveExplicitHomeAscentDemo(target, request, window.location.href)
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
