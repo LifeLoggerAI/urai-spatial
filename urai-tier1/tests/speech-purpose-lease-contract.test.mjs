@@ -50,15 +50,24 @@ test('owner may read lease; clients cannot create, replace, revive or delete it 
   assert.match(functionIndex, /export \{ grantSpeechPurposeLease, revokeSpeechPurposeLease \} from '\.\/speechPurposeConsent'/)
 })
 
-test('nine-state browser harness requires real actions, trace, screenshots and video, not route-only simulation', () => {
+test('disclosed-sample browser journey uses real sky gesture, semantic star, and Escape return', () => {
   assert.match(browser, /chromium\.launch/)
-  assert.match(browser, /page\.getByRole\('button', \{ name:'Begin Ascent' \}\)\.click\(\)/)
-  assert.match(browser, /page\.getByRole\('button', \{ name:'Start Replay' \}\)\.click\(\)/)
+  assert.match(browser, /sourceClassification:'disclosed-sample-not-private-user-memory'/)
+  assert.match(browser, /page\.mouse\.click\(x,y\)/)
+  assert.match(browser, /getByRole\('button',\{name:'Open disclosed sample'\}\)/)
+  assert.match(browser, /getByTestId\('life-map-semantic-trigger'\)/)
+  assert.match(browser, /data-life-map-node-id/)
   assert.match(browser, /page\.keyboard\.press\('Escape'\)/)
-  assert.match(browser, /await requireMode\(page, 'focus'\)/)
   assert.match(browser, /context\.tracing\.start\(/)
   assert.match(browser, /await page\.screenshot\(/)
   assert.match(browser, /recordVideo:/)
-  assert.match(browser, /assertion: 'NOT_VERIFIED'/)
-  assert.match(browser, /report\.assertion = 'PASS'/)
+  assert.match(browser, /assertion:'NOT_VERIFIED'/)
+  assert.match(browser, /report\.assertion='PASS'/)
+})
+
+test('sample-world journey is not presented as authenticated private memory acceptance', () => {
+  assert.match(browser, /sourceClassification:'disclosed-sample-not-private-user-memory'/)
+  assert.match(browser, /data-life-map-access','explicit-demo'/)
+  assert.match(browser, /data-memory-status','demo'/)
+  assert.doesNotMatch(browser, /sourceClassification:'authenticated-private-user-memory'/)
 })
