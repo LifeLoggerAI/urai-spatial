@@ -6,6 +6,7 @@ import ts from 'typescript'
 import { jsx,jsxs } from 'react/jsx-runtime'
 import * as localePreference from '../src/lib/i18n/localePreference.ts'
 import { uraiTextDirection } from '../src/lib/i18n/locales.ts'
+import { createSpeechRecognitionSession } from '../src/spatial/adam/speechRecognitionSession.mjs'
 const contentLanguageSource=fs.readFileSync(new URL('../../packages/localization/src/contentLanguage.ts',import.meta.url),'utf8')
 const contentLanguageCompiled=ts.transpileModule(contentLanguageSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
 const contentLanguageModule={exports:{}}
@@ -47,6 +48,7 @@ function fixture(){
     if(name.endsWith('/contentLanguage'))return {contentLanguage,contentLanguageProps}
     if(name==='./adamClient')return client
     if(name==='./adamSurfaceContext')return {resolveAdamSurface:()=>({id:'home',label:'Home'})}
+    if(name==='./speechRecognitionSession.mjs')return {createSpeechRecognitionSession}
     // The real runtime has no trusted per-turn Founder voice authority yet.
     // Mirror its unconfigured fail-closed bridge, never synthesize approval.
     if(name==='./founderVoicePlaybackBridge.mjs')return {createAdamFounderVoicePlaybackBridge:()=>({ready:()=>false,isPlaying:()=>false,interrupt(){},start:async()=>false})}
