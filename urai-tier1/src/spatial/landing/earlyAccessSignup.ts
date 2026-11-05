@@ -1,5 +1,5 @@
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { getFirebaseDb } from "../../lib/firebase/client";
+import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 
 export type EarlyAccessSignup = {
   email: string;
@@ -9,18 +9,10 @@ export type EarlyAccessSignup = {
   updatedAt?: string;
 };
 
-const STORAGE_KEY = "urai:early-access-signups";
 const COLLECTION = "early_access_signups";
 
 function emailToDocId(email: string) {
   return email.trim().toLowerCase().replace(/[^a-z0-9._-]/g, "_");
-}
-
-function writeLocal(signup: EarlyAccessSignup) {
-  if (typeof window === "undefined") return;
-  const current = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "[]") as EarlyAccessSignup[];
-  const next = [signup, ...current.filter((item) => item.email !== signup.email)].slice(0, 250);
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
 }
 
 export async function saveEarlyAccessSignup(email: string, source: EarlyAccessSignup["source"] = "landing") {
@@ -38,7 +30,9 @@ export async function saveEarlyAccessSignup(email: string, source: EarlyAccessSi
     updatedAt: new Date().toISOString(),
   };
 
-  writeLocal(signup);
+  // The marketing-to-UrAi handoff forbids persisting raw email locally.
+  // Only a successful backend write can confirm a waitlist entry.
+  if (!firebasePublicEnvReady) return { ...signup, persistedRemotely: false };
 
   try {
     const db = getFirebaseDb();
@@ -56,9 +50,10 @@ export async function saveEarlyAccessSignup(email: string, source: EarlyAccessSi
       },
       { merge: true },
     );
+    return { ...signup, persistedRemotely: true };
   } catch (error) {
-    console.warn("[URAI] Firestore signup write failed; local fallback saved.", error);
+    console.warn("[URAI] Firestore signup failed; no local email copy retained.", error);
   }
 
-  return signup;
+  return { ...signup, persistedRemotely: false };
 }

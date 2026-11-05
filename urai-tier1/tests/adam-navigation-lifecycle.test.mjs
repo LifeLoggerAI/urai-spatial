@@ -4,6 +4,7 @@ import { createRequire } from 'node:module'
 import vm from 'node:vm'
 import { webcrypto } from 'node:crypto'
 import test from 'node:test'
+import { createSpeechRecognitionSession } from '../src/spatial/adam/speechRecognitionSession.mjs'
 
 const require = createRequire(import.meta.url)
 const ts = require('typescript')
@@ -75,6 +76,19 @@ function fixture() {
     '@/lib/i18n/contentLanguage': { contentLanguage: () => ({ speechTag: 'en-US' }), contentLanguageProps: () => ({ lang: 'en', dir: 'ltr' }) },
     '@/lib/i18n/useUraiLocale': { useUraiLocale: () => ({ text: () => 'Founder digital presence', props: () => ({ lang: 'en', dir: 'ltr' }) }) },
     './adamSurfaceContext': surfaces.exports,
+    './speechRecognitionSession.mjs': { createSpeechRecognitionSession },
+    // Original Founder voice remains denied unless per-turn server authority exists.
+    // This harness tests text/navigation privacy, never authorizes synthetic audio.
+    './founderVoicePlaybackBridge.mjs': {
+      createAdamFounderVoicePlaybackBridge: () => ({
+        ready: () => false,
+        isPlaying: () => false,
+        start: async () => false,
+        interrupt() {},
+        dispose() {},
+      }),
+    },
+
     './adamClient': {
       AdamProviderError,
       requestAdamPresence: (input) => { const result = deferred(); requests.push({ input, ...result }); return result.promise },
@@ -112,7 +126,7 @@ function fixture() {
   const prepare = (message = 'private investor memory') => {
     let tree = render()
     find(tree, n => n.type === 'textarea').props.onChange({ target: { value: message } })
-    const ai = nodes(tree, n => n.type === 'input' && n.props.type === 'checkbox')[0]
+    const ai = nodes(tree, n => n.type === 'input' && n.props.type === 'checkbox')[1]
     ai.props.onChange({ target: { checked: true } })
     return render()
   }
@@ -170,7 +184,10 @@ test('speech callbacks delivered after navigation cannot repopulate context', ()
   const f = fixture(); const tree = f.open()
   const voice = nodes(tree, n => n.type === 'button' && n.props.children.includes('Talk'))[0]
   assert.ok(voice)
-  voice.props.onClick()
+  const speechConsent = nodes(tree, n => n.type === 'input' && n.props.type === 'checkbox')[0]
+  speechConsent.props.onChange({ target: { checked: true } })
+  f.render()
+  f.find(f.render(), n => n.type === 'button' && n.props.children.includes('Talk')).props.onClick()
   const recognition = f.recognitions[0]
   f.navigate('/adam', 'foundation')
   assert.equal(recognition.aborted, true)

@@ -47,14 +47,27 @@ requireMatch('Replay authenticated memory authority', replayClient, /useSelected
 for (const token of ['memoryId', 'manifestId']) {
   requireMatch(`Selected-memory hook reads ${token}`, selectedMemoryHook, new RegExp(`params\\.get\\('${token}'\\)`))
 }
-requireMatch('Selected-memory hook accepts Life Map node identity', selectedMemoryHook, /params\.get\('memoryId'\) \?\? params\.get\('node'\)/)
+// Visual scene nodes do not authorize a private memory. The legacy node-only
+// fallback is permitted only for an explicitly disclosed demo fixture.
+requireMatch('Selected-memory hook limits node-only fallback to disclosed demo', selectedMemoryHook, /params\.get\('memoryId'\) \?\? \(demoRequested \? params\.get\('node'\) : null\)/)
+requireMatch('Selected-memory hook verifies explicit demo intent', selectedMemoryHook, /const demoRequested = isExplicitDemoRequest\(params\)/)
+forbidMatch('Selected-memory hook implicit node authority', selectedMemoryHook, /params\.get\('memoryId'\) \?\? params\.get\('node'\)/)
 requireMatch('Selected-memory manifest identity check', selectedMemoryHook, /parsed\.memory\.replayManifest\.id !== manifestId/)
 
 requireMatch(
   'Focus forwards complete selected identity',
   focusClient,
-  /new URLSearchParams\(\{\s*memoryId:\s*memory\.id,\s*manifestId:\s*memory\.replayManifest\.id,\s*node:\s*memory\.star\.id,\s*from:\s*'focus-artifact',?\s*\}\)/,
+  /new URLSearchParams\(\{\s*memoryId:\s*memory\.id,\s*manifestId:\s*memory\.replayManifest\.id,\s*node:\s*returnNode,\s*from:\s*'focus-artifact',?\s*\}\)/,
 )
+const approvedReturnNodeGuards = [
+  "const sameMemory = incoming.get('memoryId') === memory.id && incoming.get('manifestId') === memory.replayManifest.id",
+  "const validNode = Boolean(node && /^[A-Za-z0-9._:-]{1,120}$/.test(node))",
+  "const originalSelection = fromLifeMap && node === incoming.get('returnNode')",
+  "const projectedSelection = node === `canonical-memory:${memory.id}`",
+  "const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id",
+]
+requireCondition('Focus Replay return node remains bound to the selected memory and vetted visual star', approvedReturnNodeGuards.every((marker) => focusClient.includes(marker)))
+
 requireMatch('Focus enters Replay through world travel', focusClient, /requestUraiWorldTravel\(\{/)
 requireMatch('Focus Replay destination', focusClient, /destination: 'replay'/)
 requireMatch('Focus Replay manifest context', focusClient, /replayManifestId: memory\.replayManifest\.id/)

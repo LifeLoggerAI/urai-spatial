@@ -1,7 +1,7 @@
 'use client'
 
 import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/lib/firebase/client'
+import { functions, firebasePublicEnvReady } from '@/lib/firebase/client'
 
 function op(prefix: string) {
   const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`
@@ -9,6 +9,8 @@ function op(prefix: string) {
 }
 
 async function call<T = Record<string, unknown>>(name: string, payload: Record<string, unknown>) {
+  // Never dispatch private scenario requests through an unverified or foreign default Firebase app.
+  if (!firebasePublicEnvReady) throw new Error('Possible Future: Firebase identity is not ready')
   const fn = httpsCallable<Record<string, unknown>, T>(functions, name)
   return (await fn(payload)).data
 }

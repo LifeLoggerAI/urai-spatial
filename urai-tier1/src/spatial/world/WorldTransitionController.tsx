@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { retainDisclosedHomeAscentDemo } from '@/spatial/navigation/homeSkyInteraction'
 import { subscribeBrowserLocation } from '@/lib/browserLocationStore'
 import { definitionForDestination } from './destinationRegistry'
 import { persistHomeWorldCheckpoint } from './homeWorldCheckpointPersistence'
@@ -57,8 +58,14 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
     // matches the current memory. Cross-realm travel must not leak it.
     if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
     if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
+    // No anonymous/unselected Home or stale memory may import private relationship hints.
+    // Explicit request.context fields are handled separately after this inheritance loop.
+    if ((key === 'thread' || key === 'personId' || key === 'placeId') && !sameMemory) continue
     // Relationship hints from an old memory never scope a different selection.
     if ((key === 'thread' || key === 'personId' || key === 'placeId') && selectedMemoryId && currentMemoryId && !sameMemory) continue
+    // Cross-realm navigation must not inherit private relationship identifiers
+    // from the old memory URL. Explicit destination/context hints remain intact.
+    if (!memoryDestination && (key === 'thread' || key === 'personId' || key === 'placeId')) continue
     if (!target.searchParams.has(key) && current.has(key)) {
       target.searchParams.set(key, current.get(key) ?? '')
     }
@@ -92,6 +99,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+  retainDisclosedHomeAscentDemo(window.location.pathname, window.location.search, request, target)
 
   // No node-to-memory or memory-to-node inference: these are separate
   // identities, and each consumer must independently validate access.
@@ -237,19 +245,26 @@ export function WorldTransitionController() {
       ? destinationFromOriginRealm(currentWorld.scenarioOrigin)
       : previousDestinationForReturn(currentWorld) ?? fallbackReturnDestination(currentWorld.destination)
     const definition = definitionForDestination(destination)
+    // Returning out of a memory realm is not an explicit request to disclose
+    // that memory's relationship identifiers to Home or another nonmemory realm.
+    // Keep selected-memory continuity only within the existing memory realms.
+    const returningToMemoryRealm = destination === 'life-map' || destination === 'focus'
+      || destination === 'replay' || destination === 'council' || destination === 'life-movie'
     executeTravel({
       destination,
       href: definition.href,
       entryPortal: currentWorld.entryPortal ?? definition.entryPortal,
       cameraCheckpoint: destination === 'home' ? 'home-threshold' : definition.cameraCheckpoint,
       context: {
-        memoryId: currentWorld.memoryId,
-        threadId: currentWorld.threadId,
-        personId: currentWorld.personId,
-        placeId: currentWorld.placeId,
-        replayManifestId: currentWorld.replayManifestId,
-        movieId: currentWorld.movieId,
-        chapterId: currentWorld.chapterId,
+        ...(returningToMemoryRealm ? {
+          memoryId: currentWorld.memoryId,
+          threadId: currentWorld.threadId,
+          personId: currentWorld.personId,
+          placeId: currentWorld.placeId,
+          replayManifestId: currentWorld.replayManifestId,
+          movieId: currentWorld.movieId,
+          chapterId: currentWorld.chapterId,
+        } : {}),
         privacyMode: currentWorld.privacyMode,
         originRealm: currentWorld.originRealm,
         returnToken: currentWorld.returnToken,

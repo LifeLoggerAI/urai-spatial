@@ -9,6 +9,7 @@ import { performance } from 'node:perf_hooks'
 import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
+import { founderVoiceIssuerReadiness, FOUNDER_VOICE_RECEIPT_DENIED } from '../src/adamFounderVoiceReceiptContract.mjs'
 
 const SOURCE = 'd'.repeat(40), GATEWAY = 'a'.repeat(40), UID = 'synthetic-owner'
 const gatewayUrl = 'https://spend.example.invalid/api/worker/production-spend'
@@ -441,6 +442,7 @@ function leafFixture(leaf, change = {}) {
     if (id === 'firebase-functions/v2/https') return { onRequest:(options,handler) => { assert.ok(options.secrets.includes(f.helper.SPATIAL_SPEND_WORKER_TOKENS_JSON)); return handler } }
     if (id === '../../../packages/localization/src/contentLanguage') return language
     if (id === './consentPolicyAuthority') return policyAuthority
+    if (id === './adamFounderVoiceReceiptContract.mjs') return { founderVoiceIssuerReadiness }
     if (id === './councilGraphEvidenceAuthority') return graphEvidenceAuthority
     if (id === './protectedProviderSpend') return { ...f.helper, paidSpatialFetch:f.paidFetch }
     if (id === './personPresenceAuthority') return { PersonPresenceAuthorityError, loadPersonPresenceAuthority:requireAuthority, requirePersonPresenceRenderBinding:async () => { await requireAuthority(); return { get:key => ({ provider:'elevenlabs',bindingHash:'e'.repeat(64),providerResourceId:'SYNTHETIC_VOICE',providerModelId:'synthetic-model' })[key] } } }
@@ -468,6 +470,30 @@ function leafFixture(leaf, change = {}) {
   return { ...f, invoke, privacy }
 }
 for (const leaf of leaves) {
+  // The Founder voice issuer is intentionally unconfigured in production.
+  // Keep the real paid-leaf source loaded but assert zero provider calls,
+  // rather than fabricating a verified Founder voice signature/approval.
+  if (leaf[1] === 'adamFounderVoiceProvider') {
+    for (const [scenario, controls, body] of [
+      ['consent-looking request', {}, undefined],
+      ['missing paid binding', { missingBinding:true }, undefined],
+      ['missing pricing proof', { preflight:reply => { delete reply.envelope.protected_pricing } }, undefined],
+      ['caller withheld consent', {}, { aiProcessingConsent:false, externalProcessingConsent:false }],
+      ['failed authentication', { authDenied:true }, undefined],
+    ]) test(`actual paid leaf adamFounderVoiceProvider remains fail-closed before paid dispatch: ${scenario}`, async () => {
+      const f=leafFixture(leaf,controls)
+      const result=await f.invoke(body)
+      assert.notEqual(result.code,200)
+      if (!controls.authDenied) {
+        assert.equal(result.code,409)
+        assert.equal(result.json?.error,FOUNDER_VOICE_RECEIPT_DENIED)
+      }
+      assert.equal(f.providerCalls.length,0)
+      assert.equal(f.calls.filter(x => x.action === 'reserve').length,0)
+      assert.equal(result.chunks.length,0)
+    })
+    continue
+  }
   test(`actual paid leaf ${leaf[1]} denies absent authentic admission before any external POST`, async () => {
     const f=leafFixture(leaf,{ missingBinding:true }); await f.invoke(); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.filter(x => x.action === 'reserve').length,0)
   })
