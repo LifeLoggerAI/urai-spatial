@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import { createHash } from 'node:crypto'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
+import { assertFirstPrivateMemoryPlaybackBinding } from './privatePreparedMediaAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -227,11 +228,44 @@ function exportExpiryMillis(value: unknown): number {
   return Number.isSafeInteger(time) ? time : Number.NaN
 }
 
+type ReadyLifeMovieConsentEpoch = { revision: number; receiptHash: string }
+function requirePreparedChapterReplayBinding(
+  snapshot: FirebaseFirestore.DocumentSnapshot,
+  uid: string,
+  memoryId: string,
+  epoch: ReadyLifeMovieConsentEpoch,
+): void {
+  const memory = snapshot.data() as Record<string, unknown> | undefined
+  const source = memory?.sourceProvenance && typeof memory.sourceProvenance === 'object'
+    && !Array.isArray(memory.sourceProvenance)
+      ? memory.sourceProvenance as Record<string, unknown> : {}
+  const prepared = Object.prototype.hasOwnProperty.call(source, 'derivativeSha256')
+    || source.authenticity === 'source-derivative-not-generated-autobiography'
+    || Object.prototype.hasOwnProperty.call(memory ?? {}, 'firstPrivateMemoryConsent')
+    || Object.prototype.hasOwnProperty.call(memory ?? {}, 'firstPrivateMemoryActivation')
+  if (!prepared) return // Existing ordinary non-prepared Life Movie chapters.
+  const activation = memory?.firstPrivateMemoryActivation && typeof memory.firstPrivateMemoryActivation === 'object'
+    && !Array.isArray(memory.firstPrivateMemoryActivation)
+      ? memory.firstPrivateMemoryActivation as Record<string, unknown> : {}
+  const receiptId = activation.mediaReceiptId
+  const attachments = memory?.sourceMedia
+  if (typeof receiptId !== 'string' || !Array.isArray(attachments)
+    || !attachments.some(entry => entry && typeof entry === 'object'
+      && !Array.isArray(entry) && entry.kind === 'audio' && entry.mediaReceiptId === receiptId)) {
+    throw new functions.https.HttpsError('failed-precondition', 'Life Movie prepared memory is not playback-activated.')
+  }
+  try {
+    assertFirstPrivateMemoryPlaybackBinding(memory, uid, memoryId, receiptId, epoch.revision, epoch.receiptHash)
+  } catch {
+    throw new functions.https.HttpsError('failed-precondition', 'Life Movie prepared memory has stale Replay authority.')
+  }
+}
+
 // Life Movie catalog admission must not outlive the current owner's C1 grant.
 // This uses the SAME transaction as chapter snapshots and the manifest write.
 async function requireCurrentLifeMovieC1(
   transaction: FirebaseFirestore.Transaction, uid: string, status: 'draft' | 'ready',
-): Promise<void> {
+): Promise<ReadyLifeMovieConsentEpoch> {
   const hash = (value: string) => createHash('sha256').update(value).digest('hex')
   const [owner, policySnap, receiptSnap, central, local, barrier, permanent, consentBlock] = await transaction.getAll(
     db.doc(`users/${uid}`),
@@ -283,6 +317,7 @@ async function requireCurrentLifeMovieC1(
     || permanent.get('deleted') !== false || permanent.get('deletionEpoch') !== 0)) deny()
   if (consentBlock.exists && (consentBlock.get('ownerUid') !== uid
     || consentBlock.get('purpose') !== 'memory.storage' || consentBlock.get('active') !== false)) deny()
+  return { revision: policy.revision, receiptHash: c.receiptHash }
 }
 
 export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (data, context) => {
@@ -296,7 +331,7 @@ export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
     // Read selected memories and ready-state dependencies in the SAME atomic
     // transaction as the manifest write. Revocation/deletion must retry or
     // reject the manifest, never authorize stale pre-transaction snapshots.
-    await requireCurrentLifeMovieC1(transaction, uid, status)
+    const consentEpoch = await requireCurrentLifeMovieC1(transaction, uid, status)
     const current = await transaction.get(ref)
     // A revoked movie ID cannot be silently resurrected by an upsert.
     // Both revocation and re-authoring read/write this same document in
@@ -310,6 +345,10 @@ export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
     }
     const snapshots = await transaction.getAll(...refs)
     const chapters = requested.map((chapter, index) => trustedChapterFromMemory(chapter, snapshots[index]))
+    if (status === 'ready') {
+      snapshots.forEach((snapshot, index) =>
+        requirePreparedChapterReplayBinding(snapshot, uid, requested[index].memoryId, consentEpoch))
+    }
     const dependencyIds = status === 'ready'
       ? await requireReadyLifeModelAuthority(uid, chapters, transaction)
       : [...new Set(chapters.map((chapter) => chapter.memoryId))]
