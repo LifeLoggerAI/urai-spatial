@@ -9,15 +9,24 @@ const code = readFileSync(new URL('../src/spatial/life-movie/lifeMovieConsentEpo
 const client = readFileSync(new URL('../src/app/life-movie/LifeMovieClient.tsx', import.meta.url), 'utf8')
 const hook = readFileSync(new URL('../src/spatial/life-movie/useLifeMovieConsentEpoch.ts', import.meta.url), 'utf8')
 const output = ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } })
+const sourcePolicy = readFileSync(new URL('../src/app/privacy-controls/consentModel.ts', import.meta.url), 'utf8')
+const compiledPolicy = ts.transpileModule(sourcePolicy, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } })
+const policyExports = {}
+vm.runInNewContext(compiledPolicy.outputText, { exports: policyExports, Object, Reflect, Set, Array, Number })
 const exports = {}
 vm.runInNewContext(output.outputText, { exports, require(id) {
   assert.equal(id, '@/app/privacy-controls/consentModel')
-  return { isConsentPolicy: (raw, owner) => raw?.ownerId === owner && Number.isSafeInteger(raw.revision) }
+  return { isConsentPolicy: policyExports.isConsentPolicy }
 }, Number, Math })
 const { initialLifeMovieConsentEpoch: start, advanceLifeMovieConsentEpoch: advance, sameLifeMovieConsentEpoch: same } = exports
 const owner = 'synthetic-movie-owner'
-const policy = (revision = 7, overrides = {}) => ({ownerId:owner,revision,
-  enforcement:{state:'fully-enforced'},domains:{memory:{mode:'granted',replayVisible:true}},...overrides})
+const policy = (revision = 7, overrides = {}) => {
+  const p = policyExports.defaultConsentPolicy(owner)
+  p.revision = revision
+  if (overrides.domains?.memory) Object.assign(p.domains.memory, overrides.domains.memory)
+  if (overrides.enforcement) Object.assign(p.enforcement, overrides.enforcement)
+  return p
+}
 const activated = () => advance(start(owner),owner,policy())
 
 test('fresh current owner grant admits correct revision',()=>{
