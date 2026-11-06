@@ -69,13 +69,13 @@ test('the real existing four-emulator proof calls the lifecycle before Auth toke
   assert.match(src,/firstMemoryLifecycle\.deletionCertified, false/)
 })
 
-test('six-second synthetic Ogg contains genuine decodable Vorbis packets, not only magic bytes',()=>{
+test('six-second synthetic Ogg contains genuine decodable Opus packets, not only magic bytes',()=>{
   const {spawnSync}=require('node:child_process')
   const f=make()
   const probe=spawnSync('ffprobe',['-v','error','-show_entries','stream=codec_name','-of','json','pipe:0'],
     {input:f.audio,encoding:'utf8',timeout:10000})
   assert.equal(probe.status,0,String(probe.stderr))
-  assert.ok(JSON.parse(probe.stdout).streams?.some(s=>s.codec_name==='vorbis'))
+  assert.ok(JSON.parse(probe.stdout).streams?.some(s=>s.codec_name==='opus'))
   // Seekless Ogg outputs do not carry reliable duration metadata; count full decoded PCM samples.
   const decoded=spawnSync('ffmpeg',['-hide_banner','-v','error','-nostdin','-i','pipe:0',
     '-ac','1','-ar','16000','-f','s16le','pipe:1'],
