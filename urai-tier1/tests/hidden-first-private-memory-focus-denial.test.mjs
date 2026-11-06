@@ -51,6 +51,66 @@ test('explicit demonstration material retains its distinct demo contract', () =>
   assert.equal(fixture.demo, true)
   assert.equal(fixture.ownerId, 'explicit-demo')
 })
+
+test('prepared first-life source is admitted only after exact owner-confirmed private activation', () => {
+  const digest = 'b'.repeat(64), originalDigest = 'c'.repeat(64), receiptId = 'a'.repeat(64)
+  const receiptHash = 'd'.repeat(64)
+  const accepted = {
+    ...baseline(),
+    privacy: 'private',
+    sourceProvenance: {
+      authenticity: 'source-derivative-not-generated-autobiography',
+      originalSha256: originalDigest, derivativeSha256: digest,
+      derivativeByteLength: 112, derivedContentType: 'audio/ogg',
+    },
+    sourceMedia: [{ kind: 'audio', mediaReceiptId: receiptId }],
+    firstPrivateMemoryConsent: {
+      status: 'explicit-owner-confirmation', ownerId, memoryId: id,
+      derivativeSha256: digest, canonicalConsentReceiptHash: receiptHash,
+      consentRevision: 7,
+    },
+    firstPrivateMemoryActivation: {
+      status: 'explicit-owner-private-replay', ownerId, memoryId: id,
+      derivativeSha256: digest, mediaReceiptId: receiptId,
+      consentRevision: 7, consentReceiptHash: receiptHash,
+    },
+  }
+  assert.equal(parseSelectedMemory(accepted, ownerId, id, undefined, 7).status, 'ready')
+  // Stale, renewed or absent policy epochs never restore activated media metadata.
+  for (const revision of [undefined, 0, 6, 8, Number.NaN]) {
+    const result = parseSelectedMemory(accepted, ownerId, id, undefined, revision)
+    assert.equal(result.status, 'unauthorized')
+    assert.equal(result.memory, null)
+  }
+  const denied = [
+    { ...accepted, privacy: 'hidden' },
+    { ...accepted, privacy: 'shareable' },
+    { ...accepted, privacy: 'corrupted' },
+    { ...accepted, firstPrivateMemoryActivation: undefined },
+    { ...accepted, firstPrivateMemoryActivation: {
+      ...accepted.firstPrivateMemoryActivation, ownerId: 'foreign-owner' } },
+    { ...accepted, firstPrivateMemoryActivation: {
+      ...accepted.firstPrivateMemoryActivation, consentRevision: 6 } },
+    { ...accepted, firstPrivateMemoryActivation: {
+      ...accepted.firstPrivateMemoryActivation, mediaReceiptId: 'e'.repeat(64) } },
+    { ...accepted, firstPrivateMemoryConsent: {
+      ...accepted.firstPrivateMemoryConsent, canonicalConsentReceiptHash: 'e'.repeat(64) } },
+    { ...accepted, sourceProvenance: {
+      ...accepted.sourceProvenance, derivativeSha256: 'e'.repeat(64) } },
+    { ...accepted, sourceMedia: [] },
+    { ...accepted, sourceMedia: [{ kind: 'image', mediaReceiptId: receiptId }] },
+    { ...accepted, sourceMedia: [
+      { kind: 'audio', mediaReceiptId: receiptId },
+      { kind: 'audio', mediaReceiptId: 'f'.repeat(64) },
+    ] },
+  ]
+  for (const candidate of denied) {
+    const result = parseSelectedMemory(candidate, ownerId, id)
+    assert.equal(result.status, 'unauthorized')
+    assert.equal(result.memory, null)
+  }
+})
+
 test('foreign owner, deleted, and revoked records remain unavailable', () => {
   const cases = [
     [{ ...baseline(), ownerId: 'foreign-user' }, 'unauthorized'],

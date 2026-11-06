@@ -209,7 +209,7 @@ export function buildExplicitDemoMemory(id: string): SelectedMemory {
   }
 }
 
-export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerId: string, id: string, trustedStorageBucket?: string | null): SelectedMemoryResult {
+export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerId: string, id: string, trustedStorageBucket?: string | null, currentConsentRevision?: number): SelectedMemoryResult {
   if (raw.deleted === true) return { status: 'deleted', memory: null, message: 'This memory was deleted.' }
   if (raw.consentState === 'revoked') return { status: 'unauthorized', memory: null, message: 'Consent for this memory was revoked.' }
   if (raw.consentState === 'pending') return { status: 'unauthorized', memory: null, message: 'Consent for this memory is pending.' }
@@ -222,6 +222,49 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
   // The server independently checks current C1, receipt and activation for bytes.
   if (raw.privacy === 'hidden') {
     return { status: 'unauthorized', memory: null, message: 'This memory is not available for Focus or Replay.' }
+  }
+
+  // First-life source metadata is never an alternative authorization for Focus.
+  // An incomplete or malformed promotion must fail closed even when privacy
+  // has been changed to 'private' or the initial 'hidden' marker was removed.
+  const firstSource = raw.sourceProvenance && typeof raw.sourceProvenance === 'object'
+    && !Array.isArray(raw.sourceProvenance) ? raw.sourceProvenance as Record<string, unknown> : {}
+  const isFirstLifeSource = Object.prototype.hasOwnProperty.call(firstSource, 'derivativeSha256')
+    || firstSource.authenticity === 'source-derivative-not-generated-autobiography'
+    || Object.prototype.hasOwnProperty.call(raw, 'firstPrivateMemoryConsent')
+    || Object.prototype.hasOwnProperty.call(raw, 'firstPrivateMemoryActivation')
+  if (isFirstLifeSource) {
+    const promotion = raw.firstPrivateMemoryActivation && typeof raw.firstPrivateMemoryActivation === 'object'
+      && !Array.isArray(raw.firstPrivateMemoryActivation) ? raw.firstPrivateMemoryActivation as Record<string, unknown> : {}
+    const confirmation = raw.firstPrivateMemoryConsent && typeof raw.firstPrivateMemoryConsent === 'object'
+      && !Array.isArray(raw.firstPrivateMemoryConsent) ? raw.firstPrivateMemoryConsent as Record<string, unknown> : {}
+    const attachments = raw.sourceMedia
+    const sourceDigest = firstSource.derivativeSha256
+    const media = Array.isArray(attachments) && attachments.length === 1 && attachments[0]
+      && typeof attachments[0] === 'object' && !Array.isArray(attachments[0])
+      ? attachments[0] as Record<string, unknown> : {}
+    const sha256 = (value: unknown): value is string =>
+      typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)
+    if (raw.privacy !== 'private'
+      || raw.consentState !== 'authorized'
+      || firstSource.authenticity !== 'source-derivative-not-generated-autobiography'
+      || !sha256(firstSource.originalSha256) || !sha256(sourceDigest)
+      || confirmation.status !== 'explicit-owner-confirmation'
+      || confirmation.ownerId !== expectedOwnerId || confirmation.memoryId !== id
+      || confirmation.derivativeSha256 !== sourceDigest
+      || !sha256(confirmation.canonicalConsentReceiptHash)
+      || promotion.status !== 'explicit-owner-private-replay'
+      || promotion.ownerId !== expectedOwnerId || promotion.memoryId !== id
+      || promotion.derivativeSha256 !== sourceDigest
+      || promotion.consentReceiptHash !== confirmation.canonicalConsentReceiptHash
+      || !Number.isSafeInteger(promotion.consentRevision) || Number(promotion.consentRevision) < 1
+      || promotion.consentRevision !== confirmation.consentRevision
+      || !Number.isSafeInteger(currentConsentRevision) || Number(currentConsentRevision) < 1
+      || promotion.consentRevision !== currentConsentRevision
+      || media.kind !== 'audio' || !sha256(media.mediaReceiptId)
+      || promotion.mediaReceiptId !== media.mediaReceiptId) {
+      return { status: 'unauthorized', memory: null, message: 'Private memory activation has not been verified.' }
+    }
   }
 
   const title = stringValue(raw.title)
