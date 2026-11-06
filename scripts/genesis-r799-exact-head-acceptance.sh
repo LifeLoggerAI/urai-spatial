@@ -46,6 +46,10 @@ if [[ "$(node --version)" != v22.* ]] || [[ "$(pnpm --version)" != '10.0.0' ]]; 
   block dependencies 'Node 22 and pnpm 10.0.0 are mandatory.'
 fi
 record dependencies PASS 0 "$OUT/source.log"
+# Run the inherited R801 safety tests and exact four-service project/rules
+# preflight BEFORE any dependency install, native build, or emulator startup.
+run synthetic_boundary_tests 60 node --test tests/run-memory-media-four-emulator-proof.test.mjs
+run synthetic_four_preflight 30 node scripts/run-memory-media-four-emulator-proof.mjs --preflight
 run frozen_install 900 pnpm install --frozen-lockfile
 run functions_build 600 pnpm --filter urai-functions build
 run functions_test 900 pnpm --filter urai-functions test
