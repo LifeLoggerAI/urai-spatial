@@ -64,3 +64,33 @@ test('privacy rules end in a default-deny boundary', () => {
   assert.match(rules, /match \/features\/\{flagId\} \{\s*allow read: if true;\s*allow write: if isAdmin\(\);\s*\}/)
   assert.doesNotMatch(rules.replace(publicFeatureFlags, ''), /allow\s+(read|write|create|update|delete)[^;]*:\s*if\s+true\s*;/i)
 })
+
+// User-profile authority mutation boundary.
+const userRuleBlock = rules.match(/match \/users\/\{uid\} \{([\s\S]*?)\n\s*match \/privacyPolicy\/\{docId\}/)?.[1]
+
+const protectedFields = ['entitlementTier', 'isAdmin', 'founderOverride', 'deleted', 'accountStatus']
+
+test('user profile create must reject every privileged and server-owned lifecycle field', () => {
+  assert.ok(userRuleBlock, 'must locate canonical users/{uid} rule')
+  const create = userRuleBlock.match(/allow create: if ([\s\S]*?);/)?.[1]
+  assert.ok(create)
+  assert.match(create, /request\.resource\.data\.keys\(\)\.hasAny\(/)
+  for (const field of protectedFields) assert.match(create, new RegExp(`'${field}'`))
+})
+
+test('user profile update must reject added, removed and modified authority fields', () => {
+  assert.ok(userRuleBlock)
+  const update = userRuleBlock.match(/allow update: if ([\s\S]*?);/)?.[1]
+  assert.ok(update)
+  assert.match(update, /request\.resource\.data\.diff\(resource\.data\)\.affectedKeys\(\)\.hasAny\(/)
+  assert.doesNotMatch(update, /\.changedKeys\(\)/)
+  for (const field of protectedFields) assert.match(update, new RegExp(`'${field}'`))
+})
+
+test('profile ownership, private-payload protection and default-deny remain in place', () => {
+  assert.ok(userRuleBlock)
+  assert.match(userRuleBlock, /allow create: if isSelf\(uid\)/)
+  assert.match(userRuleBlock, /allow update: if isSelf\(uid\)/)
+  assert.equal((userRuleBlock.match(/&& isPrivateSpatialPayloadSafe\(\)/g) ?? []).length, 2)
+  assert.match(userRuleBlock, /allow delete: if false;/)
+})
