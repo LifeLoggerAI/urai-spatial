@@ -18,7 +18,7 @@ function fixture({existing=null,revokeBeforeCommit=false}={}){
  const counts={writes:0,audits:0,retries:0}
  let interfered=false
  const ref=p=>({path:p,id:p.split('/').at(-1)})
- const snap=r=>{const row=records.get(r.path);return {exists:row!==undefined,ref:{...r,parent:{parent:{id:uid}}},get:k=>row?.[k]}}
+ const snap=r=>{const row=records.get(r.path);return {exists:row!==undefined,ref:{...r,parent:{parent:{id:uid}}},get:k=>row?.[k],data:()=>row}}
  const db={doc:ref,getAll:async()=>{throw Error('UNSAFE_NONTRANSACTIONAL_READ')},
  collection:()=>({add:async()=>{counts.audits++},where:()=>({limit:()=>({query:true})})}),
  runTransaction:async callback=>{
