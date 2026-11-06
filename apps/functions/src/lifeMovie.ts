@@ -218,6 +218,15 @@ async function requireReadyLifeModelAuthority(
   return [...dependencyIds]
 }
 
+// Match the protected-media authority's canonical consent expiry parser.
+// A malformed C7 projection is not evidence that a deletion fence was released.
+function exportExpiryMillis(value: unknown): number {
+  const time = value instanceof admin.firestore.Timestamp ? value.toMillis()
+    : typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
+      && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value ? Date.parse(value) : Number.NaN
+  return Number.isSafeInteger(time) ? time : Number.NaN
+}
+
 // Life Movie catalog admission must not outlive the current owner's C1 grant.
 // This uses the SAME transaction as chapter snapshots and the manifest write.
 async function requireCurrentLifeMovieC1(
@@ -266,7 +275,7 @@ async function requireCurrentLifeMovieC1(
       && ['granted', 'revoked'].includes(String(marker.exportConsentStatus))
       && /^[a-f0-9]{64}$/.test(String(marker.exportConsentReceiptHash))
       && marker.exportConsentPolicyVersion === '1.0.0'
-      && typeof marker.exportConsentExpiresAt === 'string'
+      && Number.isSafeInteger(exportExpiryMillis(marker.exportConsentExpiresAt))
     if (marker.uid !== uid || keys.some(k => k.startsWith('deletionPlanningLease'))
       || (marker.active !== false && !released && !projection)) deny()
   }
