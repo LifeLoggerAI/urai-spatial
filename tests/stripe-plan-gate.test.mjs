@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {registerHooks} from 'node:module';
+import {registerHooks,stripTypeScriptTypes} from 'node:module';
+import {readFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
 const hooks=registerHooks({
   resolve(specifier, context, nextResolve) {
     if(specifier==='firebase/auth') return {url:'urai-plan-source-fixture:auth',shortCircuit:true};
@@ -8,6 +10,7 @@ const hooks=registerHooks({
   },
   load(url,context,nextLoad) {
     if(url==='urai-plan-source-fixture:auth') return {format:'module',source:'export const getAuth=()=>({currentUser:null});',shortCircuit:true};
+    if(url.startsWith('file:') && /\.ts(?:[?#]|$)/.test(url)) return {format:'module',source:stripTypeScriptTypes(readFileSync(fileURLToPath(url),'utf8')),shortCircuit:true};
     return nextLoad(url,context);
   },
 });
