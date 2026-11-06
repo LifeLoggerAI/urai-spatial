@@ -228,6 +228,16 @@ export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
     // transaction as the manifest write. Revocation/deletion must retry or
     // reject the manifest, never authorize stale pre-transaction snapshots.
     const current = await transaction.get(ref)
+    // A revoked movie ID cannot be silently resurrected by an upsert.
+    // Both revocation and re-authoring read/write this same document in
+    // Firestore transactions, so concurrent revocation triggers a retry.
+    if (current.exists && (
+      current.get('ownerId') !== uid
+      || current.get('consentState') !== 'authorized'
+      || current.get('revokedAt') != null
+    )) {
+      throw new functions.https.HttpsError('failed-precondition', 'Life Movie manifest is not authorized for update.')
+    }
     const snapshots = await transaction.getAll(...refs)
     const chapters = requested.map((chapter, index) => trustedChapterFromMemory(chapter, snapshots[index]))
     const dependencyIds = status === 'ready'
@@ -266,17 +276,18 @@ export const revokeLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
   const uid = requireUid(context)
   const movieId = requireToken(data?.movieId, 'movieId')
   const ref = db.doc(`users/${uid}/lifeMovies/${movieId}`)
-  const snapshot = await ref.get()
-  if (!snapshot.exists || snapshot.get('ownerId') !== uid) {
-    throw new functions.https.HttpsError('not-found', 'Life Movie manifest was not found.')
-  }
-
-  await ref.set({
-    consentState: 'revoked',
-    status: 'draft',
-    revokedAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  }, { merge: true })
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref)
+    if (!snapshot.exists || snapshot.get('ownerId') !== uid) {
+      throw new functions.https.HttpsError('not-found', 'Life Movie manifest was not found.')
+    }
+    transaction.update(ref, {
+      consentState: 'revoked',
+      status: 'draft',
+      revokedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+  })
 
   await db.collection(`users/${uid}/privacyAudit`).add({
     ownerId: uid,

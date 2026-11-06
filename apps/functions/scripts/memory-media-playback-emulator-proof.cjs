@@ -1,6 +1,7 @@
 'use strict'
 const assert = require('node:assert/strict')
 const crypto = require('node:crypto')
+const { proveFirstMemoryLifecycle } = require('./first-memory-authenticated-emulator-journey.cjs')
 const admin = require('firebase-admin')
 const { createRequire } = require('node:module')
 const path = require('node:path')
@@ -161,6 +162,13 @@ async function main() {
     await db.doc(`${userPath}/privacyRuntime/exportAuthority`).set({ generation: 0, pendingDeletions: { fictional: true } })
     denied(await authority(), 'FAILED_PRECONDITION', 'current pending deletion'); await db.doc(`${userPath}/privacyRuntime/exportAuthority`).delete()
     await admin.auth().updateUser(uid, { disabled: true }); denied(await authority(), 'UNAUTHENTICATED', 'disabled current Auth account'); await admin.auth().updateUser(uid, { disabled: false })
+    // Complete the actual hidden-first-memory creation -> upload -> explicit activation
+    // lifecycle using callable Functions, emulator-issued Auth and real Admin Storage.
+    // This remains strictly fail closed for private bucket IAM-positive playback.
+    const firstMemoryLifecycle = await proveFirstMemoryLifecycle({ admin, db, call, owner, foreign, cases })
+    assert.ok(firstMemoryLifecycle.stages >= 12, 'FIRST_MEMORY_LIFECYCLE_INCOMPLETE')
+    assert.equal(firstMemoryLifecycle.positivePrivatePlaybackAccepted, false)
+    assert.equal(firstMemoryLifecycle.deletionCertified, false)
     await new Promise(resolve => setTimeout(resolve, 1100)); await admin.auth().revokeRefreshTokens(uid)
     denied(await authority(), 'UNAUTHENTICATED', 'revoked real emulator token')
     proof = { proof: 'PASS', project, sourceCommit: process.env.URAI_EXACT_HEAD || null,
