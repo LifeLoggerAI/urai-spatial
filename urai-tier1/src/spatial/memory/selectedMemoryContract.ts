@@ -224,6 +224,47 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
     return { status: 'unauthorized', memory: null, message: 'This memory is not available for Focus or Replay.' }
   }
 
+  // First-life source metadata is never an alternative authorization for Focus.
+  // An incomplete or malformed promotion must fail closed even when privacy
+  // has been changed to 'private' or the initial 'hidden' marker was removed.
+  const firstSource = raw.sourceProvenance && typeof raw.sourceProvenance === 'object'
+    && !Array.isArray(raw.sourceProvenance) ? raw.sourceProvenance as Record<string, unknown> : {}
+  const isFirstLifeSource = Object.prototype.hasOwnProperty.call(firstSource, 'derivativeSha256')
+    || firstSource.authenticity === 'source-derivative-not-generated-autobiography'
+    || Object.prototype.hasOwnProperty.call(raw, 'firstPrivateMemoryConsent')
+    || Object.prototype.hasOwnProperty.call(raw, 'firstPrivateMemoryActivation')
+  if (isFirstLifeSource) {
+    const promotion = raw.firstPrivateMemoryActivation && typeof raw.firstPrivateMemoryActivation === 'object'
+      && !Array.isArray(raw.firstPrivateMemoryActivation) ? raw.firstPrivateMemoryActivation as Record<string, unknown> : {}
+    const confirmation = raw.firstPrivateMemoryConsent && typeof raw.firstPrivateMemoryConsent === 'object'
+      && !Array.isArray(raw.firstPrivateMemoryConsent) ? raw.firstPrivateMemoryConsent as Record<string, unknown> : {}
+    const attachments = raw.sourceMedia
+    const sourceDigest = firstSource.derivativeSha256
+    const media = Array.isArray(attachments) && attachments.length === 1 && attachments[0]
+      && typeof attachments[0] === 'object' && !Array.isArray(attachments[0])
+      ? attachments[0] as Record<string, unknown> : {}
+    const sha256 = (value: unknown): value is string =>
+      typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)
+    if (raw.privacy !== 'private'
+      || raw.consentState !== 'authorized'
+      || firstSource.authenticity !== 'source-derivative-not-generated-autobiography'
+      || !sha256(firstSource.originalSha256) || !sha256(sourceDigest)
+      || confirmation.status !== 'explicit-owner-confirmation'
+      || confirmation.ownerId !== expectedOwnerId || confirmation.memoryId !== id
+      || confirmation.derivativeSha256 !== sourceDigest
+      || !sha256(confirmation.canonicalConsentReceiptHash)
+      || promotion.status !== 'explicit-owner-private-replay'
+      || promotion.ownerId !== expectedOwnerId || promotion.memoryId !== id
+      || promotion.derivativeSha256 !== sourceDigest
+      || promotion.consentReceiptHash !== confirmation.canonicalConsentReceiptHash
+      || !Number.isSafeInteger(promotion.consentRevision) || Number(promotion.consentRevision) < 1
+      || promotion.consentRevision !== confirmation.consentRevision
+      || media.kind !== 'audio' || !sha256(media.mediaReceiptId)
+      || promotion.mediaReceiptId !== media.mediaReceiptId) {
+      return { status: 'unauthorized', memory: null, message: 'Private memory activation has not been verified.' }
+    }
+  }
+
   const title = stringValue(raw.title)
   const occurredAt = isoDateValue(raw.occurredAt)
   const summary = stringValue(raw.summary)
