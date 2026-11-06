@@ -48,6 +48,7 @@ const tests = [
   'tests/authorized-export-download.test.mjs',
   'tests/operational-export-client.test.mjs',
   'tests/owned-memory-media-client.test.mjs',
+  'tests/hidden-first-private-memory-focus-denial.test.mjs',
   'tests/import-first-prepared-memory.test.mjs',
   'tests/r786-first-private-media-bridge.test.mjs',
   'tests/prepare-first-private-memory.test.mjs',

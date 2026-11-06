@@ -15,6 +15,7 @@ import { DEMO_MEMORY_STAR_NODES } from '../src/spatial/memory/memoryStarSchema.t
 import { definitionForDestination } from '../src/spatial/world/destinationRegistry.ts'
 import { previousDestinationForReturn } from '../src/spatial/world/worldTypes.ts'
 import { lifeMapHomeHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
+import * as lifeMapFlightOrientation from '../src/components/lifemap/lifeMapFlightOrientation.mjs'
 
 const source = fs.readFileSync(process.env.URAI_LIFEMAP_NAVIGATOR_SOURCE ?? 'src/components/lifemap/LifeMapSemanticNavigator.tsx', 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
@@ -55,6 +56,7 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     react, 'react/jsx-runtime':{jsx:element,jsxs:element,Fragment:Symbol('fragment')},
     'react-dom':{createPortal:tree=>tree}, 'next/navigation':{useRouter:()=>router,useSearchParams:()=>browser.location.searchParams},
     './lifeMapData':{lifeMapTypeLabels:{recovery:'Recovery'}}, './lifeMapSelection':{requestLifeMapSelection(id,activation) {calls.push({kind:'world-selection',id,activation,identity:new URL(browser.location).search})}},
+    './lifeMapFlightOrientation.mjs':lifeMapFlightOrientation,
     './useLifeMapEvents':{useLifeMapEvents:()=>({nodes:memoryNodes,eras:[],loading:false,sourceMode:browser.location.searchParams.get('demo')==='1'?'explicit-demo':'private'})},
     '@/lib/i18n/localePreference':{localizedMessage},
     '@/lib/i18n/useUraiLocale':{useUraiLocale:()=>({preference:{requested:'en',preview:false},locale:'en',text:key=>{assert.ok(messages[key]);return messages[key].source},props:()=>({lang:'en',dir:'ltr'}),formatProps:{},number:String})},

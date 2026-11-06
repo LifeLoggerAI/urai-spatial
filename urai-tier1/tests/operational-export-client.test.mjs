@@ -4,6 +4,7 @@ import vm from 'node:vm'
 import { createRequire } from 'node:module'
 import { createHash, webcrypto } from 'node:crypto'
 import test from 'node:test'
+import { ownerSessionMatches } from '../src/lib/privacy/ownerSessionFence.ts'
 const require = createRequire(import.meta.url), ts = require('typescript')
 const transpile = source => ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
 const helperCode = transpile(fs.readFileSync('src/lib/privacy/authorizedExportDownload.ts', 'utf8'))
@@ -111,13 +112,16 @@ for (const [name, path, stateKey] of [['Passport', 'passport/PassportVaultClient
   const source = fs.readFileSync('src/app/' + path, 'utf8')
   const body = source.match(/  const downloadExport = async \(request: OperationalExportRequest\) => \{([\s\S]*?)\n  \}/)?.[1]
   assert.ok(body, name + ' owns a typed transfer handler')
+  const guard = source.match(/  const ownerSessionCurrent = ([\s\S]*?\n  \}\))/)?.[1]
+  assert.ok(guard, name + ' owns a current SDK owner guard')
+  const handlerCode = transpile('const ownerSessionCurrent = ' + guard + '\nexport const run = async (request: unknown) => {' + body + '\n}')
   test(name + ' actual download handler suppresses previous account completion and failure', async () => {
     for (const fails of [false, true]) {
       const f = fixture(), session = new f.helper.OperationalExportDownloadSession(), exports = {}, authEpoch = { current: 1 }; let resolve, reject
-      const env = { ...f.context, exports, authEpoch, user: f.user, navigator: { onLine: true }, [stateKey]: 'private', keyState: 'authorized', exportDownloads: { current: session },
+      const env = { ...f.context, exports, authEpoch, user: f.user, app: {}, getAuth: () => f.auth, ownerSessionMatches, navigator: { onLine: true }, [stateKey]: 'private', keyState: 'authorized', exportDownloads: { current: session },
         setExportDownloading: value => { f.state.downloading = value }, setMessage: message => { f.state.messages.push(message) },
         downloadOperationalExportBytes: () => new Promise((done, fail) => { resolve = done; reject = fail }) }
-      vm.runInNewContext(transpile('export const run = async (request: unknown) => {' + body + '\n}'), env)
+      vm.runInNewContext(handlerCode, env)
       const pending = exports.run(request); authEpoch.current++; f.state.messages.push('New account')
       if (fails) reject(new Error('late private failure')); else resolve({ blob: new Blob([bytes]), filename: 'old.json', expiresAt: Date.now() + 30_000 })
       await pending; assert.deepEqual(f.state.messages, ['New account']); assert.equal(f.state.saves.length, 0); session.stop()
@@ -125,10 +129,10 @@ for (const [name, path, stateKey] of [['Passport', 'passport/PassportVaultClient
   })
   test(name + ' actual handler does not let stopped transfer update newer UI', async () => {
     const f = fixture(), session = new f.helper.OperationalExportDownloadSession(), exports = {}, authEpoch = { current: 1 }; let resolve
-    const env = { ...f.context, exports, authEpoch, user: f.user, navigator: { onLine: true }, [stateKey]: 'private', keyState: 'authorized', exportDownloads: { current: session },
+    const env = { ...f.context, exports, authEpoch, user: f.user, app: {}, getAuth: () => f.auth, ownerSessionMatches, navigator: { onLine: true }, [stateKey]: 'private', keyState: 'authorized', exportDownloads: { current: session },
       setExportDownloading: value => { f.state.downloading = value }, setMessage: message => { f.state.messages.push(message) },
       downloadOperationalExportBytes: () => new Promise(done => { resolve = done }) }
-    vm.runInNewContext(transpile('export const run = async (request: unknown) => {' + body + '\n}'), env)
+    vm.runInNewContext(handlerCode, env)
     const pending = exports.run(request); session.stop(); f.state.messages.push('Stopped')
     resolve({ blob: new Blob([bytes]), filename: 'stale.json', expiresAt: Date.now() + 30_000 }); await pending
     assert.deepEqual(f.state.messages, ['Stopped']); assert.equal(f.state.saves.length, 0)
