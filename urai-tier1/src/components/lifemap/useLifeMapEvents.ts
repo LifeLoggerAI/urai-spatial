@@ -359,7 +359,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         if (cancelled) return;
         const accepted = new Map<string, SelectedMemory>();
         for (const doc of snapshot.docs) {
-          const parsed = parseSelectedMemory(doc.data(), resolvedUserId, doc.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+          const parsed = parseSelectedMemory(doc.data(), resolvedUserId, doc.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, consent.revision);
           if (parsed.status === 'ready' && parsed.memory.privacy !== 'hidden') accepted.set(doc.id, parsed.memory);
         }
         setCanonicalMemories(accepted);
