@@ -40,7 +40,8 @@ function fixture({ modularFirestoreOnly = false, projectEnv = {} } = {}) {
     domains: Object.fromEntries(['memory', 'location', 'models', 'exports', 'workforce', 'identity'].map(key => [key, { ...domain }])),
     enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } }
   const receipt = { schemaVersion: schema, ownerUid: uid, memoryId, receiptId, sha256: sha(bytes), contentType: 'video/mp4', kind: 'video',
-    objectPath: `private-memory-media/${sha(uid)}/${sha(memoryId)}/${receiptId}/${sha(bytes)}.mp4`, bucketName: 'fictional-private-memory.appspot.com',
+    // Mock SDK only: match the actual source-pinned default bucket boundary.
+    objectPath: `private-memory-media/${sha(uid)}/${sha(memoryId)}/${receiptId}/${sha(bytes)}.mp4`, bucketName: 'urai-4dc1d.appspot.com',
     byteLength: bytes.length, attemptNonce: 'd'.repeat(64), state: 'ready', storageGeneration: '123', leaseExpiresAt: new Timestamp(clock.value + 120_000),
     consentRevision: 4, consentReceiptHash: 'b'.repeat(64), consentExpiresAt: clock.value + 3_600_000, deletionGeneration: 0 }
   const docs = new Map([
