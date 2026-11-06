@@ -9,12 +9,17 @@ const {canonicalPolicy,isCanonicalStoredPolicy}=require('./lifeMovieCanonicalFix
 
 const source = fs.readFileSync(path.join(__dirname, '../src/lifeMovie.ts'), 'utf8')
 const compiled = ts.transpileModule(source, {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText
-function setup({state='authorized',privacy='private',beforeTransaction=()=>{},ready=false}={}) {
+function setup(options={}) {
+  const {state='authorized',privacy='private',beforeTransaction=()=>{},ready=false} = options
   const uid='syntheticOwner', memoryId='syntheticMemory', movieId='syntheticMovie'
   const memoryPath='users/'+uid+'/memories/'+memoryId
   const moviePath='users/'+uid+'/lifeMovies/'+movieId
   const docs=new Map([[memoryPath,{ownerId:uid,deleted:false,consentState:state,privacy,
     lifeMovie:{sceneTruthPacketId:'syntheticScene'}}]])
+  // Passing {state: undefined} means a genuinely absent field, not default authorized.
+  if (Object.prototype.hasOwnProperty.call(options,'state') && options.state === undefined) {
+    delete docs.get(memoryPath).consentState
+  }
   docs.set('users/'+uid,{accountStatus:'active'})
   docs.set('users/'+uid+'/privacyPolicy/current',canonicalPolicy(uid))
   docs.set('consentRecords/'+uid+'_memory_storage',{uid,purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:'a'.repeat(64),expiresAt:'2030-01-01T00:00:00.000Z'})
@@ -76,7 +81,9 @@ test('authorized private memory commits a draft manifest inside transaction',asy
 test('missing, unknown, pending, revoked and hidden source cannot authorize manifest',async()=>{
   for(const [state,privacy] of [[undefined,'private'],['conflicted','private'],['pending','private'],
     ['revoked','private'],['authorized','hidden']]){
-    const f=setup({state,privacy});await assert.rejects(f.run(),e=>e.code==='failed-precondition')
+    const f=setup({state,privacy});
+    if (state === undefined) assert.equal(Object.hasOwn(f.docs.get(f.memoryPath),'consentState'),false)
+    await assert.rejects(f.run(),e=>e.code==='failed-precondition')
     assert.equal(f.stats().wrote,0);assert.equal(f.stats().audited,0)
   }
 })
