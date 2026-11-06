@@ -5,6 +5,7 @@ const fs=require('node:fs')
 const path=require('node:path')
 const vm=require('node:vm')
 const ts=require('typescript')
+const {canonicalPolicy,isCanonicalStoredPolicy}=require('./lifeMovieCanonicalFixture.cjs')
 const source=fs.readFileSync(path.join(__dirname,'../src/lifeMovie.ts'),'utf8')
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText
 const uid='syntheticOwner', movieId='syntheticMovie',memoryId='syntheticMemory'
@@ -12,7 +13,7 @@ const moviePath='users/'+uid+'/lifeMovies/'+movieId,memoryPath='users/'+uid+'/me
 function fixture({existing=null,revokeBeforeCommit=false}={}){
  const records=new Map([[memoryPath,{ownerId:uid,deleted:false,consentState:'authorized',privacy:'private'}]])
  records.set('users/'+uid,{accountStatus:'active'})
- records.set('users/'+uid+'/privacyPolicy/current',{version:2,revision:4,ownerId:uid,domains:{memory:{mode:'granted',replayVisible:true,lifeMapVisible:true}},enforcement:{state:'fully-enforced'}})
+ records.set('users/'+uid+'/privacyPolicy/current',canonicalPolicy(uid))
  records.set('consentRecords/'+uid+'_memory_storage',{uid,purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:'a'.repeat(64),expiresAt:'2030-01-01T00:00:00.000Z'})
  if(existing)records.set(moviePath,{...existing})
  const counts={writes:0,audits:0,retries:0}
@@ -49,7 +50,7 @@ function fixture({existing=null,revokeBeforeCommit=false}={}){
       vm.runInNewContext(compiledHelper,{module:moduleHelper,exports:moduleHelper.exports,require})
       return moduleHelper.exports
     }
-  if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy:p=>p?.version===2 && p?.ownerId===uid}
+  if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy}
   throw Error('UNEXPECTED_IMPORT_'+name)
  },URL,Date,Math,Number,Set})
  return {records,counts,upsert:()=>mod.exports.upsertLifeMovieManifest({movieId,status:'draft',chapters:[{id:'chapter1',memoryId,order:0}]},{auth:{uid}}),
