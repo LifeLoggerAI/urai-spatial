@@ -8,6 +8,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { isOrbState, resolveAuthorizedHomeReviewOrbState, resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, URAI_EMBODIED_MOVEMENT_INPUT_EVENT, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import HomeSkyInteraction from '@/spatial/navigation/HomeSkyAscentInteraction'
+import { sampleHomeAscentFlight } from '@/spatial/navigation/homeAscentFlight'
 import { useSceneStore } from '@/spatial/store/useSceneStore'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { HomeInterpretiveSplatEnvironment, resolveHomeInterpretiveSplatAsset } from '@/spatial/home/HomeInterpretiveSplat'
@@ -769,6 +770,8 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
   const lastNearby = useRef<Nearby>(null)
   const transitionStarted = useRef<number | null>(null)
   const transitionOrigin = useRef(new THREE.Vector3())
+  const transitionLookOrigin = useRef(new THREE.Vector3())
+  const ascentFrameCallbacks = useRef(0)
   const transitionIssued = useRef(false)
   const lastTransitionSequence = useRef<TransitionSequence>('idle')
   const desired = useRef(new THREE.Vector3())
@@ -830,6 +833,8 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
       if (transitionStarted.current === null) {
         transitionStarted.current = clock.elapsedTime
         transitionOrigin.current.copy(camera.position)
+        transitionLookOrigin.current.copy(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(8)).add(camera.position)
+        ascentFrameCallbacks.current = 0
       }
       const duration = reducedMotion ? .42 : ascending ? ASCENT_DURATION_SECONDS : GROUND_DESCENT_DURATION_SECONDS
       const t = THREE.MathUtils.smootherstep(THREE.MathUtils.clamp((clock.elapsedTime - transitionStarted.current) / duration, 0, 1), 0, 1)
@@ -838,10 +843,37 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
         : t < .16 ? 'ground:opening' : t < .84 ? 'ground:traversal' : 'ground:closing'
       if (sequence !== lastTransitionSequence.current) { lastTransitionSequence.current = sequence; onTransitionSequence(sequence) }
       if (ascending) {
-        camera.position.lerpVectors(transitionOrigin.current, new THREE.Vector3(0, 44, -54), t)
-        camera.lookAt(0, 20 + t * 28, -38 - t * 24)
+        // Real camera flight above native sanctuary, not a state-only sky cut.
+        const pose = sampleHomeAscentFlight(t,
+          [transitionOrigin.current.x, transitionOrigin.current.y, transitionOrigin.current.z],
+          [transitionLookOrigin.current.x, transitionLookOrigin.current.y, transitionLookOrigin.current.z],
+          reducedMotion)
+        camera.position.set(...pose.position)
+        camera.lookAt(...pose.lookAt)
+        ascentFrameCallbacks.current += 1
+        if (owner.current) {
+          // Frame callbacks are NOT proof of finished WebGL draws or moving pixels.
+          owner.current.dataset.homeAscentR3fCallbacks = String(ascentFrameCallbacks.current)
+          owner.current.dataset.homeAscentRendererFrame = String(gl.info.render.frame)
+          owner.current.dataset.homeAscentCameraX = camera.position.x.toFixed(4)
+          owner.current.dataset.homeAscentCameraY = camera.position.y.toFixed(4)
+          owner.current.dataset.homeAscentCameraZ = camera.position.z.toFixed(4)
+        }
         store.setProgress(t)
-        if (t >= 1 && !transitionIssued.current) { transitionIssued.current = true; requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' }) }
+        if (t >= 1 && !transitionIssued.current) {
+          transitionIssued.current = true
+          // Preserve only a single explicitly disclosed demo fixture across Home -> Life Map.
+          // Never infer demo authority from other query values or duplicate parameters.
+          const query = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search)
+          const disclosedDemo = query !== null && query.getAll('demo').length === 1 && query.get('demo') === '1'
+          requestUraiWorldTravel({
+            destination: 'life-map',
+            href: '/life-map/?from=home-sky',
+            entryPortal: 'home-sky',
+            cameraCheckpoint: 'home-sky-ascent-complete',
+            ...(disclosedDemo ? { context: { demo: true } } : {}),
+          })
+        }
       } else {
         camera.position.lerp(new THREE.Vector3(-5.3, -2.4, -16.5), 1 - Math.pow(.002, delta))
         camera.lookAt(-5.4, -1.2, -18)
@@ -960,8 +992,9 @@ function World001V3Preview() {
 }
 
 function Scene(props: { previewW13V3: boolean; nearby: Nearby; input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onGroundComplete: () => void; onLifeMap: () => void; onReady: () => void; onTransitionSequence: (value: TransitionSequence) => void; groundDescent: boolean; reducedMotion: boolean; reducedStimulation: boolean; orbState: OrbState }) {
-  const phase = useSceneStore((state) => state.phase)
-  const cosmic = phase === 'ASCENT'
+  // Preserve the authored Home sky/lighting throughout real camera flight.
+  // LifeMap switches to its own cosmos only after navigation completes.
+  const cosmic = false
   const orbAnchor = props.previewW13V3 ? W13_V3_ORB : ORB
   const orbGroundY = props.previewW13V3 ? W13_V3_FLOOR_Y : terrainHeight(ORB.x, ORB.z)
   return <>
@@ -1086,7 +1119,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const orbSensory = resolveOrbSensoryOutput(orbState, reducedMotion, true, reducedStimulation)
   const contextId = phase === 'ASCENT' ? 'ascent.progress' : groundDescent ? 'home.groundProgress' : nearby === 'orb' ? 'home.orbNearby' : nearby === 'ground' ? 'home.groundNearby' : nearby === 'life-map' ? 'home.skyNearby' : null
 
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="legacy-placeholder-metadata-only" data-home-provider-regions="not-rendered" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-input-ready={ready && !transitioning && !inputLocked ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-orb-anchor-x={previewW13V3 ? W13_V3_ORB.x : ORB.x} data-home-orb-anchor-z={previewW13V3 ? W13_V3_ORB.z : ORB.z} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-world001-preview={previewW13V3 ? 'MODELED_INTERPRETIVE_NONPRODUCTION' : 'off'} data-home-v3-navigation={previewW13V3 ? 'bounded-central-terrace-research-not-certified-navmesh' : 'off'} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-orb-reduced-stimulation={reducedStimulation ? 'true' : 'false'} data-home-orb-playback={orbSensory.movement === 'settled' ? 'stopped' : 'playing'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="legacy-placeholder-metadata-only" data-home-provider-regions="not-rendered" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-input-ready={ready && !transitioning && !inputLocked ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-orb-anchor-x={previewW13V3 ? W13_V3_ORB.x : ORB.x} data-home-orb-anchor-z={previewW13V3 ? W13_V3_ORB.z : ORB.z} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-genesis-build-revision={process.env.NEXT_PUBLIC_URAI_GENESIS_BUILD_REVISION || undefined} data-home-world001-preview={previewW13V3 ? 'MODELED_INTERPRETIVE_NONPRODUCTION' : 'off'} data-home-v3-navigation={previewW13V3 ? 'bounded-central-terrace-research-not-certified-navmesh' : 'off'} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-orb-reduced-stimulation={reducedStimulation ? 'true' : 'false'} data-home-orb-playback={orbSensory.movement === 'settled' ? 'stopped' : 'playing'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
     <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? (reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene key={previewW13V3 ? 'w13-v3' : 'canonical'} previewW13V3={previewW13V3} nearby={nearby} input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
     {contextId ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" {...locale.props(contextId)} style={{ zIndex:19, ...(locale.locale !== 'en' ? { maxInlineSize:'calc(100vw - 32px)', whiteSpace:'normal', overflowWrap:'anywhere', textAlign:'start' as const } : {}) }}>{locale.text(contextId)}</div> : null}

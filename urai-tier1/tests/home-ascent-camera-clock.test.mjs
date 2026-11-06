@@ -4,6 +4,7 @@ import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
 import * as THREE from 'three'
+import { sampleHomeAscentFlight } from '../src/spatial/navigation/homeAscentFlight.ts'
 
 const source = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionPolished.tsx', import.meta.url), 'utf8')
 const ast = ts.createSourceFile('HomeWorldProductionPolished.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
@@ -22,10 +23,11 @@ function rig(reducedMotion = false) {
   const output = {}
   vm.runInNewContext(code, {
     exports: output, THREE,
-    useThree: () => ({ camera, size: { width: 1440, height: 900 }, invalidate() {}, gl: { domElement: { closest: () => null } } }),
+    useThree: () => ({ camera, size: { width: 1440, height: 900 }, invalidate() {}, gl: { info: { render: { frame: 0 } }, domElement: { closest: () => null } } }),
     useRef: current => ({ current }), useCallback: callback => callback, useLayoutEffect: callback => callback(), useEffect() {},
     useFrame: callback => { frame = callback }, useSceneStore: { getState: () => state },
     homeWalkSurfaceHeight: () => 0, stepEmbodiedMotion() {}, resolveHomeSolidPenetration() {}, HOME_NAVIGATION_OBSTACLES: [],
+    sampleHomeAscentFlight,
     requestUraiWorldTravel: request => travels.push(JSON.parse(JSON.stringify(request))),
   })
   output.PlayerRig({ input: { keys: { current: new Set() }, virtualX: { current: 0 }, virtualZ: { current: 0 } },
@@ -49,7 +51,7 @@ test('same elapsed ascent position is independent of frame partition', () => {
   for (let n = 1; n <= 102; n++) regular.tick(n / 60, 1 / 60)
   delayed.tick(.1, .1); delayed.tick(1.7, 1.6)
   near(regular.camera.position, delayed.camera.position)
-  near(delayed.camera.position, start.clone().add(new THREE.Vector3(0, 44, -54)).multiplyScalar(.5))
+  near(delayed.camera.position, new THREE.Vector3(...sampleHomeAscentFlight(.5, start.toArray(), [0, 0, 0]).position))
   assert.equal(delayed.state.progress, .5)
 })
 
@@ -58,17 +60,17 @@ test('normal ascent retains its duration, endpoint and exactly one canonical adm
   r.tick(0, 5); r.tick(3.399, 3.399)
   assert.equal(r.travels.length, 0)
   r.tick(3.4, .001); r.tick(4, .6)
-  near(r.camera.position, new THREE.Vector3(0, 44, -54))
+  near(r.camera.position, new THREE.Vector3(-1.5, 39, -6))
   assert.deepEqual(r.travels, [{ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' }])
 })
 
-test('reduced motion retains the existing .42-second duration', () => {
+test('reduced motion keeps camera still during the existing .42-second transition', () => {
   const r = rig(true), start = r.camera.position.clone()
   r.tick(0, 5); r.tick(.21, .21)
-  near(r.camera.position, start.clone().add(new THREE.Vector3(0, 44, -54)).multiplyScalar(.5))
+  near(r.camera.position, start)
   assert.equal(r.travels.length, 0)
   r.tick(.42, .21)
-  near(r.camera.position, new THREE.Vector3(0, 44, -54))
+  near(r.camera.position, start)
   assert.equal(r.travels.length, 1)
 })
 
@@ -82,7 +84,7 @@ test('cancel and reentry recapture the current camera and restart admission time
   assert.equal(r.state.progress, 0)
   assert.equal(r.travels.length, 0)
   r.tick(21.7, 1.7)
-  near(r.camera.position, new THREE.Vector3(1, 23.5, -25))
+  near(r.camera.position, new THREE.Vector3(...sampleHomeAscentFlight(.5, [2, 3, 4], [0, 0, 0]).position))
 })
 
 test('position cannot outrun the existing look target and reverse its forward direction', () => {
