@@ -49,7 +49,7 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
       // explicitly activated first-life source. No media descriptor or URL is
       // released until this exact revision-bound check succeeds.
       const isCanonicalMemoryCurrent = () => {
-        if (policyRevision === null || !canonicalMemorySnapshot) return false
+        if (!user || policyRevision === null || !canonicalMemorySnapshot) return false
         const parsed = parseSelectedMemory(canonicalMemorySnapshot, user.uid, memory.id,
           process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, policyRevision)
         return parsed.status === 'ready' && parsed.memory.privacy === 'private'
