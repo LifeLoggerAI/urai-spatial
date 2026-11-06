@@ -19,7 +19,10 @@ export async function attachOwnedMemoryFile(memory: Memory, file: FileSource, li
     || !/^[A-Za-z0-9_-]{1,128}$/.test(memory.id)) throw new Error('PRIVATE_MEMORY_REQUIRED')
   if (!Number.isSafeInteger(file.size) || file.size < 1 || file.size > MEMORY_MEDIA_MAX_BYTES || !kinds[file.type]) throw new Error('FILE_TYPE_OR_SIZE_UNSUPPORTED')
   if (expectedPreparedSha256 !== undefined && !/^[a-f0-9]{64}$/.test(expectedPreparedSha256)) throw new Error('PREPARED_MEDIA_FIXITY_INVALID')
-  if (memory.privacy === 'hidden' && (expectedPreparedSha256 === undefined || !suppliedOperationId?.startsWith('firstlife_'))) throw new Error('PREPARED_MEDIA_AUTHORITY_REQUIRED')
+  if (memory.privacy === 'hidden' && (typeof suppliedOperationId !== 'string' || !/^firstlife_[a-f0-9]{40}$/.test(suppliedOperationId)
+    || typeof expectedPreparedSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(expectedPreparedSha256))) {
+    throw new Error('FIRST_PRIVATE_MEDIA_PREPARED_AUTHORITY_REQUIRED')
+  }
   if (memory.privacy === 'private' && suppliedOperationId?.startsWith('firstlife_')) throw new Error('PREPARED_MEDIA_AUTHORITY_REQUIRED')
   const operationId = suppliedOperationId ?? `memory-media-${crypto.randomUUID()}`
   if (!/^[A-Za-z0-9_-]{1,128}$/.test(operationId)) throw new Error('OPERATION_ID_INVALID')
