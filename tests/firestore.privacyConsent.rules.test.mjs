@@ -10,7 +10,7 @@ import {
 } from '@firebase/rules-unit-testing'
 import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore'
 
-const projectId = `urai-privacy-rules-${Date.now()}`
+const projectId = 'demo-urai-firestore-owner-rules'
 const rules = fs.readFileSync(path.resolve('firebase/firestore.rules'), 'utf8')
 const ownerId = 'privacy-owner-a'
 const otherOwnerId = 'privacy-owner-b'

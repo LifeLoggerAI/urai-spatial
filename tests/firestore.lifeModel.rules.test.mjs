@@ -9,7 +9,7 @@ import {
 } from '@firebase/rules-unit-testing'
 import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 
-const projectId = `urai-life-model-rules-${Date.now()}`
+const projectId = 'demo-urai-firestore-owner-rules'
 const rules = fs.readFileSync(path.resolve('firebase/firestore.rules'), 'utf8')
 const ownerId = 'life-model-owner-a'
 const otherOwnerId = 'life-model-owner-b'

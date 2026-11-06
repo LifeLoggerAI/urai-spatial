@@ -7,7 +7,7 @@ import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebas
 import { deleteDoc, deleteField, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 
 // Real Firestore Rules emulator tests; these must not be replaced by static mocks.
-const projectId = 'urai-owner-profile-rules-' + Date.now()
+const projectId = 'demo-urai-firestore-owner-rules'
 const rules = fs.readFileSync(path.resolve('firebase/firestore.rules'), 'utf8')
 const ownerId = 'profile-owner-a'
 const otherOwnerId = 'profile-owner-b'
