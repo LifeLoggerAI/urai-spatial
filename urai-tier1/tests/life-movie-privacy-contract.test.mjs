@@ -10,7 +10,7 @@ const manifest = fs.readFileSync('../privacy/feature-manifests/life-movie.privac
 
 test('Life Movie reads the canonical owner-scoped private memories collection', () => {
   assert.match(lifeMovie, /collection\(getFirebaseDb\(\), 'users', user\.uid, 'memories'\)/)
-  assert.match(lifeMovie, /parseSelectedMemory\(item\.data\(\), user\.uid, item\.id, process\.env\.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET\)/)
+  assert.match(lifeMovie, /parseSelectedMemory\(item\.data\(\), user\.uid, item\.id, process\.env\.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, consentRevision\)/)
   assert.match(lifeMovie, /result\.memory && result\.status === 'ready'/)
 })
 
