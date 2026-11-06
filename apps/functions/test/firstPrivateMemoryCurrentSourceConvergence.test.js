@@ -1,0 +1,52 @@
+'use strict'
+const test = require('node:test')
+const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const path = require('node:path')
+const ts = require('typescript')
+
+const sourceDir = path.join(__dirname, '../src')
+const media = fs.readFileSync(path.join(sourceDir, 'memoryMedia.ts'), 'utf8')
+const create = fs.readFileSync(path.join(sourceDir, 'createFirstPrivateMemory.ts'), 'utf8')
+const index = fs.readFileSync(path.join(sourceDir, 'index.ts'), 'utf8')
+const binding = fs.readFileSync(path.join(sourceDir, 'privatePreparedMediaAuthority.ts'), 'utf8')
+const parse = (name, value) => {
+  const ast = ts.createSourceFile(name, value, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  assert.equal(ast.parseDiagnostics.length, 0, name + ' has TypeScript syntax errors')
+}
+test('converged Functions sources parse and both first-memory callables are exported', () => {
+  for (const [name, value] of [['memoryMedia.ts',media],['createFirstPrivateMemory.ts',create],['privatePreparedMediaAuthority.ts',binding]]) parse(name,value)
+  assert.match(index,/export \{ createFirstPrivateMemory \} from '\.\/createFirstPrivateMemory'/)
+  assert.match(index,/streamMemoryMediaPlayback, activateFirstPrivateMemory \} from '\.\/memoryMedia'/)
+})
+test('owner created first memory stays hidden without media until owner-confirmed upload', () => {
+  assert.match(create,/parsePreparedFirstPrivateMemory\(input\.packet, uid\)/)
+  assert.match(create,/approval\.visibility !== 'hidden'/)
+  assert.match(create,/transaction\.create\(memoryRef,/)
+  assert.match(create,/state: 'created-without-media'/)
+  assert.match(create,/consentTier !== 'C1'/)
+  assert.match(create,/deletions\.empty/)
+})
+test('prepared source is bound at both upload transactions and hidden nonprepared upload is forbidden', () => {
+  assert.equal((media.match(/assertPreparedPrivateMediaFirstUpload\(authority\.memory\.data\(\), uid, memoryId, operationId/g)||[]).length,2)
+  assert.equal((media.match(/authority\.memory\.get\('privacy'\) === 'hidden' && !operationId\.startsWith\('firstlife_'\)/g)||[]).length,2)
+  assert.match(media,/sameAuthority\(r, authority\)/)
+  assert.match(media,/preconditionOpts: \{ ifGenerationMatch: 0 \}/)
+})
+test('hidden Replay remains denied and private activation requires second owner decision and current source', () => {
+  assert.match(media,/assertFirstPrivateMemoryPlaybackBinding\(authority\.memory\.data\(\), uid, memoryId, receiptId,/)
+  assert.match(binding,/if \(selected\.privacy === 'hidden'\)/)
+  assert.match(media,/value\.confirmPrivateReplay !== true/)
+  assert.match(media,/m\.privacy !== 'hidden'/)
+  assert.match(media,/r\.state !== 'ready'/)
+  assert.match(media,/authority\.consentExpiresAt <= Date\.now\(\)/)
+  assert.match(media,/transaction\.update\(authority\.memory\.ref,/)
+  assert.match(media,/privacy: 'private'/)
+})
+test('source and media receipt rights cannot be downgraded to public sharing or unsigned attachment', () => {
+  assert.match(media,/const digest = sha\(bytes\)/)
+  assert.match(media,/storageGeneration/)
+  assert.match(binding,/activation\.mediaReceiptId !== receiptId/)
+  assert.match(binding,/activation\.consentReceiptHash !== currentConsentReceiptHash/)
+  assert.doesNotMatch(media.slice(media.indexOf('export const activateFirstPrivateMemory =')),/shareable|downloadUrl|signedUrl|base64/)
+})
