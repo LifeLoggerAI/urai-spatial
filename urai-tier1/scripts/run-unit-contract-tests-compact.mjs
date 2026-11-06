@@ -26,6 +26,7 @@ const tests = [
   'tests/lifemap-flight-orientation.test.mjs',
   'tests/lifemap-flight-key-guard.test.mjs',
   'tests/lifemap-r780-convergence-contract.test.mjs',
+  'tests/lifemap-signedout-home-return.test.mjs',
   'tests/lifemap-data-boundary.test.mjs',
   'tests/lifemap-semantic-owner-contract.test.mjs',
   'tests/lifemap-founder-harness-contract.test.mjs',

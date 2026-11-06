@@ -626,9 +626,9 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
     </nav> : null}
 
-    {!thresholdsVisible && sourceMode !== "signed-out" ? <nav className="life-map-overview-controls" aria-label="Life Map overview controls">
+    {!thresholdsVisible ? <nav className="life-map-overview-controls" aria-label="Life Map overview controls">
       <button type="button" className="overview-home-return" data-life-map-overview-home-return="true" onClick={returnHome}>Return Home</button>
-      {!recovery ? <AdamLauncherSlot name="life-map-overview-controls" as="div" /> : null}
+      {sourceMode !== "signed-out" && !recovery ? <AdamLauncherSlot name="life-map-overview-controls" as="div" /> : null}
     </nav> : null}
 
     {recovery ? <section className="life-map-recovery" role="status" aria-live="assertive">
