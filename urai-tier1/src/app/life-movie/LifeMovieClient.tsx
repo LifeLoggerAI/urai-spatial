@@ -13,6 +13,7 @@ import { createReplayMediaSession, initialReplayVideoSnapshot, type ReplayVideoS
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { lifeMovieReplayHref, type LifeMovieRuntimeChapter } from '@/spatial/life-movie/lifeMovieRuntimeContract'
 import { useLifeMovieRuntimeManifest } from '@/spatial/life-movie/useLifeMovieRuntimeManifest'
+import { useLifeMovieConsentEpoch } from '@/spatial/life-movie/useLifeMovieConsentEpoch'
 import { captionSegmentForMediaTime } from '@/spatial/life-movie/lifeMovieCaptionTimeline'
 import { revokeLifeMovieManifest, saveLifeMovieManifest } from '@/spatial/life-movie/lifeMovieManifestOperations'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
@@ -43,10 +44,17 @@ export default function LifeMovieClient() {
   const [identityReady, setIdentityReady] = useState(false)
   const requestedMemoryId = identity.memoryId
   const requestedMovieId = identity.movieId
-  const runtimeManifest = useLifeMovieRuntimeManifest(identityReady ? requestedMovieId : null)
-  const reducedMotion = useReducedMotion()
   const [user, setUser] = useState<User | null | undefined>(undefined)
-  const [memories, setMemories] = useState<SelectedMemory[]>([])
+  const consent = useLifeMovieConsentEpoch(user)
+  const consentRevision = consent.epoch.revision
+  const consentAllowed = Boolean(user && consent.isCurrent(user.uid, consentRevision))
+  // Do not even observe a private manifest until the current owner policy permits replay.
+  const runtimeManifest = useLifeMovieRuntimeManifest(identityReady && consentAllowed ? requestedMovieId : null)
+  const reducedMotion = useReducedMotion()
+  const [batch, setBatch] = useState<{ ownerId: string | null; revision: number; records: SelectedMemory[] }>(
+    { ownerId: null, revision: -1, records: [] })
+  const memories = user && consentAllowed && batch.ownerId === user.uid && batch.revision === consentRevision
+    ? batch.records : []
   const [state, setState] = useState<MovieState>({ kind: 'auth-loading', message: 'Checking private identity…' })
   const [activeIndex, setActiveIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -86,10 +94,15 @@ export default function LifeMovieClient() {
   }, [])
 
   useEffect(() => {
-    if (!identityReady || !user) return
+    if (!identityReady || !user || !consentAllowed) {
+      setBatch({ ownerId: null, revision: -1, records: [] })
+      setPlaying(false)
+      return
+    }
     if (requestedMovieId && runtimeManifest.status === 'loading') return
     let cancelled = false
-    setMemories([])
+    const stillAuthorized = () => !cancelled && consent.isCurrent(user.uid, consentRevision)
+    setBatch({ ownerId: null, revision: -1, records: [] })
     setActiveIndex(0)
     setPlaying(false)
     setState({ kind: 'loading', message: 'Assembling your Life Movie from permitted memories…' })
@@ -100,23 +113,23 @@ export default function LifeMovieClient() {
 
         if (requestedMovieId) {
           if (runtimeManifest.status !== 'ready' || !runtimeManifest.manifest) {
-            if (!cancelled) setState({ kind: 'error', message: runtimeManifest.message })
+            if (stillAuthorized()) setState({ kind: 'error', message: runtimeManifest.message })
             return
           }
 
           const ordered = await Promise.all(runtimeManifest.manifest.chapters.map(async (chapter: LifeMovieRuntimeChapter) => {
             const snapshot = await getDoc(doc(getFirebaseDb(), 'users', user.uid, 'memories', chapter.memoryId))
-            if (!snapshot.exists()) return null
-            const result = parseSelectedMemory(snapshot.data(), user.uid, chapter.memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
+            if (!snapshot.exists() || !stillAuthorized()) return null
+            const result = parseSelectedMemory(snapshot.data(), user.uid, chapter.memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, consentRevision)
             return result.memory && result.status === 'ready' ? { memory: result.memory, chapter } : null
           }))
-          if (cancelled) return
+          if (!stillAuthorized()) return
           parsed = ordered.flatMap((entry) => entry ? [entry.memory] : [])
         } else {
           const snapshot = await getDocs(query(collection(getFirebaseDb(), 'users', user.uid, 'memories'), limit(36)))
-          if (cancelled) return
+          if (!stillAuthorized()) return
           parsed = snapshot.docs.flatMap((item) => {
-            const result = parseSelectedMemory(item.data(), user.uid, item.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
+            const result = parseSelectedMemory(item.data(), user.uid, item.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, consentRevision)
             return result.memory && result.status === 'ready' ? [result.memory] : []
           })
           parsed.sort((left, right) => safeOccurredAt(right) - safeOccurredAt(left))
@@ -125,7 +138,8 @@ export default function LifeMovieClient() {
           }
         }
 
-        setMemories(parsed)
+        if (!stillAuthorized()) return
+        setBatch({ ownerId: user.uid, revision: consentRevision, records: parsed })
         if (requestedMovieId && requestedMemoryId) {
           const resumeIndex = parsed.findIndex((memory) => memory.id === requestedMemoryId)
           if (resumeIndex >= 0) setActiveIndex(resumeIndex)
@@ -136,13 +150,13 @@ export default function LifeMovieClient() {
               ? 'No authorized chapters in this Life Movie are currently playable.'
               : 'No complete private memories are available for a Life Movie yet.' })
       } catch (error) {
-        if (cancelled) return
+        if (!stillAuthorized()) return
         setState({ kind: 'error', message: error instanceof Error ? error.message : 'Your Life Movie could not be assembled.' })
       }
     })()
 
     return () => { cancelled = true }
-  }, [identityReady, requestedMemoryId, requestedMovieId, runtimeManifest, user])
+  }, [identityReady, requestedMemoryId, requestedMovieId, runtimeManifest, user, consentAllowed, consentRevision, consent.isCurrent])
 
   const active = memories[activeIndex] ?? null
   const visibility = useReplayMemoryVisibility(active)
@@ -179,12 +193,13 @@ export default function LifeMovieClient() {
     }
   }, [media?.url, timedSource])
   const togglePlayback = useCallback(() => {
+    if (!user || !consent.isCurrent(user.uid, consentRevision)) return
     if (expectsPrivateSource && ownedPlayback.status !== 'ready') return
     if (timedSource) {
       if (playing) mediaSession.current?.pause()
       else void mediaSession.current?.play()
     } else setPlaying(value => !value)
-  }, [expectsPrivateSource, ownedPlayback.status, playing, timedSource])
+  }, [expectsPrivateSource, ownedPlayback.status, playing, timedSource, user, consent.isCurrent, consentRevision])
   const chapterDurationMs = useMemo(() => {
     if (!active) return 8000
     const derived = Math.round(active.replayManifest.durationMs / Math.max(1, active.replayManifest.segments.length))
@@ -233,12 +248,15 @@ export default function LifeMovieClient() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [memories.length, togglePlayback])
 
-  if (!identityReady || user === undefined || state.kind === 'auth-loading' || state.kind === 'loading') {
+  if (!identityReady || user === undefined || state.kind === 'auth-loading' || (consentAllowed && state.kind === 'loading')) {
     return <main data-testid="life-movie-runtime" data-state={state.kind}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Your private sequence will open after identity and memory access are checked."><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-loading" as="div" /></MemoryExperienceState></main>
   }
 
   if (!user || state.kind === 'unauthenticated') {
     return <main data-testid="life-movie-runtime" data-state="unauthenticated"><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message={state.message} guidance="Sign in to open a sequence of your own memories. No personal memory content is displayed here."><a href="/login?returnTo=%2Flife-movie">Continue securely</a><a href="/life-map">Return to Life Map</a><AdamLauncherSlot name="life-movie-unavailable" as="div" /></MemoryExperienceState></main>
+  }
+  if (!consentAllowed) {
+    return <main data-testid="life-movie-runtime" data-state="unavailable"><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message="Current private-memory consent is required to open this sequence." guidance="Review your memory access permissions before opening private chapters."><a href="/privacy-controls">Privacy controls</a><a href="/life-map">Return to Life Map</a></MemoryExperienceState></main>
   }
   if (active && visibility !== 'visible') {
     return <main data-testid="life-movie-runtime" data-state={visibility === 'loading' ? 'loading' : 'unavailable'}><MemoryExperienceState title="Life Movie" journey="Your memories · Life Movie" message="This Replay memory is currently unavailable." guidance="Return to Life Map to choose an available memory. This sequence cannot display the unavailable chapter."><a href="/life-map">Return to Life Map</a></MemoryExperienceState></main>
@@ -249,7 +267,7 @@ export default function LifeMovieClient() {
   }
 
   const enterReplay = () => {
-    if (!active) return
+    if (!active || !user || !consent.isCurrent(user.uid, consentRevision)) return
     const href = activeChapter
       ? lifeMovieReplayHref(activeChapter)
       : `/replay?memoryId=${encodeURIComponent(active.id)}&from=life-movie`
@@ -269,7 +287,7 @@ export default function LifeMovieClient() {
   }
 
   const saveSequence = async () => {
-    if (!memories.length || manifestAction.kind === 'working') return
+    if (!user || !consent.isCurrent(user.uid, consentRevision) || !memories.length || manifestAction.kind === 'working') return
     const movieId = requestedMovieId ?? `life-movie-${Date.now().toString(36)}`
     setPlaying(false)
     setManifestAction({ kind: 'working', message: requestedMovieId ? 'Updating private Life Movie…' : 'Saving private Life Movie…' })
@@ -299,7 +317,7 @@ export default function LifeMovieClient() {
   }
 
   const revokeSequence = async () => {
-    if (!requestedMovieId || manifestAction.kind === 'working') return
+    if (!user || !consent.isCurrent(user.uid, consentRevision) || !requestedMovieId || manifestAction.kind === 'working') return
     setPlaying(false)
     setManifestAction({ kind: 'working', message: 'Removing private Life Movie manifest…' })
     try {
