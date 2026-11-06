@@ -107,6 +107,11 @@ function trustedChapterFromMemory(requested: RequestedChapter, snapshot: Firebas
   if (consentState === 'pending') {
     throw new functions.https.HttpsError('failed-precondition', 'Life Movie memory consent is pending.')
   }
+  // A private first recording is not movie-eligible until explicitly activated.
+  // Unknown/missing consent is not a grant, even for an otherwise owned memory.
+  if (consentState !== 'authorized' || snapshot.get('privacy') === 'hidden') {
+    throw new functions.https.HttpsError('failed-precondition', 'Life Movie memory is not authorized.')
+  }
 
   const lifeMovie = snapshot.get('lifeMovie') as Record<string, unknown> | undefined
   const rawTruthClass = String(lifeMovie?.truthClass ?? snapshot.get('truthClass') ?? 'UNKNOWN_UNRESOLVED')
@@ -162,6 +167,7 @@ function trustedChapterFromMemory(requested: RequestedChapter, snapshot: Firebas
 async function requireReadyLifeModelAuthority(
   uid: string,
   chapters: ReturnType<typeof trustedChapterFromMemory>[],
+  transaction: FirebaseFirestore.Transaction,
 ) {
   const sceneIds = [...new Set(chapters.map((chapter) => chapter.sceneTruthPacketId).filter((value): value is string => Boolean(value)))]
   if (sceneIds.length !== chapters.length) {
@@ -169,8 +175,8 @@ async function requireReadyLifeModelAuthority(
   }
   const bundleIds = [...new Set(chapters.flatMap((chapter) => chapter.personModelBundleIds))]
   const [sceneSnapshots, bundleSnapshots] = await Promise.all([
-    sceneIds.length ? db.getAll(...sceneIds.map((id) => db.doc(`users/${uid}/sceneTruthPackets/${id}`))) : [],
-    bundleIds.length ? db.getAll(...bundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`))) : [],
+    sceneIds.length ? transaction.getAll(...sceneIds.map((id) => db.doc(`users/${uid}/sceneTruthPackets/${id}`))) : [],
+    bundleIds.length ? transaction.getAll(...bundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`))) : [],
   ])
   const dependencyIds = new Set<string>(chapters.map((chapter) => chapter.memoryId))
 
@@ -216,15 +222,17 @@ export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
   const status = data?.status === 'ready' ? 'ready' : 'draft'
   const requested = requestedChapters(data?.chapters)
   const refs = requested.map((chapter) => db.doc(`users/${uid}/memories/${chapter.memoryId}`))
-  const snapshots = await db.getAll(...refs)
-  const chapters = requested.map((chapter, index) => trustedChapterFromMemory(chapter, snapshots[index]))
-  const dependencyIds = status === 'ready'
-    ? await requireReadyLifeModelAuthority(uid, chapters)
-    : [...new Set(chapters.map((chapter) => chapter.memoryId))]
-
   const ref = db.doc(`users/${uid}/lifeMovies/${movieId}`)
   await db.runTransaction(async (transaction) => {
+    // Read selected memories and ready-state dependencies in the SAME atomic
+    // transaction as the manifest write. Revocation/deletion must retry or
+    // reject the manifest, never authorize stale pre-transaction snapshots.
     const current = await transaction.get(ref)
+    const snapshots = await transaction.getAll(...refs)
+    const chapters = requested.map((chapter, index) => trustedChapterFromMemory(chapter, snapshots[index]))
+    const dependencyIds = status === 'ready'
+      ? await requireReadyLifeModelAuthority(uid, chapters, transaction)
+      : [...new Set(chapters.map((chapter) => chapter.memoryId))]
     const version = Math.max(1, Number(current.get('version') ?? 0) + 1)
     transaction.set(ref, {
       id: movieId,
@@ -247,11 +255,11 @@ export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
     ownerId: uid,
     kind: 'life_movie.manifest_upserted',
     movieId,
-    chapterCount: chapters.length,
+    chapterCount: requested.length,
     recordedAt: admin.firestore.FieldValue.serverTimestamp(),
   })
 
-  return { movieId, status, chapterCount: chapters.length }
+  return { movieId, status, chapterCount: requested.length }
 })
 
 export const revokeLifeMovieManifest = lifeMovieFunctions.https.onCall(async (data, context) => {
