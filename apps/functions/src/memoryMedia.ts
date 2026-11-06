@@ -5,7 +5,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
 import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 import { resolveMemoryMediaProject } from './memoryMediaProjectBoundary'
-import { assertPreparedPrivateMediaFirstUpload, assertFirstPrivateMemoryPlaybackBinding } from './privatePreparedMediaAuthority'
+import { assertPreparedPrivateMediaFirstUpload, assertFirstPrivateMemoryPlaybackBinding, assertPreparedPrivateMediaUploadAuthority } from './privatePreparedMediaAuthority'
 import { chargeExportValue, requireExportReadBudget, type ExportReadBudget } from './exportPagination'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -232,10 +232,16 @@ export const getMemoryMediaUploadAuthority = functions.https.onCall(async (data,
   playbackProject()
   const { uid, requireAuthentication } = authenticatedOwner(context), value = row(data), memoryId = id(value.memoryId)
   if (Object.keys(value).some(key => key !== 'memoryId')) fail('MEMORY_MEDIA_AUTHORITY_REQUEST_INVALID')
+  const check = () => db.runTransaction(async transaction => {
+    const authority = await readOwner(transaction, uid, memoryId)
+    try { assertPreparedPrivateMediaUploadAuthority(authority.memory.data()) }
+    catch { fail('FIRST_PRIVATE_MEDIA_BINDING_INVALID') }
+    return authority
+  })
   await requireAuthentication()
-  await db.runTransaction(transaction => readOwner(transaction, uid, memoryId))
+  await check()
   await requireAuthentication()
-  const current = await db.runTransaction(transaction => readOwner(transaction, uid, memoryId))
+  const current = await check()
   return { schemaVersion: SCHEMA, ownerId: uid, memoryId, consentRevision: current.consentRevision, expiresAt: current.consentExpiresAt }
 })
 
