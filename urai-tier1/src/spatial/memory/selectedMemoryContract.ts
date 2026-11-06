@@ -209,7 +209,7 @@ export function buildExplicitDemoMemory(id: string): SelectedMemory {
   }
 }
 
-export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerId: string, id: string, trustedStorageBucket?: string | null): SelectedMemoryResult {
+export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerId: string, id: string, trustedStorageBucket?: string | null, currentConsentRevision?: number): SelectedMemoryResult {
   if (raw.deleted === true) return { status: 'deleted', memory: null, message: 'This memory was deleted.' }
   if (raw.consentState === 'revoked') return { status: 'unauthorized', memory: null, message: 'Consent for this memory was revoked.' }
   if (raw.consentState === 'pending') return { status: 'unauthorized', memory: null, message: 'Consent for this memory is pending.' }
@@ -259,6 +259,8 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
       || promotion.consentReceiptHash !== confirmation.canonicalConsentReceiptHash
       || !Number.isSafeInteger(promotion.consentRevision) || Number(promotion.consentRevision) < 1
       || promotion.consentRevision !== confirmation.consentRevision
+      || !Number.isSafeInteger(currentConsentRevision) || Number(currentConsentRevision) < 1
+      || promotion.consentRevision !== currentConsentRevision
       || media.kind !== 'audio' || !sha256(media.mediaReceiptId)
       || promotion.mediaReceiptId !== media.mediaReceiptId) {
       return { status: 'unauthorized', memory: null, message: 'Private memory activation has not been verified.' }
