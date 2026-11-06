@@ -216,6 +216,14 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
   const ownerId = stringValue(raw.ownerId ?? raw.userId)
   if (!ownerId || ownerId !== expectedOwnerId) return { status: 'unauthorized', memory: null, message: 'This memory is not available to this account.' }
 
+  // A hidden first-life memory has not received its separate owner-confirmed
+  // private Replay activation. Even an owner-supplied direct Focus/Replay link
+  // must not turn its title, narrator, source or star into visible content.
+  // The server independently checks current C1, receipt and activation for bytes.
+  if (raw.privacy === 'hidden') {
+    return { status: 'unauthorized', memory: null, message: 'This memory is not available for Focus or Replay.' }
+  }
+
   const title = stringValue(raw.title)
   const occurredAt = isoDateValue(raw.occurredAt)
   const summary = stringValue(raw.summary)
