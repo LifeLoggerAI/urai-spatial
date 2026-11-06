@@ -75,7 +75,13 @@ test('prepared first-life source is admitted only after exact owner-confirmed pr
       consentRevision: 7, consentReceiptHash: receiptHash,
     },
   }
-  assert.equal(parseSelectedMemory(accepted, ownerId, id).status, 'ready')
+  assert.equal(parseSelectedMemory(accepted, ownerId, id, undefined, 7).status, 'ready')
+  // Stale, renewed or absent policy epochs never restore activated media metadata.
+  for (const revision of [undefined, 0, 6, 8, Number.NaN]) {
+    const result = parseSelectedMemory(accepted, ownerId, id, undefined, revision)
+    assert.equal(result.status, 'unauthorized')
+    assert.equal(result.memory, null)
+  }
   const denied = [
     { ...accepted, privacy: 'hidden' },
     { ...accepted, privacy: 'shareable' },
