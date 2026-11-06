@@ -41,6 +41,14 @@ function fixture({existing=null,revokeBeforeCommit=false}={}){
   if(name==='firebase-admin')return admin
   if(name==='firebase-functions/v1')return functions
   if(name==='node:crypto')return require('node:crypto')
+    if(name==='./privatePreparedMediaAuthority'){
+      const helper=fs.readFileSync(path.join(__dirname,'../src/privatePreparedMediaAuthority.ts'),'utf8')
+      const compiledHelper=ts.transpileModule(helper,{compilerOptions:{
+        module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
+      const moduleHelper={exports:{}}
+      vm.runInNewContext(compiledHelper,{module:moduleHelper,exports:moduleHelper.exports,require})
+      return moduleHelper.exports
+    }
   if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy:p=>p?.version===2 && p?.ownerId===uid}
   throw Error('UNEXPECTED_IMPORT_'+name)
  },URL,Date,Math,Number,Set})

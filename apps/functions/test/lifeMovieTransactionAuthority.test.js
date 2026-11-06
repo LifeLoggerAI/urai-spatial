@@ -51,6 +51,14 @@ function setup({state='authorized',privacy='private',beforeTransaction=()=>{},re
     if(name==='firebase-admin')return admin
     if(name==='firebase-functions/v1')return functions
     if(name==='node:crypto')return require('node:crypto')
+    if(name==='./privatePreparedMediaAuthority'){
+      const helper=fs.readFileSync(path.join(__dirname,'../src/privatePreparedMediaAuthority.ts'),'utf8')
+      const compiledHelper=ts.transpileModule(helper,{compilerOptions:{
+        module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
+      const moduleHelper={exports:{}}
+      vm.runInNewContext(compiledHelper,{module:moduleHelper,exports:moduleHelper.exports,require})
+      return moduleHelper.exports
+    }
     if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy:p=>p?.version===2 && p?.ownerId===uid}
     throw Error('unexpected dependency '+name)
   },URL,Set,Number,Math,Date}, {filename:'lifeMovie.ts'})
@@ -96,4 +104,53 @@ test('source retains audit, ownership and revoke callable',()=>{
   assert.match(source,/consentState !== 'authorized'/)
   assert.match(source,/transaction\.getAll\(\.\.\.refs\)/)
   assert.doesNotMatch(source,/db\.getAll\(/)
+})
+
+function preparedReadySource(f, { revision=4, receiptHash='a'.repeat(64), attached=true, active=true }={}) {
+  const uid='syntheticOwner', memoryId='syntheticMemory', receiptId='b'.repeat(64), derivative='c'.repeat(64)
+  const record=f.docs.get(f.memoryPath)
+  f.docs.set(f.memoryPath, { ...record,
+    sourceProvenance: {authenticity:'source-derivative-not-generated-autobiography',derivativeSha256:derivative},
+    sourceMedia:attached ? [{kind:'audio',mediaReceiptId:receiptId}] : [],
+    firstPrivateMemoryConsent:{status:'explicit-owner-confirmation'},
+    ...(active ? {firstPrivateMemoryActivation:{
+      status:'explicit-owner-private-replay',ownerId:uid,memoryId,mediaReceiptId:receiptId,
+      derivativeSha256:derivative,consentRevision:revision,consentReceiptHash:receiptHash
+    }} : {})
+  })
+}
+test('READY prepared source with current owner activation is admitted',async()=>{
+  const f=setup({ready:true});preparedReadySource(f)
+  await f.run()
+  assert.equal(f.stats().wrote,1)
+})
+test('READY prepared source with stale activation revision is rejected',async()=>{
+  const f=setup({ready:true});preparedReadySource(f,{revision:3})
+  await assert.rejects(f.run(),e=>e.code==='failed-precondition')
+  assert.equal(f.stats().wrote,0)
+})
+test('READY prepared source with renewed consent receipt hash is rejected',async()=>{
+  const f=setup({ready:true});preparedReadySource(f,{receiptHash:'d'.repeat(64)})
+  await assert.rejects(f.run(),e=>e.code==='failed-precondition')
+  assert.equal(f.stats().wrote,0)
+})
+test('READY prepared source missing explicit activation is rejected',async()=>{
+  const f=setup({ready:true});preparedReadySource(f,{active:false})
+  await assert.rejects(f.run(),e=>e.code==='failed-precondition')
+  assert.equal(f.stats().wrote,0)
+})
+test('READY prepared source missing activated receipt attachment is rejected',async()=>{
+  const f=setup({ready:true});preparedReadySource(f,{attached:false})
+  await assert.rejects(f.run(),e=>e.code==='failed-precondition')
+  assert.equal(f.stats().wrote,0)
+})
+test('DRAFT prepared source stays draft-eligible without private playback activation',async()=>{
+  const f=setup();preparedReadySource(f,{active:false,attached:false})
+  await f.run()
+  assert.equal(f.stats().wrote,1)
+})
+test('READY replay check shares the original protected-media guard instead of a substitute',()=>{
+  assert.match(source,/assertFirstPrivateMemoryPlaybackBinding\(memory, uid, memoryId, receiptId, epoch\.revision, epoch\.receiptHash\)/)
+  assert.match(source,/if \(status === 'ready'\)/)
+  assert.match(source,/requirePreparedChapterReplayBinding\(snapshot, uid, requested\[index\]\.memoryId, consentEpoch\)/)
 })
