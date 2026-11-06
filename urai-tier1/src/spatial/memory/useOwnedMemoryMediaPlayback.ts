@@ -44,6 +44,18 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
       let policyRevision: number | null = null, deletionGeneration: number | null = null
       let consentSnapshot: { receiptHash: string; expiresAt: number } | null = null
       let sourceSnapshot: Record<string, unknown> | null = null
+      let canonicalMemorySnapshot: Record<string, unknown> | null = null
+      // The selected-memory parser requires the LIVE policy revision to admit an
+      // explicitly activated first-life source. No media descriptor or URL is
+      // released until this exact revision-bound check succeeds.
+      const isCanonicalMemoryCurrent = () => {
+        if (policyRevision === null || !canonicalMemorySnapshot) return false
+        const parsed = parseSelectedMemory(canonicalMemorySnapshot, user.uid, memory.id,
+          process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, policyRevision)
+        return parsed.status === 'ready' && parsed.memory.privacy === 'private'
+          && parsed.memory.sourceMediaReceipts?.some(item =>
+            item.mediaReceiptId === receipt.mediaReceiptId && item.kind === receipt.kind) === true
+      }
       const readSourceSnapshot = (): Record<string, unknown> | null => sourceSnapshot
       const loaded = new Set<number>()
       let finishSnapshots: () => void = () => {}
@@ -93,7 +105,8 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
       const revalidate = async () => {
         try {
           const next = await resolve()
-          if (!current() || next.sourceAuthorityHash !== admitted?.sourceAuthorityHash) { deny(); return }
+          if (!current() || !isCanonicalMemoryCurrent()
+            || next.sourceAuthorityHash !== admitted?.sourceAuthorityHash) { deny(); return }
           armExpiry(next); poll = setTimeout(() => void revalidate(), 30_000)
         } catch { deny() }
       }
@@ -122,9 +135,19 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
       })
       watch(['users', user.uid, 'memories', memory.id], data => {
         if (!data) return false
-        const parsed = parseSelectedMemory(data, user.uid, memory.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
-        return parsed.status === 'ready' && parsed.memory?.privacy === 'private'
-          && parsed.memory.sourceMediaReceipts?.some(item => item.mediaReceiptId === receipt.mediaReceiptId && item.kind === receipt.kind) === true
+        canonicalMemorySnapshot = data
+        if (policyRevision !== null) return isCanonicalMemoryCurrent()
+        // Firestore can deliver the memory before the policy. This only enrolls
+        // a provisional owner-bound snapshot in the six-watch barrier: it does
+        // NOT authorize callable playback, bytes, or a generated object URL.
+        const media = data.sourceMedia
+        return (data.ownerId ?? data.userId) === user.uid && data.privacy === 'private'
+          && data.deleted !== true && !['pending', 'revoked'].includes(String(data.consentState))
+          && Array.isArray(media) && media.some((item: unknown) => {
+            if (!item || typeof item !== 'object' || Array.isArray(item)) return false
+            const value = item as { kind?: unknown; mediaReceiptId?: unknown }
+            return value.kind === receipt.kind && value.mediaReceiptId === receipt.mediaReceiptId
+          })
       })
       watch(['users', user.uid, 'privacyPolicy', 'current'], data => {
         if (!data || data.ownerId !== user.uid || data.version !== 2 || !Number.isSafeInteger(data.revision) || Number(data.revision) < 1
@@ -133,7 +156,8 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
           || (data.enforcement as { state?: unknown } | undefined)?.state !== 'fully-enforced'
           || (policyRevision !== null && data.revision !== policyRevision)) return false
         policyRevision = Number(data.revision)
-        return !sourceSnapshot || sourceSnapshot.consentRevision === policyRevision
+        return (!canonicalMemorySnapshot || isCanonicalMemoryCurrent())
+          && (!sourceSnapshot || sourceSnapshot.consentRevision === policyRevision)
       })
       watch(['users', user.uid, 'privacyRuntime', 'exportAuthority'], data => {
         const next = data ? data.generation : 0
@@ -161,7 +185,7 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
       void (async () => {
         try {
           await snapshotsReady
-          if (!current()) return
+          if (!current() || !isCanonicalMemoryCurrent()) { deny(); return }
           admitted = await resolve(); armExpiry(admitted)
           const observed = readSourceSnapshot()
           if (!observed || observed.sha256 !== admitted.sha256 || observed.storageGeneration !== admitted.storageGeneration
@@ -169,7 +193,8 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
           const blob = await fetchOwnedMemoryPlayback(admitted, projectId, { signal: controller.signal, isCurrent: current,
             requestHeaders: async () => { const token = await user.getIdToken(true); if (!current()) throw new Error('PRIVATE_MEDIA_AUTHORITY_CHANGED'); return { Authorization: `Bearer ${token}` } } })
           const after = await resolve()
-          if (!current() || after.sourceAuthorityHash !== admitted.sourceAuthorityHash) { deny(); return }
+          if (!current() || !isCanonicalMemoryCurrent()
+            || after.sourceAuthorityHash !== admitted.sourceAuthorityHash) { deny(); return }
           armExpiry(after)
           objectUrl = URL.createObjectURL(blob)
           setPlayback({ key, status: 'ready', media: [{ kind: receipt.kind, url: objectUrl, caption: receipt.caption }] })
