@@ -95,6 +95,7 @@ const focusedContractTests = [
   'tests/public-estate-constellation-contract.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
   'tests/replay-media-teardown-faults.test.mjs',
+  'tests/owner-session-fence.test.mjs',
   'tests/security-boundary-contract.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',

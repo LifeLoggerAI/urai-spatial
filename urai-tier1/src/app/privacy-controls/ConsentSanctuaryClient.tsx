@@ -21,6 +21,7 @@ import {
   type PrivacyRow,
 } from '@/lib/privacy/operationalPrivacyClient'
 import { OperationalExportDownloadSession, type OperationalExportRequest } from '@/lib/privacy/authorizedExportDownload'
+import { ownerSessionMatches } from '@/lib/privacy/ownerSessionFence'
 import {
   consequenceSummary,
   defaultConsentPolicy,
@@ -240,6 +241,11 @@ export default function ConsentSanctuaryClient() {
   const params = useMemo(() => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search), [])
   const explicitDemo = params.get('demo') === '1'
   const authEpoch = useRef(0)
+  const [connectionEpoch, setConnectionEpoch] = useState(0)
+  const ownerSessionCurrent = (uid: string | null | undefined, epoch: number) => ownerSessionMatches({
+    initiatingUid: uid, currentUid: getAuth(app).currentUser?.uid,
+    initiatingEpoch: epoch, currentEpoch: authEpoch.current, online: navigator.onLine,
+  })
   const [user, setUser] = useState<User | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [policy, setPolicy] = useState<ConsentPolicy>(() => unresolvedPolicy())
@@ -265,6 +271,11 @@ export default function ConsentSanctuaryClient() {
 
   useEffect(() => {
     const online = () => {
+      authEpoch.current += 1
+      exportDownloads.current?.stop(); setExportDownloading(false)
+      exportAuthorityRevision.current = null; setPolicy(unresolvedPolicy()); setReceipts([]); setExports([]); setDeletions([])
+      setPending(null); setMutationState('idle'); setDeletionConfirmation(''); setOperationBusy(false)
+      setConnectionEpoch(value => value + 1)
       if (explicitDemo) {
         setLoadState('demo')
         setMessage('DEMONSTRATION — no personal data. Controls cannot write production state.')
@@ -279,7 +290,14 @@ export default function ConsentSanctuaryClient() {
         setMessage('Connection restored. Rechecking server authority…')
       }
     }
-    const offline = () => { exportDownloads.current?.stop(); setExportDownloading(false); setLoadState('offline'); setMessage('Offline. No change can be represented as saved or enforced.') }
+    const offline = () => {
+      authEpoch.current += 1
+      exportDownloads.current?.stop(); setExportDownloading(false)
+      exportAuthorityRevision.current = null; setPolicy(unresolvedPolicy()); setReceipts([]); setExports([]); setDeletions([])
+      setPending(null); setMutationState('idle'); setDeletionConfirmation(''); setOperationBusy(false)
+      setShowAudit(false); setLoadState('offline')
+      setMessage('Offline. Private consent state is hidden until current owner authority can be verified.')
+    }
     window.addEventListener('online', online)
     window.addEventListener('offline', offline)
     return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline) }
@@ -335,7 +353,7 @@ export default function ConsentSanctuaryClient() {
     if (!user || explicitDemo || loadState === 'signed-out' || loadState === 'unavailable' || loadState === 'offline') return
     let active = true
     const epoch = authEpoch.current
-    const current = () => active && epoch === authEpoch.current && navigator.onLine
+    const current = () => active && ownerSessionCurrent(user.uid, epoch)
     const policyRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current')
     const unsubscribe = onSnapshot(policyRef, (snapshot) => {
       if (!current()) return
@@ -376,20 +394,20 @@ export default function ConsentSanctuaryClient() {
       setMessage('The consent authority could not be read. No private state was replaced with demo data.')
     })
     return () => { active = false; unsubscribe() }
-  }, [user, explicitDemo, loadState])
+  }, [user, explicitDemo, loadState, connectionEpoch])
 
   useEffect(() => {
     if (!user || explicitDemo) return
     let active = true
     const epoch = authEpoch.current
-    const current = () => active && epoch === authEpoch.current
+    const current = () => active && ownerSessionCurrent(user.uid, epoch)
     const unsubscribers = [
       subscribeOperationalUserCollection('privacyReceipts', user.uid, (rows) => { if (current()) setReceipts(rows) }, () => { if (current()) setMessage('Audit receipts are temporarily unavailable.') }),
       subscribeOperationalUserCollection('exportJobs', user.uid, (rows) => { if (current()) setExports(rows) }, () => { if (current()) setMessage('Export status is temporarily unavailable.') }),
       subscribeOperationalUserCollection('deletionJobs', user.uid, (rows) => { if (current()) setDeletions(rows) }, () => { if (current()) setMessage('Deletion status is temporarily unavailable.') }),
     ]
     return () => { active = false; unsubscribers.forEach((unsubscribe) => unsubscribe()) }
-  }, [user, explicitDemo])
+  }, [user, explicitDemo, connectionEpoch])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -425,7 +443,7 @@ export default function ConsentSanctuaryClient() {
 
   const confirmChange = async () => {
     const epoch = authEpoch.current
-    if (!pending || !user || loadState !== 'private') return
+    if (!pending || !user || loadState !== 'private' || !ownerSessionCurrent(user.uid, epoch)) return
     setMutationState('requested')
     setMessage('Requesting a revision-controlled policy change…')
     try {
@@ -434,13 +452,13 @@ export default function ConsentSanctuaryClient() {
         next: pending.next as unknown as Record<string, unknown>,
         expectedRevision: policy.revision,
       })
-      if (epoch !== authEpoch.current) return
+      if (!ownerSessionCurrent(user?.uid, epoch)) return
       setPending(null)
       setMutationState('pending')
-      if (epoch !== authEpoch.current) return
+      if (!ownerSessionCurrent(user?.uid, epoch)) return
       setMessage(`Request accepted. Enforcement job ${String(result.jobId ?? '').slice(0, 10)} is pending; no completion is claimed yet.`)
     } catch (error) {
-      if (epoch !== authEpoch.current) return
+      if (!ownerSessionCurrent(user?.uid, epoch)) return
       const code = errorCode(error)
       setMutationState(code === 'conflict' ? 'conflict' : 'failed')
       setMessage(code === 'conflict' ? 'Another session changed this policy first. Current server authority must be reloaded.' : 'The change was not accepted. The prior server policy remains authoritative.')
@@ -449,21 +467,21 @@ export default function ConsentSanctuaryClient() {
 
   const requestExport = async () => {
     const epoch = authEpoch.current
-    if (loadState !== 'private' || exportScopes.length === 0) return
+    if (loadState !== 'private' || exportScopes.length === 0 || !ownerSessionCurrent(user?.uid, epoch)) return
     setOperationBusy(true)
     try {
       const result = await createOperationalExportRequest(exportScopes)
-      if (epoch !== authEpoch.current) return
+      if (!ownerSessionCurrent(user?.uid, epoch)) return
       setMessage(`Export ${String(result.jobId ?? '').slice(0, 10)} queued. It is not ready until the server reports ready.`)
     } catch (error) {
-      if (epoch !== authEpoch.current) return
+      if (!ownerSessionCurrent(user?.uid, epoch)) return
       setMessage(errorCode(error) === 'reauth' ? 'Recent reauthentication is required before an export can begin.' : 'Export request failed. No file was created or represented as ready.')
-    } finally { if (epoch === authEpoch.current) setOperationBusy(false) }
+    } finally { if (ownerSessionCurrent(user?.uid, epoch)) setOperationBusy(false) }
   }
 
   const requestDeletion = async () => {
     const epoch = authEpoch.current
-    if (loadState !== 'private') return
+    if (loadState !== 'private' || !ownerSessionCurrent(user?.uid, epoch)) return
     const required = DELETION_SCOPES.find(([scope]) => scope === deletionScope)?.[2] ?? 'CONFIRM DELETE'
     if (deletionConfirmation !== required) { setMessage(`Type “${required}” exactly to confirm this scope.`); return }
     exportDownloads.current?.stop()
@@ -471,32 +489,32 @@ export default function ConsentSanctuaryClient() {
     setOperationBusy(true)
     try {
       const result = await createOperationalDeletionRequest({ scope: deletionScope, confirmation: deletionConfirmation })
-      if (epoch !== authEpoch.current) return
+      if (!ownerSessionCurrent(user?.uid, epoch)) return
       setDeletionConfirmation('')
-      if (epoch !== authEpoch.current) return
+      if (!ownerSessionCurrent(user?.uid, epoch)) return
       setMessage(`Deletion ${String(result.jobId ?? '').slice(0, 10)} entered ${String(result.state)}. Completion is not claimed until the trusted job reports completed.`)
     } catch (error) {
-      if (epoch !== authEpoch.current) return
+      if (!ownerSessionCurrent(user?.uid, epoch)) return
       setMessage(errorCode(error) === 'reauth' ? 'Recent reauthentication is required before deletion can begin.' : 'Deletion request failed. No data was represented as deleted.')
-    } finally { if (epoch === authEpoch.current) setOperationBusy(false) }
+    } finally { if (ownerSessionCurrent(user?.uid, epoch)) setOperationBusy(false) }
   }
 
   const downloadExport = async (request: OperationalExportRequest) => {
     const epoch = authEpoch.current
-    if (loadState !== 'private' || !user || !navigator.onLine) return
+    if (loadState !== 'private' || !user || !ownerSessionCurrent(user.uid, epoch)) return
     const session = exportDownloads.current!
     setExportDownloading(true)
-    const transfer = session.download(request, () => epoch === authEpoch.current && navigator.onLine, downloadOperationalExportBytes)
+    const transfer = session.download(request, () => ownerSessionCurrent(user.uid, epoch), downloadOperationalExportBytes)
     const attempt = session.revision
     try {
       await transfer
-      if (epoch === authEpoch.current && attempt === session.revision) setMessage('Verified export transfer started. Files saved to your device remain under your control.')
+      if (ownerSessionCurrent(user.uid, epoch) && attempt === session.revision) setMessage('Verified export transfer started. Files saved to your device remain under your control.')
     } catch (error) {
-      if (epoch !== authEpoch.current || attempt !== session.revision) return
+      if (!ownerSessionCurrent(user.uid, epoch) || attempt !== session.revision) return
       setMessage(error instanceof DOMException && error.name === 'AbortError' ? 'Export transfer stopped.' :
         error instanceof Error && error.message === 'EXPORT_TOO_LARGE' ? 'This transfer supports exports up to 64 MiB. Request a smaller scope or contact support.' :
         'Secure download was not authorized. Request a current export; no file was opened.')
-    } finally { if (epoch === authEpoch.current && attempt === session.revision) setExportDownloading(session.active) }
+    } finally { if (ownerSessionCurrent(user.uid, epoch) && attempt === session.revision) setExportDownloading(session.active) }
   }
 
   const selected = policy.domains[selectedDomain]
@@ -544,7 +562,7 @@ export default function ConsentSanctuaryClient() {
         <p>Choose scope. Tokens, credentials, raw secret fields and legally excepted records are excluded.</p>
         <div className="consentToggleGrid">{EXPORT_SCOPES.map((scope) => <label key={scope}><input type="checkbox" disabled={loadState !== 'private' || operationBusy} checked={exportScopes.includes(scope)} onChange={(event) => setExportScopes((items) => event.target.checked ? [...new Set([...items, scope])] : items.filter((item) => item !== scope))} /><span>{scope}</span></label>)}</div>
         <div className="consentActions"><button type="button" disabled={loadState !== 'private' || operationBusy || exportScopes.length === 0} onClick={() => void requestExport()}>Request export</button></div>
-        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" disabled={exportDownloading} onClick={() => void downloadExport({ jobId: job.id })}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" disabled={exportDownloading} onClick={() => void downloadExport({ jobId: job.id, file: 'runtime', assetId })}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
+        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" disabled={exportDownloading} onClick={() => void downloadExport({ jobId: job.id })}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" disabled={exportDownloading} onClick={() => void downloadExport({ jobId: job.id, file: 'runtime', assetId })}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => { if (loadState === 'private' && ownerSessionCurrent(user?.uid, authEpoch.current)) void cancelOperationalExportRequest(job.id) }}>Cancel</button>}</li>)}</ol>
 
         <hr />
         <h3>Scoped deletion</h3>
@@ -552,7 +570,7 @@ export default function ConsentSanctuaryClient() {
         <label className="consentRetention"><span>Deletion scope</span><select value={deletionScope} disabled={loadState !== 'private' || operationBusy} onChange={(event) => { setDeletionScope(event.target.value); setDeletionConfirmation('') }}>{DELETION_SCOPES.map(([scope, label]) => <option key={scope} value={scope}>{label}</option>)}</select></label>
         <label><span>Type {requiredDeletionText}</span><input value={deletionConfirmation} disabled={loadState !== 'private' || operationBusy} onChange={(event) => setDeletionConfirmation(event.target.value)} /></label>
         <div className="consentActions"><button type="button" disabled={loadState !== 'private' || operationBusy} onClick={() => void requestDeletion()}>Create deletion request</button></div>
-        <ol>{deletions.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {String(job.scope)} {['queued', 'awaiting-grace'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalDeletionRequest(job.id)}>Cancel</button>}</li>)}</ol>
+        <ol>{deletions.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {String(job.scope)} {['queued', 'awaiting-grace'].includes(String(job.state)) && <button type="button" onClick={() => { if (loadState === 'private' && ownerSessionCurrent(user?.uid, authEpoch.current)) void cancelOperationalDeletionRequest(job.id) }}>Cancel</button>}</li>)}</ol>
       </section>
 
       <aside className="consentOrb" aria-label="Enforcement status"><strong>{policy.enforcement.state}</strong><p>{policy.enforcement.affectedTargets.length ? `${policy.enforcement.affectedTargets.length} connected targets` : 'No active propagation job'}</p><small>Animations reflect the server state; they never prove backend completion.</small><div className="consentCompanion"><AdamLauncherSlot name="privacy-enforcement" /></div></aside>
