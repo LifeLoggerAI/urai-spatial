@@ -252,4 +252,3 @@ test('individual owner confirmation cannot be replaced by valid packet and C1 al
   await reject(f,/FIRST_PRIVATE_MEMORY_OWNER_CONFIRMATION_REQUIRED/)
   assert.equal(f.stats().readCount,0)
 })
-
