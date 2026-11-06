@@ -302,6 +302,9 @@ async function requireCurrentLifeMovieC1(
     || !activeDeletions.empty || barrier.get('blocked') === true) deny()
   if (central.exists) {
     const marker = central.data() ?? {}, keys = Object.keys(marker)
+    // active:false is only released when no unresolved deletion metadata remains.
+    const inactive = marker.active === false && keys.every(k => ['uid', 'active', 'updatedAt'].includes(k))
+      && (!keys.includes('updatedAt') || marker.updatedAt instanceof admin.firestore.Timestamp)
     const released = !keys.includes('active') && keys.every(k => ['uid', 'updatedAt'].includes(k))
       && marker.updatedAt instanceof admin.firestore.Timestamp
     const projection = !keys.includes('active') && keys.every(k => ['uid', 'updatedAt', 'exportConsentStatus',
@@ -311,7 +314,7 @@ async function requireCurrentLifeMovieC1(
       && marker.exportConsentPolicyVersion === '1.0.0'
       && Number.isSafeInteger(exportExpiryMillis(marker.exportConsentExpiresAt))
     if (marker.uid !== uid || keys.some(k => k.startsWith('deletionPlanningLease'))
-      || (marker.active !== false && !released && !projection)) deny()
+      || (!inactive && !released && !projection)) deny()
   }
   if (permanent.exists && (permanent.get('ownerHash') !== hash(uid)
     || permanent.get('deleted') !== false || permanent.get('deletionEpoch') !== 0)) deny()

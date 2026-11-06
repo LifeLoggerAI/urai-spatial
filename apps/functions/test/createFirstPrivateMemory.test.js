@@ -252,3 +252,20 @@ test('individual owner confirmation cannot be replaced by valid packet and C1 al
   await reject(f,/FIRST_PRIVATE_MEMORY_OWNER_CONFIRMATION_REQUIRED/)
   assert.equal(f.stats().readCount,0)
 })
+
+// R813: explicit inactive must not hide unresolved, noncanonical deletion metadata.
+test('a contradictory inactive deletion fence fails closed for first-memory creation', async()=>{
+  for(const marker of [
+    {uid,active:false,status:'deletion_in_progress',requestId:'unfinished'},
+    {uid,active:false,updatedAt:'malformed'},
+    {uid,active:false,unrecognizedLease:'pending'}
+  ]) {
+    const f=fixture(true);f.documents.set(`privacyDeletionTombstones/${uid}`,marker)
+    await reject(f,/CURRENT_AUTHORITY_REQUIRED/)
+  }
+})
+test('a minimal confirmed inactive fence retains current C1 first-memory creation',async()=>{
+  const f=fixture(true);f.documents.set(`privacyDeletionTombstones/${uid}`,{uid,active:false})
+  const result=await f.run()
+  assert.equal(result.state,'created-without-media')
+})

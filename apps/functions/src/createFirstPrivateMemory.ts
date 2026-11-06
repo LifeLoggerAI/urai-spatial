@@ -77,6 +77,9 @@ export const createFirstPrivateMemory = functions.https.onCall(async (data, cont
       || barrier.get('blocked') === true) fail('FIRST_PRIVATE_MEMORY_CURRENT_AUTHORITY_REQUIRED')
     if (central.exists) {
       const marker = central.data() ?? {}, keys = Object.keys(marker)
+      // active:false is only released when no unresolved deletion metadata remains.
+      const inactive = marker.active === false && keys.every(key => ['uid', 'active', 'updatedAt'].includes(key))
+        && (!keys.includes('updatedAt') || marker.updatedAt instanceof Timestamp)
       const released = !keys.includes('active') && keys.every(key => ['uid', 'updatedAt'].includes(key))
         && marker.updatedAt instanceof Timestamp
       const exportProjection = !keys.includes('active') && keys.every(key => ['uid', 'updatedAt', 'exportConsentStatus',
@@ -85,7 +88,7 @@ export const createFirstPrivateMemory = functions.https.onCall(async (data, cont
         && SHA.test(String(marker.exportConsentReceiptHash)) && marker.exportConsentPolicyVersion === '1.0.0'
         && Number.isSafeInteger(expiration(marker.exportConsentExpiresAt))
       if (marker.uid !== uid || keys.some(key => key.startsWith('deletionPlanningLease'))
-        || (marker.active !== false && !released && !exportProjection)) fail('FIRST_PRIVATE_MEMORY_CURRENT_AUTHORITY_REQUIRED')
+        || (!inactive && !released && !exportProjection)) fail('FIRST_PRIVATE_MEMORY_CURRENT_AUTHORITY_REQUIRED')
     }
     if (permanent.exists && (permanent.get('ownerHash') !== hash(uid) || permanent.get('deleted') !== false
       || permanent.get('deletionEpoch') !== 0)) fail('FIRST_PRIVATE_MEMORY_CURRENT_AUTHORITY_REQUIRED')
