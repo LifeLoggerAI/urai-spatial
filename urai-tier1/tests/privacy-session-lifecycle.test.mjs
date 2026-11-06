@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
+import ts from 'typescript'
+import { ownerSessionMatches } from '../src/lib/privacy/ownerSessionFence.ts'
 
 // Execute the actual subscription effects with controlled auth and delivery order.
 // No Firebase/network calls or private account data are used by this regression.
@@ -18,7 +20,7 @@ const run = (body, env) => new Function(...Object.keys(env), body)(...Object.val
 for (const [name, source, stateKey] of [['Passport', passport, 'State'], ['Consent', consent, 'LoadState']]) {
   for (const mode of ['demo', 'signed-out', 'unavailable', 'private']) {
     test(`${name} reconnect restores ${mode} authority without a permanent loading state`, () => {
-      const { env, state } = fixture()
+      const { env, state } = fixture(source)
       const listeners = {}
       env.explicitDemo = mode === 'demo'
       env.firebasePublicEnvReady = mode !== 'unavailable'
@@ -32,6 +34,7 @@ for (const [name, source, stateKey] of [['Passport', passport, 'State'], ['Conse
       assert.equal(state[stateKey], 'offline')
       listeners.online()
       assert.equal(state[stateKey], mode === 'private' ? 'loading' : mode)
+      assert.equal(state.ConnectionEpoch, 1, 'reconnect restarts source subscriptions')
       cleanup()
       assert.deepEqual(listeners, {})
     })
@@ -40,13 +43,13 @@ for (const [name, source, stateKey] of [['Passport', passport, 'State'], ['Conse
 const unresolvedSource = consent.slice(consent.indexOf('function unresolvedPolicy()'), consent.indexOf('function demoPolicy()'))
 const unresolvedPolicy = new Function(`${unresolvedSource.replaceAll(': ConsentPolicy', '').replaceAll(': ConsentDomainPolicy', '')}; return unresolvedPolicy`)()
 
-function fixture() {
-  const state = {}
+function fixture(source = passport) {
+  const state = { ConnectionEpoch: 0 }
   const env = {
     explicitDemo: false, firebasePublicEnvReady: true, app: {},
     user: { uid: 'owner-a' }, state: 'loading', loadState: 'loading',
     authEpoch: { current: 1 }, exportDownloads: { current: { stop: () => { state.transferStops = (state.transferStops ?? 0) + 1 } } }, exportAuthorityRevision: { current: null }, navigator: { onLine: true },
-    getAuth: () => ({}), getFirebaseDb: () => ({}), doc: (...args) => args,
+    getAuth: () => ({ currentUser: env.user }), getFirebaseDb: () => ({}), doc: (...args) => args,
     unresolvedPolicy,
     list: (value) => Array.isArray(value) ? value : [],
     record: value => value && typeof value === 'object' ? value : {},
@@ -57,12 +60,19 @@ function fixture() {
   for (const name of ['User', 'Snapshot', 'Exports', 'Deletions', 'Receipts', 'Confirmation', 'Busy', 'State', 'Message', 'Policy', 'Pending', 'MutationState', 'DeletionConfirmation', 'OperationBusy', 'ShowAudit', 'LoadState', 'ExportDownloading']) {
     env[`set${name}`] = (value) => { state[name] = value }
   }
+  env.setConnectionEpoch = value => { state.ConnectionEpoch = typeof value === 'function' ? value(state.ConnectionEpoch) : value }
+  // Execute this component's actual session guard with the real pure authority
+  // predicate. Keep SDK currentUser mutable so pre-auth-callback races are tested.
+  const declaration = source.match(/  const ownerSessionCurrent = ([\s\S]*?\n  \}\))/)?.[1]
+  assert.ok(declaration, 'actual owner session guard must exist')
+  const guard = ts.transpileModule('const guard = ' + declaration, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
+  env.ownerSessionCurrent = run(guard + '\nreturn guard', { ...env, ownerSessionMatches })
   return { env, state }
 }
 
 for (const [name, source] of [['Passport', passport], ['Consent', consent]]) {
   test(`${name} unmount invalidates pending export authority and stops its session`, () => {
-    const { env, state } = fixture()
+    const { env, state } = fixture(source)
     const cleanupSource = source.match(/useEffect\(\(\) => \(\) => \{ ([^\n]+) \}, \[\]\)/)?.[1]
     assert.ok(cleanupSource, 'actual unmount effect must own pending-transfer cleanup')
     const prior = env.authEpoch.current
@@ -71,7 +81,7 @@ for (const [name, source] of [['Passport', passport], ['Consent', consent]]) {
     assert.equal(state.transferStops, 1)
   })
   test(`${name} clears private history and confirmation on sign-out and account switch`, () => {
-    const { env, state } = fixture()
+    const { env, state } = fixture(source)
     run(effect(source, 'onAuthStateChanged'), env)
     for (const nextUser of [null, { uid: 'owner-b' }]) {
       Object.assign(state, { Snapshot: { owner: 'owner-a' }, Receipts: ['private'], Exports: ['private'], Deletions: ['private'], Confirmation: 'confirmed', DeletionConfirmation: 'confirmed', Pending: { domain: 'memory' } })
@@ -94,7 +104,7 @@ for (const [name, source] of [['Passport', passport], ['Consent', consent]]) {
   })
 
   test(`${name} ignores prior-owner collection events before cleanup and after cleanup`, () => {
-    const { env, state } = fixture()
+    const { env, state } = fixture(source)
     const callbacks = []
     env.subscribeOperationalUserCollection = (_name, _uid, success, error) => {
       callbacks.push({ success, error }); return () => {}
@@ -139,7 +149,7 @@ test('Passport ignores a snapshot that completes after the browser goes offline'
 })
 
 test('Consent cannot regain writable authority from an offline queued snapshot', () => {
-  const { env, state } = fixture()
+  const { env, state } = fixture(consent)
   let callback
   env.onSnapshot = (_ref, next) => { callback = next; return () => {} }
   const cleanup = run(effect(consent, 'const policyRef'), env)
@@ -152,7 +162,7 @@ test('Consent cannot regain writable authority from an offline queued snapshot',
 
 test('Consent never reports a missing or invalid server policy as enforced', () => {
   for (const snapshot of [{ exists: () => false, data: () => undefined }, { exists: () => true, data: () => ({ ownerId: 'wrong-owner', version: 2 }) }]) {
-    const { env, state } = fixture()
+    const { env, state } = fixture(consent)
     env.onSnapshot = (_ref, callback) => { callback(snapshot); return () => {} }
     run(effect(consent, 'const policyRef'), env)
     assert.equal(state.LoadState, 'unavailable')
@@ -163,7 +173,7 @@ test('Consent never reports a missing or invalid server policy as enforced', () 
 })
 
 test('Consent ignores a queued prior-owner policy and fails closed on read errors', () => {
-  const { env, state } = fixture()
+  const { env, state } = fixture(consent)
   let success, error
   env.onSnapshot = (_ref, onSuccess, onError) => { success = onSuccess; error = onError; return () => {} }
   const cleanup = run(effect(consent, 'const policyRef'), env)
@@ -179,7 +189,7 @@ test('Consent ignores a queued prior-owner policy and fails closed on read error
 
 for (const [name, source] of [['Passport', passport], ['Consent', consent]]) {
   test(`${name} does not report an old export job in the next account`, async () => {
-    const { env, state } = fixture()
+    const { env, state } = fixture(source)
     let resolve
     Object.assign(env, { canOperate: true, loadState: 'private', exportScopes: ['consent'],
       createOperationalExportRequest: () => new Promise((done) => { resolve = done }),
@@ -196,7 +206,7 @@ for (const [name, source] of [['Passport', passport], ['Consent', consent]]) {
 }
 
 test('Consent accepts a valid current-owner policy without replacing server authority', () => {
-  const { env, state } = fixture()
+  const { env, state } = fixture(consent)
   const policy = { ...unresolvedPolicy(), ownerId: 'owner-a', revision: 17 }
   env.onSnapshot = (_ref, callback) => { callback({ exists: () => true, data: () => policy }); return () => {} }
   run(effect(consent, 'const policyRef'), env)
@@ -204,3 +214,24 @@ test('Consent accepts a valid current-owner policy without replacing server auth
   assert.equal(state.LoadState, 'private')
   assert.equal(state.MutationState, 'pending')
 })
+
+for (const [name, source] of [['Passport', passport], ['Consent', consent]]) {
+  test(`${name} rejects collection delivery when SDK owner changes before auth callback`, () => {
+    const { env, state } = fixture(source)
+    const callbacks = []
+    env.subscribeOperationalUserCollection = (_name, _uid, success, error) => {
+      callbacks.push({ success, error }); return () => {}
+    }
+    const cleanup = run(effect(source, 'const unsubscribers'), env)
+    callbacks[0].success([{ id: 'current-owner-record' }])
+    const before = structuredClone(state)
+    const epoch = env.authEpoch.current
+    env.user = { uid: 'owner-b' }
+    for (const callback of callbacks) {
+      callback.success([{ id: 'stale-private-record' }]); callback.error()
+    }
+    assert.equal(env.authEpoch.current, epoch, 'auth listener has not delivered yet')
+    assert.deepEqual(state, before)
+    cleanup()
+  })
+}
