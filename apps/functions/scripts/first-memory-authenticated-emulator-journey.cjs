@@ -2,6 +2,7 @@
 // Synthetic four-Firebase-emulator lifecycle extension. No live users or IAM-positive byte acceptance.
 const assert = require('node:assert/strict')
 const crypto = require('node:crypto')
+const { generateDecodableSyntheticOgg } = require('./synthetic-decodable-audio.cjs')
 const sha = value => crypto.createHash('sha256').update(value).digest('hex')
 const phases = ['memory','emotion','pattern','return']
 
@@ -9,9 +10,7 @@ function makeFixture(uid, memoryId = 'fictional_first_memory') {
   assert.match(uid, /^[A-Za-z0-9_-]{1,128}$/)
   assert.match(memoryId, /^[A-Za-z0-9_-]{1,128}$/)
   const original = Buffer.from('Fictional offline source for Firebase emulator only. No private memories.\n')
-  const audio = Buffer.alloc(112)
-  audio.write('OggS', 0, 'ascii')
-  for (let i = 4; i < audio.length; i++) audio[i] = (i * 17) % 251
+  const audio = generateDecodableSyntheticOgg()
   const originalSha256 = sha(original), derivativeSha256 = sha(audio)
   const operationId = 'firstlife_' + sha(uid+'\n'+memoryId+'\n'+derivativeSha256).slice(0, 40)
   const occurredAtBasis = 'archive-time-proxy-not-capture-date'
