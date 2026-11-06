@@ -5,6 +5,22 @@ const SHA256 = /^[a-f0-9]{64}$/
 const OPERATION = /^firstlife_[a-f0-9]{40}$/
 const asRow = (value: unknown): RecordLike => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as RecordLike : {}
 
+/** The upload-authority preview must use the same selected-memory consent
+ * boundary as the actual prepared source upload. This does not establish
+ * account C1, owner identity, or deletion authority; readOwner must do that. */
+export function assertPreparedPrivateMediaUploadAuthority(memory: unknown): void {
+  const selected = asRow(memory)
+  const source = asRow(selected.sourceProvenance)
+  const prepared = Object.prototype.hasOwnProperty.call(source, 'derivativeSha256')
+    || source.authenticity === 'source-derivative-not-generated-autobiography'
+    || Object.prototype.hasOwnProperty.call(selected, 'firstPrivateMemoryConsent')
+    || Object.prototype.hasOwnProperty.call(selected, 'firstPrivateMemoryActivation')
+  if (!prepared) return // Ordinary legacy records retain their existing admission contract.
+  if (selected.consentState !== 'authorized' || (selected.sourceMedia !== undefined && !Array.isArray(selected.sourceMedia))) {
+    throw new Error('FIRST_PRIVATE_MEDIA_BINDING_INVALID')
+  }
+}
+
 /** A trusted Firestore memory can bind its FIRST audio attachment to an offline
  * prepared derivative. This does not grant consent or create a private memory.
  * The caller must separately verify current Auth, C1, deletion fences and owner.

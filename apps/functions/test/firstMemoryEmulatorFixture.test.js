@@ -11,7 +11,7 @@ const make = () => makeFixture(uid, 'fictional_first_memory')
 test('prepared emulator first-memory source is deterministic and synthetic', () => {
   const a = make(), b = make()
   assert.deepEqual(a.packet,b.packet); assert.deepEqual(a.audio,b.audio)
-  assert.equal(a.audio.length,112); assert.equal(a.audio.toString('ascii',0,4),'OggS')
+  assert.ok(a.audio.length>512 && a.audio.length<4*1024*1024); assert.equal(a.audio.toString('ascii',0,4),'OggS')
   assert.equal(a.packet.recordedTruth.claimedReconstruction,false)
   assert.equal(a.packet.recordedTruth.claimedLifeMovieAcceptance,false)
 })
@@ -67,4 +67,19 @@ test('the real existing four-emulator proof calls the lifecycle before Auth toke
   assert.ok(begin>=0 && revoke>begin,'LIFECYCLE_NOT_ENROLLED_BEFORE_AUTH_REVOKE')
   assert.match(src,/firstMemoryLifecycle\.positivePrivatePlaybackAccepted, false/)
   assert.match(src,/firstMemoryLifecycle\.deletionCertified, false/)
+})
+
+test('six-second synthetic Ogg contains genuine decodable Vorbis packets, not only magic bytes',()=>{
+  const {spawnSync}=require('node:child_process')
+  const f=make()
+  const probe=spawnSync('ffprobe',['-v','error','-show_entries','stream=codec_name','-of','json','pipe:0'],
+    {input:f.audio,encoding:'utf8',timeout:10000})
+  assert.equal(probe.status,0,String(probe.stderr))
+  assert.ok(JSON.parse(probe.stdout).streams?.some(s=>s.codec_name==='vorbis'))
+  // Seekless Ogg outputs do not carry reliable duration metadata; count full decoded PCM samples.
+  const decoded=spawnSync('ffmpeg',['-hide_banner','-v','error','-nostdin','-i','pipe:0',
+    '-ac','1','-ar','16000','-f','s16le','pipe:1'],
+    {input:f.audio,timeout:10000,maxBuffer:1024*1024})
+  assert.equal(decoded.status,0,String(decoded.stderr))
+  assert.equal(decoded.stdout.length,6*16000*2,'synthetic audio must decode exactly six seconds')
 })
