@@ -47,7 +47,7 @@ function setup({grant='granted',mode='granted',deleted=false,pending=false,expir
     if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy}
     throw Error('unexpected import '+name)
   }})
- return {check:status=>module.exports.__guard(tx,uid,status),count:()=>count}
+ return {check:status=>module.exports.__guard(tx,uid,status),count:()=>count,docs}
 }
 test('valid current C1 can admit draft',async()=>{await assert.doesNotReject(setup().check('draft'))})
 test('missing/revoked/paused C1 denies',async()=>{for(const grant of ['revoked','paused','unexpected'])await assert.rejects(setup({grant}).check('draft'),e=>e.code==='failed-precondition')})
@@ -67,4 +67,23 @@ test('malformed or missing C7 projection expiry never bypasses deletion fence au
 test('C7 expiry has canonical parser and planning tombstone targets UID document',()=>{
  assert.match(text,/function exportExpiryMillis\(value: unknown\)/)
  assert.match(text,/Number\.isSafeInteger\(exportExpiryMillis\(marker\.exportConsentExpiresAt\)\)/)
+})
+
+// R813: reject any unrecognized keys on purportedly released privacy deletion fences.
+test('an inactive tombstone carrying deletion-in-progress metadata cannot admit Life Movie',async()=>{
+ for(const marker of [
+  {uid,active:false,status:'deletion_in_progress',requestId:'unfinished'},
+  {uid,active:false,updatedAt:'malformed'},
+  {uid,active:false,unexpectedNestedField:{state:'processing'}}
+ ]) {
+  const f=setup();f.docs.set('privacyDeletionTombstones/'+uid,marker)
+  await assert.rejects(f.check('draft'),e=>e.code==='failed-precondition')
+  await assert.rejects(f.check('ready'),e=>e.code==='failed-precondition')
+ }
+})
+test('a minimal inactive tombstone does not block valid C1 or C7 Life Movie',async()=>{
+ const f=setup();f.docs.set('privacyDeletionTombstones/'+uid,{uid,active:false})
+ await assert.doesNotReject(f.check('draft'))
+ await assert.doesNotReject(f.check('ready'))
+ for(const status of ['draft','ready'])await assert.doesNotReject(setup({c7Projection:true}).check(status))
 })

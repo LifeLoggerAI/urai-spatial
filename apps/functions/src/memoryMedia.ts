@@ -81,6 +81,9 @@ async function readOwner(transaction: FirebaseFirestore.Transaction, uid: string
   // export and delivery. Only the canonical released forms grant authority.
   if (central.exists) {
     const marker = central.data() ?? {}, keys = Object.keys(marker)
+    // active:false is only released when no unresolved deletion metadata remains.
+    const inactive = marker.active === false && keys.every(key => ['uid', 'active', 'updatedAt'].includes(key))
+      && (!keys.includes('updatedAt') || marker.updatedAt instanceof Timestamp)
     const released = !keys.includes('active') && keys.every(key => ['uid', 'updatedAt'].includes(key))
       && marker.updatedAt instanceof Timestamp
     // Canonical C7 consent projects into this same document without an active
@@ -91,7 +94,7 @@ async function readOwner(transaction: FirebaseFirestore.Transaction, uid: string
       && SHA.test(String(marker.exportConsentReceiptHash)) && marker.exportConsentPolicyVersion === '1.0.0'
       && Number.isSafeInteger(millis(marker.exportConsentExpiresAt))
     if (marker.uid !== uid || keys.some(key => key.startsWith('deletionPlanningLease'))
-      || (marker.active !== false && !released && !exportProjection)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
+      || (!inactive && !released && !exportProjection)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
   }
   if (permanent.exists && (permanent.get('ownerHash') !== sha(uid) || permanent.get('deleted') !== false
     || permanent.get('deletionEpoch') !== 0)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
@@ -408,6 +411,9 @@ async function playbackReceipt(transaction: FirebaseFirestore.Transaction, uid: 
   if (policy.get('domains.memory.replayVisible') !== true) fail('MEMORY_MEDIA_REPLAY_NOT_AUTHORIZED')
   if (central.exists) {
     const marker = central.data() ?? {}, keys = Object.keys(marker)
+    // active:false is only released when no unresolved deletion metadata remains.
+    const inactive = marker.active === false && keys.every(key => ['uid', 'active', 'updatedAt'].includes(key))
+      && (!keys.includes('updatedAt') || marker.updatedAt instanceof Timestamp)
     const released = !keys.includes('active') && keys.every(key => ['uid', 'updatedAt'].includes(key))
       && marker.updatedAt instanceof Timestamp
     // Canonical C7 consent projects into this same document without an active
@@ -418,7 +424,7 @@ async function playbackReceipt(transaction: FirebaseFirestore.Transaction, uid: 
       && SHA.test(String(marker.exportConsentReceiptHash)) && marker.exportConsentPolicyVersion === '1.0.0'
       && Number.isSafeInteger(millis(marker.exportConsentExpiresAt))
     if (marker.uid !== uid || keys.some(key => key.startsWith('deletionPlanningLease'))
-      || (marker.active !== false && !released && !exportProjection)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
+      || (!inactive && !released && !exportProjection)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
   }
   if (permanent.exists && (permanent.get('ownerHash') !== sha(uid) || permanent.get('deleted') !== false
     || permanent.get('deletionEpoch') !== 0)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
