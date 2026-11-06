@@ -8,6 +8,7 @@ const focusedContractTests = [
   'tests/trusted-speech-source-ports.test.mjs',
   'tests/speech-purpose-lease-contract.test.mjs',
   'tests/owned-memory-media-client.test.mjs',
+  'tests/hidden-first-private-memory-focus-denial.test.mjs',
   'tests/import-first-prepared-memory.test.mjs',
   'tests/r786-first-private-media-bridge.test.mjs',
   'tests/prepare-first-private-memory.test.mjs',
