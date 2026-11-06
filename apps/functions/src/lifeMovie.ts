@@ -1,5 +1,7 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { createHash } from 'node:crypto'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -216,6 +218,64 @@ async function requireReadyLifeModelAuthority(
   return [...dependencyIds]
 }
 
+// Life Movie catalog admission must not outlive the current owner's C1 grant.
+// This uses the SAME transaction as chapter snapshots and the manifest write.
+async function requireCurrentLifeMovieC1(
+  transaction: FirebaseFirestore.Transaction, uid: string, status: 'draft' | 'ready',
+): Promise<void> {
+  const hash = (value: string) => createHash('sha256').update(value).digest('hex')
+  const [owner, policySnap, receiptSnap, central, local, barrier, permanent, consentBlock] = await transaction.getAll(
+    db.doc(`users/${uid}`),
+    db.doc(`users/${uid}/privacyPolicy/current`),
+    db.doc(`consentRecords/${uid}_memory_storage`),
+    db.doc(`privacyDeletionTombstones/${uid}`),
+    db.doc(`users/${uid}/privacyRuntime/exportAuthority`),
+    db.doc(`privateLifeModelOwnerBarriers/${hash(uid)}`),
+    db.doc(`uraiPrivateLifeModelOwnerFences/${hash(uid)}`),
+    db.doc(`jobConsentBlocks/${hash(uid + '\n' + 'memory.storage')}`),
+  )
+  const activeDeletions = await transaction.get(
+    db.collection(`users/${uid}/deletionJobs`)
+      .where('state', 'in', ['awaiting-grace', 'queued', 'in-progress', 'failed']).limit(1),
+  )
+  const policy = policySnap.data(), c = receiptSnap.data()
+  const rawExpiry = c?.expiresAt
+  const expiry = typeof rawExpiry === 'string'
+    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(rawExpiry)
+    && Number.isFinite(Date.parse(rawExpiry)) && new Date(rawExpiry).toISOString() === rawExpiry
+      ? Date.parse(rawExpiry) : Number.NaN
+  const pending = local.get('pendingDeletions'), generation = local.exists ? local.get('generation') : 0
+  const deny = () => { throw new functions.https.HttpsError('failed-precondition', 'Current Life Movie memory consent is unavailable.') }
+  if (!owner.exists || owner.get('deleted') === true || ['deleting', 'deleted', 'disabled'].includes(String(owner.get('accountStatus')))
+    || !policySnap.exists || !isCanonicalStoredPolicy(policy, uid) || policy.revision < 1
+    || policy.domains.memory.mode !== 'granted' || policy.enforcement.state !== 'fully-enforced'
+    || (status === 'ready' && (policy.domains.memory.replayVisible !== true || policy.domains.memory.lifeMapVisible !== true))
+    || !receiptSnap.exists || c?.uid !== uid || c.purpose !== 'memory.storage'
+    || c.consentTier !== 'C1' || c.policyVersion !== '1.0.0' || c.status !== 'granted'
+    || !/^[a-f0-9]{64}$/.test(String(c.receiptHash)) || !Number.isSafeInteger(expiry) || expiry <= Date.now()
+    || !Number.isSafeInteger(generation) || generation < 0
+    || (local.exists && (!pending || typeof pending !== 'object' || Array.isArray(pending)))
+    || (pending && Object.keys(pending).length > 0)
+    || !activeDeletions.empty || barrier.get('blocked') === true) deny()
+  if (central.exists) {
+    const marker = central.data() ?? {}, keys = Object.keys(marker)
+    const released = !keys.includes('active') && keys.every(k => ['uid', 'updatedAt'].includes(k))
+      && marker.updatedAt instanceof admin.firestore.Timestamp
+    const projection = !keys.includes('active') && keys.every(k => ['uid', 'updatedAt', 'exportConsentStatus',
+      'exportConsentReceiptHash', 'exportConsentPolicyVersion', 'exportConsentExpiresAt'].includes(k))
+      && ['granted', 'revoked'].includes(String(marker.exportConsentStatus))
+      && /^[a-f0-9]{64}$/.test(String(marker.exportConsentReceiptHash))
+      && marker.exportConsentPolicyVersion === '1.0.0'
+      && typeof marker.exportConsentExpiresAt === 'string'
+    if (marker.uid !== uid || keys.some(k => k.startsWith('deletionPlanningLease'))
+      || (marker.active !== false && !released && !projection)) deny()
+  }
+  if (permanent.exists && (permanent.get('ownerHash') !== hash(uid)
+    || permanent.get('deleted') !== false || permanent.get('deletionEpoch') !== 0)) deny()
+  if (consentBlock.exists && (consentBlock.get('ownerUid') !== uid
+    || consentBlock.get('purpose') !== 'memory.storage' || consentBlock.get('active') !== false)) deny()
+}
+
 export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   const movieId = requireToken(data?.movieId, 'movieId')
@@ -227,6 +287,7 @@ export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
     // Read selected memories and ready-state dependencies in the SAME atomic
     // transaction as the manifest write. Revocation/deletion must retry or
     // reject the manifest, never authorize stale pre-transaction snapshots.
+    await requireCurrentLifeMovieC1(transaction, uid, status)
     const current = await transaction.get(ref)
     // A revoked movie ID cannot be silently resurrected by an upsert.
     // Both revocation and re-authoring read/write this same document in

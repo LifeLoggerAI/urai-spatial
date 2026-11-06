@@ -11,18 +11,21 @@ const uid='syntheticOwner', movieId='syntheticMovie',memoryId='syntheticMemory'
 const moviePath='users/'+uid+'/lifeMovies/'+movieId,memoryPath='users/'+uid+'/memories/'+memoryId
 function fixture({existing=null,revokeBeforeCommit=false}={}){
  const records=new Map([[memoryPath,{ownerId:uid,deleted:false,consentState:'authorized',privacy:'private'}]])
+ records.set('users/'+uid,{accountStatus:'active'})
+ records.set('users/'+uid+'/privacyPolicy/current',{version:2,revision:4,ownerId:uid,domains:{memory:{mode:'granted',replayVisible:true,lifeMapVisible:true}},enforcement:{state:'fully-enforced'}})
+ records.set('consentRecords/'+uid+'_memory_storage',{uid,purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:'a'.repeat(64),expiresAt:'2030-01-01T00:00:00.000Z'})
  if(existing)records.set(moviePath,{...existing})
  const counts={writes:0,audits:0,retries:0}
  let interfered=false
  const ref=p=>({path:p,id:p.split('/').at(-1)})
- const snap=r=>{const row=records.get(r.path);return {exists:row!==undefined,ref:{...r,parent:{parent:{id:uid}}},get:k=>row?.[k]}}
+ const snap=r=>{const row=records.get(r.path);return {exists:row!==undefined,ref:{...r,parent:{parent:{id:uid}}},get:k=>row?.[k],data:()=>row}}
  const db={doc:ref,getAll:async()=>{throw Error('UNSAFE_NONTRANSACTIONAL_READ')},
- collection:()=>({add:async()=>{counts.audits++}}),
+ collection:()=>({add:async()=>{counts.audits++},where:()=>({limit:()=>({query:true})})}),
  runTransaction:async callback=>{
   for(let attempt=0;attempt<3;attempt++){
    const reads=new Map(),staged=[]
    const read=r=>{reads.set(r.path,JSON.stringify(records.get(r.path)));return snap(r)}
-   const tx={get:async r=>read(r),getAll:async(...refs)=>refs.map(read),
+   const tx={get:async r=>r.query ? {empty:true} : read(r),getAll:async(...refs)=>refs.map(read),
     set:(r,data)=>staged.push([r.path,data,false]),update:(r,data)=>staged.push([r.path,data,true])}
    const result=await callback(tx)
    if(revokeBeforeCommit&&!interfered){interfered=true;records.set(moviePath,{...records.get(moviePath),consentState:'revoked',revokedAt:'race'})}
@@ -37,6 +40,8 @@ function fixture({existing=null,revokeBeforeCommit=false}={}){
  vm.runInNewContext(compiled,{module:mod,exports:mod.exports,require:name=>{
   if(name==='firebase-admin')return admin
   if(name==='firebase-functions/v1')return functions
+  if(name==='node:crypto')return require('node:crypto')
+  if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy:p=>p?.version===2 && p?.ownerId===uid}
   throw Error('UNEXPECTED_IMPORT_'+name)
  },URL,Date,Math,Number,Set})
  return {records,counts,upsert:()=>mod.exports.upsertLifeMovieManifest({movieId,status:'draft',chapters:[{id:'chapter1',memoryId,order:0}]},{auth:{uid}}),
