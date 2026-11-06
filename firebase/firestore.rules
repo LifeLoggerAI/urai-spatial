@@ -104,15 +104,18 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if isSelf(uid) || isAdmin();
+      // Owner profile writes must never introduce or modify trusted authority
+      // and account-lifecycle fields. affectedKeys() covers additions, removals
+      // AND edits; changedKeys() alone misses adding privileged fields.
       allow create: if isSelf(uid)
-        && !('entitlementTier' in request.resource.data)
-        && !('isAdmin' in request.resource.data)
-        && !('founderOverride' in request.resource.data)
+        && !request.resource.data.keys().hasAny([
+          'entitlementTier', 'isAdmin', 'founderOverride', 'deleted', 'accountStatus'
+        ])
         && isPrivateSpatialPayloadSafe();
       allow update: if isSelf(uid)
-        && !('entitlementTier' in request.resource.data.diff(resource.data).changedKeys())
-        && !('isAdmin' in request.resource.data.diff(resource.data).changedKeys())
-        && !('founderOverride' in request.resource.data.diff(resource.data).changedKeys())
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'entitlementTier', 'isAdmin', 'founderOverride', 'deleted', 'accountStatus'
+        ])
         && isPrivateSpatialPayloadSafe();
       allow delete: if false;
 
