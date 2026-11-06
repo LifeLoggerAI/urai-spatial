@@ -55,7 +55,7 @@ test('canonical denied or limited memory mode denies',async()=>{for(const mode o
 test('deleted owner and active privacy deletion fence deny',async()=>{for(const options of [{deleted:true},{pending:true},{planning:true}])await assert.rejects(setup(options).check('draft'),e=>e.code==='failed-precondition')})
 test('expired or malformed grant denies',async()=>{for(const expiry of ['2020-01-01T00:00:00.000Z','malformed'])await assert.rejects(setup({expiry}).check('draft'),e=>e.code==='failed-precondition')})
 test('READY requires both Replay and Life Map visibility',async()=>{for(const options of [{replayVisible:false},{lifeMapVisible:false}])await assert.rejects(setup(options).check('ready'),e=>e.code==='failed-precondition')})
-test('manifest source enforces current C1 inside transactional update',()=>{assert.match(text,/await requireCurrentLifeMovieC1\(transaction, uid, status\)/);assert.match(text,/transaction\.set\(ref,/);assert.doesNotMatch(text,/db\.getAll\(/)})
+test('manifest source enforces current C1 inside transactional update',()=>{assert.match(text,/const consentEpoch = await requireCurrentLifeMovieC1\(transaction, uid, status\)/);assert.match(text,/transaction\.set\(ref,/);assert.doesNotMatch(text,/db\.getAll\(/)})
 test('canonical C7 export projection remains compatible with Life Movie C1 admission',async()=>{
  for(const c7Expiry of ['2030-01-01T00:00:00.000Z','valid-sdk-timestamp'])
    await assert.doesNotReject(setup({c7Projection:true,c7Expiry}).check('draft'))
