@@ -75,7 +75,7 @@ test('prepared first-life source is admitted only after exact owner-confirmed pr
       consentRevision: 7, consentReceiptHash: receiptHash,
     },
   }
-  assert.equal(parseSelectedMemory(accepted, ownerId, id).status, 'ready')
+  assert.equal(parseSelectedMemory(accepted, ownerId, id, undefined, 7).status, 'ready')
   const denied = [
     { ...accepted, privacy: 'hidden' },
     { ...accepted, privacy: 'shareable' },
