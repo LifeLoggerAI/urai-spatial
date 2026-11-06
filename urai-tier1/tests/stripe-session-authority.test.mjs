@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { beforeEach, after } from 'node:test';
-import { registerHooks } from 'node:module';
-import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import { registerHooks, stripTypeScriptTypes } from 'node:module';
+import { mkdtempSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,6 +38,10 @@ const hooks = registerHooks({
     return nextResolve(specifier, context);
   },
   load(url, context, nextLoad) {
+    // Synchronous alias resolution bypasses tsx's asynchronous source loader.
+    if (url.startsWith('file:') && url.endsWith('.ts')) {
+      return { format: 'module', source: stripTypeScriptTypes(readFileSync(fileURLToPath(url), 'utf8')), shortCircuit: true };
+    }
     if (!url.startsWith('urai-stripe-authority-fixture:')) return nextLoad(url, context);
     const kind = url.slice('urai-stripe-authority-fixture:'.length);
     let source;
