@@ -86,6 +86,7 @@ export const createFirstPrivateMemory = functions.https.onCall(async (data, cont
         'exportConsentReceiptHash', 'exportConsentPolicyVersion', 'exportConsentExpiresAt'].includes(key))
         && ['granted', 'revoked'].includes(String(marker.exportConsentStatus))
         && SHA.test(String(marker.exportConsentReceiptHash)) && marker.exportConsentPolicyVersion === '1.0.0'
+        && (!keys.includes('updatedAt') || marker.updatedAt instanceof Timestamp)
         && Number.isSafeInteger(expiration(marker.exportConsentExpiresAt))
       if (marker.uid !== uid || keys.some(key => key.startsWith('deletionPlanningLease'))
         || (!inactive && !released && !exportProjection)) fail('FIRST_PRIVATE_MEMORY_CURRENT_AUTHORITY_REQUIRED')
