@@ -71,3 +71,16 @@ test('the same real media owner guard serves upload, playback, export and cleanu
  assert.match(text,/async function playbackReceipt[\s\S]*readOwner\(transaction, uid, memoryId\)/)
  assert.match(text,/verifyMemoryMediaExportAuthorities[\s\S]*readOwner\(transaction, uid, memoryId\)/)
 })
+
+
+test('media owner authority rejects malformed optional updatedAt on otherwise valid C7 projection',async()=>{
+ const projection={uid,exportConsentStatus:'granted',exportConsentReceiptHash:'a'.repeat(64),
+   exportConsentPolicyVersion:'1.0.0',exportConsentExpiresAt:'2030-01-01T00:00:00.000Z'}
+ await assert.doesNotReject(fixture(projection).read())
+ const valid=fixture(projection)
+ valid.data.get(markerPath).updatedAt=new valid.Timestamp(Date.now())
+ await assert.doesNotReject(valid.read())
+ for(const updatedAt of ['bogus',null,1700000000000,{toMillis:()=>Date.now()}]){
+  await assert.rejects(fixture({...projection,updatedAt}).read(),e=>e.code==='failed-precondition')
+ }
+})

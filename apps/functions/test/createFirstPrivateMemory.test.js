@@ -106,7 +106,7 @@ function fixture(realPacket=false) {
   const context={auth:{uid},rawRequest:{get:k=>k==='authorization'?'Bearer fictional-jwt':undefined}}
   const data={packet:realPacket?packet():{fake:'only'},ownerConfirmation:{authorize:true,memoryId,derivativeSha256:digest,visibility:'hidden'}}
   const run=()=>module.exports.createFirstPrivateMemory(data,context)
-  return {run,context,data,documents,queries,policy,consent,writes,uid,memoryId,digest,
+  return {run,context,data,documents,queries,policy,consent,writes,uid,memoryId,digest,Timestamp:FakeTimestamp,
     stats:()=>({readCount,verified,createCount}),token:val=>{token=val},onVerify:cb=>{beforeVerify=cb},project:()=>{deniedProject=true},parse:()=>{throwParse=true}}
 }
 const reject=async (f,pattern)=>{await assert.rejects(f.run(),x=>{assert.equal(x.code,'failed-precondition');assert.match(x.message,pattern);return true});assert.equal(f.writes.length,0)}
@@ -268,4 +268,26 @@ test('a minimal confirmed inactive fence retains current C1 first-memory creatio
   const f=fixture(true);f.documents.set(`privacyDeletionTombstones/${uid}`,{uid,active:false})
   const result=await f.run()
   assert.equal(result.state,'created-without-media')
+})
+
+
+test('C7 projection refuses malformed optional updatedAt on first-memory admission',async()=>{
+ for(const updatedAt of ['bogus',null,1700000000000]){
+  const f=fixture(true)
+  f.documents.set(`privacyDeletionTombstones/${uid}`,{
+   uid,exportConsentStatus:'granted',exportConsentReceiptHash:'a'.repeat(64),
+   exportConsentPolicyVersion:'1.0.0',exportConsentExpiresAt:'2030-01-01T00:00:00.000Z',updatedAt
+  })
+  await reject(f,/CURRENT_AUTHORITY_REQUIRED/)
+ }
+ const f=fixture(true)
+ f.documents.set(`privacyDeletionTombstones/${uid}`,{
+  uid,exportConsentStatus:'granted',exportConsentReceiptHash:'a'.repeat(64),
+  exportConsentPolicyVersion:'1.0.0',exportConsentExpiresAt:'2030-01-01T00:00:00.000Z'
+ })
+ await assert.doesNotReject(f.run())
+ const current=fixture(true)
+ current.documents.set(`privacyDeletionTombstones/${uid}`,{uid,exportConsentStatus:'granted',exportConsentReceiptHash:'a'.repeat(64),
+  exportConsentPolicyVersion:'1.0.0',exportConsentExpiresAt:'2030-01-01T00:00:00.000Z',updatedAt:new current.Timestamp()})
+ await assert.doesNotReject(current.run())
 })

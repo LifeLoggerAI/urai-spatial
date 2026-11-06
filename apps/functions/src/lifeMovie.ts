@@ -312,7 +312,8 @@ async function requireCurrentLifeMovieC1(
       && ['granted', 'revoked'].includes(String(marker.exportConsentStatus))
       && /^[a-f0-9]{64}$/.test(String(marker.exportConsentReceiptHash))
       && marker.exportConsentPolicyVersion === '1.0.0'
-      && Number.isSafeInteger(exportExpiryMillis(marker.exportConsentExpiresAt))
+      && (!keys.includes('updatedAt') || marker.updatedAt instanceof admin.firestore.Timestamp)
+        && Number.isSafeInteger(exportExpiryMillis(marker.exportConsentExpiresAt))
     if (marker.uid !== uid || keys.some(k => k.startsWith('deletionPlanningLease'))
       || (!inactive && !released && !projection)) deny()
   }
