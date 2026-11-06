@@ -14,6 +14,9 @@ function setup({state='authorized',privacy='private',beforeTransaction=()=>{},re
   const moviePath='users/'+uid+'/lifeMovies/'+movieId
   const docs=new Map([[memoryPath,{ownerId:uid,deleted:false,consentState:state,privacy,
     lifeMovie:{sceneTruthPacketId:'syntheticScene'}}]])
+  docs.set('users/'+uid,{accountStatus:'active'})
+  docs.set('users/'+uid+'/privacyPolicy/current',{version:2,revision:4,ownerId:uid,domains:{memory:{mode:'granted',replayVisible:true,lifeMapVisible:true}},enforcement:{state:'fully-enforced'}})
+  docs.set('consentRecords/'+uid+'_memory_storage',{uid,purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:'a'.repeat(64),expiresAt:'2030-01-01T00:00:00.000Z'})
   if(ready) docs.set('users/'+uid+'/sceneTruthPackets/syntheticScene',{
     ownerId:uid,schemaVersion:'urai-life-model-v1',state:'current',syntheticOutputMayBecomeHistoricalSource:false,
     decision:'READY',dependencyIds:[]})
@@ -27,12 +30,12 @@ function setup({state='authorized',privacy='private',beforeTransaction=()=>{},re
   }
   const database={
     doc, getAll:async()=>{extraReads++;throw Error('PRE_TRANSACTION_DEPENDENCY_READ')},
-    collection:()=>({add:async()=>{audited++}}),
+    collection:()=>({add:async()=>{audited++},where:()=>({limit:()=>({query:true})})}),
     runTransaction:async callback=>{
       beforeTransaction(docs,memoryPath)
       const staged=[]
       const tx={
-        get:async ref=>{transactionalReads++;return snap(ref)},
+        get:async ref=>{transactionalReads++;return ref.query ? {empty:true} : snap(ref)},
         getAll:async(...refs)=>{transactionalReads+=refs.length;return refs.map(snap)},
         set:(ref,value)=>staged.push([ref.path,value]),
       }
@@ -47,6 +50,8 @@ function setup({state='authorized',privacy='private',beforeTransaction=()=>{},re
   vm.runInNewContext(compiled,{module,exports:module.exports,require:name=>{
     if(name==='firebase-admin')return admin
     if(name==='firebase-functions/v1')return functions
+    if(name==='node:crypto')return require('node:crypto')
+    if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy:p=>p?.version===2 && p?.ownerId===uid}
     throw Error('unexpected dependency '+name)
   },URL,Set,Number,Math,Date}, {filename:'lifeMovie.ts'})
   const input={movieId,status:ready?'ready':'draft',chapters:[{id:'chapter1',memoryId,order:0}]}
