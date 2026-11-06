@@ -92,7 +92,8 @@ async function readOwner(transaction: FirebaseFirestore.Transaction, uid: string
       'exportConsentReceiptHash', 'exportConsentPolicyVersion', 'exportConsentExpiresAt'].includes(key))
       && ['granted', 'revoked'].includes(String(marker.exportConsentStatus))
       && SHA.test(String(marker.exportConsentReceiptHash)) && marker.exportConsentPolicyVersion === '1.0.0'
-      && Number.isSafeInteger(millis(marker.exportConsentExpiresAt))
+      && (!keys.includes('updatedAt') || marker.updatedAt instanceof Timestamp)
+        && Number.isSafeInteger(millis(marker.exportConsentExpiresAt))
     if (marker.uid !== uid || keys.some(key => key.startsWith('deletionPlanningLease'))
       || (!inactive && !released && !exportProjection)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
   }
@@ -422,7 +423,8 @@ async function playbackReceipt(transaction: FirebaseFirestore.Transaction, uid: 
       'exportConsentReceiptHash', 'exportConsentPolicyVersion', 'exportConsentExpiresAt'].includes(key))
       && ['granted', 'revoked'].includes(String(marker.exportConsentStatus))
       && SHA.test(String(marker.exportConsentReceiptHash)) && marker.exportConsentPolicyVersion === '1.0.0'
-      && Number.isSafeInteger(millis(marker.exportConsentExpiresAt))
+      && (!keys.includes('updatedAt') || marker.updatedAt instanceof Timestamp)
+        && Number.isSafeInteger(millis(marker.exportConsentExpiresAt))
     if (marker.uid !== uid || keys.some(key => key.startsWith('deletionPlanningLease'))
       || (!inactive && !released && !exportProjection)) fail('MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED')
   }

@@ -47,7 +47,7 @@ function setup({grant='granted',mode='granted',deleted=false,pending=false,expir
     if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy}
     throw Error('unexpected import '+name)
   }})
- return {check:status=>module.exports.__guard(tx,uid,status),count:()=>count,docs}
+ return {check:status=>module.exports.__guard(tx,uid,status),count:()=>count,docs,Timestamp}
 }
 test('valid current C1 can admit draft',async()=>{await assert.doesNotReject(setup().check('draft'))})
 test('missing/revoked/paused C1 denies',async()=>{for(const grant of ['revoked','paused','unexpected'])await assert.rejects(setup({grant}).check('draft'),e=>e.code==='failed-precondition')})
@@ -86,4 +86,14 @@ test('a minimal inactive tombstone does not block valid C1 or C7 Life Movie',asy
  await assert.doesNotReject(f.check('draft'))
  await assert.doesNotReject(f.check('ready'))
  for(const status of ['draft','ready'])await assert.doesNotReject(setup({c7Projection:true}).check(status))
+})
+
+test('C7 projection rejects malformed optional updatedAt even when expiry and receipt look canonical',async()=>{
+ for(const value of ['malformed',null,1700000000000,{toMillis:()=>Date.now()}]) {
+  const f=setup({c7Projection:true});f.docs.get('privacyDeletionTombstones/'+uid).updatedAt=value
+  await assert.rejects(f.check('draft'),e=>e.code==='failed-precondition')
+ }
+ const valid=setup({c7Projection:true})
+ valid.docs.get('privacyDeletionTombstones/'+uid).updatedAt=new valid.Timestamp(Date.now())
+ await assert.doesNotReject(valid.check('draft'))
 })
