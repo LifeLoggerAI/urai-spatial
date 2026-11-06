@@ -123,3 +123,19 @@ test('foreign owner, deleted, and revoked records remain unavailable', () => {
     assert.equal(result.memory, null)
   }
 })
+
+test('owned Replay playback binds first-memory admission to the live consent epoch', () => {
+  const playbackSource = readFileSync(new URL('../src/spatial/memory/useOwnedMemoryMediaPlayback.ts', import.meta.url), 'utf8')
+  const ast = ts.createSourceFile('useOwnedMemoryMediaPlayback.ts', playbackSource, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS)
+  assert.equal(ast.parseDiagnostics.length, 0)
+  // The older hook parsed first-memory metadata without the required policy
+  // revision, denying a legitimate private activation despite correct C1.
+  assert.match(playbackSource, /parseSelectedMemory\(canonicalMemorySnapshot, user\.uid, memory\.id,\s*process\.env\.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, policyRevision\)/)
+  // Firestore listeners are unordered: memory may arrive before policy. Its
+  // provisional subscription never authorizes byte retrieval or object URLs.
+  assert.match(playbackSource, /await snapshotsReady\s+if \(!current\(\) \|\| !isCanonicalMemoryCurrent\(\)\)/)
+  assert.match(playbackSource, /const isCanonicalMemoryCurrent = \(\) => \{/)
+  assert.match(playbackSource, /if \(!user \|\| policyRevision === null \|\| !canonicalMemorySnapshot\) return false/)
+  assert.match(playbackSource, /if \(!current\(\) \|\| !isCanonicalMemoryCurrent\(\)\s+\|\| after\.sourceAuthorityHash !== admitted\.sourceAuthorityHash\)/)
+  assert.match(playbackSource, /if \(!current\(\) \|\| !isCanonicalMemoryCurrent\(\)\s+\|\| next\.sourceAuthorityHash !== admitted\?\.sourceAuthorityHash\)/)
+})
