@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 
 const focusedContractTests = [
+  'tests/hidden-first-private-memory-focus-denial.test.mjs',
   'tests/import-first-prepared-memory.test.mjs',
   'tests/first-private-memory-activation-panel.contract.test.mjs',
   'tests/first-private-memory-dev-source-contract.test.mjs',
