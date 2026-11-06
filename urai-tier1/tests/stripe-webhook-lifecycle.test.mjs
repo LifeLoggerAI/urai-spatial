@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test, {beforeEach, after} from 'node:test';
-import {registerHooks} from 'node:module';
-import {mkdtempSync, writeFileSync, rmSync, existsSync} from 'node:fs';
+import {registerHooks, stripTypeScriptTypes} from 'node:module';
+import {mkdtempSync, writeFileSync, rmSync, existsSync, readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
@@ -31,6 +31,12 @@ const hooks = registerHooks({
     return nextResolve(specifier, context);
   },
   load(url, context, nextLoad) {
+    // The synchronous source resolver bypasses tsx's asynchronous loader.
+    // Strip actual source types here so the supported Node 22.16 runtime
+    // executes the same webhook contracts without depending on native flags.
+    if (url.startsWith('file:') && url.endsWith('.ts')) {
+      return {format: 'module', source: stripTypeScriptTypes(readFileSync(fileURLToPath(url), 'utf8')), shortCircuit: true};
+    }
     if (!url.startsWith('urai-stripe-source-test:')) return nextLoad(url, context);
     let source;
     switch (url.slice('urai-stripe-source-test:'.length)) {
