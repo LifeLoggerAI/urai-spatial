@@ -135,7 +135,7 @@ test('owned Replay playback binds first-memory admission to the live consent epo
   // provisional subscription never authorizes byte retrieval or object URLs.
   assert.match(playbackSource, /await snapshotsReady\s+if \(!current\(\) \|\| !isCanonicalMemoryCurrent\(\)\)/)
   assert.match(playbackSource, /const isCanonicalMemoryCurrent = \(\) => \{/)
-  assert.match(playbackSource, /if \(policyRevision === null \|\| !canonicalMemorySnapshot\) return false/)
+  assert.match(playbackSource, /if \(!user \|\| policyRevision === null \|\| !canonicalMemorySnapshot\) return false/)
   assert.match(playbackSource, /if \(!current\(\) \|\| !isCanonicalMemoryCurrent\(\)\s+\|\| after\.sourceAuthorityHash !== admitted\.sourceAuthorityHash\)/)
   assert.match(playbackSource, /if \(!current\(\) \|\| !isCanonicalMemoryCurrent\(\)\s+\|\| next\.sourceAuthorityHash !== admitted\?\.sourceAuthorityHash\)/)
 })
