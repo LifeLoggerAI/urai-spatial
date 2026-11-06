@@ -53,6 +53,8 @@ run synthetic_four_preflight 30 node scripts/run-memory-media-four-emulator-proo
 run frozen_install 900 pnpm install --frozen-lockfile
 run functions_build 600 pnpm --filter urai-functions build
 run functions_test 900 pnpm --filter urai-functions test
+run firestore_static_boundary 90 node --test tests/firestore.assetManifests.rules.static.test.mjs tests/firestore.privacyConsent.rules.static.test.mjs tests/firestore.lifeModel.rules.static.test.mjs
+run firestore_owner_emulator 600 env URAI_REQUIRE_FIRESTORE_EMULATOR=1 node scripts/run-firestore-rules-tests.mjs
 run tier1_typecheck 600 pnpm --filter urai-tier1 typecheck
 run tier1_test 900 pnpm --filter urai-tier1 test:unit
 run tier1_build 900 pnpm --filter urai-tier1 build
