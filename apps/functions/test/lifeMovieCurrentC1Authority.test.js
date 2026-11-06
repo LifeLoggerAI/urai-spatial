@@ -5,13 +5,14 @@ const fs=require('node:fs')
 const vm=require('node:vm')
 const path=require('node:path')
 const ts=require('typescript')
+const {canonicalPolicy,isCanonicalStoredPolicy}=require('./lifeMovieCanonicalFixture.cjs')
 const text=fs.readFileSync(path.join(__dirname,'../src/lifeMovie.ts'),'utf8')
 const compiled=ts.transpileModule(text,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText
 const uid='fictionalMovieOwner',hash='a'.repeat(64)
 function setup({grant='granted',mode='granted',deleted=false,pending=false,expiry='2030-01-01T00:00:00.000Z',replayVisible=true,lifeMapVisible=true,planning=false,c7Projection=false,c7Expiry='2030-01-01T00:00:00.000Z'}={}){
  const user='users/'+uid
  const docs=new Map([[user,{accountStatus:'active',deleted}],
-   [user+'/privacyPolicy/current',{version:2,revision:4,ownerId:uid,domains:{memory:{mode,replayVisible,lifeMapVisible}},enforcement:{state:'fully-enforced'}}],
+   [user+'/privacyPolicy/current',canonicalPolicy(uid,{mode,replayVisible,lifeMapVisible})],
    ['consentRecords/'+uid+'_memory_storage',{uid,purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:grant,receiptHash:hash,expiresAt:expiry}]])
  if(planning)docs.set('privacyDeletionTombstones/'+uid,{uid,active:true})
  if(pending)docs.set(user+'/privacyRuntime/exportAuthority',{generation:0,pendingDeletions:{staged:true}})
@@ -43,7 +44,7 @@ function setup({grant='granted',mode='granted',deleted=false,pending=false,expir
       vm.runInNewContext(compiledHelper,{module:moduleHelper,exports:moduleHelper.exports,require})
       return moduleHelper.exports
     }
-    if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy:(p,actor)=>p?.version===2&&p?.ownerId===actor&&p?.revision>0}
+    if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy}
     throw Error('unexpected import '+name)
   }})
  return {check:status=>module.exports.__guard(tx,uid,status),count:()=>count}

@@ -5,6 +5,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const vm = require('node:vm')
 const ts = require('typescript')
+const {canonicalPolicy,isCanonicalStoredPolicy}=require('./lifeMovieCanonicalFixture.cjs')
 
 const source = fs.readFileSync(path.join(__dirname, '../src/lifeMovie.ts'), 'utf8')
 const compiled = ts.transpileModule(source, {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText
@@ -15,7 +16,7 @@ function setup({state='authorized',privacy='private',beforeTransaction=()=>{},re
   const docs=new Map([[memoryPath,{ownerId:uid,deleted:false,consentState:state,privacy,
     lifeMovie:{sceneTruthPacketId:'syntheticScene'}}]])
   docs.set('users/'+uid,{accountStatus:'active'})
-  docs.set('users/'+uid+'/privacyPolicy/current',{version:2,revision:4,ownerId:uid,domains:{memory:{mode:'granted',replayVisible:true,lifeMapVisible:true}},enforcement:{state:'fully-enforced'}})
+  docs.set('users/'+uid+'/privacyPolicy/current',canonicalPolicy(uid))
   docs.set('consentRecords/'+uid+'_memory_storage',{uid,purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:'a'.repeat(64),expiresAt:'2030-01-01T00:00:00.000Z'})
   if(ready) docs.set('users/'+uid+'/sceneTruthPackets/syntheticScene',{
     ownerId:uid,schemaVersion:'urai-life-model-v1',state:'current',syntheticOutputMayBecomeHistoricalSource:false,
@@ -59,7 +60,7 @@ function setup({state='authorized',privacy='private',beforeTransaction=()=>{},re
       vm.runInNewContext(compiledHelper,{module:moduleHelper,exports:moduleHelper.exports,require})
       return moduleHelper.exports
     }
-    if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy:p=>p?.version===2 && p?.ownerId===uid}
+    if(name==='./consentPolicyAuthority')return {isCanonicalStoredPolicy}
     throw Error('unexpected dependency '+name)
   },URL,Set,Number,Math,Date}, {filename:'lifeMovie.ts'})
   const input={movieId,status:ready?'ready':'draft',chapters:[{id:'chapter1',memoryId,order:0}]}
