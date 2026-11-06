@@ -39,6 +39,7 @@ test('wrong actor never inherits an existing owner authorization',()=>{
 })
 for(const [label,value] of [
   ['revoked',policy(8,{domains:{memory:{mode:'denied',replayVisible:false}}})],
+  ['limited-with-replay-flag',policy(8,{domains:{memory:{mode:'limited',replayVisible:true}}})],
   ['paused',policy(8,{domains:{memory:{mode:'paused',replayVisible:true}}})],
   ['hidden replay',policy(8,{domains:{memory:{mode:'limited',replayVisible:false}}})],
   ['pending enforcement',policy(8,{enforcement:{state:'pending'}})],

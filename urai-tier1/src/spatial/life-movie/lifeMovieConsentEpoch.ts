@@ -34,9 +34,11 @@ export function advanceLifeMovieConsentEpoch(
   }
   const highestSeenRevision = Math.max(state.highestSeenRevision, raw.revision)
   const memory = raw.domains.memory
+  // Private media authority requires a full memory grant. A limited mode may
+  // permit context visibility, but cannot authorize a private Life Movie stream.
   const permitted = raw.revision >= 1
     && raw.enforcement.state === 'fully-enforced'
-    && (memory.mode === 'granted' || memory.mode === 'limited')
+    && memory.mode === 'granted'
     && memory.replayVisible === true
   const deniedAtRevision = permitted ? state.deniedAtRevision
     : Math.max(state.deniedAtRevision, raw.revision)
