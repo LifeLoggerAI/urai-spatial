@@ -12,8 +12,14 @@ const configFile = 'firebase.memory-media-playback-test.json'
 const proofFile = 'apps/functions/scripts/memory-media-playback-emulator-proof.cjs'
 const expectedPorts = { auth: 9549, firestore: 8249, storage: 9249, functions: 5549, hub: 4549, logging: 4649 }
 const readonly = process.argv.includes('--preflight')
-const expectedOption = process.argv.find(arg => arg.startsWith('--expected-head='))
-assert.ok(process.argv.slice(2).every(arg => arg === '--preflight' || /^--expected-head=[a-f0-9]{40}$/.test(arg)), 'UNSUPPORTED_PROOF_RUNNER_ARGUMENT')
+const args = process.argv.slice(2)
+const expectedOptions = args.filter(arg => arg.startsWith('--expected-head='))
+const expectedOption = expectedOptions[0]
+assert.ok(args.every(arg => arg === '--preflight' || /^--expected-head=[a-f0-9]{40}$/.test(arg)), 'UNSUPPORTED_PROOF_RUNNER_ARGUMENT')
+assert.ok(expectedOptions.length <= 1, 'MULTIPLE_SOURCE_HEAD_FLAGS_REFUSED')
+// Preflight checks configuration only. Actual execution MUST match an explicit,
+// independently reviewed SHA instead of silently accepting whichever HEAD exists.
+assert.ok(readonly || expectedOptions.length === 1, 'EXPECTED_SOURCE_HEAD_REQUIRED')
 assert.ok(existsSync(path.join(root, configFile)) && existsSync(path.join(root, proofFile)), 'FOUR_EMULATOR_SOURCE_MISSING')
 const config = JSON.parse(readFileSync(path.join(root, configFile), 'utf8'))
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
@@ -55,8 +61,8 @@ const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8'
 assert.equal(path.resolve(git('rev-parse', '--show-toplevel')), root, 'WRONG_CHECKOUT_ROOT')
 const head = git('rev-parse', 'HEAD')
 assert.match(head, /^[a-f0-9]{40}$/, 'SOURCE_HEAD_NOT_PINNED')
-if (expectedOption) assert.equal(head, expectedOption.slice('--expected-head='.length), 'SOURCE_HEAD_MISMATCH')
-assert.equal(git('status', '--porcelain', '--untracked-files=no'), '', 'DIRTY_TRACKED_SOURCE')
+assert.equal(head, expectedOption.slice('--expected-head='.length), 'SOURCE_HEAD_MISMATCH')
+assert.equal(git('status', '--porcelain', '--untracked-files=all'), '', 'DIRTY_CHECKOUT_SOURCE')
 const env = {
   ...process.env, ...locked, URAI_EXACT_HEAD: head,
   FIREBASE_CONFIG: JSON.stringify({ projectId: project, storageBucket: `${project}.appspot.com` }),
