@@ -13,6 +13,7 @@ import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import AdamLauncherSlot from "@/spatial/adam/AdamLauncherSlot";
+import { lifeMapRotateFlightAxes, advanceLifeMapViewOrientation, lifeMapRotatedLookTarget } from "./lifeMapFlightOrientation.mjs";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
@@ -37,15 +38,15 @@ function selectedStagePoint(node: LifeMapNode, portrait: boolean) {
   return new THREE.Vector3(...node.position).multiply(scale).add(position);
 }
 
-function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean): CameraGoal {
+function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, origin?: THREE.Vector3): CameraGoal {
   const target = selectedStagePoint(node, portrait);
-  const overview = new THREE.Vector3(...OVERVIEW_POSITION);
+  const overview = origin?.clone() ?? new THREE.Vector3(...OVERVIEW_POSITION);
   const direction = overview.clone().sub(target);
   if (direction.lengthSq() < 0.01) direction.set(0, 0.1, 1);
   direction.normalize();
   const arrival = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF);
   arrival.y += 0.34;
-  if (phase === "departure") return { position: OVERVIEW_POSITION, target: tuple(target) };
+  if (phase === "departure") return { position: tuple(overview), target: tuple(target) };
   if (phase === "travel") {
     const travel = overview.clone().lerp(arrival, 0.5);
     travel.x += (Math.sign(target.x) || 1) * 1.25;
@@ -60,23 +61,109 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean):
   return { position: tuple(arrival), target: tuple(target) };
 }
 
+type LifeMapFlightVector = { x: number; y: number; z: number };
+function stepLifeMapFlight(
+  offset: LifeMapFlightVector, velocity: LifeMapFlightVector,
+  held: ReadonlySet<string>, delta: number, reducedMotion: boolean, yaw = 0,
+) {
+  const dt = Math.max(0, Math.min(0.05, Number.isFinite(delta) ? delta : 0));
+  const axis = (positive: string, negative: string) => Number(held.has(positive)) - Number(held.has(negative));
+  const input = lifeMapRotateFlightAxes({ x: axis('KeyD', 'KeyA'), y: axis('KeyE', 'KeyQ'), z: axis('KeyS', 'KeyW') }, yaw);
+  const magnitude = Math.hypot(input.x, input.y, input.z);
+  const speed = held.has('ShiftLeft') || held.has('ShiftRight') ? 9 : 5.5;
+  const smoothing = reducedMotion ? 1 : 1 - Math.exp(-12 * dt);
+  const clamp = (value: number, bound: number) => Math.max(-bound, Math.min(bound, value));
+  const nextVelocity = {
+    x: velocity.x + ((magnitude ? input.x / magnitude * speed : 0) - velocity.x) * smoothing,
+    y: velocity.y + ((magnitude ? input.y / magnitude * speed : 0) - velocity.y) * smoothing,
+    z: velocity.z + ((magnitude ? input.z / magnitude * speed : 0) - velocity.z) * smoothing,
+  };
+  return {
+    offset: {
+      x: clamp(offset.x + nextVelocity.x * dt, 28),
+      y: clamp(offset.y + nextVelocity.y * dt, 11),
+      z: clamp(offset.z + nextVelocity.z * dt, 28),
+    },
+    velocity: nextVelocity,
+  };
+}
+
 function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean; shellRef: RefObject<HTMLElement | null> }) {
   const { camera, size } = useThree();
   const initialized = useRef(false);
   const positionGoal = useRef(new THREE.Vector3());
   const targetGoal = useRef(new THREE.Vector3());
   const lookTarget = useRef(new THREE.Vector3(...OVERVIEW_TARGET));
+  const flightOffset = useRef(new THREE.Vector3());
+  const flightVelocity = useRef(new THREE.Vector3());
+  const heldFlightKeys = useRef(new Set<string>());
+  const flightOrientation = useRef({ yaw: 0, pitch: 0 });
+  const departureOrigin = useRef<THREE.Vector3 | null>(null);
+  const departureNodeId = useRef<string | null>(null);
+  const previousCameraPhase = useRef<JourneyPhase>("overview");
+  useEffect(() => {
+    // Selection, unloading and blur must never leave a motion key stuck.
+    heldFlightKeys.current.clear();
+    if (phase !== "overview") return;
+    const controls = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
+    const keyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable
+        || target.closest('input,textarea,select,button,a,[role="textbox"],[role="button"],[role="link"],[role="dialog"],[data-urai-adam-presence]'))) {
+        release();
+        return;
+      }
+      if (document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"]')) {
+        release();
+        return;
+      }
+      if (event.code === 'KeyR') {
+        event.preventDefault();
+        flightOffset.current.set(0, 0, 0);
+        flightOrientation.current = { yaw: 0, pitch: 0 };
+        flightVelocity.current.set(0, 0, 0);
+        heldFlightKeys.current.clear();
+        return;
+      }
+      if (controls.has(event.code)) event.preventDefault();
+      if (controls.has(event.code) || event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
+        heldFlightKeys.current.add(event.code);
+      }
+    };
+    const keyUp = (event: KeyboardEvent) => { heldFlightKeys.current.delete(event.code); };
+    const release = () => { heldFlightKeys.current.clear(); flightVelocity.current.set(0, 0, 0); };
+    const focusIn = (event: FocusEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable
+        || target.closest('input,textarea,select,button,a,[role="textbox"],[role="button"],[role="link"],[role="dialog"],[data-urai-adam-presence]'))) release();
+    };
+    window.addEventListener('focusin', focusIn);
+    window.addEventListener('keydown', keyDown);
+    window.addEventListener('keyup', keyUp);
+    window.addEventListener('blur', release);
+    return () => {
+      window.removeEventListener('focusin', focusIn);
+      window.removeEventListener('keydown', keyDown);
+      window.removeEventListener('keyup', keyUp);
+      window.removeEventListener('blur', release);
+      release();
+    };
+  }, [phase]);
 
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
-    const goal = selected ? goalForNode(selected, phase, portrait) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
+    const goal = selected ? (departureOrigin.current
+      ? goalForNode(selected, phase, portrait, departureOrigin.current)
+      : goalForNode(selected, phase, portrait))
+      : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
     positionGoal.current.set(...goal.position);
     targetGoal.current.set(...goal.target);
     if (portrait) {
       if (phase === "overview") {
         positionGoal.current.set(0, 2.15, 16.6);
         targetGoal.current.set(0, 0.2, -4.6);
-      } else {
+      } else if (!(phase === "departure" && departureOrigin.current)) {
         const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.34);
         positionGoal.current.copy(targetGoal.current).add(offset);
         positionGoal.current.y += 0.42;
@@ -99,7 +186,51 @@ function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: Lif
   }, [camera, phase, resolve]);
 
   useFrame(({ pointer }, delta) => {
+    // Capture before resolving this frame's camera goal, never one effect later.
+    // The first departure frame must originate at the camera's explored pose.
+    if (phase === "overview") {
+      departureOrigin.current = null;
+      departureNodeId.current = null;
+    } else if (phase === "departure" && selected &&
+      (departureNodeId.current !== selected.id || previousCameraPhase.current !== "departure")) {
+      // Re-selecting the same star after arrival is a new journey, not a
+      // continuation of its old departure camera pose.
+      departureOrigin.current = camera.position.clone();
+      departureNodeId.current = selected.id;
+    }
+    previousCameraPhase.current = phase;
     const portrait = resolve();
+    if (phase === "overview") {
+      const focused = document.activeElement;
+      if ((focused instanceof HTMLElement && (focused.isContentEditable
+        || focused.closest('input,textarea,select,button,a,[role="textbox"],[role="button"],[role="link"],[role="dialog"],[data-urai-adam-presence]')))
+        || document.querySelector('[role="dialog"][aria-modal="true"],#life-map-navigator[aria-modal="true"]')) {
+        heldFlightKeys.current.clear();
+        flightVelocity.current.set(0, 0, 0);
+      }
+      flightOrientation.current = advanceLifeMapViewOrientation(flightOrientation.current, heldFlightKeys.current, delta);
+      const offset = flightOffset.current, velocity = flightVelocity.current;
+      const next = stepLifeMapFlight(
+        { x: offset.x, y: offset.y, z: offset.z },
+        { x: velocity.x, y: velocity.y, z: velocity.z },
+        heldFlightKeys.current, delta, reducedMotion, flightOrientation.current.yaw,
+      );
+      offset.set(next.offset.x, next.offset.y, next.offset.z);
+      velocity.set(next.velocity.x, next.velocity.y, next.velocity.z);
+    }
+    // The actual departure camera already includes exploration displacement;
+    // adding flight offset again would pull star travel away from its origin.
+    const flightWeight = phase === "overview" ? 1 : 0;
+    positionGoal.current.addScaledVector(flightOffset.current, flightWeight);
+    targetGoal.current.addScaledVector(flightOffset.current, flightWeight);
+    if (phase === "overview") {
+      const rotated = lifeMapRotatedLookTarget(
+        [positionGoal.current.x, positionGoal.current.y, positionGoal.current.z],
+        [targetGoal.current.x, targetGoal.current.y, targetGoal.current.z],
+        flightOrientation.current,
+      );
+      targetGoal.current.set(...rotated);
+    }
     if (phase === "overview" && !reducedMotion) {
       positionGoal.current.x += pointer.x * (portrait ? 0.45 : 1.05);
       positionGoal.current.y += pointer.y * (portrait ? 0.24 : 0.42);
@@ -434,12 +565,14 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     data-life-map-mode={selected ? "selected" : "overview"}
     data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"}
     data-life-map-production-world="true"
+    aria-describedby="life-map-keyboard-flight-help"
     data-webgl-state={webglState}
     data-software-renderer={softwareRenderer ? "true" : "false"}
     data-software-render-cadence={softwareRenderer ? "bounded-demand-10fps" : "continuous"}
     data-home-companion-owned="false"
   >
     <h1 className="sr-only">URAI Life Map private universe</h1>
+    <p className="sr-only" id="life-map-keyboard-flight-help">In Life Map overview, use W A S D to move, Q and E to move vertically, arrow keys to look around, and R to reset. Motion stops when you choose a memory or focus an interactive control.</p>
     <span className="life-map-depth-contract" data-depth-band="near" aria-hidden="true" />
     <span className="life-map-depth-contract" data-depth-band="middle" aria-hidden="true" />
     <span className="life-map-depth-contract" data-depth-band="far" aria-hidden="true" />
