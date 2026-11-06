@@ -33,7 +33,7 @@ if (javaCheck.status === 0) {
     '--config', 'firebase.json',
     '--project', project,
     '--only', 'firestore',
-    'node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs tests/firestore.userAuthority.rules.test.mjs',
+    'node --test --test-concurrency=1 tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs tests/firestore.userAuthority.rules.test.mjs',
   ], { env: { ...process.env, GCLOUD_PROJECT: project, GOOGLE_CLOUD_PROJECT: project, FIREBASE_PROJECT_ID: project } })
   if (result.error) console.error('[URAI] Firestore emulator failed before tests:', result.error.message)
   process.exit(result.status ?? 1)

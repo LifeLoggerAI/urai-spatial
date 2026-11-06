@@ -10,7 +10,7 @@ import {
 } from '@firebase/rules-unit-testing'
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'
 
-const projectId = `urai-spatial-rules-${Date.now()}`
+const projectId = 'demo-urai-firestore-owner-rules'
 const rules = fs.readFileSync(path.resolve('firebase/firestore.rules'), 'utf8')
 
 function manifest(ownerId) {
