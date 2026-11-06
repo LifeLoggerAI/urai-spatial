@@ -62,6 +62,14 @@ test('cloud service-account and CLI bearer credentials are refused', () => {
 test('unknown flags are refused without executing anything', () => {
   const r=invoke({},['--deploy']);assert.notEqual(r.status,0);assert.match(r.stderr,/UNSUPPORTED_PROOF_RUNNER_ARGUMENT/)
 })
-test('run mode refuses a non-repository checkout before any bootstrap', () => {
-  const r=invoke({},[]);assert.notEqual(r.status,0);assert.match(r.stderr,/not a git repository|Command failed/)
+test('run mode requires an independently reviewed exact SHA before any bootstrap', () => {
+  const r=invoke({},[]);assert.notEqual(r.status,0);assert.match(r.stderr,/EXPECTED_SOURCE_HEAD_REQUIRED/)
+})
+test('run mode with a valid pinned SHA refuses non-repository checkout', () => {
+  const r=invoke({},['--expected-head='+'a'.repeat(40)]);assert.notEqual(r.status,0)
+  assert.match(r.stderr,/not a git repository|Command failed/)
+})
+test('duplicate head flags are rejected before any source execution', () => {
+  const r=invoke({},['--expected-head='+'a'.repeat(40),'--expected-head='+'b'.repeat(40)])
+  assert.notEqual(r.status,0);assert.match(r.stderr,/MULTIPLE_SOURCE_HEAD_FLAGS_REFUSED/)
 })
