@@ -14,7 +14,7 @@ const playback = scope.exports.assertFirstPrivateMemoryPlaybackBinding
 const uid = 'syntheticOwner', memoryId = 'syntheticMemory'
 const receiptId = 'b'.repeat(64), derivative = 'a'.repeat(64), consent = 'c'.repeat(64)
 const first = {
-  privacy: 'private', sourceMedia: [{ kind: 'audio', mediaReceiptId: receiptId }],
+  privacy: 'private', consentState: 'authorized', sourceMedia: [{ kind: 'audio', mediaReceiptId: receiptId }],
   sourceProvenance: { authenticity: 'source-derivative-not-generated-autobiography', derivativeSha256: derivative },
   firstPrivateMemoryConsent: { status: 'explicit-owner-confirmation', ownerId: uid, memoryId },
   firstPrivateMemoryActivation: { status: 'explicit-owner-private-replay', ownerId: uid, memoryId,
@@ -36,7 +36,7 @@ test('a first-memory consent marker cannot permit playback after provenance is e
   assert.throws(() => check({ ...first, sourceProvenance: {} }), /FIRST_PRIVATE_MEMORY_REPLAY_NOT_ACTIVATED/)
 })
 test('orphaned first-memory activation metadata cannot bypass playback provenance check', () => {
-  const orphan = { privacy: 'private', firstPrivateMemoryActivation: first.firstPrivateMemoryActivation }
+  const orphan = { privacy: 'private', consentState: 'authorized', firstPrivateMemoryActivation: first.firstPrivateMemoryActivation }
   assert.throws(() => check(orphan), /FIRST_PRIVATE_MEMORY_REPLAY_NOT_ACTIVATED/)
 })
 test('ordinary private memory without first-memory markers retains its existing behavior', () => {

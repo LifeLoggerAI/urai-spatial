@@ -12,7 +12,7 @@ const scope = { exports: {} }
 vm.runInNewContext(output.outputText, { exports: scope.exports, require })
 const guard = scope.exports.assertFirstPrivateMemoryPlaybackBinding
 const sha = 'a'.repeat(64), receiptId = 'b'.repeat(64), consentHash = 'c'.repeat(64), uid = 'syntheticOwner', memoryId = 'syntheticMemory'
-const active = { privacy: 'private', sourceProvenance: { authenticity: 'source-derivative-not-generated-autobiography', derivativeSha256: sha },
+const active = { privacy: 'private', consentState: 'authorized', sourceProvenance: { authenticity: 'source-derivative-not-generated-autobiography', derivativeSha256: sha },
   firstPrivateMemoryActivation: { status: 'explicit-owner-private-replay', ownerId: uid, memoryId,
     mediaReceiptId: receiptId, derivativeSha256: sha, consentRevision: 4, consentReceiptHash: consentHash } }
 const attempt = (value=active, actor=uid, selected=memoryId, receipt=receiptId, revision=4, consent=consentHash) =>

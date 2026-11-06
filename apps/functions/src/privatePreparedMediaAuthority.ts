@@ -26,6 +26,10 @@ export function assertPreparedPrivateMediaFirstUpload(
     if (marked) throw new Error('FIRST_PRIVATE_MEDIA_BINDING_INVALID')
     return
   }
+  // The server-authored first-memory record has an explicit selected-memory
+  // consent state. A missing or unrecognized state must never make a prepared
+  // recording uploadable, including on ordinary subsequent attachments.
+  if (row.consentState !== 'authorized') throw new Error('FIRST_PRIVATE_MEDIA_BINDING_INVALID')
   // Subsequent ordinary attachments remain supported after an actual first
   // audio receipt exists, but erasing provenance must never downgrade a
   // server-marked first memory into an ordinary attachment path.
@@ -76,6 +80,9 @@ export function assertFirstPrivateMemoryPlaybackBinding(
     || Object.prototype.hasOwnProperty.call(selected, 'firstPrivateMemoryConsent')
     || Object.prototype.hasOwnProperty.call(selected, 'firstPrivateMemoryActivation')
   if (!prepared) return
+  // Current account-wide C1 is necessary but does not replace the selected
+  // memory's own authorization. Keep ordinary legacy memories unaffected.
+  if (selected.consentState !== 'authorized') throw new Error('FIRST_PRIVATE_MEMORY_REPLAY_NOT_ACTIVATED')
   const activation = asRow(selected.firstPrivateMemoryActivation)
   if (selected.privacy !== 'private'
     || source.authenticity !== 'source-derivative-not-generated-autobiography'
