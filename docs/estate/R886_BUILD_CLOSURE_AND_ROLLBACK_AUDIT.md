@@ -30,3 +30,7 @@ The R885 workflow's Functions compiled-file attestation and `--mode verify` occu
 The workflow still uses a WIF **deployer** token for provider evidence collection; a GET-only collector does not establish least-privilege credential scope. A separate authorized read-only provider identity, full domain/site authentication, Hosting and deployed backend revision-digest proof, rollback correctness, exact merged-main native CI, positive signed C6 owner consent, protected memory → Jobs → Studio → Replay → deletion, accessibility, device/XR and independent release review remain outstanding.
 
 The source reviews and Git-fixture tests protect changes but cannot certify an integrated production system. Preserve PR #1636 and the separate Focus PR #2072; reconcile without overwriting other workers.
+
+## Current exact-head Actions readback — not CI certified
+
+At review SHA `514cbfe72490c8cd1548289f49d12e981be339ec`, the connected GitHub Actions API reported `URAI Spatial CI` run `42422424081` and `Frozen Lockfile Check` run `42422424185` both `completed/failure`, with start at 2026-11-07T22:49:47Z and update by 22:49:51Z. The Spatial CI jobs API reported seven `completed/failure` jobs; two job step readbacks returned empty arrays and job logs failed to download with `BlobNotFound`. Therefore the failure is **confirmed**, but **no specific test, compilation error, or billing-root cause is established by the available evidence**. All exact-head CI remain unsatisfied; do not count offline fixture results as CI. No new run was dispatched manually.
