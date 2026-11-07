@@ -333,8 +333,17 @@ export default function FocusChamberClient() {
   const result = useSelectedMemory()
   const location = useBrowserLocation()
   const memory = result.memory
+  const selectedFocusNodeId = useMemo(() => {
+    const search = location.includes('?') ? location.slice(location.indexOf('?') + 1).split('#')[0] : ''
+    return new URLSearchParams(search).get('node')
+  }, [location])
   const lifeMap = useLifeMapEvents(memory?.demo ? 'demo-user' : memory?.ownerId)
-  const starTravel = useMemo(() => focusStarTravel(lifeMap.nodes, memory, lifeMap.sourceMode, lifeMap.loading), [lifeMap.nodes, lifeMap.sourceMode, lifeMap.loading, memory])
+  const verifiedFocusNodeId = useMemo(() => verifiedFocusEventNodeId(
+    lifeMap.nodes, memory, lifeMap.sourceMode, lifeMap.loading, selectedFocusNodeId,
+  ), [lifeMap.nodes, memory, lifeMap.sourceMode, lifeMap.loading, selectedFocusNodeId])
+  const starTravel = useMemo(() => focusStarTravel(
+    lifeMap.nodes, memory, lifeMap.sourceMode, lifeMap.loading, selectedFocusNodeId,
+  ), [lifeMap.nodes, lifeMap.sourceMode, lifeMap.loading, memory, selectedFocusNodeId])
   const adaptiveProfile = useAdaptiveSpatialQuality()
   const [softwareRenderer, setSoftwareRenderer] = useState(false)
   const profile: SpatialQualityProfile = useMemo(() => softwareRenderer ? {
@@ -399,12 +408,9 @@ export default function FocusChamberClient() {
     const incoming = new URLSearchParams(search)
     // Preserve an event-backed Focus selection only when the consent-scoped Life Map
     // confirmed the selected star; never infer owner authority from route metadata.
-    // Route metadata carries continuity, not authority. Recheck the exact
-    // event against the current owner/consent-scoped Life Map on every trip.
-    const verifiedNodeId = verifiedFocusEventNodeId(
-      lifeMap.nodes, memory, lifeMap.sourceMode, lifeMap.loading, incoming.get('node'),
-    )
-    const returnNode = focusReplayReturnNode(memory, incoming, verifiedNodeId)
+    // Exact event identity is revalidated by the current owner/consent-scoped Life
+    // Map, including after a previous Replay return. Route parameters grant nothing.
+    const returnNode = focusReplayReturnNode(memory, incoming, verifiedFocusNodeId)
     const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: returnNode, from: 'focus-artifact' })
     if (returnNode !== memory.star.id) next.set('returnNode', returnNode)
     if (memory.demo) next.set('demo', '1')
@@ -415,7 +421,7 @@ export default function FocusChamberClient() {
       })
     }
     return `/replay?${next.toString()}`
-  }, [memory, location, lifeMap.nodes, lifeMap.sourceMode, lifeMap.loading])
+  }, [memory, location, verifiedFocusNodeId])
 
   const enterReplay = useCallback(() => {
     if (!memory || !replayHref || committed) return
@@ -450,7 +456,7 @@ export default function FocusChamberClient() {
   const preparingField = Boolean(memory) && !semanticFallback && (!fieldReady || memoryRevealState === 'loading')
   const fieldStatusId = semanticFallback || memoryRevealState === 'unavailable' ? 'common.spatialAccessible' : webglState === 'lost' ? 'focus.paused' : webglState === 'restoring' ? 'focus.restoring' : fieldReady ? memoryRevealState === 'loading' ? 'focus.openingSelected' : 'focus.ready' : 'focus.opening'
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-memory-reveal-state={semanticFallback ? 'absent' : memoryRevealState} data-focus-render-ready={fieldReady ? 'true' : 'false'} data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x={DEFAULT_CAMERA[0].toFixed(3)} data-focus-camera-y={DEFAULT_CAMERA[1].toFixed(3)} data-focus-camera-z={DEFAULT_CAMERA[2].toFixed(3)} data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-renderer-mode={softwareRenderer ? 'software' : 'hardware-or-unknown'} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-memory-reveal-state={semanticFallback ? 'absent' : memoryRevealState} data-focus-render-ready={fieldReady ? 'true' : 'false'} data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x={DEFAULT_CAMERA[0].toFixed(3)} data-focus-camera-y={DEFAULT_CAMERA[1].toFixed(3)} data-focus-camera-z={DEFAULT_CAMERA[2].toFixed(3)} data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-renderer-mode={softwareRenderer ? 'software' : 'hardware-or-unknown'} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={verifiedFocusNodeId ?? memory?.star.id}>
     <h1 className="srOnly" {...locale.props('focus.title')}>{locale.text('focus.title')}</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     {!webglUsable ? <div className="focusFog" aria-hidden="true" /> : null}
