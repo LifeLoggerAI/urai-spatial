@@ -20,7 +20,7 @@ import { assetCssStack, focusAssets, replayAssets } from '@/spatial/assets/uraiA
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
-import { focusStarTravel, focusReplayReturnNode } from './focusStarTravel'
+import { focusStarTravel, focusReplayReturnNode, verifiedFocusEventNodeId } from './focusStarTravel'
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import { forwardPrivateMovieRouteSelection } from '@/spatial/life-movie/privateLifeMovieRouteSelection'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
@@ -399,7 +399,12 @@ export default function FocusChamberClient() {
     const incoming = new URLSearchParams(search)
     // Preserve an event-backed Focus selection only when the consent-scoped Life Map
     // confirmed the selected star; never infer owner authority from route metadata.
-    const returnNode = focusReplayReturnNode(memory, incoming, starTravel.currentNodeId)
+    // Route metadata carries continuity, not authority. Recheck the exact
+    // event against the current owner/consent-scoped Life Map on every trip.
+    const verifiedNodeId = verifiedFocusEventNodeId(
+      lifeMap.nodes, memory, lifeMap.sourceMode, lifeMap.loading, incoming.get('node'),
+    )
+    const returnNode = focusReplayReturnNode(memory, incoming, verifiedNodeId)
     const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: returnNode, from: 'focus-artifact' })
     if (returnNode !== memory.star.id) next.set('returnNode', returnNode)
     if (memory.demo) next.set('demo', '1')
@@ -410,7 +415,7 @@ export default function FocusChamberClient() {
       })
     }
     return `/replay?${next.toString()}`
-  }, [memory, location, starTravel.currentNodeId])
+  }, [memory, location, lifeMap.nodes, lifeMap.sourceMode, lifeMap.loading])
 
   const enterReplay = useCallback(() => {
     if (!memory || !replayHref || committed) return
