@@ -12,6 +12,7 @@ const sha256=/^[0-9a-f]{64}$/
 const runIdPattern=/^[1-9][0-9]*$/
 const inputPaths=[
   ['apps/functions','tree'], ['packages/tier-locks/src','tree'],
+  ['packages/tier-locks/package.json','blob'],
   ['pnpm-lock.yaml','blob'], ['package.json','blob'], ['pnpm-workspace.yaml','blob'],
   ['firebase.json','blob'],
 ]
@@ -37,7 +38,7 @@ function context(repoRoot,expectedSha,runId){
   const root=resolve(repoRoot),head=git(root,['rev-parse','HEAD'])
   if(head!==expectedSha)throw new Error('Checkout HEAD does not match expected merged release SHA')
   // Reject modified tracked source and untracked source that might enter the TypeScript compilation.
-  for(const cmd of [['diff','--quiet','HEAD','--','apps/functions','packages/tier-locks/src','pnpm-lock.yaml','package.json','pnpm-workspace.yaml','firebase.json'],['diff','--cached','--quiet','HEAD','--','apps/functions','packages/tier-locks/src','pnpm-lock.yaml','package.json','pnpm-workspace.yaml','firebase.json']]){
+  for(const cmd of [['diff','--quiet','HEAD','--','apps/functions','packages/tier-locks/src','packages/tier-locks/package.json','pnpm-lock.yaml','package.json','pnpm-workspace.yaml','firebase.json'],['diff','--cached','--quiet','HEAD','--','apps/functions','packages/tier-locks/src','packages/tier-locks/package.json','pnpm-lock.yaml','package.json','pnpm-workspace.yaml','firebase.json']]){
     try{git(root,cmd)}catch{throw new Error('Source build inputs differ from reviewed commit')}
   }
   const untracked=git(root,['ls-files','--others','--exclude-standard','--','apps/functions/src','packages/tier-locks/src'])
