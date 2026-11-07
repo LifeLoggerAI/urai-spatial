@@ -35,7 +35,9 @@ export function focusStarTravel(
   const visited = new Set<string>()
   for (const node of nodes) {
     if (!safeToken(node.id) || node.locked || node.privacyLevel === 'hidden') continue
-    const selectedId = disclosedDemo ? node.id : node.memoryId
+    // Replay and WorldTransitionController use canonical demo: IDs. Keep the
+    // same identity on Focus steps so Escape returns to that exact star.
+    const selectedId = disclosedDemo ? `demo:${node.id}` : node.memoryId
     if (!safeToken(selectedId) || visited.has(selectedId)) continue
     if (disclosedDemo) {
       if (!node.replayAvailable) continue
@@ -58,7 +60,7 @@ export function focusStarTravel(
 
   // A disappearing/revoked current star must not become a doorway into another.
   const current = accepted.findIndex(item => disclosedDemo
-    ? item.nodeId === memory.star.id && memory.id === 'demo:' + item.memoryId
+    ? item.nodeId === memory.star.id && memory.id === item.memoryId
     : item.memoryId === memory.id && item.manifestId === memory.replayManifest.id)
   if (current < 0) return EMPTY
   return {

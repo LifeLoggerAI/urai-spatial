@@ -67,3 +67,11 @@ test('canonical browser navigation must exercise same-Focus star stepping and re
  assert.ok(src.includes("u.pathname==='/focus'"));
  assert.doesNotMatch(src,/productionGrant=true|FIREBASE_TOKEN|GOOGLE_APPLICATION_CREDENTIALS/);
 });
+
+test('Focus browser sample uses canonical demo identity before and after Replay',()=>{
+ assert.ok(src.includes("memoryId=demo:quiet-reset&manifestId=replay-recovery-thread"));
+ assert.ok(src.includes("u.searchParams.get('memoryId')?.startsWith('demo:')"));
+ assert.ok(src.includes("getAttribute('data-memory-id')===id"));
+ assert.ok(!src.includes("getAttribute('data-memory-id')==='demo:'+id"));
+ assert.ok(src.includes("u.searchParams.get('memoryId')==='demo:quiet-reset'"));
+});

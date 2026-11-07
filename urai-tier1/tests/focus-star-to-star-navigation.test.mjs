@@ -78,10 +78,28 @@ test('disclosed sample only: may step to another visible fictional star without 
   const u = new URL(result.next.href, 'https://example.invalid')
   assert.equal(u.pathname,'/focus')
   assert.equal(u.searchParams.get('demo'),'1')
-  assert.equal(u.searchParams.get('memoryId'),'voice-note-home')
+  assert.equal(u.searchParams.get('memoryId'),'demo:voice-note-home')
   assert.equal(u.searchParams.has('manifestId'),false)
   zero(focusStarTravel(sample, fixture, 'private', false))
   zero(focusStarTravel(sample, owner, 'explicit-demo', false))
+})
+
+test('demo Focus star identity survives Replay and Escape without alias changes', () => {
+  const samples = [
+    { id:'quiet-reset', type:'recovery', replayAvailable:true, privacyLevel:'private' },
+    { id:'voice-note-home', type:'memory', replayAvailable:true, privacyLevel:'private' },
+  ]
+  const first = { ...owner, id:'demo:quiet-reset', demo:true, star:{ id:'quiet-reset' } }
+  const firstStep = focusStarTravel(samples, first, 'explicit-demo', false)
+  const selectedId = new URL(firstStep.next.href, 'https://example.invalid').searchParams.get('memoryId')
+  assert.equal(selectedId, 'demo:voice-note-home')
+  // This is the selected identity passed to Replay and back by the world controller.
+  const returned = { ...first, id:selectedId, star:{ id:'voice-note-home' } }
+  const afterReturn = focusStarTravel(samples, returned, 'explicit-demo', false)
+  assert.equal(afterReturn.position, 2)
+  assert.equal(afterReturn.total, 2)
+  assert.equal(afterReturn.next, null)
+  assert.equal(new URL(afterReturn.previous.href, 'https://example.invalid').searchParams.get('memoryId'), 'demo:quiet-reset')
 })
 
 test('malformed and duplicate IDs fail closed without generating untrusted route payloads', () => {

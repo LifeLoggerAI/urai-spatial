@@ -105,7 +105,7 @@ async function navigation(page){
 // Deliberately disclosed demo only: no owner grants, tokens, private media, or
 // synthetic shortcut around the canonical memory-selection React hook.
 async function focusStarNavigation(page){
- await page.goto(BASE+'/focus?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',{waitUntil:'domcontentloaded'});
+ await page.goto(BASE+'/focus?demo=1&memoryId=demo:quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',{waitUntil:'domcontentloaded'});
  const chamber=page.getByTestId('urai-final-focus-chamber');
  await chamber.waitFor({state:'visible',timeout:25000});
  await page.waitForFunction(()=>
@@ -121,16 +121,16 @@ async function focusStarNavigation(page){
  ensure(await next.isEnabled(),'No same-Focus next star despite disclosed sample neighbors');
  await next.click();
  await page.waitForURL(u=>u.pathname==='/focus'&&u.searchParams.get('demo')==='1'
-  && Boolean(u.searchParams.get('memoryId'))&&u.searchParams.get('memoryId')!=='quiet-reset',{timeout:25000});
+  && u.searchParams.get('memoryId')?.startsWith('demo:')&&u.searchParams.get('memoryId')!=='demo:quiet-reset',{timeout:25000});
  const steppedId=new URL(page.url()).searchParams.get('memoryId');
  await page.waitForFunction(id=>
-  document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')==='demo:'+id,
+  document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')===id,
   steppedId,{timeout:25000});
  ensure(!/[?&](ownerId|planId|movieId|consent|token)=/.test(page.url()),'Focus step carried unrelated authority identifiers');
  await shot(page,'disclosed-sample-focus-star-to-star');
  if(!await help.evaluate(element=>element.open))await help.locator('summary').click();
  await previous.click();
- await page.waitForURL(u=>u.pathname==='/focus'&&u.searchParams.get('memoryId')==='quiet-reset',{timeout:25000});
+ await page.waitForURL(u=>u.pathname==='/focus'&&u.searchParams.get('memoryId')==='demo:quiet-reset',{timeout:25000});
  await page.waitForFunction(()=>
   document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')==='demo:quiet-reset',
   null,{timeout:25000});
@@ -138,7 +138,7 @@ async function focusStarNavigation(page){
  await next.click();
  await page.waitForURL(u=>u.pathname==='/focus'&&u.searchParams.get('memoryId')===steppedId,{timeout:25000});
  await page.waitForFunction(id=>
-  document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')==='demo:'+id,
+  document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')===id,
   steppedId,{timeout:25000});
  await page.locator('.focusControls button.primary').click();
  await pathIs(page,'/replay',30000);
