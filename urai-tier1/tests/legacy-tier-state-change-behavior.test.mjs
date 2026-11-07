@@ -75,8 +75,9 @@ function persistence() {
   const writes = []
   const hook = hookHarness('spatial/hooks/useUraiPersistence.ts', 'useUraiPersistence', {
     '@/lib/uraiPersistence/localStore': { loadUraiSnapshot: () => null, saveUraiSnapshot: value => { writes.push(clone(value)) } },
+    '@/lib/uraiStorage/ownerScope': { resolveLegacyOwnerId: id => id || null },
   })
-  return { ...hook, writes }
+  return { ...hook, writes, render: args => hook.render({ ownerId: 'synthetic-owner', enabled: true, ...args }) }
 }
 const snapshotChanges = [
   ['memory title', value => { value.memories[0].title = 'After' }],
@@ -133,9 +134,10 @@ function adaptive() {
   const writes = []
   const hook = hookHarness('spatial/hooks/useUraiAdaptiveLearning.ts', 'useUraiAdaptiveLearning', {
     '@/lib/uraiAdaptive/localStore': { loadAdaptiveProfile: createDefaultAdaptiveProfile, saveAdaptiveProfile: value => { writes.push(clone(value)) } },
-    '@/lib/uraiAdaptive/profile': { resolveAdaptiveOutput, updateAdaptiveProfile },
+    '@/lib/uraiAdaptive/profile': { createDefaultAdaptiveProfile, resolveAdaptiveOutput, updateAdaptiveProfile },
+    '@/lib/uraiStorage/ownerScope': { resolveLegacyOwnerId: id => id || null },
   })
-  return { ...hook, writes }
+  return { ...hook, writes, render: args => hook.render({ ownerId: 'synthetic-owner', enabled: true, ...args }) }
 }
 for (const field of ['memoryWeight', 'auraIntensity']) test('Tier 8 applies changed ' + field + ' without a phase or tone change', () => {
   const hook = adaptive(), before = signal()
