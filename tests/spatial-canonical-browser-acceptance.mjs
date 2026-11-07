@@ -123,6 +123,9 @@ async function focusStarNavigation(page){
  await page.waitForURL(u=>u.pathname==='/focus'&&u.searchParams.get('demo')==='1'
   && u.searchParams.get('memoryId')?.startsWith('demo:')&&u.searchParams.get('memoryId')!=='demo:quiet-reset',{timeout:25000});
  const steppedId=new URL(page.url()).searchParams.get('memoryId');
+ const steppedNode=new URL(page.url()).searchParams.get('node');
+ ensure(steppedNode===steppedId?.replace(/^demo:/,''),
+   'Focus demo step selected the wrong constellation node');
  await page.waitForFunction(id=>
   document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')===id,
   steppedId,{timeout:25000});
@@ -147,6 +150,8 @@ async function focusStarNavigation(page){
  await pathIs(page,'/focus',25000);
  ensure(new URL(page.url()).searchParams.get('memoryId')===steppedId,
   'Replay Escape lost the last disclosed Focus star');
+ ensure(new URL(page.url()).searchParams.get('node')===steppedNode,
+  'Replay Escape lost the selected constellation node');
   // R867: test a second Replay return using only disclosed fictional sample.
   await page.getByTestId('urai-final-focus-chamber').waitFor({state:'visible',timeout:25000});
   await page.waitForFunction(id=>
