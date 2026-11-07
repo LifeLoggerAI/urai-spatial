@@ -321,6 +321,11 @@ async function requireCurrentLifeMovieC1(
     || permanent.get('deleted') !== false || permanent.get('deletionEpoch') !== 0)) deny()
   if (consentBlock.exists && (consentBlock.get('ownerUid') !== uid
     || consentBlock.get('purpose') !== 'memory.storage' || consentBlock.get('active') !== false)) deny()
+  // Explicit narrowing: Firestore snapshot data is optional even after the
+  // fail-closed compound admission predicate. Never return an absent epoch.
+  if (!policy || !c) {
+    throw new functions.https.HttpsError('failed-precondition', 'Current Life Movie memory consent is unavailable.')
+  }
   return { revision: policy.revision, receiptHash: c.receiptHash }
 }
 
