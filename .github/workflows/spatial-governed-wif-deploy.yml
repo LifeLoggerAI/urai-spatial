@@ -259,6 +259,28 @@ jobs:
           test "$(jq -r 'has("private_key")' "$GOOGLE_APPLICATION_CREDENTIALS")" = 'false'
           test "$(jq -r 'has("client_email")' "$GOOGLE_APPLICATION_CREDENTIALS")" = 'false'
 
+      - name: Authenticate and resolve actual Hosting site and live-channel source
+        shell: bash
+        env:
+          GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          mkdir -p deployment-receipt/predeploy
+          python3 scripts/R882_PROVIDER_LIVE_SITE_COLLECTOR.py \
+            --collect --acknowledge-readonly-cloud-access \
+            --output deployment-receipt/predeploy/site-readback.json
+          jq -e --arg project "$FIREBASE_PROJECT" '
+            .classification == "READBACK_ONLY_NO_PRODUCTION_GO"
+            and .selectedSiteId == $project
+            and .selectedSiteType == "DEFAULT_SITE"
+            and (.latestLiveRelease.versionName | type == "string")
+            and (.holdReasons | length == 0)
+          ' deployment-receipt/predeploy/site-readback.json >/dev/null || {
+            echo 'HOLD: custom domain Hosting site is not independently verified as the configured default.' >&2
+            exit 1
+          }
+          echo "VERIFIED_HOSTING_SITE_ID=$(jq -r '.selectedSiteId' deployment-receipt/predeploy/site-readback.json)" >> "$GITHUB_ENV"
+
       - name: Capture current live Hosting rollback authority
         shell: bash
         env:
@@ -268,26 +290,12 @@ jobs:
           test -n "$GOOGLE_WIF_ACCESS_TOKEN"
           echo "::add-mask::$GOOGLE_WIF_ACCESS_TOKEN"
           mkdir -p deployment-receipt/predeploy
-          curl --fail --silent --show-error \
-            --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
-            "https://firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases?pageSize=100" \
-            > deployment-receipt/predeploy/releases.json
-          jq -e '
-            .releases
-            | map(select(.type != "SITE_DISABLE"))
-            | sort_by(.releaseTime)
-            | last
-            | (.name | type == "string")
-              and (.version.name | type == "string")
-              and (.releaseTime | type == "string")
-          ' deployment-receipt/predeploy/releases.json >/dev/null
-          jq '
-            .releases
-            | map(select(.type != "SITE_DISABLE"))
-            | sort_by(.releaseTime)
-            | last
-          ' deployment-receipt/predeploy/releases.json > deployment-receipt/predeploy/live-release.json
-          jq -r '.version.name' deployment-receipt/predeploy/live-release.json > deployment-receipt/predeploy/version-name.txt
+          test "$VERIFIED_HOSTING_SITE_ID" = "$FIREBASE_PROJECT"
+          jq -e '.latestLiveRelease and (.holdReasons | length == 0)' \
+            deployment-receipt/predeploy/site-readback.json >/dev/null
+          jq '.latestLiveRelease' deployment-receipt/predeploy/site-readback.json > deployment-receipt/predeploy/live-release.json
+          jq -r '.latestLiveRelease.versionName' deployment-receipt/predeploy/site-readback.json > deployment-receipt/predeploy/version-name.txt
+          test -s deployment-receipt/predeploy/version-name.txt
 
           fingerprint_status='absent-or-invalid'
           if curl --fail --silent --show-error --proto '=https' --tlsv1.2 \
@@ -476,7 +484,7 @@ jobs:
             --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
             --header 'Content-Type: application/json' \
             --data "$(jq -nc --arg message "URAI automatic Hosting rollback after failed exact-head release run $GITHUB_RUN_ID" '{message:$message}')" \
-            "https://firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases?versionName=$version_name" \
+            "https://firebasehosting.googleapis.com/v1beta1/sites/$VERIFIED_HOSTING_SITE_ID/releases?versionName=$version_name" \
             > deployment-receipt/rollback/restore-result.json
           test "$(jq -r '.version.name // empty' deployment-receipt/rollback/restore-result.json)" = "$version_name"
 
@@ -493,7 +501,7 @@ jobs:
           sleep 5
           curl --fail --silent --show-error \
             --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
-            "https://firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases?pageSize=20" \
+            "https://firebasehosting.googleapis.com/v1beta1/sites/$VERIFIED_HOSTING_SITE_ID/channels/live/releases?pageSize=100" \
             > deployment-receipt/rollback/releases-after-restore.json
           observed="$(jq -r '
             .releases
