@@ -217,15 +217,37 @@ test('Focus stepper never promotes a hidden, stale or malformed duplicate event'
   const first={...b,id:'event:one'}
   const selected={...owner,id:'mem_b',star:{id:'physical-star-b'},replayManifest:{id:'manifest_b'}}
   const privateNodes=[a,first,{...b,id:'event:two',privacyLevel:'hidden'},c]
-  for(const nodeId of ['event:two','event:missing','evil?access=1']) {
-    const result=focusStarTravel(privateNodes,selected,'private',false,nodeId)
-    assert.equal(result.currentNodeId,'event:one')
-    assert.equal(result.total,3)
+  for(const nodeId of ['event:two','event:missing','evil?access=1','canonical-memory:mem_c','']) {
+    zero(focusStarTravel(privateNodes,selected,'private',false,nodeId))
   }
+  // An ordinary selected memory with no requested event retains safe
+  // same-Focus navigation from the live owner/consent-scoped Life Map.
+  const direct=focusStarTravel(privateNodes,selected,'private',false)
+  assert.equal(direct.total,3)
+  assert.equal(direct.currentNodeId,'event:one')
+  const ownerEvent=focusStarTravel(privateNodes,selected,'private',false,'event:one')
+  assert.equal(ownerEvent.currentNodeId,'event:one')
   const revoked=focusStarTravel(privateNodes,selected,'signed-out',false,'event:one')
   zero(revoked)
   const pending=focusStarTravel(privateNodes,selected,'private',true,'event:one')
   zero(pending)
+})
+
+test('stale explicit Focus event cannot use another authorized star as a navigation doorway', () => {
+  const selected={...owner,id:'mem_b',star:{id:'physical-star-b'},replayManifest:{id:'manifest_b'}}
+  const valid={...b,id:'event:current'}
+  const revoked={...b,id:'event:revoked',authorizedMemory:false}
+  const hidden={...b,id:'event:hidden',privacyLevel:'hidden'}
+  const mismatched={...b,id:'event:wrong-manifest',replayManifestId:'manifest_old'}
+  for(const candidate of [revoked,hidden,mismatched]){
+    zero(focusStarTravel([a,valid,candidate,c],selected,'private',false,candidate.id))
+  }
+  zero(focusStarTravel([a,valid,c],selected,'private',false,a.id))
+  const current=focusStarTravel([a,valid,c],selected,'private',false,valid.id)
+  assert.equal(current.currentNodeId,'event:current')
+  assert.equal(current.total,3)
+  assert.equal(current.previous.nodeId,a.id)
+  assert.equal(current.next.nodeId,c.id)
 })
 
 test('canonical projection needs live owner Life Map evidence, not a URL-derived ID', () => {
