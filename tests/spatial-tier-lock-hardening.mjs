@@ -1,9 +1,10 @@
-import playwright from '../urai-tier1/node_modules/playwright/index.js';
+import { createRequire } from 'node:module';
+const requireTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url));
+const { chromium } = requireTierOne('playwright');
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 
-const { chromium } = playwright;
 
 const BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
@@ -220,9 +221,42 @@ async function runVisual(page, stage, report) {
   await screenshot(page, report, 'visual-lifemap-mobile');
 }
 
+// Real Chromium touch emulation; separate physical mobile/XR acceptance is required.
+async function runMobileTouchJourney(browser, report) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 }, deviceScaleFactor: 2,
+    isMobile: true, hasTouch: true, reducedMotion: 'reduce'
+  });
+  try {
+    const page = await context.newPage();
+    collectConsole(page, report);
+    const stage = page.getByTestId('urai-scene-stage');
+    await gotoMode(page, stage, 'home', '/home');
+    const reduced = await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (!reduced) throw new Error('Mobile reduced motion preference missing');
+    const sky = page.getByTestId('urai-sky-click-target');
+    await expectVisible(sky, 'mobile home touch target');
+    await sky.tap();
+    await expectAttr(stage, 'data-scene-mode', 'life-map', 9000);
+    const star = page.getByTestId('lifemap-node-seed-memory-bloom');
+    await expectVisible(star, 'mobile demo star');
+    await star.tap();
+    await expectAttr(stage, 'data-scene-mode', 'focus');
+    await page.getByRole('button', { name: 'Start Replay' }).tap();
+    await expectAttr(stage, 'data-scene-mode', 'replay');
+    for (const mode of ['focus','life-map','home']) {
+      await page.keyboard.press('Escape');
+      await expectAttr(stage, 'data-scene-mode', mode);
+    }
+    await screenshot(page, report, 'mobile-touch-reduced-motion-return-home');
+  } finally {
+    await context.close();
+  }
+}
+
 async function run() {
   const server = startServer();
-  const report = { suite: SUITE, screenshots: [], console: [], checks: [] };
+  const report = { suite: SUITE, screenshots: [], console: [], checks: [], browserExecution: 'required', mobileEmulation: true, physicalDeviceCertified: false };
   try {
     await waitForServer(BASE_URL);
     const browser = await chromium.launch();
@@ -236,6 +270,7 @@ async function run() {
       race: runRaceConditions,
       data: runDataStates,
       visual: runVisual,
+      mobile: (_page, _stage, receipt) => runMobileTouchJourney(browser, receipt),
     };
 
     const selected = SUITE === 'all' ? Object.entries(suites) : Object.entries(suites).filter(([name]) => name === SUITE);
