@@ -22,7 +22,30 @@ run() {
   local gate="$1" limit="$2" code=0
   shift 2
   timeout -k 15 "$limit" "$@" > "$OUT/$gate.log" 2>&1 || code=$?
-  if ((code)); then record "$gate" FAIL "$code" "$OUT/$gate.log"; block downstream "Required $gate failed; no fallback."
+  if ((code)); then
+    record "$gate" FAIL "$code" "$OUT/$gate.log"
+    # The full original test log remains unchanged with its SHA256 receipt.
+    # Surface the first failure so it is visible outside ephemeral pod disks.
+    if [[ "$gate" == "tier1_test" ]]; then
+      printf 'URAI_TIER1_FIRST_FAILURE_BEGIN\n'
+      awk '
+        /^FAIL (tests\\/|\\.\\.\\/tests\\/)/ { failed = $0 }
+        /^not ok [0-9]+/ && !found {
+          if (failed != "") print failed
+          found = 1
+          remaining = 24
+        }
+        found && remaining > 0 { print; remaining--; if (remaining == 0) exit }
+        END {
+          if (!found) {
+            if (failed != "") print failed
+            else print "No TAP not-ok marker; inspect preserved tier1_test.log"
+          }
+        }
+      ' "$OUT/$gate.log" || true
+      printf 'URAI_TIER1_FIRST_FAILURE_END\n'
+    fi
+    block downstream "Required $gate failed; no fallback."
   else record "$gate" PASS 0 "$OUT/$gate.log"; fi
 }
 # Required exact SHA must be supplied by a separately reviewed candidate.

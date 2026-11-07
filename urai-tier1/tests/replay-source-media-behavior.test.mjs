@@ -588,6 +588,10 @@ async function staleReleaseScenario(source,phase,settlement="resolve"){
  const bytes=Buffer.from('synthetic hook cleanup fixture; not family media');
  const receipt={mediaReceiptId:'a'.repeat(64),kind:'audio'};
  const memory={ownerId:'owner',id:'memory',privacy:'private',authorization:'owner',sourceMediaReceipts:[receipt]};
+ // Reuse the real canonical parser in the synthetic race fixture. An incomplete
+ // memory is correctly denied before the late-SDK behavior under test begins.
+ const canonicalOwnerMemory={...buildExplicitDemoMemory('demo:synthetic-private-replay-test'),id:'memory',ownerId:'owner',demo:false,privacy:'private',sourceMedia:[{kind:receipt.kind,mediaReceiptId:receipt.mediaReceiptId}]};
+ assert.equal(parseSelectedMemory(canonicalOwnerMemory,'owner','memory','synthetic-bucket',1).status,'ready','synthetic Replay source must meet real canonical owner/memory policy');
  const descriptor={schemaVersion:'urai-owned-memory-media-playback-v1',requiresAuthorization:true,ownerId:'owner',memoryId:'memory',receiptId:receipt.mediaReceiptId,kind:'audio',contentType:'audio/wav',sha256:createHash('sha256').update(bytes).digest('hex'),byteLength:bytes.length,storageGeneration:'123',sourceAuthorityHash:'b'.repeat(64),authorityHash:'c'.repeat(64),expiresAt:Date.now()+60000};
  const pending=staleReleaseDeferred(), postDownloadAuthorityEntered=staleReleaseDeferred(), watches=[],timers=new Set();let effect,authCallback,tokenCalls=0,callableCalls=0,newRelease=0,oldRelease=0;
  const ref={current:null};const user={uid:'owner',getIdToken(){tokenCalls++;return phase==='token'?pending.promise:Promise.resolve('synthetic-token');}};const auth={currentUser:user};
@@ -606,8 +610,23 @@ async function staleReleaseScenario(source,phase,settlement="resolve"){
   throw Error('unexpected import '+id);
  },{...timerEnv,navigator:{onLine:true},window:{addEventListener(){},removeEventListener(){}},process:{env:{NEXT_PUBLIC_FIREBASE_PROJECT_ID:'urai-4dc1d'}}});
  hook.useOwnedMemoryMediaPlayback(memory,()=>{oldRelease++;});const cleanup=effect();authCallback(user);
- for(const {path,fn}of watches){let data=sourceReceipt;if(path==='consentRecords/owner_memory_storage')data={uid:'owner',purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:sourceReceipt.consentReceiptHash,expiresAt:consentExpiry};else if(path.endsWith('/memories/memory'))data={};else if(path.endsWith('/privacyPolicy/current'))data={ownerId:'owner',version:2,revision:1,domains:{memory:{mode:'granted',replayVisible:true}},enforcement:{state:'fully-enforced'}};else if(path.endsWith('/privacyRuntime/exportAuthority'))data={generation:0,pendingDeletions:{}};else if(path==='users/owner')data={};fn({exists:()=>true,data:()=>data});}
- await staleReleaseDrain();if(phase==='post-download-authority'){await postDownloadAuthorityEntered.promise;await staleReleaseDrain();}assert.equal(callableCalls,phase==='post-download-authority'?2:1,'old mount entered actual callable wait');if(phase==='token')assert.equal(tokenCalls,1,'old mount entered actual token wait');
+ for(const {path,fn}of watches){let data=sourceReceipt;if(path==='consentRecords/owner_memory_storage')data={uid:'owner',purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:sourceReceipt.consentReceiptHash,expiresAt:consentExpiry};else if(path.endsWith('/memories/memory'))data=canonicalOwnerMemory;else if(path.endsWith('/privacyPolicy/current'))data={ownerId:'owner',version:2,revision:1,domains:{memory:{mode:'granted',replayVisible:true}},enforcement:{state:'fully-enforced'}};else if(path.endsWith('/privacyRuntime/exportAuthority'))data={generation:0,pendingDeletions:{}};else if(path==='users/owner')data={};fn({exists:()=>true,data:()=>data});}
+ await staleReleaseDrain();
+ if(phase==='post-download-authority'){
+   // Do not let a failed synthetic admission silently cancel the rest of the
+   // test run as a pending Promise. Preserve the actual reason and call counts.
+   let diagnosticTimeout;
+   try {
+     await Promise.race([
+       postDownloadAuthorityEntered.promise,
+       new Promise((_resolve,reject)=>{ diagnosticTimeout=setTimeout(
+         ()=>reject(new Error('SYNTHETIC_REPLAY_POST_DOWNLOAD_AUTHORITY_NOT_REACHED tokenCalls='+tokenCalls+' callableCalls='+callableCalls+' watches='+watches.length)),5000) })
+     ]);
+   } finally { clearTimeout(diagnosticTimeout); }
+   await staleReleaseDrain();
+ }
+ assert.equal(callableCalls,phase==='post-download-authority'?2:1,'old mount entered actual callable wait');
+ if(phase==='token')assert.equal(tokenCalls,1,'old mount entered actual token wait');
  cleanup();assert.equal(oldRelease,1,'initial cleanup releases old consumer once');
  hook.useOwnedMemoryMediaPlayback(memory,()=>{newRelease++;});
  await staleReleaseDrain();const timersAfterCancel=timers.size;
