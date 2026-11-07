@@ -58,6 +58,8 @@ jobs:
         run: corepack enable
       - name: Install
         run: pnpm install --frozen-lockfile
+      - name: R885 release source safety regression
+        run: node --test scripts/r885-release-source-regression.test.mjs
       - name: Source integrity
         run: pnpm check:source-integrity
       - name: Production route exposure
@@ -174,6 +176,8 @@ jobs:
         run: corepack enable
       - name: Install
         run: pnpm install --frozen-lockfile
+      - name: R885 release source safety regression
+        run: node --test scripts/r885-release-source-regression.test.mjs
       - name: Source integrity
         run: pnpm check:source-integrity
       - name: Production route exposure
