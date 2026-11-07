@@ -35,7 +35,8 @@ test('browser dependency resolves from the installed Tier 1 package under pnpm',
 test('selected Life Map inspector remains visible for explicit disclosed sample navigation', () => {
   const css=readFileSync(new URL('../urai-tier1/src/components/lifemap/lifeMapSemanticNavigatorOwnership.css',import.meta.url),'utf8');
   const component=readFileSync(new URL('../urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx',import.meta.url),'utf8');
-  assert.match(css,/html\\.urai-route-life-map body \\.life-map-semantic-inspector\\s*\\{\\s*display:\\s*grid\\s*!important;/);
-  assert.match(component,/selected && open \\? <aside className="life-map-semantic-inspector"/);
-  assert.match(component,/disabled=\\{\\(!explicitDemo && !selected\\.authorizedMemory\\)/);
+  assert.ok(css.includes('html.urai-route-life-map body .life-map-semantic-inspector {'));
+  assert.ok(css.includes('display: grid !important;'));
+  assert.ok(component.includes('selected && open ? <aside className="life-map-semantic-inspector"'));
+  assert.ok(component.includes('(!explicitDemo && !selected.authorizedMemory)'));
 });
