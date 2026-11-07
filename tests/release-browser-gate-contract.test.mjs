@@ -48,3 +48,9 @@ test('multi-route browser visual acceptance waits for original hydration and sti
  assert.ok(src.includes("report.console.push(name+': '+msg.text().slice(0,14000))"));
  assert.ok(src.includes("ensure(report.console.length===0"));
 });
+
+test('screenshots leave caret styles unchanged while React hydrates',()=>{
+ assert.ok(src.includes("page.screenshot({path,fullPage:true,caret:'initial'})"));
+ assert.ok(src.includes("ensure(report.console.length===0"));
+ assert.ok(!src.includes("page.screenshot({path,fullPage:true})"));
+});

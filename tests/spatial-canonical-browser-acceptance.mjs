@@ -30,7 +30,8 @@ function attach(page,name){
  page.on('pageerror',err=>report.console.push(name+': '+err.message.slice(0,500)));
 }
 async function shot(page,name){
- const path=DIR+'/'+name+'.png';await page.screenshot({path,fullPage:true});report.screenshots.push(path);
+ const path=DIR+'/'+name+'.png';// Retain source DOM styles during React hydration; Playwright defaults to caret:'hide'.
+ await page.screenshot({path,fullPage:true,caret:'initial'});report.screenshots.push(path);
 }
 async function pathIs(page,path,limit=24000){
  await page.waitForURL(u=>u.pathname.replace(/\/+$/,'')===path,{timeout:limit});
