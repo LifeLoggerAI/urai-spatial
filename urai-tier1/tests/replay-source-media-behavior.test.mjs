@@ -611,7 +611,22 @@ async function staleReleaseScenario(source,phase,settlement="resolve"){
  },{...timerEnv,navigator:{onLine:true},window:{addEventListener(){},removeEventListener(){}},process:{env:{NEXT_PUBLIC_FIREBASE_PROJECT_ID:'urai-4dc1d'}}});
  hook.useOwnedMemoryMediaPlayback(memory,()=>{oldRelease++;});const cleanup=effect();authCallback(user);
  for(const {path,fn}of watches){let data=sourceReceipt;if(path==='consentRecords/owner_memory_storage')data={uid:'owner',purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:sourceReceipt.consentReceiptHash,expiresAt:consentExpiry};else if(path.endsWith('/memories/memory'))data=canonicalOwnerMemory;else if(path.endsWith('/privacyPolicy/current'))data={ownerId:'owner',version:2,revision:1,domains:{memory:{mode:'granted',replayVisible:true}},enforcement:{state:'fully-enforced'}};else if(path.endsWith('/privacyRuntime/exportAuthority'))data={generation:0,pendingDeletions:{}};else if(path==='users/owner')data={};fn({exists:()=>true,data:()=>data});}
- await staleReleaseDrain();if(phase==='post-download-authority'){await postDownloadAuthorityEntered.promise;await staleReleaseDrain();}assert.equal(callableCalls,phase==='post-download-authority'?2:1,'old mount entered actual callable wait');if(phase==='token')assert.equal(tokenCalls,1,'old mount entered actual token wait');
+ await staleReleaseDrain();
+ if(phase==='post-download-authority'){
+   // Do not let a failed synthetic admission silently cancel the rest of the
+   // test run as a pending Promise. Preserve the actual reason and call counts.
+   let diagnosticTimeout;
+   try {
+     await Promise.race([
+       postDownloadAuthorityEntered.promise,
+       new Promise((_resolve,reject)=>{ diagnosticTimeout=setTimeout(
+         ()=>reject(new Error('SYNTHETIC_REPLAY_POST_DOWNLOAD_AUTHORITY_NOT_REACHED tokenCalls='+tokenCalls+' callableCalls='+callableCalls+' watches='+watches.length)),5000) })
+     ]);
+   } finally { clearTimeout(diagnosticTimeout); }
+   await staleReleaseDrain();
+ }
+ assert.equal(callableCalls,phase==='post-download-authority'?2:1,'old mount entered actual callable wait');
+ if(phase==='token')assert.equal(tokenCalls,1,'old mount entered actual token wait');
  cleanup();assert.equal(oldRelease,1,'initial cleanup releases old consumer once');
  hook.useOwnedMemoryMediaPlayback(memory,()=>{newRelease++;});
  await staleReleaseDrain();const timersAfterCancel=timers.size;
