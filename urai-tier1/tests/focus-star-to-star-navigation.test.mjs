@@ -130,7 +130,10 @@ test('direct Life Map and canonical projected star remain supported, without adm
   assert.equal(focusReplayReturnNode(selected,direct,null),'physical-star-b')
   assert.equal(focusReplayReturnNode(selected,direct,verifiedFocusEventNodeId([{...b,id:'event:b'}],selected,'private',false,'event:b')),'event:b')
   const projection=new URLSearchParams({memoryId:'mem_b',manifestId:'manifest_b',node:'canonical-memory:mem_b',from:'manual-direct'})
-  assert.equal(focusReplayReturnNode(selected,projection,null),'canonical-memory:mem_b')
+  assert.equal(focusReplayReturnNode(selected,projection,null),'physical-star-b')
+  projection.set('from','life-map-semantic')
+  const projectionNode=verifiedFocusEventNodeId([b],selected,'private',false,'canonical-memory:mem_b')
+  assert.equal(focusReplayReturnNode(selected,projection,projectionNode),'canonical-memory:mem_b')
   projection.set('manifestId','manifest_a')
   assert.equal(focusReplayReturnNode(selected,projection,null),'physical-star-b')
 })
@@ -194,6 +197,45 @@ test('Replay-return source cannot be forged to override a mismatched node/manife
   assert.equal(focusReplayReturnNode(selected,route({}),verified),'event:b')
   for(const values of [{memoryId:'mem_c'},{manifestId:'manifest_c'},{node:'event:c'},{returnNode:'event:c'},{from:'manual-url'}]) assert.equal(focusReplayReturnNode(selected,route(values),verified),'physical-star-b')
   assert.equal(focusReplayReturnNode({...selected,authorization:'none'},route({}),verified),'physical-star-b')
+})
+
+test('Focus stepper preserves the exact second event for an authorized duplicate memory', () => {
+  const first={...b,id:'event:one'}
+  const second={...b,id:'event:two'}
+  const selected={...owner,id:'mem_b',star:{id:'physical-star-b'},replayManifest:{id:'manifest_b'}}
+  const stepper=focusStarTravel([a,first,second,c],selected,'private',false,'event:two')
+  assert.equal(stepper.position,2)
+  assert.equal(stepper.total,3)
+  assert.equal(stepper.currentNodeId,'event:two')
+  assert.equal(stepper.previous.nodeId,a.id)
+  assert.equal(stepper.next.nodeId,c.id)
+  const replay=new URLSearchParams({memoryId:'mem_b',manifestId:'manifest_b',node:stepper.currentNodeId,from:'focus-artifact'})
+  assert.equal(focusReplayReturnNode(selected,replay,verifiedFocusEventNodeId([a,first,second,c],selected,'private',false,stepper.currentNodeId)),'event:two')
+})
+
+test('Focus stepper never promotes a hidden, stale or malformed duplicate event', () => {
+  const first={...b,id:'event:one'}
+  const selected={...owner,id:'mem_b',star:{id:'physical-star-b'},replayManifest:{id:'manifest_b'}}
+  const privateNodes=[a,first,{...b,id:'event:two',privacyLevel:'hidden'},c]
+  for(const nodeId of ['event:two','event:missing','evil?access=1']) {
+    const result=focusStarTravel(privateNodes,selected,'private',false,nodeId)
+    assert.equal(result.currentNodeId,'event:one')
+    assert.equal(result.total,3)
+  }
+  const revoked=focusStarTravel(privateNodes,selected,'signed-out',false,'event:one')
+  zero(revoked)
+  const pending=focusStarTravel(privateNodes,selected,'private',true,'event:one')
+  zero(pending)
+})
+
+test('canonical projection needs live owner Life Map evidence, not a URL-derived ID', () => {
+  const selected={...owner,id:'mem_b',star:{id:'physical-star-b'},replayManifest:{id:'manifest_b'}}
+  const route=new URLSearchParams({memoryId:'mem_b',manifestId:'manifest_b',node:'canonical-memory:mem_b',from:'focus-artifact'})
+  assert.equal(focusReplayReturnNode(selected,route,null),'physical-star-b')
+  const match=verifiedFocusEventNodeId([b],selected,'private',false,'canonical-memory:mem_b')
+  assert.equal(focusReplayReturnNode(selected,route,match),'canonical-memory:mem_b')
+  assert.equal(verifiedFocusEventNodeId([{...b,privacyLevel:'hidden'}],selected,'private',false,'canonical-memory:mem_b'),null)
+  assert.equal(verifiedFocusEventNodeId([{...b,replayManifestId:'stale'}],selected,'private',false,'canonical-memory:mem_b'),null)
 })
 
 test('canonical mounted Focus must import owner-scoped Life Map hook and use same-route stepper', (t) => {
