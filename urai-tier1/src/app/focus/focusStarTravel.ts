@@ -26,6 +26,7 @@ export function focusStarTravel(
   memory: SelectedMemory | null,
   sourceMode: LifeMapSourceMode,
   loading: boolean,
+  requestedNodeId: string | null = null,
 ): FocusStarTravel {
   if (!memory || loading || memory.authorization !== 'owner') return EMPTY
   const disclosedDemo = memory.demo && sourceMode === 'explicit-demo'
@@ -69,7 +70,8 @@ export function focusStarTravel(
     next: current < accepted.length - 1 ? accepted[current + 1] : null,
     position: current + 1,
     total: accepted.length,
-    currentNodeId: accepted[current].nodeId,
+    currentNodeId: disclosedDemo ? accepted[current].nodeId
+      : verifiedFocusEventNodeId(nodes, memory, sourceMode, loading, requestedNodeId) ?? accepted[current].nodeId,
   }
 }
 
@@ -110,8 +112,9 @@ export function focusReplayReturnNode(
   const source = incoming.get('from')
   const acceptedSource = source === null || source === 'life-map' || source === 'life-map-semantic'
     || source === 'focus-star-step' || source === 'focus-artifact'
-  const projectedSelection = !memory.demo && node === `canonical-memory:${memory.id}`
+  // Projected canonical stars follow the same live Life Map verification as
+  // physical event stars. A forged projection URL cannot create an anchor.
   const verifiedSelection = !memory.demo && memory.authorization === 'owner'
     && acceptedSource && node === verifiedFocusNodeId
-  return projectedSelection || verifiedSelection ? node : memory.star.id
+  return verifiedSelection ? node : memory.star.id
 }
