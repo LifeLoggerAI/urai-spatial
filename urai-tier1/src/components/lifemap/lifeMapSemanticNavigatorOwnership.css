@@ -118,3 +118,10 @@ html.urai-route-life-map[dir='rtl'] .life-map-semantic-inspector {
 }
 
 @media (max-width: 760px) { html.urai-route-life-map[dir='rtl'] body #life-map-navigator { right: auto !important; left: max(12px, env(safe-area-inset-left)) !important; } }
+
+/* R857: The selected semantic inspector is conditionally mounted only after
+   user selection while Search is open. Keep its actions visible above the
+   canvas; generic visual-dashboard rules must not suppress real navigation. */
+html.urai-route-life-map body .life-map-semantic-inspector {
+  display: grid !important;
+}
