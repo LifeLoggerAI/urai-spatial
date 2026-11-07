@@ -2,26 +2,32 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8'));
-const src=readFileSync(new URL('./spatial-tier-lock-hardening.mjs',import.meta.url),'utf8');
-test('release invokes true browser journey, not only static route check',()=>{
+const src=readFileSync(new URL('./spatial-canonical-browser-acceptance.mjs',import.meta.url),'utf8');
+const legacy=readFileSync(new URL('./spatial-tier-lock-hardening.mjs',import.meta.url),'utf8');
+test('release requires real browser and canonical current routes rather than old scene stage',()=>{
  const cmd=pkg.scripts['test:e2e'];
  assert.match(cmd,/playwright:ensure/);
- assert.match(cmd,/tests\/spatial-lock\.mjs/);
- assert.match(cmd,/tests\/spatial-tier-lock-hardening\.mjs --suite=all/);
+ assert.match(cmd,/node tests\/spatial-lock\.mjs/);
+ assert.match(cmd,/node tests\/spatial-canonical-browser-acceptance\.mjs --suite=all/);
  assert.match(pkg.scripts['lock:e2e'],/test:e2e/);
- assert.match(src,/await chromium\.launch\(/);
- assert.match(src,/await page\.goto\(/);
- assert.match(src,/report\.console\.length/);
+ assert.match(src,/await chromium\.launch/);
+ assert.doesNotMatch(src,/getByTestId\('urai-scene-stage'\)/);
+ assert.match(legacy,/data-scene-mode/);
 });
-test('mobile touch and reduced motion are tested without claiming real devices',()=>{
- for(const marker of ['runMobileTouchJourney(browser, report)','isMobile: true','hasTouch: true',"reducedMotion: 'reduce'",'.tap()',"physicalDeviceCertified: false",'await context.close()']) assert.ok(src.includes(marker),marker);
+test('all seven route-owner acceptance suites fail closed without removing old tests',()=>{
+ for(const marker of ["const NAMES=['home','sample','navigation','race','data','visual','mobile']",'await SUITES[name](page)','report.failures.push','ensure(report.failures.length===0','ensure(report.console.length===0'])assert.ok(src.includes(marker),marker);
+ assert.match(src,/process\.exitCode=1/);
 });
-test('release has no optional browser fallback',()=>{
- assert.doesNotMatch(pkg.scripts['test:e2e'],/run-optional-e2e|run-playwright-tests\.mjs/);
- assert.doesNotMatch(src,/Skipping e2e|Running static Playwright contract/);
+test('signed-out Life Map private-data fence and explicit demo are required',()=>{
+ for(const marker of ["[data-private-memory-mounted=\"false\"]",'Open disclosed sample',"u.searchParams.get('demo')==='1'","[data-testid=\"urai-r3f-canonical-lifemap\"]"])assert.ok(src.includes(marker),marker);
+ assert.doesNotMatch(src,/FIREBASE_TOKEN|GOOGLE_APPLICATION_CREDENTIALS|productionGrant=true/);
 });
-test('browser package is resolved from Tier 1 workspace under pnpm 10', () => {
-  assert.match(src, /createRequire\(new URL\('\.\.\/urai-tier1\/package\.json'/);
-  assert.match(src, /requireTierOne\('playwright'\)/);
-  assert.doesNotMatch(src, /node_modules\/playwright\/index\.js/);
+test('Home keyboard, Focus Replay Escape, mobile touch and reduced motion are observable',()=>{
+ for(const marker of ["page.keyboard.press('Enter')","page.keyboard.press('Escape')","await pathIs(page,'/replay'","await pathIs(page,'/focus'","await pathIs(page,'/life-map'","hasTouch:true","reducedMotion:'reduce'","await link.tap()","physicalDeviceCertified:false"])assert.ok(src.includes(marker),marker);
+});
+test('browser dependency resolves from the installed Tier 1 package under pnpm',()=>{
+ assert.match(src,/createRequire\(new URL\('\.\.\/urai-tier1\/package\.json'/);
+ assert.match(src,/requireTierOne\('playwright'\)/);
+ assert.doesNotMatch(src,/node_modules\/playwright\/index\.js/);
+ assert.doesNotMatch(pkg.scripts['test:e2e'],/run-optional-e2e|spatial-tier-lock-hardening\.mjs/);
 });
