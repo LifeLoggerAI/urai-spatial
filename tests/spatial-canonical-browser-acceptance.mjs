@@ -98,7 +98,57 @@ async function navigation(page){
  await page.locator('.focusControls button.unwind').click();
  await pathIs(page,'/life-map',25000);
  await shot(page,'replay-escape-to-lifemap');
+ await focusStarNavigation(page);
 }
+
+// R864: exercise the new Focus-to-Focus navigation in an actual browser.
+// Deliberately disclosed demo only: no owner grants, tokens, private media, or
+// synthetic shortcut around the canonical memory-selection React hook.
+async function focusStarNavigation(page){
+ await page.goto(BASE+'/focus?demo=1&memoryId=demo:quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',{waitUntil:'domcontentloaded'});
+ const chamber=page.getByTestId('urai-final-focus-chamber');
+ await chamber.waitFor({state:'visible',timeout:25000});
+ await page.waitForFunction(()=>
+  document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')==='demo:quiet-reset',
+  null,{timeout:25000});
+ const help=page.locator('details.focusHelp');
+ await help.locator('summary').click();
+ const steps=page.locator('[data-focus-star-step="verified-visible-memory-only"]');
+ await steps.waitFor({state:'visible',timeout:25000});
+ const previous=steps.getByRole('button',{name:'Previous star'});
+ const next=steps.getByRole('button',{name:'Next star'});
+ ensure(!await previous.isEnabled(),'First disclosed star unexpectedly has a prior neighbor');
+ ensure(await next.isEnabled(),'No same-Focus next star despite disclosed sample neighbors');
+ await next.click();
+ await page.waitForURL(u=>u.pathname==='/focus'&&u.searchParams.get('demo')==='1'
+  && u.searchParams.get('memoryId')?.startsWith('demo:')&&u.searchParams.get('memoryId')!=='demo:quiet-reset',{timeout:25000});
+ const steppedId=new URL(page.url()).searchParams.get('memoryId');
+ await page.waitForFunction(id=>
+  document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')===id,
+  steppedId,{timeout:25000});
+ ensure(!/[?&](ownerId|planId|movieId|consent|token)=/.test(page.url()),'Focus step carried unrelated authority identifiers');
+ await shot(page,'disclosed-sample-focus-star-to-star');
+ if(!await help.evaluate(element=>element.open))await help.locator('summary').click();
+ await previous.click();
+ await page.waitForURL(u=>u.pathname==='/focus'&&u.searchParams.get('memoryId')==='demo:quiet-reset',{timeout:25000});
+ await page.waitForFunction(()=>
+  document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')==='demo:quiet-reset',
+  null,{timeout:25000});
+ if(!await help.evaluate(element=>element.open))await help.locator('summary').click();
+ await next.click();
+ await page.waitForURL(u=>u.pathname==='/focus'&&u.searchParams.get('memoryId')===steppedId,{timeout:25000});
+ await page.waitForFunction(id=>
+  document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')===id,
+  steppedId,{timeout:25000});
+ await page.locator('.focusControls button.primary').click();
+ await pathIs(page,'/replay',30000);
+ await page.getByTestId('cinematic-replay-client').waitFor({state:'visible',timeout:25000});
+ await page.keyboard.press('Escape');
+ await pathIs(page,'/focus',25000);
+ ensure(new URL(page.url()).searchParams.get('memoryId')===steppedId,
+  'Replay Escape lost the last disclosed Focus star');
+}
+
 async function race(page){
  await page.goto(BASE+'/life-map?demo=1&manifestId=replay-recovery-thread',{waitUntil:'domcontentloaded'});
  await visibleOne(page,['[data-testid="urai-r3f-canonical-lifemap"]','[data-testid="urai-life-map-authored-fallback"]']);

@@ -54,3 +54,24 @@ test('screenshots leave caret styles unchanged while React hydrates',()=>{
  assert.ok(src.includes("ensure(report.console.length===0"));
  assert.ok(!src.includes("page.screenshot({path,fullPage:true})"));
 });
+
+test('canonical browser navigation must exercise same-Focus star stepping and retain Replay Escape identity',()=>{
+ assert.ok(src.includes('await focusStarNavigation(page)'));
+ assert.ok(src.includes('async function focusStarNavigation(page)'));
+ assert.ok(src.includes('data-focus-star-step="verified-visible-memory-only"'));
+ assert.ok(src.includes("steps.getByRole('button',{name:'Next star'})"));
+ assert.ok(src.includes("steps.getByRole('button',{name:'Previous star'})"));
+ assert.ok(src.includes("await pathIs(page,'/replay'"));
+ assert.ok(src.includes("await pathIs(page,'/focus'"));
+ assert.ok(src.includes('Replay Escape lost the last disclosed Focus star'));
+ assert.ok(src.includes("u.pathname==='/focus'"));
+ assert.doesNotMatch(src,/productionGrant=true|FIREBASE_TOKEN|GOOGLE_APPLICATION_CREDENTIALS/);
+});
+
+test('Focus browser sample uses canonical demo identity before and after Replay',()=>{
+ assert.ok(src.includes("memoryId=demo:quiet-reset&manifestId=replay-recovery-thread"));
+ assert.ok(src.includes("u.searchParams.get('memoryId')?.startsWith('demo:')"));
+ assert.ok(src.includes("getAttribute('data-memory-id')===id"));
+ assert.ok(!src.includes("getAttribute('data-memory-id')==='demo:'+id"));
+ assert.ok(src.includes("u.searchParams.get('memoryId')==='demo:quiet-reset'"));
+});

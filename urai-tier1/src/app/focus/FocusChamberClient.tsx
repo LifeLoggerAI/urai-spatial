@@ -1,6 +1,7 @@
 'use client'
 
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
+import { useRouter } from 'next/navigation'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 
 import { consumeReplayReturnFocus } from '@/spatial/world/replayReturnFocusHandoff'
@@ -18,6 +19,8 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets, replayAssets } from '@/spatial/assets/uraiAssets'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
+import { focusStarTravel, focusReplayReturnNode } from './focusStarTravel'
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import { forwardPrivateMovieRouteSelection } from '@/spatial/life-movie/privateLifeMovieRouteSelection'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
@@ -326,9 +329,12 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
 
 export default function FocusChamberClient() {
   const locale = useUraiLocale()
+  const router = useRouter()
   const result = useSelectedMemory()
   const location = useBrowserLocation()
   const memory = result.memory
+  const lifeMap = useLifeMapEvents(memory?.demo ? 'demo-user' : memory?.ownerId)
+  const starTravel = useMemo(() => focusStarTravel(lifeMap.nodes, memory, lifeMap.sourceMode, lifeMap.loading), [lifeMap.nodes, lifeMap.sourceMode, lifeMap.loading, memory])
   const adaptiveProfile = useAdaptiveSpatialQuality()
   const [softwareRenderer, setSoftwareRenderer] = useState(false)
   const profile: SpatialQualityProfile = useMemo(() => softwareRenderer ? {
@@ -391,15 +397,9 @@ export default function FocusChamberClient() {
     if (!memory) return null
     const search = location.includes('?') ? location.slice(location.indexOf('?') + 1).split('#')[0] : ''
     const incoming = new URLSearchParams(search)
-    const node = incoming.get('node')
-    const sameMemory = incoming.get('memoryId') === memory.id && incoming.get('manifestId') === memory.replayManifest.id
-    const validNode = Boolean(node && /^[A-Za-z0-9._:-]{1,120}$/.test(node))
-    const fromLifeMap = incoming.get('from') === 'life-map' || incoming.get('from') === 'life-map-semantic'
-    const originalSelection = fromLifeMap && node === incoming.get('returnNode')
-    const projectedSelection = node === `canonical-memory:${memory.id}`
-    // A projected Memory Star has a distinct scene ID from its canonical memory.
-    // Preserve it across Focus -> Replay -> Focus without ever treating it as authority.
-    const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id
+    // Preserve an event-backed Focus selection only when the consent-scoped Life Map
+    // confirmed the selected star; never infer owner authority from route metadata.
+    const returnNode = focusReplayReturnNode(memory, incoming, starTravel.currentNodeId)
     const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: returnNode, from: 'focus-artifact' })
     if (returnNode !== memory.star.id) next.set('returnNode', returnNode)
     if (memory.demo) next.set('demo', '1')
@@ -410,7 +410,7 @@ export default function FocusChamberClient() {
       })
     }
     return `/replay?${next.toString()}`
-  }, [memory, location])
+  }, [memory, location, starTravel.currentNodeId])
 
   const enterReplay = useCallback(() => {
     if (!memory || !replayHref || committed) return
@@ -469,7 +469,7 @@ export default function FocusChamberClient() {
     </nav>
     <div className="focusUtilities">
       <AdamLauncherSlot name="focus-memory-controls" as="div" />
-      <details className="focusHelp"><summary {...locale.props('focus.explore')}>{locale.text('focus.explore')}</summary><p {...locale.props('focus.instructions')}>{locale.text('focus.instructions')}</p></details>
+      <details className="focusHelp"><summary {...locale.props('focus.explore')}>{locale.text('focus.explore')}</summary><div className="focusHelpPanel"><p {...locale.props('focus.instructions')}>{locale.text('focus.instructions')}</p>{starTravel.total > 1 ? <nav className="focusStarSteps" data-focus-star-step="verified-visible-memory-only" aria-label="Travel between currently authorized memory stars"><span className="focusStarStepsCount">Star {starTravel.position} of {starTravel.total}</span><div className="focusStarStepsActions"><button type="button" disabled={!starTravel.previous || committed} onClick={() => { const target = starTravel.previous; if (!target || committed) return; router.replace(target.href, { scroll: false }) }}>Previous star</button><button type="button" disabled={!starTravel.next || committed} onClick={() => { const target = starTravel.next; if (!target || committed) return; router.replace(target.href, { scroll: false }) }}>Next star</button></div></nav> : null}</div></details>
     </div>
     </div>
     {webglState !== 'ready' && webglState !== 'failed' ? <section className="webglRecovery" role="status" aria-live="assertive"><strong {...locale.props(webglState === 'lost' ? 'focus.paused' : 'focus.restoring')}>{locale.text(webglState === 'lost' ? 'focus.paused' : 'focus.restoring')}</strong><span {...locale.props('focus.preserved')}>{locale.text('focus.preserved')}</span><button type="button" onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenterRestored')}>{locale.text('focus.recenterRestored')}</button></section> : null}
