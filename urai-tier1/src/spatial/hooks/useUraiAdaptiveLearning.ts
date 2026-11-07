@@ -17,16 +17,9 @@ export function useUraiAdaptiveLearning({
   const [profile, setProfile] = useState(() => loadAdaptiveProfile());
   const lastKeyRef = useRef("");
 
-  const signalKey = useMemo(() => {
-    return JSON.stringify({
-      phase: signal.phase,
-      selectedMemoryType: signal.selectedMemoryType,
-      selectedTone: signal.selectedTone,
-      dominantArc: signal.dominantArc,
-      companionMode: signal.companionMode,
-      companionAction: signal.companionAction,
-    });
-  }, [signal]);
+  // Include the intensity/weight consumed by the real algorithm and the
+  // timestamp distinguishing a later event with otherwise identical content.
+  const signalKey = JSON.stringify(signal);
 
   useEffect(() => {
     if (!enabled) return;

@@ -86,6 +86,7 @@ const tests = [
   'tests/replay-trail-geometry.test.mjs',
   'tests/software-webgl-renderer-quality.test.mjs',
   'tests/home-world-checkpoint-persistence.test.mjs',
+  'tests/legacy-tier-state-change-behavior.test.mjs',
   'tests/replay-transition-evidence-contract.test.mjs',
   'tests/dispatcher-transient-retry-contract.test.mjs',
   'tests/home-runtime-cursor-cleanup-contract.test.mjs',
