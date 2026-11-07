@@ -1,13 +1,16 @@
 import type { UraiAdaptiveProfile } from "./types";
 import { createDefaultAdaptiveProfile } from "./profile";
+import { legacyOwnerStorageKey } from "@/lib/uraiStorage/ownerScope";
 
-const KEY = "urai:tier8:adaptive-profile:v1";
+const NAMESPACE = "urai:tier8:adaptive-profile";
+// No reads from the historical unscoped key or implicit legacy migration.
 
-export function loadAdaptiveProfile(): UraiAdaptiveProfile {
-  if (typeof window === "undefined") return createDefaultAdaptiveProfile();
+export function loadAdaptiveProfile(ownerId: string | null | undefined): UraiAdaptiveProfile {
+  const key = legacyOwnerStorageKey(NAMESPACE, ownerId);
+  if (!key || typeof window === "undefined") return createDefaultAdaptiveProfile();
 
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return createDefaultAdaptiveProfile();
     return JSON.parse(raw) as UraiAdaptiveProfile;
   } catch {
@@ -15,21 +18,26 @@ export function loadAdaptiveProfile(): UraiAdaptiveProfile {
   }
 }
 
-export function saveAdaptiveProfile(profile: UraiAdaptiveProfile): void {
-  if (typeof window === "undefined") return;
+export function saveAdaptiveProfile(
+  profile: UraiAdaptiveProfile,
+  ownerId: string | null | undefined
+): void {
+  const key = legacyOwnerStorageKey(NAMESPACE, ownerId);
+  if (!key || typeof window === "undefined") return;
 
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(profile));
+    window.localStorage.setItem(key, JSON.stringify(profile));
   } catch {
     // adaptive learning must never break Spatial
   }
 }
 
-export function clearAdaptiveProfile(): void {
-  if (typeof window === "undefined") return;
+export function clearAdaptiveProfile(ownerId: string | null | undefined): void {
+  const key = legacyOwnerStorageKey(NAMESPACE, ownerId);
+  if (!key || typeof window === "undefined") return;
 
   try {
-    window.localStorage.removeItem(KEY);
+    window.localStorage.removeItem(key);
   } catch {
     // no-op
   }
