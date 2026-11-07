@@ -13,6 +13,7 @@ Changed source:
 - `scripts/R883_VERIFY_FUNCTIONS_BUILD.mjs`: source-preserved build-input / compiled-file identity tool.
 - `scripts/R883_VERIFY_HOSTING_ARTIFACTS.mjs`: source-preserved pending and certified output-byte verifier.
 - `scripts/r885-release-source-regression.test.mjs`: new six-case read-only workflow/source regression test.
+- `.github/workflows/urai-spatial-ci.yml`: adds the R885 source regression in both established CI jobs; no run was dispatched here.
 
 ## Intentional hard HOLD
 
