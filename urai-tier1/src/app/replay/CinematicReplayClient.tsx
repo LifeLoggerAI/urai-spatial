@@ -40,7 +40,7 @@ import { ReplayPersonPresence } from './ReplayPersonPresence'
 import { ReplayRecordedSource, type ReplayImageState } from './ReplayRecordedSource'
 import { initialReplayVideoSnapshot, type ReplayVideoSession, type ReplayVideoSnapshot } from './replayMediaSession'
 import { cameraLerpAlpha } from '@/spatial/canon/cameraMotion'
-import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmission'
+import { replaySessionIdentity, replayVisualAdmission, type ReplayAuthorizedSource } from './replayVisualAdmission'
 import { ReplayForestFloor, ReplayMemoryGrove, ReplayScannedUnderstory } from './ReplayEnvironmentDetails'
 import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
 import { buildReplayWornTrailGeometry, replayTrailCenter } from './replayTrailGeometry'
@@ -474,7 +474,14 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const interpretiveWorldEntry = useInterpretiveWorldReplayEntry(governedMemoryId)
   const generatedWorldEntry = capturedRealityEntry ? null : interpretiveWorldEntry
   const memoryWorldHref = useMemo(() => memory.demo || lifeModelAuthority.available ? memoryWorldReplayHref(memory) : null, [lifeModelAuthority.available, memory])
-  const admission = useMemo(() => replayVisualAdmission(playableMemory), [playableMemory])
+  // Only the receipt/consent-bound owner hook or protected Studio movie hook
+  // can authorize private bytes. A legacy direct Storage URL is NOT a playback
+  // grant, even when the ordinary memory document remains owner-readable.
+  const sourceAuthority: ReplayAuthorizedSource | null = hasProtectedMovie
+    ? 'protected-life-movie'
+    : expectsPrivateSource && ownedPlayback.status === 'ready' ? 'owned-receipt' : null
+  const admission = useMemo(() => replayVisualAdmission(playableMemory, sourceAuthority),
+    [playableMemory, sourceAuthority])
   const media = admission.media
   const video = media?.kind === 'video' || media?.kind === 'audio'
   const webgl = useReplayWebGL()
