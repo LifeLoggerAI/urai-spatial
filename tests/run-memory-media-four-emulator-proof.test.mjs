@@ -73,3 +73,18 @@ test('duplicate head flags are rejected before any source execution', () => {
   const r=invoke({},['--expected-head='+'a'.repeat(40),'--expected-head='+'b'.repeat(40)])
   assert.notEqual(r.status,0);assert.match(r.stderr,/MULTIPLE_SOURCE_HEAD_FLAGS_REFUSED/)
 })
+
+test('R847 Captured Reality fixture is opt-in only within exact demo four-emulator stage', () => {
+  const runner = readFileSync(path.join(fixture, 'scripts/genesis-r799-exact-head-acceptance.sh'), 'utf8')
+  const stage = runner.slice(runner.indexOf('run firebase_four 750 env'))
+  assert.ok(stage.startsWith('run firebase_four 750 env GCLOUD_PROJECT=demo-memory-media-playback'))
+  assert.ok(stage.includes('URAI_ENABLE_CAPTURED_REALITY=true'))
+  assert.ok(stage.includes('FIREBASE_STORAGE_BUCKET=demo-memory-media-playback.appspot.com'))
+  assert.ok(stage.includes('FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9549'))
+  assert.ok(stage.includes('FIRESTORE_EMULATOR_HOST=127.0.0.1:8249'))
+  assert.ok(stage.includes('STORAGE_EMULATOR_HOST=http://127.0.0.1:9249'))
+  assert.ok(stage.includes('--project demo-memory-media-playback --only auth,firestore,storage,functions'))
+  assert.ok(stage.includes("block production_go 'Four-service synthetic proof cannot certify"))
+  assert.ok(runner.includes('GOOGLE_CLOUD_PROJECT GCLOUD_PROJECT URAI_ENABLE_CAPTURED_REALITY FIREBASE_STORAGE_BUCKET; do'))
+  assert.equal(runner.split('URAI_ENABLE_CAPTURED_REALITY=true').length - 1, 1)
+})

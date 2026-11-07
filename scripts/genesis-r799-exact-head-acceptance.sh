@@ -59,7 +59,7 @@ fi
 printf '%s\n' "$HEAD_SHA" > "$OUT/source.log"
 record source PASS 0 "$OUT/source.log"
 # Prevent accidental live-project admission and prevent passing sensitive keys.
-for name in GOOGLE_APPLICATION_CREDENTIALS FIREBASE_TOKEN GITHUB_TOKEN GH_TOKEN RUNPOD_API_KEY STRIPE_SECRET_KEY OPENAI_API_KEY GOOGLE_CLOUD_PROJECT GCLOUD_PROJECT; do
+for name in GOOGLE_APPLICATION_CREDENTIALS FIREBASE_TOKEN GITHUB_TOKEN GH_TOKEN RUNPOD_API_KEY STRIPE_SECRET_KEY OPENAI_API_KEY GOOGLE_CLOUD_PROJECT GCLOUD_PROJECT URAI_ENABLE_CAPTURED_REALITY FIREBASE_STORAGE_BUCKET; do
   if printenv "$name" >/dev/null 2>&1; then block environment "Unsafe active environment variable: $name"; fi
 done
 for name in node pnpm timeout sha256sum python3; do
@@ -89,7 +89,11 @@ run tier1_test 900 pnpm --filter urai-tier1 test:unit
 run tier1_build 900 pnpm --filter urai-tier1 build
 if ! pnpm exec firebase --version > "$OUT/firebase-cli.log" 2>&1; then block emulator 'No installed Firebase CLI'; fi
 # Four real emulators, never three services with HTTP substitutes.
+# The accepted Captured Reality fixture requires its release feature on ONLY
+# inside this isolated demo process. No production feature gate is changed.
 run firebase_four 750 env GCLOUD_PROJECT=demo-memory-media-playback \
+  URAI_ENABLE_CAPTURED_REALITY=true \
+  FIREBASE_STORAGE_BUCKET=demo-memory-media-playback.appspot.com \
   FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9549 \
   FIRESTORE_EMULATOR_HOST=127.0.0.1:8249 \
   STORAGE_EMULATOR_HOST=http://127.0.0.1:9249 \
