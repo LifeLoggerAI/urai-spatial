@@ -40,7 +40,11 @@ test('R882: verified custom domain owner and live channel replace preview-mixed 
   assert.match(selection, /VERIFIED_HOSTING_SITE_ID/)
   assert.match(section('Re-prove exact deployment boundary'), /site-readback-final\.json/)
   assert.doesNotMatch(workflow, /sites\/\$FIREBASE_PROJECT\/releases\?pageSize/)
-  assert.match(section('Roll back Hosting and Functions after any deployment or certification failure'), /channels\/live\/releases/)
+  const rollback = section('Roll back Hosting and Functions after any deployment or certification failure')
+  assert.match(rollback, /R882_PROVIDER_LIVE_SITE_COLLECTOR\.py/)
+  assert.match(rollback, /live-release-after-restore\.json/)
+  assert.match(rollback, /latestLiveRelease\.versionName/)
+  assert.doesNotMatch(rollback, /releases\?pageSize=100/)
 })
 
 test('R883: attestation is checked before deploying Functions or Hosting bytes', () => {
