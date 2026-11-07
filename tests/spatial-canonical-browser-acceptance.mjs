@@ -119,7 +119,12 @@ async function focusStarNavigation(page){
  const next=steps.getByRole('button',{name:'Next star'});
  ensure(!await previous.isEnabled(),'First disclosed star unexpectedly has a prior neighbor');
  ensure(await next.isEnabled(),'No same-Focus next star despite disclosed sample neighbors');
- await next.click();
+ // Keyboard operation and target size are part of the canonical browser gate.
+ await next.focus();
+ ensure(await next.evaluate(el=>document.activeElement===el),'Next Focus star is not keyboard focusable');
+ ensure(await next.evaluate(el=>{const b=el.getBoundingClientRect();return b.width>=48&&b.height>=48}),
+  'Next Focus star control is smaller than the 48px touch target');
+ await page.keyboard.press('Enter');
  await page.waitForURL(u=>u.pathname==='/focus'&&u.searchParams.get('demo')==='1'
   && u.searchParams.get('memoryId')?.startsWith('demo:')&&u.searchParams.get('memoryId')!=='demo:quiet-reset',{timeout:25000});
  const steppedId=new URL(page.url()).searchParams.get('memoryId');
@@ -132,7 +137,11 @@ async function focusStarNavigation(page){
  ensure(!/[?&](ownerId|planId|movieId|consent|token)=/.test(page.url()),'Focus step carried unrelated authority identifiers');
  await shot(page,'disclosed-sample-focus-star-to-star');
  if(!await help.evaluate(element=>element.open))await help.locator('summary').click();
- await previous.click();
+ await previous.focus();
+ ensure(await previous.evaluate(el=>document.activeElement===el),'Previous Focus star is not keyboard focusable');
+ ensure(await previous.evaluate(el=>{const b=el.getBoundingClientRect();return b.width>=48&&b.height>=48}),
+  'Previous Focus star control is smaller than the 48px touch target');
+ await page.keyboard.press('Enter');
  await page.waitForURL(u=>u.pathname==='/focus'&&u.searchParams.get('memoryId')==='demo:quiet-reset',{timeout:25000});
  await page.waitForFunction(()=>
   document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')==='demo:quiet-reset',
