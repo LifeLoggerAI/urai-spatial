@@ -326,6 +326,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
@@ -342,6 +343,22 @@ jobs:
           test "$(jq -r '.object.sha // empty' <<<"$main_ref")" = "$RELEASE_SHA"
           test -n "${GOOGLE_APPLICATION_CREDENTIALS:-}"
           test "$GOOGLE_APPLICATION_CREDENTIALS" = "$GOOGLE_GHA_CREDS_PATH"
+          # Recheck the domain-owner site and live release immediately before mutation.
+          python3 scripts/R882_PROVIDER_LIVE_SITE_COLLECTOR.py \
+            --collect --acknowledge-readonly-cloud-access \
+            --output deployment-receipt/predeploy/site-readback-final.json
+          jq -e --arg site "$VERIFIED_HOSTING_SITE_ID" \
+            --arg version "$(cat deployment-receipt/predeploy/version-name.txt)" '
+              .selectedSiteId == $site and .latestLiveRelease.versionName == $version
+              and (.holdReasons | length == 0)
+            ' deployment-receipt/predeploy/site-readback-final.json >/dev/null || {
+              echo 'HOLD: live Hosting site or version drift before mutation.' >&2
+              exit 1
+            }
+          # No independently pinned backend revisions / rollback artifact equivalence yet.
+          # This deliberate stop MUST NOT be lifted by source-only or synthetic tests.
+          echo 'HOLD: protected backend revision and rollback equivalence not certified.' >&2
+          exit 1
 
       - name: Reverify compiled Functions bytes before first provider mutation
         shell: bash
