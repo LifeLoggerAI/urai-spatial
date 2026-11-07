@@ -77,6 +77,7 @@ const tests = [
   'tests/life-movie-consent-epoch.test.mjs',
   'tests/r797-life-movie-consent-hook-behavior.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
+  'tests/focus-star-to-star-navigation.test.mjs',
   'tests/focus-memory-appearance.test.mjs',
   'tests/stellar-memory-reveal.test.mjs',
   'tests/stellar-photosphere-frame.test.mjs',
