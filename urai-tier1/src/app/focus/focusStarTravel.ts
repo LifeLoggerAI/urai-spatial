@@ -32,6 +32,14 @@ export function focusStarTravel(
   const disclosedDemo = memory.demo && sourceMode === 'explicit-demo'
   const ownerGranted = !memory.demo && memory.privacy !== 'hidden' && sourceMode === 'private'
   if (!disclosedDemo && !ownerGranted) return EMPTY
+  // A route that explicitly names an event must still name a current,
+  // owner-authorized event for THIS memory and manifest. Never substitute
+  // a different event or offer its neighbors after this one is revoked,
+  // hidden, locked, malformed, or belongs to another selected memory.
+  const verifiedRequestedNodeId = !disclosedDemo && requestedNodeId !== null
+    ? verifiedFocusEventNodeId(nodes, memory, sourceMode, loading, requestedNodeId)
+    : null
+  if (!disclosedDemo && requestedNodeId !== null && !verifiedRequestedNodeId) return EMPTY
 
   const accepted: Array<FocusStarTravelTarget & { memoryId: string; manifestId: string | null }> = []
   const visited = new Set<string>()
@@ -71,7 +79,7 @@ export function focusStarTravel(
     position: current + 1,
     total: accepted.length,
     currentNodeId: disclosedDemo ? accepted[current].nodeId
-      : verifiedFocusEventNodeId(nodes, memory, sourceMode, loading, requestedNodeId) ?? accepted[current].nodeId,
+      : verifiedRequestedNodeId ?? accepted[current].nodeId,
   }
 }
 
