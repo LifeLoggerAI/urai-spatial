@@ -7,6 +7,7 @@ import { Timestamp } from 'firebase/firestore'
 import * as ownedPlayback from '../src/spatial/memory/ownedMemoryMediaPlayback.ts'
 import { createReplayVideoSession, createReplayMediaSession } from '../src/app/replay/replayMediaSession.ts'
 import { replaySessionIdentity, replayVisualAdmission } from '../src/app/replay/replayVisualAdmission.ts'
+import { focusMemoryAppearance } from '../src/app/focus/focusMemoryAppearance.ts'
 import { parseSelectedMemory, buildExplicitDemoMemory } from '../src/spatial/memory/selectedMemoryContract.ts'
 
 class FakeVideo extends EventTarget {
@@ -78,6 +79,20 @@ test('legacy Firebase Storage download tokens are not private Replay authority',
   assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [granted] }), { kind: 'neutral', media: null })
   assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [granted] }, 'owned-receipt'), { kind: 'recorded-source', media: granted })
   assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [granted] }, 'protected-life-movie'), { kind: 'recorded-source', media: granted })
+})
+
+test('Focus photosphere never accepts legacy private Storage URLs without current image receipt authority', () => {
+  const memory = { ...buildExplicitDemoMemory('demo:source-test'), demo: false, ownerId: 'owner-a', id: 'personal-a' }
+  const legacy = { kind: 'image', url: 'https://firebasestorage.googleapis.com/v0/b/example.appspot.com/o/private?alt=media&token=persistent' }
+  assert.equal(focusMemoryAppearance({ ...memory, sourceMedia: [legacy] }, '/demo/fallback.svg').imageUrl, null)
+  assert.equal(focusMemoryAppearance({ ...memory, sourceMedia: [legacy] }, '/demo/fallback.svg', [legacy]).imageUrl, null)
+  const blob = { ...legacy, url: 'blob:https://urai.app/receipt-image' }
+  assert.equal(focusMemoryAppearance({ ...memory, sourceMedia: [legacy] }, '/demo/fallback.svg', [blob]).imageUrl, blob.url)
+  assert.equal(focusMemoryAppearance({ ...memory, sourceMedia: [legacy], privacy: 'hidden' }, '/demo/fallback.svg', [blob]).imageUrl, null)
+  assert.equal(focusMemoryAppearance({ ...memory, sourceMedia: [legacy], authorization: 'none' }, '/demo/fallback.svg', [blob]).imageUrl, null)
+  assert.equal(focusMemoryAppearance({ ...memory, sourceMedia: [legacy], privacy: 'shareable' }, '/demo/fallback.svg', [blob]).imageUrl, null)
+  const demo = buildExplicitDemoMemory('demo:source-test')
+  assert.equal(focusMemoryAppearance(demo, '/demo/fallback.svg').imageUrl, '/demo/fallback.svg')
 })
 
 test('owner, source, manifest, and privacy changes produce a new teardown boundary', () => {
