@@ -1,9 +1,10 @@
-import playwright from '../urai-tier1/node_modules/playwright/index.js';
+import { createRequire } from 'node:module';
+const requireTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url));
+const { chromium } = requireTierOne('playwright');
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 
-const { chromium } = playwright;
 
 const BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';

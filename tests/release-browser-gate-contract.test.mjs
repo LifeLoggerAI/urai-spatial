@@ -20,3 +20,8 @@ test('release has no optional browser fallback',()=>{
  assert.doesNotMatch(pkg.scripts['test:e2e'],/run-optional-e2e|run-playwright-tests\.mjs/);
  assert.doesNotMatch(src,/Skipping e2e|Running static Playwright contract/);
 });
+test('browser package is resolved from Tier 1 workspace under pnpm 10', () => {
+  assert.match(src, /createRequire\(new URL\('\.\.\/urai-tier1\/package\.json'/);
+  assert.match(src, /requireTierOne\('playwright'\)/);
+  assert.doesNotMatch(src, /node_modules\/playwright\/index\.js/);
+});
