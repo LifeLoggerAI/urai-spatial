@@ -98,6 +98,12 @@ test('R867 second Replay visit must retain star and node identity in real browse
  assert.ok(src.includes('Second Replay Escape changed the selected constellation node'));
  assert.ok(src.includes('Replay Escape lost the selected constellation node'));
  assert.ok(src.includes('Focus demo step selected the wrong constellation node'));
+ for(const marker of ['Mounted Focus scene selected a different node from the disclosed star',
+  'Replay Escape restored a different Focus scene node',
+  'Second Replay Escape restored a different mounted Focus scene node']){
+   assert.ok(src.includes(marker),marker);
+ }
+ assert.ok(src.includes("await chamber.getAttribute('data-node')"));
  assert.ok(src.includes('const secondBefore=new URL(page.url()).searchParams.get(\'node\')'));
  assert.ok(src.includes('await focusStarNavigation(page)'));
 });
