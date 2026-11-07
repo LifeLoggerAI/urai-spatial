@@ -147,6 +147,24 @@ async function focusStarNavigation(page){
  await pathIs(page,'/focus',25000);
  ensure(new URL(page.url()).searchParams.get('memoryId')===steppedId,
   'Replay Escape lost the last disclosed Focus star');
+  // R867: test a second Replay return using only disclosed fictional sample.
+  await page.getByTestId('urai-final-focus-chamber').waitFor({state:'visible',timeout:25000});
+  await page.waitForFunction(id=>
+    document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')===id,
+    steppedId,{timeout:25000});
+  const secondBefore=new URL(page.url()).searchParams.get('node');
+  await page.locator('.focusControls button.primary').click();
+  await pathIs(page,'/replay',30000);
+  await page.getByTestId('cinematic-replay-client').waitFor({state:'visible',timeout:25000});
+  await page.keyboard.press('Escape');
+  await pathIs(page,'/focus',25000);
+  await page.waitForFunction(id=>
+    document.querySelector('[data-testid="urai-final-focus-chamber"]')?.getAttribute('data-memory-id')===id,
+    steppedId,{timeout:25000});
+  ensure(new URL(page.url()).searchParams.get('memoryId')===steppedId,
+    'Second Replay Escape lost the selected Focus memory');
+  ensure(new URL(page.url()).searchParams.get('node')===secondBefore,
+    'Second Replay Escape changed the selected constellation node');
 }
 
 async function race(page){
