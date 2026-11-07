@@ -39,11 +39,17 @@ record source PASS 0 "$OUT/source.log"
 for name in GOOGLE_APPLICATION_CREDENTIALS FIREBASE_TOKEN GITHUB_TOKEN GH_TOKEN RUNPOD_API_KEY STRIPE_SECRET_KEY OPENAI_API_KEY GOOGLE_CLOUD_PROJECT GCLOUD_PROJECT; do
   if printenv "$name" >/dev/null 2>&1; then block environment "Unsafe active environment variable: $name"; fi
 done
-for name in node pnpm timeout sha256sum; do
+for name in node pnpm timeout sha256sum python3; do
   if ! command -v "$name" >/dev/null 2>&1; then block dependencies "Missing installed $name (no automatic downloads)."; fi
 done
 if [[ "$(node --version)" != v22.* ]] || [[ "$(pnpm --version)" != '10.0.0' ]]; then
   block dependencies 'Node 22 and pnpm 10.0.0 are mandatory.'
+fi
+# Tier 1's iOS source-archive regression launches python3 via spawnSync.
+# Missing Python yields a null child exit status in all seven cases and must be
+# an environment BLOCK, not misreported as failing product logic.
+if ! python3 -c 'import sys, zipfile; assert sys.version_info >= (3, 8)' >/dev/null 2>&1; then
+  block dependencies 'Working Python 3.8+ with stdlib zipfile is required for original Tier 1 iOS archive tests.'
 fi
 record dependencies PASS 0 "$OUT/source.log"
 # Run the inherited R801 safety tests and exact four-service project/rules
