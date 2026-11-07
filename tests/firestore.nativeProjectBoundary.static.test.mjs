@@ -29,6 +29,21 @@ test('native runner pins a single project and serializes the Rules suites', () =
   assert.match(source, /URAI_REQUIRE_FIRESTORE_EMULATOR === '1'/)
 })
 
+test('native Rules loader has isolated no-webframework Firestore config', () => {
+  const source = fs.readFileSync(path.resolve('scripts/run-firestore-rules-tests.mjs'), 'utf8')
+  assert.match(source, /'--config', 'firebase\\.firestore-owner-rules-test\\.json'/)
+  const config = JSON.parse(fs.readFileSync(path.resolve('firebase.firestore-owner-rules-test.json'), 'utf8'))
+  assert.equal(config.firestore.rules, 'firebase/firestore.rules')
+  assert.equal(config.firestore.indexes, 'firebase/firestore.indexes.json')
+  assert.equal(config.emulators.firestore.host, '127.0.0.1')
+  assert.equal(config.emulators.firestore.port, 8080)
+  assert.equal(config.emulators.singleProjectMode, true)
+  assert.equal(config.emulators.ui.enabled, false)
+  assert.equal(config.hosting, undefined)
+  assert.equal(config.functions, undefined)
+  assert.equal(config.storage, undefined)
+})
+
 test('original exact-head acceptance includes the project boundary check', () => {
   const source = fs.readFileSync(path.resolve('scripts/genesis-r799-exact-head-acceptance.sh'), 'utf8')
   assert.match(source, /run firestore_static_boundary 90 node --test [^\n]*tests\/firestore\.nativeProjectBoundary\.static\.test\.mjs/)
