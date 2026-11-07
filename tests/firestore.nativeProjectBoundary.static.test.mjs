@@ -31,7 +31,7 @@ test('native runner pins a single project and serializes the Rules suites', () =
 
 test('native Rules loader has isolated no-webframework Firestore config', () => {
   const source = fs.readFileSync(path.resolve('scripts/run-firestore-rules-tests.mjs'), 'utf8')
-  assert.match(source, /'--config', 'firebase\\.firestore-owner-rules-test\\.json'/)
+  assert.match(source, /'--config', 'firebase\.firestore-owner-rules-test\.json'/)
   const config = JSON.parse(fs.readFileSync(path.resolve('firebase.firestore-owner-rules-test.json'), 'utf8'))
   assert.equal(config.firestore.rules, 'firebase/firestore.rules')
   assert.equal(config.firestore.indexes, 'firebase/firestore.indexes.json')
