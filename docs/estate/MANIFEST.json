@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "repository": "LifeLoggerAI/urai-spatial",
+  "sourceCommit": "c2bd556129a6357680c581a582373bac25d542fb",
+  "sourceTree": "44e772097b2d54f14bc72f1a58376c0679f0884d",
+  "method": "GitHub REST git/trees recursive",
+  "truncated": false,
+  "enumeration": {
+    "treeEntries": 12882,
+    "trackedBlobs": 9597,
+    "gitReportedBytes": 387089762,
+    "directories": 3284,
+    "submodules": [
+      {
+        "path": "urai-tier1/urai-spatial",
+        "gitCommit": "1a33a332a31da115ec10ee201587ab80ea1c09e6"
+      }
+    ]
+  },
+  "objectShaAlgorithm": "git-object-id; NOT raw-content SHA256",
+  "contentSha256Certification": "NOT PERFORMED FOR ALL BLOBS",
+  "coverage": "100% of one immutable tracked Git tree metadata, not all historical bytes",
+  "shards": [
+    {
+      "part": 1,
+      "path": "docs/estate/manifests/spatial-r861-tree-01.json",
+      "entryCount": 750
+    },
+    {
+      "part": 2,
+      "path": "docs/estate/manifests/spatial-r861-tree-02.json",
+      "entryCount": 750
+    },
+    {
+      "part": 3,
+      "path": "docs/estate/manifests/spatial-r861-tree-03.json",
+      "entryCount": 750
+    },
+    {
+      "part": 4,
+      "path": "docs/estate/manifests/spatial-r861-tree-04.json",
+      "entryCount": 750
+    },
+    {
+      "part": 5,
+      "path": "docs/estate/manifests/spatial-r861-tree-05.json",
+      "entryCount": 750
+    },
+    {
+      "part": 6,
+      "path": "docs/estate/manifests/spatial-r861-tree-06.json",
+      "entryCount": 750
+    },
+    {
+      "part": 7,
+      "path": "docs/estate/manifests/spatial-r861-tree-07.json",
+      "entryCount": 750
+    },
+    {
+      "part": 8,
+      "path": "docs/estate/manifests/spatial-r861-tree-08.json",
+      "entryCount": 750
+    },
+    {
+      "part": 9,
+      "path": "docs/estate/manifests/spatial-r861-tree-09.json",
+      "entryCount": 750
+    },
+    {
+      "part": 10,
+      "path": "docs/estate/manifests/spatial-r861-tree-10.json",
+      "entryCount": 750
+    },
+    {
+      "part": 11,
+      "path": "docs/estate/manifests/spatial-r861-tree-11.json",
+      "entryCount": 750
+    },
+    {
+      "part": 12,
+      "path": "docs/estate/manifests/spatial-r861-tree-12.json",
+      "entryCount": 750
+    },
+    {
+      "part": 13,
+      "path": "docs/estate/manifests/spatial-r861-tree-13.json",
+      "entryCount": 750
+    },
+    {
+      "part": 14,
+      "path": "docs/estate/manifests/spatial-r861-tree-14.json",
+      "entryCount": 750
+    },
+    {
+      "part": 15,
+      "path": "docs/estate/manifests/spatial-r861-tree-15.json",
+      "entryCount": 750
+    },
+    {
+      "part": 16,
+      "path": "docs/estate/manifests/spatial-r861-tree-16.json",
+      "entryCount": 750
+    },
+    {
+      "part": 17,
+      "path": "docs/estate/manifests/spatial-r861-tree-17.json",
+      "entryCount": 750
+    },
+    {
+      "part": 18,
+      "path": "docs/estate/manifests/spatial-r861-tree-18.json",
+      "entryCount": 132
+    }
+  ],
+  "excluded": [
+    "raw SHA256 download and decode of every blob",
+    "remote LFS payloads",
+    "submodule nested object bytes",
+    "untracked/ignored files",
+    "other refs and full 2024-2026 history",
+    "cloud/Drive originals and private media",
+    "complete CI and Runpod log payloads"
+  ]
+}

@@ -1,24 +1,12 @@
-# One UrAi Genesis — repository continuity entrypoint
+# One UrAi Genesis - Spatial forensic continuation (2026-11-07 UTC)
 
-**Repository:** `LifeLoggerAI/urai-spatial`  
-**Registry bootstrap date:** 2026-11-06 (America/Chicago)  
-**Status:** STARTER ONLY — no exhaustive file/byte/history audit or release certification is claimed.
+Repository: `LifeLoggerAI/urai-spatial`. Canonical immersive runtime: `urai-tier1`. This is the existing documentation-only branch behind draft Spatial PR #2070, not a release controller.
+Source candidate reviewed: draft #2071 `c2bd556129a6357680c581a582373bac25d542fb` (Git tree `44e772097b2d54f14bc72f1a58376c0679f0884d`); exact native four-emulator parent: draft #2069 `ad0dcf7412e6c6f84724b030660275f29ef4dfee`. `main` remains `da94837c2457b0a7590e26a7a644cd728de8afb8`.
 
-This repository is in scope for the One UrAi 2024–present shared evidence and history reconciliation initiative. The provisional private central registry is maintained in `LifeLoggerAI/urai-labs-llc`, `docs/estate/`, proposed in draft PR [#262](https://github.com/LifeLoggerAI/urai-labs-llc/pull/262). Only authorized workers can access that private registry.
+Status: IMPLEMENTED IMMERSIVE SOURCE; SOURCE-PINNED REPORTED NATIVE AND REAL CHROMIUM ACCEPTANCE; PRODUCTION HOLD. Original LifeLogger, LifeOS, and UrAi were built; current work reconciles their source and finishes integration/verification, not recreates them.
 
-## Required continuation
+Entry path: `01_COMPLETE_INVENTORY.md` and `MANIFEST.json` -> `02_HISTORY_AND_PROVENANCE.md` -> `03_ARCHITECTURE_AND_CONNECTIONS.md` -> `04_IMPLEMENTED_CAPABILITIES.md` -> `05_VERIFICATION_AND_EVIDENCE.md` -> `06_GAPS_CONFLICTS_AND_BLOCKERS.md` -> `07_WORKER_RECONCILIATION.md` -> `08_NEXT_WORKER_HANDOFF.md` -> `09_COVERAGE_AND_LIMITATIONS.md`.
 
-1. Read the central `docs/estate/README.md`, `WORKER_PROTOCOL.md`, `EVIDENCE_STANDARD.md`, and `WORKER_HANDOFF_TEMPLATE.md` and review existing repository documentation and all other active workers' changes.
-2. Compare the current default branch and open PRs against the latest master snapshot. Establish exact immutable commit SHAs and scope.
-3. Inventory every accessible ref/path/file/asset; hash actual bytes where accessible, including separately accounting for binary objects, LFS, historical commits, workflow evidence and missing/inaccessible data.
-4. Reconstruct original LifeLogger/LifeOS/UrAi/RuAi history, architecture, cross-system interfaces, verification evidence and release constraints as relevant to **this** repo.
-5. Produce the complete nine-document `docs/estate/` knowledge pack and a machine-readable manifest per the central protocol. Mark omissions explicitly.
-6. Submit reviewed changes, conflicts, dependencies, exact test provenance and next-worker handoff to the central registry through a separate review PR.
+Private central registry: Labs draft #262 branch `docs/genesis-estate-registry-20261106`, with current source-pinned engineering map. This pack adds direct Git tree metadata, selected direct file inspection, historical PR reconciliation, and exact failure evidence. It does not grant trusted C6, output writes, cloud deployment, device certification, review approval, or founder GO.
 
-## Safety / authority boundaries
-
-This entrypoint is **documentation only**. It does not modify runtime code, lift any release HOLD, create a deployment, authorize paid compute, inspect protected user media, or change production access.
-
-Previously verified functionality remains real; historical “LOCKED” or “DONE” claims are not automatically current integrated production proof. Preserve all source history and earlier worker contributions.
-
-**Next worker:** Start with the current repository README and active PRs, then update this entrypoint with actual source-pinned findings, not guessed certification.
+Source: https://github.com/LifeLoggerAI/urai-spatial/pull/2071 ; evidence: https://github.com/LifeLoggerAI/urai-spatial/pull/2071#issuecomment-6703273396 .
