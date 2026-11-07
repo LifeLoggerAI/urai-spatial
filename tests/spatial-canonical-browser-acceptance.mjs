@@ -26,7 +26,7 @@ function startServer(){if(USE_EXISTING)return null;
  return spawn('pnpm',['--filter','urai-tier1','dev','--port','3000'],{cwd:process.cwd(),env:{...process.env,CI:'1'},stdio:'inherit',shell:process.platform==='win32'});
 }
 function attach(page,name){
- page.on('console',msg=>{if(msg.type()==='error')report.console.push(name+': '+msg.text().slice(0,500));});
+ page.on('console',msg=>{if(msg.type()==='error')report.console.push(name+': '+msg.text().slice(0,14000));});
  page.on('pageerror',err=>report.console.push(name+': '+err.message.slice(0,500)));
 }
 async function shot(page,name){
@@ -34,6 +34,13 @@ async function shot(page,name){
 }
 async function pathIs(page,path,limit=24000){
  await page.waitForURL(u=>u.pathname.replace(/\/+$/,'')===path,{timeout:limit});
+}
+// A multi-route visual test must allow each original SSR hydration to settle
+// before leaving that route. Errors are still captured and remain fatal.
+async function settleRoute(page){
+ await page.waitForLoadState('load');
+ await page.evaluate(() => new Promise(resolve =>
+  requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
 async function visibleOne(page,selectors,limit=30000){
  const loc=page.locator(selectors.join(',')).first();
@@ -107,10 +114,12 @@ async function race(page){
 async function data(page){
  await page.goto(BASE+'/focus?manifestId=missing-audit-manifest',{waitUntil:'domcontentloaded'});
  await page.getByTestId('urai-final-focus-chamber').waitFor({state:'visible',timeout:26000});
+ await settleRoute(page);
  ensure(await page.locator('.neutralActions').count()>0,'Missing memory did not show neutral Focus actions');
  await shot(page,'neutral-focus-without-owner');
  await page.goto(BASE+'/replay?manifestId=missing-audit-manifest',{waitUntil:'domcontentloaded'});
  await page.getByTestId('cinematic-replay-client').waitFor({state:'visible',timeout:26000});
+ await settleRoute(page);
  ensure(await page.locator('[data-replay-neutral="memory-horizon"]').count()>0,'Missing replay source bypassed neutral state');
  await shot(page,'neutral-replay-without-owner');
 }
@@ -123,6 +132,7 @@ async function visual(page){
  ]){
   await page.goto(BASE+path,{waitUntil:'domcontentloaded'});
   await page.locator(sel).first().waitFor({state:'visible',timeout:30000});
+  await settleRoute(page);
   await shot(page,label);
  }
  await page.goto(BASE+'/ascent',{waitUntil:'domcontentloaded'});

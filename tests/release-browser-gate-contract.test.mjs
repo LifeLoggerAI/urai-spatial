@@ -40,3 +40,11 @@ test('selected Life Map inspector remains visible for explicit disclosed sample 
   assert.ok(component.includes('selected && open ? <aside className="life-map-semantic-inspector"'));
   assert.ok(component.includes('(!explicitDemo && !selected.authorizedMemory)'));
 });
+
+test('multi-route browser visual acceptance waits for original hydration and still fails on console errors',()=>{
+ assert.ok(src.includes("await page.waitForLoadState('load')"));
+ assert.ok(src.includes("await settleRoute(page)"));
+ assert.ok(src.includes("requestAnimationFrame(() => requestAnimationFrame(resolve))"));
+ assert.ok(src.includes("report.console.push(name+': '+msg.text().slice(0,14000))"));
+ assert.ok(src.includes("ensure(report.console.length===0"));
+});
