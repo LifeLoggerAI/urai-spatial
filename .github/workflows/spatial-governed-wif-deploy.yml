@@ -201,6 +201,16 @@ jobs:
             and (.firebaseStaticConfigSha256 | test("^[0-9a-f]{64}$"))
           ' urai-tier1/out/release-fingerprint.json >/dev/null
 
+      - name: Attest complete compiled Functions source closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deployment-receipt/predeploy
+          node scripts/R883_VERIFY_FUNCTIONS_BUILD.mjs \
+            --mode attest --repo-root . \
+            --release-sha "$RELEASE_SHA" --run-id "$GITHUB_RUN_ID" \
+            --manifest deployment-receipt/predeploy/functions-build-evidence.json
+
       - name: Prepare exact rollback Functions source before any production mutation
         shell: bash
         run: |
@@ -325,6 +335,15 @@ jobs:
           test -n "${GOOGLE_APPLICATION_CREDENTIALS:-}"
           test "$GOOGLE_APPLICATION_CREDENTIALS" = "$GOOGLE_GHA_CREDS_PATH"
 
+      - name: Reverify compiled Functions bytes before first provider mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/R883_VERIFY_FUNCTIONS_BUILD.mjs \
+            --mode verify --repo-root . \
+            --release-sha "$RELEASE_SHA" --run-id "$GITHUB_RUN_ID" \
+            --manifest deployment-receipt/predeploy/functions-build-evidence.json
+
       - id: deploy-functions
         name: Deploy exact Firebase Functions source with WIF ADC
         continue-on-error: true
@@ -339,9 +358,21 @@ jobs:
             --non-interactive \
             2>&1 | tee deployment-receipt/deploy/functions.log
 
+      - id: hosting-byte-custody
+        name: Verify pending Hosting bytes immediately before publication
+        if: steps.deploy-functions.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/R883_VERIFY_HOSTING_ARTIFACTS.mjs \
+            --phase pending --output urai-tier1/out \
+            --preserved release-bundle/urai-tier1/out \
+            --initial-manifest release-bundle/manifest.json \
+            --release-sha "$RELEASE_SHA" --run-id "$GITHUB_RUN_ID"
+
       - id: deploy-hosting
         name: Deploy exact static Hosting release with WIF ADC
-        if: steps.deploy-functions.outcome == 'success'
+        if: steps.deploy-functions.outcome == 'success' && steps.hosting-byte-custody.outcome == 'success'
         continue-on-error: true
         shell: bash
         run: |
@@ -387,9 +418,22 @@ jobs:
             and .certificationRunId == $run
           ' urai-tier1/out/release-fingerprint.json >/dev/null
 
+      - id: certified-byte-custody
+        name: Verify certified Hosting bytes immediately before publication
+        if: steps.certify-fingerprint.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/R883_VERIFY_HOSTING_ARTIFACTS.mjs \
+            --phase certified --output urai-tier1/out \
+            --preserved release-bundle/urai-tier1/out \
+            --initial-manifest release-bundle/manifest.json \
+            --certified-manifest deployment-receipt/postdeploy/certified-bundle-manifest.json \
+            --release-sha "$RELEASE_SHA" --run-id "$GITHUB_RUN_ID"
+
       - id: deploy-certified-fingerprint
         name: Publish certified fingerprint with unchanged exact Hosting bundle
-        if: steps.certify-fingerprint.outcome == 'success'
+        if: steps.certify-fingerprint.outcome == 'success' && steps.certified-byte-custody.outcome == 'success'
         continue-on-error: true
         shell: bash
         run: |
@@ -415,7 +459,7 @@ jobs:
             node scripts/urai-post-deploy-smoke.mjs
 
       - name: Roll back Hosting and Functions after any deployment or certification failure
-        if: always() && steps.deploy-functions.outcome != '' && steps.deploy-functions.outcome != 'skipped' && (steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success')
+        if: always() && steps.deploy-functions.outcome != '' && steps.deploy-functions.outcome != 'skipped' && (steps.deploy-functions.outcome != 'success' || steps.hosting-byte-custody.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.certified-byte-custody.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success')
         shell: bash
         env:
           GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
@@ -501,7 +545,7 @@ jobs:
           retention-days: 90
 
       - name: Fail release after rollback when deployment or live certification failed
-        if: always() && steps.deploy-functions.outcome != '' && steps.deploy-functions.outcome != 'skipped' && (steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success')
+        if: always() && steps.deploy-functions.outcome != '' && steps.deploy-functions.outcome != 'skipped' && (steps.deploy-functions.outcome != 'success' || steps.hosting-byte-custody.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.certified-byte-custody.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success')
         shell: bash
         run: |
           echo 'Exact Functions + Hosting certification failed. Governed rollback was attempted and the release remains NO-GO.' >&2
