@@ -30,7 +30,7 @@ if (javaCheck.status === 0) {
   // A missing local dependency must fail rather than invoking a global CLI.
   const result = run(process.execPath, [
     'scripts/run-pnpm.mjs', 'exec', 'firebase', 'emulators:exec',
-    '--config', 'firebase.json',
+    '--config', 'firebase.firestore-owner-rules-test.json',
     '--project', project,
     '--only', 'firestore',
     'node --test --test-concurrency=1 tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs tests/firestore.lifeModel.rules.test.mjs tests/firestore.userAuthority.rules.test.mjs',
