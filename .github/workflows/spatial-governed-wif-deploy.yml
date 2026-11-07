@@ -515,19 +515,20 @@ jobs:
               2>&1 | tee "$GITHUB_WORKSPACE/deployment-receipt/rollback/functions.log"
           )
 
-          sleep 5
-          curl --fail --silent --show-error \
-            --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
-            "https://firebasehosting.googleapis.com/v1beta1/sites/$VERIFIED_HOSTING_SITE_ID/channels/live/releases?pageSize=100" \
-            > deployment-receipt/rollback/releases-after-restore.json
-          observed="$(jq -r '
-            .releases
-            | map(select(.type != "SITE_DISABLE"))
-            | sort_by(.releaseTime)
-            | last
-            | .version.name // empty
-          ' deployment-receipt/rollback/releases-after-restore.json)"
-          test "$observed" = "$version_name"
+          # Use complete paginated live-channel evidence, not the first 100 releases.
+          python3 scripts/R882_PROVIDER_LIVE_SITE_COLLECTOR.py \
+            --collect --acknowledge-readonly-cloud-access \
+            --output deployment-receipt/rollback/live-release-after-restore.json
+          jq -e --arg site "$VERIFIED_HOSTING_SITE_ID" --arg version "$version_name" '
+            .classification == "READBACK_ONLY_NO_PRODUCTION_GO"
+            and .selectedSiteId == $site
+            and .selectedSiteType == "DEFAULT_SITE"
+            and .latestLiveRelease.versionName == $version
+            and (.holdReasons | length == 0)
+          ' deployment-receipt/rollback/live-release-after-restore.json >/dev/null || {
+            echo 'HOLD: rollback live channel was not fully paginated and verified.' >&2
+            exit 1
+          }
           printf '%s\n' "$ROLLBACK_SHA" > deployment-receipt/rollback/functions-source-sha.txt
 
       - name: Write governed deployment receipt
