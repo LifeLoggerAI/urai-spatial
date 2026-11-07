@@ -17,7 +17,8 @@ export function replayVisualAdmission(
   sourceAuthority: ReplayAuthorizedSource | null = null,
 ): ReplayVisualAdmission {
   const media = memory.sourceMedia.find((item) => item.kind === 'video' || item.kind === 'image' || item.kind === 'audio')
-  if (media && (memory.demo || ((sourceAuthority === 'owned-receipt' || sourceAuthority === 'protected-life-movie')
+  if (media && (memory.demo || (memory.authorization === 'owner' && memory.privacy === 'private'
+    && (sourceAuthority === 'owned-receipt' || sourceAuthority === 'protected-life-movie')
     && media.url.startsWith('blob:')))) {
     return { kind: 'recorded-source', media }
   }
