@@ -27,6 +27,10 @@ const journeyCatalogPath = 'urai-tier1/src/lib/i18n/journeyMessages.ts'
 const journeyCatalog = read(journeyCatalogPath)
 assertIncludes(journeyCatalogPath, journeyCatalog, "'replay.pause': { id:'replay.pause', source:\"Pause memory\"")
 assertIncludes(journeyCatalogPath, journeyCatalog, "'replay.continue': { id:'replay.continue', source:\"Continue memory\"")
+const focusPath = 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
+const focus = read(focusPath)
+const focusAppearancePath = 'urai-tier1/src/app/focus/focusMemoryAppearance.ts'
+const focusAppearance = read(focusAppearancePath)
 const admissionPath = 'urai-tier1/src/app/replay/replayVisualAdmission.ts'
 const admission = read(admissionPath)
 const replayState = read(replayStatePath)
@@ -74,6 +78,17 @@ for (const token of [
 ]) {
   assertIncludes(replayClientPath, replayClient, token)
 }
+
+for (const token of [
+  'useOwnedMemoryMediaPlayback(imageReceiptMemory)',
+  'authorizedMedia={authorizedFocusMedia}',
+  'focusMemoryAppearance(memory, replayAssets.primary.src, authorizedFocusMedia)',
+]) assertIncludes(focusPath, focus, token)
+for (const token of [
+  "media.kind === 'image' && media.url.startsWith('blob:')",
+  "memory?.authorization === 'owner'",
+  "memory.privacy === 'private'",
+]) assertIncludes(focusAppearancePath, focusAppearance, token)
 
 for (const token of [
   "sourceAuthority === 'owned-receipt' || sourceAuthority === 'protected-life-movie'",
