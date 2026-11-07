@@ -73,9 +73,30 @@ export function focusStarTravel(
   }
 }
 
-/** Keep the actual owner's selected constellation event when traveling through
- * Replay. Route-supplied node metadata is never memory access authority; a
- * Focus-to-Focus step additionally needs the consent-scoped Life Map match. */
+/** Verify the EXACT selected constellation event, not merely the first
+ * projection of this memory in the Focus stepper. Event duplicates may share
+ * a memory while owning distinct coordinates. The Life Map hook has already
+ * fenced these nodes by owner, consent revision, and canonical memory source. */
+export function verifiedFocusEventNodeId(
+  nodes: readonly LifeMapNode[],
+  memory: SelectedMemory | null,
+  sourceMode: LifeMapSourceMode,
+  loading: boolean,
+  requestedNodeId: string | null,
+): string | null {
+  if (!memory || loading || memory.demo || memory.authorization !== 'owner'
+    || memory.privacy === 'hidden' || sourceMode !== 'private' || !safeToken(requestedNodeId)) return null
+  return nodes.some(node => node.id === requestedNodeId
+    && !node.locked && node.privacyLevel !== 'hidden'
+    && node.type === 'memory' && node.authorizedMemory === true
+    && node.memoryId === memory.id && node.replayManifestId === memory.replayManifest.id)
+    ? requestedNodeId : null
+}
+
+/** Keep the actual owner's selected constellation event across ANY number of
+ * Replay returns. Return URLs can lose their original `from`/`returnNode`
+ * markers; those markers grant nothing. Only a live authorized Life Map node
+ * for this exact selected memory+manifest can preserve the event anchor. */
 export function focusReplayReturnNode(
   memory: SelectedMemory,
   incoming: URLSearchParams,
@@ -85,12 +106,12 @@ export function focusReplayReturnNode(
   const sameMemory = incoming.get('memoryId') === memory.id
     && incoming.get('manifestId') === memory.replayManifest.id
   if (!sameMemory || !safeToken(node)) return memory.star.id
+  if (incoming.has('returnNode') && incoming.get('returnNode') !== node) return memory.star.id
   const source = incoming.get('from')
-  const originalSelection = (source === 'life-map' || source === 'life-map-semantic')
-    && node === incoming.get('returnNode')
-  const projectedSelection = node === `canonical-memory:${memory.id}`
-  const authorizedStep = memory.authorization === 'owner'
-    && source === 'focus-star-step' && node === incoming.get('returnNode')
-    && node === verifiedFocusNodeId
-  return originalSelection || projectedSelection || authorizedStep ? node : memory.star.id
+  const acceptedSource = source === null || source === 'life-map' || source === 'life-map-semantic'
+    || source === 'focus-star-step' || source === 'focus-artifact'
+  const projectedSelection = !memory.demo && node === `canonical-memory:${memory.id}`
+  const verifiedSelection = !memory.demo && memory.authorization === 'owner'
+    && acceptedSource && node === verifiedFocusNodeId
+  return projectedSelection || verifiedSelection ? node : memory.star.id
 }
