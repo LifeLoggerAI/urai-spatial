@@ -20,7 +20,7 @@ import { assetCssStack, focusAssets, replayAssets } from '@/spatial/assets/uraiA
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
-import { focusStarTravel } from './focusStarTravel'
+import { focusStarTravel, focusReplayReturnNode } from './focusStarTravel'
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import { forwardPrivateMovieRouteSelection } from '@/spatial/life-movie/privateLifeMovieRouteSelection'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
@@ -397,15 +397,9 @@ export default function FocusChamberClient() {
     if (!memory) return null
     const search = location.includes('?') ? location.slice(location.indexOf('?') + 1).split('#')[0] : ''
     const incoming = new URLSearchParams(search)
-    const node = incoming.get('node')
-    const sameMemory = incoming.get('memoryId') === memory.id && incoming.get('manifestId') === memory.replayManifest.id
-    const validNode = Boolean(node && /^[A-Za-z0-9._:-]{1,120}$/.test(node))
-    const fromLifeMap = incoming.get('from') === 'life-map' || incoming.get('from') === 'life-map-semantic'
-    const originalSelection = fromLifeMap && node === incoming.get('returnNode')
-    const projectedSelection = node === `canonical-memory:${memory.id}`
-    // A projected Memory Star has a distinct scene ID from its canonical memory.
-    // Preserve it across Focus -> Replay -> Focus without ever treating it as authority.
-    const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id
+    // Preserve an event-backed Focus selection only when the consent-scoped Life Map
+    // confirmed the selected star; never infer owner authority from route metadata.
+    const returnNode = focusReplayReturnNode(memory, incoming, starTravel.currentNodeId)
     const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: returnNode, from: 'focus-artifact' })
     if (returnNode !== memory.star.id) next.set('returnNode', returnNode)
     if (memory.demo) next.set('demo', '1')
@@ -416,7 +410,7 @@ export default function FocusChamberClient() {
       })
     }
     return `/replay?${next.toString()}`
-  }, [memory, location])
+  }, [memory, location, starTravel.currentNodeId])
 
   const enterReplay = useCallback(() => {
     if (!memory || !replayHref || committed) return

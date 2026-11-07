@@ -8,9 +8,10 @@ export type FocusStarTravel = {
   next: FocusStarTravelTarget | null
   position: number
   total: number
+  currentNodeId: string | null
 }
 
-const EMPTY: FocusStarTravel = { previous: null, next: null, position: 0, total: 0 }
+const EMPTY: FocusStarTravel = { previous: null, next: null, position: 0, total: 0, currentNodeId: null }
 const SAFE_TOKEN = /^[A-Za-z0-9._:-]{1,120}$/
 
 function safeToken(value: unknown): value is string {
@@ -68,5 +69,28 @@ export function focusStarTravel(
     next: current < accepted.length - 1 ? accepted[current + 1] : null,
     position: current + 1,
     total: accepted.length,
+    currentNodeId: accepted[current].nodeId,
   }
+}
+
+/** Keep the actual owner's selected constellation event when traveling through
+ * Replay. Route-supplied node metadata is never memory access authority; a
+ * Focus-to-Focus step additionally needs the consent-scoped Life Map match. */
+export function focusReplayReturnNode(
+  memory: SelectedMemory,
+  incoming: URLSearchParams,
+  verifiedFocusNodeId: string | null,
+): string {
+  const node = incoming.get('node')
+  const sameMemory = incoming.get('memoryId') === memory.id
+    && incoming.get('manifestId') === memory.replayManifest.id
+  if (!sameMemory || !safeToken(node)) return memory.star.id
+  const source = incoming.get('from')
+  const originalSelection = (source === 'life-map' || source === 'life-map-semantic')
+    && node === incoming.get('returnNode')
+  const projectedSelection = node === `canonical-memory:${memory.id}`
+  const authorizedStep = memory.authorization === 'owner'
+    && source === 'focus-star-step' && node === incoming.get('returnNode')
+    && node === verifiedFocusNodeId
+  return originalSelection || projectedSelection || authorizedStep ? node : memory.star.id
 }
