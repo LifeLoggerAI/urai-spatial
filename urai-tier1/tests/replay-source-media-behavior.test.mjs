@@ -67,6 +67,9 @@ test('source media admission cannot use demo art for a personal memory or interp
   assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob] }, 'owned-receipt'), { kind: 'recorded-source', media: blob })
   assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob] }, 'protected-life-movie'), { kind: 'recorded-source', media: blob })
   assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob] }, 'unrecognized-authority'), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob], authorization: 'none' }, 'owned-receipt'), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob], privacy: 'hidden' }, 'owned-receipt'), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob], privacy: 'shareable' }, 'protected-life-movie'), { kind: 'neutral', media: null })
   assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }, 'owned-receipt'), { kind: 'neutral', media: null })
 })
 
