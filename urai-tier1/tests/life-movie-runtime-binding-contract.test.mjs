@@ -20,7 +20,11 @@ test('Life Movie manifest playback resolves chapters to exact owner memories', (
   assert.match(client, /memoryId: sanitizeMemoryId\(params\.get\('memoryId'\)\)/)
   assert.match(client, /movieId: sanitizeMemoryId\(params\.get\('movieId'\)\)/)
   assert.match(client, /setIdentityReady\(true\)/)
-  assert.match(client, /useLifeMovieRuntimeManifest\(identityReady \? requestedMovieId : null\)/)
+  // A manifest listener must not attach until both identity and the current
+  // owner C1 policy permit Replay. The older identity-only check is unsafe.
+  assert.match(client, /useLifeMovieConsentEpoch\(user\)/)
+  assert.match(client, /consentAllowed = Boolean\(user && consent\.isCurrent\(user\.uid, consentRevision\)\)/)
+  assert.match(client, /useLifeMovieRuntimeManifest\(identityReady && consentAllowed \? requestedMovieId : null\)/)
   assert.match(client, /window\.addEventListener\('popstate', hydrateIdentity\)/)
   assert.match(client, /runtimeManifest\.manifest\.chapters\.map/)
   assert.match(client, /'users', user\.uid, 'memories', chapter\.memoryId/)
