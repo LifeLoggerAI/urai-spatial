@@ -56,9 +56,28 @@ test('source media admission cannot use demo art for a personal memory or interp
   const personal = { ...demo, demo: false, ownerId: 'owner-a', id: 'personal-a' }
   assert.deepEqual(replayVisualAdmission(personal), { kind: 'neutral', media: null })
   const audio = { kind: 'audio', url: 'https://example.invalid/source.ogg' }
-  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [audio] }), { kind: 'recorded-source', media: audio })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [audio] }), { kind: 'neutral', media: null })
   const source = { kind: 'image', url: 'https://example.invalid/photo.jpg', caption: 'Original photo' }
-  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }), { kind: 'recorded-source', media: source })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }), { kind: 'neutral', media: null })
+  // A locally generated Blob only becomes usable after a current bounded
+  // receipt/Studio authority check; simply passing the object URL is insufficient.
+  const blob = { kind: 'image', url: 'blob:https://urai.app/fixture-blob', caption: 'Private source' }
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob] }), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob] }, 'owned-receipt'), { kind: 'recorded-source', media: blob })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob] }, 'protected-life-movie'), { kind: 'recorded-source', media: blob })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob] }, 'unrecognized-authority'), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }, 'owned-receipt'), { kind: 'neutral', media: null })
+})
+
+test('legacy Firebase Storage download tokens are not private Replay authority', () => {
+  const fixture = { ...buildExplicitDemoMemory('demo:source-test'), demo: false, privacy: 'private', ownerId: 'owner-a', id: 'personal-a' }
+  const legacy = { kind: 'video', url: 'https://firebasestorage.googleapis.com/v0/b/example.appspot.com/o/owner%2Fprivate.mp4?alt=media&token=persistent-token' }
+  assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [legacy] }), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [legacy] }, 'owned-receipt'), { kind: 'neutral', media: null })
+  const granted = { ...legacy, url: 'blob:https://urai.app/authorized-media' }
+  assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [granted] }), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [granted] }, 'owned-receipt'), { kind: 'recorded-source', media: granted })
+  assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [granted] }, 'protected-life-movie'), { kind: 'recorded-source', media: granted })
 })
 
 test('owner, source, manifest, and privacy changes produce a new teardown boundary', () => {
