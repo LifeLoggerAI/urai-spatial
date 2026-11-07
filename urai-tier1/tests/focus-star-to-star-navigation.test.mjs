@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { existsSync, readFileSync } from 'node:fs'
-import { focusStarTravel, focusReplayReturnNode } from '../src/app/focus/focusStarTravel.ts'
+import { focusStarTravel, focusReplayReturnNode, verifiedFocusEventNodeId } from '../src/app/focus/focusStarTravel.ts'
 
 const owner = { id: 'mem_a', ownerId: 'owner-a', demo: false, privacy: 'private', authorization: 'owner', star: { id: 'canonical-memory:mem_a' }, replayManifest: { id: 'manifest_a' } }
 const a = { id: 'canonical-memory:mem_a', type: 'memory', memoryId: 'mem_a', replayManifestId: 'manifest_a', authorizedMemory: true, replayAvailable: true, privacyLevel: 'private' }
@@ -127,7 +127,8 @@ test('unverified or mismatched event node is not carried from Focus through Repl
 test('direct Life Map and canonical projected star remain supported, without admitting stale manifests', () => {
   const selected={...owner,id:'mem_b',star:{id:'physical-star-b'},replayManifest:{id:'manifest_b'}}
   const direct=new URLSearchParams({memoryId:'mem_b',manifestId:'manifest_b',node:'event:b',returnNode:'event:b',from:'life-map-semantic'})
-  assert.equal(focusReplayReturnNode(selected,direct,null),'event:b')
+  assert.equal(focusReplayReturnNode(selected,direct,null),'physical-star-b')
+  assert.equal(focusReplayReturnNode(selected,direct,verifiedFocusEventNodeId([{...b,id:'event:b'}],selected,'private',false,'event:b')),'event:b')
   const projection=new URLSearchParams({memoryId:'mem_b',manifestId:'manifest_b',node:'canonical-memory:mem_b',from:'manual-direct'})
   assert.equal(focusReplayReturnNode(selected,projection,null),'canonical-memory:mem_b')
   projection.set('manifestId','manifest_a')
@@ -140,12 +141,68 @@ test('malformed and duplicate IDs fail closed without generating untrusted route
   assert.equal(result.next,null)
 })
 
+test('repeated private Replay returns keep exact event without stale from or returnNode hints', () => {
+  const event={...b,id:'event:b'}
+  const selected={...owner,id:'mem_b',star:{id:'physical-star-b'},replayManifest:{id:'manifest_b'}}
+  const verified=verifiedFocusEventNodeId([a,event,c],selected,'private',false,'event:b')
+  assert.equal(verified,'event:b')
+  const first=new URLSearchParams({memoryId:'mem_b',manifestId:'manifest_b',node:'event:b',returnNode:'event:b',from:'focus-star-step'})
+  assert.equal(focusReplayReturnNode(selected,first,verified),'event:b')
+  const replay=new URLSearchParams({memoryId:'mem_b',manifestId:'manifest_b',node:'event:b',returnNode:'event:b',from:'focus-artifact'})
+  assert.equal(focusReplayReturnNode(selected,replay,verified),'event:b')
+  const escaped=new URLSearchParams({memoryId:'mem_b',manifestId:'manifest_b',node:'event:b'})
+  assert.equal(focusReplayReturnNode(selected,escaped,verified),'event:b')
+  assert.equal(focusReplayReturnNode(selected,escaped,verified),'event:b')
+})
+
+test('two owner events with same memory never substitute each other on Replay return', () => {
+  const first={...b,id:'event:one'}
+  const second={...b,id:'event:two'}
+  const selected={...owner,id:'mem_b',star:{id:'physical-star-b'},replayManifest:{id:'manifest_b'}}
+  const travel=focusStarTravel([a,first,second,c],selected,'private',false)
+  assert.equal(travel.currentNodeId,'event:one')
+  const verified=verifiedFocusEventNodeId([a,first,second,c],selected,'private',false,'event:two')
+  assert.equal(verified,'event:two')
+  const route=new URLSearchParams({memoryId:'mem_b',manifestId:'manifest_b',node:'event:two'})
+  assert.equal(focusReplayReturnNode(selected,route,verified),'event:two')
+  assert.equal(focusReplayReturnNode(selected,route,travel.currentNodeId),'physical-star-b')
+})
+
+test('revalidated private event must disappear on revoke, loading, changed manifest, or cross-memory data', () => {
+  const event={...b,id:'event:b'}
+  const selected={...owner,id:'mem_b',star:{id:'physical-star-b'},replayManifest:{id:'manifest_b'}}
+  const route=new URLSearchParams({memoryId:'mem_b',manifestId:'manifest_b',node:'event:b'})
+  const variants=[[{...event,locked:true}], [{...event,privacyLevel:'hidden'}], [{...event,authorizedMemory:false}], [{...event,type:'relationship'}], [{...event,memoryId:'mem_c'}], [{...event,replayManifestId:'manifest_old'}]]
+  for(const entries of variants){
+    const verified=verifiedFocusEventNodeId(entries,selected,'private',false,'event:b')
+    assert.equal(verified,null)
+    assert.equal(focusReplayReturnNode(selected,route,verified),'physical-star-b')
+  }
+  for(const mode of ['signed-out','unavailable','explicit-demo','empty']) assert.equal(verifiedFocusEventNodeId([event],selected,mode,false,'event:b'),null)
+  assert.equal(verifiedFocusEventNodeId([event],selected,'private',true,'event:b'),null)
+  assert.equal(verifiedFocusEventNodeId([event],{...selected,authorization:'none'},'private',false,'event:b'),null)
+  assert.equal(verifiedFocusEventNodeId([event],{...selected,privacy:'hidden'},'private',false,'event:b'),null)
+  assert.equal(verifiedFocusEventNodeId([event],{...selected,demo:true},'private',false,'event:b'),null)
+  assert.equal(verifiedFocusEventNodeId([event],selected,'private',false,'event:b?owner=other'),null)
+})
+
+test('Replay-return source cannot be forged to override a mismatched node/manifest or owner denial', () => {
+  const event={...b,id:'event:b'}
+  const selected={...owner,id:'mem_b',star:{id:'physical-star-b'},replayManifest:{id:'manifest_b'}}
+  const verified=verifiedFocusEventNodeId([event],selected,'private',false,'event:b')
+  const route=(extra)=>new URLSearchParams({memoryId:'mem_b',manifestId:'manifest_b',node:'event:b',from:'focus-artifact',...extra})
+  assert.equal(focusReplayReturnNode(selected,route({}),verified),'event:b')
+  for(const values of [{memoryId:'mem_c'},{manifestId:'manifest_c'},{node:'event:c'},{returnNode:'event:c'},{from:'manual-url'}]) assert.equal(focusReplayReturnNode(selected,route(values),verified),'physical-star-b')
+  assert.equal(focusReplayReturnNode({...selected,authorization:'none'},route({}),verified),'physical-star-b')
+})
+
 test('canonical mounted Focus must import owner-scoped Life Map hook and use same-route stepper', (t) => {
   const path = new URL('../src/app/focus/FocusChamberClient.tsx',import.meta.url)
   if (!existsSync(path)) { t.skip('full repo checkout unavailable on this host'); return }
   const src = readFileSync(path,'utf8')
   assert.match(src,/useLifeMapEvents\(/)
   assert.match(src,/focusStarTravel\(/)
+  assert.match(src,/verifiedFocusEventNodeId\(/)
   assert.match(src,/focusReplayReturnNode\(/)
   assert.match(src,/router\.replace\(target\.href/)
   assert.match(src,/focus-star-step/)
