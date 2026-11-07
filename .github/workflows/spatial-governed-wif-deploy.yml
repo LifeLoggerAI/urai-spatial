@@ -88,13 +88,20 @@ jobs:
             "$GITHUB_API_URL/repos/$REPOSITORY/pulls/$PR_NUMBER")"
           test "$(jq -r '.merged' <<<"$pr")" = 'true'
           test "$(jq -r '.base.ref' <<<"$pr")" = 'main'
-          test "$(jq -r '.head.sha' <<<"$pr")" = "$RELEASE_SHA"
+          # Premerge PR head is distinct from the merged main commit.
+          PR_HEAD_SHA="$(jq -r '.head.sha' <<<"$pr")"
+          [[ "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(jq -r '.merge_commit_sha // empty' <<<"$pr")" = "$RELEASE_SHA"
+          main_ref="$(curl --fail --silent --show-error \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            "$GITHUB_API_URL/repos/$REPOSITORY/git/ref/heads/main")"
+          test "$(jq -r '.object.sha // empty' <<<"$main_ref")" = "$RELEASE_SHA"
 
           guard_runs="$(curl --fail --silent --show-error \
             --header 'Accept: application/vnd.github+json' \
             --header "Authorization: Bearer $GH_TOKEN" \
             --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "$GITHUB_API_URL/repos/$REPOSITORY/actions/workflows/release-governance-guard.yml/runs?event=pull_request&status=success&head_sha=$RELEASE_SHA&per_page=100")"
+            "$GITHUB_API_URL/repos/$REPOSITORY/actions/workflows/release-governance-guard.yml/runs?event=pull_request&status=success&head_sha=$PR_HEAD_SHA&per_page=100")"
           jq -e --argjson pr "$PR_NUMBER" '
             .workflow_runs
             | any(
@@ -103,7 +110,20 @@ jobs:
                 and any(.pull_requests[]?; .number == $pr)
               )
           ' <<<"$guard_runs" >/dev/null || {
-            echo 'No successful exact-head Release Governance Guard run is associated with the merged PR.' >&2
+            echo 'No successful original PR-head Release Governance Guard run was found.' >&2
+            exit 1
+          }
+
+          # Require fresh exact merged-main CI, not a PR-head run.
+          merged_ci="$(curl --fail --silent --show-error \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            "$GITHUB_API_URL/repos/$REPOSITORY/actions/workflows/urai-spatial-ci.yml/runs?head_sha=$RELEASE_SHA&status=success&per_page=100")"
+          jq -e --arg sha "$RELEASE_SHA" '
+            .workflow_runs | any(.head_sha == $sha and .head_branch == "main"
+              and (.event == "push" or .event == "workflow_dispatch")
+              and .status == "completed" and .conclusion == "success")
+          ' <<<"$merged_ci" >/dev/null || {
+            echo 'HOLD: no independently passing exact merged-main CI.' >&2
             exit 1
           }
 
@@ -260,19 +280,34 @@ jobs:
           jq -r '.version.name' deployment-receipt/predeploy/live-release.json > deployment-receipt/predeploy/version-name.txt
 
           fingerprint_status='absent-or-invalid'
-          if curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+          if curl --fail --silent --show-error --proto '=https' --tlsv1.2 \
             "$LIVE_URL/release-fingerprint.json?predeploy=$GITHUB_RUN_ID" \
             -o deployment-receipt/predeploy/live-fingerprint.json; then
-            if jq -e '.schemaVersion == "urai-release-fingerprint-1" and (.releaseSha | test("^[0-9a-f]{40}$"))' \
-              deployment-receipt/predeploy/live-fingerprint.json >/dev/null 2>&1; then
+            if jq -e --arg rollback "$ROLLBACK_SHA" --arg project "$FIREBASE_PROJECT" --arg live_url "$LIVE_URL" '
+              .schemaVersion == "urai-release-fingerprint-1"
+              and .repository == "LifeLoggerAI/urai-spatial"
+              and .releaseSha == $rollback and .authoritySha == $rollback
+              and .firebaseProject == $project and .liveUrl == $live_url
+              and .deploymentScope == "functions-and-hosting"
+              and .certification == "verified-post-deploy-smoke"
+              and (.functionsTreeSha | test("^[0-9a-f]{40}$"))
+              and (.firebaseStaticConfigSha256 | test("^[0-9a-f]{64}$"))
+              and ((.workflowRunId | tostring) | test("^[1-9][0-9]*$"))
+              and ((.certificationRunId | tostring) | test("^[1-9][0-9]*$"))
+            ' deployment-receipt/predeploy/live-fingerprint.json >/dev/null 2>&1; then
               fingerprint_status='valid'
-              test "$(jq -r '.releaseSha' deployment-receipt/predeploy/live-fingerprint.json)" = "$ROLLBACK_SHA"
             fi
           fi
           printf '%s\n' "$fingerprint_status" > deployment-receipt/predeploy/fingerprint-status.txt
+          test "$fingerprint_status" = valid || {
+            echo 'HOLD: rollback fingerprint not independently certified.' >&2
+            exit 1
+          }
 
       - name: Re-prove exact deployment boundary
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
@@ -281,6 +316,12 @@ jobs:
           test "$NEXT_PUBLIC_FIREBASE_PROJECT_ID" = "$FIREBASE_PROJECT"
           test -s urai-tier1/out/release-fingerprint.json
           test -s deployment-receipt/predeploy/version-name.txt
+          test "$(cat deployment-receipt/predeploy/fingerprint-status.txt)" = valid
+          # Prevent stale-main deployment even after successful premerge review.
+          main_ref="$(curl --fail --silent --show-error \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/ref/heads/main")"
+          test "$(jq -r '.object.sha // empty' <<<"$main_ref")" = "$RELEASE_SHA"
           test -n "${GOOGLE_APPLICATION_CREDENTIALS:-}"
           test "$GOOGLE_APPLICATION_CREDENTIALS" = "$GOOGLE_GHA_CREDS_PATH"
 
