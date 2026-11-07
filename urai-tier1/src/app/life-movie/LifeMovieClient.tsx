@@ -8,6 +8,7 @@ import { collection, doc, getDoc, getDocs, limit, query } from 'firebase/firesto
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { useOwnedMemoryMediaPlayback } from '@/spatial/memory/useOwnedMemoryMediaPlayback'
+import { replayVisualAdmission } from '../replay/replayVisualAdmission'
 import { useReplayMemoryVisibility } from '@/spatial/memory/useReplayMemoryVisibility'
 import { createReplayMediaSession, initialReplayVideoSnapshot, type ReplayVideoSession } from '../replay/replayMediaSession'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
@@ -26,13 +27,6 @@ type MovieState =
   | { kind: 'ready'; message: string }
   | { kind: 'empty'; message: string }
   | { kind: 'error'; message: string }
-
-function mediaFor(memory: SelectedMemory) {
-  return memory.sourceMedia.find((item) => item.kind === 'video')
-    ?? memory.sourceMedia.find((item) => item.kind === 'image')
-    ?? memory.sourceMedia.find((item) => item.kind === 'audio')
-    ?? null
-}
 
 function safeOccurredAt(memory: SelectedMemory) {
   const timestamp = Date.parse(memory.occurredAt)
@@ -168,8 +162,14 @@ export default function LifeMovieClient() {
     mediaSession.current?.dispose()
     if (imageRef.current) { imageRef.current.style.visibility = 'hidden'; imageRef.current.removeAttribute('src') }
   })
-  const expectsPrivateSource = Boolean(active?.sourceMediaReceipts?.length)
-  const media = active ? mediaFor(expectsPrivateSource ? { ...active, sourceMedia: ownedPlayback.media } : active) : null
+  // A pre-receipt canonical memory can still contain legacy download URLs.
+  // Do not send these URLs to a player or call them authorized media.
+  const expectsPrivateSource = Boolean(active && !active.demo
+    && ((active.sourceMediaReceipts?.length ?? 0) > 0 || active.sourceMedia.length > 0))
+  const media = active ? replayVisualAdmission(
+    { ...active, sourceMedia: ownedPlayback.status === 'ready' ? ownedPlayback.media : [] },
+    ownedPlayback.status === 'ready' ? 'owned-receipt' : null,
+  ).media : null
   const timedSource = media?.kind === 'video' || media?.kind === 'audio'
   useEffect(() => {
     setMediaSnapshot(initialReplayVideoSnapshot())
@@ -364,7 +364,7 @@ export default function LifeMovieClient() {
           {media?.kind === 'image' ? <img key={media.url} ref={imageRef} src={media.url} alt={media.caption || active.title} /> : null}
           {media?.kind === 'video' ? <video key={media.url} ref={attachMedia} controls playsInline preload="metadata" aria-label={media.caption || active.title} /> : null}
           {media?.kind === 'audio' ? <div className="lifeMovieAudio"><div aria-hidden="true" className="lifeMovieAudioField" /><audio key={media.url} ref={attachMedia} controls preload="metadata" aria-label={media.caption || active.title} /></div> : null}
-          {expectsPrivateSource && ownedPlayback.status === 'loading' ? <p role="status">Opening private source…</p> : expectsPrivateSource && ownedPlayback.status === 'unavailable' ? <p role="status">The private source is currently unavailable.</p> : null}
+          {expectsPrivateSource && ownedPlayback.status === 'loading' ? <p role="status">Opening private source…</p> : expectsPrivateSource && ownedPlayback.status !== 'ready' && ownedPlayback.status !== 'loading' ? <p role="status">The private source is currently unavailable.</p> : null}
           {timedSource && mediaSnapshot.error ? <p role="status">{mediaSnapshot.error}</p> : null}
           {!media ? <div className="lifeMovieMemoryField" aria-hidden="true"><span /><span /><span /></div> : null}
         </div>
