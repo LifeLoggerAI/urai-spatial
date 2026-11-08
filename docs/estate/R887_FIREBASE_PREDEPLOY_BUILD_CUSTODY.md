@@ -36,3 +36,7 @@ The revised workflow and R885 source contract were verified by GitHub source rea
 6. The guarded release config and temporary evidence files must be preserved in CI artifacts and reviewed; no authorization can derive from source-only checks.
 
 No live Firebase, billing, IAM, user memory, GitHub main, or production operations were performed during R887 source admission.
+
+## Post-admission current-head Actions readback
+
+For candidate head `2c91582b1054a1343c592bcfb1dd0e0dfb8fbcd2`, the GitHub connector returned **completed/failure** for `URAI Spatial CI` run `42433296911` and other pull-request checks. Its jobs API returned seven `completed/failure` jobs with no step details in the response. This does **not** establish a specific code error or root cause. R887 is **not** CI-passed and production remains HOLD; no manual Actions dispatch occurred.
