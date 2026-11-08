@@ -369,6 +369,12 @@ jobs:
             --release-sha "$RELEASE_SHA" --run-id "$GITHUB_RUN_ID" \
             --manifest deployment-receipt/predeploy/functions-build-evidence.json
 
+      - name: Prepare source-preserving guarded Firebase Functions configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/r887-guard-functions-predeploy.mjs --mode prepare
+
       - id: deploy-functions
         name: Deploy exact Firebase Functions source with WIF ADC
         continue-on-error: true
@@ -379,7 +385,7 @@ jobs:
           npx --yes firebase-tools@15.22.3 deploy \
             --only functions \
             --project "$FIREBASE_PROJECT" \
-            --config firebase.json \
+            --config firebase.r887.governed.json \
             --non-interactive \
             2>&1 | tee deployment-receipt/deploy/functions.log
 
