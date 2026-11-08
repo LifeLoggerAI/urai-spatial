@@ -63,3 +63,14 @@ test('R885: protected backend rollback ambiguity preserves mandatory production 
   assert.match(boundary, /backend revision and rollback equivalence not certified/)
   assert.match(boundary, /exit 1/)
 })
+
+test('R887: deployed Functions must use governed config with final post-predeploy guard', () => {
+  const prepare = section('Prepare source-preserving guarded Firebase Functions configuration')
+  const deploy = section('Deploy exact Firebase Functions source with WIF ADC')
+  assert.match(prepare, /r887-guard-functions-predeploy\.mjs --mode prepare/)
+  assert.match(deploy, /--config firebase\.r887\.governed\.json/)
+  assert.doesNotMatch(deploy, /--config firebase\.json/)
+  const boundary = section('Re-prove exact deployment boundary')
+  assert.match(boundary, /HOLD: protected backend revision and rollback equivalence not certified/)
+  assert.match(boundary, /exit 1/)
+})
