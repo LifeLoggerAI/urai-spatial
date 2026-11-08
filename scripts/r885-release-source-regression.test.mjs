@@ -66,7 +66,8 @@ test('R885: protected backend rollback ambiguity preserves mandatory production 
 
 test('R887: deployed Functions must use governed config with final post-predeploy guard', () => {
   const prepare = section('Prepare source-preserving guarded Firebase Functions configuration')
-  const deploy = section('Deploy exact Firebase Functions source with WIF ADC')
+  const deploy = workflow.slice(workflow.indexOf('      - id: deploy-functions'), workflow.indexOf('      - id: hosting-byte-custody'))
+  assert.ok(deploy.startsWith('      - id: deploy-functions'))
   assert.match(prepare, /r887-guard-functions-predeploy\.mjs --mode prepare/)
   assert.match(deploy, /--config firebase\.r887\.governed\.json/)
   assert.doesNotMatch(deploy, /--config firebase\.json/)
