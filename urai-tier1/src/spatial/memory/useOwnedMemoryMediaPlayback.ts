@@ -99,15 +99,25 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
         return result.data
       }
       let admitted: OwnedMemoryPlaybackDescriptor | null = null
-      const armExpiry = (descriptor: OwnedMemoryPlaybackDescriptor) => {
-        clearTimeout(expiry); expiry = setTimeout(deny, Math.max(0, descriptor.expiresAt - Date.now()))
+      // The per-playback descriptor is not permitted to outlive the owner C1
+      // consent receipt. Firestore does not publish an event merely because
+      // a timestamp passes, so schedule local teardown at the EARLIER expiry.
+      const armExpiry = (descriptor: OwnedMemoryPlaybackDescriptor): boolean => {
+        const consentExpiresAt = consentSnapshot?.expiresAt
+        if (typeof consentExpiresAt !== 'number' || !Number.isSafeInteger(consentExpiresAt)) return false
+        const remaining = Math.min(descriptor.expiresAt, consentExpiresAt) - Date.now()
+        if (!Number.isFinite(remaining) || remaining <= 0) return false
+        clearTimeout(expiry)
+        expiry = setTimeout(deny, remaining)
+        return true
       }
       const revalidate = async () => {
         try {
           const next = await resolve()
           if (!current() || !isCanonicalMemoryCurrent()
             || next.sourceAuthorityHash !== admitted?.sourceAuthorityHash) { deny(); return }
-          armExpiry(next); poll = setTimeout(() => void revalidate(), 30_000)
+          if (!armExpiry(next)) { deny(); return }
+          poll = setTimeout(() => void revalidate(), 30_000)
         } catch { deny() }
       }
       const watch = (parts: string[], check: (data: Record<string, unknown> | null) => boolean) => {
@@ -186,7 +196,8 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
         try {
           await snapshotsReady
           if (!current() || !isCanonicalMemoryCurrent()) { deny(); return }
-          admitted = await resolve(); armExpiry(admitted)
+          admitted = await resolve()
+          if (!armExpiry(admitted)) { deny(); return }
           const observed = readSourceSnapshot()
           if (!observed || observed.sha256 !== admitted.sha256 || observed.storageGeneration !== admitted.storageGeneration
             || observed.byteLength !== admitted.byteLength || observed.contentType !== admitted.contentType) { deny(); return }
@@ -195,7 +206,7 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
           const after = await resolve()
           if (!current() || !isCanonicalMemoryCurrent()
             || after.sourceAuthorityHash !== admitted.sourceAuthorityHash) { deny(); return }
-          armExpiry(after)
+          if (!armExpiry(after)) { deny(); return }
           objectUrl = URL.createObjectURL(blob)
           setPlayback({ key, status: 'ready', media: [{ kind: receipt.kind, url: objectUrl, caption: receipt.caption }] })
           poll = setTimeout(() => void revalidate(), 30_000)

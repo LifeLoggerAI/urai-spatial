@@ -569,11 +569,11 @@ test('released Life Movie media cannot auto-start the source-less chapter timer'
 
 // Actual hook execution; SDK/HTTP boundary doubles are explicitly synthetic.
 const c1HookCode = ts.transpileModule(fs.readFileSync(new URL('../src/spatial/memory/useOwnedMemoryMediaPlayback.ts', import.meta.url), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
-async function mountC1Playback() {
- const uid='synthetic-owner',id='synthetic-memory',rid='a'.repeat(64),expiry=Date.now()+600000
+async function mountC1Playback({ consentTtlMs = 600_000, descriptorTtlMs = 60_000 } = {}) {
+ const uid='synthetic-owner',id='synthetic-memory',rid='a'.repeat(64),expiry=Date.now()+consentTtlMs
  const raw={ownerId:uid,title:'Synthetic consent boundary',occurredAt:'2026-01-01T12:00:00.000Z',summary:'Synthetic only',emotionalState:'calm',privacy:'private',sourceMedia:[{kind:'video',mediaReceiptId:rid}],star:{position:[0,0,-4]},replayManifest:{id:'synthetic-manifest',version:1,durationMs:3000,segments:['memory','emotion','pattern','return'].map((id,i)=>({id,label:id,caption:id,narratorLine:'Synthetic',startsAtMs:i*750,durationMs:750}))}}
  const parsed=parseSelectedMemory(raw,uid,id,'synthetic-bucket');assert.equal(parsed.status,'ready')
- const descriptor={schemaVersion:'urai-owned-memory-media-playback-v1',requiresAuthorization:true,ownerId:uid,memoryId:id,receiptId:rid,kind:'video',contentType:'video/mp4',sha256:'f'.repeat(64),byteLength:16,storageGeneration:'123',sourceAuthorityHash:'c'.repeat(64),authorityHash:'d'.repeat(64),expiresAt:Date.now()+60000}
+ const descriptor={schemaVersion:'urai-owned-memory-media-playback-v1',requiresAuthorization:true,ownerId:uid,memoryId:id,receiptId:rid,kind:'video',contentType:'video/mp4',sha256:'f'.repeat(64),byteLength:16,storageGeneration:'123',sourceAuthorityHash:'c'.repeat(64),authorityHash:'d'.repeat(64),expiresAt:Date.now()+descriptorTtlMs}
  const path='consentRecords/'+uid+'_memory_storage'
  const consent={uid,purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:'b'.repeat(64),expiresAt:expiry}
  const docs=new Map([
@@ -603,6 +603,7 @@ async function mountC1Playback() {
  render();for(let i=0;i<30;i++)await Promise.resolve()
  assert.equal(render().status,'ready','the actual hook mounts under disclosed SDK/HTTP fixtures')
  return {path,consent,revoked,releaseCount:()=>releases,render,
+  pendingTimers:()=>[...timers.values()],
   update(value){docs.set(path,value);for(const w of [...watchers])if(w.p===path)w.fn(snapshot(path))},
   cleanup(){for(const e of effects)e.cleanup?.()}}
 }
@@ -616,6 +617,30 @@ for(const [label,change] of [
  finally{h.cleanup()}
 })
 
+
+test('C1 receipt clock expiry revokes private Blob before a longer descriptor lease',async()=>{
+  const h=await mountC1Playback({consentTtlMs:12_000,descriptorTtlMs:60_000})
+  try {
+    const deadline=h.pendingTimers().find(timer=>timer.ms>=0 && timer.ms<=12_000)
+    assert.ok(deadline,'missing C1-bounded playback teardown timer: descriptor must not outlive consent')
+    assert.equal(h.render().status,'ready','the fixture starts with an owner-authorized private Blob')
+    deadline.fn()
+    assert.equal(h.render().status,'unavailable','C1 expiry must remove playback without a new Firestore event')
+    assert.deepEqual(h.revoked,['blob:synthetic'],'C1 expiry must revoke the local object URL')
+    assert.equal(h.releaseCount(),1,'C1 expiry must notify the mounted media consumer')
+  } finally { h.cleanup() }
+})
+
+test('shorter descriptor expiry remains the playback limit when C1 receipt lasts longer',async()=>{
+  const h=await mountC1Playback({consentTtlMs:120_000,descriptorTtlMs:9_000})
+  try {
+    const deadline=h.pendingTimers().find(timer=>timer.ms>=0 && timer.ms<=9_000)
+    assert.ok(deadline,'descriptor expiry must remain enforced when it is earlier than C1 expiry')
+    deadline.fn()
+    assert.equal(h.render().status,'unavailable')
+    assert.deepEqual(h.revoked,['blob:synthetic'])
+  } finally { h.cleanup() }
+})
 
 // Late SDK settlement executes the actual hook and transport; SDK/HTTP doubles are synthetic.
 function staleReleaseDeferred(){let resolve,reject; const promise=new Promise((a,b)=>{resolve=a;reject=b});return {promise,resolve,reject};}
