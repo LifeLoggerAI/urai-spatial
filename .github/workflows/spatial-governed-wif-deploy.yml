@@ -88,13 +88,20 @@ jobs:
             "$GITHUB_API_URL/repos/$REPOSITORY/pulls/$PR_NUMBER")"
           test "$(jq -r '.merged' <<<"$pr")" = 'true'
           test "$(jq -r '.base.ref' <<<"$pr")" = 'main'
-          test "$(jq -r '.head.sha' <<<"$pr")" = "$RELEASE_SHA"
+          # Premerge PR head is distinct from the merged main commit.
+          PR_HEAD_SHA="$(jq -r '.head.sha' <<<"$pr")"
+          [[ "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(jq -r '.merge_commit_sha // empty' <<<"$pr")" = "$RELEASE_SHA"
+          main_ref="$(curl --fail --silent --show-error \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            "$GITHUB_API_URL/repos/$REPOSITORY/git/ref/heads/main")"
+          test "$(jq -r '.object.sha // empty' <<<"$main_ref")" = "$RELEASE_SHA"
 
           guard_runs="$(curl --fail --silent --show-error \
             --header 'Accept: application/vnd.github+json' \
             --header "Authorization: Bearer $GH_TOKEN" \
             --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "$GITHUB_API_URL/repos/$REPOSITORY/actions/workflows/release-governance-guard.yml/runs?event=pull_request&status=success&head_sha=$RELEASE_SHA&per_page=100")"
+            "$GITHUB_API_URL/repos/$REPOSITORY/actions/workflows/release-governance-guard.yml/runs?event=pull_request&status=success&head_sha=$PR_HEAD_SHA&per_page=100")"
           jq -e --argjson pr "$PR_NUMBER" '
             .workflow_runs
             | any(
@@ -103,7 +110,20 @@ jobs:
                 and any(.pull_requests[]?; .number == $pr)
               )
           ' <<<"$guard_runs" >/dev/null || {
-            echo 'No successful exact-head Release Governance Guard run is associated with the merged PR.' >&2
+            echo 'No successful original PR-head Release Governance Guard run was found.' >&2
+            exit 1
+          }
+
+          # Require fresh exact merged-main CI, not a PR-head run.
+          merged_ci="$(curl --fail --silent --show-error \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            "$GITHUB_API_URL/repos/$REPOSITORY/actions/workflows/urai-spatial-ci.yml/runs?head_sha=$RELEASE_SHA&status=success&per_page=100")"
+          jq -e --arg sha "$RELEASE_SHA" '
+            .workflow_runs | any(.head_sha == $sha and .head_branch == "main"
+              and (.event == "push" or .event == "workflow_dispatch")
+              and .status == "completed" and .conclusion == "success")
+          ' <<<"$merged_ci" >/dev/null || {
+            echo 'HOLD: no independently passing exact merged-main CI.' >&2
             exit 1
           }
 
@@ -181,6 +201,16 @@ jobs:
             and (.firebaseStaticConfigSha256 | test("^[0-9a-f]{64}$"))
           ' urai-tier1/out/release-fingerprint.json >/dev/null
 
+      - name: Attest complete compiled Functions source closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deployment-receipt/predeploy
+          node scripts/R883_VERIFY_FUNCTIONS_BUILD.mjs \
+            --mode attest --repo-root . \
+            --release-sha "$RELEASE_SHA" --run-id "$GITHUB_RUN_ID" \
+            --manifest deployment-receipt/predeploy/functions-build-evidence.json
+
       - name: Prepare exact rollback Functions source before any production mutation
         shell: bash
         run: |
@@ -229,6 +259,28 @@ jobs:
           test "$(jq -r 'has("private_key")' "$GOOGLE_APPLICATION_CREDENTIALS")" = 'false'
           test "$(jq -r 'has("client_email")' "$GOOGLE_APPLICATION_CREDENTIALS")" = 'false'
 
+      - name: Authenticate and resolve actual Hosting site and live-channel source
+        shell: bash
+        env:
+          GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          mkdir -p deployment-receipt/predeploy
+          python3 scripts/R882_PROVIDER_LIVE_SITE_COLLECTOR.py \
+            --collect --acknowledge-readonly-cloud-access \
+            --output deployment-receipt/predeploy/site-readback.json
+          jq -e --arg project "$FIREBASE_PROJECT" '
+            .classification == "READBACK_ONLY_NO_PRODUCTION_GO"
+            and .selectedSiteId == $project
+            and .selectedSiteType == "DEFAULT_SITE"
+            and (.latestLiveRelease.versionName | type == "string")
+            and (.holdReasons | length == 0)
+          ' deployment-receipt/predeploy/site-readback.json >/dev/null || {
+            echo 'HOLD: custom domain Hosting site is not independently verified as the configured default.' >&2
+            exit 1
+          }
+          echo "VERIFIED_HOSTING_SITE_ID=$(jq -r '.selectedSiteId' deployment-receipt/predeploy/site-readback.json)" >> "$GITHUB_ENV"
+
       - name: Capture current live Hosting rollback authority
         shell: bash
         env:
@@ -238,41 +290,43 @@ jobs:
           test -n "$GOOGLE_WIF_ACCESS_TOKEN"
           echo "::add-mask::$GOOGLE_WIF_ACCESS_TOKEN"
           mkdir -p deployment-receipt/predeploy
-          curl --fail --silent --show-error \
-            --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
-            "https://firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases?pageSize=100" \
-            > deployment-receipt/predeploy/releases.json
-          jq -e '
-            .releases
-            | map(select(.type != "SITE_DISABLE"))
-            | sort_by(.releaseTime)
-            | last
-            | (.name | type == "string")
-              and (.version.name | type == "string")
-              and (.releaseTime | type == "string")
-          ' deployment-receipt/predeploy/releases.json >/dev/null
-          jq '
-            .releases
-            | map(select(.type != "SITE_DISABLE"))
-            | sort_by(.releaseTime)
-            | last
-          ' deployment-receipt/predeploy/releases.json > deployment-receipt/predeploy/live-release.json
-          jq -r '.version.name' deployment-receipt/predeploy/live-release.json > deployment-receipt/predeploy/version-name.txt
+          test "$VERIFIED_HOSTING_SITE_ID" = "$FIREBASE_PROJECT"
+          jq -e '.latestLiveRelease and (.holdReasons | length == 0)' \
+            deployment-receipt/predeploy/site-readback.json >/dev/null
+          jq '.latestLiveRelease' deployment-receipt/predeploy/site-readback.json > deployment-receipt/predeploy/live-release.json
+          jq -r '.latestLiveRelease.versionName' deployment-receipt/predeploy/site-readback.json > deployment-receipt/predeploy/version-name.txt
+          test -s deployment-receipt/predeploy/version-name.txt
 
           fingerprint_status='absent-or-invalid'
-          if curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+          if curl --fail --silent --show-error --proto '=https' --tlsv1.2 \
             "$LIVE_URL/release-fingerprint.json?predeploy=$GITHUB_RUN_ID" \
             -o deployment-receipt/predeploy/live-fingerprint.json; then
-            if jq -e '.schemaVersion == "urai-release-fingerprint-1" and (.releaseSha | test("^[0-9a-f]{40}$"))' \
-              deployment-receipt/predeploy/live-fingerprint.json >/dev/null 2>&1; then
+            if jq -e --arg rollback "$ROLLBACK_SHA" --arg project "$FIREBASE_PROJECT" --arg live_url "$LIVE_URL" '
+              .schemaVersion == "urai-release-fingerprint-1"
+              and .repository == "LifeLoggerAI/urai-spatial"
+              and .releaseSha == $rollback and .authoritySha == $rollback
+              and .firebaseProject == $project and .liveUrl == $live_url
+              and .deploymentScope == "functions-and-hosting"
+              and .certification == "verified-post-deploy-smoke"
+              and (.functionsTreeSha | test("^[0-9a-f]{40}$"))
+              and (.firebaseStaticConfigSha256 | test("^[0-9a-f]{64}$"))
+              and ((.workflowRunId | tostring) | test("^[1-9][0-9]*$"))
+              and ((.certificationRunId | tostring) | test("^[1-9][0-9]*$"))
+            ' deployment-receipt/predeploy/live-fingerprint.json >/dev/null 2>&1; then
               fingerprint_status='valid'
-              test "$(jq -r '.releaseSha' deployment-receipt/predeploy/live-fingerprint.json)" = "$ROLLBACK_SHA"
             fi
           fi
           printf '%s\n' "$fingerprint_status" > deployment-receipt/predeploy/fingerprint-status.txt
+          test "$fingerprint_status" = valid || {
+            echo 'HOLD: rollback fingerprint not independently certified.' >&2
+            exit 1
+          }
 
       - name: Re-prove exact deployment boundary
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
@@ -281,8 +335,45 @@ jobs:
           test "$NEXT_PUBLIC_FIREBASE_PROJECT_ID" = "$FIREBASE_PROJECT"
           test -s urai-tier1/out/release-fingerprint.json
           test -s deployment-receipt/predeploy/version-name.txt
+          test "$(cat deployment-receipt/predeploy/fingerprint-status.txt)" = valid
+          # Prevent stale-main deployment even after successful premerge review.
+          main_ref="$(curl --fail --silent --show-error \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/ref/heads/main")"
+          test "$(jq -r '.object.sha // empty' <<<"$main_ref")" = "$RELEASE_SHA"
           test -n "${GOOGLE_APPLICATION_CREDENTIALS:-}"
           test "$GOOGLE_APPLICATION_CREDENTIALS" = "$GOOGLE_GHA_CREDS_PATH"
+          # Recheck the domain-owner site and live release immediately before mutation.
+          python3 scripts/R882_PROVIDER_LIVE_SITE_COLLECTOR.py \
+            --collect --acknowledge-readonly-cloud-access \
+            --output deployment-receipt/predeploy/site-readback-final.json
+          jq -e --arg site "$VERIFIED_HOSTING_SITE_ID" \
+            --arg version "$(cat deployment-receipt/predeploy/version-name.txt)" '
+              .selectedSiteId == $site and .latestLiveRelease.versionName == $version
+              and (.holdReasons | length == 0)
+            ' deployment-receipt/predeploy/site-readback-final.json >/dev/null || {
+              echo 'HOLD: live Hosting site or version drift before mutation.' >&2
+              exit 1
+            }
+          # No independently pinned backend revisions / rollback artifact equivalence yet.
+          # This deliberate stop MUST NOT be lifted by source-only or synthetic tests.
+          echo 'HOLD: protected backend revision and rollback equivalence not certified.' >&2
+          exit 1
+
+      - name: Reverify compiled Functions bytes before first provider mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/R883_VERIFY_FUNCTIONS_BUILD.mjs \
+            --mode verify --repo-root . \
+            --release-sha "$RELEASE_SHA" --run-id "$GITHUB_RUN_ID" \
+            --manifest deployment-receipt/predeploy/functions-build-evidence.json
+
+      - name: Prepare source-preserving guarded Firebase Functions configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/r887-guard-functions-predeploy.mjs --mode prepare
 
       - id: deploy-functions
         name: Deploy exact Firebase Functions source with WIF ADC
@@ -294,13 +385,25 @@ jobs:
           npx --yes firebase-tools@15.22.3 deploy \
             --only functions \
             --project "$FIREBASE_PROJECT" \
-            --config firebase.json \
+            --config firebase.r887.governed.json \
             --non-interactive \
             2>&1 | tee deployment-receipt/deploy/functions.log
 
+      - id: hosting-byte-custody
+        name: Verify pending Hosting bytes immediately before publication
+        if: steps.deploy-functions.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/R883_VERIFY_HOSTING_ARTIFACTS.mjs \
+            --phase pending --output urai-tier1/out \
+            --preserved release-bundle/urai-tier1/out \
+            --initial-manifest release-bundle/manifest.json \
+            --release-sha "$RELEASE_SHA" --run-id "$GITHUB_RUN_ID"
+
       - id: deploy-hosting
         name: Deploy exact static Hosting release with WIF ADC
-        if: steps.deploy-functions.outcome == 'success'
+        if: steps.deploy-functions.outcome == 'success' && steps.hosting-byte-custody.outcome == 'success'
         continue-on-error: true
         shell: bash
         run: |
@@ -346,9 +449,22 @@ jobs:
             and .certificationRunId == $run
           ' urai-tier1/out/release-fingerprint.json >/dev/null
 
+      - id: certified-byte-custody
+        name: Verify certified Hosting bytes immediately before publication
+        if: steps.certify-fingerprint.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/R883_VERIFY_HOSTING_ARTIFACTS.mjs \
+            --phase certified --output urai-tier1/out \
+            --preserved release-bundle/urai-tier1/out \
+            --initial-manifest release-bundle/manifest.json \
+            --certified-manifest deployment-receipt/postdeploy/certified-bundle-manifest.json \
+            --release-sha "$RELEASE_SHA" --run-id "$GITHUB_RUN_ID"
+
       - id: deploy-certified-fingerprint
         name: Publish certified fingerprint with unchanged exact Hosting bundle
-        if: steps.certify-fingerprint.outcome == 'success'
+        if: steps.certify-fingerprint.outcome == 'success' && steps.certified-byte-custody.outcome == 'success'
         continue-on-error: true
         shell: bash
         run: |
@@ -374,7 +490,7 @@ jobs:
             node scripts/urai-post-deploy-smoke.mjs
 
       - name: Roll back Hosting and Functions after any deployment or certification failure
-        if: always() && steps.deploy-functions.outcome != '' && steps.deploy-functions.outcome != 'skipped' && (steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success')
+        if: always() && steps.deploy-functions.outcome != '' && steps.deploy-functions.outcome != 'skipped' && (steps.deploy-functions.outcome != 'success' || steps.hosting-byte-custody.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.certified-byte-custody.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success')
         shell: bash
         env:
           GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
@@ -391,7 +507,7 @@ jobs:
             --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
             --header 'Content-Type: application/json' \
             --data "$(jq -nc --arg message "URAI automatic Hosting rollback after failed exact-head release run $GITHUB_RUN_ID" '{message:$message}')" \
-            "https://firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases?versionName=$version_name" \
+            "https://firebasehosting.googleapis.com/v1beta1/sites/$VERIFIED_HOSTING_SITE_ID/releases?versionName=$version_name" \
             > deployment-receipt/rollback/restore-result.json
           test "$(jq -r '.version.name // empty' deployment-receipt/rollback/restore-result.json)" = "$version_name"
 
@@ -405,19 +521,20 @@ jobs:
               2>&1 | tee "$GITHUB_WORKSPACE/deployment-receipt/rollback/functions.log"
           )
 
-          sleep 5
-          curl --fail --silent --show-error \
-            --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
-            "https://firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases?pageSize=20" \
-            > deployment-receipt/rollback/releases-after-restore.json
-          observed="$(jq -r '
-            .releases
-            | map(select(.type != "SITE_DISABLE"))
-            | sort_by(.releaseTime)
-            | last
-            | .version.name // empty
-          ' deployment-receipt/rollback/releases-after-restore.json)"
-          test "$observed" = "$version_name"
+          # Use complete paginated live-channel evidence, not the first 100 releases.
+          python3 scripts/R882_PROVIDER_LIVE_SITE_COLLECTOR.py \
+            --collect --acknowledge-readonly-cloud-access \
+            --output deployment-receipt/rollback/live-release-after-restore.json
+          jq -e --arg site "$VERIFIED_HOSTING_SITE_ID" --arg version "$version_name" '
+            .classification == "READBACK_ONLY_NO_PRODUCTION_GO"
+            and .selectedSiteId == $site
+            and .selectedSiteType == "DEFAULT_SITE"
+            and .latestLiveRelease.versionName == $version
+            and (.holdReasons | length == 0)
+          ' deployment-receipt/rollback/live-release-after-restore.json >/dev/null || {
+            echo 'HOLD: rollback live channel was not fully paginated and verified.' >&2
+            exit 1
+          }
           printf '%s\n' "$ROLLBACK_SHA" > deployment-receipt/rollback/functions-source-sha.txt
 
       - name: Write governed deployment receipt
@@ -460,7 +577,7 @@ jobs:
           retention-days: 90
 
       - name: Fail release after rollback when deployment or live certification failed
-        if: always() && steps.deploy-functions.outcome != '' && steps.deploy-functions.outcome != 'skipped' && (steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success')
+        if: always() && steps.deploy-functions.outcome != '' && steps.deploy-functions.outcome != 'skipped' && (steps.deploy-functions.outcome != 'success' || steps.hosting-byte-custody.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.certified-byte-custody.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success')
         shell: bash
         run: |
           echo 'Exact Functions + Hosting certification failed. Governed rollback was attempted and the release remains NO-GO.' >&2
