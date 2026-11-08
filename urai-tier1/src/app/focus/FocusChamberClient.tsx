@@ -1,6 +1,7 @@
 'use client'
 
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
+import { useRouter } from 'next/navigation'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 
 import { consumeReplayReturnFocus } from '@/spatial/world/replayReturnFocusHandoff'
@@ -18,11 +19,14 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets, replayAssets } from '@/spatial/assets/uraiAssets'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import { useOwnedMemoryMediaPlayback } from '@/spatial/memory/useOwnedMemoryMediaPlayback'
+import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
+import { focusStarTravel, focusReplayReturnNode, verifiedFocusEventNodeId } from './focusStarTravel'
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import { forwardPrivateMovieRouteSelection } from '@/spatial/life-movie/privateLifeMovieRouteSelection'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { focusMemoryAppearance } from './focusMemoryAppearance'
-import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
+import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selectedMemoryContract'
 import MemoryMediaAttachment from '@/spatial/memory/MemoryMediaAttachment'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
@@ -311,8 +315,8 @@ function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivat
   )
 }
 
-function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame, readinessKey, onFirstFrame, onInputReadyChange, onMemoryState }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; readinessKey: string; onFirstFrame: () => void; onInputReadyChange: (ready: boolean) => void; onMemoryState: (state: StellarMemoryState) => void }) {
-  const { accent, light, imageUrl: memoryImageUrl } = focusMemoryAppearance(memory, replayAssets.primary.src)
+function FocusScene({ memory, authorizedMedia, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame, readinessKey, onFirstFrame, onInputReadyChange, onMemoryState }: { memory: SelectedMemory | null; authorizedMedia: readonly SelectedMemoryMedia[]; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; readinessKey: string; onFirstFrame: () => void; onInputReadyChange: (ready: boolean) => void; onMemoryState: (state: StellarMemoryState) => void }) {
+  const { accent, light, imageUrl: memoryImageUrl } = focusMemoryAppearance(memory, replayAssets.primary.src, authorizedMedia)
   return <>
     <FirstFrame key={readinessKey} profile={profile} onReady={onFirstFrame} />
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
@@ -326,9 +330,30 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
 
 export default function FocusChamberClient() {
   const locale = useUraiLocale()
+  const router = useRouter()
   const result = useSelectedMemory()
   const location = useBrowserLocation()
   const memory = result.memory
+  // Fetch only a receipt-backed *image* for the Focus photosphere. Never
+  // download video/audio in Focus or reuse legacy permanent Storage URLs.
+  const imageReceiptMemory = useMemo(() => {
+    if (!memory || memory.demo || memory.authorization !== 'owner' || memory.privacy !== 'private') return null
+    const imageReceipt = memory.sourceMediaReceipts?.find(receipt => receipt.kind === 'image')
+    return imageReceipt ? { ...memory, sourceMediaReceipts: [imageReceipt] } : null
+  }, [memory])
+  const focusImagePlayback = useOwnedMemoryMediaPlayback(imageReceiptMemory)
+  const authorizedFocusMedia = focusImagePlayback.status === 'ready' ? focusImagePlayback.media : []
+  const selectedFocusNodeId = useMemo(() => {
+    const search = location.includes('?') ? location.slice(location.indexOf('?') + 1).split('#')[0] : ''
+    return new URLSearchParams(search).get('node')
+  }, [location])
+  const lifeMap = useLifeMapEvents(memory?.demo ? 'demo-user' : memory?.ownerId)
+  const verifiedFocusNodeId = useMemo(() => verifiedFocusEventNodeId(
+    lifeMap.nodes, memory, lifeMap.sourceMode, lifeMap.loading, selectedFocusNodeId,
+  ), [lifeMap.nodes, memory, lifeMap.sourceMode, lifeMap.loading, selectedFocusNodeId])
+  const starTravel = useMemo(() => focusStarTravel(
+    lifeMap.nodes, memory, lifeMap.sourceMode, lifeMap.loading, selectedFocusNodeId,
+  ), [lifeMap.nodes, lifeMap.sourceMode, lifeMap.loading, memory, selectedFocusNodeId])
   const adaptiveProfile = useAdaptiveSpatialQuality()
   const [softwareRenderer, setSoftwareRenderer] = useState(false)
   const profile: SpatialQualityProfile = useMemo(() => softwareRenderer ? {
@@ -391,15 +416,11 @@ export default function FocusChamberClient() {
     if (!memory) return null
     const search = location.includes('?') ? location.slice(location.indexOf('?') + 1).split('#')[0] : ''
     const incoming = new URLSearchParams(search)
-    const node = incoming.get('node')
-    const sameMemory = incoming.get('memoryId') === memory.id && incoming.get('manifestId') === memory.replayManifest.id
-    const validNode = Boolean(node && /^[A-Za-z0-9._:-]{1,120}$/.test(node))
-    const fromLifeMap = incoming.get('from') === 'life-map' || incoming.get('from') === 'life-map-semantic'
-    const originalSelection = fromLifeMap && node === incoming.get('returnNode')
-    const projectedSelection = node === `canonical-memory:${memory.id}`
-    // A projected Memory Star has a distinct scene ID from its canonical memory.
-    // Preserve it across Focus -> Replay -> Focus without ever treating it as authority.
-    const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id
+    // Preserve an event-backed Focus selection only when the consent-scoped Life Map
+    // confirmed the selected star; never infer owner authority from route metadata.
+    // Exact event identity is revalidated by the current owner/consent-scoped Life
+    // Map, including after a previous Replay return. Route parameters grant nothing.
+    const returnNode = focusReplayReturnNode(memory, incoming, verifiedFocusNodeId)
     const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: returnNode, from: 'focus-artifact' })
     if (returnNode !== memory.star.id) next.set('returnNode', returnNode)
     if (memory.demo) next.set('demo', '1')
@@ -410,7 +431,7 @@ export default function FocusChamberClient() {
       })
     }
     return `/replay?${next.toString()}`
-  }, [memory, location])
+  }, [memory, location, verifiedFocusNodeId])
 
   const enterReplay = useCallback(() => {
     if (!memory || !replayHref || committed) return
@@ -433,7 +454,7 @@ export default function FocusChamberClient() {
   const headingId = directEntry ? 'focus.heading' : 'focus.resting'
   const heading = memory?.title ?? locale.text(headingId)
   const description = memory?.narrator.focus ?? (directEntry ? locale.text('focus.chooseMemory') : result.message)
-  const appearance = focusMemoryAppearance(memory, replayAssets.primary.src)
+  const appearance = focusMemoryAppearance(memory, replayAssets.primary.src, authorizedFocusMedia)
   const style = { '--memory-accent': appearance.accent, '--memory-light': appearance.light, '--memory-sky': memory?.visuals.sky ?? '#020712', '--memory-ground': memory?.visuals.ground ?? '#07121c', '--focus-asset': assetCssStack(focusAssets.primary) } as CSSProperties
   const webglUsable = webglAvailable === true && webglState !== 'failed'
   const readinessKey = JSON.stringify([memory?.ownerId, memory?.id, memory?.replayManifest.id, appearance.imageUrl, webglState, renderEpoch])
@@ -445,12 +466,12 @@ export default function FocusChamberClient() {
   const preparingField = Boolean(memory) && !semanticFallback && (!fieldReady || memoryRevealState === 'loading')
   const fieldStatusId = semanticFallback || memoryRevealState === 'unavailable' ? 'common.spatialAccessible' : webglState === 'lost' ? 'focus.paused' : webglState === 'restoring' ? 'focus.restoring' : fieldReady ? memoryRevealState === 'loading' ? 'focus.openingSelected' : 'focus.ready' : 'focus.opening'
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-memory-reveal-state={semanticFallback ? 'absent' : memoryRevealState} data-focus-render-ready={fieldReady ? 'true' : 'false'} data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x={DEFAULT_CAMERA[0].toFixed(3)} data-focus-camera-y={DEFAULT_CAMERA[1].toFixed(3)} data-focus-camera-z={DEFAULT_CAMERA[2].toFixed(3)} data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-renderer-mode={softwareRenderer ? 'software' : 'hardware-or-unknown'} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-memory-reveal-state={semanticFallback ? 'absent' : memoryRevealState} data-focus-render-ready={fieldReady ? 'true' : 'false'} data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x={DEFAULT_CAMERA[0].toFixed(3)} data-focus-camera-y={DEFAULT_CAMERA[1].toFixed(3)} data-focus-camera-z={DEFAULT_CAMERA[2].toFixed(3)} data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-renderer-mode={softwareRenderer ? 'software' : 'hardware-or-unknown'} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={verifiedFocusNodeId ?? memory?.star.id}>
     <h1 className="srOnly" {...locale.props('focus.title')}>{locale.text('focus.title')}</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     {!webglUsable ? <div className="focusFog" aria-hidden="true" /> : null}
     <div className="focusCanvas" aria-label={locale.text('focus.canvasLabel')} {...locale.props('focus.canvasLabel')}>
-      {webglAvailable === null ? <div className="focusFallback" role="status" {...locale.props('focus.preparing')}>{locale.text('focus.preparing')}</div> : webglUsable ? <Suspense fallback={<div className="focusFallback" role="status" {...locale.props('focus.opening')}>{locale.text('focus.opening')}</div>}><Canvas camera={{ position: DEFAULT_CAMERA, fov: INITIAL_FRAME.fov, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'always' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => setSoftwareRenderer(isSoftwareWebGLRenderer(gl))}><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={onWebGLState} shellRef={shellRef} entryFrame={entryFrame} readinessKey={readinessKey} onFirstFrame={onFirstFrame} onInputReadyChange={setInputReady} onMemoryState={onMemoryState} /></Canvas></Suspense> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong {...locale.props('common.spatialUnavailable')}>{locale.text('common.spatialUnavailable')}</strong><span {...locale.props('common.spatialAccessible')}>{locale.text('common.spatialAccessible')}</span></div>}
+      {webglAvailable === null ? <div className="focusFallback" role="status" {...locale.props('focus.preparing')}>{locale.text('focus.preparing')}</div> : webglUsable ? <Suspense fallback={<div className="focusFallback" role="status" {...locale.props('focus.opening')}>{locale.text('focus.opening')}</div>}><Canvas camera={{ position: DEFAULT_CAMERA, fov: INITIAL_FRAME.fov, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'always' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => setSoftwareRenderer(isSoftwareWebGLRenderer(gl))}><FocusScene memory={memory} authorizedMedia={authorizedFocusMedia} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={onWebGLState} shellRef={shellRef} entryFrame={entryFrame} readinessKey={readinessKey} onFirstFrame={onFirstFrame} onInputReadyChange={setInputReady} onMemoryState={onMemoryState} /></Canvas></Suspense> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong {...locale.props('common.spatialUnavailable')}>{locale.text('common.spatialUnavailable')}</strong><span {...locale.props('common.spatialAccessible')}>{locale.text('common.spatialAccessible')}</span></div>}
     </div>
     <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS MEMORY STAR'}</p><h2 {...(!memory ? locale.props(headingId) : {dir:'auto' as const})} style={{overflowWrap:'anywhere'}}>{heading}</h2>{memory ? <span {...(Number.isFinite(new Date(memory.occurredAt).getTime()) ? locale.formatProps : {dir:'auto'})}>{dateLabel(memory.occurredAt, locale)}</span> : null}<details className="focusNarration"><summary {...locale.props(memory ? 'focus.selectedMemory' : 'focus.threshold')}>{locale.text(memory ? 'focus.selectedMemory' : 'focus.threshold')}</summary><strong {...(!memory && directEntry ? locale.props('focus.chooseMemory') : {dir:'auto' as const})} style={{overflowWrap:'anywhere'}}>{description}</strong></details></header>
     {!webglUsable && <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral stellar Focus field'} data-focus-visual-owner="stellar-photosphere-corona" aria-hidden="true">
@@ -469,7 +490,7 @@ export default function FocusChamberClient() {
     </nav>
     <div className="focusUtilities">
       <AdamLauncherSlot name="focus-memory-controls" as="div" />
-      <details className="focusHelp"><summary {...locale.props('focus.explore')}>{locale.text('focus.explore')}</summary><p {...locale.props('focus.instructions')}>{locale.text('focus.instructions')}</p></details>
+      <details className="focusHelp"><summary {...locale.props('focus.explore')}>{locale.text('focus.explore')}</summary><div className="focusHelpPanel"><p {...locale.props('focus.instructions')}>{locale.text('focus.instructions')}</p>{starTravel.total > 1 ? <nav className="focusStarSteps" data-focus-star-step="verified-visible-memory-only" aria-label={locale.text('focus.starTravelLabel')} {...locale.props('focus.starTravelLabel')}><span className="focusStarStepsCount" role="status" aria-live="polite" aria-atomic="true" {...locale.props('focus.starPosition')}>{locale.text('focus.starPosition', { position: locale.number(starTravel.position), total: locale.number(starTravel.total) })}</span><div className="focusStarStepsActions"><button type="button" disabled={!starTravel.previous || committed} onClick={() => { const target = starTravel.previous; if (!target || committed) return; router.replace(target.href, { scroll: false }) }} {...locale.props('focus.previousStar')}>{locale.text('focus.previousStar')}</button><button type="button" disabled={!starTravel.next || committed} onClick={() => { const target = starTravel.next; if (!target || committed) return; router.replace(target.href, { scroll: false }) }} {...locale.props('focus.nextStar')}>{locale.text('focus.nextStar')}</button></div></nav> : null}</div></details>
     </div>
     </div>
     {webglState !== 'ready' && webglState !== 'failed' ? <section className="webglRecovery" role="status" aria-live="assertive"><strong {...locale.props(webglState === 'lost' ? 'focus.paused' : 'focus.restoring')}>{locale.text(webglState === 'lost' ? 'focus.paused' : 'focus.restoring')}</strong><span {...locale.props('focus.preserved')}>{locale.text('focus.preserved')}</span><button type="button" onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenterRestored')}>{locale.text('focus.recenterRestored')}</button></section> : null}

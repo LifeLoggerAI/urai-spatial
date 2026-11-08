@@ -31,6 +31,17 @@ test('canonical memories are portable and included in deletion scopes', () => {
   assert.match(allData[1], /'memories'/)
 })
 
+test('Life Movie prevents legacy private download URLs from reaching its media player', () => {
+  const shared = fs.readFileSync('src/app/replay/replayVisualAdmission.ts','utf8')
+  assert.match(lifeMovie, /replayVisualAdmission\(/)
+  assert.match(lifeMovie, /ownedPlayback\.status === 'ready' \? ownedPlayback\.media : \[\]/)
+  assert.match(lifeMovie, /ownedPlayback\.status === 'ready' \? 'owned-receipt' : null/)
+  assert.match(lifeMovie, /active\.sourceMedia\.length > 0/)
+  assert.doesNotMatch(lifeMovie, /mediaFor\(expectsPrivateSource/)
+  assert.match(shared, /memory\.authorization === 'owner' && memory\.privacy === 'private'/)
+  assert.match(shared, /media\.url\.startsWith\('blob:'\)/)
+})
+
 test('Life Movie media is restricted to the configured Firebase Storage authority', () => {
   const contract = fs.readFileSync('src/spatial/memory/selectedMemoryContract.ts', 'utf8')
   const selected = fs.readFileSync('src/spatial/memory/useSelectedMemory.ts', 'utf8')

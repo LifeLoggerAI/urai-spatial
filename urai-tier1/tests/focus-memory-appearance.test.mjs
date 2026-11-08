@@ -34,12 +34,23 @@ test('an ordinary memory with a sample-like identifier keeps its own appearance 
   assert.deepEqual(appearance, { accent: '#123456', light: '#abcdef', imageUrl: null })
 })
 
-test('an admitted source image remains authoritative for both sample and ordinary memories', () => {
-  for (const demo of [true, false]) {
-    const selected = memory('seed-calm-return', demo)
-    selected.sourceMedia = [{ kind: 'audio', url: '/synthetic.wav' }, { kind: 'image', url: '/synthetic-owner-image.webp' }]
-    assert.equal(focusMemoryAppearance(selected, fallback).imageUrl, '/synthetic-owner-image.webp')
-  }
+test('disclosed demo images remain visible without inventing private media authority', () => {
+  const selected = memory('seed-calm-return', true)
+  selected.sourceMedia = [{ kind: 'audio', url: '/synthetic.wav' }, { kind: 'image', url: '/synthetic-demo-image.webp' }]
+  assert.equal(focusMemoryAppearance(selected, fallback).imageUrl, '/synthetic-demo-image.webp')
+})
+
+test('private photosphere denies legacy source URLs and requires receipt-backed image Blob', () => {
+  const selected = { ...memory('seed-calm-return', false), ownerId: 'owner-a', authorization: 'owner', privacy: 'private',
+    sourceMedia: [{ kind: 'image', url: 'https://firebasestorage.googleapis.com/v0/b/example.appspot.com/o/private?alt=media&token=old' }] }
+  const permitted = { kind: 'image', url: 'blob:https://urai.app/receipt-backed-image' }
+  assert.equal(focusMemoryAppearance(selected, fallback).imageUrl, null)
+  assert.equal(focusMemoryAppearance(selected, fallback, selected.sourceMedia).imageUrl, null)
+  assert.equal(focusMemoryAppearance(selected, fallback, [permitted]).imageUrl, permitted.url)
+  assert.equal(focusMemoryAppearance({ ...selected, privacy: 'hidden' }, fallback, [permitted]).imageUrl, null)
+  assert.equal(focusMemoryAppearance({ ...selected, privacy: 'shareable' }, fallback, [permitted]).imageUrl, null)
+  assert.equal(focusMemoryAppearance({ ...selected, authorization: 'none' }, fallback, [permitted]).imageUrl, null)
+  assert.equal(focusMemoryAppearance({ ...selected, sourceMedia: [permitted] }, fallback).imageUrl, null)
 })
 
 test('unknown disclosed samples retain the generic disclosed fallback', () => {

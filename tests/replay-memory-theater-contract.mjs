@@ -27,6 +27,12 @@ const journeyCatalogPath = 'urai-tier1/src/lib/i18n/journeyMessages.ts'
 const journeyCatalog = read(journeyCatalogPath)
 assertIncludes(journeyCatalogPath, journeyCatalog, "'replay.pause': { id:'replay.pause', source:\"Pause memory\"")
 assertIncludes(journeyCatalogPath, journeyCatalog, "'replay.continue': { id:'replay.continue', source:\"Continue memory\"")
+const focusPath = 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
+const focus = read(focusPath)
+const focusAppearancePath = 'urai-tier1/src/app/focus/focusMemoryAppearance.ts'
+const focusAppearance = read(focusAppearancePath)
+const admissionPath = 'urai-tier1/src/app/replay/replayVisualAdmission.ts'
+const admission = read(admissionPath)
 const replayState = read(replayStatePath)
 const autonomousIsolation = read(autonomousIsolationPath)
 
@@ -64,12 +70,31 @@ for (const token of [
   'forced-colors:active',
   'replayVisualAdmission',
   'replaySessionIdentity',
+  "ownedPlayback.status === 'ready'",
+  "sourceAuthority: ReplayAuthorizedSource | null",
   'data-replay-media-status={mediaStatus}',
   "'recorded-source-original-framing'",
   'media={{ kind:',
 ]) {
   assertIncludes(replayClientPath, replayClient, token)
 }
+
+for (const token of [
+  'useOwnedMemoryMediaPlayback(imageReceiptMemory)',
+  'authorizedMedia={authorizedFocusMedia}',
+  'focusMemoryAppearance(memory, replayAssets.primary.src, authorizedFocusMedia)',
+]) assertIncludes(focusPath, focus, token)
+for (const token of [
+  "media.kind === 'image' && media.url.startsWith('blob:')",
+  "memory?.authorization === 'owner'",
+  "memory.privacy === 'private'",
+]) assertIncludes(focusAppearancePath, focusAppearance, token)
+
+for (const token of [
+  "sourceAuthority === 'owned-receipt' || sourceAuthority === 'protected-life-movie'",
+  "sourceAuthority: ReplayAuthorizedSource | null = null",
+  "return memory.demo ? { kind: 'disclosed-demo', media: null } : { kind: 'neutral', media: null }",
+]) assertIncludes(admissionPath, admission, token)
 
 for (const forbidden of [
   'READINESS 87%',

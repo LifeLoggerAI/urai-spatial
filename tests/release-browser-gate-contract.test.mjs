@@ -54,3 +54,56 @@ test('screenshots leave caret styles unchanged while React hydrates',()=>{
  assert.ok(src.includes("ensure(report.console.length===0"));
  assert.ok(!src.includes("page.screenshot({path,fullPage:true})"));
 });
+
+test('canonical browser navigation must exercise same-Focus star stepping and retain Replay Escape identity',()=>{
+ assert.ok(src.includes('await focusStarNavigation(page)'));
+ assert.ok(src.includes('async function focusStarNavigation(page)'));
+ assert.ok(src.includes('data-focus-star-step="verified-visible-memory-only"'));
+ assert.ok(src.includes("steps.getByRole('button',{name:'Next star'})"));
+ assert.ok(src.includes("steps.getByRole('button',{name:'Previous star'})"));
+ assert.ok(src.includes("await pathIs(page,'/replay'"));
+ assert.ok(src.includes("await pathIs(page,'/focus'"));
+ assert.ok(src.includes('Replay Escape lost the last disclosed Focus star'));
+ assert.ok(src.includes("u.pathname==='/focus'"));
+ assert.doesNotMatch(src,/productionGrant=true|FIREBASE_TOKEN|GOOGLE_APPLICATION_CREDENTIALS/);
+});
+
+test('Focus browser sample uses canonical demo identity before and after Replay',()=>{
+ assert.ok(src.includes("memoryId=demo:quiet-reset&manifestId=replay-recovery-thread"));
+ assert.ok(src.includes("u.searchParams.get('memoryId')?.startsWith('demo:')"));
+ assert.ok(src.includes("getAttribute('data-memory-id')===id"));
+ assert.ok(!src.includes("getAttribute('data-memory-id')==='demo:'+id"));
+ assert.ok(src.includes("u.searchParams.get('memoryId')==='demo:quiet-reset'"));
+});
+
+test('R869 Focus star stepper uses typed locale catalog, explicit fallback language and keyboard accessible actions',()=>{
+ const focus=readFileSync(new URL('../urai-tier1/src/app/focus/FocusChamberClient.tsx',import.meta.url),'utf8');
+ const catalog=readFileSync(new URL('../urai-tier1/src/lib/i18n/journeyControlMessages.ts',import.meta.url),'utf8');
+ for(const key of ['focus.starTravelLabel','focus.starPosition','focus.previousStar','focus.nextStar']){
+  assert.ok(catalog.includes('"'+key+'": {id:"'+key+'"'),key+' missing from typed message catalog');
+  assert.ok(focus.includes("locale.text('"+key+"'"),key+' is not rendered through locale runtime');
+  assert.ok(focus.includes("locale.props('"+key+"'"),key+' is missing native-language disclosure metadata');
+ }
+ assert.ok(focus.includes("locale.number(starTravel.position)"));
+ assert.ok(focus.includes("locale.number(starTravel.total)"));
+ assert.ok(focus.includes('aria-live="polite"'));
+ assert.ok(src.includes("await next.focus()"));
+ assert.ok(src.includes("await previous.focus()"));
+ assert.ok(src.includes("await page.keyboard.press('Enter')"));
+ assert.ok(src.includes("b.width>=48&&b.height>=48"));
+});
+
+test('R867 second Replay visit must retain star and node identity in real browser',()=>{
+ assert.ok(src.includes('Second Replay Escape lost the selected Focus memory'));
+ assert.ok(src.includes('Second Replay Escape changed the selected constellation node'));
+ assert.ok(src.includes('Replay Escape lost the selected constellation node'));
+ assert.ok(src.includes('Focus demo step selected the wrong constellation node'));
+ for(const marker of ['Mounted Focus scene selected a different node from the disclosed star',
+  'Replay Escape restored a different Focus scene node',
+  'Second Replay Escape restored a different mounted Focus scene node']){
+   assert.ok(src.includes(marker),marker);
+ }
+ assert.ok(src.includes("await chamber.getAttribute('data-node')"));
+ assert.ok(src.includes('const secondBefore=new URL(page.url()).searchParams.get(\'node\')'));
+ assert.ok(src.includes('await focusStarNavigation(page)'));
+});

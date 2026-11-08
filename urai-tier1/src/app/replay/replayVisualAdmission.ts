@@ -6,9 +6,22 @@ export type ReplayVisualAdmission =
   | { kind: 'disclosed-demo'; media: null }
   | { kind: 'neutral'; media: null }
 
-export function replayVisualAdmission(memory: SelectedMemory): ReplayVisualAdmission {
+export type ReplayAuthorizedSource = 'owned-receipt' | 'protected-life-movie'
+
+/** Private media may be admitted only after the calling runtime's current
+ * consent/receipt-bound authority hook has released a local Blob URL.
+ * A legacy Storage download URL, even one from the expected bucket, is
+ * not proof of revocable playback authority. Demo assets are separate. */
+export function replayVisualAdmission(
+  memory: SelectedMemory,
+  sourceAuthority: ReplayAuthorizedSource | null = null,
+): ReplayVisualAdmission {
   const media = memory.sourceMedia.find((item) => item.kind === 'video' || item.kind === 'image' || item.kind === 'audio')
-  if (media) return { kind: 'recorded-source', media }
+  if (media && (memory.demo || (memory.authorization === 'owner' && memory.privacy === 'private'
+    && (sourceAuthority === 'owned-receipt' || sourceAuthority === 'protected-life-movie')
+    && media.url.startsWith('blob:')))) {
+    return { kind: 'recorded-source', media }
+  }
   return memory.demo ? { kind: 'disclosed-demo', media: null } : { kind: 'neutral', media: null }
 }
 

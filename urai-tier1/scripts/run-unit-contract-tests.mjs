@@ -67,6 +67,7 @@ const focusedContractTests = [
   'tests/life-movie-consent-epoch.test.mjs',
   'tests/r797-life-movie-consent-hook-behavior.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
+  'tests/focus-star-to-star-navigation.test.mjs',
   'tests/world-return-destination.test.mjs',
   'tests/replay-trail-geometry.test.mjs',
   'tests/software-webgl-renderer-quality.test.mjs',

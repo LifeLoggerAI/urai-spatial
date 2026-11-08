@@ -51,3 +51,44 @@
 
 /* Utilities occupy their own column beside the navigation controls. */
 [data-testid="urai-final-focus-chamber"] .focusUtilities .focusHelp { bottom: auto !important; }
+
+/* R863 review-only: owner-verified same-route Focus star travel resides in the
+   existing Explore utility; it adds no controls over the primary stellar canvas. */
+.focusWorld .focusHelp .focusHelpPanel {
+  position: absolute; top: calc(100% + 16px); right: 0;
+  width: min(310px, calc(100vw - 54px)); max-height: min(60svh, 370px);
+  overflow: auto; box-sizing: border-box; padding: 18px;
+  border: 1px solid #bdeaff44; border-radius: 16px;
+  background: #05101c; color: #dceaf4; box-shadow: 0 16px 48px #0008;
+}
+.focusWorld .focusHelp .focusHelpPanel p {
+  position: static; inset: auto; width: auto; max-width: none;
+  margin: 0; padding: 0; border: 0; border-radius: 0;
+  background: none; box-shadow: none;
+}
+.focusWorld .focusStarSteps {
+  display: grid; gap: 10px; margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid #bdeaff44;
+}
+.focusWorld .focusStarStepsCount { font-size: 12px; color: #dceaf4; }
+.focusWorld .focusStarStepsActions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.focusWorld .focusStarStepsActions button {
+  min-height: 48px; border-radius: 10px; border: 1px solid #bdeaff55;
+  color: #fff; background: #102538; font: inherit; font-size: 12px; cursor: pointer;
+}
+.focusWorld .focusStarStepsActions button:disabled { opacity: .45; cursor: not-allowed; }
+.focusWorld .focusStarStepsActions button:focus-visible {
+  outline: 3px solid #e7fbff; outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  .focusWorld .focusHelp .focusHelpPanel {
+    top: auto; bottom: calc(100% + 16px);
+    max-height: min(54svh, 330px);
+  }
+}
+@media (forced-colors: active) {
+  .focusWorld .focusHelp .focusHelpPanel,
+  .focusWorld .focusStarStepsActions button {
+    background: Canvas; color: CanvasText; border-color: CanvasText;
+  }
+}

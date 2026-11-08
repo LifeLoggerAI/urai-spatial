@@ -7,6 +7,7 @@ import { Timestamp } from 'firebase/firestore'
 import * as ownedPlayback from '../src/spatial/memory/ownedMemoryMediaPlayback.ts'
 import { createReplayVideoSession, createReplayMediaSession } from '../src/app/replay/replayMediaSession.ts'
 import { replaySessionIdentity, replayVisualAdmission } from '../src/app/replay/replayVisualAdmission.ts'
+import { focusMemoryAppearance } from '../src/app/focus/focusMemoryAppearance.ts'
 import { parseSelectedMemory, buildExplicitDemoMemory } from '../src/spatial/memory/selectedMemoryContract.ts'
 
 class FakeVideo extends EventTarget {
@@ -56,9 +57,45 @@ test('source media admission cannot use demo art for a personal memory or interp
   const personal = { ...demo, demo: false, ownerId: 'owner-a', id: 'personal-a' }
   assert.deepEqual(replayVisualAdmission(personal), { kind: 'neutral', media: null })
   const audio = { kind: 'audio', url: 'https://example.invalid/source.ogg' }
-  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [audio] }), { kind: 'recorded-source', media: audio })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [audio] }), { kind: 'neutral', media: null })
   const source = { kind: 'image', url: 'https://example.invalid/photo.jpg', caption: 'Original photo' }
-  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }), { kind: 'recorded-source', media: source })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }), { kind: 'neutral', media: null })
+  // A locally generated Blob only becomes usable after a current bounded
+  // receipt/Studio authority check; simply passing the object URL is insufficient.
+  const blob = { kind: 'image', url: 'blob:https://urai.app/fixture-blob', caption: 'Private source' }
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob] }), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob] }, 'owned-receipt'), { kind: 'recorded-source', media: blob })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob] }, 'protected-life-movie'), { kind: 'recorded-source', media: blob })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob] }, 'unrecognized-authority'), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob], authorization: 'none' }, 'owned-receipt'), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob], privacy: 'hidden' }, 'owned-receipt'), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [blob], privacy: 'shareable' }, 'protected-life-movie'), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }, 'owned-receipt'), { kind: 'neutral', media: null })
+})
+
+test('legacy Firebase Storage download tokens are not private Replay authority', () => {
+  const fixture = { ...buildExplicitDemoMemory('demo:source-test'), demo: false, privacy: 'private', ownerId: 'owner-a', id: 'personal-a' }
+  const legacy = { kind: 'video', url: 'https://firebasestorage.googleapis.com/v0/b/example.appspot.com/o/owner%2Fprivate.mp4?alt=media&token=persistent-token' }
+  assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [legacy] }), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [legacy] }, 'owned-receipt'), { kind: 'neutral', media: null })
+  const granted = { ...legacy, url: 'blob:https://urai.app/authorized-media' }
+  assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [granted] }), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [granted] }, 'owned-receipt'), { kind: 'recorded-source', media: granted })
+  assert.deepEqual(replayVisualAdmission({ ...fixture, sourceMedia: [granted] }, 'protected-life-movie'), { kind: 'recorded-source', media: granted })
+})
+
+test('Focus photosphere never accepts legacy private Storage URLs without current image receipt authority', () => {
+  const memory = { ...buildExplicitDemoMemory('demo:source-test'), demo: false, ownerId: 'owner-a', id: 'personal-a' }
+  const legacy = { kind: 'image', url: 'https://firebasestorage.googleapis.com/v0/b/example.appspot.com/o/private?alt=media&token=persistent' }
+  assert.equal(focusMemoryAppearance({ ...memory, sourceMedia: [legacy] }, '/demo/fallback.svg').imageUrl, null)
+  assert.equal(focusMemoryAppearance({ ...memory, sourceMedia: [legacy] }, '/demo/fallback.svg', [legacy]).imageUrl, null)
+  const blob = { ...legacy, url: 'blob:https://urai.app/receipt-image' }
+  assert.equal(focusMemoryAppearance({ ...memory, sourceMedia: [legacy] }, '/demo/fallback.svg', [blob]).imageUrl, blob.url)
+  assert.equal(focusMemoryAppearance({ ...memory, sourceMedia: [legacy], privacy: 'hidden' }, '/demo/fallback.svg', [blob]).imageUrl, null)
+  assert.equal(focusMemoryAppearance({ ...memory, sourceMedia: [legacy], authorization: 'none' }, '/demo/fallback.svg', [blob]).imageUrl, null)
+  assert.equal(focusMemoryAppearance({ ...memory, sourceMedia: [legacy], privacy: 'shareable' }, '/demo/fallback.svg', [blob]).imageUrl, null)
+  const demo = buildExplicitDemoMemory('demo:source-test')
+  assert.equal(focusMemoryAppearance(demo, '/demo/fallback.svg').imageUrl, '/demo/fallback.svg')
 })
 
 test('owner, source, manifest, and privacy changes produce a new teardown boundary', () => {
@@ -532,11 +569,12 @@ test('released Life Movie media cannot auto-start the source-less chapter timer'
 
 // Actual hook execution; SDK/HTTP boundary doubles are explicitly synthetic.
 const c1HookCode = ts.transpileModule(fs.readFileSync(new URL('../src/spatial/memory/useOwnedMemoryMediaPlayback.ts', import.meta.url), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
-async function mountC1Playback() {
- const uid='synthetic-owner',id='synthetic-memory',rid='a'.repeat(64),expiry=Date.now()+600000
+async function mountC1Playback({ consentTtlMs = 600_000, descriptorTtlMs = 60_000,
+ throwConsumerOnRelease = false, throwWatcherUnsubscribe = false } = {}) {
+ const uid='synthetic-owner',id='synthetic-memory',rid='a'.repeat(64),expiry=Date.now()+consentTtlMs
  const raw={ownerId:uid,title:'Synthetic consent boundary',occurredAt:'2026-01-01T12:00:00.000Z',summary:'Synthetic only',emotionalState:'calm',privacy:'private',sourceMedia:[{kind:'video',mediaReceiptId:rid}],star:{position:[0,0,-4]},replayManifest:{id:'synthetic-manifest',version:1,durationMs:3000,segments:['memory','emotion','pattern','return'].map((id,i)=>({id,label:id,caption:id,narratorLine:'Synthetic',startsAtMs:i*750,durationMs:750}))}}
  const parsed=parseSelectedMemory(raw,uid,id,'synthetic-bucket');assert.equal(parsed.status,'ready')
- const descriptor={schemaVersion:'urai-owned-memory-media-playback-v1',requiresAuthorization:true,ownerId:uid,memoryId:id,receiptId:rid,kind:'video',contentType:'video/mp4',sha256:'f'.repeat(64),byteLength:16,storageGeneration:'123',sourceAuthorityHash:'c'.repeat(64),authorityHash:'d'.repeat(64),expiresAt:Date.now()+60000}
+ const descriptor={schemaVersion:'urai-owned-memory-media-playback-v1',requiresAuthorization:true,ownerId:uid,memoryId:id,receiptId:rid,kind:'video',contentType:'video/mp4',sha256:'f'.repeat(64),byteLength:16,storageGeneration:'123',sourceAuthorityHash:'c'.repeat(64),authorityHash:'d'.repeat(64),expiresAt:Date.now()+descriptorTtlMs}
  const path='consentRecords/'+uid+'_memory_storage'
  const consent={uid,purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:'b'.repeat(64),expiresAt:expiry}
  const docs=new Map([
@@ -554,7 +592,7 @@ async function mountC1Playback() {
   react:{useState(initial){const i=si++;if(!(i in states))states[i]=initial;return[states[i],v=>{states[i]=typeof v==='function'?v(states[i]):v}]},
    useRef(v){return refs[ri++]??={current:v}},useEffect(fn,deps){const i=ei++;if(!effects[i]||deps.some((x,j)=>x!==effects[i].deps[j]))queued.push(()=>{effects[i]?.cleanup?.();effects[i]={deps,cleanup:fn()}})}},
   'firebase/auth':{getAuth:()=>auth,onAuthStateChanged(_a,cb){queueMicrotask(()=>cb(auth.currentUser));return()=>{}}},
-  'firebase/firestore':{Timestamp,doc:(_db,...p)=>p.join('/'),onSnapshot(p,fn){const w={p,fn};watchers.add(w);queueMicrotask(()=>{if(watchers.has(w))fn(snapshot(p))});return()=>watchers.delete(w)}},
+  'firebase/firestore':{Timestamp,doc:(_db,...p)=>p.join('/'),onSnapshot(p,fn){const w={p,fn};watchers.add(w);queueMicrotask(()=>{if(watchers.has(w))fn(snapshot(p))});return()=>{watchers.delete(w);if(throwWatcherUnsubscribe&&p===path)throw Error('synthetic firestore unsubscribe failure')}}},
   'firebase/functions':{httpsCallable:()=>async()=>({data:{...descriptor}})},
   '@/lib/firebase/client':{app:{},firebasePublicEnvReady:true,functions:{},getFirebaseDb:()=>({})},
   './selectedMemoryContract':{parseSelectedMemory},
@@ -562,10 +600,11 @@ async function mountC1Playback() {
  const output={}
  const setTimer=(fn,ms)=>{const i=++tid;timers.set(i,{fn,ms});return i},clearTimer=i=>timers.delete(i)
  vm.runInNewContext(c1HookCode,{exports:output,require:n=>{assert.ok(n in modules,n);return modules[n]},AbortController,Date,Number,JSON,navigator:{onLine:true},process:{env:{NEXT_PUBLIC_FIREBASE_PROJECT_ID:'urai-4dc1d',NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET:'synthetic-bucket'}},setTimeout:setTimer,clearTimeout:clearTimer,URL:{createObjectURL:()=> 'blob:synthetic',revokeObjectURL:u=>revoked.push(u)},window:new EventTarget()})
- const render=()=>{si=ri=ei=0;const p=output.useOwnedMemoryMediaPlayback(parsed.memory,()=>releases++);while(queued.length)queued.shift()();return p}
+ const render=()=>{si=ri=ei=0;const p=output.useOwnedMemoryMediaPlayback(parsed.memory,()=>{releases++;if(throwConsumerOnRelease)throw Error('synthetic decoder cleanup failure')});while(queued.length)queued.shift()();return p}
  render();for(let i=0;i<30;i++)await Promise.resolve()
  assert.equal(render().status,'ready','the actual hook mounts under disclosed SDK/HTTP fixtures')
  return {path,consent,revoked,releaseCount:()=>releases,render,
+  pendingTimers:()=>[...timers.values()],liveWatchers:()=>watchers.size,
   update(value){docs.set(path,value);for(const w of [...watchers])if(w.p===path)w.fn(snapshot(path))},
   cleanup(){for(const e of effects)e.cleanup?.()}}
 }
@@ -579,6 +618,54 @@ for(const [label,change] of [
  finally{h.cleanup()}
 })
 
+
+test('C1 receipt clock expiry revokes private Blob before a longer descriptor lease',async()=>{
+  const h=await mountC1Playback({consentTtlMs:12_000,descriptorTtlMs:60_000})
+  try {
+    const deadline=h.pendingTimers().find(timer=>timer.ms>=0 && timer.ms<=12_000)
+    assert.ok(deadline,'missing C1-bounded playback teardown timer: descriptor must not outlive consent')
+    assert.equal(h.render().status,'ready','the fixture starts with an owner-authorized private Blob')
+    deadline.fn()
+    assert.equal(h.render().status,'unavailable','C1 expiry must remove playback without a new Firestore event')
+    assert.deepEqual(h.revoked,['blob:synthetic'],'C1 expiry must revoke the local object URL')
+    assert.equal(h.releaseCount(),1,'C1 expiry must notify the mounted media consumer')
+  } finally { h.cleanup() }
+})
+
+test('shorter descriptor expiry remains the playback limit when C1 receipt lasts longer',async()=>{
+  const h=await mountC1Playback({consentTtlMs:120_000,descriptorTtlMs:9_000})
+  try {
+    const deadline=h.pendingTimers().find(timer=>timer.ms>=0 && timer.ms<=9_000)
+    assert.ok(deadline,'descriptor expiry must remain enforced when it is earlier than C1 expiry')
+    deadline.fn()
+    assert.equal(h.render().status,'unavailable')
+    assert.deepEqual(h.revoked,['blob:synthetic'])
+  } finally { h.cleanup() }
+})
+
+test('C1 revocation still denies and revokes Blob if a Firestore unsubscribe throws',async()=>{
+  const h=await mountC1Playback({throwWatcherUnsubscribe:true})
+  try {
+    assert.equal(h.render().status,'ready')
+    assert.doesNotThrow(()=>h.update({...h.consent,status:'revoked'}))
+    assert.equal(h.render().status,'unavailable','failed unsubscribe cannot preserve authorized media')
+    assert.deepEqual(h.revoked,['blob:synthetic'],'private object URL must still be revoked')
+    assert.equal(h.liveWatchers(),0,'all remaining Firestore watchers must be removed')
+    assert.equal(h.releaseCount(),1)
+  } finally { h.cleanup() }
+})
+
+test('C1 revocation still denies and revokes Blob if the video consumer cleanup throws',async()=>{
+  const h=await mountC1Playback({throwConsumerOnRelease:true})
+  try {
+    assert.equal(h.render().status,'ready')
+    assert.doesNotThrow(()=>h.update({...h.consent,status:'revoked'}))
+    assert.equal(h.render().status,'unavailable','failed consumer cleanup cannot preserve authorized media')
+    assert.deepEqual(h.revoked,['blob:synthetic'],'private object URL must still be revoked')
+    assert.equal(h.liveWatchers(),0,'all Firestore watchers must be removed')
+    assert.equal(h.releaseCount(),1)
+  } finally { h.cleanup() }
+})
 
 // Late SDK settlement executes the actual hook and transport; SDK/HTTP doubles are synthetic.
 function staleReleaseDeferred(){let resolve,reject; const promise=new Promise((a,b)=>{resolve=a;reject=b});return {promise,resolve,reject};}
