@@ -569,7 +569,8 @@ test('released Life Movie media cannot auto-start the source-less chapter timer'
 
 // Actual hook execution; SDK/HTTP boundary doubles are explicitly synthetic.
 const c1HookCode = ts.transpileModule(fs.readFileSync(new URL('../src/spatial/memory/useOwnedMemoryMediaPlayback.ts', import.meta.url), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
-async function mountC1Playback({ consentTtlMs = 600_000, descriptorTtlMs = 60_000 } = {}) {
+async function mountC1Playback({ consentTtlMs = 600_000, descriptorTtlMs = 60_000,
+ throwConsumerOnRelease = false, throwWatcherUnsubscribe = false } = {}) {
  const uid='synthetic-owner',id='synthetic-memory',rid='a'.repeat(64),expiry=Date.now()+consentTtlMs
  const raw={ownerId:uid,title:'Synthetic consent boundary',occurredAt:'2026-01-01T12:00:00.000Z',summary:'Synthetic only',emotionalState:'calm',privacy:'private',sourceMedia:[{kind:'video',mediaReceiptId:rid}],star:{position:[0,0,-4]},replayManifest:{id:'synthetic-manifest',version:1,durationMs:3000,segments:['memory','emotion','pattern','return'].map((id,i)=>({id,label:id,caption:id,narratorLine:'Synthetic',startsAtMs:i*750,durationMs:750}))}}
  const parsed=parseSelectedMemory(raw,uid,id,'synthetic-bucket');assert.equal(parsed.status,'ready')
@@ -591,7 +592,7 @@ async function mountC1Playback({ consentTtlMs = 600_000, descriptorTtlMs = 60_00
   react:{useState(initial){const i=si++;if(!(i in states))states[i]=initial;return[states[i],v=>{states[i]=typeof v==='function'?v(states[i]):v}]},
    useRef(v){return refs[ri++]??={current:v}},useEffect(fn,deps){const i=ei++;if(!effects[i]||deps.some((x,j)=>x!==effects[i].deps[j]))queued.push(()=>{effects[i]?.cleanup?.();effects[i]={deps,cleanup:fn()}})}},
   'firebase/auth':{getAuth:()=>auth,onAuthStateChanged(_a,cb){queueMicrotask(()=>cb(auth.currentUser));return()=>{}}},
-  'firebase/firestore':{Timestamp,doc:(_db,...p)=>p.join('/'),onSnapshot(p,fn){const w={p,fn};watchers.add(w);queueMicrotask(()=>{if(watchers.has(w))fn(snapshot(p))});return()=>watchers.delete(w)}},
+  'firebase/firestore':{Timestamp,doc:(_db,...p)=>p.join('/'),onSnapshot(p,fn){const w={p,fn};watchers.add(w);queueMicrotask(()=>{if(watchers.has(w))fn(snapshot(p))});return()=>{watchers.delete(w);if(throwWatcherUnsubscribe&&p===path)throw Error('synthetic firestore unsubscribe failure')}}},
   'firebase/functions':{httpsCallable:()=>async()=>({data:{...descriptor}})},
   '@/lib/firebase/client':{app:{},firebasePublicEnvReady:true,functions:{},getFirebaseDb:()=>({})},
   './selectedMemoryContract':{parseSelectedMemory},
@@ -599,11 +600,11 @@ async function mountC1Playback({ consentTtlMs = 600_000, descriptorTtlMs = 60_00
  const output={}
  const setTimer=(fn,ms)=>{const i=++tid;timers.set(i,{fn,ms});return i},clearTimer=i=>timers.delete(i)
  vm.runInNewContext(c1HookCode,{exports:output,require:n=>{assert.ok(n in modules,n);return modules[n]},AbortController,Date,Number,JSON,navigator:{onLine:true},process:{env:{NEXT_PUBLIC_FIREBASE_PROJECT_ID:'urai-4dc1d',NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET:'synthetic-bucket'}},setTimeout:setTimer,clearTimeout:clearTimer,URL:{createObjectURL:()=> 'blob:synthetic',revokeObjectURL:u=>revoked.push(u)},window:new EventTarget()})
- const render=()=>{si=ri=ei=0;const p=output.useOwnedMemoryMediaPlayback(parsed.memory,()=>releases++);while(queued.length)queued.shift()();return p}
+ const render=()=>{si=ri=ei=0;const p=output.useOwnedMemoryMediaPlayback(parsed.memory,()=>{releases++;if(throwConsumerOnRelease)throw Error('synthetic decoder cleanup failure')});while(queued.length)queued.shift()();return p}
  render();for(let i=0;i<30;i++)await Promise.resolve()
  assert.equal(render().status,'ready','the actual hook mounts under disclosed SDK/HTTP fixtures')
  return {path,consent,revoked,releaseCount:()=>releases,render,
-  pendingTimers:()=>[...timers.values()],
+  pendingTimers:()=>[...timers.values()],liveWatchers:()=>watchers.size,
   update(value){docs.set(path,value);for(const w of [...watchers])if(w.p===path)w.fn(snapshot(path))},
   cleanup(){for(const e of effects)e.cleanup?.()}}
 }
@@ -639,6 +640,30 @@ test('shorter descriptor expiry remains the playback limit when C1 receipt lasts
     deadline.fn()
     assert.equal(h.render().status,'unavailable')
     assert.deepEqual(h.revoked,['blob:synthetic'])
+  } finally { h.cleanup() }
+})
+
+test('C1 revocation still denies and revokes Blob if a Firestore unsubscribe throws',async()=>{
+  const h=await mountC1Playback({throwWatcherUnsubscribe:true})
+  try {
+    assert.equal(h.render().status,'ready')
+    assert.doesNotThrow(()=>h.update({...h.consent,status:'revoked'}))
+    assert.equal(h.render().status,'unavailable','failed unsubscribe cannot preserve authorized media')
+    assert.deepEqual(h.revoked,['blob:synthetic'],'private object URL must still be revoked')
+    assert.equal(h.liveWatchers(),0,'all remaining Firestore watchers must be removed')
+    assert.equal(h.releaseCount(),1)
+  } finally { h.cleanup() }
+})
+
+test('C1 revocation still denies and revokes Blob if the video consumer cleanup throws',async()=>{
+  const h=await mountC1Playback({throwConsumerOnRelease:true})
+  try {
+    assert.equal(h.render().status,'ready')
+    assert.doesNotThrow(()=>h.update({...h.consent,status:'revoked'}))
+    assert.equal(h.render().status,'unavailable','failed consumer cleanup cannot preserve authorized media')
+    assert.deepEqual(h.revoked,['blob:synthetic'],'private object URL must still be revoked')
+    assert.equal(h.liveWatchers(),0,'all Firestore watchers must be removed')
+    assert.equal(h.releaseCount(),1)
   } finally { h.cleanup() }
 })
 

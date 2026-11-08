@@ -65,12 +65,21 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
       const release = () => {
         if (released) return
         released = true
-        controller.abort(); stops.splice(0).forEach(stop => stop())
+        controller.abort()
+        // A failed Firestore unsubscribe or consumer decoder cleanup must not
+        // interrupt the remaining revocation actions. Always attempt every
+        // teardown, and withdraw the private object URL even on failure.
+        for (const stop of stops.splice(0)) {
+          try { stop() } catch { /* Continue fail-closed cleanup. */ }
+        }
         clearTimeout(expiry); clearTimeout(poll)
         finishSnapshots()
-        releaseConsumer.current?.()
-        if (objectUrl) URL.revokeObjectURL(objectUrl)
+        try { releaseConsumer.current?.() } catch { /* Do not retain private media on UI cleanup failure. */ }
+        const url = objectUrl
         objectUrl = null
+        if (url) {
+          try { URL.revokeObjectURL(url) } catch { /* Still publish unavailable state. */ }
+        }
       }
       detach = release
       const deny = () => { const publish = !closed && version === generation; release(); if (publish) setPlayback({ key, status: 'unavailable', media: [] }) }
