@@ -39,6 +39,9 @@ test('Life Movie media is restricted to the configured Firebase Storage authorit
   assert.match(contract, /storage\.googleapis\.com/)
   assert.match(contract, /trustedStorageBucket/)
   assert.match(selected, /NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET/)
+  assert.match(selected, /NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET \\?\\? null/)
+  assert.match(lifeMovie, /parseSelectedMemory\\(snapshot\\.data\\(\\), user\\.uid, chapter\\.memoryId, process\\.env\\.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET \\?\\? null\\)/)
+  assert.match(lifeMovie, /parseSelectedMemory\\(item\\.data\\(\\), user\\.uid, item\\.id, process\\.env\\.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET \\?\\? null\\)/)
 })
 
 test('privacy inventory declares memory text and media as exportable and deletable', () => {
