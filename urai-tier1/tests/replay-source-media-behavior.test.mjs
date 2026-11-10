@@ -55,7 +55,38 @@ test('source media admission cannot use demo art for a personal memory or interp
   assert.deepEqual(replayVisualAdmission(personal), { kind: 'neutral', media: null })
   assert.equal(replayVisualAdmission({ ...personal, sourceMedia: [{ kind: 'audio', url: 'https://example.invalid/source.ogg' }] }).kind, 'neutral')
   const source = { kind: 'image', url: 'https://example.invalid/photo.jpg', caption: 'Original photo' }
-  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }), { kind: 'recorded-source', media: source })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...demo, sourceMedia: [source] }), { kind: 'recorded-source', media: source })
+})
+
+
+test('historical private URLs do not become playback grants merely because the memory is owner-readable', () => {
+  const demo = buildExplicitDemoMemory('demo:legacy-private-url')
+  const personal = { ...demo, demo: false, ownerId: 'private-owner', id: 'private-memory' }
+  for (const privacy of ['private', 'shareable', 'hidden']) {
+    for (const url of [
+      'https://firebasestorage.googleapis.com/v0/b/old-bucket/o/asset?token=legacy',
+      'https://storage.googleapis.com/old-bucket/asset.jpg',
+      'blob:https://urai.app/previous-object-url',
+      'data:image/jpeg;base64,AA==',
+    ]) {
+      for (const kind of ['image', 'video']) {
+        assert.deepEqual(
+          replayVisualAdmission({ ...personal, privacy, sourceMedia: [{ kind, url }] }),
+          { kind: 'neutral', media: null },
+        )
+      }
+    }
+  }
+})
+
+test('Focus and Life Movie do not hand off document-level legacy private URLs', () => {
+  const focus = fs.readFileSync('src/app/focus/FocusChamberClient.tsx', 'utf8')
+  const movie = fs.readFileSync('src/app/life-movie/LifeMovieClient.tsx', 'utf8')
+  const visual = fs.readFileSync('src/app/replay/replayVisualAdmission.ts', 'utf8')
+  assert.match(focus, /const memoryImageUrl = memory\?\.demo/)
+  assert.match(movie, /if \(!memory\.demo\) return null/)
+  assert.match(visual, /if \(!memory\.demo\) return \{ kind: 'neutral', media: null \}/)
 })
 
 test('owner, source, manifest, and privacy changes produce a new teardown boundary', () => {

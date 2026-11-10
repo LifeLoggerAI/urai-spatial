@@ -6,9 +6,13 @@ export type ReplayVisualAdmission =
   | { kind: 'neutral'; media: null }
 
 export function replayVisualAdmission(memory: SelectedMemory): ReplayVisualAdmission {
+  // Owner-readable memory metadata never grants playback of historical Storage
+  // URLs. Private media requires an independently authorized receipt-backed
+  // playback source, which is not yet connected to this legacy view.
+  if (!memory.demo) return { kind: 'neutral', media: null }
   const media = memory.sourceMedia.find((item) => item.kind === 'video' || item.kind === 'image')
   if (media) return { kind: 'recorded-source', media }
-  return memory.demo ? { kind: 'disclosed-demo', media: null } : { kind: 'neutral', media: null }
+  return { kind: 'disclosed-demo', media: null }
 }
 
 /** Reset and tear down playback across ownership, source, privacy, and manifest changes. */
