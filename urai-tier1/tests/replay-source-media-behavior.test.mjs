@@ -55,7 +55,8 @@ test('source media admission cannot use demo art for a personal memory or interp
   assert.deepEqual(replayVisualAdmission(personal), { kind: 'neutral', media: null })
   assert.equal(replayVisualAdmission({ ...personal, sourceMedia: [{ kind: 'audio', url: 'https://example.invalid/source.ogg' }] }).kind, 'neutral')
   const source = { kind: 'image', url: 'https://example.invalid/photo.jpg', caption: 'Original photo' }
-  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }), { kind: 'recorded-source', media: source })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...demo, sourceMedia: [source] }), { kind: 'recorded-source', media: source })
 })
 
 test('owner, source, manifest, and privacy changes produce a new teardown boundary', () => {
