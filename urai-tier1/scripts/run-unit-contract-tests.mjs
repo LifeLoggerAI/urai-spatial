@@ -36,6 +36,7 @@ const focusedContractTests = [
   'tests/life-movie-privacy-contract.test.mjs',
   'tests/replay-source-media-behavior.test.mjs',
   'tests/private-media-bucket-failclosed.test.mjs',
+  'tests/hidden-memory-selection-denial.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/spatial-production-audio-runtime-contract.test.mjs',

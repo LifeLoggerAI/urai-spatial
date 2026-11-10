@@ -6,6 +6,7 @@ const focusedRunnerSource = fs.readFileSync(new URL('../scripts/run-unit-contrac
 const compactRunnerSource = fs.readFileSync(new URL('../scripts/run-unit-contract-tests-compact.mjs', import.meta.url), 'utf8')
 
 const requiredFocusedTests = [
+  'tests/hidden-memory-selection-denial.test.mjs',
   'tests/launch-ungating-runtime-contract.test.mjs',
   'tests/browser-location-store.test.mjs',
   'tests/selected-memory-live-lifecycle.test.mjs',

@@ -204,3 +204,13 @@ for (const method of ['replaceState', 'pushState']) {
     assert.equal(h.listeners.size, 0)
   })
 }
+
+
+test('a loaded owner memory becoming hidden immediately clears selected metadata', () => {
+  const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+  const result = h.emit(0, { ...h.data(), privacy: 'hidden', title: 'SYNTHETIC HIDDEN TITLE' })
+  assert.equal(result.status, 'unauthorized')
+  assert.equal(result.memory, null)
+  assert.doesNotMatch(JSON.stringify(result), /SYNTHETIC HIDDEN TITLE/)
+  h.unmount()
+})

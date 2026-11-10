@@ -89,6 +89,7 @@ const tests = [
   'tests/security-boundary-contract.test.mjs',
   'tests/browser-location-store.test.mjs',
   'tests/private-media-bucket-failclosed.test.mjs',
+  'tests/hidden-memory-selection-denial.test.mjs',
   'tests/speaker-awareness-contract.test.mjs',
   'tests/selected-memory-production-contract.test.mjs',
   'tests/selected-memory-live-lifecycle.test.mjs',
