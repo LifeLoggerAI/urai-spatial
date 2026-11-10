@@ -28,7 +28,9 @@ const moduleFile = mode === 'original'
   ? path.resolve(__dirname, 'proof-original/passiveSignals-before-consent-transaction.js')
   : path.resolve(__dirname, '../lib/apps/functions/src/passiveSignals.js')
 const compiled = fs.readFileSync(moduleFile, 'utf8')
+const runId = crypto.randomUUID()
 const report = {
+  runId,
   schemaVersion: 'urai-passive-consent-real-firestore-proof-v1',
   sourceSha: process.env.URAI_PROOF_SOURCE_SHA,
   mode, project, emulatorHost: host,
@@ -75,7 +77,7 @@ function atOrBefore(left, right) {
   return left.seconds < right.seconds || (left.seconds === right.seconds && left.nanoseconds <= right.nanoseconds)
 }
 async function fixture(name, onPolicyRead = async () => {}) {
-  const uid = `synthetic-${mode}-${name}`
+  const uid = `synthetic-${runId}-${mode}-${name}`
   const policyRef = db.doc(`users/${uid}/privacyPolicy/current`)
   const reads = [], allocatedIds = []
   let transactionAttempts = 0
