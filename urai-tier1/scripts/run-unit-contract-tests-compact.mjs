@@ -3,6 +3,7 @@ import fs from 'node:fs'
 
 const tests = [
   'tests/aaa-world-artifact-contract.test.mjs',
+  'tests/launch-ungating-runtime-contract.test.mjs',
   'tests/adam-presence-runtime-contract.test.mjs',
   'tests/v1-aaa-asset-program-matrix-contract.test.mjs',
   'tests/geographic-location-vault.test.mjs',
@@ -86,6 +87,8 @@ const tests = [
   'tests/replay-mobile-control-clearance-contract.test.mjs',
   'tests/route-owner-exclusivity-contract.test.mjs',
   'tests/security-boundary-contract.test.mjs',
+  'tests/browser-location-store.test.mjs',
+  'tests/private-media-bucket-failclosed.test.mjs',
   'tests/speaker-awareness-contract.test.mjs',
   'tests/selected-memory-production-contract.test.mjs',
   'tests/selected-memory-live-lifecycle.test.mjs',

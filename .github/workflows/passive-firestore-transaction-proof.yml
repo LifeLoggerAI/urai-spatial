@@ -107,6 +107,21 @@ jobs:
           const path = require('node:path')
           const crypto = require('node:crypto')
           const { spawnSync } = require('node:child_process')
+          const functionsRequire = require('node:module').createRequire(path.resolve('apps/functions/package.json'))
+          function installedVersion(name) {
+            let directory = path.dirname(functionsRequire.resolve(name))
+            while (true) {
+              const manifest = path.join(directory, 'package.json')
+              if (fs.existsSync(manifest)) {
+                const metadata = JSON.parse(fs.readFileSync(manifest, 'utf8'))
+                if (metadata.name === name) return metadata.version
+              }
+              const parent = path.dirname(directory)
+              if (parent === directory) throw new Error('Installed package manifest not found: ' + name)
+              directory = parent
+            }
+          }
+
           const proof = path.resolve('passive-firestore-proof')
           const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
           assert.equal(process.env.GCLOUD_PROJECT, 'demo-urai-passive-consent-proof')
@@ -149,10 +164,10 @@ jobs:
             schemaVersion: 'urai-passive-consent-real-firestore-native-receipt-v1',
             sourceSha: process.env.URAI_PROOF_SOURCE_SHA,
             nodeVersion: process.version,
-            firebaseAdminVersion: require('../apps/functions/node_modules/firebase-admin/package.json').version,
-            firebaseFunctionsVersion: require('../apps/functions/node_modules/firebase-functions/package.json').version,
-            typeScriptVersion: require('../apps/functions/node_modules/typescript/package.json').version,
-            firebaseCliVersion: require('../node_modules/firebase-tools/package.json').version,
+            firebaseAdminVersion: installedVersion('firebase-admin'),
+            firebaseFunctionsVersion: installedVersion('firebase-functions'),
+            typeScriptVersion: installedVersion('typescript'),
+            firebaseCliVersion: installedVersion('firebase-tools'),
             project: process.env.GCLOUD_PROJECT, emulatorHost: process.env.FIRESTORE_EMULATOR_HOST,
             javaRuntime: String(java.stdout || '') + String(java.stderr || ''),
             emulatorJar: emulatorJars[0], emulatorJarSha256: hash(emulatorJar),

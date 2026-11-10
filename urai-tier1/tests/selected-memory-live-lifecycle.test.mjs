@@ -25,6 +25,11 @@ function hooks() {
       slots[index] ??= { value: typeof initial === 'function' ? initial() : initial }
       return [slots[index].value, value => { slots[index].value = typeof value === 'function' ? value(slots[index].value) : value; dirty = true }]
     },
+    useSyncExternalStore(subscribe, snapshot) {
+      const [, setValue] = react.useState(0)
+      react.useEffect(() => subscribe(() => setValue(value => value + 1)), [subscribe])
+      return snapshot()
+    },
     useMemo(factory, deps) {
       const index = cursor++
       if (!slots[index] || changed(slots[index].deps, deps)) slots[index] = { value: factory(), deps }
@@ -62,13 +67,21 @@ function harness(search = '?memoryId=memory-one') {
   let authStopped = false
   const listeners = new Map()
   const browser = {
-    location: { search }, localStorage: { getItem: () => null },
+    location: { pathname: '/focus', search, hash: '' }, localStorage: { getItem: () => null },
     addEventListener(name, listener) { listeners.set(name, listener) },
     removeEventListener(name, listener) { if (listeners.get(name) === listener) listeners.delete(name) },
   }
+  const commit = (_data, _title, url) => {
+    const next = new URL(url, 'https://example.invalid/focus')
+    Object.assign(browser.location, { pathname: next.pathname, search: next.search, hash: next.hash })
+  }
+  browser.history = { pushState: commit, replaceState: commit }
+  const storePath = path.resolve('src/lib/browserLocationStore.ts')
+  const store = fs.existsSync(storePath) ? load('../../lib/browserLocationStore.ts', {}, { window: browser }) : {}
   const contract = load('selectedMemoryContract.ts', {}, { URL })
   const owner = load('useSelectedMemory.ts', {
     react: driver.react,
+    '@/lib/browserLocationStore': store,
     'firebase/auth': { getAuth: () => ({}), onAuthStateChanged(_auth, callback) { authCallback = callback; return () => { authStopped = true } } },
     'firebase/firestore': {
       doc: (...parts) => parts,
@@ -92,6 +105,7 @@ function harness(search = '?memoryId=memory-one') {
     emit(index, value) { subscriptions[index].receive(snapshot(value)); return render() },
     error(index) { subscriptions[index].error(new Error('provider-private-details')); return render() },
     navigate(nextSearch) { browser.location.search = nextSearch; listeners.get('popstate')?.(); return render() },
+    async historyNavigate(method, nextSearch) { browser.history[method](null, '', nextSearch); await Promise.resolve(); return render() },
     unmount: () => driver.unmount(), authStopped: () => authStopped, listeners,
   }
 }
@@ -175,3 +189,18 @@ test('explicitly disclosed demo never starts a private source subscription', () 
   assert.equal(result.memory.demo, true)
   assert.equal(h.subscriptions.length, 0)
 })
+
+for (const method of ['replaceState', 'pushState']) {
+  test(`same-Focus ${method} detaches the old private selection and rejects its queued callbacks`, async () => {
+    const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+    assert.equal((await h.historyNavigate(method, '?memoryId=memory-two')).memory, null)
+    assert.equal(h.subscriptions[0].stopped, true)
+    h.signIn('account-a')
+    assert.deepEqual(h.subscriptions[1].ref.slice(1), ['users', 'account-a', 'memories', 'memory-two'])
+    h.emit(1, h.data('account-a', 'memory-two'))
+    assert.equal(h.emit(0, h.data()).memory.id, 'memory-two')
+    assert.equal(h.error(0).memory.id, 'memory-two')
+    h.unmount()
+    assert.equal(h.listeners.size, 0)
+  })
+}
