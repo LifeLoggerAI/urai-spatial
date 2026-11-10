@@ -484,7 +484,11 @@ function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivat
 function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null }) {
   const accent = memory?.visuals.accent ?? '#79dfff'
   const light = memory?.visuals.light ?? '#e7fbff'
-  const memoryImageUrl = memory?.sourceMedia.find((media) => media.kind === 'image')?.url ?? (memory?.demo ? replayAssets.primary.src : null)
+  // A historical private Storage URL in a memory document is NOT a photosphere grant.
+  // Display only explicit demonstration media until receipt-backed playback is wired.
+  const memoryImageUrl = memory?.demo
+    ? (memory.sourceMedia.find((media) => media.kind === 'image')?.url ?? replayAssets.primary.src)
+    : null
   return <>
     <FirstFrame profile={profile} />
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
