@@ -20,6 +20,9 @@ type MovieState =
   | { kind: 'error'; message: string }
 
 function mediaFor(memory: SelectedMemory) {
+  // The canonical private document contains metadata, not permission to replay
+  // persistent Storage URLs. Only disclosed demo media may use this legacy path.
+  if (!memory.demo) return null
   return memory.sourceMedia.find((item) => item.kind === 'video')
     ?? memory.sourceMedia.find((item) => item.kind === 'image')
     ?? memory.sourceMedia.find((item) => item.kind === 'audio')
