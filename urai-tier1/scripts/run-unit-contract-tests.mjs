@@ -30,6 +30,7 @@ const focusedContractTests = [
   'tests/localization-flow.test.mjs',
   'tests/localization-journey-copy.test.mjs',
   'tests/adam-navigation-lifecycle.test.mjs',
+  'tests/adam-local-functions-proxy.test.mjs',
   'tests/ground-semantic-return-lifecycle.test.mjs',
   'tests/status-route-target-floor.test.mjs',
   'tests/localization-readiness-evidence-contract.test.mjs',
