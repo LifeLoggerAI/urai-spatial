@@ -52,10 +52,14 @@ async function stableAdamRequestId(input: {
 
 async function bearerToken() {
   if (!firebasePublicEnvReady) throw new AdamProviderError('FIREBASE_NOT_READY', 'UrAi authentication is not ready.')
-  const user = getAuth(app).currentUser
+  const auth = getAuth(app)
+  // Firebase may still be restoring the persisted account after UI hydration.
+  await auth.authStateReady()
+  const user = auth.currentUser
   if (!user) throw new AdamProviderError('AUTH_REQUIRED', 'Sign in to talk with Adam.')
   const token = await user.getIdToken()
-  if (!token) throw new AdamProviderError('AUTH_REQUIRED', 'Sign in to talk with Adam.')
+  // Do not send a prior account's bearer token after a sign-out or switch.
+  if (!token || auth.currentUser?.uid !== user.uid) throw new AdamProviderError('AUTH_REQUIRED', 'Sign in to talk with Adam.')
   return token
 }
 
