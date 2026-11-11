@@ -21,6 +21,7 @@ const requiredFocusedTests = [
   'tests/person-render-binding-promotion.test.mjs',
   'tests/replay-person-presence-ui.test.mjs',
   'tests/replay-person-presence-lifecycle.test.mjs',
+  'tests/private-movie-reconnect-policy.test.mjs',
   'tests/replay-media-teardown-faults.test.mjs',
   'tests/life-model-functions-contract.test.mjs',
   'tests/life-model-data-rights-contract.test.mjs',

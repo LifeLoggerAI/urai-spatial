@@ -6,6 +6,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app as spatialApp } from '@/lib/firebase/client'
 import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selectedMemoryContract'
 import { parsePrivateLifeMovieTimeline, selectPrivateLifeMovieSegment, type PrivateLifeMovieTimeline, type PrivateLifeMovieSegment } from './privateLifeMovieSegmentTimeline'
+import { createPrivateMovieReconnectPolicy } from './privateMovieReconnectPolicy'
 
 const PLAN = /^lmp_[A-Za-z0-9_-]{20,64}$/
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
@@ -52,8 +53,15 @@ function scopedPlaybackForSelection(state: Playback, key: string): Playback {
  * must already exist for the separately configured Firebase project. */
 export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planId: string | null, movieId: string | null) {
   const [state, setState] = useState<Playback>(EMPTY)
+  const [reconnectEpoch, setReconnectEpoch] = useState(0)
   const segmentSelect = useRef<((globalMs: number, resume: boolean) => void) | null>(null)
   const seekTo = useCallback((globalMs: number, resume = false) => segmentSelect.current?.(globalMs, resume), [])
+  // Failed transport can occur without a browser 'offline' event. An explicit
+  // retry never restores cached private bytes: it reruns both identity checks.
+  const retry = useCallback(() => {
+    if (typeof navigator !== 'undefined' && navigator.onLine !== false)
+      setReconnectEpoch(epoch => epoch + 1)
+  }, [])
   const advance = useCallback(() => {
     const timeline = state.timeline, segment = state.segment
     if (timeline && segment && segment.index + 1 < timeline.segments.length)
@@ -80,9 +88,13 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
         projectId: approvedConfig.projectId }, 'urai-studio-private-replay')
     const studioAuth = getAuth(studioApp), spatialAuth = getAuth(spatialApp)
     let generation = 0, active = true, revoke: (() => void) | null = null
+    const reconnect = createPrivateMovieReconnectPolicy(
+      () => setReconnectEpoch(epoch => epoch + 1),
+      () => navigator.onLine !== false,
+    )
     segmentSelect.current = null
     let stopStudio: (() => void) | null = null
-    const clean = () => { generation++; revoke?.(); revoke = null; segmentSelect.current = null; publish({status:'unavailable',media:null,captions:null}) }
+    const clean = () => { if (navigator.onLine === false) reconnect.observeOffline(); generation++; revoke?.(); revoke = null; segmentSelect.current = null; publish({status:'unavailable',media:null,captions:null}) }
     const stopSpatial = onAuthStateChanged(spatialAuth, spatialUser => {
       revoke?.(); revoke = null; stopStudio?.(); stopStudio = null
       const current = ++generation
@@ -265,12 +277,17 @@ export function useProtectedLifeMovieReplay(memory: SelectedMemory | null, planI
         })()
       })
     })
-    const offline = () => clean()
+    // Reconnection always establishes a fresh Firebase/Studio/Jobs authority;
+    // revoked Blob URLs and old delivery receipts are never restored.
+    const offline = () => { reconnect.observeOffline(); clean() }
+    const online = () => reconnect.observeOnline()
     window.addEventListener('offline',offline)
-    return () => { active = false; generation++; revoke?.(); stopStudio?.(); stopSpatial(); window.removeEventListener('offline',offline) }
-  }, [key, config, memory, planId, movieId])
+    window.addEventListener('online',online)
+    return () => { active = false; reconnect.dispose(); generation++; revoke?.(); stopStudio?.(); stopSpatial(); window.removeEventListener('offline',offline); window.removeEventListener('online',online) }
+  }, [key, config, memory, planId, movieId, reconnectEpoch])
   const scoped = scopedPlaybackForSelection(state, key)
   // Never give a newly selected movie the prior selection's decoded media or controls.
   return { ...scoped, seekTo: scoped.status === 'ready' ? seekTo : () => {},
-    advance: scoped.status === 'ready' ? advance : () => {} }
+    advance: scoped.status === 'ready' ? advance : () => {},
+    retry: scoped.status === 'unavailable' ? retry : () => {} }
 }
