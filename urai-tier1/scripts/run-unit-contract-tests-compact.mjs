@@ -85,6 +85,7 @@ const tests = [
   'tests/open-graph-asset-ownership-contract.test.mjs',
   'tests/captured-reality-life-model-binding.test.mjs',
   'tests/aaa-world-artifact-contract.test.mjs',
+  'tests/r1088-xr-release-boundary.test.mjs',
   'tests/launch-ungating-runtime-contract.test.mjs',
   'tests/adam-presence-runtime-contract.test.mjs',
   'tests/adam-client-language-ui.test.mjs',
