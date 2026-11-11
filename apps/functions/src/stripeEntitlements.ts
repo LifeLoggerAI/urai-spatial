@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
+import { readStripeAccountAuthority } from './stripeAccountAuthority'
 import { assertCheckoutSubscriptionMatch, invoiceSubscriptionId, invoiceBelongsToSubscription, settledStripeSubscriptionStatus } from './stripeEntitlementEvent'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -184,8 +185,10 @@ async function applyOrderedEntitlement(
   event: Stripe.Event,
   resolveCurrentSubscription?: () => Promise<StoredEntitlement>,
 ) {
-  const ref = admin.firestore().collection(ENTITLEMENT_COLLECTION).doc(record.userId)
-  return admin.firestore().runTransaction(async (transaction) => {
+  const db = admin.firestore()
+  const ref = db.collection(ENTITLEMENT_COLLECTION).doc(record.userId)
+  const getCurrentUser = (uid: string) => admin.auth().getUser(uid)
+  return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref)
     const current = snapshot.exists
       ? { ...defaultEntitlement(record.userId), ...(snapshot.data() as Partial<StoredEntitlement>), userId: record.userId }
@@ -193,6 +196,8 @@ async function applyOrderedEntitlement(
 
     if (current.stripeLastEventId === event.id) return { applied: false, reason: 'duplicate-event' }
     if ((current.stripeLastEventCreated ?? 0) > event.created) return { applied: false, reason: 'stale-event' }
+    const authority = await readStripeAccountAuthority(db, transaction, record.userId, event.created, getCurrentUser)
+    if (!authority.allowed) return { applied: false, reason: authority.reason, retryable: authority.retryable }
     let nextRecord = record
     let currentProviderResolved = false
     if (
@@ -215,6 +220,8 @@ async function applyOrderedEntitlement(
         nextRecord = latest
         currentProviderResolved = true
       } catch {
+        const live = await readStripeAccountAuthority(db, transaction, record.userId, event.created, getCurrentUser, authority.creationTime)
+        if (!live.allowed) return { applied: false, reason: live.reason, retryable: live.retryable }
         const currentPaid = current.subscriptionStatus === 'active' || current.subscriptionStatus === 'trialing'
         const incomingPaid = record.subscriptionStatus === 'active' || record.subscriptionStatus === 'trialing'
         if (sameBinding && currentPaid && !incomingPaid) {
@@ -235,6 +242,8 @@ async function applyOrderedEntitlement(
       ) return { applied: false, reason: 'equal-time-precedence' }
     }
 
+    const live = await readStripeAccountAuthority(db, transaction, record.userId, event.created, getCurrentUser, authority.creationTime)
+    if (!live.allowed) return { applied: false, reason: live.reason, retryable: live.retryable }
     transaction.set(ref, {
       ...nextRecord,
       stripeLastEventCreated: event.created,
@@ -632,4 +641,5 @@ export const handleStripeWebhook = functions.https.onRequest(async (req, res) =>
 
   res.status(200).json({ received: true, ...application })
 })
+
 
