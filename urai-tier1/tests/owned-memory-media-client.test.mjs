@@ -121,7 +121,7 @@ for (const phase of ['actor', 'unmount', 'selection']) {
 }
 test('Focus keeps private attachment disabled until exclusive Storage writer is certified', () => {
   const focus = fs.readFileSync('src/app/focus/FocusChamberClient.tsx', 'utf8')
-  assert.doesNotMatch(focus, /<MemoryMediaAttachment\\b/)
-  assert.doesNotMatch(focus, /forwardPrivateMovieRouteSelection\\(/)
+  assert.doesNotMatch(focus, /<MemoryMediaAttachment\b/)
+  assert.doesNotMatch(focus, /forwardPrivateMovieRouteSelection\(/)
   assert.match(URAI_SOURCE_MESSAGES['memoryMedia.attached'].source, /Preview is not available here/)
 })
