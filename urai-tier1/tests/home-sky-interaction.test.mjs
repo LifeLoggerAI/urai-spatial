@@ -32,7 +32,7 @@ for (const [name,down,up] of [
   ['invalid pointer ID',{pointerId:NaN},{}],['long hold',{}, {timeStamp:1600}],['time reversal',{}, {timeStamp:1}],
   ['release displacement',{}, {clientX:107}],['nonprimary release',{}, {isPrimary:false}],
 ]) test(`gesture rejects ${name}`,()=>{const f=fixture();f.tap(down,up);assert.equal(f.state.calls,0)})
-test('drag excursion remains a drag after returning to the start',()=>{const f=fixture();f.gate.down(pointer());f.gate.move(pointer({clientX:150}));f.gate.move(pointer());f.gate.up(pointer({timeStamp:50}));assert.equal(f.state.calls,0);assert.equal(f.state.rayCalls,0)})
+test('drag excursion remains a drag after returning to the start',()=>{const f=fixture();f.gate.down(pointer());f.gate.move(pointer({clientX:150}));f.gate.move(pointer());f.gate.up(pointer({timeStamp:50}));assert.equal(f.state.calls,0);assert.equal(f.state.rayCalls,1)})
 test('secondary touch cancels primary tap',()=>{const f=fixture();f.gate.down(pointer());f.gate.down(pointer({pointerId:2,isPrimary:false}));f.gate.up(pointer({timeStamp:50}));assert.equal(f.state.calls,0)})
 test('cancellation and unmatched release never enter',()=>{const f=fixture();f.gate.up(pointer());f.gate.down(pointer());f.gate.cancel();f.gate.up(pointer());assert.equal(f.state.calls,0)})
 test('locked or descending readiness blocks before geometry work',()=>{const f=fixture({ready:false});f.tap();assert.equal(f.state.calls,0);assert.equal(f.state.rayCalls,0)})

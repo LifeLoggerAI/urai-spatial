@@ -144,7 +144,8 @@
     "world001:preview:verify": "node scripts/world001-v3-preview-asset.mjs verify-source",
     "world001:preview:stage": "node scripts/world001-v3-preview-asset.mjs stage",
     "world001:preview:clean": "node scripts/world001-v3-preview-asset.mjs clean",
-    "world001:preview:assert-excluded": "node scripts/world001-v3-preview-asset.mjs assert-excluded"
+    "world001:preview:assert-excluded": "node scripts/world001-v3-preview-asset.mjs assert-excluded",
+    "test:functions:native": "node scripts/run-functions-native-acceptance.mjs"
   },
   "devDependencies": {
     "firebase-tools": "15.32.1",

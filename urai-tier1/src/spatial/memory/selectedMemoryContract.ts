@@ -216,6 +216,12 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
   const ownerId = stringValue(raw.ownerId ?? raw.userId)
   if (!ownerId || ownerId !== expectedOwnerId) return { status: 'unauthorized', memory: null, message: 'This memory is not available to this account.' }
 
+  // Recovered from Focus #2072: ownership alone does not activate a hidden
+  // memory for Focus or Replay. Deny before copying personal metadata.
+  if (raw.privacy === 'hidden') {
+    return { status: 'unauthorized', memory: null, message: 'This memory is not available for Focus or Replay.' }
+  }
+
   const title = stringValue(raw.title)
   const occurredAt = isoDateValue(raw.occurredAt)
   const summary = stringValue(raw.summary)

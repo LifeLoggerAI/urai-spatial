@@ -119,12 +119,9 @@ for (const phase of ['actor', 'unmount', 'selection']) {
     await pending; assert.deepEqual(f.states, before)
   })
 }
-test('Focus mounts the real file control only for an owned selected private memory and retains accurate preview copy', () => {
-  const source = fs.readFileSync('src/app/focus/FocusChamberClient.tsx', 'utf8')
-  const ast = ts.createSourceFile('Focus.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
-  const mounts = []; const visit = node => { if (ts.isConditionalExpression(node) && node.whenTrue.getText(ast).includes('<MemoryMediaAttachment ')) mounts.push(node); ts.forEachChild(node, visit) }; visit(ast)
-  assert.equal(mounts.length, 1)
-  assert.match(mounts[0].condition.getText(ast), /memory && !memory.demo && memory.privacy === 'private' && memory.authorization === 'owner'/)
-  assert.match(fs.readFileSync('src/spatial/memory/MemoryMediaAttachment.tsx', 'utf8'), /setMessage\('memoryMedia.attached'\)/)
-  assert.match(URAI_SOURCE_MESSAGES['memoryMedia.attached'].source,/Preview is not available here/)
+test('Focus keeps private attachment disabled until exclusive Storage writer is certified', () => {
+  const focus = fs.readFileSync('src/app/focus/FocusChamberClient.tsx', 'utf8')
+  assert.doesNotMatch(focus, /<MemoryMediaAttachment\b/)
+  assert.doesNotMatch(focus, /forwardPrivateMovieRouteSelection\(/)
+  assert.match(URAI_SOURCE_MESSAGES['memoryMedia.attached'].source, /Preview is not available here/)
 })
