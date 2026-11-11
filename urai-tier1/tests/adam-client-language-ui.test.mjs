@@ -45,6 +45,8 @@ function fixture(){
     if(name.endsWith('/useUraiLocale'))return localeModule.exports
     if(name.endsWith('/localePreference'))return {currentSpeechTag:()=>locale}
     if(name.endsWith('/contentLanguage'))return {contentLanguage,contentLanguageProps}
+    if(name==='firebase/auth')return {onAuthStateChanged:()=>()=>{}}
+    if(name==='@/lib/firebase/client')return {firebasePublicEnvReady:false,getUraiAuth:()=>({})}
     if(name==='./adamClient')return client
     if(name==='./adamSurfaceContext')return {resolveAdamSurface:()=>({id:'home',label:'Home'})}
     if(name.endsWith('.module.css'))return {__esModule:true,default:{}}
