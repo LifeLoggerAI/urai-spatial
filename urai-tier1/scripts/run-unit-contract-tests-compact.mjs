@@ -63,6 +63,7 @@ const tests = [
   'tests/replay-life-model-authority.test.mjs',
   'tests/life-movie-life-model-binding.test.mjs',
   'tests/life-movie-runtime-contract.test.mjs',
+  'tests/r1155-life-movie-private-media-bridge.test.mjs',
   'tests/life-movie-runtime-binding-contract.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
   'tests/focus-memory-appearance.test.mjs',
