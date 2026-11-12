@@ -13,6 +13,7 @@ import { createReplayMediaSession, initialReplayVideoSnapshot, type ReplayVideoS
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { lifeMovieReplayHref, type LifeMovieRuntimeChapter } from '@/spatial/life-movie/lifeMovieRuntimeContract'
 import { useLifeMovieRuntimeManifest } from '@/spatial/life-movie/useLifeMovieRuntimeManifest'
+import { selectLifeMovieMedia } from '@/spatial/life-movie/selectLifeMovieMedia'
 import { captionSegmentForMediaTime } from '@/spatial/life-movie/lifeMovieCaptionTimeline'
 import { revokeLifeMovieManifest, saveLifeMovieManifest } from '@/spatial/life-movie/lifeMovieManifestOperations'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
@@ -25,16 +26,6 @@ type MovieState =
   | { kind: 'ready'; message: string }
   | { kind: 'empty'; message: string }
   | { kind: 'error'; message: string }
-
-function mediaFor(memory: SelectedMemory) {
-  // The canonical private document contains metadata, not permission to replay
-  // persistent Storage URLs. Only disclosed demo media may use this legacy path.
-  if (!memory.demo) return null
-  return memory.sourceMedia.find((item) => item.kind === 'video')
-    ?? memory.sourceMedia.find((item) => item.kind === 'image')
-    ?? memory.sourceMedia.find((item) => item.kind === 'audio')
-    ?? null
-}
 
 function safeOccurredAt(memory: SelectedMemory) {
   const timestamp = Date.parse(memory.occurredAt)
@@ -158,7 +149,7 @@ export default function LifeMovieClient() {
     if (imageRef.current) { imageRef.current.style.visibility = 'hidden'; imageRef.current.removeAttribute('src') }
   })
   const expectsPrivateSource = Boolean(active?.sourceMediaReceipts?.length)
-  const media = active ? mediaFor(expectsPrivateSource ? { ...active, sourceMedia: ownedPlayback.media } : active) : null
+  const media = selectLifeMovieMedia(active, ownedPlayback)
   const timedSource = media?.kind === 'video' || media?.kind === 'audio'
   useEffect(() => {
     setMediaSnapshot(initialReplayVideoSnapshot())
