@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { spatialLaunchBoundary } from '@/lib/spatial-launch-boundaries'
 
 function enabled(...values: Array<string | undefined>) {
   return values.some((value) => value === 'true')
@@ -23,6 +24,15 @@ function routeAllowed(pathname: string) {
 }
 
 export function middleware(request: NextRequest) {
+  // Next.js can return an HTTP 200 with not-found UI for a statically
+  // prerendered XR page. Enforce the release boundary at the HTTP edge too.
+  if (request.nextUrl.pathname === '/xr' && !spatialLaunchBoundary.liveArWebXrEnabled) {
+    return new NextResponse('Not Found', {
+      status: 404,
+      headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
+    })
+  }
+
   if (request.nextUrl.pathname === '/home') {
     return NextResponse.rewrite(new URL('/', request.url))
   }
@@ -33,5 +43,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/home', '/admin/:path*', '/brand-system/:path*', '/demo/:path*', '/internal/:path*'],
+  matcher: ['/xr', '/home', '/admin/:path*', '/brand-system/:path*', '/demo/:path*', '/internal/:path*'],
 }
