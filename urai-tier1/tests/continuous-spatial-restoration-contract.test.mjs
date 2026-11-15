@@ -13,6 +13,7 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
+const recoveredFern = read('src/spatial/assets/useRecoveredFernAsset.ts')
 const embodiedNavigation = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
@@ -51,7 +52,7 @@ test('Home remains one embodied authored natural sanctuary 3D environment with a
     'HomeWorldProductionPolished',
     'Stars',
     'home-entry-chamber-v1.glb',
-    'polyhaven-fern-02-geometry-v1.glb',
+    'useRecoveredFernAsset',
     'living-orb',
     'reflecting-water',
     'data-home-primary-owner="asset-driven"',
@@ -97,8 +98,8 @@ test('Home remains one embodied authored natural sanctuary 3D environment with a
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
   assert.match(companion, /publishOrbState\('attention', 'companion'\)/)
   assert.match(companion, /publishOrbState\('transition', 'companion'\)/)
-  assert.match(homeProduction, /const HOME_FERN_MODEL = '\/assets\/urai\/home-production\/cc0\/polyhaven-fern-02-geometry-v1\.glb'/)
-  assert.match(homeProduction, /useGLTF\(HOME_FERN_MODEL\)/)
+  assert.match(recoveredFern, /RECOVERED_FERN_MODEL = '\/assets\/urai\/home-production\/cc0\/polyhaven-v48\/fern_02\/asset\.gltf'/)
+  assert.match(homeProduction, /useRecoveredFernAsset\(\)/)
   assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })

@@ -11,6 +11,7 @@ import HomeSkyInteraction from '@/spatial/navigation/HomeSkyAscentInteraction'
 import { useSceneStore } from '@/spatial/store/useSceneStore'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { HomeInterpretiveSplatEnvironment, resolveHomeInterpretiveSplatAsset } from '@/spatial/home/HomeInterpretiveSplat'
+import { RECOVERED_FERN_MODEL, useRecoveredFernAsset, clearRecoveredFernAssetCache, isRecoveredFernAssetLoadError } from '@/spatial/assets/useRecoveredFernAsset'
 import { sensorySafeEnabled, URAI_SENSORY_SAFE_EVENT, URAI_SENSORY_SAFE_STORAGE_KEY } from '@/spatial/accessibility/SensorySafeRuntime'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { HOME_COURTYARD, HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL, homeCourtyardFloorHeight, homeTerrainHeight, homeWalkSurfaceHeight, makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, projectHomeTerrainGeometry, resolveHomeSolidPenetration } from './HomeSanctuaryGeometry'
@@ -25,13 +26,13 @@ import { showHomeThresholdLabel } from './HomeThresholdVisibility'
 import { HomeCC0ReviewMaterial } from './HomeCC0ReviewMaterial'
 import { HomeCC0ReviewShrubs } from './HomeCC0ReviewShrubs'
 import { HomeCC0ReviewRetainedGround } from './HomeCC0ReviewRetainedGround'
+import { clearHomeRecoveredStoneCache, isHomeRecoveredStoneLoadError, useHomeRecoveredStoneMaterial } from './HomeRecoveredStoneMaterial'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 
 const HOME_PROVIDER_ENVIRONMENT = '/assets/urai/home/home-threshold-main.webp'
 const HOME_SANCTUARY_MODEL = '/assets/urai/generated/models/home-entry-chamber-v1.glb'
 // Wave 13 owner-authored modeled interpretive candidate; private development review only.
 const HOME_W13_V3_PREVIEW = '/assets/urai/world001-preview/URAI_WORLD001_FOUNDER_HOME_ARCHITECTURE_v3.glb'
-const HOME_FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
 const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const HOME_SCANNED_COMPOSITION_V1 = 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'
 const HOME_INTERPRETIVE_SPLAT_ASSET = resolveHomeInterpretiveSplatAsset(process.env.NEXT_PUBLIC_URAI_HOME_INTERPRETIVE_SPLAT_ASSET)
@@ -317,10 +318,20 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
 }
 
 function SanctuaryPath() {
+  if (!HOME_CC0_DEV_REVIEW) return <RecoveredSanctuaryPath />
   return <group name="home-sanctuary-path" userData={{ role: 'walkable-natural-stone-thread' }}>
-    <mesh geometry={MAIN_PATH_GEOMETRY} receiveShadow>{HOME_CC0_DEV_REVIEW ? <HomeCC0ReviewMaterial surface="path" /> : <HomeSurfaceMaterial kind="path" color="#968d7c" roughness={.96} metalness={0} envMapIntensity={.32} />}</mesh>
-    <mesh geometry={GROUND_PATH_GEOMETRY} receiveShadow>{HOME_CC0_DEV_REVIEW ? <HomeCC0ReviewMaterial surface="path" /> : <HomeSurfaceMaterial kind="path" color="#908a78" roughness={.98} metalness={0} envMapIntensity={.30} />}</mesh>
-    <mesh geometry={LIFE_MAP_PATH_GEOMETRY} receiveShadow>{HOME_CC0_DEV_REVIEW ? <HomeCC0ReviewMaterial surface="path" /> : <HomeSurfaceMaterial kind="path" color="#8b8879" roughness={.98} metalness={0} envMapIntensity={.30} />}</mesh>
+    <mesh geometry={MAIN_PATH_GEOMETRY} receiveShadow><HomeCC0ReviewMaterial surface="path" /></mesh>
+    <mesh geometry={GROUND_PATH_GEOMETRY} receiveShadow><HomeCC0ReviewMaterial surface="path" /></mesh>
+    <mesh geometry={LIFE_MAP_PATH_GEOMETRY} receiveShadow><HomeCC0ReviewMaterial surface="path" /></mesh>
+  </group>
+}
+
+function RecoveredSanctuaryPath() {
+  const material = useHomeRecoveredStoneMaterial()
+  return <group name="home-sanctuary-path" dispose={null} userData={{ role: 'walkable-natural-stone-thread', materialSource: 'recovered-cc0-rock-tile-floor', finalArtAdmitted: false }}>
+    <mesh geometry={MAIN_PATH_GEOMETRY} material={material} receiveShadow />
+    <mesh geometry={GROUND_PATH_GEOMETRY} material={material} receiveShadow />
+    <mesh geometry={LIFE_MAP_PATH_GEOMETRY} material={material} receiveShadow />
   </group>
 }
 
@@ -364,31 +375,16 @@ function FernBatch({ geometry, localMatrix, indices, rootRotation, material, cas
 }
 
 function Vegetation() {
-  const fern = useGLTF(HOME_FERN_MODEL)
-  const materials = useMemo(() => [
-    new THREE.MeshStandardMaterial({ color: '#6f8d68', roughness: .96, metalness: 0, side: THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ color: '#819b72', roughness: .94, metalness: 0, side: THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ color: '#5f7c61', roughness: .97, metalness: 0, side: THREE.DoubleSide }),
-  ], [])
-  useEffect(() => () => materials.forEach((material) => material.dispose()), [materials])
-  const parts = useMemo(() => {
-    // Resolve local geometry transforms on one clone without mutating cached GLTF.
-    const model = fern.scene.clone(true)
-    model.updateMatrixWorld(true)
-    const inverseRoot = model.matrixWorld.clone().invert()
-    const result: { geometry: THREE.BufferGeometry; localMatrix: THREE.Matrix4 }[] = []
-    model.traverse((child) => {
-      if (child instanceof THREE.Mesh) result.push({ geometry: child.geometry, localMatrix: new THREE.Matrix4().multiplyMatrices(inverseRoot, child.matrixWorld) })
-    })
-    return result
-  }, [fern.scene])
-  const groups = useMemo(() => Array.from({ length: 6 }, (_, group) => {
-    const variant = group % materials.length
-    const castShadow = group < materials.length
-    const indices = FERN_PLACEMENTS.flatMap((_, index) => index % materials.length === variant && (index < 24) === castShadow ? [index] : [])
+  const { variants, rootRotation, sourceUrl } = useRecoveredFernAsset()
+  // Each authored root receives one recovered plant, not the source asset's
+  // four-plant display grid. Root positions, posture and shadow budget stay put.
+  const groups = useMemo(() => Array.from({ length: variants.length * 2 }, (_, group) => {
+    const variant = group % variants.length
+    const castShadow = group < variants.length
+    const indices = FERN_PLACEMENTS.flatMap((_, index) => index % variants.length === variant && (index < 24) === castShadow ? [index] : [])
     return { variant, castShadow, indices }
-  }), [materials.length])
-  return <group name="home-living-vegetation" userData={{ role: 'edge-clustered-scanned-cc0-nature', source: 'Poly Haven fern_02 CC0' }}>{parts.flatMap((part, partIndex) => groups.map(({ variant, castShadow, indices }) => <FernBatch key={`${partIndex}-${variant}-${castShadow}`} geometry={part.geometry} localMatrix={part.localMatrix} indices={indices} rootRotation={fern.scene.rotation} material={materials[variant]} castShadow={castShadow} name={`home-scanned-fern-batch-${partIndex}-${variant}-${castShadow}`} />))}</group>
+  }), [variants.length])
+  return <group name="home-living-vegetation" userData={{ role: 'edge-clustered-scanned-cc0-nature', source: 'Poly Haven fern_02 CC0', sourceUrl }}>{groups.map(({ variant, castShadow, indices }) => <FernBatch key={`${variant}-${castShadow}`} geometry={variants[variant].geometry} localMatrix={variants[variant].localMatrix} indices={indices} rootRotation={rootRotation} material={variants[variant].material} castShadow={castShadow} name={`home-scanned-fern-batch-${variant}-${castShadow}`} />)}</group>
 }
 
 type StonePlacement = (typeof STONE_SCATTER)[number]
@@ -1087,7 +1083,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const orbSensory = resolveOrbSensoryOutput(orbState, reducedMotion, true, reducedStimulation)
   const contextId = phase === 'ASCENT' ? 'ascent.progress' : groundDescent ? 'home.groundProgress' : nearby === 'orb' ? 'home.orbNearby' : nearby === 'ground' ? 'home.groundNearby' : nearby === 'life-map' ? 'home.skyNearby' : null
 
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="legacy-placeholder-metadata-only" data-home-provider-regions="not-rendered" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-input-ready={ready && !transitioning && !inputLocked ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-orb-anchor-x={previewW13V3 ? W13_V3_ORB.x : ORB.x} data-home-orb-anchor-z={previewW13V3 ? W13_V3_ORB.z : ORB.z} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-world001-preview={previewW13V3 ? 'MODELED_INTERPRETIVE_NONPRODUCTION' : 'off'} data-home-v3-navigation={previewW13V3 ? 'bounded-central-terrace-research-not-certified-navmesh' : 'off'} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-orb-reduced-stimulation={reducedStimulation ? 'true' : 'false'} data-home-orb-playback={orbSensory.movement === 'settled' ? 'stopped' : 'playing'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="legacy-placeholder-metadata-only" data-home-provider-regions="not-rendered" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-input-ready={ready && !transitioning && !inputLocked ? 'true' : 'false'} data-home-runtime-assets={`home-entry-chamber-v1.glb ${RECOVERED_FERN_MODEL} local-three-dimensional-terrain living-orb reflecting-water`} data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-orb-anchor-x={previewW13V3 ? W13_V3_ORB.x : ORB.x} data-home-orb-anchor-z={previewW13V3 ? W13_V3_ORB.z : ORB.z} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-world001-preview={previewW13V3 ? 'MODELED_INTERPRETIVE_NONPRODUCTION' : 'off'} data-home-v3-navigation={previewW13V3 ? 'bounded-central-terrace-research-not-certified-navmesh' : 'off'} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-orb-reduced-stimulation={reducedStimulation ? 'true' : 'false'} data-home-orb-playback={orbSensory.movement === 'settled' ? 'stopped' : 'playing'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
     <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? (reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene key={previewW13V3 ? 'w13-v3' : 'canonical'} previewW13V3={previewW13V3} nearby={nearby} input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
     {contextId ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" {...locale.props(contextId)} style={{ zIndex:19, ...(locale.locale !== 'en' ? { maxInlineSize:'calc(100vw - 32px)', whiteSpace:'normal', overflowWrap:'anywhere', textAlign:'start' as const } : {}) }}>{locale.text(contextId)}</div> : null}
@@ -1098,13 +1094,16 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
 }
 
 export function clearHomeAssetCache() {
-  for (const asset of [HOME_SANCTUARY_MODEL, HOME_FERN_MODEL, ORB_MODEL, HOME_W13_V3_PREVIEW]) useGLTF.clear(asset)
+  clearHomeRecoveredStoneCache()
+  for (const asset of [HOME_SANCTUARY_MODEL, ORB_MODEL, HOME_W13_V3_PREVIEW]) useGLTF.clear(asset)
+  clearRecoveredFernAssetCache()
 }
 
 export function isHomeAssetLoadError(error: Error) {
-  return [HOME_SANCTUARY_MODEL, HOME_FERN_MODEL, ORB_MODEL, HOME_W13_V3_PREVIEW].some((asset) => error.message.includes(asset))
+  if (isHomeRecoveredStoneLoadError(error)) return true
+  return isRecoveredFernAssetLoadError(error)
+    || [HOME_SANCTUARY_MODEL, ORB_MODEL, HOME_W13_V3_PREVIEW].some((asset) => error.message.includes(asset))
 }
 
 useGLTF.preload(HOME_SANCTUARY_MODEL)
-useGLTF.preload(HOME_FERN_MODEL)
 useGLTF.preload(ORB_MODEL)

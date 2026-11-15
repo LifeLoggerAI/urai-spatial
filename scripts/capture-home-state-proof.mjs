@@ -615,7 +615,9 @@ async function captureHomeAssetFailure(fixture) {
   await page.route(targetUrl, blockActualAssetRequest)
   try {
     // The query identifies the retained evidence only. The runtime does not read
-    // homeAssetFailure; the real useGLTF request is blocked above before preload.
+    // homeAssetFailure; the actual model or texture request is blocked above
+    // before its loader runs. Missing alpha and stone normal maps must fail
+    // visibly too, and retry must clear their actual loader cache entries.
     const query = `homeAssetReview=1&homeAssetFailure=${fixture.id}`
     const response = await page.goto(`${base}/home/?${query}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     record.status = response?.status()
@@ -724,7 +726,9 @@ async function captureHomeAssetFailure(fixture) {
 for (const fixture of [
   { id: 'sanctuary', asset: '/assets/urai/generated/models/home-entry-chamber-v1.glb', travelTestId: 'home-semantic-ground', destination: '/ground' },
   { id: 'orb', asset: '/assets/urai/generated/models/urai-orb-avatar-v1.glb', travelTestId: 'home-semantic-ground', destination: '/ground' },
-  { id: 'fern', asset: '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb', travelTestId: 'home-semantic-life-map', destination: '/life-map' },
+  { id: 'fern', asset: '/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf', travelTestId: 'home-semantic-life-map', destination: '/life-map' },
+  { id: 'fern-alpha', asset: '/assets/urai/home-production/cc0/polyhaven-v48/fern_02/textures/fern_02_alpha_1k.png', travelTestId: 'home-semantic-life-map', destination: '/life-map' },
+  { id: 'stone-normal', asset: '/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.webp', travelTestId: 'home-semantic-ground', destination: '/ground' },
 ]) await captureHomeAssetFailure(fixture)
 
 for (const state of states) await capture(state)

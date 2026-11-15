@@ -255,7 +255,7 @@ test('CI-invoked exact-head evidence covers mobile motion portals accessibility 
   has(groupedProof, 'await capturePortalSequence(browser)')
   has(groupedProof, './run-continuous-spatial-proof-v19-portal-stable.mjs')
   for (const marker of ['reducedMotion', 'forcedColors', 'homeAssetFailure', 'home-real-offline-transition', 'captureHomeAssetFailure', 'real-loader-http-503']) has(stateProof, marker)
-  for (const file of ['home-entry-chamber-v1.glb', 'urai-orb-avatar-v1.glb', 'polyhaven-fern-02-geometry-v1.glb']) has(stateProof, file)
+  for (const file of ['home-entry-chamber-v1.glb', 'urai-orb-avatar-v1.glb', '/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf', '/assets/urai/home-production/cc0/polyhaven-v48/fern_02/textures/fern_02_alpha_1k.png', '/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.webp']) has(stateProof, file)
   assert.match(stateProof, /await page\.route\(targetUrl, blockActualAssetRequest\)/)
   assert.match(stateProof, /route\.fulfill\(\{ status: 503/)
   assert.match(stateProof, /await page\.unroute\(targetUrl, blockActualAssetRequest\)/)

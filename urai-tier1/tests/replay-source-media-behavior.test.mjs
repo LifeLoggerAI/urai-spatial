@@ -370,3 +370,56 @@ test('an unusable duration fails accessibly instead of exposing a fictitious med
   assert.match(latest().error, /no usable duration/)
   controls.dispose()
 })
+
+test('an explicit spatial retry releases both failed fern cache entries before remounting', () => {
+  const client = fs.readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+  const syntax = ts.createSourceFile('CinematicReplayClient.tsx', client, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const hook = syntax.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'useReplayWebGL')
+  assert.ok(hook, 'execute the production retry callback, not a copied implementation')
+  const cache = new Map(), events = []
+  const clearEntry = kind => url => { events.push(kind); cache.delete(url) }
+  const helperSource = fs.readFileSync(new URL('../src/spatial/assets/useRecoveredFernAsset.ts', import.meta.url), 'utf8')
+  const helper = { exports: {} }
+  vm.runInNewContext(ts.transpileModule(helperSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, {
+    module: helper, exports: helper.exports,
+    require: id => {
+      if (id === '@react-three/drei') return { useGLTF: { clear: clearEntry('gltf') }, useTexture: { clear: clearEntry('alpha') } }
+      if (['react', '@react-three/fiber', 'three'].includes(id)) return {}
+      throw new Error(`Unexpected fern retry dependency: ${id}`)
+    },
+  })
+  const { RECOVERED_FERN_MODEL, RECOVERED_FERN_ALPHA, clearRecoveredFernAssetCache } = helper.exports
+  cache.set(RECOVERED_FERN_MODEL, new Error('temporary glTF request failure'))
+  cache.set(RECOVERED_FERN_ALPHA, new Error('temporary alpha request failure'))
+  const unrelated = '/assets/other-scene.glb'
+  cache.set(unrelated, 'already loaded')
+  const cells = []
+  const state = { exports: {} }
+  vm.runInNewContext(ts.transpileModule(hook.getText(syntax) + '\nmodule.exports = useReplayWebGL', {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText, {
+    module: state, clearRecoveredFernAssetCache,
+    useState: initial => {
+      const index = cells.length
+      cells.push(initial)
+      return [initial, next => {
+        cells[index] = typeof next === 'function' ? next(cells[index]) : next
+        events.push(index === 0 ? cells[index] : 'attempt')
+      }]
+    },
+    useEffect: () => {},
+    useCallback: callback => callback,
+  })
+  const lifecycle = state.exports()
+  assert.equal(cache.size, 3, 'ordinary mount must not discard shared assets')
+  lifecycle.fail()
+  assert.equal(cells[0], 'failed')
+  assert.equal(cache.size, 3, 'failure alone must preserve evidence for an explicit retry')
+  events.length = 0
+  lifecycle.retry()
+  assert.deepEqual(events, ['gltf', 'alpha', 'checking', 'attempt'])
+  assert.deepEqual(cells, ['checking', 1])
+  assert.equal(cache.has(RECOVERED_FERN_MODEL), false)
+  assert.equal(cache.has(RECOVERED_FERN_ALPHA), false)
+  assert.equal(cache.get(unrelated), 'already loaded')
+})

@@ -7,6 +7,7 @@ import { makeReplaySurfaceTextures } from '../src/app/replay/replaySurfaceTextur
 
 const replay = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
 const details = readFileSync(new URL('../src/app/replay/ReplayEnvironmentDetails.tsx', import.meta.url), 'utf8')
+const recoveredFern = readFileSync(new URL('../src/spatial/assets/useRecoveredFernAsset.ts', import.meta.url), 'utf8')
 
 test('demo forest keeps the walk corridor clear, with bounded deterministic plants', () => {
   for (const maker of [replayGroundPlacement, replayFernPlacement]) {
@@ -26,13 +27,16 @@ test('Replay actually mounts instanced trunks, branches, canopy, forest-floor an
   assert.match(replay, /<ReplayMemoryGrove trees=\{trees\} groundHeight=\{replayGroundHeight\}/)
   assert.match(replay, /<ReplayForestFloor groundHeight=\{replayGroundHeight\}/)
   assert.match(replay, /<ReplayScannedUnderstory groundHeight=\{replayGroundHeight\}/)
-  assert.match(details, /useGLTF\(REPLAY_CC0_FERN_MODEL\)/)
+  assert.match(details, /useRecoveredFernAsset\(\)/)
   assert.match(details, /mesh\.setMatrixAt|trunks\.current!\.setMatrixAt/)
   assert.match(details, /truthClass: 'disclosed-demonstration'/)
   assert.match(replay, /memory\.demo \? <DemoMemoryLandscape memory=\{memory\}/)
-  const file = new URL('../public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb', import.meta.url)
+  const file = new URL('../public/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf', import.meta.url)
   assert.ok(existsSync(file), 'existing CC0 fern geometry must be packaged')
-  assert.ok(statSync(file).size > 100, 'model must contain actual geometry bytes')
+  const gltf = JSON.parse(readFileSync(file, 'utf8'))
+  assert.ok(statSync(new URL(gltf.buffers[0].uri, file)).size > 170000, 'model must contain the actual recovered geometry bytes')
+  for (const image of gltf.images) assert.ok(existsSync(new URL(image.uri, file)), 'photographic map must be packaged')
+  assert.ok(existsSync(new URL('textures/fern_02_alpha_1k.png', file)), 'separate leaf silhouette map must be packaged')
 })
 
 test('new demo forest must not substitute source media or impersonate an approved final asset', () => {
@@ -41,11 +45,11 @@ test('new demo forest must not substitute source media or impersonate an approve
   assert.match(details, /finalArtAdmitted: false/)
   assert.match(details, /owner\.dataset\.replayCc0UnderstoryReady = 'true'/)
   assert.match(details, /delete owner\.dataset\.replayCc0UnderstoryReady/)
-  assert.doesNotMatch(details, /useGLTF\.preload\(REPLAY_CC0_FERN_MODEL\)/)
+  assert.doesNotMatch(recoveredFern, /useGLTF\.preload|useTexture\.preload/)
   assert.doesNotMatch(details, /localStorage|sessionStorage|fetch\(|requestCouncilProvider/)
   assert.match(details, /SCANNED_FERN_COUNT = 52/)
-  assert.match(details, /material: child\.material/)
-  assert.match(details, /args=\{\[geometry, material, SCANNED_FERN_COUNT\]\}/)
+  assert.match(details, /material=\{material\}/)
+  assert.match(details, /args=\{\[geometry, material, indices\.length\]\}/)
   assert.doesNotMatch(details, /<icosahedronGeometry args=\{\[1, 2\]\}/)
   assert.doesNotMatch(details, /<coneGeometry args=\{\[\.075, 1, 3\]\}/)
 })
