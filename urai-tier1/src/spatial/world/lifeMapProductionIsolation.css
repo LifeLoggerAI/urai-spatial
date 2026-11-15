@@ -10,8 +10,10 @@ html.urai-route-life-map [data-testid='urai-r3f-canonical-lifemap'] { position: 
 html.urai-route-life-map [data-testid='urai-true-3d-life-map'] { position: fixed !important; inset: 0 !important; z-index: 100 !important; width: 100vw !important; height: 100svh !important; min-height: 100svh !important; opacity: 1 !important; visibility: visible !important; background: radial-gradient(circle at 50% 42%, rgba(38,63,95,.18), transparent 34%), radial-gradient(circle at 18% 76%, rgba(38,136,158,.08), transparent 32%), #02050b !important; isolation: isolate !important; }
 html.urai-route-life-map [data-testid='urai-true-3d-life-map'] canvas { position: absolute !important; inset: 0 !important; z-index: 0 !important; width: 100% !important; height: 100% !important; opacity: 1 !important; visibility: visible !important; filter: saturate(.88) contrast(1.04) !important; transform-origin: 50% 50% !important; transition: transform .72s cubic-bezier(.2,.8,.2,1), filter .4s ease !important; }
 html.urai-route-life-map .life-map-journey-rail,
-html.urai-route-life-map .life-map-semantic-inspector,
 html.urai-route-life-map .life-map-movement-help { display: none !important; }
+/* The 3D scene supplies its own selected-memory actions. Without WebGL,
+   the semantic inspector is the only Focus/Replay entry and must remain visible. */
+html.urai-route-life-map:has([data-testid='urai-r3f-canonical-lifemap']) .life-map-semantic-inspector { display: none !important; }
 html.urai-route-life-map .life-map-search-trigger { position: fixed !important; left: auto !important; pointer-events: auto !important; min-width: 48px !important; min-height: 48px !important; box-sizing: border-box !important; }
 html.urai-route-life-map .life-map-navigator { position: fixed !important; z-index: 130 !important; pointer-events: auto !important; }
 html.urai-route-life-map .life-map-title { padding: 12px 14px !important; border-left: 1px solid rgba(205,240,255,.28) !important; background: linear-gradient(90deg,rgba(2,7,18,.76),rgba(2,7,18,0)) !important; backdrop-filter: blur(8px) !important; }
