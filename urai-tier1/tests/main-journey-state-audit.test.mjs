@@ -47,6 +47,8 @@ for (const mutation of [
   {label:'Replay authentication', path:replayPath, before:'useSelectedMemory()', after:'useFixtureMemory()', failure:'Replay authenticated memory authority'},
   {label:'Replay reduced motion', path:replayPath, before:'const reducedMotion = useReducedMotion()', after:'const reducedMotion = false', all:true, failure:'Replay honors reduced motion'},
   {label:'manifest mismatch denial', path:'urai-tier1/src/spatial/memory/useSelectedMemory.ts', before:'parsed.memory.replayManifest.id !== manifestId', after:'false', failure:'Selected-memory manifest identity check'},
+  {label:'private node-only identity denial', path:'urai-tier1/src/spatial/memory/useSelectedMemory.ts', before:"params.get('memoryId') ?? (demoRequested ? params.get('node') : null)", after:"params.get('memoryId') ?? params.get('node')", failure:'Selected-memory hook accepts Life Map node identity only for disclosed samples'},
+  {label:'preserved scene-node identity fence', path:focusPath, before:'const returnNode = sameMemory && validNode && (originalSelection || projectedSelection) ? node! : memory.star.id', after:'const returnNode = node!', failure:'Focus validates preserved scene-node identity'},
   {label:'movie travel identity', path:'urai-tier1/src/app/life-movie/LifeMovieClient.tsx', before:'movieId: requestedMovieId', after:"movieId: 'other-movie'", failure:'Life Movie preserves movie identity'},
   {label:'Replay hard navigation', path:replayPath, before:'requestUraiWorldReturn()', after:'window.location.assign("/home")', failure:'Replay client: forbidden hardcoded pattern'},
 ]) {

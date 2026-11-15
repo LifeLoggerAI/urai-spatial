@@ -47,15 +47,17 @@ requireMatch('Replay authenticated memory authority', replayClient, /useSelected
 for (const token of ['memoryId', 'manifestId']) {
   requireMatch(`Selected-memory hook reads ${token}`, selectedMemoryHook, new RegExp(`params\\.get\\('${token}'\\)`))
 }
-requireMatch('Selected-memory hook accepts Life Map node identity', selectedMemoryHook, /params\.get\('memoryId'\) \?\? params\.get\('node'\)/)
+requireMatch('Selected-memory hook requires explicit demo intent for node-only identity', selectedMemoryHook, /const demoRequested = isExplicitDemoRequest\(params\)/)
+requireMatch('Selected-memory hook accepts Life Map node identity only for disclosed samples', selectedMemoryHook, /params\.get\('memoryId'\) \?\? \(demoRequested \? params\.get\('node'\) : null\)/)
 requireMatch('Selected-memory manifest identity check', selectedMemoryHook, /parsed\.memory\.replayManifest\.id !== manifestId/)
 
 requireMatch(
   'Focus forwards complete selected identity',
   focusClient,
-  /new URLSearchParams\(\{\s*memoryId:\s*memory\.id,\s*manifestId:\s*memory\.replayManifest\.id,\s*node:\s*memory\.star\.id,\s*from:\s*'focus-artifact',?\s*\}\)/,
+  /new URLSearchParams\(\{\s*memoryId:\s*memory\.id,\s*manifestId:\s*memory\.replayManifest\.id,\s*node:\s*returnNode,\s*from:\s*'focus-artifact',?\s*\}\)/,
 )
 requireMatch('Focus enters Replay through world travel', focusClient, /requestUraiWorldTravel\(\{/)
+requireMatch('Focus validates preserved scene-node identity', focusClient, /const returnNode = sameMemory && validNode && \(originalSelection \|\| projectedSelection\) \? node! : memory\.star\.id/)
 requireMatch('Focus Replay destination', focusClient, /destination: 'replay'/)
 requireMatch('Focus Replay manifest context', focusClient, /replayManifestId: memory\.replayManifest\.id/)
 const focusNavigation = focusClient.match(/<nav className="focusControls"[\s\S]*?<\/nav>/)?.[0] ?? ''

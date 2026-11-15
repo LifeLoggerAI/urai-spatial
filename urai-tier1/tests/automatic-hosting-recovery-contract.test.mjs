@@ -60,7 +60,7 @@ test('both focused runners execute this quarantine-aware recovery contract', () 
 // This bounded runner executes no deployment, credential or network commands.
 const governed = read('.github/workflows/spatial-governed-wif-deploy.yml')
 const blocks = governed.split(/\n(?=      - (?:id|name):)/)
-const phaseIds = ['deploy-functions', 'deploy-hosting', 'live-smoke', 'certify-fingerprint', 'deploy-certified-fingerprint', 'certified-smoke']
+const phaseIds = ['deploy-functions', 'hosting-byte-custody', 'deploy-hosting', 'live-smoke', 'certify-fingerprint', 'certified-byte-custody', 'deploy-certified-fingerprint', 'certified-smoke']
 function control(key, value) {
   const block = blocks.find((entry) => entry.startsWith(`      - ${key}: ${value}\n`))
   assert.ok(block, `missing governed step ${value}`)
@@ -122,7 +122,7 @@ for (const failPhase of phaseIds) {
     assert.equal(result.finalFailure, true)
     assert.equal(result.receipt, true)
     assert.equal(result.retainedEvidence, true)
-    if (['deploy-functions', 'deploy-hosting', 'live-smoke', 'certify-fingerprint'].includes(failPhase)) {
+    if (['deploy-functions', 'hosting-byte-custody', 'deploy-hosting', 'live-smoke', 'certify-fingerprint', 'certified-byte-custody'].includes(failPhase)) {
       assert.equal(result.steps['deploy-certified-fingerprint'].outcome, 'skipped', 'failed predecessor must never publish a certified fingerprint')
     }
   })
