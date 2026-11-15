@@ -4,6 +4,7 @@ import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
 import * as THREE from 'three'
+import { homeJourneyHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
 
 const source = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionPolished.tsx', import.meta.url), 'utf8')
 const ast = ts.createSourceFile('HomeWorldProductionPolished.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
@@ -15,13 +16,13 @@ const code = ts.transpileModule(declarations.map(node => node.getText(ast)).join
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
 }).outputText
 
-function rig(reducedMotion = false) {
+function rig(reducedMotion = false, search = '') {
   const camera = new THREE.PerspectiveCamera(), travels = [], sequences = []
   const state = { phase: 'ASCENT', progress: 0, setProgress(value) { state.progress = value } }
   let frame
   const output = {}
   vm.runInNewContext(code, {
-    exports: output, THREE,
+    exports: output, THREE, homeJourneyHref, window: { location: { search } },
     useThree: () => ({ camera, size: { width: 1440, height: 900 }, invalidate() {}, gl: { domElement: { closest: () => null } } }),
     useRef: current => ({ current }), useCallback: callback => callback, useLayoutEffect: callback => callback(), useEffect() {},
     useFrame: callback => { frame = callback }, useSceneStore: { getState: () => state },
@@ -94,3 +95,20 @@ test('position cannot outrun the existing look target and reverse its forward di
     assert.ok(direction.z < 0, `unexpected backward turn at ${n / 10}s`)
   }
 })
+
+for (const reducedMotion of [false, true]) {
+  for (const search of ['', '?demo=0', '?demo=1', '?demo=1&demo=1', '?demo=1&memoryId=private-old&token=secret']) {
+    test(`actual camera admission preserves only explicit sample mode (reduced=${reducedMotion}, query=${search})`, () => {
+      const r = rig(reducedMotion, search)
+      r.tick(0, 0); r.tick(4, 4)
+      assert.equal(r.travels.length, 1)
+      const target = new URL(r.travels[0].href, 'https://urai.test')
+      const params = new URLSearchParams(search)
+      const expected = params.getAll('demo').length === 1 && params.get('demo') === '1'
+      assert.equal(target.searchParams.get('demo'), expected ? '1' : null)
+      assert.equal(target.searchParams.get('from'), 'home-sky')
+      assert.equal(target.searchParams.has('memoryId'), false)
+      assert.equal(target.searchParams.has('token'), false)
+    })
+  }
+}

@@ -18,6 +18,7 @@ import { applyOriginalHomeSurfaceDetail, HomeSkyGradient, HomeSurfaceMaterial } 
 import { classifyRetainedHomeMesh } from './HomeSanctuaryAssetPolicy'
 import { createLivingMemoryGeometry, createMemoryFieldGeometry, createMemoryFilamentGeometry } from './HomeLivingOrbGeometry'
 import { createAuthoredOrbLightPresentation, disposeAuthoredOrbLightPresentation } from './HomeAuthoredOrbLight'
+import { homeJourneyHref } from '@/spatial/navigation/homeSkyInteraction'
 import styles from './HomeWorldProduction.module.css'
 import HomeSanctuaryPerimeterGrove from './HomeSanctuaryPerimeterGrove'
 import { showHomeThresholdLabel } from './HomeThresholdVisibility'
@@ -841,7 +842,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
         camera.position.lerpVectors(transitionOrigin.current, new THREE.Vector3(0, 44, -54), t)
         camera.lookAt(0, 20 + t * 28, -38 - t * 24)
         store.setProgress(t)
-        if (t >= 1 && !transitionIssued.current) { transitionIssued.current = true; requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' }) }
+        if (t >= 1 && !transitionIssued.current) { transitionIssued.current = true; requestUraiWorldTravel({ destination: 'life-map', href: homeJourneyHref('/life-map/?from=home-sky', window.location.search), entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' }) }
       } else {
         camera.position.lerp(new THREE.Vector3(-5.3, -2.4, -16.5), 1 - Math.pow(.002, delta))
         camera.lookAt(-5.4, -1.2, -18)
