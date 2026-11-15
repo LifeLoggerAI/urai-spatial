@@ -6,6 +6,7 @@ import ts from 'typescript'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { homeJourneyHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
 import { showHomeThresholdLabel } from '../src/spatial/layout/HomeThresholdVisibility.ts'
 
 // Execute production vegetation with explicit hook/GLTF adapters and real Three
@@ -72,6 +73,7 @@ function mountVegetation(scene) {
     './HomeWorldProduction.module.css': {},
     './HomeSanctuaryMaterials': {}, './HomeSanctuaryAssetPolicy': {},
     '@/app/home/orbStateController': {}, '@/spatial/navigation/EmbodiedNavigation': {},
+    '@/spatial/navigation/homeSkyInteraction': { homeJourneyHref },
     '@/spatial/navigation/HomeSkyAscentInteraction': {}, '@/spatial/store/useSceneStore': {},
     '@/spatial/world/worldEvents': {}, '@/spatial/accessibility/SensorySafeRuntime': {},
     '@/spatial/performance/useAdaptiveSpatialQuality': {}, '@/lib/i18n/useUraiLocale': {},
