@@ -166,7 +166,10 @@
   margin: 0;
   box-sizing: border-box;
   width: 100%;
-  padding-inline: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 6px;
 }
 /* Route typography and spatial header transforms do not own founder controls. */
 .launcher[data-urai-adam-launcher][data-adam-launcher-placement] {
