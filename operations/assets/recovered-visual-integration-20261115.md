@@ -39,8 +39,7 @@ The isolated local base has the identical tree at local commit
   Replay header and transport spacing, including protected-preview landscape
   bounds and forced-color/reduced-motion styles.
 - Update existing proof harness asset identities and add real alpha and stone
-  normal HTTP-503/retry cases. These browser cases are prepared, not yet run on
-  this changed build.
+  normal HTTP-503/retry cases. Final browser receipts are linked from PR #2088.
 
 ## Recovered but not mounted
 
@@ -78,30 +77,50 @@ is copied into public assets or treated as approved scenery.
   canopy clearance, root posture, batch bounds, photo/alpha material bindings and
   resource ownership. Browser image I/O is explicitly replaced in that fixture.
 
-These local results do not establish visual acceptance or physical-device
-performance. A temporary Vercel Sandbox successfully launched real Chromium with
-SwiftShader, but automatic approval review rejected uploading this changed app
-source, including after prior project authorization and payload checks were
-provided. No indirect upload or deployment route is used to bypass that denial.
-Fresh user approval for this specific source-to-project upload is required before
-the integrated screenshots, canonical journey and actual loader retry proofs can
-run. Automatic review also rejected creating the review tree in the original
-`LifeLoggerAI/urai-spatial` GitHub repository, requiring explicit permission for
-that source mutation. The completed change is therefore committed locally;
-no remote review branch or PR was created. Neither denied action is retried
-through an indirect route.
+## Approved browser checkpoint
 
-The separate public-donor viewer evidence is asset inspection only. The owned
-temporary Vercel Sandbox was stopped after exporting that inspection; the earlier
-unused Runpod attempt was also stopped.
+The user explicitly approved the GitHub review branch and protected Vercel
+preview after the earlier upload approval blocks. PR #2088 now contains the
+restoration. Its first provider commit is
+`f755557a71c87a83f36dfc62b1162eb13310381a`, with tree
+`9e455fd0faa6a715285eae27895fbe3b52e1d56c`, identical to the local prepared tree.
+
+The isolated Vercel Sandbox verified all 9,553 source blobs against that tree.
+TypeScript and the Node 22 production build passed, including 151 static pages.
+Actual Chromium 148 with SwiftShader then passed all three original canonical
+journeys: desktop with real Ascent, mobile touch with real Ascent, and keyboard
+with reduced motion. Each journey returned through the same selected memory to
+Home without page errors or failed requests. A continuous desktop recording and
+the original screenshots accompany the browser receipts.
+
+Focus passed at 320 × 700, 390 × 844 and 568 × 320: native context disclosure,
+visible demo/privacy notices, 48-pixel targets, help, offline notice and the
+Replay-to-Focus return with the same memory identity and restored focus.
+
+The first Replay clearance run exposed real defects: the Memory actions summary
+overlapped the centered Orb in narrow portrait, and its expanded panel covered
+Adam in narrow landscape. The correction in this commit reserves the actual
+right-hand footer space and bounds the landscape panel above the transport.
+Measured candidate geometry gives a 12-pixel summary/Orb gap at 320 and 390
+pixels wide, and a 31-pixel panel/transport gap at 568 × 320. All eleven candidate
+profiles passed the original assertions plus playback/seek hit testing. Those
+candidate checks injected the exact edited CSS into the prior build; final
+acceptance must use the rebuilt commit without injected CSS. Initial failures
+remain in the evidence. PR #2088 records the final source, browser receipts and
+protected deployment after that rebuild.
+
+These results do not establish visual acceptance or physical-device
+performance. The software renderer and its detected quality tier remain
+unmodified. The separate public-donor viewer remains asset inspection only.
 
 ## Release status
 
 This is an unmerged review candidate. Production HOLD, disabled private-memory
 writes, authentication/consent boundaries and existing art-promotion decisions
-remain unchanged. No new deployment or AAA visual certification is claimed.
+remain unchanged. A protected preview supports review; AAA visual acceptance
+must be judged from the actual experience.
 
-## Resume browser verification after upload approval
+## Final review and handoff
 
 1. Use the same isolated Vercel project
    `prj_pt7oOQLnCFki8vJb4ph9XhIjiLwZ`; keep the test environment private and use
