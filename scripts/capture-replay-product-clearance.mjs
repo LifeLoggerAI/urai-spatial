@@ -22,6 +22,8 @@ const profiles = [
   { id: 'short-reflow', width: 320, height: 320 },
   { id: 'small-landscape', width: 700, height: 390 },
   { id: 'landscape', width: 844, height: 390 },
+  { id: 'short-landscape', width: 844, height: 320 },
+  { id: 'short-after-product-breakpoint', width: 701, height: 320 },
   { id: 'narrow-breakpoint', width: 480, height: 700 },
   { id: 'after-narrow-breakpoint', width: 481, height: 700 },
   { id: 'launcher-breakpoint', width: 560, height: 390 },

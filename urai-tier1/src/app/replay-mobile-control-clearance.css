@@ -112,6 +112,23 @@ body:has(.replayWorld) [data-urai-adam-launcher] {
     max-height: calc(100svh - var(--replay-footer-bottom) - 70px - var(--replay-transport-height) - 24px - max(48px, env(safe-area-inset-top, 0px)));
   }
 }
+@media (max-height: 500px) and (min-width: 701px) {
+  html[data-urai-preview='true'] .replayWorld { --replay-header-top: max(78px, calc(env(safe-area-inset-top, 0px) + 72px)); }
+  html[data-urai-preview='true'] .replayWorld .replayProductActions {
+    max-height: calc(100svh - var(--replay-product-clearance) - 116px - var(--replay-header-top));
+  }
+  html[data-urai-preview='true'] .replayWorld .caption { top: var(--replay-header-top); }
+}
+@media (max-height: 364px) and (min-width: 701px) {
+  /* A short wide viewport needs the footer below the inline playback row,
+     leaving a full action target between the banner and transport. */
+  html[data-urai-preview='true'] .replayWorld .replayProduct { --replay-product-clearance: max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px)); }
+  html[data-urai-preview='true'] .replayWorld .memoryTempo { bottom: max(88px, calc(env(safe-area-inset-bottom, 0px) + 82px)); }
+  html[data-urai-preview='true'] .replayWorld .replayProductActions {
+    bottom: 126px;
+    max-height: calc(100svh - var(--replay-product-clearance) - 126px - var(--replay-header-top));
+  }
+}
 
 /* Source context stays beside the selected title; the cinematic caption owns narration. */
 .replayWorld .replayMemoryContext { width: 100%; min-width: 0; margin: 4px 0 0; color: #d4e2ec; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
