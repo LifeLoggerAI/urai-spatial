@@ -148,7 +148,7 @@ test('Home telemetry and continuous proof stay aligned to the polished interacti
 })
 
 test('Home Life Map entry is one canonical sky ascent transaction with one camera authority and a closing handoff', () => {
-  assert.match(sceneStore, /enterLifeMap: \(\) => set\(\{ mode: "ASCENT", sceneMode: "ASCENT", phase: "ASCENT", isTransitioning: true, inputLocked: true, progress: 0 \}\)/)
+  assert.match(sceneStore, /enterLifeMap: \(\) => set\(\{ mode: "ASCENT", sceneMode: "ASCENT", phase: "ASCENT", isTransitioning: true, inputLocked: true, progress: 0, selectedStarId: null, selectedStarPosition: null \}\)/)
   assert.match(worldEvents, /function shouldBeginHomeAscent/)
   assert.match(worldEvents, /function markHomeAscentClosing/)
   assert.match(worldEvents, /request\.entryPortal !== 'home-sky'/)

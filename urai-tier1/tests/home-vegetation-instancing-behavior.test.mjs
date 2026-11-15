@@ -6,6 +6,7 @@ import ts from 'typescript'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { showHomeThresholdLabel } from '../src/spatial/layout/HomeThresholdVisibility.ts'
 
 // Execute production vegetation with explicit hook/GLTF adapters and real Three
 // geometry. This tests scene construction, never browser/GPU timing or pixels.
@@ -49,6 +50,7 @@ function mountVegetation(scene) {
   const layout = [], effects = [], cleanup = []
   const unexpectedOrbWork = () => assert.fail('vegetation must not construct or dispose Orb presentation')
   const unexpectedPerimeterWork = () => assert.fail('fern-only test fixture must not construct or render the independent perimeter grove')
+  const unexpectedReviewWork = () => assert.fail('production vegetation must not mount development-only review assets')
   const react = {
     Component: class {}, useMemo: fn => fn(), useRef: initial => ({ current: initial }),
     useLayoutEffect: fn => layout.push(fn), useEffect: fn => effects.push(fn),
@@ -63,6 +65,10 @@ function mountVegetation(scene) {
     './HomeLivingOrbGeometry': { createLivingMemoryGeometry: unexpectedOrbWork, createMemoryFieldGeometry: unexpectedOrbWork, createMemoryFilamentGeometry: unexpectedOrbWork },
     './HomeAuthoredOrbLight': { createAuthoredOrbLightPresentation: unexpectedOrbWork, disposeAuthoredOrbLightPresentation: unexpectedOrbWork },
     './HomeSanctuaryPerimeterGrove': unexpectedPerimeterWork,
+    './HomeThresholdVisibility': { showHomeThresholdLabel },
+    './HomeCC0ReviewMaterial': { HomeCC0ReviewMaterial: unexpectedReviewWork },
+    './HomeCC0ReviewShrubs': { HomeCC0ReviewShrubs: unexpectedReviewWork },
+    './HomeCC0ReviewRetainedGround': { HomeCC0ReviewRetainedGround: unexpectedReviewWork },
     './HomeWorldProduction.module.css': {},
     './HomeSanctuaryMaterials': {}, './HomeSanctuaryAssetPolicy': {},
     '@/app/home/orbStateController': {}, '@/spatial/navigation/EmbodiedNavigation': {},

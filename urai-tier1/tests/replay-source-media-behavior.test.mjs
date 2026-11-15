@@ -85,7 +85,9 @@ test('Focus and Life Movie do not hand off document-level legacy private URLs', 
   const movie = fs.readFileSync('src/app/life-movie/LifeMovieClient.tsx', 'utf8')
   const visual = fs.readFileSync('src/app/replay/replayVisualAdmission.ts', 'utf8')
   assert.match(fs.readFileSync('src/app/focus/focusMemoryAppearance.ts', 'utf8'), /imageUrl: memory\?\.demo/)
-  assert.match(movie, /if \(!memory\.demo\) return null/)
+  assert.match(movie, /useOwnedMemoryMediaPlayback/)
+  assert.match(movie, /const media = selectLifeMovieMedia\(active, ownedPlayback\)/)
+  assert.doesNotMatch(movie, /active\.sourceMedia\??\.find|active\.sourceMedia\[/)
   assert.match(visual, /if \(!memory\.demo\) return \{ kind: 'neutral', media: null \}/)
 })
 
