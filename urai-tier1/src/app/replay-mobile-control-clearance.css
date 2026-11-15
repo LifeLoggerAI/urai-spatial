@@ -187,6 +187,11 @@ body:has(.replayWorld) [data-urai-adam-launcher] {
     transform: none;
     max-height: calc(100svh - 230px - env(safe-area-inset-top, 0px));
   }
+  html[data-urai-preview='true'] .replayWorld .replayProductActions,
+  html[data-urai-preview='true'] .replayWorld .caption {
+    top: var(--replay-header-top);
+    max-height: calc(100svh - var(--replay-header-top) - var(--replay-tempo-bottom) - var(--replay-transport-height) - 12px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
