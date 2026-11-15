@@ -191,7 +191,7 @@ for (const spec of cases) {
       && record.embodiedSelf === 'privacy-preserving-shadow'
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
-      && record.runtimeAssets?.includes('polyhaven-fern-02-geometry-v1.glb')
+      && record.runtimeAssets?.includes('/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf')
       && record.runtimeAssets?.includes('living-orb')
       && record.runtimeAssets?.includes('reflecting-water')
       && record.authoredRegions?.includes('home-sanctuary-geometry')

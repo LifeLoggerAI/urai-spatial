@@ -130,12 +130,30 @@ async function activate(page, locator, mode) {
   return locator.click()
 }
 
+async function assertHomeLauncherClearance(page, journey, surface) {
+  await assertAdamLauncherLabel(page, journey, surface)
+  const launcher = page.locator('.home-adam-launcher-slot [data-urai-adam-launcher]')
+  const target = await launcher.boundingBox()
+  assert.ok(target && target.width >= 48 && target.height >= 48, `${surface} launcher must retain its 48px target`)
+  const banner = page.getByTestId('urai-global-preview-banner')
+  const preview = await page.locator('html').getAttribute('data-urai-preview') === 'true'
+  const bannerBounds = preview ? await banner.boundingBox() : null
+  if (preview) {
+    assert.ok(bannerBounds, `${surface} preview must disclose its banner`)
+    // This overlay ignores pointer events; center hit tests alone miss visual occlusion.
+    assert.ok(target.y >= bannerBounds.y + bannerBounds.height + 8, `${surface} launcher must clear the preview banner by 8px`)
+  }
+  journey.homeLauncherClearanceChecks ||= []
+  journey.homeLauncherClearanceChecks.push({ surface, target, previewBanner: bannerBounds })
+}
+
 async function openHome(page, journey) {
   const response = await page.goto(`${base}/home/?demo=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
   assert.ok(response?.ok(), 'Home did not return 2xx')
   const home = ownedHome(page)
   await home.waitFor({ state: 'visible', timeout: 90_000 })
   await waitAttr(home, 'data-home-assets-ready', 'true', 90_000)
+  await assertHomeLauncherClearance(page, journey, 'home')
   await capture(page, journey, 'home')
   return home
 }
@@ -341,6 +359,7 @@ async function lifeMapToHome(page, journey, mode, root) {
     await sleep(250)
   } while (Date.now() - settleStarted < 5_000)
   journey.settledHome = settledHome
+  await assertHomeLauncherClearance(page, journey, 'return-home')
   await capture(page, journey, 'return-home')
 }
 

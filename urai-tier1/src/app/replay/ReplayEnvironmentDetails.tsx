@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
-import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
+import { RECOVERED_FERN_MODEL, useRecoveredFernAsset } from '@/spatial/assets/useRecoveredFernAsset'
 import { replayVariation, replayGroundPlacement, replayFernPlacement } from './replayEnvironmentPlacement'
 import { buildReplayLeafSprayGeometry, buildReplayMeadowTuftGeometry } from './replayBotanicalGeometry'
 import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
@@ -10,7 +10,7 @@ import { makeReplaySurfaceTextures } from './replaySurfaceTextures'
 type Elevation = (x: number, z: number) => number
 type TreePosition = readonly [number, number, number]
 
-export const REPLAY_CC0_FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
+export const REPLAY_CC0_FERN_MODEL = RECOVERED_FERN_MODEL
 const GROVE_FOLIAGE_PER_TREE = 42
 const GROVE_BRANCHES_PER_TREE = 5
 const GROUND_GRASS_COUNT = 840
@@ -147,21 +147,23 @@ export function ReplayForestFloor({ groundHeight }: { groundHeight: Elevation })
   </group>
 }
 
-function ReplayFernPart({ geometry, material, localMatrix, rootRotation, groundHeight, part }: {
+function ReplayFernPart({ geometry, material, localMatrix, rootRotation, groundHeight, part, indices }: {
   geometry: THREE.BufferGeometry
   material: THREE.Material | THREE.Material[]
   localMatrix: THREE.Matrix4
   rootRotation: THREE.Euler
   groundHeight: Elevation
   part: number
+  indices: readonly number[]
 }) {
   const batch = useRef<THREE.InstancedMesh>(null)
   useLayoutEffect(() => {
     if (!batch.current) return
+    const mesh = batch.current
     const dummy = new THREE.Object3D()
     const matrix = new THREE.Matrix4()
     const tint = new THREE.Color()
-    for (let i = 0; i < SCANNED_FERN_COUNT; i++) {
+    indices.forEach((i, localIndex) => {
       const item = replayFernPlacement(i)
       dummy.position.set(item.x, groundHeight(item.x, item.z) + .025, item.z)
       dummy.rotation.copy(rootRotation)
@@ -169,50 +171,41 @@ function ReplayFernPart({ geometry, material, localMatrix, rootRotation, groundH
       dummy.scale.setScalar(item.scale)
       dummy.updateMatrix()
       matrix.multiplyMatrices(dummy.matrix, localMatrix)
-      batch.current.setMatrixAt(i, matrix)
-      tint.set('#769875').lerp(new THREE.Color('#b5af86'), replayVariation(i + part * 19, 97) * .38)
-      batch.current.setColorAt(i, tint)
-    }
-    batch.current.instanceMatrix.needsUpdate = true
-    if (batch.current.instanceColor) batch.current.instanceColor.needsUpdate = true
-    batch.current.computeBoundingSphere()
-  }, [localMatrix, rootRotation, groundHeight, part])
-  return <instancedMesh ref={batch} args={[geometry, material, SCANNED_FERN_COUNT]} dispose={null} castShadow receiveShadow name={'replay-cc0-fern-part-' + part} />
+      mesh.setMatrixAt(localIndex, matrix)
+      const luminance = .92 + replayVariation(i, 97) * .08
+      tint.setRGB(luminance * .98, luminance, luminance * .96)
+      mesh.setColorAt(localIndex, tint)
+    })
+    mesh.instanceMatrix.needsUpdate = true
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+    mesh.computeBoundingSphere()
+    return () => { mesh.dispose() }
+  }, [indices, localMatrix, rootRotation, groundHeight])
+  return <instancedMesh ref={batch} args={[geometry, material, indices.length]} dispose={null} castShadow receiveShadow name={'replay-cc0-fern-part-' + part} />
 }
 
 // Reuse the already-shipped, source-controlled Poly Haven CC0 scan geometry,
 // not an invented final hero package and never an autobiographical reconstruction.
 export function ReplayScannedUnderstory({ groundHeight }: { groundHeight: Elevation }) {
-  const fern = useGLTF(REPLAY_CC0_FERN_MODEL)
-  const pieces = useMemo(() => {
-    const clone = fern.scene.clone(true)
-    clone.updateMatrixWorld(true)
-    const inverse = clone.matrixWorld.clone().invert()
-    const result: { geometry: THREE.BufferGeometry; material: THREE.Material | THREE.Material[]; localMatrix: THREE.Matrix4 }[] = []
-    clone.traverse((child) => {
-      if (child instanceof THREE.Mesh) result.push({
-        geometry: child.geometry,
-        material: child.material,
-        localMatrix: new THREE.Matrix4().multiplyMatrices(inverse, child.matrixWorld),
-      })
-    })
-    return result
-  }, [fern.scene])
+  const { variants, rootRotation } = useRecoveredFernAsset()
+  const groups = useMemo(() => variants.map((_, variant) =>
+    Array.from({ length: SCANNED_FERN_COUNT }, (_, index) => index)
+      .filter((index) => index % variants.length === variant)), [variants])
   // Publish readiness only once this source-controlled CC0 GLTF, including
   // referenced image assets, has resolved and the instanced source is mounted.
   useEffect(() => {
-    if (!pieces.length) return
+    if (!variants.length) return
     const owner = document.querySelector<HTMLElement>('main.replayWorld[data-memory-status="demo"]')
     if (!owner) return
     owner.dataset.replayCc0UnderstoryReady = 'true'
-    owner.dataset.replayCc0UnderstoryMeshes = String(pieces.length)
+    owner.dataset.replayCc0UnderstoryMeshes = String(variants.length)
     return () => {
       delete owner.dataset.replayCc0UnderstoryReady
       delete owner.dataset.replayCc0UnderstoryMeshes
     }
-  }, [pieces])
-  return <group name="replay-scanned-understory" userData={{ source: 'Poly Haven fern_02 CC0', truthClass: 'disclosed-demonstration', finalArtAdmitted: false }}>
-    {pieces.map(({ geometry, material, localMatrix }, index) => <ReplayFernPart key={index} geometry={geometry} material={material} localMatrix={localMatrix} rootRotation={fern.scene.rotation} groundHeight={groundHeight} part={index} />)}
+  }, [variants])
+  return <group name="replay-scanned-understory" userData={{ source: 'Poly Haven fern_02 CC0', sourceUrl: REPLAY_CC0_FERN_MODEL, truthClass: 'disclosed-demonstration', finalArtAdmitted: false }}>
+    {variants.map(({ geometry, material, localMatrix }, index) => <ReplayFernPart key={index} geometry={geometry} material={material} localMatrix={localMatrix} rootRotation={rootRotation} groundHeight={groundHeight} part={index} indices={groups[index]} />)}
   </group>
 }
 

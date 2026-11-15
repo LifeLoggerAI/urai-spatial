@@ -22,6 +22,8 @@ const profiles = [
   { id: 'short-reflow', width: 320, height: 320 },
   { id: 'small-landscape', width: 700, height: 390 },
   { id: 'landscape', width: 844, height: 390 },
+  { id: 'short-landscape', width: 844, height: 320 },
+  { id: 'short-after-product-breakpoint', width: 701, height: 320 },
   { id: 'narrow-breakpoint', width: 480, height: 700 },
   { id: 'after-narrow-breakpoint', width: 481, height: 700 },
   { id: 'launcher-breakpoint', width: 560, height: 390 },
@@ -116,6 +118,33 @@ try {
           assert.equal(bounds.actionPanel.backgroundImage, 'none', `${state}: action-panel background must remain uniform`)
           assert.equal(bounds.actionPanel.backdropFilter, 'none', `${state}: readability must not depend on backdrop blur`)
           assert.equal(bounds.actionPanel.opacity, 1, `${state}: action-panel ancestors must not reintroduce translucency`)
+          const previewBanner = page.getByTestId('urai-global-preview-banner')
+          if (await previewBanner.isVisible()) {
+            // The banner ignores pointer input, so center hit testing cannot
+            // detect a visible action being painted beneath the banner.
+            bounds.previewBanner = await box(previewBanner)
+            const clearBanner = target => target.y >= bounds.previewBanner.y + bounds.previewBanner.height + 8
+            assert.ok(clearBanner(bounds.actions), `${state}: action panel must clear the preview banner by 8px`)
+            const scrollTop = await actions.evaluate(element => element.scrollTop)
+            bounds.previewActionTargets = []
+            try {
+              const targets = actions.locator(':scope > button, .replayHistory > summary')
+              for (let index = 0; index < await targets.count(); index += 1) {
+                const target = targets.nth(index)
+                if (!await target.isVisible()) continue
+                await target.scrollIntoViewIfNeeded()
+                const targetBounds = await box(target)
+                bounds.previewActionTargets.push({ label: await target.textContent(), ...targetBounds })
+                within(targetBounds)
+                assert.ok(targetBounds.width >= 48 && targetBounds.height >= 48, `${state}: visible action must retain its 48px target`)
+                assert.ok(clearBanner(targetBounds), `${state}: visible action must clear the preview banner by 8px`)
+                assert.ok(targetBounds.y >= bounds.actions.y && targetBounds.y + targetBounds.height <= bounds.actions.y + bounds.actions.height,
+                  `${state}: the whole action target must fit inside the panel scroll area`)
+              }
+            } finally {
+              await actions.evaluate((element, position) => { element.scrollTop = position }, scrollTop)
+            }
+          }
         }
         record[state] = bounds
       }

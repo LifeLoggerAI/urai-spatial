@@ -16,6 +16,7 @@ const replayProofSurfaceStyle = {
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { replayAssets } from '@/spatial/assets/uraiAssets'
+import { clearRecoveredFernAssetCache } from '@/spatial/assets/useRecoveredFernAsset'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
@@ -429,7 +430,13 @@ function useReplayWebGL() {
     } catch { setState('unavailable') }
   }, [attempt])
   const fail = useCallback(() => setState('failed'), [])
-  const retry = useCallback(() => { setState('checking'); setAttempt((current) => current + 1) }, [])
+  const retry = useCallback(() => {
+    // A remount alone rethrows a cached glTF or separate alpha-map failure.
+    // Only an explicit retry evicts these local art requests before reopening.
+    clearRecoveredFernAssetCache()
+    setState('checking')
+    setAttempt((current) => current + 1)
+  }, [])
   return { state, attempt, fail, retry }
 }
 

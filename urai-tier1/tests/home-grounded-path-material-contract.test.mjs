@@ -5,10 +5,11 @@ import test from 'node:test'
 const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8')
 const renderer = read('../src/spatial/layout/HomeWorldProductionPolished.tsx')
 const materials = read('../src/spatial/layout/HomeSanctuaryMaterials.tsx')
+const recovered = read('../src/spatial/layout/HomeRecoveredStoneMaterial.tsx')
 const manifest = JSON.parse(read('../../operations/assets/launch-critical-assets.json'))
 const promotion = JSON.parse(read('../../operations/assets/promotion-decisions/home-entry-chamber-v1.json'))
 
-test('three original Home paths consume one world-meter earth/stone material grammar', () => {
+test('three original Home paths share the recovered photographic stone material in world meters', () => {
   assert.match(materials, /type SurfaceKind = 'ground' \| 'stone' \| 'timber' \| 'path'/)
   assert.match(materials, /WALKABLE_PATH_STRATA/)
   assert.match(materials, /kind === 'path' \? WALKABLE_PATH_STRATA/)
@@ -21,10 +22,18 @@ test('three original Home paths consume one world-meter earth/stone material gra
   for (const key of ['MAIN_PATH_GEOMETRY', 'GROUND_PATH_GEOMETRY', 'LIFE_MAP_PATH_GEOMETRY']) {
     assert.match(paths, new RegExp(key))
   }
-  assert.equal((paths.match(/kind="path"/g) ?? []).length, 3)
+  assert.equal((paths.match(/material=\{material\}/g) ?? []).length, 3)
   assert.equal((paths.match(/<HomeCC0ReviewMaterial surface="path" \/>/g) ?? []).length, 3)
-  // Photographic maps must remain higher priority in explicitly opted-in local dev.
-  assert.equal((paths.match(/HOME_CC0_DEV_REVIEW \? <HomeCC0ReviewMaterial surface="path" \/> : <HomeSurfaceMaterial kind="path"/g) ?? []).length, 3)
+  // The separate opt-in review pack keeps its explicit development-only branch.
+  assert.match(paths, /if \(!HOME_CC0_DEV_REVIEW\) return <RecoveredSanctuaryPath \/>/)
+  assert.match(paths, /const material = useHomeRecoveredStoneMaterial\(\)/)
+  assert.match(paths, /dispose=\{null\}/)
+  assert.match(recovered, /texture\.repeat\.set\(\.5, \.5\)/)
+  assert.match(recovered, /normalMap: normal/)
+  assert.match(recovered, /roughnessMap: arm/)
+  assert.match(recovered, /THREE\.SRGBColorSpace : THREE\.NoColorSpace/)
+  assert.match(recovered, /material\.onBeforeCompile = applyHomeCC0MacroVariation/)
+  assert.doesNotMatch(recovered, /applyOriginalHomeSurfaceDetail/)
   assert.match(paths, /home-sanctuary-path/)
   assert.doesNotMatch(paths, /new THREE\.Geometry|<planeGeometry/)
 })

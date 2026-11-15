@@ -352,6 +352,7 @@ export default function FocusChamberClient() {
   const [inputReady, setInputReady] = useState(false)
   const [renderEpoch, setRenderEpoch] = useState(0)
   const [memoryReveal, setMemoryReveal] = useState<{ key: string; state: StellarMemoryState } | null>(null)
+  const [memoryContextExpanded, setMemoryContextExpanded] = useState(true)
   const onWebGLState = useCallback((state: WebGLState) => {
     setRenderedSceneKey(null)
     setRenderEpoch(value => value + 1)
@@ -363,6 +364,16 @@ export default function FocusChamberClient() {
     setDirectEntry(!params.get('memoryId') && !params.get('node'))
     setEntryFrame(parseEntryCameraFrame(params))
     return () => { document.body.style.cursor = '' }
+  }, [])
+
+  useEffect(() => {
+    // Keep the full context beside the scene on larger screens. On a phone,
+    // the native disclosure leaves room for the memory and stays keyboard accessible.
+    const compact = window.matchMedia('(max-width: 760px)')
+    const followViewport = () => setMemoryContextExpanded(!compact.matches)
+    followViewport()
+    compact.addEventListener('change', followViewport)
+    return () => compact.removeEventListener('change', followViewport)
   }, [])
 
   useEffect(() => {
@@ -449,11 +460,29 @@ export default function FocusChamberClient() {
     {!webglUsable && <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral stellar Focus field'} data-focus-visual-owner="stellar-photosphere-corona" aria-hidden="true">
       <div className="focusPhotosphereVisual" />
     </section>}
-    <aside className="memoryMeaning" aria-labelledby="focus-memory-context-label"><span id="focus-memory-context-label" className="sr-only" {...locale.props('focus.selectedContext')}>{locale.text('focus.selectedContext')}</span><p {...locale.props(memory ? 'focus.heldContext' : result.status === 'loading' ? 'focus.openingSafely' : 'focus.emptyContext')}>{memory ? locale.text('focus.heldContext') : result.status === 'loading' ? locale.text('focus.openingSafely') : locale.locale === 'en' ? 'No personal memory is displayed in this neutral stellar field.' : locale.text('focus.emptyContext')}</p>{memory ? <dl><div><dt {...locale.props('focus.emotion')}>{locale.text('focus.emotion')}</dt><dd dir="auto">{memory.emotionalState}</dd></div><div><dt {...locale.props('focus.place')}>{locale.text('focus.place')}</dt><dd {...(memory.place?.label ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.place?.label ?? locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.people')}>{locale.text('focus.people')}</dt><dd {...(memory.people.length ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || locale.text('common.notRecorded')}</dd></div><div><dt {...locale.props('focus.privacy')}>{locale.text('focus.privacy')}</dt><dd dir="auto">{memory.privacy}</dd></div></dl> : <div className="neutralActions"><button type="button" onClick={unwind} {...locale.props('focus.openLifeMap')}>{locale.text('focus.openLifeMap')}</button><span {...(result.status === 'loading' ? locale.props('focus.loading') : {})}>{result.status === 'loading' ? locale.text('focus.loading') : result.message}</span></div>}{memory && !semanticFallback && memoryRevealState === 'unavailable' ? <p role="status" {...locale.props('common.spatialAccessible')}>{locale.text('common.spatialAccessible')}</p> : null}<JourneyOfflineNotice /></aside>
+    <aside className="memoryMeaning" aria-labelledby="focus-memory-context-label">
+      <span id="focus-memory-context-label" className="sr-only" {...locale.props('focus.selectedContext')}>{locale.text('focus.selectedContext')}</span>
+      <p {...locale.props(memory ? 'focus.heldContext' : result.status === 'loading' ? 'focus.openingSafely' : 'focus.emptyContext')}>{memory ? locale.text('focus.heldContext') : result.status === 'loading' ? locale.text('focus.openingSafely') : locale.locale === 'en' ? 'No personal memory is displayed in this neutral stellar field.' : locale.text('focus.emptyContext')}</p>
+      {memory ? <details className="focusMemoryContext" open={memoryContextExpanded} onToggle={(event) => setMemoryContextExpanded(event.currentTarget.open)}>
+        <summary>
+          <span {...locale.props('focus.selectedContext')}>{locale.text('focus.selectedContext')}</span>
+          <span className="focusPrivacyLabel" dir="auto" aria-label={`${locale.text('focus.privacy')}: ${memory.privacy}`}>{memory.privacy}</span>
+          <span className="focusContextIndicator" aria-hidden="true">{memoryContextExpanded ? '−' : '+'}</span>
+        </summary>
+        <dl>
+          <div><dt {...locale.props('focus.emotion')}>{locale.text('focus.emotion')}</dt><dd dir="auto">{memory.emotionalState}</dd></div>
+          <div><dt {...locale.props('focus.place')}>{locale.text('focus.place')}</dt><dd {...(memory.place?.label ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.place?.label ?? locale.text('common.notRecorded')}</dd></div>
+          <div><dt {...locale.props('focus.people')}>{locale.text('focus.people')}</dt><dd {...(memory.people.length ? {dir:'auto' as const} : locale.props('common.notRecorded'))}>{memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || locale.text('common.notRecorded')}</dd></div>
+          <div><dt {...locale.props('focus.privacy')}>{locale.text('focus.privacy')}</dt><dd dir="auto">{memory.privacy}</dd></div>
+        </dl>
+      </details> : <div className="neutralActions"><button type="button" onClick={unwind} {...locale.props('focus.openLifeMap')}>{locale.text('focus.openLifeMap')}</button><span {...(result.status === 'loading' ? locale.props('focus.loading') : {})}>{result.status === 'loading' ? locale.text('focus.loading') : result.message}</span></div>}
+      {memory && !semanticFallback && memoryRevealState === 'unavailable' ? <p role="status" {...locale.props('common.spatialAccessible')}>{locale.text('common.spatialAccessible')}</p> : null}
+      <JourneyOfflineNotice />
+    </aside>
     <div className="focusControlDock">
     <nav className="focusControls" aria-label={locale.text('focus.controls')} {...locale.props('focus.controls')}>
       {memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} {...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')} aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}><span {...locale.props(committed ? 'common.loading' : 'focus.enterReplay')}>{committed ? locale.text('common.loading') : locale.text('focus.enterReplay')}</span></button> : null}
-      {memory && !memory.demo && memory.authorization === 'owner' ? <button type="button" disabled={committed}
+      {memory && !memory.demo && memory.authorization === 'owner' ? <button className="focusCouncilAction" type="button" disabled={committed}
         onClick={() => requestUraiWorldTravel({ destination: 'council', href: `/council?memoryId=${encodeURIComponent(memory.id)}`,
           entryPortal: 'focus-memory-council', cameraCheckpoint: `focus:${memory.star.id}`,
           context: { memoryId: memory.id } })}>Ask Council about this memory</button> : null}

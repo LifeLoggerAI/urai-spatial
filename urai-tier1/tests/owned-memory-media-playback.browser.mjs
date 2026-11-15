@@ -49,7 +49,7 @@ const shims = {
   '@react-three/fiber': `export function Canvas(){return null};export function useFrame(){};export function useThree(select){const state={invalidate:()=>{}};return typeof select==='function'?select(state):state}`, 
   // Rendering assets are explicitly unavailable to this synthetic private-media transport.
   // An accidental world mount must fail closed rather than masquerade as an admitted GLTF.
-  '@react-three/drei': `export const useGLTF=Object.assign(()=>{throw Error('Synthetic private-memory transport must not load world art')},{preload:()=>{},clear:()=>{}});`,
+  '@react-three/drei': `export const useGLTF=Object.assign(()=>{throw Error('Synthetic private-memory transport must not load world art')},{preload:()=>{},clear:()=>{}});export const useTexture=Object.assign(()=>{throw Error('Synthetic private-memory transport must not load world textures')},{clear:()=>{}});`,
 
   '@/spatial/assets/uraiAssets': `export const replayAssets={primary:{src:'/disclosed-unused-demo.png'}};`,
   '@/spatial/adam/AdamLauncherSlot': `export default function AdamLauncherSlot(){return null}`, 

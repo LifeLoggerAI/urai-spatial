@@ -9,6 +9,7 @@ const journeyMessages = read('src/lib/i18n/journeyMessages.ts')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
+const recoveredFern = read('src/spatial/assets/useRecoveredFernAsset.ts')
 const finalHome = read('src/app/FinalHomeWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
@@ -58,7 +59,7 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
 
   for (const marker of [
     "const HOME_SANCTUARY_MODEL = '/assets/urai/generated/models/home-entry-chamber-v1.glb'",
-    "const HOME_FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'",
+    "from '@/spatial/assets/useRecoveredFernAsset'",
     'data-home-primary-owner="asset-driven"',
     'data-home-visible-world="authored-coherent-three-dimensional-sanctuary"',
     'data-home-world-character="believable-natural-inhabitable-environment"',
@@ -90,7 +91,7 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
     '<Canvas',
   ]) has(homeProduction, marker)
   assert.match(homeProduction, /useGLTF\(HOME_SANCTUARY_MODEL\)/)
-  assert.match(homeProduction, /useGLTF\(HOME_FERN_MODEL\)/)
+  assert.match(homeProduction, /useRecoveredFernAsset\(\)/)
   assert.match(homeProduction, /function SanctuaryPath\(/)
   assert.match(homeProduction, /function Horizon\(/)
   assert.match(homeProduction, /function Orb\(/)
