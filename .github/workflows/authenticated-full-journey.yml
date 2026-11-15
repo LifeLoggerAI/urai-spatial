@@ -7,6 +7,8 @@ on:
       - 'scripts/report-authenticated-journey.cjs'
       - 'scripts/report-authenticated-journey.test.cjs'
       - 'urai-tier1/src/lib/firebase/client.ts'
+      - 'urai-tier1/src/lib/firebase/configReadiness.ts'
+      - 'urai-tier1/src/lib/firebase/configReadiness.test.ts'
       - 'urai-tier1/src/app/login/LoginClient.tsx'
   workflow_dispatch:
     inputs:
@@ -43,6 +45,7 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           node --check scripts/prove-authenticated-full-journey.mjs
+          node --experimental-strip-types --test urai-tier1/src/lib/firebase/configReadiness.test.ts
           node --test scripts/report-authenticated-journey.test.cjs
       - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
         with:
