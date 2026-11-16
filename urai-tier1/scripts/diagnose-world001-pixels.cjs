@@ -11,6 +11,10 @@ const path = require('node:path');
     throw new Error('URAI_VISUAL_URL must be an explicit loopback development URL');
   }
   const output = process.env.URAI_VISUAL_OUTPUT || '/tmp/urai-world001-visual-proof';
+  // A fresh run must not overwrite evidence from another browser invocation.
+  if (fs.existsSync(output) && fs.readdirSync(output).length) {
+    throw new Error('Output directory already contains evidence: choose a unique URAI_VISUAL_OUTPUT');
+  }
   fs.mkdirSync(output, { recursive: true });
   const browser = await chromium.launch({
     headless: true,
@@ -56,7 +60,13 @@ const path = require('node:path');
         if (samples.at(-1).ownerReady === 'true') break;
       }
       await page.screenshot({ path: path.join(output, device.name + '.png'), fullPage: false, timeout: 15000 });
-      const record = { device, url, samples, errors, responses, pass: samples.at(-1).ownerReady === 'true' && Number(samples.at(-1).meshCount) > 0 && Number(samples.at(-1).materialCount) > 0 };
+      const last = samples.at(-1);
+      const record = { device, url, samples, errors, responses, pass:
+        last.ownerReady === 'true' && last.runtimeReady === 'true'
+        && Number(last.ownerFrames) >= 3
+        && Number(last.meshCount) > 0 && Number(last.materialCount) > 0
+        && errors.length === 0 && responses.every(response => response.status < 400)
+      };
       fs.writeFileSync(path.join(output, device.name + '.json'), JSON.stringify(record, null, 2));
       console.log(JSON.stringify({ device: device.name, pass: record.pass, last: samples.at(-1), errors, responses }));
       if (!record.pass) failed = true;
