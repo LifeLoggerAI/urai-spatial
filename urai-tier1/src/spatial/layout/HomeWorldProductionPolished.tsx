@@ -1063,6 +1063,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
     // A production-compiled *protected review build* may opt in explicitly at build time.
     // Default and public builds stay on canonical Home; URL flags alone cannot enable the donor.
     const reviewBuildEnabled = process.env.NODE_ENV !== 'production'
+      || process.env.NEXT_PUBLIC_VERCEL_ENV === 'preview'
       || process.env.NEXT_PUBLIC_URAI_WORLD001_PROTECTED_REVIEW === 'true'
     const privatePreview = reviewBuildEnabled && params.get('homeAssetReview') === '1' && params.get('homePrivateFixture') === '1'
     setReviewFixture(privatePreview ? 'safe-private' : 'none')
