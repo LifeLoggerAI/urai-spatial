@@ -82,7 +82,7 @@ function prepareAuthoredSanctuary(source: THREE.Object3D) {
     if (!object.visible) return;
     const name = object.name.toLowerCase();
     const stone = /basin|pedestal|path|ground|terrain|stone/.test(name);
-    object.material = new THREE.MeshStandardMaterial({ color: stone ? "#526158" : "#3f5148", roughness: stone ? 0.92 : 0.98, metalness: 0.01 });
+    // Preserve the authored material response on restored natural landmarks.\n    // Only normalize the core walkable stone geometry to the sanctuary palette.\n    if (!/mountain|waterfall/i.test(object.name)) {\n      object.material = new THREE.MeshStandardMaterial({ color: stone ? "#526158" : "#3f5148", roughness: stone ? 0.92 : 0.98, metalness: 0.01 });\n    }
     object.castShadow = true;
     object.receiveShadow = true;
     visibleMeshCount += 1;
