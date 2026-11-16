@@ -46,9 +46,9 @@ html[dir='rtl'] .uraiV2OnboardingCard { inset-inline-end: max(18px, env(safe-are
 @media (max-width: 400px) { .uraiV2OnboardingActions { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 760px) { html[dir='rtl'] .uraiV2OnboardingCard { inset-inline-end: max(10px, env(safe-area-inset-left)); } }
 
-// R526: Automatic Home welcome stays discoverable without hiding the first
-// person world on a small screen. Guided onboarding and accessibility controls
-// retain their original presentation and navigation behavior.
+/* R526: Automatic Home welcome stays discoverable without hiding the first
+   person world on a small screen. Guided onboarding and accessibility controls
+   retain their original presentation and navigation behavior. */
 @media (max-width: 760px) {
   .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] {
     width: min(300px, calc(100vw - 24px));
