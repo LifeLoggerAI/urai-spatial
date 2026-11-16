@@ -966,10 +966,16 @@ function Scene(props: { previewW13V3: boolean; nearby: Nearby; input: MovementIn
     {!cosmic ? <HomeSkyGradient /> : null}
     <Stars radius={190} depth={90} count={cosmic ? 2200 : 700} factor={cosmic ? 2.7 : 1.1} saturation={.12} fade speed={props.reducedMotion ? 0 : .02} />
     <fogExp2 attach="fog" args={[cosmic ? '#050b14' : '#172a38', cosmic ? .0017 : .006]} />
-    <ambientLight intensity={cosmic ? .13 : .26} color="#bdcadc" />
-    <hemisphereLight args={['#aec7e8','#292b25',cosmic ? .22 : .48]} />
+    <ambientLight intensity={cosmic ? .13 : props.previewW13V3 ? .38 : .26} color="#bdcadc" />
+    <hemisphereLight args={['#aec7e8','#292b25',cosmic ? .22 : props.previewW13V3 ? .7 : .48]} />
     <directionalLight position={[8,18,7]} intensity={cosmic ? .34 : 1.12} color="#e4eafa" castShadow shadow-mapSize={[1024,1024]} shadow-camera-left={-18} shadow-camera-right={18} shadow-camera-top={18} shadow-camera-bottom={-18} shadow-camera-near={1} shadow-camera-far={60} shadow-normalBias={.025} shadow-bias={-.00015} />
     <directionalLight position={[-10,7,-8]} intensity={cosmic ? .1 : .28} color="#b4c7e8" />
+    {props.previewW13V3 && !cosmic ? <>
+      {/* Isolated visual-review lighting pass: reveal authored geometry and silhouettes.
+          Never modify the production sanctuary or the protected donor GLB. */}
+      <directionalLight position={[-7,12,10]} intensity={.72} color="#f8d9aa" />
+      <directionalLight position={[2,9,-12]} intensity={.62} color="#9bd8f4" />
+    </> : null}
     {!cosmic ? <Environment resolution={128} frames={1} background={false}>
       <Lightformer form="rect" intensity={1.7} color="#f0dfbd" position={[0,8,5]} scale={[18,8,1]} />
       <Lightformer form="rect" intensity={1.15} color="#8fbeb7" position={[-8,4,-6]} rotation={[0,Math.PI/3,0]} scale={[10,5,1]} />

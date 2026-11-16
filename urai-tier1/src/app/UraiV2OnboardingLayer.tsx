@@ -141,7 +141,14 @@ function OnboardingCardContent() {
     }
   }, [explicitSequence, navigationKey, pathname]);
 
-  const shouldShow = explicitSequence || automaticFirstRun;
+  // The isolated WORLD001 visual-review route needs unobstructed pixels.
+  // Never suppress guided onboarding or ordinary first-run consent/navigation.
+  const protectedWorldVisualReview = process.env.NODE_ENV === "development"
+    && process.env.NEXT_PUBLIC_URAI_WORLD001_PROTECTED_REVIEW === "true"
+    && searchParams?.get("homeAssetReview") === "1"
+    && searchParams?.get("homePrivateFixture") === "1"
+    && searchParams?.get("world001ModeledV3") === "1";
+  const shouldShow = explicitSequence || (automaticFirstRun && !protectedWorldVisualReview);
 
   useEffect(() => {
     if (!shouldShow || !card || !explicitSequence) return;
