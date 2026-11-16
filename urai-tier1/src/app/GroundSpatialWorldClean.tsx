@@ -274,11 +274,11 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
       <fogExp2 attach="fog" args={["#173843", 0.012]} />
       <ambientLight intensity={0.52} color="#d8f4f2" />
       <hemisphereLight args={["#eaf8ef", "#1f2d2c", 1.05]} />
-      <directionalLight position={[9, 18, 12]} intensity={3.25} color="#ffd7a0" castShadow shadow-mapSize={[1024, 1024]} />
+      <directionalLight position={[9, 18, 12]} intensity={1.7} color="#ffd7a0" castShadow shadow-mapSize={[1024, 1024]} />
       <directionalLight position={[-11, 9, -8]} intensity={0.9} color="#9edcff" />
-      <pointLight position={[0, 4.2, -1]} intensity={3.2} distance={24} decay={2} color="#ffc479" />
-      <pointLight position={[7.5, 3.1, -15]} intensity={1.6} distance={22} decay={2} color="#8fe5ff" />
-      <pointLight position={[-8.2, 3.4, -23]} intensity={1.4} distance={22} decay={2} color="#cabdff" />
+      <pointLight position={[0, 4.2, -1]} intensity={1.35} distance={24} decay={2} color="#ffc479" />
+      <pointLight position={[7.5, 3.1, -15]} intensity={0.85} distance={22} decay={2} color="#8fe5ff" />
+      <pointLight position={[-8.2, 3.4, -23]} intensity={0.8} distance={22} decay={2} color="#cabdff" />
       <Sparkles count={28} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={0.025} opacity={0.045} color="#f9e7ba" />
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
