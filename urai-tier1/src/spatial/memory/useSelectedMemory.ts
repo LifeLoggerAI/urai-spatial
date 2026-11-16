@@ -119,6 +119,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
         try {
           unsubscribeMemory = onSnapshot(
             doc(getFirebaseDb(), 'users', user.uid, 'memories', memoryId),
+            { includeMetadataChanges: true },
             (snapshot) => {
               if (!isCurrentMemory()) return
               if (!isServerConfirmedSnapshot(snapshot.metadata)) {
@@ -140,7 +141,6 @@ export function useSelectedMemory(): SelectedMemoryResult {
               if (!isCurrentMemory()) return
               setResult(unavailable('Selected memory could not be loaded.'))
             },
-            { includeMetadataChanges: true },
           )
         } catch {
           if (!isCurrentMemory()) return
@@ -151,6 +151,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
       try {
         unsubscribePolicy = onSnapshot(
           doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current'),
+          { includeMetadataChanges: true },
           (snapshot) => {
             if (!isCurrentOwner()) return
             if (!isServerConfirmedSnapshot(snapshot.metadata)) {
@@ -200,7 +201,6 @@ export function useSelectedMemory(): SelectedMemoryResult {
             detachMemory()
             setResult(unavailable('Private memory consent authority could not be loaded.'))
           },
-          { includeMetadataChanges: true },
         )
       } catch {
         if (!isCurrentOwner()) return
