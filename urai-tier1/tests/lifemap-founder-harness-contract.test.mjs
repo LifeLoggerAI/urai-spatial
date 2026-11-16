@@ -3,12 +3,13 @@ import { readFile } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
+import { runInNewContext } from 'node:vm'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 const launcherPath = fileURLToPath(new URL('../../scripts/run-lifemap-founder-proof-fixed.mjs', import.meta.url))
 const runnerPath = fileURLToPath(new URL('../../scripts/capture-lifemap-founder-proof-fixed.mjs', import.meta.url))
 const launcher = await readFile(launcherPath, 'utf8')
-const runner = await readFile(runnerPath, 'utf8')
+const runner = (await readFile(runnerPath, 'utf8')).replace(/\r\n/g, '\n')
 const scene = await readFile(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 const world = await readFile(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
 const navigator = await readFile(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
@@ -121,7 +122,9 @@ test('Founder proof observes the real production state machine without a product
   assert.match(scene, /setPhase\("arrival"\)/)
   assert.match(scene, /data-life-map-phase=\{phase\}/)
   assert.match(navigator, /className="life-map-search-trigger"/)
-  assert.match(navigator, /className="life-map-navigator" aria-label="Search and filter Life Map"/)
+  assert.match(navigator, /className="life-map-navigator" aria-labelledby="life-map-navigator-label"/)
+  assert.match(navigator, /id="life-map-navigator-label"[^>]*locale.props\('lifeMap.searchRegion'\)[^>]*>\{locale.text\('lifeMap.searchRegion'\)\}/)
+  assert.match(runner, /region.contains\(label\) && label.textContent === 'Search and filter Life Map'/)
   assert.doesNotMatch(scene, /URAI_FOUNDER|founderProof|proofPhase|__uraiFounderPhase/)
   assert.doesNotMatch(navigator, /URAI_FOUNDER|founderProof|proofPhase|__uraiFounderPhase/)
   assert.doesNotMatch(runner, /setPhase\(|PHASE_DURATION_MS\s*=|window\.setTimeout\s*=/)
@@ -221,4 +224,252 @@ test('founder proof follows the current rendered signed-out privacy boundary and
   assert.match(runner, /if \(signedOutBoundary\.privateSourceMounted\) throw new Error\('signed-out Life Map mounted a private memory source'\)/)
   assert.match(runner, /if \(!\/no personal data displayed\/i\.test\(signedOutBoundary\.disclosure\)\)/)
   assert.match(runner, /data-testid="urai-life-map-authored-fallback"/)
+})
+
+function replayReadinessHarness(snapshots, url = 'http://127.0.0.1:4173/replay/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread') {
+  const pollSource = runner.match(/async function poll\([\s\S]*?\n\}\n/)?.[0]
+  const readinessSource = runner.match(/async function waitForReplayRenderedWorld\([\s\S]*?\n\}\n/)?.[0]
+  assert.ok(pollSource && readinessSource, 'Replay destination proof must wait for actual media and a rendered first frame')
+  class TestElement {}
+  class TestCanvas {}
+  let samples = 0
+  const document = {
+    querySelector(selector) {
+      assert.equal(selector, '[data-testid="cinematic-replay-client"]', 'Do not certify from the hidden proof-only Replay surface')
+      const state = snapshots[Math.min(samples++, snapshots.length - 1)]
+      if (!state) return null
+      const canvas = Object.assign(new TestCanvas(), { dataset: { replayFirstFrame: state.firstFrame ? 'true' : 'false' } })
+      return Object.assign(new TestElement(), {
+        dataset: { memoryId: state.memoryId, manifestId: state.manifestId, replayMediaStatus: state.mediaStatus, replayMediaReady: state.mediaReady, webglState: state.webgl, replayEnvironmentFallback: state.admission },
+        querySelector: (canvasSelector) => { assert.equal(canvasSelector, 'canvas'); return canvas },
+      })
+    },
+  }
+  const waitForReplay = runInNewContext(`${pollSource}\n${readinessSource}\nwaitForReplayRenderedWorld`, { URL, Date, setTimeout, document, HTMLElement: TestElement, HTMLCanvasElement: TestCanvas })
+  return { run: (timeout = 1000) => waitForReplay({ url: () => url, evaluate: async (read) => read() }, timeout), samples: () => samples }
+}
+
+const renderedReplay = { memoryId: 'demo:quiet-reset', manifestId: 'replay-recovery-thread', mediaStatus: 'ready', mediaReady: 'true', webgl: 'ready', admission: 'disclosed-demo', firstFrame: true }
+
+test('Replay rendered proof binds the actual disclosed demo namespace without admitting a private route', async () => {
+  const state = await replayReadinessHarness([renderedReplay], 'http://127.0.0.1:4173/replay/?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread').run()
+  assert.equal(state.memoryId, 'demo:quiet-reset')
+  await assert.rejects(replayReadinessHarness([renderedReplay], 'http://127.0.0.1:4173/replay/?memoryId=quiet-reset&manifestId=replay-recovery-thread').run(), /requires the selected memory and manifest route identity/)
+})
+
+test('Replay capture waits through the real loading state before retaining the selected media first frame', async () => {
+  const proof = replayReadinessHarness([{ ...renderedReplay, mediaStatus: 'loading', mediaReady: 'false', firstFrame: false }, renderedReplay])
+  const state = await proof.run()
+  assert.equal(proof.samples(), 2)
+  assert.equal(state.firstFrame, true)
+  assert.equal(state.mediaStatus, 'ready')
+  assert.match(runner, /const replayRenderProof = await waitForReplayRenderedWorld\(page\)\s+await shot\(page, 'replay-destination', 'replay', \{ memoryId: 'quiet-reset', replayRenderProof \}\)/)
+})
+
+test('Replay capture rejects a visible shell, loading or errored media and an unrendered canvas', async (t) => {
+  for (const [name, state] of [
+    ['shell only', null],
+    ['media loading', { ...renderedReplay, mediaStatus: 'loading' }],
+    ['media error', { ...renderedReplay, mediaStatus: 'error' }],
+    ['readiness false', { ...renderedReplay, mediaReady: 'false' }],
+    ['no first frame', { ...renderedReplay, firstFrame: false }],
+    ['lost context', { ...renderedReplay, webgl: 'lost' }],
+  ]) await t.test(name, async () => {
+    await assert.rejects(replayReadinessHarness([state]).run(10), /selected Replay media and first rendered frame timed out/)
+  })
+})
+
+test('Replay capture rejects a stale memory, wrong manifest, private source or a route without exact selected identity', async (t) => {
+  for (const [name, state] of [
+    ['stale memory', { ...renderedReplay, memoryId: 'different-memory' }],
+    ['wrong manifest', { ...renderedReplay, manifestId: 'different-manifest' }],
+    ['private recorded source', { ...renderedReplay, admission: 'recorded-source' }],
+  ]) await t.test(name, async () => {
+    await assert.rejects(replayReadinessHarness([state]).run(10), /selected Replay media and first rendered frame timed out/)
+  })
+  await assert.rejects(replayReadinessHarness([renderedReplay], 'http://127.0.0.1:4173/replay/').run(), /requires the selected memory and manifest route identity/)
+})
+
+function stylesheetHarness(states, failLoad = false) {
+  const pollSource = runner.match(/async function poll\([\s\S]*?\n\}\n/)?.[0]
+  const source = runner.match(/async function waitForDocumentStylesheets\([\s\S]*?\n\}\n/)?.[0]
+  assert.ok(source && pollSource)
+  let samples = 0, loadObserved = false
+  const document = {
+    get readyState() { return states[Math.min(samples, states.length - 1)].readyState },
+    querySelectorAll(selector) {
+      assert.ok(loadObserved, 'Document load must be awaited before reading CSS')
+      assert.equal(selector, 'link[rel="stylesheet"]')
+      const state = states[Math.min(samples++, states.length - 1)]
+      return state.loaded.map((loaded, i) => ({ href: '/style-' + i + '.css', sheet: loaded ? {} : null }))
+    },
+  }
+  const fn = runInNewContext(pollSource + '\n' + source + '\nwaitForDocumentStylesheets', { Date, setTimeout, document })
+  return { samples: () => samples, run: (timeout = 1000) => fn({
+    waitForLoadState: async (state, options) => {
+      assert.equal(state, 'load'); assert.equal(options.timeout, timeout)
+      if (failLoad) throw new Error('Document load failed')
+      loadObserved = true
+    },
+    evaluate: async read => read(),
+  }, timeout) }
+}
+test('Founder navigation waits for actual loaded document CSS without hiding failed requests', async () => {
+  const h = stylesheetHarness([{ readyState: 'complete', loaded: [false] }, { readyState: 'complete', loaded: [true] }])
+  const state = await h.run()
+  assert.equal(h.samples(), 2)
+  assert.equal(state.stylesheets[0].loaded, true)
+  assert.match(runner, /if \(page\.url\(\) !== 'about:blank'\) await waitForDocumentStylesheets\(page\)/)
+  assert.match(runner, /await waitForPath\(page, destinationPath\)\s+await waitForDocumentStylesheets\(page\)/)
+  assert.match(runner, /event\.kind === 'requestfailed'/)
+  assert.doesNotMatch(runner, /ERR_ABORTED.*\.css|\.css.*ERR_ABORTED/)
+})
+test('Founder CSS readiness rejects absent stylesheets, unloaded CSS and load failure', async () => {
+  for (const state of [{readyState:'loading', loaded:[true]}, {readyState:'complete', loaded:[]}, {readyState:'complete', loaded:[false]}]) {
+    await assert.rejects(stylesheetHarness([state]).run(10), /complete document stylesheets timed out/)
+  }
+  await assert.rejects(stylesheetHarness([{readyState:'complete',loaded:[true]}], true).run(), /Document load failed/)
+})
+
+function runnerFunction(name) {
+  const source = runner.match(new RegExp(`(?:async )?function ${name}\\([\\s\\S]*?\\n\\}\\n`))?.[0]
+  assert.ok(source, `Missing proof function ${name}`)
+  return source
+}
+
+const checkNarrowGeometry = runInNewContext(`${runnerFunction('assertNarrowControlGeometry')}\nassertNarrowControlGeometry`)
+const checkNarrowIdentity = runInNewContext(`${runnerFunction('assertNarrowRouteIdentity')}\nassertNarrowRouteIdentity`, { URL })
+const narrowViewport = { width: 320, height: 700 }
+const reachableControl = { selector: 'button.primary', x: 16, y: 620, width: 90, height: 48, disabled: false, visible: true, centerOwned: true }
+const selectedLifeMap = { source: 'explicit-demo', phase: 'arrival', mode: 'selected', scale: 'intimate', title: 'The Quiet Reset' }
+const selectedMemory = { memoryId: 'demo:quiet-reset', manifestId: 'replay-recovery-thread', starId: 'quiet-reset', memoryStatus: 'demo' }
+const selectedRoute = (path, memoryId = 'quiet-reset') => `http://127.0.0.1:4173${path}/?demo=1&memoryId=${encodeURIComponent(memoryId)}&manifestId=replay-recovery-thread&node=quiet-reset`
+
+test('narrow proof admits reachable separated controls and rejects clipping, overlap and interception', () => {
+  const separated = [reachableControl, { ...reachableControl, selector: 'button.unwind', x: 114 }]
+  assert.equal(checkNarrowGeometry(separated, narrowViewport).length, 2)
+  for (const invalid of [
+    { x: -1 }, { y: -1 }, { x: 240 }, { y: 680 }, { width: 47 }, { height: 47 },
+    { x: Number.NaN }, { disabled: true }, { visible: false }, { centerOwned: false },
+  ]) assert.throws(() => checkNarrowGeometry([{ ...reachableControl, ...invalid }], narrowViewport), /clipped, undersized, disabled or intercepted/)
+  assert.throws(() => checkNarrowGeometry([reachableControl, { ...reachableControl, selector: 'button.other', x: 90 }], narrowViewport), /controls overlap/)
+  assert.throws(() => checkNarrowGeometry([], narrowViewport), /actual controls/)
+  assert.throws(() => checkNarrowGeometry(separated, { width: 390, height: 844 }), /320x700/)
+})
+
+test('narrow journey binds route tokens to actual disclosed selected memory through both unwind destinations', () => {
+  for (const [path, rendered] of [['/life-map', selectedLifeMap], ['/focus', selectedMemory], ['/replay', selectedMemory]]) {
+    for (const memoryId of ['quiet-reset', 'demo:quiet-reset']) assert.equal(checkNarrowIdentity(selectedRoute(path, memoryId), path, rendered).node, 'quiet-reset')
+    for (const stale of [
+      selectedRoute(path).replace('demo=1', 'demo=0'),
+      selectedRoute(path).replace('memoryId=quiet-reset', 'memoryId=other'),
+      selectedRoute(path).replace('replay-recovery-thread', 'other-manifest'),
+      selectedRoute(path).replace('node=quiet-reset', 'node=other'),
+      selectedRoute(path).replace(`${path}/?`, '/wrong/?'),
+    ]) assert.throws(() => checkNarrowIdentity(stale, path, rendered), /route identity drifted/)
+  }
+  for (const invalid of [{ source: 'private' }, { phase: 'overview' }, { mode: 'overview' }, { scale: 'cosmic' }, { title: 'Another memory' }]) {
+    assert.throws(() => checkNarrowIdentity(selectedRoute('/life-map'), '/life-map', { ...selectedLifeMap, ...invalid }), /Life Map identity drifted/)
+  }
+  for (const invalid of [{ memoryId: 'demo:other' }, { manifestId: 'other-manifest' }, { starId: 'other' }, { memoryStatus: 'private' }]) {
+    assert.throws(() => checkNarrowIdentity(selectedRoute('/focus'), '/focus', { ...selectedMemory, ...invalid }), /resolved memory identity drifted/)
+  }
+  assert.throws(() => checkNarrowIdentity(selectedRoute('/focus'), '/focus', null), /resolved memory identity drifted/)
+})
+
+function focusReadinessHarness(snapshots) {
+  class TestElement {}
+  class TestCanvas {}
+  let samples = 0
+  const document = {
+    querySelector(selector) {
+      assert.equal(selector, '[data-testid="urai-final-focus-chamber"]')
+      const state = snapshots[Math.min(samples++, snapshots.length - 1)]
+      if (!state) return null
+      const canvas = Object.assign(new TestCanvas(), { dataset: { focusFirstFrame: state.firstFrame ? 'true' : 'false' } })
+      return Object.assign(new TestElement(), {
+        dataset: { memoryId: state.memoryId, manifestId: state.manifestId, starId: state.starId, memoryStatus: state.memoryStatus,
+          focusInputReady: state.inputReady, focusRenderReady: state.renderReady, focusMemoryRevealState: state.reveal, webglState: state.webgl },
+        querySelector: canvasSelector => { assert.equal(canvasSelector, '.focusCanvas canvas'); return canvas },
+      })
+    },
+  }
+  const fn = runInNewContext(`${runnerFunction('poll')}\n${runnerFunction('waitForFocusRenderedWorld')}\nwaitForFocusRenderedWorld`, { Date, setTimeout, document, HTMLElement: TestElement, HTMLCanvasElement: TestCanvas })
+  return { samples: () => samples, run: (timeout = 1000) => fn({ evaluate: async read => read() }, timeout) }
+}
+const renderedFocus = { ...selectedMemory, inputReady: 'true', renderReady: 'true', reveal: 'ready', webgl: 'ready', firstFrame: true }
+
+test('narrow Focus proof waits for the disclosed selected manifestation and real canvas frame', async () => {
+  const h = focusReadinessHarness([{ ...renderedFocus, renderReady: 'false', firstFrame: false }, renderedFocus])
+  const state = await h.run()
+  assert.equal(h.samples(), 2)
+  assert.equal(state.firstFrame, true)
+  for (const invalid of [null, ...[
+    { memoryId: 'demo:other' }, { manifestId: 'other' }, { starId: 'other' }, { memoryStatus: 'private' },
+    { inputReady: 'false' }, { renderReady: 'false' }, { reveal: 'unavailable' }, { webgl: 'lost' }, { firstFrame: false },
+  ].map(patch => ({ ...renderedFocus, ...patch }))]) {
+    await assert.rejects(focusReadinessHarness([invalid]).run(10), /selected Focus memory and first rendered frame timed out/)
+  }
+})
+
+test('320px touch and reduced-motion keyboard proof appends complete actual journeys to the original matrix', () => {
+  const narrow = runnerFunction('narrowMobileJourney')
+  assert.match(narrow, /prefix: 'narrow-touch', interaction: 'touch', motion: 'no-preference'/)
+  assert.match(narrow, /prefix: 'narrow-keyboard-reduced', interaction: 'keyboard', motion: 'reduce'/)
+  assert.match(narrow, /viewport: \{ width: 320, height: 700 \}/)
+  assert.match(narrow, /await narrowFocusRestoration\(page, profile\.interaction\)/)
+  assert.match(narrow, /await selectQuietReset\(page, \{ touch: profile\.interaction === 'touch', keyboard: profile\.interaction === 'keyboard', narrow: true \}\)/)
+  for (const state of ['arrival', 'focus', 'replay', 'focus-return', 'lifemap-return']) assert.ok(narrow.includes(`await retain('${state}'`), `Missing retained narrow ${state}`)
+  for (const selector of ["selectedActionSelector('Enter Focus')", "'.focusControls button.primary'", "'.replayWorld button.unwind'", "'.focusControls button.unwind'"]) {
+    assert.ok(narrow.includes(`await narrowActivate(page, ${selector}, profile.interaction)`), `Missing actual narrow action ${selector}`)
+  }
+  const restoration = runnerFunction('narrowFocusRestoration')
+  assert.match(restoration, /page\.keyboard\.press\('Escape'\)/)
+  assert.match(restoration, /Close Life Map search/)
+  assert.match(restoration, /Close Adam/)
+  assert.match(restoration, /searchRestored/)
+  assert.match(restoration, /founderRestored/)
+  assert.match(runner, /try \{\s+await narrowMobileJourney\(\)\s+await highResolutionOverview\(\)/)
+  assert.match(runner, /await privacyAndRecovery\(\)\s+assertVisualSanity\(\)/)
+  assert.match(runner, /receipt\.captures\.length >= 38/)
+  assert.doesNotMatch(narrow, /force:\s*true|dispatchEvent|setAttribute|\.goto\(/)
+})
+
+test('narrow keyboard proof follows bounded natural Tab order and rejects an unreachable control', async () => {
+  class TestElement { constructor(id) { this.id = id; this.tagName = 'BUTTON'; this.className = '' } }
+  const controls = ['first', 'middle', 'target'].map(id => new TestElement(id))
+  let focused = 0, tabs = 0
+  const document = { querySelector: () => controls[2], get activeElement() { return controls[focused] } }
+  const traverse = runInNewContext(`${runnerFunction('narrowTabTo')}\nnarrowTabTo`, { document, HTMLElement: TestElement })
+  const page = { evaluate: async (read, selector) => read(selector), keyboard: { press: async key => { assert.equal(key, 'Tab'); focused = Math.min(focused + 1, 2); tabs += 1 } } }
+  const reached = await traverse(page, '#target', 4)
+  assert.equal(reached.tabs, 2)
+  assert.equal(tabs, 2)
+  focused = 0; tabs = 0
+  page.keyboard.press = async key => { assert.equal(key, 'Tab'); tabs += 1 }
+  await assert.rejects(traverse(page, '#target', 3), /Tab traversal could not reach/)
+  assert.equal(tabs, 3)
+  assert.doesNotMatch(runnerFunction('narrowTabTo'), /\.focus\(|setAttribute|dispatchEvent/)
+  assert.match(runnerFunction('narrowActivate'), /await narrowTabTo\(page, selector\)\s+await page\.keyboard\.press\('Enter'\)/)
+  assert.match(runnerFunction('selectQuietReset'), /if \(options\.narrow\) await narrowActivate\(page, resultSelector/)
+  assert.match(runnerFunction('selectQuietReset'), /if \(options\.narrow\) await narrowActivate\(page, triggerSelector/)
+})
+
+test('narrow reduced-motion proof observes media preference and unmasked stable arrival camera samples', () => {
+  const checkMotion = runInNewContext(`${runnerFunction('assertNarrowMotion')}\nassertNarrowMotion`)
+  const camera = [0, 3, 7.5, 0, 1, 0, 50]
+  const samples = [0, 125, 250].map(elapsedMs => ({ elapsedMs, phase: 'arrival', camera: [...camera] }))
+  const reduced = { mediaQueryMatches: true, arrivalSamples: samples }
+  assert.equal(checkMotion(reduced, 'reduce', true).arrivalSamples.length, 3)
+  assert.equal(checkMotion({ mediaQueryMatches: false }, 'no-preference', true).mediaQueryMatches, false)
+  assert.throws(() => checkMotion({ mediaQueryMatches: false, arrivalSamples: samples }, 'reduce', true), /preference was not observed/)
+  assert.throws(() => checkMotion({ mediaQueryMatches: true }, 'reduce', true), /bounded camera stability observation/)
+  assert.throws(() => checkMotion({ ...reduced, arrivalSamples: samples.slice(0, 2) }, 'reduce', true), /bounded camera stability observation/)
+  for (const invalid of [{ phase: 'travel' }, { camera: [0, 3, 7.6, 0, 1, 0, 50] }, { camera: [0, 3, Number.NaN, 0, 1, 0, 50] }, { camera: [] }]) {
+    assert.throws(() => checkMotion({ ...reduced, arrivalSamples: [samples[0], samples[1], { ...samples[2], ...invalid }] }, 'reduce', true), /camera or phase moved/)
+  }
+  assert.match(runnerFunction('narrowMotionEvidence'), /matchMedia\('\(prefers-reduced-motion: reduce\)'\)\.matches/)
+  assert.match(runnerFunction('captureScreenshot'), /animations = 'disabled'/)
+  assert.match(runnerFunction('narrowMobileJourney'), /focusRestoration, renderProof \}, 'allow'\)/)
+  assert.match(runnerFunction('assertVisualSanity'), /capture\.screenshot\.animations !== 'allow'/)
 })

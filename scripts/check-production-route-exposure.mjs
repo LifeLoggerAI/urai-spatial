@@ -12,6 +12,7 @@ const appRoot = path.join(root, 'urai-tier1', 'src', 'app')
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'release', 'route-manifest.json'), 'utf8'))
 const classification = manifest.classification ?? {}
 const publicExact = new Set(classification.publicExact ?? [])
+const conditionalExact = new Set(classification.conditionalExact ?? [])
 const prefixGroups = [
   classification.servicePrefixes ?? [],
   classification.internalPrefixes ?? [],
@@ -34,7 +35,7 @@ const routeFor = (file) => {
   return segments.length ? `/${segments.join('/')}` : '/'
 }
 
-const manifestClassified = (route) => publicExact.has(route) || prefixGroups.some((prefixes) =>
+const manifestClassified = (route) => publicExact.has(route) || conditionalExact.has(route) || prefixGroups.some((prefixes) =>
   prefixes.some((prefix) => route === prefix.replace(/\/$/, '') || route.startsWith(prefix)),
 )
 

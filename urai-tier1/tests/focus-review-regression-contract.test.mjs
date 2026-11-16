@@ -43,3 +43,12 @@ test('selected Memory Star arrival framing is carried into Focus without a hard 
   assert.match(focusClient, /THREE\.MathUtils\.damp\(camera\.position\.x, defaultCamera\.x/)
   assert.match(focusClient, /reducedMotion.*DEFAULT_CAMERA|useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion/)
 })
+
+test('world travel scopes memory identity and refuses stale private selection', () => {
+  for (const token of ['WORLD_TRAVEL_CONTEXT_KEYS', "'thread'", "'personId'", "'placeId'", "'movieId'", "'chapterId'"])
+    assert.ok(worldEvents.includes(token), 'missing scoped context '+token)
+  assert.match(worldEvents, /target\.searchParams\.delete\('memoryId'\)/)
+  assert.match(worldEvents, /target\.searchParams\.delete\('node'\)/)
+  assert.match(worldEvents, /if \(memoryDestination && context\?\.memoryId\) target\.searchParams\.set\('memoryId', context\.memoryId\)/)
+  assert.match(worldEvents, /memoryDestination && context\?\.demo && \(!selectedMemoryId \|\| !currentMemoryId \|\| sameMemory\)/)
+})

@@ -5,6 +5,7 @@ on:
     paths:
       - 'operations/life-model/**'
       - 'scripts/validate-life-model-release-receipt.mjs'
+      - 'urai-tier1/tests/life-model-release-*.test.mjs'
       - 'urai-tier1/src/spatial/life-model/**'
       - 'apps/functions/src/lifeModelFunctions.ts'
       - 'apps/functions/src/personPresenceFunctions.ts'
@@ -15,10 +16,14 @@ on:
   workflow_dispatch:
     inputs:
       certify:
-        description: 'Run strict exact-SHA launch certification'
+        description: 'Validate all terminal receipt evidence; does not grant release certification'
         required: true
         type: boolean
         default: false
+      component_envelope_sha256:
+        description: 'Externally governed exact component repositories hash for strict evidence validation'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -32,8 +37,12 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Validate fail-closed receipt contract
         run: node scripts/validate-life-model-release-receipt.mjs
-      - name: Strict exact-SHA certification
+      - name: Test retained evidence and adversarial reference validation
+        run: node --test urai-tier1/tests/life-model-release-receipt-contract.test.mjs urai-tier1/tests/life-model-release-validator-cli.test.mjs urai-tier1/tests/life-model-release-evidence.test.mjs
+      - name: Strict exact-SHA retained receipt contract
         if: github.event_name == 'workflow_dispatch' && inputs.certify == true
         env:
           GITHUB_SHA: ${{ github.sha }}
+          COMPONENT_ENVELOPE_SHA256: ${{ inputs.component_envelope_sha256 }}
+          RELEASE_AUTHOR: ${{ github.actor }}
         run: node scripts/validate-life-model-release-receipt.mjs --strict

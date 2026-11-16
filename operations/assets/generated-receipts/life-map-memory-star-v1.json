@@ -5,21 +5,51 @@
   "bytes": 373236,
   "sha256": "ae4a70d2964a69025e246e7c09394b674a3c9f7b4b44a014cde6e1bffe7e9efa",
   "measured": {
+    "format": "glb",
+    "version": 2,
+    "generator": "URAI Labs Final GLB Forge 1.0",
+    "nodes": 30,
+    "meshes": 11,
+    "materials": 8,
     "triangleCount": 8770,
-    "nodeCount": 30,
-    "materialCount": 8,
-    "animationClips": [
-      "MemoryStar_Idle",
-      "MemoryStar_Selected",
-      "MemoryStar_Focus"
-    ]
+    "boundsMin": [
+      -2.5750508308410645,
+      -1.5697879791259766,
+      -0.4860000014305115
+    ],
+    "boundsMax": [
+      2.5076136589050293,
+      1.527533769607544,
+      0.4860000014305115
+    ],
+    "boundsMeters": [
+      5.083,
+      3.097,
+      0.972
+    ],
+    "extensionsUsed": [
+      "KHR_materials_clearcoat",
+      "KHR_materials_emissive_strength",
+      "KHR_materials_transmission"
+    ],
+    "extensionsRequired": []
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "uncompressed-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-memory-star",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "license": "URAI Labs internal production asset",
   "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Life Map shard pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
   "generatedAt": "2026-08-08T23:57:27.724Z",
-  "releaseState": "candidate-not-production-ready"
+  "releaseState": "candidate-not-production-ready",
+  "targetRoutes": [
+    "/life-map"
+  ],
+  "measurementReconciliation": {
+    "sourceSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
+    "observedAt": "2026-10-06T17:20:57.484062+00:00",
+    "method": "audit-launch-critical-artifact.mjs actual-byte inspection",
+    "assetBytesChanged": false,
+    "finalReviewGranted": false
+  }
 }

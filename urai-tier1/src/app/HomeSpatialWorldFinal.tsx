@@ -12,7 +12,7 @@ const portals = [
   { id: "passport", href: "/passport", eyebrow: "Own", label: "Passport", detail: "consent vault" },
   { id: "council", href: "/council", eyebrow: "Guide", label: "Council", detail: "stewardship chamber" },
   { id: "movie", href: "/life-movie", eyebrow: "Remember", label: "Life Movie", detail: "play your private film" },
-  { id: "xr", href: "/xr", eyebrow: "Enter", label: "XR", detail: "immersive world entry" },
+  { id: "xr", href: "/spatial/ar-vr", eyebrow: "Preview", label: "XR preview", detail: "Live XR awaits device certification" },
 ] as const;
 
 const stars = Array.from({ length: 72 }, (_, index) => index);
@@ -100,6 +100,10 @@ export default function HomeSpatialWorldFinal() {
     resetPointer();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === "o") {
+        // A world shortcut must not consume text entry or browser/assistive commands.
+        if (event.defaultPrevented || event.isComposing || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+        const target = event.target;
+        if (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, [role="textbox"], [role="combobox"]'))) return;
         event.preventDefault();
         setTransitionTarget('orb');
         setOrbOpen((open) => !open);
@@ -260,7 +264,7 @@ export default function HomeSpatialWorldFinal() {
           <Link href="/passport">Passport</Link>
           <Link href="/council">Council</Link>
           <Link href="/life-movie">Life Movie</Link>
-          <Link href="/xr">XR</Link>
+          <Link href="/spatial/ar-vr">XR preview</Link>
         </div>
       </aside>
 

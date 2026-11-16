@@ -10,6 +10,7 @@ export type XrSessionLike = {
   end: () => Promise<void>
   addEventListener: (type: string, listener: () => void, options?: { once?: boolean }) => void
   inputSources?: ArrayLike<{ gamepad?: Gamepad }>
+  frameRate?: number
 }
 
 const LIMIT = 10.5
@@ -25,8 +26,11 @@ function controllerRay(controller: THREE.Group, raycaster: THREE.Raycaster) {
 }
 
 function safeMove(position: THREE.Vector3, nextX: number, nextZ: number) {
-  const x = THREE.MathUtils.clamp(nextX, -LIMIT + RADIUS, LIMIT - RADIUS)
-  const z = THREE.MathUtils.clamp(nextZ, -LIMIT + RADIUS, LIMIT - RADIUS)
+  if (!Number.isFinite(nextX) || !Number.isFinite(nextZ)) return
+  const distance = Math.hypot(nextX, nextZ)
+  const scale = distance > LIMIT - RADIUS ? (LIMIT - RADIUS) / distance : 1
+  const x = nextX * scale
+  const z = nextZ * scale
   const daisRadius = 2.18
   if (x * x + (z + 0.7) * (z + 0.7) < daisRadius * daisRadius) {
     const angle = Math.atan2(z + 0.7, x)
@@ -84,11 +88,16 @@ export class UraiXrWorldRuntime {
   private snapReady = true
   private disposed = false
   private lastTime = performance.now()
+  private frameIntervals: number[] = []
+  private frameTime: number | null = null
+  private telemetryImmersive: boolean | null = null
+  private qualityTier: 'quest-mobile' | 'desktop' = 'desktop'
   private orb: THREE.Mesh
   private orbRing: THREE.Mesh
   private stars: THREE.Points
 
   constructor(private mount: HTMLDivElement, private announce: (message: string) => void, private openRoute: (route: string, label: string) => void) {
+    this.reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
     this.scene.background = new THREE.Color(0x050816)
     this.scene.fog = new THREE.FogExp2(0x071125, 0.028)
     this.camera.position.set(0, 1.65, 0)
@@ -175,6 +184,7 @@ export class UraiXrWorldRuntime {
     this.camera.aspect = width / height
     this.camera.updateProjectionMatrix()
     const mobile = /OculusBrowser|Quest|Android|iPhone/i.test(navigator.userAgent)
+    this.qualityTier = mobile ? 'quest-mobile' : 'desktop'
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile ? 1.25 : 1.75))
     this.renderer.setSize(width, height, false)
   }
@@ -208,7 +218,10 @@ export class UraiXrWorldRuntime {
     this.dragging = false
     this.pointerMoved = false
   }
-  private windowBlur = () => this.cancelPointerDrag()
+  private windowBlur = () => {
+    this.cancelPointerDrag()
+    this.keys.clear()
+  }
   private pointerUp = (event: PointerEvent) => {
     const moved = this.pointerMoved
     this.cancelPointerDrag(event)
@@ -228,6 +241,7 @@ export class UraiXrWorldRuntime {
     window.addEventListener('keydown', this.keyDown)
     window.addEventListener('keyup', this.keyUp)
     window.addEventListener('blur', this.windowBlur)
+    window.addEventListener('urai:xr-performance-request', this.performanceRequest)
     this.renderer.domElement.addEventListener('pointerdown', this.pointerDown)
     this.renderer.domElement.addEventListener('pointermove', this.pointerMove)
     this.renderer.domElement.addEventListener('pointerup', this.pointerUp)
@@ -257,10 +271,13 @@ export class UraiXrWorldRuntime {
     if (this.disposed) return
     const delta = Math.min(0.05, Math.max(0, (time - this.lastTime) / 1000))
     this.lastTime = time
-    this.orb.position.y = (this.orb.userData.baseY as number) + Math.sin(time * 0.0014) * (this.reducedMotion ? 0.025 : 0.11)
-    this.orb.rotation.y += delta * (this.reducedMotion ? 0.12 : 0.42)
-    this.orbRing.rotation.z += delta * (this.reducedMotion ? 0.08 : 0.28)
-    this.stars.rotation.y += delta * (this.reducedMotion ? 0.002 : 0.01)
+    this.orb.position.y = this.orb.userData.baseY as number
+    if (!this.reducedMotion) {
+      this.orb.position.y += Math.sin(time * 0.0014) * 0.11
+      this.orb.rotation.y += delta * 0.42
+      this.orbRing.rotation.z += delta * 0.28
+      this.stars.rotation.y += delta * 0.01
+    }
 
     if (!this.renderer.xr.isPresenting) {
       this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ')
@@ -288,6 +305,47 @@ export class UraiXrWorldRuntime {
       }
     }
     this.renderer.render(this.scene, this.camera)
+    this.recordFrameInterval(time)
+  }
+
+  private recordFrameInterval(time: number) {
+    const immersive = this.renderer.xr.isPresenting
+    if (this.telemetryImmersive !== immersive) {
+      this.frameIntervals.length = 0
+      this.frameTime = null
+      this.telemetryImmersive = immersive
+    }
+    if (Number.isFinite(time) && this.frameTime !== null && time > this.frameTime) {
+      this.frameIntervals.push(time - this.frameTime)
+      if (this.frameIntervals.length > 600) this.frameIntervals.shift()
+    }
+    this.frameTime = Number.isFinite(time) ? time : null
+  }
+
+  getPerformanceSnapshot() {
+    const intervals = [...this.frameIntervals].sort((left, right) => left - right)
+    const nativeRate = this.session?.frameRate
+    const targetFrameRate = this.renderer.xr.isPresenting
+      ? typeof nativeRate === 'number' && Number.isFinite(nativeRate) && nativeRate > 0 ? nativeRate : 72
+      : 60
+    const percentile = (fraction: number) => intervals.length ? intervals[Math.max(0, Math.ceil(intervals.length * fraction) - 1)] : null
+    return {
+      schemaVersion: 'urai-xr-entry-frame-snapshot-v1',
+      measurement: 'animation-loop-cadence-and-renderer-counters',
+      sampleCount: intervals.length, immersive: this.renderer.xr.isPresenting,
+      qualityTier: this.qualityTier, pixelRatio: this.renderer.getPixelRatio(), targetFrameRate,
+      frameBudgetMs: 1000 / targetFrameRate,
+      frameIntervalP50Ms: percentile(0.5), frameIntervalP95Ms: percentile(0.95),
+      longestFrameIntervalMs: intervals.at(-1) ?? null,
+      framesOverBudget: intervals.filter(interval => interval > 1000 / targetFrameRate).length,
+      drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles,
+      geometries: this.renderer.info.memory.geometries, textures: this.renderer.info.memory.textures,
+      physicalDeviceAccepted: false,
+    }
+  }
+
+  private performanceRequest = () => {
+    window.dispatchEvent(new CustomEvent('urai:xr-performance-snapshot', { detail: this.getPerformanceSnapshot() }))
   }
 
   setKey(code: string, held: boolean) {
@@ -310,6 +368,7 @@ export class UraiXrWorldRuntime {
     window.removeEventListener('keydown', this.keyDown)
     window.removeEventListener('keyup', this.keyUp)
     window.removeEventListener('blur', this.windowBlur)
+    window.removeEventListener('urai:xr-performance-request', this.performanceRequest)
     this.renderer.domElement.removeEventListener('pointerdown', this.pointerDown)
     this.renderer.domElement.removeEventListener('pointermove', this.pointerMove)
     this.renderer.domElement.removeEventListener('pointerup', this.pointerUp)

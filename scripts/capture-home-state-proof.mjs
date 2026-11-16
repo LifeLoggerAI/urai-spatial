@@ -1,13 +1,23 @@
+import { inspectFocusedHomeNavigation } from './lib/home-ui-readability.mjs'
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { captureVisibleCanvasPng } from './capture-visible-canvas-png.mjs'
+import { dismissHomeFirstRunGuide } from './dismiss-home-first-run-guide.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/home-state-proof')
+const proofScope = process.env.URAI_PROOF_SCOPE || 'full'
+if (!['full', 'asset-recovery-only'].includes(proofScope)) {
+  throw new Error(`Unsupported Home proof scope: ${proofScope}`)
+}
+const MAX_CANVAS_EVIDENCE_FILES = 64
+const HOME_CANVAS_SAMPLE_POINTS = [[.18,.2],[.5,.2],[.82,.2],[.18,.5],[.5,.5],[.82,.5],[.18,.8],[.5,.8],[.82,.8]]
+let canvasEvidenceCount = 0
 const ownerSelector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"]'
 const states = [
   { id: 'permission-limited', query: 'homeState=permission-limited' },
@@ -20,9 +30,16 @@ const receipt = {
   schemaVersion: 'urai-home-state-proof-6',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'natural-home-live-owner-orb-lifecycle-stability-accessibility-and-retained-canvas-evidence',
+  scope: proofScope,
+  expectedCaptureCount: proofScope === 'full' ? 13 : 5,
+  runtimeContract: proofScope === 'full'
+    ? 'natural-home-live-owner-orb-lifecycle-stability-accessibility-and-retained-canvas-evidence'
+    : 'home-assets-real-loader-failure-accessible-controls-native-retry-and-retained-canvas-evidence',
   visualGate: {
     source: 'retained-canvas-png',
+    pixelSource: 'unmodified-browser-composite',
+    guard: 'fully-visible-stable-bounds-topmost-at-each-sampled-point-before-and-after',
+    maximumRetainedImages: MAX_CANVAS_EVIDENCE_FILES,
     sampling: 'distributed-3x3-neighborhood',
     minimumViewportCoverage: 0.82,
     minimumLuminanceRange: 12,
@@ -57,30 +74,20 @@ async function settleAnimationFrames(page, frameCount, timeoutMs = 15_000) {
 }
 
 async function readVisualEvidence(page) {
-  const canvas = page.locator('.urai-asset-home-world canvas').first()
-  await canvas.waitFor({ state: 'visible', timeout: 45_000 })
-  const bounds = await page.evaluate(() => {
-    const element = document.querySelector('.urai-asset-home-world canvas')
-    if (!element) return null
-    const rect = element.getBoundingClientRect()
-    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
-  })
-  const viewport = page.viewportSize()
-  if (!bounds || !viewport) return { available: false, reason: 'missing-canvas-bounds' }
-  const clipX = Math.max(0, bounds.x)
-  const clipY = Math.max(0, bounds.y)
-  const visibleWidth = Math.max(0, Math.min(bounds.x + bounds.width, viewport.width) - clipX)
-  const visibleHeight = Math.max(0, Math.min(bounds.y + bounds.height, viewport.height) - clipY)
-  const viewportCoverage = visibleWidth * visibleHeight / Math.max(1, viewport.width * viewport.height)
-  if (visibleWidth < 1 || visibleHeight < 1) return { available: false, reason: 'canvas-outside-viewport', viewportCoverage }
-  const png = await page.screenshot({
-    animations: 'disabled',
-    caret: 'hide',
-    timeout: 90_000,
-    clip: { x: clipX, y: clipY, width: visibleWidth, height: visibleHeight },
-  })
+  const canvas = page.locator('.urai-asset-home-world canvas')
+  if (await canvas.count() !== 1) throw new Error('Home visual evidence requires exactly one world canvas')
+  if (canvasEvidenceCount >= MAX_CANVAS_EVIDENCE_FILES) throw new Error('Home canvas evidence image budget exhausted')
+  const { buffer: png, capture } = await captureVisibleCanvasPng(page, canvas, 90_000, HOME_CANVAS_SAMPLE_POINTS, '.urai-asset-home-world canvas')
+  if (!Buffer.isBuffer(png) || png.length < 1 || png.length > 16 * 1024 * 1024) {
+    throw new Error('Home canvas PNG exceeds its finite image byte budget')
+  }
+  const sequence = ++canvasEvidenceCount
+  const prefix = String(exactHead).slice(0, 12).replace(/[^a-zA-Z0-9_-]/g, '_')
+  const canvasPngFile = `home-canvas-${prefix}-${String(sequence).padStart(3, '0')}.png`
+  await writeFile(path.join(outputDir, canvasPngFile), png, { flag: 'wx' })
+  const canvasPngSha256 = createHash('sha256').update(png).digest('hex')
   const dataUrl = `data:image/png;base64,${png.toString('base64')}`
-  const sample = await page.evaluate(async ({ dataUrl }) => {
+  const sample = await page.evaluate(async ({ dataUrl, samplePoints }) => {
     const image = new Image()
     const loaded = new Promise((resolve, reject) => {
       image.onload = resolve
@@ -94,11 +101,7 @@ async function readVisualEvidence(page) {
     const context = surface.getContext('2d', { willReadFrequently: true })
     if (!context) return { available: false, reason: 'missing-2d-sampler' }
     context.drawImage(image, 0, 0)
-    const points = [
-      [0.18, 0.2], [0.5, 0.2], [0.82, 0.2],
-      [0.18, 0.5], [0.5, 0.5], [0.82, 0.5],
-      [0.18, 0.8], [0.5, 0.8], [0.82, 0.8],
-    ]
+    const points = samplePoints
     const luminance = points.map(([xRatio, yRatio]) => {
       const x = Math.max(0, Math.min(surface.width - 3, Math.round(surface.width * xRatio) - 1))
       const y = Math.max(0, Math.min(surface.height - 3, Math.round(surface.height * yRatio) - 1))
@@ -119,8 +122,9 @@ async function readVisualEvidence(page) {
       luminanceRange: Math.max(...luminance) - Math.min(...luminance),
       visibleSamples: luminance.filter((value) => value >= 8).length,
     }
-  }, { dataUrl })
-  return { ...sample, viewportCoverage, bounds: { width: bounds.width, height: bounds.height }, canvasPngBytes: png.length }
+  }, { dataUrl, samplePoints: HOME_CANVAS_SAMPLE_POINTS })
+  return { ...sample, viewportCoverage: capture.viewportCoverage, bounds: capture.bounds,
+    capture, canvasPngFile, canvasPngSha256, canvasPngBytes: png.length }
 }
 
 async function waitForVisualEvidence(page, frameBudget = 240) {
@@ -164,6 +168,7 @@ async function capture(state, options = {}) {
   try {
     const response = await page.goto(`${base}/home/?${query}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
+    record.onboardingDismissal = await dismissHomeFirstRunGuide(page)
     await settleAnimationFrames(page, options.forcedColors === 'active' ? 24 : 60)
 
     record.status = response?.status()
@@ -259,6 +264,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     stage = 'home-ready'
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
+    record.onboardingDismissal = await dismissHomeFirstRunGuide(page)
     await page.waitForFunction(
       (selector) => Boolean(document.querySelector(selector)?.getAttribute('data-home-orb-state')),
       ownerSelector,
@@ -306,8 +312,41 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.keyboard.press('Enter')
     const message = page.getByLabel('Message for Orb').first()
     await message.waitFor({ state: 'visible', timeout: 20_000 })
+    await page.evaluate(() => {
+      const element = document.querySelector('#urai-orb-message')
+      if (!(element instanceof HTMLTextAreaElement)) throw new Error('Orb message target is missing')
+      element.dataset.uraiProofMessageTarget = 'true'
+    })
+    const inspectMessageActionability = () => page.evaluate(() => {
+      const control = document.querySelector('textarea[data-urai-proof-message-target="true"]')
+      if (!(control instanceof HTMLTextAreaElement)) throw new Error('Orb proof message target is missing')
+      const bounds = control.getBoundingClientRect()
+      const style = getComputedStyle(control)
+      const busyOwner = control.closest('[aria-busy]')
+      return {
+        disabled: control.disabled,
+        readOnly: control.readOnly,
+        ariaDisabled: control.getAttribute('aria-disabled'),
+        ariaBusy: busyOwner?.getAttribute('aria-busy') ?? null,
+        visible: bounds.width > 0 && bounds.height > 0 && style.visibility !== 'hidden' && style.display !== 'none',
+        activeElement: document.activeElement === control,
+      }
+    })
+    const focusMessageControl = () => page.evaluate(() => {
+      const control = document.querySelector('textarea[data-urai-proof-message-target="true"]')
+      if (!(control instanceof HTMLTextAreaElement)) throw new Error('Orb proof message target is missing')
+      const bounds = control.getBoundingClientRect()
+      const style = getComputedStyle(control)
+      if (control.disabled || control.readOnly || control.getAttribute('aria-disabled') === 'true'
+        || bounds.width <= 0 || bounds.height <= 0 || style.visibility === 'hidden' || style.display === 'none') {
+        throw new Error('Orb proof message target is not actionable')
+      }
+      control.focus()
+      if (document.activeElement !== control) throw new Error('Orb proof message target did not receive focus')
+      return true
+    })
     stage = 'focus-message'
-    await message.focus()
+    await focusMessageControl()
     await page.waitForFunction(
       (selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention',
       ownerSelector,
@@ -333,8 +372,24 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     if (!await consent.isChecked()) throw new Error('Native keyboard consent grant did not check the checkbox')
     record.consentInput = 'native-keyboard'
     record.consentGranted = true
-    await message.fill('Give me a short grounded reflection.')
-    await message.focus()
+    record.messageActionabilityAfterConsent = await inspectMessageActionability()
+    await page.waitForFunction((selector) => {
+      const control = document.querySelector(selector)
+      if (!(control instanceof HTMLTextAreaElement)) return false
+      const bounds = control.getBoundingClientRect()
+      const style = getComputedStyle(control)
+      return !control.disabled && !control.readOnly
+        && control.getAttribute('aria-disabled') !== 'true'
+        && bounds.width > 0 && bounds.height > 0
+        && style.visibility !== 'hidden' && style.display !== 'none'
+    }, 'textarea[data-urai-proof-message-target="true"]', { timeout: 90_000 })
+    record.messageActionabilityBeforeTyping = await inspectMessageActionability()
+    const reflectionPrompt = 'Give me a short grounded reflection.'
+    await focusMessageControl()
+    await page.keyboard.type(reflectionPrompt, { delay: 10 })
+    const typedReflection = await message.inputValue()
+    if (typedReflection !== reflectionPrompt) throw new Error('Native keyboard reflection input did not retain the exact prompt')
+    record.messageInput = 'native-keyboard'
     stage = 'send-text-response'
     await page.getByRole('button', { name: 'Send' }).focus()
     await page.keyboard.press('Enter')
@@ -452,18 +507,30 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.privacyClip = await owner.getAttribute('data-home-orb-clip')
     record.privacyAnimation = await owner.getAttribute('data-home-orb-animation')
 
+    // Retain the actual privacy UI while it is open. It intentionally covers
+    // the world and cannot satisfy the unobstructed-canvas evidence contract.
+    stage = 'capture-revoked-consent-ui'
+    record.privacyScreenshot = `${id}-privacy-${exactHead.slice(0, 12)}.png`
+    const privacyScreenshot = await page.screenshot({ path: path.join(outputDir, record.privacyScreenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+    record.privacyScreenshotBytes = privacyScreenshot.length
+    record.privacyScreenshotSha256 = createHash('sha256').update(privacyScreenshot).digest('hex')
+
+    stage = 'close-companion'
+    await page.keyboard.press('Escape')
+    await page.locator('#urai-world-companion-menu[aria-hidden="true"]').waitFor({ state: 'attached', timeout: 20_000 })
+    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'idle', ownerSelector)
+    record.closedState = await owner.getAttribute('data-home-orb-state')
+    record.closedClip = await owner.getAttribute('data-home-orb-clip')
+    record.closedAnimation = await owner.getAttribute('data-home-orb-animation')
+
+    stage = 'capture-closed-world'
+    record.focusedNavigationReadability = await inspectFocusedHomeNavigation(page)
+    if (!record.focusedNavigationReadability.passed) throw new Error('Actual focused Home destination labels are clipped, hidden or obstructed')
     record.visual = await waitForVisualEvidence(page)
     record.screenshot = `${id}-${exactHead.slice(0, 12)}.png`
     const screenshot = await page.screenshot({ path: path.join(outputDir, record.screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
     record.screenshotBytes = screenshot.length
     record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
-
-    stage = 'close-companion'
-    await page.keyboard.press('Escape')
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'idle', ownerSelector)
-    record.closedState = await owner.getAttribute('data-home-orb-state')
-    record.closedClip = await owner.getAttribute('data-home-orb-clip')
-    record.closedAnimation = await owner.getAttribute('data-home-orb-animation')
 
     const expectedAnimation = reducedMotion === 'reduce' ? 'orb-state-static' : null
     record.voiceQualificationPassed = record.voicePlayback?.available === true
@@ -489,6 +556,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       && record.privacyState === 'privacy'
       && record.privacyClip === 'Orb_Privacy'
       && record.privacyAnimation === (expectedAnimation ?? 'orb-privacy')
+      && record.privacyScreenshotBytes > 12_000
       && record.closedState === 'idle'
       && record.closedClip === 'Orb_Idle'
       && record.closedAnimation === (expectedAnimation ?? 'orb-breathe')
@@ -519,6 +587,30 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     if (!record.passed) receipt.errors.push(record)
     await context.close().catch(() => {})
     await browser.close().catch(() => {})
+  }
+}
+
+function matchesExpectedHomeDestination(href, expectedHref) {
+  if (typeof href !== 'string' || !href) return false
+  try {
+    const origin = new URL(base).origin
+    const actual = new URL(href, base)
+    const expected = new URL(expectedHref, base)
+    if (actual.origin !== origin || expected.origin !== origin
+      || actual.username || actual.password || actual.href.includes('#')
+      || expected.username || expected.password || expected.href.includes('#')) return false
+    // Next's server build omits the final slash; static export retains it.
+    // Preserve the route and every query entry while accepting either form.
+    const pathname = (url) => url.pathname.replace(/\/$/, '') || '/'
+    if (pathname(actual) !== pathname(expected)) return false
+    const entries = (url) => [...url.searchParams.entries()].sort(([leftKey, leftValue], [rightKey, rightValue]) =>
+      leftKey.localeCompare(rightKey) || leftValue.localeCompare(rightValue))
+    const actualEntries = entries(actual)
+    const expectedEntries = entries(expected)
+    return actualEntries.length === expectedEntries.length
+      && actualEntries.every(([key, value], index) => key === expectedEntries[index][0] && value === expectedEntries[index][1])
+  } catch {
+    return false
   }
 }
 
@@ -555,7 +647,9 @@ async function captureHomeAssetFailure(fixture) {
   await page.route(targetUrl, blockActualAssetRequest)
   try {
     // The query identifies the retained evidence only. The runtime does not read
-    // homeAssetFailure; the real useGLTF request is blocked above before preload.
+    // homeAssetFailure; the actual model or texture request is blocked above
+    // before its loader runs. Missing alpha and stone normal maps must fail
+    // visibly too, and retry must clear their actual loader cache entries.
     const query = `homeAssetReview=1&homeAssetFailure=${fixture.id}`
     const response = await page.goto(`${base}/home/?${query}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     record.status = response?.status()
@@ -575,8 +669,8 @@ async function captureHomeAssetFailure(fixture) {
     record.semanticDestinationsPassed = record.fallbackControls.length === 3
       && record.fallbackControls.every((control) => !control.disabled && control.width >= 48 && control.height >= 48)
       && record.fallbackControls.some((control) => control.label === 'Open URAI Orb companion')
-      && record.fallbackControls.some((control) => control.label === 'Open Ground directly' && control.href === '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent')
-      && record.fallbackControls.some((control) => control.label === 'Open Life Map directly' && control.href === '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete')
+      && record.fallbackControls.some((control) => control.label === 'Open Ground directly' && matchesExpectedHomeDestination(control.href, '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent'))
+      && record.fallbackControls.some((control) => control.label === 'Open Life Map directly' && matchesExpectedHomeDestination(control.href, '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete'))
     stage = 'fallback-orb-access'
     await navigation.getByTestId('home-semantic-orb').focus()
     await page.keyboard.press('Enter')
@@ -613,6 +707,7 @@ async function captureHomeAssetFailure(fixture) {
     record.recoveredAssetsReady = await owner.getAttribute('data-home-assets-ready')
     record.recoveredOwner = await owner.getAttribute('data-home-primary-owner')
     record.recoveredPointerLock = await page.evaluate(() => document.pointerLockElement === null)
+    record.onboardingDismissal = await dismissHomeFirstRunGuide(page)
     record.recoveredVisual = await waitForVisualEvidence(page)
     record.retryScreenshot = `${record.id}-retry-${exactHead.slice(0, 12)}.png`
     const retryScreenshot = await page.screenshot({ path: path.join(outputDir, record.retryScreenshot), animations: 'disabled', caret: 'hide', timeout: 90_000 })
@@ -643,8 +738,15 @@ async function captureHomeAssetFailure(fixture) {
   } catch (error) {
     record.error = String(error)
     record.failedStage = stage
-    record.failureScreenshot = `${record.id}-harness-failure-${exactHead.slice(0, 12)}.png`
-    await page.screenshot({ path: path.join(outputDir, record.failureScreenshot), timeout: 30_000 }).catch(() => {})
+    const harnessFailureScreenshot = `${record.id}-harness-failure-${exactHead.slice(0, 12)}.png`
+    try {
+      const screenshot = await page.screenshot({ path: path.join(outputDir, harnessFailureScreenshot), timeout: 30_000 })
+      record.harnessFailureScreenshot = harnessFailureScreenshot
+      record.harnessFailureScreenshotBytes = screenshot.length
+      record.harnessFailureScreenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
+    } catch (captureError) {
+      record.harnessFailureScreenshotError = String(captureError)
+    }
   } finally {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
@@ -656,47 +758,64 @@ async function captureHomeAssetFailure(fixture) {
 for (const fixture of [
   { id: 'sanctuary', asset: '/assets/urai/generated/models/home-entry-chamber-v1.glb', travelTestId: 'home-semantic-ground', destination: '/ground' },
   { id: 'orb', asset: '/assets/urai/generated/models/urai-orb-avatar-v1.glb', travelTestId: 'home-semantic-ground', destination: '/ground' },
-  { id: 'fern', asset: '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb', travelTestId: 'home-semantic-life-map', destination: '/life-map' },
+  { id: 'fern', asset: '/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf', travelTestId: 'home-semantic-life-map', destination: '/life-map' },
+  { id: 'fern-alpha', asset: '/assets/urai/home-production/cc0/polyhaven-v48/fern_02/textures/fern_02_alpha_1k.png', travelTestId: 'home-semantic-life-map', destination: '/life-map' },
+  { id: 'stone-normal', asset: '/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.webp', travelTestId: 'home-semantic-ground', destination: '/ground' },
 ]) await captureHomeAssetFailure(fixture)
 
-for (const state of states) await capture(state)
-await capture({ id: 'reduced-motion', query: 'homePrivateFixture=1' }, { reducedMotion: 'reduce' })
-await capture({ id: 'forced-colors', query: 'homePrivateFixture=1' }, { forcedColors: 'active' })
-await captureOrbLifecycle()
-await captureOrbLifecycle({ reducedMotion: 'reduce' })
+if (proofScope === 'full') {
+  for (const state of states) await capture(state)
+  await capture({ id: 'reduced-motion', query: 'homePrivateFixture=1' }, { reducedMotion: 'reduce' })
+  await capture({ id: 'forced-colors', query: 'homePrivateFixture=1' }, { forcedColors: 'active' })
+  await captureOrbLifecycle()
+  await captureOrbLifecycle({ reducedMotion: 'reduce' })
 
-const transitionBrowser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-const transitionContext = await transitionBrowser.newContext({ viewport: { width: 1440, height: 900 } })
-const transitionPage = await transitionContext.newPage()
-const transitionErrors = []
-transitionPage.on('pageerror', (error) => transitionErrors.push(String(error)))
-const transition = { id: 'home-real-offline-transition', pageErrors: transitionErrors, passed: false }
-try {
-  const response = await transitionPage.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
-  const owner = await waitForHomeReady(transitionPage)
-  await transitionContext.setOffline(true)
-  await transitionPage.evaluate(() => window.dispatchEvent(new Event('offline')))
-  await settleAnimationFrames(transitionPage, 30)
-  transition.status = response?.status()
-  transition.canvasReady = await owner.getAttribute('data-home-assets-ready')
-  transition.primaryOwner = await owner.getAttribute('data-home-primary-owner')
-  transition.visibleWorld = await owner.getAttribute('data-home-visible-world')
-  transition.pointerLock = await transitionPage.evaluate(() => document.pointerLockElement === null)
-  transition.passed = transition.status === 200
-    && transition.canvasReady === 'true'
-    && transition.primaryOwner === 'asset-driven'
-    && transition.visibleWorld === 'authored-coherent-three-dimensional-sanctuary'
-    && transition.pointerLock
-    && transitionErrors.length === 0
-} catch (error) {
-  transition.error = String(error)
-} finally {
-  await transitionContext.setOffline(false).catch(() => {})
-  await transitionContext.close().catch(() => {})
-  await transitionBrowser.close().catch(() => {})
-  receipt.captures.push(transition)
-  if (!transition.passed) receipt.errors.push(transition)
+  const transitionBrowser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
+  const transitionContext = await transitionBrowser.newContext({ viewport: { width: 1440, height: 900 } })
+  const transitionPage = await transitionContext.newPage()
+  const transitionErrors = []
+  transitionPage.on('pageerror', (error) => transitionErrors.push(String(error)))
+  const transition = { id: 'home-real-offline-transition', pageErrors: transitionErrors, passed: false }
+  try {
+    const response = await transitionPage.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    const owner = await waitForHomeReady(transitionPage)
+    transition.onboardingDismissal = await dismissHomeFirstRunGuide(transitionPage)
+    await transitionContext.setOffline(true)
+    await transitionPage.evaluate(() => window.dispatchEvent(new Event('offline')))
+    await settleAnimationFrames(transitionPage, 30)
+    transition.status = response?.status()
+    transition.canvasReady = await owner.getAttribute('data-home-assets-ready')
+    transition.primaryOwner = await owner.getAttribute('data-home-primary-owner')
+    transition.visibleWorld = await owner.getAttribute('data-home-visible-world')
+    transition.pointerLock = await transitionPage.evaluate(() => document.pointerLockElement === null)
+    transition.passed = transition.status === 200
+      && transition.canvasReady === 'true'
+      && transition.primaryOwner === 'asset-driven'
+      && transition.visibleWorld === 'authored-coherent-three-dimensional-sanctuary'
+      && transition.pointerLock
+      && transitionErrors.length === 0
+  } catch (error) {
+    transition.error = String(error)
+  } finally {
+    await transitionContext.setOffline(false).catch(() => {})
+    await transitionContext.close().catch(() => {})
+    await transitionBrowser.close().catch(() => {})
+    receipt.captures.push(transition)
+    if (!transition.passed) receipt.errors.push(transition)
+  }
+}
+
+if (receipt.captures.length !== receipt.expectedCaptureCount) {
+  receipt.errors.push({
+    id: 'home-proof-capture-count',
+    scope: proofScope,
+    expected: receipt.expectedCaptureCount,
+    actual: receipt.captures.length,
+    error: 'Home proof did not produce the exact number of captures required by its declared scope',
+  })
 }
 
 await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 if (receipt.errors.length) process.exit(1)
+
+

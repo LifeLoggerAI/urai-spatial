@@ -1,3 +1,6 @@
+import DocumentScrollArea from '@/components/public/DocumentScrollArea'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+
 export const metadata = {
   title: 'URAI Account Deletion',
   description: 'How to request deletion of your URAI account and repository-controlled personal data.',
@@ -5,7 +8,7 @@ export const metadata = {
 
 export default function AccountDeletionPage() {
   return (
-    <main
+    <DocumentScrollArea
       aria-labelledby="account-deletion-heading"
       style={{
         minHeight: '100dvh',
@@ -62,8 +65,9 @@ export default function AccountDeletionPage() {
           <a href="/privacy-controls" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', color: 'inherit' }}>Privacy & Consent</a>
           <a href="/support" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', color: 'inherit' }}>Support</a>
           <a href="/" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', color: 'inherit' }}>Return Home</a>
+          <AdamLauncherSlot name="account-deletion" />
         </nav>
       </section>
-    </main>
+    </DocumentScrollArea>
   )
 }

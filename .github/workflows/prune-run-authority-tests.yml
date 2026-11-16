@@ -1,0 +1,25 @@
+name: Prune run authority regression
+on:
+  pull_request:
+    paths:
+      - scripts/ci/prune-stale-release-runs*
+      - .github/workflows/prune-stale-release-runs.yml
+      - .github/workflows/prune-run-authority-tests.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  authority:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify source identity
+        env:
+          TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+      - name: Test live-head cancellation authority without API mutations
+        run: node --test scripts/ci/prune-stale-release-runs.test.cjs

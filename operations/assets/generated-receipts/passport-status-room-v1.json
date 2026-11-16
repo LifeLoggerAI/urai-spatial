@@ -8,22 +8,48 @@
   "bytes": 347512,
   "sha256": "15f1f7634389994715e4f263eecf67731b52a8e9ef62a22eae889b6054213257",
   "measured": {
+    "format": "glb",
+    "version": 2,
+    "generator": "URAI Labs Final GLB Forge 1.0",
+    "nodes": 48,
+    "meshes": 7,
+    "materials": 8,
     "triangleCount": 7878,
-    "nodeCount": 48,
-    "materialCount": 8,
-    "animationClips": [
-      "Passport_Idle",
-      "Passport_Grant",
-      "Status_Pulse",
-      "Privacy_Lock"
-    ]
+    "boundsMin": [
+      -9,
+      -1.3199995756149292,
+      -9
+    ],
+    "boundsMax": [
+      9,
+      5.49527645111084,
+      9
+    ],
+    "boundsMeters": [
+      18,
+      6.815,
+      18
+    ],
+    "extensionsUsed": [
+      "KHR_materials_clearcoat",
+      "KHR_materials_emissive_strength",
+      "KHR_materials_transmission"
+    ],
+    "extensionsRequired": []
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "uncompressed-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "semantic-passport-status-room",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "license": "URAI Labs internal production asset",
   "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Passport identity-core pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
   "generatedAt": "2026-08-09T00:09:34.176Z",
-  "releaseState": "candidate-not-production-ready"
+  "releaseState": "candidate-not-production-ready",
+  "measurementReconciliation": {
+    "sourceSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
+    "observedAt": "2026-10-06T17:20:57.485073+00:00",
+    "method": "audit-launch-critical-artifact.mjs actual-byte inspection",
+    "assetBytesChanged": false,
+    "finalReviewGranted": false
+  }
 }

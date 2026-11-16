@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
 const root = process.cwd()
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
@@ -12,6 +13,7 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
+const recoveredFern = read('src/spatial/assets/useRecoveredFernAsset.ts')
 const embodiedNavigation = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
@@ -50,7 +52,7 @@ test('Home remains one embodied authored natural sanctuary 3D environment with a
     'HomeWorldProductionPolished',
     'Stars',
     'home-entry-chamber-v1.glb',
-    'polyhaven-fern-02-geometry-v1.glb',
+    'useRecoveredFernAsset',
     'living-orb',
     'reflecting-water',
     'data-home-primary-owner="asset-driven"',
@@ -96,8 +98,8 @@ test('Home remains one embodied authored natural sanctuary 3D environment with a
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
   assert.match(companion, /publishOrbState\('attention', 'companion'\)/)
   assert.match(companion, /publishOrbState\('transition', 'companion'\)/)
-  assert.match(homeProduction, /const HOME_FERN_MODEL = '\/assets\/urai\/home-production\/cc0\/polyhaven-fern-02-geometry-v1\.glb'/)
-  assert.match(homeProduction, /useGLTF\(HOME_FERN_MODEL\)/)
+  assert.match(recoveredFern, /RECOVERED_FERN_MODEL = '\/assets\/urai\/home-production\/cc0\/polyhaven-v48\/fern_02\/asset\.gltf'/)
+  assert.match(homeProduction, /useRecoveredFernAsset\(\)/)
   assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })
@@ -106,10 +108,12 @@ test('Home remains one embodied authored natural sanctuary 3D environment with a
 test('Home telemetry and continuous proof stay aligned to the polished interaction geometry', () => {
   const runtimeMarkers = [
     "const SPAWN = new THREE.Vector3(-0.85, 0, 8.4)",
-    "const ORB = new THREE.Vector3(0, 0.82, -4.25)",
+    "const ORB = new THREE.Vector3(1.8, 0.82, -9.5)",
     "const GROUND_THRESHOLD = new THREE.Vector3(-5.4, 0, -10.8)",
     "const LIFE_MAP_LOOKOUT = new THREE.Vector3(5.4, 0, -10.8)",
-    "['orb', ORB, 2.4]",
+    "['orb', orbAnchor, 2.4]",
+    "const W13_V3_ORB = new THREE.Vector3(0.1, 1.42, -1.9)",
+    "const orbAnchor = props.previewW13V3 ? W13_V3_ORB : ORB",
     "['ground', GROUND_THRESHOLD, 2.8]",
     "['life-map', LIFE_MAP_LOOKOUT, 2.8]",
   ]
@@ -117,21 +121,27 @@ test('Home telemetry and continuous proof stay aligned to the polished interacti
 
   for (const marker of [
     "HOME_SPAWN = { x: -0.85, z: 8.4 }",
-    "HOME_ORB = { x: 0, z: -4.25 }",
+    "Number.parseFloat(world.dataset.homeOrbAnchorX",
+    "Number.parseFloat(world.dataset.homeOrbAnchorZ",
     "HOME_GROUND = { x: -5.4, z: -10.8 }",
     "HOME_LIFE_MAP = { x: 5.4, z: -10.8 }",
   ]) assert.ok(includesCanonical(assetHome, marker), `stale AssetDrivenHomeWorld telemetry: ${marker}`)
+  assert.doesNotMatch(assetHome, /HOME_ORB\s*=\s*\{\s*x:\s*1\.8,\s*z:\s*-9\.5\s*\}/)
 
   for (const marker of [
     "const spawnX = -0.85",
     "const spawnZ = 8.4",
-    "position.z + 4.25",
-    "position.x + 5.4, position.z + 10.8",
-    "position.x - 5.4, position.z + 10.8",
+    "const playerX = position.x.toFixed(4)",
+    "playerZ = position.z.toFixed(4)",
+    "const telemetryX = Number(playerX)",
+    "telemetryZ = Number(playerZ)",
+    "telemetryX - 1.8, telemetryZ + 9.5",
+    "telemetryX + 5.4, telemetryZ + 10.8",
+    "telemetryX - 5.4, telemetryZ + 10.8",
   ]) assert.ok(includesCanonical(embodiedNavigation, marker), `stale movement telemetry: ${marker}`)
 
   for (const marker of [
-    "orb: { x: 0, z: -4.25, radius: 2.4",
+    "orb: { x: 1.8, z: -9.5, radius: 2.4",
     "ground: { x: -5.4, z: -10.8, radius: 2.8",
     "'life-map': { x: 5.4, z: -10.8, radius: 2.8",
     "result.orbClip === orbClips[expected.orbState]",
@@ -139,7 +149,7 @@ test('Home telemetry and continuous proof stay aligned to the polished interacti
 })
 
 test('Home Life Map entry is one canonical sky ascent transaction with one camera authority and a closing handoff', () => {
-  assert.match(sceneStore, /enterLifeMap: \(\) => set\(\{ mode: "ASCENT", sceneMode: "ASCENT", phase: "ASCENT", isTransitioning: true, inputLocked: true, progress: 0 \}\)/)
+  assert.match(sceneStore, /enterLifeMap: \(\) => set\(\{ mode: "ASCENT", sceneMode: "ASCENT", phase: "ASCENT", isTransitioning: true, inputLocked: true, progress: 0, selectedStarId: null, selectedStarPosition: null \}\)/)
   assert.match(worldEvents, /function shouldBeginHomeAscent/)
   assert.match(worldEvents, /function markHomeAscentClosing/)
   assert.match(worldEvents, /request\.entryPortal !== 'home-sky'/)
@@ -200,6 +210,17 @@ test('browser proof and supplemental state proof cover required exact-head evide
   for (const marker of ["schemaVersion: 'urai-continuous-spatial-visual-proof-18'", "id: 'home-normal-root'", "id: 'home-normal-home'", 'portrait-mobile', 'landscape-mobile', 'homeOrbState', 'Orb_Resting', 'Orb_Transition', 'recordVideo', 'home-pointer-look-desktop', 'capturePortal', 'home-no-webgl-fallback', 'receipt.json']) assert.ok(proof.includes(marker), `missing primary proof marker: ${marker}`)
   for (const marker of ["schemaVersion: 'urai-home-state-proof-6'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'orb-lifecycle-production-ui', 'orb-lifecycle-reduced-motion', '__uraiObservedOrbStates', "'thinking'", "'speaking'", 'orb-state-static', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
   assert.doesNotMatch(`${proof}\n${stateProof}`, /waitForTimeout/)
+  const pointerLookStart = proof.indexOf('async function capturePointerLook(')
+  const pointerLookEnd = proof.indexOf('\nasync function capturePortalSequence(', pointerLookStart)
+  assert.ok(pointerLookStart >= 0 && pointerLookEnd > pointerLookStart, 'pointer-look proof boundaries are present')
+  const pointerLook = proof.slice(pointerLookStart, pointerLookEnd)
+  assert.ok(pointerLook.includes('const box = await page.evaluate((selector) => {'))
+  assert.ok(pointerLook.includes("await page.mouse.down({ button: 'left' })"))
+  assert.ok(pointerLook.includes('await page.mouse.move(box.x + box.width * 0.64, box.y + box.height * 0.42, { steps: 4 })'))
+  assert.ok(pointerLook.includes("await page.mouse.up({ button: 'left' })"))
+  assert.ok(!pointerLook.includes('canvas.boundingBox('))
+  assert.ok(!pointerLook.includes('canvas.evaluate('))
+  assert.ok(!pointerLook.includes('canvas.dispatchEvent('))
   assert.match(stateProof, /settleAnimationFrames\(page, frameCount, timeoutMs = 15_000\)/)
   assert.match(stateProof, /window\.setTimeout\(\(\) => finish\(true\), timeoutMs\)/)
   assert.doesNotMatch(stateProof, /gl\.readPixels/)
@@ -220,7 +241,9 @@ test('Home environmental thresholds and generated manifest filter remain observa
   assert.match(homeProduction, /home-life-map-sky-lookout/)
   assert.ok(includesCanonical(homeProduction, "destination: 'infrastructure-hub'"))
   assert.ok(includesCanonical(homeProduction, "destination: 'life-map'"))
-  assert.match(homeProduction, /Look to the sky/)
+  assert.match(homeProduction, /nearby === 'life-map' \? 'home.skyNearby'/)
+  assert.match(homeProduction, /locale.text\(contextId\)/)
+  assert.equal(URAI_SOURCE_MESSAGES['home.skyNearby'].source, 'Look to the sky')
   assert.ok(hostStableProof.includes('const manifestRegexSource = String.raw`&& /^\\/assets\\/urai'))
   assert.ok(hostStableProof.includes('const escapedManifestRegexSource = String.raw`&& /^\\\\/assets\\\\/urai'))
   assert.ok(hostStableProof.includes('.replace(manifestRegexSource, escapedManifestRegexSource)'))

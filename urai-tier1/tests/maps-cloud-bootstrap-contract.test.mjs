@@ -8,12 +8,13 @@ const policyPath = '../operations/maps/geographic-maps-launch-policy.json'
 const workflow = fs.readFileSync(workflowPath, 'utf8')
 const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'))
 
-test('targets only the canonical project and two governed Maps APIs', () => {
+test('targets only the canonical project and three governed Maps APIs', () => {
   assert.match(workflow, /EXPECTED_PROJECT_ID: urai-4dc1d/)
-  assert.match(workflow, /maps-backend\.googleapis\.com geocoding-backend\.googleapis\.com/)
+  assert.match(workflow, /maps-backend\.googleapis\.com geocoding-backend\.googleapis\.com elevation-backend\.googleapis\.com/)
+  assert.equal((workflow.match(/\^\(maps-backend\|geocoding-backend\|elevation-backend\)\\\.googleapis\\\.com\$/g) || []).length, 3)
   assert.doesNotMatch(workflow, /places-backend\.googleapis\.com/)
   assert.doesNotMatch(workflow, /routes\.googleapis\.com/)
-  assert.deepEqual(policy.apiAllowlist, ['maps-javascript-api', 'geocoding-api'])
+  assert.deepEqual(policy.apiAllowlist, ['maps-javascript-api', 'geocoding-api', 'elevation-api'])
 })
 
 test('requires explicit main-only confirmation before mutation', () => {

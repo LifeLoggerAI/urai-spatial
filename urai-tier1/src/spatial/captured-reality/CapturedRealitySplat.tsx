@@ -3,6 +3,7 @@
 import { OwnedCapturedRealitySplat } from './OwnedCapturedRealitySplat'
 import { CAPTURED_REALITY_QUALITY_PROFILES } from './capturedRealityRuntime'
 import type { CapturedRealityRenderDecision } from './capturedReality'
+import type { CapturedRealityStreamAuthority } from './capturedRealityDelivery'
 
 export type CapturedRealitySplatProps = {
   decision: CapturedRealityRenderDecision
@@ -13,6 +14,7 @@ export type CapturedRealitySplatProps = {
   chunkSize?: number
   alphaHash?: boolean
   onRenderReady?: (src: string) => void
+  authority?: CapturedRealityStreamAuthority
 }
 
 /**
@@ -23,7 +25,7 @@ export type CapturedRealitySplatProps = {
  * before the renderer is allowed to see a URL.
  *
  * The private captured-reality route mounts this adapter only after owner,
- * consent, release and signed-delivery gates succeed. Visual acceptance and
+ * consent, release and authenticated-delivery gates succeed. Visual acceptance and
  * device certification remain separate exact-head gates.
  */
 export function CapturedRealitySplat({
@@ -35,6 +37,7 @@ export function CapturedRealitySplat({
   chunkSize,
   alphaHash = true,
   onRenderReady,
+  authority,
 }: CapturedRealitySplatProps) {
   if (decision.mode !== 'gaussian-splat' || !decision.assetUrl) return null
 
@@ -49,7 +52,7 @@ export function CapturedRealitySplat({
         autobiographical: decision.autobiographical,
       }}
     >
-      <OwnedCapturedRealitySplat src={decision.assetUrl} maxBytes={maxBytes} chunkSize={chunkSize} alphaHash={alphaHash} onRenderReady={onRenderReady} />
+      <OwnedCapturedRealitySplat src={decision.assetUrl} maxBytes={maxBytes} chunkSize={chunkSize} alphaHash={alphaHash} onRenderReady={onRenderReady} authority={authority} />
     </group>
   )
 }

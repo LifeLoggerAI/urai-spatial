@@ -23,7 +23,7 @@ let
   ];
 in {
   channel = "stable-24.05";
-  packages = [ pkgs.nodejs_20 ] ++ runtimeLibs;
+  packages = [ pkgs.nodejs_22 ] ++ runtimeLibs;
   env = {
     LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath runtimeLibs;
   };

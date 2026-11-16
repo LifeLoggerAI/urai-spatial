@@ -9,6 +9,18 @@ export const URAI_HOME_ASCENT_EVENT = 'urai:home-ascent'
 const WORLD_TRAVEL_DEBOUNCE_MS = 1500
 const WORLD_TRAVEL_FALLBACK_MS = 2400
 const WORLD_TRAVEL_OBSERVE_MS = 50
+const WORLD_TRAVEL_CONTEXT_KEYS = [
+  'memoryId',
+  'node',
+  'thread',
+  'personId',
+  'placeId',
+  'manifestId',
+  'movieId',
+  'chapterId',
+  'privacyMode',
+  'demo',
+] as const
 let lastTravelFingerprint = ''
 let lastTravelAt = 0
 
@@ -19,17 +31,40 @@ function dispatchSpatialAudioCue(cue: 'transition' | 'orb-confirm' | 'error') {
 function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (!request.href || typeof window === 'undefined') return request.href
   const target = new URL(request.href, window.location.origin)
-  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
-  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
-
+  const current = new URLSearchParams(window.location.search)
   const context = request.context
-  if (context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
+  const selectedMemoryId = context?.memoryId ?? target.searchParams.get('memoryId')
+  const currentMemoryId = current.get('memoryId')
+  const sameMemory = Boolean(selectedMemoryId && currentMemoryId && selectedMemoryId === currentMemoryId)
+  const memoryDestination = request.destination === 'life-map' || request.destination === 'focus'
+    || request.destination === 'replay' || request.destination === 'council'
+    || request.destination === 'life-movie'
+  // Match the canonical WorldTransitionController: visual node and private
+  // memory identities are separate even when its delayed hard fallback runs.
+  for (const key of WORLD_TRAVEL_CONTEXT_KEYS) {
+    if (key === 'memoryId' && (!memoryDestination || !selectedMemoryId)) continue
+    if ((key === 'node' || key === 'manifestId' || key === 'movieId' || key === 'chapterId' || key === 'demo') && (!memoryDestination || !sameMemory)) continue
+    // Relationship hints from an old memory never scope a different selection.
+    if ((key === 'thread' || key === 'personId' || key === 'placeId') && selectedMemoryId && currentMemoryId && !sameMemory) continue
+    if (!target.searchParams.has(key) && current.has(key)) {
+      target.searchParams.set(key, current.get(key) ?? '')
+    }
+  }
+  if (!memoryDestination) {
+    target.searchParams.delete('memoryId')
+    target.searchParams.delete('node')
+    target.searchParams.delete('manifestId')
+    target.searchParams.delete('movieId')
+    target.searchParams.delete('chapterId')
+    target.searchParams.delete('demo')
+  }
+  if (memoryDestination && context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
-  if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
-  if (context?.movieId) target.searchParams.set('movieId', context.movieId)
-  if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
+  if (memoryDestination && context?.replayManifestId && selectedMemoryId) target.searchParams.set('manifestId', context.replayManifestId)
+  if (memoryDestination && context?.movieId) target.searchParams.set('movieId', context.movieId)
+  if (memoryDestination && context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
   if (context?.originRealm) target.searchParams.set('originRealm', context.originRealm)
   if (context?.returnToken) target.searchParams.set('returnToken', context.returnToken)
@@ -39,15 +74,31 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.scenarioBasisRevision !== undefined) target.searchParams.set('basisRevision', String(context.scenarioBasisRevision))
   if (context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
   if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
+  if (memoryDestination && context?.demo && (!selectedMemoryId || !currentMemoryId || sameMemory)) target.searchParams.set('demo', '1')
+  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
+  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
   return `${target.pathname}${target.search}${target.hash}`
 }
 
 function commitHardFallback(href: string) {
-  // Commit exactly one browser-history entry. The previous pushState + reload
-  // sequence could race the client router and leave duplicate destination
-  // entries, causing one Back action to remain on the destination route.
+  // Commit exactly one browser-history entry. If the client router already moved
+  // the URL but failed to mount the destination surface, assigning the same URL
+  // may not create a fresh document. Force a reload only in that stalled case.
+  const target = new URL(href, window.location.origin)
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  const targetLocation = `${target.pathname}${target.search}${target.hash}`
+  if (current === targetLocation) {
+    window.location.reload()
+    return
+  }
   window.location.assign(href)
+}
+
+export function destinationSurfaceReady(destination: UraiWorldTravelRequest['destination']) {
+  if (destination === 'replay') return Boolean(document.querySelector('[data-testid="cinematic-replay-client"]'))
+  if (destination === 'passport') return Boolean(document.querySelector('main[data-route-owner="passport-ownership-vault"]'))
+  return true
 }
 
 function shouldBeginHomeAscent(request: UraiWorldTravelRequest) {
@@ -104,12 +155,12 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
     settled = true
     if (observer) window.clearInterval(observer)
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) commitHardFallback(fallbackHref)
+    if (currentLocation === startingLocation || !destinationSurfaceReady(request.destination)) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
 
   observer = window.setInterval(() => {
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) return
+    if (currentLocation === startingLocation || !destinationSurfaceReady(request.destination)) return
     settled = true
     window.clearTimeout(fallback)
     window.clearInterval(observer)
@@ -118,6 +169,11 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
 
 export function requestUraiWorldReturn() {
   if (typeof window === 'undefined') return
+  // A real return ends the prior journey. Keep duplicate-click protection
+  // within one traversal, but never suppress a new Focus -> Replay entry just
+  // because the user legitimately returned in under 1.5 seconds.
+  lastTravelFingerprint = ''
+  lastTravelAt = 0
   dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new Event(URAI_WORLD_RETURN_EVENT))
 }

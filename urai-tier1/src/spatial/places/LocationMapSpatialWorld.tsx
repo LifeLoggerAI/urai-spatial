@@ -39,9 +39,9 @@ function makeTerrainGeometry() {
   geometry.rotateX(-Math.PI / 2)
   const position = geometry.attributes.position as THREE.BufferAttribute
   const colors = new Float32Array(position.count * 3)
-  const low = new THREE.Color('#102924')
-  const mid = new THREE.Color('#274b43')
-  const high = new THREE.Color('#52685d')
+  const low = new THREE.Color('#213f39')
+  const mid = new THREE.Color('#426a5c')
+  const high = new THREE.Color('#819084')
   const color = new THREE.Color()
   for (let index = 0; index < position.count; index += 1) {
     const x = position.getX(index)
@@ -84,7 +84,7 @@ function makePathGeometry(points: LocationAtlasWorldPoint[]) {
     const z = (point.y - 50) * .17
     return new THREE.Vector3(x, terrainHeight(x, z) + .055, z)
   }), false, 'catmullrom', .25)
-  return new THREE.TubeGeometry(curve, Math.max(24, ordered.length * 10), .018, 5, false)
+  return new THREE.TubeGeometry(curve, Math.max(24, ordered.length * 10), .028, 8, false)
 }
 
 const TERRAIN = makeTerrainGeometry()
@@ -122,11 +122,11 @@ function PlaceWeather({ point, reducedMotion }: { point: LocationAtlasWorldPoint
     <pointLight color={point.color} intensity={strength * 2.4} distance={point.selected ? 8.5 : 5.8} decay={2} position={[0, .62, 0]} />
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .018, 0]}>
       <circleGeometry args={[point.selected ? .62 : .34, 48]} />
-      <meshBasicMaterial color={point.color} transparent opacity={point.selected ? .2 : .085} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+      <meshBasicMaterial color={point.color} transparent opacity={point.selected ? .32 : .16} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </mesh>
-    <mesh position={[0, .16, 0]} scale={[point.selected ? .15 : .09, point.selected ? .42 : .24, point.selected ? .15 : .09]}>
+    <mesh position={[0, .24, 0]} scale={[point.selected ? .19 : .13, point.selected ? .5 : .34, point.selected ? .19 : .13]}>
       <sphereGeometry args={[1, 24, 20]} />
-      <meshBasicMaterial color={point.color} transparent opacity={point.selected ? .42 : .22} depthWrite={false} toneMapped={false} />
+      <meshBasicMaterial color={point.color} transparent opacity={point.selected ? .85 : .58} depthWrite={false} toneMapped={false} />
     </mesh>
   </group>
 }
@@ -135,9 +135,9 @@ function AtlasWorld({ camera, points, selectedColor, reducedMotion }: Props) {
   const path = useMemo(() => makePathGeometry(points), [points])
   return <>
     <color attach="background" args={['#06110f']} />
-    <fogExp2 attach="fog" args={['#0a1c1b', .035]} />
-    <ambientLight intensity={.34} color="#c5e2dc" />
-    <hemisphereLight args={['#bde4df', '#07110d', .78]} />
+    <fogExp2 attach="fog" args={['#142e2b', .022]} />
+    <ambientLight intensity={.52} color="#c5e2dc" />
+    <hemisphereLight args={['#bde4df', '#142a20', .95]} />
     <directionalLight position={[8, 14, 8]} intensity={1.45} color="#dce9df" castShadow />
     <pointLight position={[0, 7, -3]} intensity={1.8} distance={24} color={selectedColor} />
     <Stars radius={84} depth={36} count={reducedMotion ? 150 : 420} factor={1.4} fade speed={reducedMotion ? 0 : .012} />
@@ -149,7 +149,7 @@ function AtlasWorld({ camera, points, selectedColor, reducedMotion }: Props) {
       <meshPhysicalMaterial color="#28585a" roughness={.22} clearcoat={.55} clearcoatRoughness={.2} transparent opacity={.68} />
     </mesh>
     <mesh geometry={path} name="location-map-memory-route-thread">
-      <meshBasicMaterial color="#b5ebe3" transparent opacity={.16} toneMapped={false} />
+      <meshBasicMaterial color="#b5ebe3" transparent opacity={.55} toneMapped={false} />
     </mesh>
     {points.map((point) => <PlaceWeather key={point.id} point={point} reducedMotion={reducedMotion} />)}
   </>

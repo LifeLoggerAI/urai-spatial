@@ -13,7 +13,7 @@ const adapter = fs.readFileSync(new URL('../src/spatial/captured-reality/Capture
 
 test('browser launch budgets are explicit and mobile is more constrained than desktop', () => {
   assert.equal(CAPTURED_REALITY_QUALITY_PROFILES.mobile.targetFps, 30)
-  assert.equal(CAPTURED_REALITY_QUALITY_PROFILES.desktop.targetFps, 45)
+  assert.equal(CAPTURED_REALITY_QUALITY_PROFILES.desktop.targetFps, 50)
   assert.ok(CAPTURED_REALITY_QUALITY_PROFILES.mobile.maxRuntimeBytes < CAPTURED_REALITY_QUALITY_PROFILES.desktop.maxRuntimeBytes)
 })
 
@@ -56,7 +56,7 @@ test('XR never inherits browser readiness without a physical-device receipt', ()
   const desktop = {
     tier: 'desktop',
     runtimeBytes: 32 * 1024 * 1024,
-    sustainedFps: 60,
+    sustainedFps: 60, firstInteractiveMs: 1000, minimumFps: 50,
     sampleSeconds: 60,
     deviceLabel: 'desktop-proof',
     measuredAt: '2026-09-25T00:00:00Z',
@@ -66,6 +66,22 @@ test('XR never inherits browser readiness without a physical-device receipt', ()
   assert.equal(result.mobileReady, false)
   assert.equal(result.xrReady, false)
   assert.ok(result.xrErrors.includes('XR_DEVICE_RECEIPT_MISSING'))
+})
+
+test('first interactive timing and the desktop route lower bound are required for certification', () => {
+  const receipt = {
+    tier: 'desktop', runtimeBytes: 32, sustainedFps: 60, sampleSeconds: 60,
+    deviceLabel: 'synthetic control receipt', measuredAt: '2026-10-08T00:00:00Z',
+    firstInteractiveMs: 12_000, minimumFps: 40,
+  }
+  assert.deepEqual(validateCapturedRealityPerformanceReceipt(receipt), [])
+  assert.ok(validateCapturedRealityPerformanceReceipt({ ...receipt, firstInteractiveMs: undefined }).includes('FIRST_INTERACTIVE_MEASUREMENT_REQUIRED'))
+  assert.ok(validateCapturedRealityPerformanceReceipt({ ...receipt, firstInteractiveMs: 12_001 }).includes('FIRST_INTERACTIVE_OVER_BUDGET'))
+  assert.ok(validateCapturedRealityPerformanceReceipt({ ...receipt, minimumFps: 39.99 }).includes('PRIMARY_ROUTE_MINIMUM_FPS_BELOW_BUDGET'))
+  assert.ok(validateCapturedRealityPerformanceReceipt({ ...receipt, minimumFps: undefined }).includes('PRIMARY_ROUTE_MINIMUM_FPS_BELOW_BUDGET'))
+  assert.ok(validateCapturedRealityPerformanceReceipt({ ...receipt, sustainedFps: 49.99 }).includes('SUSTAINED_FPS_BELOW_BUDGET'))
+  assert.deepEqual(validateCapturedRealityPerformanceReceipt({ ...receipt, tier: 'mobile', sustainedFps: 30, firstInteractiveMs: 18_000 }), [])
+  assert.ok(validateCapturedRealityPerformanceReceipt({ ...receipt, tier: 'mobile', firstInteractiveMs: 18_001 }).includes('FIRST_INTERACTIVE_OVER_BUDGET'))
 })
 
 test('private scene always exposes exit, truth, provenance and non-spatial accessibility copy', () => {

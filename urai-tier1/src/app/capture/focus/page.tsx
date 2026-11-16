@@ -1,24 +1,23 @@
-import MemoryStarArtifact from '@/spatial/memory/MemoryStarArtifact'
-import { buildMemoryMorphology } from '@/spatial/memory/memoryMorphology'
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import InstitutionalPublicSurface from '../../InstitutionalPublicSurface'
 
 export default function CinematicFocusCaptureRoute() {
-  const morphology = buildMemoryMorphology(null, 'recovery')
+  const router = useRouter()
+
+  useEffect(() => {
+    // Keep selected-memory, source, and explicit demo context from this entry URL.
+    router.replace(`/focus${window.location.search}${window.location.hash}`)
+  }, [router])
 
   return (
-    <main className="urai-capture-focus" data-capture-mode="true" data-memory-state={morphology.state} data-memory-tone={morphology.tone}>
-      <div className="urai-capture-focus__field" aria-hidden="true" />
-      <section className="urai-capture-focus__copy" aria-label="URAI focus state">
-        <div className="urai-capture-focus__eyebrow">{morphology.systemLabel}</div>
-        <h1>A memory star, opened gently.</h1>
-        <p>{morphology.poeticLine}</p>
-      </section>
-      <MemoryStarArtifact morphology={morphology} />
-      <section className="urai-capture-focus__action" aria-label="Selected memory star">
-        <div className="urai-capture-focus__eyebrow">Memory Star Open</div>
-        <h2>{morphology.title}</h2>
-        <p>This star is open. Start replay to enter the memory stream.</p>
-        <div className="urai-capture-focus__button">Start Replay</div>
-      </section>
-    </main>
+    <InstitutionalPublicSurface
+      eyebrow="UrAi · Focus"
+      title="Opening your memory star."
+      lede="Focus is the place to explore a selected memory and enter Replay."
+      links={[{ href: '/focus', label: 'Open Focus', primary: true }, { href: '/life-map', label: 'Return to Life Map' }]}
+    />
   )
 }

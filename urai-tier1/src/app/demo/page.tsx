@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import CutOneReplayFilmPage from './replay-film/page'
+import './replay-film/aaa-mobile.css'
 
 export const metadata = {
   title: 'URAI in 60 Seconds | Spatial AI Memory World',
@@ -13,5 +14,5 @@ function publicDemoRouteExplicitlyDisabled() {
 
 export default function DemoPage() {
   if (publicDemoRouteExplicitlyDisabled()) notFound()
-  return <CutOneReplayFilmPage />
+  return <div className="urai-replay-film-route"><CutOneReplayFilmPage /></div>
 }

@@ -49,6 +49,12 @@ export type UraiWorldState = {
   demo?: boolean
 }
 
+// Focus is the outward step between Replay and Life Map. Returning from Replay
+// must not make Focus's next outward action re-enter Replay indefinitely.
+export function previousDestinationForReturn(world: Pick<UraiWorldState, 'destination' | 'previousDestination'>): UraiDestination | undefined {
+  return world.destination === 'focus' ? 'life-map' : world.previousDestination
+}
+
 export type UraiWorldContextPatch = Partial<
   Pick<
     UraiWorldState,

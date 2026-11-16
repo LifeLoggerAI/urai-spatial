@@ -2,15 +2,50 @@
   "schemaVersion": 1,
   "id": "council-guardian-human-makehuman-v4",
   "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-guardian-human-makehuman-v4.glb",
-  "targetRoutes": ["/council"],
+  "targetRoutes": [
+    "/council"
+  ],
   "bytes": 1708672,
   "sha256": "05a5c7c4e2e47c4fb2c831b7c4aeee21d9443ab08ce681e667e730d397046564",
-  "compressionStatus": "candidate-makehuman-v4",
+  "compressionStatus": "uncompressed-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "council-guardian-human-rig-v3",
   "source": "Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract",
   "license": "MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate",
   "generatedBy": "URAI MakeHuman V4 Forge",
   "generatedAt": "2026-08-17T03:12:00.000Z",
-  "releaseState": "candidate-not-production-ready"
+  "releaseState": "candidate-not-production-ready",
+  "measured": {
+    "format": "glb",
+    "version": 2,
+    "generator": "URAI MakeHuman Rig Forge V4",
+    "nodes": 19,
+    "meshes": 1,
+    "materials": 4,
+    "triangleCount": 36972,
+    "boundsMin": [
+      -0.5860248804092407,
+      0,
+      -0.25193217396736145
+    ],
+    "boundsMax": [
+      0.5860248804092407,
+      1.9199999570846558,
+      0.25193217396736145
+    ],
+    "boundsMeters": [
+      1.172,
+      1.92,
+      0.504
+    ],
+    "extensionsUsed": [],
+    "extensionsRequired": []
+  },
+  "measurementReconciliation": {
+    "sourceSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
+    "observedAt": "2026-10-06T17:20:57.486862+00:00",
+    "method": "audit-launch-critical-artifact.mjs actual-byte inspection",
+    "assetBytesChanged": false,
+    "finalReviewGranted": false
+  }
 }

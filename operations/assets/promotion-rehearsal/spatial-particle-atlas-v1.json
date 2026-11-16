@@ -20,5 +20,120 @@
   "optimizationVerified": true,
   "visualProofVerified": false,
   "exactHeadChecksPassed": true,
-  "notes": "Fail-closed low-risk rehearsal only. This decision does not promote the asset or change its manifest release state."
+  "notes": "Fail-closed low-risk rehearsal only. This decision does not promote the asset or change its manifest release state. Candidate receipt reconciliation records measured routes, geometry and compression without changing binaries, release state, reviewer approval or production authority. Existing rehearsal validations remain required.",
+  "receiptReconciliation": {
+    "mode": "candidate-metadata-only",
+    "observedAt": "2026-10-06T17:28:00Z",
+    "sourceByteSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
+    "assetBytesChanged": false,
+    "productionPromotion": false,
+    "finalReviewGranted": false,
+    "method": "audit-launch-critical-candidate-bundle.mjs actual byte inspection",
+    "receipts": [
+      {
+        "path": "operations/assets/generated-receipts/council-archivist-human-makehuman-v4.json",
+        "sha256": "0d03c8d0e940a10f1ad29eb3d8249fb24f4e50b4f7d6e6645e79444f8b6da2ac"
+      },
+      {
+        "path": "operations/assets/generated-receipts/council-archivist-human-rig-v3.json",
+        "sha256": "243d3f858db56f88b91999bf7fa392ff413fca2f4583c51f0469ed0635ee9a62"
+      },
+      {
+        "path": "operations/assets/generated-receipts/council-builder-human-makehuman-v4.json",
+        "sha256": "ea3359c6b296f78981912cc40c3ffe93ed534e05cb2210597f6dea36ed74191b"
+      },
+      {
+        "path": "operations/assets/generated-receipts/council-builder-human-rig-v3.json",
+        "sha256": "a8e2a92885b060a32c641742199d4b5026e8b9b6ef1532d81c301a3e94c998d8"
+      },
+      {
+        "path": "operations/assets/generated-receipts/council-guardian-human-makehuman-v4.json",
+        "sha256": "77aa014949f80a14eb0e49353695b719460e3eb5c28ab125d4321583be5b91aa"
+      },
+      {
+        "path": "operations/assets/generated-receipts/council-guardian-human-rig-v3.json",
+        "sha256": "efc1404342f288e64cdaf71841f7cf3e7ba0f32111541a73192d12b215a84608"
+      },
+      {
+        "path": "operations/assets/generated-receipts/council-guide-human-makehuman-v4.json",
+        "sha256": "360cfd9daf0e7d35e1c85893d70949be674ef8924bee41a81b99b4f62602e383"
+      },
+      {
+        "path": "operations/assets/generated-receipts/council-guide-human-rig-v3.json",
+        "sha256": "94d3aca2fc612ccfeed1228351b1893aa1e1c6a5b6ef416f006166089a1c4ef0"
+      },
+      {
+        "path": "operations/assets/generated-receipts/council-mirror-human-makehuman-v4.json",
+        "sha256": "35c15d77fa18c37c9517f291ec85cec31b64bffdc3fcf80c5663f31d7a4c2416"
+      },
+      {
+        "path": "operations/assets/generated-receipts/council-mirror-human-rig-v3.json",
+        "sha256": "886c10d25787c7f86f5842a5516a4a1ad8ef9fae0987f5d460b23162c855cff9"
+      },
+      {
+        "path": "operations/assets/generated-receipts/council-trickster-human-makehuman-v4.json",
+        "sha256": "0759a4443788bfaf3e924a8101b1878007c07c31b62a7bbe20f81f65300bc0d9"
+      },
+      {
+        "path": "operations/assets/generated-receipts/council-trickster-human-rig-v3.json",
+        "sha256": "b166ad30ac658b7ff52f844d3ecd6edbd06273399ce68988c8c9c4395eac48e3"
+      },
+      {
+        "path": "operations/assets/generated-receipts/focus-memory-chamber-v1.json",
+        "sha256": "abc1f81a136c55d0bca5c0a19886456cf8b43ee0d949969febfcf8f3eaccd363"
+      },
+      {
+        "path": "operations/assets/generated-receipts/global-cinematic-material-pack-v1.json",
+        "sha256": "a862d9c46b8101af2b30c952588136217292e1ecdd79fe6ba0eb349d511e7e4f"
+      },
+      {
+        "path": "operations/assets/generated-receipts/ground-world-terrain-v1.json",
+        "sha256": "0128835e4f914a7c243a93896e842bdeab21cbc3ef5379464a64f1887f4f9d3e"
+      },
+      {
+        "path": "operations/assets/generated-receipts/home-entry-chamber-v1.json",
+        "sha256": "bb47333a5b12e32690ccbb977012e408cdff32672773b3403495a1072a8f4ea2"
+      },
+      {
+        "path": "operations/assets/generated-receipts/home-human-makehuman-v4.json",
+        "sha256": "cdd72f81489f3996590506509c0969fe25400eb541f0bd66b5ed670bf3cdfa35"
+      },
+      {
+        "path": "operations/assets/generated-receipts/home-human-rig-v3.json",
+        "sha256": "16d2b581748fd9ffe758b1a4645d4949b897156583d2bb50a78495136982e404"
+      },
+      {
+        "path": "operations/assets/generated-receipts/life-map-memory-star-v1.json",
+        "sha256": "1478abb0670d74593e8adbe8cb5cd7242f1459acfdacfa31777228f462c2dae2"
+      },
+      {
+        "path": "operations/assets/generated-receipts/passport-status-room-v1.json",
+        "sha256": "e5d30830b61a60f3df3f39a31da3d1d5e2bbb4d71fc65bd936d97b3d5db9a10e"
+      },
+      {
+        "path": "operations/assets/generated-receipts/portal-ring-master-v1.json",
+        "sha256": "e7f313be4bfeff391f13d63c34a1395c82ca975fbf0e53ce9c2d3f913a216339"
+      },
+      {
+        "path": "operations/assets/generated-receipts/replay-memory-environment-v1.json",
+        "sha256": "fa0f21654e7dc0c96a1311f85438570d3806899cb5f43ef8bfe85f11633b80cd"
+      },
+      {
+        "path": "operations/assets/generated-receipts/spatial-particle-atlas-v1.json",
+        "sha256": "f8fad84503d33158a828420f14de9209751edc82e45ba0c390321b882d5bebd1"
+      },
+      {
+        "path": "operations/assets/generated-receipts/urai-ambient-bed-v1.json",
+        "sha256": "fe7ba2f7f3020e3131d9c65f512420daad261cda4a0ca0702881bb2109feb936"
+      },
+      {
+        "path": "operations/assets/generated-receipts/urai-loading-sequence-v1.json",
+        "sha256": "e3013347d5b0982c488f1902ddb93da21fb3a83ea4267b0734fab2300c49604f"
+      },
+      {
+        "path": "operations/assets/generated-receipts/urai-orb-avatar-v1.json",
+        "sha256": "15ab8e53d0fd3a57b55dfbb678f64391ae20ddaeba7f428a6b539daa0c7970aa"
+      }
+    ]
+  }
 }

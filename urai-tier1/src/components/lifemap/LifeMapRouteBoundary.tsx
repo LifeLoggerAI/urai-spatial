@@ -8,9 +8,28 @@ import { useRouter } from 'next/navigation'
 import ComposedLifeMapScene from './ComposedLifeMapScene'
 import LifeMapSemanticNavigator from './LifeMapSemanticNavigator'
 import { LIFE_MAP_SELECTION_EVENT, type LifeMapSelectionDetail } from './lifeMapSelection'
+import { sanitizeMemoryId } from '@/spatial/memory/selectedMemoryContract'
 
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 const MIN_DIRECT_ROUTE_RENDER_ANCHORS = 8
+
+function appendCurrentArrivalCamera(destination: URL, root: HTMLElement) {
+  const values = root.dataset
+  if (values.lifeMapPhase !== 'arrival') return
+  const camera = [values.lifeMapCameraX, values.lifeMapCameraY, values.lifeMapCameraZ]
+  const target = [values.lifeMapTargetX, values.lifeMapTargetY, values.lifeMapTargetZ]
+  const validVector = (vector: (string | undefined)[]) => vector.every((value) => typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value)))
+  if (!validVector(camera) || !validVector(target)) return
+  const fov = Number(values.lifeMapFov)
+  const distance = Math.hypot(...camera.map((value, index) => Number(value) - Number(target[index])))
+  const nodeId = sanitizeMemoryId(destination.searchParams.get('node') ?? destination.searchParams.get('memoryId'))
+  if (!nodeId || !Number.isFinite(fov) || fov <= 0 || fov >= 180 || !Number.isFinite(distance) || distance === 0) return
+
+  destination.searchParams.set('entryCamera', camera.join(','))
+  destination.searchParams.set('entryTarget', target.join(','))
+  destination.searchParams.set('entryFov', values.lifeMapFov!)
+  destination.searchParams.set('cameraCheckpoint', `life-map-arrival:${nodeId}`)
+}
 
 export default function LifeMapRouteBoundary({ authenticatedUserId }: { authenticatedUserId: string | null }) {
   const router = useRouter()
@@ -55,6 +74,10 @@ export default function LifeMapRouteBoundary({ authenticatedUserId }: { authenti
       const destination = new URL(href, window.location.origin)
       if (destination.origin !== window.location.origin || destination.pathname !== `/${route}`) return
       if (!destination.searchParams.get('memoryId') || !destination.searchParams.get('manifestId')) return
+
+      // CameraRig updates the scene dataset between React renders. This capture
+      // handler bypasses the scene's fresh onClick, so sample its own root now.
+      if (route === 'focus') appendCurrentArrivalCamera(destination, root)
 
       // Native navigation tears down software WebGL immediately. Keeping a stalled
       // SwiftShader scene alive while Next streams the next realm can otherwise delay

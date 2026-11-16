@@ -1,0 +1,59 @@
+name: Google OAuth disconnect privacy fence
+
+on:
+  pull_request:
+    paths:
+      - 'apps/functions/**'
+      - 'packages/tier-locks/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/google-oauth-privacy-fence.yml'
+      - 'docs/GOOGLE_WORKSPACE_OAUTH_DISCONNECT_FENCE.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: google-oauth-privacy-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  handler-proof:
+    name: Exact-head OAuth handler privacy proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      PROOF_DIRECTORY: artifacts/google-oauth-privacy-fence
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install the existing frozen workspace graph
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck all Functions and run actual-handler privacy regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$PROOF_DIRECTORY"
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          pnpm --filter urai-functions build 2>&1 | tee "$PROOF_DIRECTORY/typecheck.log"
+          node --test --test-reporter=tap apps/functions/test/googleWorkspaceOAuth.test.js 2>&1 | tee "$PROOF_DIRECTORY/oauth-tests.tap"
+          pnpm --filter urai-functions test 2>&1 | tee "$PROOF_DIRECTORY/functions-tests.log"
+          node apps/functions/scripts/google-oauth-privacy-receipt.mjs "$URAI_EXACT_HEAD" "$PROOF_DIRECTORY"
+      - name: Retain bounded source and test receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-oauth-privacy-fence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/google-oauth-privacy-fence/
+          if-no-files-found: error
+          retention-days: 30

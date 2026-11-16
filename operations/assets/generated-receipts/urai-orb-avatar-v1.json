@@ -5,48 +5,55 @@
   "bytes": 403220,
   "sha256": "06b21ff93a2221a6367fb8b8e305a0453cb151d3a92194445d72e4d48d6c7708",
   "measured": {
-    "triangleCount": 8776,
-    "boundsMeters": {
-      "min": [
-        -0.765,
-        -0.73,
-        -0.4873
-      ],
-      "max": [
-        0.756,
-        0.73,
-        0.4873
-      ],
-      "size": [
-        1.521,
-        1.46,
-        0.9746
-      ]
-    },
-    "repairedEulerRotations": 2,
-    "nodeCount": 34,
-    "materialCount": 8,
-    "animationClips": [
-      "Orb_Resting",
-      "Orb_Idle",
-      "Orb_Attention",
-      "Orb_Listening",
-      "Orb_Thinking",
-      "Orb_Speaking",
-      "Orb_Guiding",
-      "Orb_Reflecting",
-      "Orb_Calming",
-      "Orb_Privacy",
-      "Orb_Degraded",
-      "Orb_Transition"
-    ]
+    "format": "glb",
+    "version": 2,
+    "generator": "URAI Labs Final GLB Forge 1.0",
+    "nodes": 29,
+    "meshes": 8,
+    "materials": 8,
+    "triangleCount": 9380,
+    "boundsMin": [
+      -1.369198203086853,
+      -1.0593626499176025,
+      -1.0421526432037354
+    ],
+    "boundsMax": [
+      1.4342269897460938,
+      1.0596486330032349,
+      1.079864263534546
+    ],
+    "boundsMeters": [
+      2.803,
+      2.119,
+      2.122
+    ],
+    "extensionsUsed": [
+      "KHR_materials_clearcoat",
+      "KHR_materials_emissive_strength",
+      "KHR_materials_transmission"
+    ],
+    "extensionsRequired": []
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "uncompressed-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-orb",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
   "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Orb petal zero-normal repair; reconciled to urai-final-glb-production-pack-v1",
   "generatedAt": "2026-08-09T00:32:49.973Z",
-  "releaseState": "candidate-not-production-ready"
+  "releaseState": "candidate-not-production-ready",
+  "targetRoutes": [
+    "/",
+    "/home",
+    "/life-map",
+    "/focus",
+    "/replay"
+  ],
+  "measurementReconciliation": {
+    "sourceSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
+    "observedAt": "2026-10-06T17:20:57.484697+00:00",
+    "method": "audit-launch-critical-artifact.mjs actual-byte inspection",
+    "assetBytesChanged": false,
+    "finalReviewGranted": false
+  }
 }

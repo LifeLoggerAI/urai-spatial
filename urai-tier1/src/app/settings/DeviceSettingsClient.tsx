@@ -1,12 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+import { useEffect, useRef, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { setHapticsEnabled, URAI_HAPTICS_STORAGE_KEY } from '@/spatial/haptics/HapticRuntime'
 import { sensorySafeEnabled, setSensorySafeEnabled } from '@/spatial/accessibility/SensorySafeRuntime'
 import { clientApiUrl } from '@/lib/clientApiUrl'
+import LanguageSettings from '@/components/settings/LanguageSettings'
+import { ManualEmotionalWeatherControls } from '@/lib/uraiEmotion/ManualEmotionalWeatherControls'
+import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 
 function readHapticsPreference() {
   if (typeof window === 'undefined') return true
@@ -37,8 +41,11 @@ function isNativeCapacitorRuntime() {
   return Boolean((window as CapacitorWindow).Capacitor?.isNativePlatform?.())
 }
 
-async function googleRequest<T>(path: string, user: User): Promise<T> {
+async function googleRequest<T>(path: string, user: User, lifecycle: { signal: AbortSignal; isCurrent: () => boolean }): Promise<T> {
+  const current = () => { if (lifecycle.signal.aborted || !lifecycle.isCurrent()) throw new DOMException('Account changed.', 'AbortError') }
+  current()
   const token = await user.getIdToken()
+  current()
   const response = await fetch(clientApiUrl(path), {
     method: 'POST',
     headers: {
@@ -47,17 +54,25 @@ async function googleRequest<T>(path: string, user: User): Promise<T> {
     },
     body: '{}',
     cache: 'no-store',
+    signal: lifecycle.signal,
+    credentials: 'omit',
+    redirect: 'error',
+    referrerPolicy: 'no-referrer',
   })
+  current()
   const payload = await response.json().catch(() => ({})) as T & { message?: string; error?: string }
+  current()
   if (!response.ok) throw new Error(payload.message || payload.error || 'Google Workspace request failed.')
   return payload
 }
 
 export default function DeviceSettingsClient() {
+  const locale = useUraiLocale()
   const [haptics, setHaptics] = useState(true)
   const [sensorySafe, setSensorySafe] = useState(false)
   const [supportsVibration, setSupportsVibration] = useState(false)
   const [supportsGamepad, setSupportsGamepad] = useState(false)
+  const googleSession = useRef<{ controller: AbortController; owner: User } | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [googleState, setGoogleState] = useState<GoogleUiState>(firebasePublicEnvReady ? 'checking' : 'signed-out')
   const [googleConnection, setGoogleConnection] = useState<GoogleConnection | null>(null)
@@ -79,17 +94,26 @@ export default function DeviceSettingsClient() {
   useEffect(() => {
     if (!firebasePublicEnvReady) return
     const auth = getAuth(app)
-    return onAuthStateChanged(auth, (nextUser) => {
+    let active = true
+    const invalidate = () => { googleSession.current?.controller.abort(); googleSession.current = null }
+    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+      if (!active) return
+      invalidate()
       setUser(nextUser)
+      setGoogleConnection(null)
       if (!nextUser) {
-        setGoogleConnection(null)
         setGoogleState('signed-out')
         setGoogleMessage('Sign in to connect Gmail, Calendar, Contacts, and Drive.')
         return
       }
+      const session = { controller: new AbortController(), owner: nextUser }
+      googleSession.current = session
+      const isCurrent = () => active && googleSession.current === session && auth.currentUser === nextUser
       setGoogleState('checking')
-      void googleRequest<GoogleConnection>('/api/google/oauth/status', nextUser)
+      setGoogleMessage('Checking this account’s Google Workspace connection...')
+      void googleRequest<GoogleConnection>('/api/google/oauth/status', nextUser, { signal: session.controller.signal, isCurrent })
         .then((status) => {
+          if (!isCurrent()) return
           setGoogleConnection(status)
           setGoogleState('ready')
           setGoogleMessage(status.connected
@@ -97,10 +121,19 @@ export default function DeviceSettingsClient() {
             : 'Connect only the Google services you choose to use with URAI.')
         })
         .catch(() => {
+          if (!isCurrent()) return
           setGoogleState('error')
           setGoogleMessage('Google Workspace connection status is temporarily unavailable.')
         })
+    }, () => {
+      if (!active) return
+      invalidate()
+      setUser(null)
+      setGoogleConnection(null)
+      setGoogleState('error')
+      setGoogleMessage('Account authority is unavailable. Google Workspace access remains closed.')
     })
+    return () => { active = false; invalidate(); unsubscribe() }
   }, [])
 
   useEffect(() => {
@@ -131,13 +164,19 @@ export default function DeviceSettingsClient() {
       }
       return
     }
+    const session = googleSession.current
+    if (!session || session.owner !== user) return
+    const isCurrent = () => googleSession.current === session && getAuth(app).currentUser === user
+    const lifecycle = { signal: session.controller.signal, isCurrent }
     setGoogleState('working')
     setGoogleMessage('Opening Google permission controls...')
     try {
-      const result = await googleRequest<{ authorizationUrl: string }>('/api/google/oauth/start', user)
+      const result = await googleRequest<{ authorizationUrl: string }>('/api/google/oauth/start', user, lifecycle)
+      if (!isCurrent()) return
       if (!result.authorizationUrl.startsWith('https://accounts.google.com/')) throw new Error('Unexpected Google authorization URL.')
       window.location.assign(result.authorizationUrl)
     } catch {
+      if (!isCurrent()) return
       setGoogleState('error')
       setGoogleMessage('Google Workspace connection could not start. Your account remains unchanged.')
     }
@@ -145,24 +184,33 @@ export default function DeviceSettingsClient() {
 
   const disconnectGoogle = async () => {
     if (!user || googleState === 'working') return
+    const session = googleSession.current
+    if (!session || session.owner !== user) return
+    const isCurrent = () => googleSession.current === session && getAuth(app).currentUser === user
+    const lifecycle = { signal: session.controller.signal, isCurrent }
     setGoogleState('working')
     setGoogleMessage('Revoking the Google Workspace connection...')
     try {
-      await googleRequest<{ connected: false }>('/api/google/oauth/disconnect', user)
+      await googleRequest<{ connected: false }>('/api/google/oauth/disconnect', user, lifecycle)
+      if (!isCurrent()) return
       setGoogleConnection({ connected: false, status: 'disconnected', scopes: [], expiresAt: null })
       setGoogleState('ready')
       setGoogleMessage('Google Workspace is disconnected from URAI.')
     } catch {
+      if (!isCurrent()) return
       setGoogleState('error')
       setGoogleMessage('URAI could not confirm the disconnect. Try again before assuming access was revoked.')
     }
   }
 
   return (
-    <main style={{boxSizing:'border-box',overflowWrap:'anywhere',height:'100svh',minHeight:'100svh',overflowX:'hidden',overflowY:'auto',overscrollBehaviorY:'contain',background:'radial-gradient(circle at 50% 0%,#10202a 0,#071018 42%,#02060a 100%)',color:'#f4f8fb',padding:'max(28px,env(safe-area-inset-top)) max(clamp(18px,5vw,72px),env(safe-area-inset-right)) max(44px,env(safe-area-inset-bottom)) max(clamp(18px,5vw,72px),env(safe-area-inset-left))',fontFamily:'var(--font-sans)'}} data-route-owner="device-settings">
+    <main style={{position:'relative',zIndex:3,boxSizing:'border-box',overflowWrap:'anywhere',height:'100svh',minHeight:'100svh',overflowX:'hidden',overflowY:'auto',overscrollBehaviorY:'contain',background:'radial-gradient(circle at 50% 0%,#10202a 0,#071018 42%,#02060a 100%)',color:'#f4f8fb',padding:'max(28px,env(safe-area-inset-top)) max(clamp(18px,5vw,72px),env(safe-area-inset-right)) max(44px,env(safe-area-inset-bottom)) max(clamp(18px,5vw,72px),env(safe-area-inset-left))',fontFamily:'var(--font-sans)'}} data-route-owner="device-settings">
       <div style={{maxWidth:860,margin:'0 auto'}}>
-        <nav aria-label="Settings navigation" style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'center',flexWrap:'wrap'}}><Link href="/home" style={{display:'inline-flex',alignItems:'center',minWidth:48,minHeight:48,color:'#c9eef3',textDecoration:'none'}}>← Home</Link><Link href="/passport" style={{display:'inline-flex',alignItems:'center',minWidth:48,minHeight:48,color:'#c9eef3',textDecoration:'none'}}>Passport</Link></nav>
+        <nav aria-label="Settings navigation" style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'center',flexWrap:'wrap'}}><Link href="/home" {...locale.props('nav.home')} style={{display:'inline-flex',alignItems:'center',minWidth:48,minHeight:48,color:'#c9eef3',textDecoration:'none'}}>← {locale.text('nav.home')}</Link><Link href="/passport" style={{display:'inline-flex',alignItems:'center',minWidth:48,minHeight:48,color:'#c9eef3',textDecoration:'none'}}>Passport</Link><AdamLauncherSlot name="device-settings" /></nav>
         <header style={{padding:'clamp(42px,8vw,92px) 0 34px'}}><p style={{letterSpacing:'.22em',textTransform:'uppercase',fontSize:11,color:'#8fb4bd'}}>Device feel</p><h1 style={{fontSize:'clamp(42px,8vw,78px)',lineHeight:.94,letterSpacing:'-.055em',margin:'10px 0 18px'}}>How URAI meets you.</h1><p style={{maxWidth:620,fontSize:'clamp(16px,2vw,20px)',lineHeight:1.6,color:'#c4d1d6'}}>Local sensory preferences live on this device. Private data permissions remain in the Consent Sanctuary, and ownership controls remain in Passport.</p></header>
+
+        <LanguageSettings />
+        <ManualEmotionalWeatherControls />
 
         <section aria-labelledby="sensory-safe-heading" style={{border:'1px solid rgba(197,242,247,.16)',borderRadius:28,padding:'clamp(22px,4vw,34px)',background:'rgba(9,20,28,.66)',backdropFilter:'blur(18px)'}}>
           <div style={{display:'flex',justifyContent:'space-between',gap:24,alignItems:'start',flexWrap:'wrap'}}>
