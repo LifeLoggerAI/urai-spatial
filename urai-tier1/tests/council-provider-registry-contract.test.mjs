@@ -9,6 +9,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 process.env.NEXT_PUBLIC_FIREBASE_API_KEY = 'synthetic-council-api-key'
 process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = 'synthetic-council.invalid'
 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'synthetic-council'
+process.env.NEXT_PUBLIC_FIREBASE_APP_ID = '1:synthetic:web:council'
+process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = 'synthetic-council.firebasestorage.app'
 process.env.NEXT_PUBLIC_URAI_API_ORIGIN = ''
 const providers = ['anthropic', 'gemini', 'xai', 'mistral']
 const allProviders = ['openai', ...providers]
