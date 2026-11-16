@@ -43,10 +43,11 @@ function harness(initialUser = 'owner-a') {
   }
   const doc = (_db, ...paths) => ({kind:'document', paths})
   const collection = (_db, ...paths) => ({kind:'collection', paths})
-  const onSnapshot = (ref, success, error) => {
-    const s = {ref,success,error,stopped:false,emit(data) {
-      if (ref.kind === 'document') success({exists:()=>data !== null, data:()=>data})
-      else success({docs:data.map(({id,value})=>({id,data:()=>value}))})
+  const onSnapshot = (ref, options, success, error) => {
+    assert.equal(options?.includeMetadataChanges,true,'must observe server/cache metadata transitions')
+    const s = {ref,success,error,stopped:false,emit(data, metadata={fromCache:false,hasPendingWrites:false}) {
+      if (ref.kind === 'document') success({exists:()=>data !== null, data:()=>data,metadata})
+      else success({docs:data.map(({id,value})=>({id,data:()=>value})),metadata})
     },fail(){error(new Error('raw-provider-private-details'))}}
     subscriptions.push(s)
     return () => {s.stopped = true}
@@ -65,6 +66,8 @@ function harness(initialUser = 'owner-a') {
           star:raw.star||{id,position:[1.5,.5,-8],scale:1,aura:'#aaddff'},
           replayManifest:{id:raw.manifest,segments:[{id:'memory',startsAtMs:0,durationMs:1000}]}}},
     },
+    '@/spatial/memory/serverConfirmedSnapshot': {isServerConfirmedSnapshot: metadata =>
+      metadata?.fromCache === false && metadata?.hasPendingWrites === false },
     '@/app/privacy-controls/consentModel': { isConsentPolicy: (raw,owner) => Boolean(raw && raw.version===2 && raw.ownerId===owner
       && Number.isSafeInteger(raw.revision) && raw.revision>=0 && raw.domains?.memory
       && ['granted','limited','paused','denied'].includes(raw.domains.memory.mode)
@@ -97,9 +100,9 @@ function harness(initialUser = 'owner-a') {
   }
   const policy = (revision=1, mode='granted', visible=true) => ({version:2,ownerId:currentUser,revision,domains:{memory:{mode,lifeMapVisible:visible}},enforcement:{state:'fully-enforced'}})
   const find=(name)=>subscriptions.filter(s=>s.ref.paths.at(-1)===name)
-  const emit=(name,data,instance = find(name).length-1)=>{
+  const emit=(name,data,instance = find(name).length-1, metadata={fromCache:false,hasPendingWrites:false})=>{
     const s=find(name)[instance];assert.ok(s,'missing '+name+' subscription '+instance)
-    s.emit(data);return render()
+    s.emit(data,metadata);return render()
   }
   return {subscriptions,find,render,emit,policy,user(uid){currentUser=uid;return render()},
     load() {
@@ -233,4 +236,50 @@ test('a contextual signal cannot expose a withdrawn canonical memoryId',()=>{
   const view=h.emit('memories',[])
   assert.equal(view.nodes.find(n=>n.id==='context')?.memoryId,undefined)
   assert.equal(view.nodes.find(n=>n.id==='context')?.replayManifestId,undefined)
+})
+
+const CACHED = {fromCache:true,hasPendingWrites:false}
+const PENDING = {fromCache:false,hasPendingWrites:true}
+const SERVER = {fromCache:false,hasPendingWrites:false}
+
+test('offline cached consent cannot grant or retain private Life Map authority',()=>{
+  const h=harness();h.render()
+  assert.equal(h.emit('current',h.policy(1),0,CACHED).nodes.length,0)
+  assert.equal(h.find('lifeMapEvents').length,0)
+  h.emit('current',h.policy(1),0,SERVER)
+  assert.equal(h.load().nodes.some(n=>n.id==='event-1'),true)
+  const unavailable=h.emit('current',h.policy(1),0,CACHED)
+  assert.equal(unavailable.nodes.length,0)
+  assert.equal(unavailable.eras.length,0)
+  assert.equal(unavailable.sourceMode,'unavailable')
+  const recovered=h.emit('current',h.policy(1),0,SERVER)
+  assert.equal(recovered.nodes.length,0,'new snapshots required after consent reconnects')
+  assert.equal(recovered.loading,true)
+})
+test('all three private streams reject cached or uncommitted responses',()=>{
+  for (const name of ['lifeMapEvents','lifeMapEras','memories']) {
+    for(const metadata of [CACHED,PENDING]) {
+      const h=harness();h.render();h.emit('current',h.policy());h.load()
+      const before=h.render()
+      assert.equal(before.nodes.some(n=>n.id==='event-1'),true)
+      const existing=h.find(name).at(-1)
+      const input=name==='lifeMapEvents'?[{id:'event-1',value:{type:'memory',memoryId:'memory-1',title:'Stale secret'}}]
+        :name==='lifeMapEras'?[{id:'era-1',value:{title:'Stale private era'}}]
+        :[{id:'memory-1',value:{ownerId:'owner-a',title:'Stale private memory',manifest:'manifest-1'}}]
+      existing.emit(input,metadata)
+      const view=h.render()
+      assert.equal(view.nodes.length,0, name+' exposed cached nodes')
+      assert.equal(view.eras.length,0, name+' exposed cached eras')
+      assert.equal(view.sourceMode,'error')
+      existing.emit(input,SERVER)
+      const recovered=h.render()
+      assert.equal(recovered.nodes.some(n=>n.id==='event-1'),true, name+' did not recover from server-confirmed data')
+    }
+  }
+})
+test('disclosed demonstration remains usable without Firestore identity or snapshots',()=>{
+  const h=harness('demo-user'),v=h.render()
+  assert.equal(v.sourceMode,'explicit-demo')
+  assert.ok(v.nodes.some(n=>n.id==='disclosed-demo-star'))
+  assert.equal(h.subscriptions.length,0)
 })
