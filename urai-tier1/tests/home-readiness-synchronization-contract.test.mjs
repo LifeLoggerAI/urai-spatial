@@ -14,7 +14,7 @@ test('late asset readiness preserves the existing input and three-frame Home thr
 })
 
 test('asset-owner observer covers the readiness transition without polling or fabricated readiness', () => {
-  assert.match(assetOwner, /attributeFilter: \['data-home-player-x', 'data-home-player-z', 'data-home-assets-ready', 'data-home-input-ready'\]/)
+  assert.match(assetOwner, /attributeFilter: \['data-home-player-x', 'data-home-player-z', 'data-home-orb-anchor-x', 'data-home-orb-anchor-z', 'data-home-assets-ready', 'data-home-input-ready', 'data-home-rendered-frames'\]/)
   assert.match(assetOwner, /lastReportedAssetsReady\.current !== assetsReady/)
   assert.match(assetOwner, /onAssetsReadyChange\?\.\(assetsReady\)/)
 })
