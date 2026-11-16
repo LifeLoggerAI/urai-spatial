@@ -46,9 +46,9 @@ html[dir='rtl'] .uraiV2OnboardingCard { inset-inline-end: max(18px, env(safe-are
 @media (max-width: 400px) { .uraiV2OnboardingActions { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 760px) { html[dir='rtl'] .uraiV2OnboardingCard { inset-inline-end: max(10px, env(safe-area-inset-left)); } }
 
-// R526: Automatic Home welcome stays discoverable without hiding the first
-// person world on a small screen. Guided onboarding and accessibility controls
-// retain their original presentation and navigation behavior.
+/* R526: Automatic Home welcome stays discoverable without hiding the first
+   person world on a small screen. Guided onboarding and accessibility controls
+   retain their original presentation and navigation behavior. */
 @media (max-width: 760px) {
   .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] {
     width: min(300px, calc(100vw - 24px));
@@ -77,5 +77,36 @@ html[dir='rtl'] .uraiV2OnboardingCard { inset-inline-end: max(18px, env(safe-are
   }
   html[dir='rtl'] .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] {
     inset-inline-end: max(12px, env(safe-area-inset-left));
+  }
+}
+
+/* R1326 integration review: preserve the original cinematic Home while reducing
+   only its automatic desktop introduction. Guided and mobile flows are unchanged.
+   Inherits the visual change from PR #2096 and CSS parser repair from PR #2098. */
+@media (min-width: 761px) and (min-height: 501px) {
+  .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] {
+    width: min(286px, calc(100vw - 28px));
+    bottom: max(24px, calc(env(safe-area-inset-bottom) + 20px));
+    border-radius: 20px;
+    border-color: rgba(218, 246, 255, .22);
+    background: rgba(2, 7, 15, .78);
+    box-shadow: 0 14px 42px rgba(0, 0, 0, .34);
+  }
+  .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] .uraiV2OnboardingCopy {
+    gap: 6px;
+    padding: 12px 14px 5px;
+  }
+  .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] .uraiV2OnboardingCopy strong {
+    font-size: 16px;
+    line-height: 1.2;
+  }
+  .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] .uraiV2OnboardingActions {
+    padding: 7px 14px 14px;
+    gap: 8px;
+    background: transparent;
+  }
+  .uraiV2OnboardingCard[data-home-guide='true'][data-first-run='automatic'] .uraiV2OnboardingActions :is(a, button) {
+    min-width: 48px;
+    min-height: 48px;
   }
 }

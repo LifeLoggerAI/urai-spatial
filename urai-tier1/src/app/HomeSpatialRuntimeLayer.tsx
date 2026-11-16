@@ -103,6 +103,26 @@ export default function HomeSpatialRuntimeLayer() {
     setRendererState('failed')
   }, [])
 
+  // A stalled WebGL scene must never trap people behind the full-screen
+  // "forming" scrim indefinitely. This does not certify assets or mark ready.
+  // Fail to the existing accessible sanctuary with a deliberate Retry action.
+  useEffect(() => {
+    if (!homeRuntimeActive || rendererState !== 'ready' || assetsReady) return
+
+    const deadline = window.setTimeout(() => {
+      const owner = runtimeRef.current?.querySelector<HTMLElement>(
+        '.urai-asset-home-world[data-home-primary-owner="asset-driven"]',
+      )
+      // Read the authoritative rendered scene again to avoid a stale-state
+      // timeout racing a just-completed scene and masking a successful frame.
+      if (owner?.dataset.homeAssetsReady === 'true') return
+      setAssetLoadFailed(false)
+      setRendererState('failed')
+    }, 30_000)
+
+    return () => window.clearTimeout(deadline)
+  }, [homeRuntimeActive, rendererState, assetsReady])
+
   const retryHome = useCallback(() => {
     clearHomeAssetCache()
     recoveryAttemptsRef.current = 0
