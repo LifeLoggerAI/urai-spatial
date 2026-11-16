@@ -7,6 +7,7 @@ import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/clien
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import { isConsentPolicy } from '@/app/privacy-controls/consentModel'
 import { buildNamedExplicitDemoMemory } from './explicitDemoMemory'
+import { isServerConfirmedSnapshot } from './serverConfirmedSnapshot'
 import {
   isExplicitDemoRequest,
   parseSelectedMemory,
@@ -118,8 +119,13 @@ export function useSelectedMemory(): SelectedMemoryResult {
         try {
           unsubscribeMemory = onSnapshot(
             doc(getFirebaseDb(), 'users', user.uid, 'memories', memoryId),
+            { includeMetadataChanges: true },
             (snapshot) => {
               if (!isCurrentMemory()) return
+              if (!isServerConfirmedSnapshot(snapshot.metadata)) {
+                setResult(unavailable('Private memory requires a current server confirmation.'))
+                return
+              }
               if (!snapshot.exists()) {
                 setResult(unavailable('Selected memory could not be found.'))
                 return
@@ -145,8 +151,14 @@ export function useSelectedMemory(): SelectedMemoryResult {
       try {
         unsubscribePolicy = onSnapshot(
           doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current'),
+          { includeMetadataChanges: true },
           (snapshot) => {
             if (!isCurrentOwner()) return
+            if (!isServerConfirmedSnapshot(snapshot.metadata)) {
+              detachMemory()
+              setResult(unavailable('Private memory consent requires a current server confirmation.'))
+              return
+            }
             const raw = snapshot.exists() ? snapshot.data() : undefined
             if (!isConsentPolicy(raw, user.uid)) {
               detachMemory()

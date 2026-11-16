@@ -2,6 +2,7 @@ import { getApp, getApps, initializeApp, type FirebaseOptions } from 'firebase/a
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
 import { connectAuthEmulator, getAuth } from 'firebase/auth'
 import { connectFunctionsEmulator, getFunctions } from 'firebase/functions'
+import { isFirebaseBrowserConfigReady } from './configReadiness'
 
 const PUBLIC_FIREBASE_ENV = {
   NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,11 +14,7 @@ const PUBLIC_FIREBASE_ENV = {
   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 } as const
 
-export const firebasePublicEnvReady = Boolean(
-  PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_API_KEY &&
-    PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-    PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-)
+export const firebasePublicEnvReady = isFirebaseBrowserConfigReady(PUBLIC_FIREBASE_ENV)
 
 const fallbackProjectId = 'urai-local'
 const projectId = PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? fallbackProjectId
