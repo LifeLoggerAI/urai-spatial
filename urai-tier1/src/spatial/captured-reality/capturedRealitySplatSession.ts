@@ -1,10 +1,11 @@
 import { streamCapturedRealitySplat } from './capturedRealitySplatStream'
 import { createCapturedSplatResources, type CapturedSplatResources, type SplatWorker } from './capturedRealitySplatResources'
+import type { CapturedRealityStreamAuthority } from './capturedRealityDelivery'
 
 /** One private owner/lifecycle scope. No URL, byte, GPU, or worker cache. */
 export function createCapturedRealitySplatSession({
   url, maxBytes, maxTextureSize, chunkSize, alphaHash, onResource, onProgress, onFailure,
-  fetcher, workerFactory,
+  fetcher, workerFactory, authority,
 }: {
   url: string
   maxBytes: number
@@ -16,6 +17,7 @@ export function createCapturedRealitySplatSession({
   onFailure?: () => void
   fetcher?: typeof fetch
   workerFactory?: () => SplatWorker
+  authority?: CapturedRealityStreamAuthority
 }) {
   const abort = new AbortController()
   let resource: CapturedSplatResources | undefined
@@ -34,7 +36,7 @@ export function createCapturedRealitySplatSession({
     onFailure?.()
   }
   const completion = streamCapturedRealitySplat({
-    url, maxBytes, chunkSize, signal: abort.signal, fetcher,
+    url, maxBytes, chunkSize, signal: abort.signal, fetcher, authority,
     onHeader(bytes) {
       total = bytes
       resource = createCapturedSplatResources(bytes, { maxTextureSize, alphaHash, onFailure: fail, workerFactory })

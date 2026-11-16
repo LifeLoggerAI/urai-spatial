@@ -23,7 +23,14 @@ const scenario = {
 
 const report = {
   generatedAt: new Date().toISOString(),
-  decision: 'V10_SCENARIO_SIMULATION_READY',
+  decision: 'V10_ADVISORY_SCENARIO_SCAFFOLD',
+  evidenceScope: 'STATIC_ADVISORY_EXAMPLE_ONLY',
+  scenarioSource: example ? 'RETAINED_EXAMPLE' : 'RETAINED_PLACEHOLDER',
+  isGeneratedSimulation: false,
+  adoptionStatus: 'NOT_ESTABLISHED_BY_THIS_REPORT',
+  simulationAcceptance: 'NOT_ASSESSED',
+  releaseAcceptance: 'NOT_ASSESSED',
+  shipAuthorized: false,
   scenario,
   outputs: {
     nearTerm: 'Asset-active V1-V6 enables credible demonstration and evidence capture.',

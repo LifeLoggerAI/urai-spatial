@@ -34,7 +34,7 @@ test('Life Movie truth classes are explicit and confidence is bounded', () => {
 })
 
 test('Life Movie runtime accepts only internal UrAi replay destinations', () => {
-  assert.match(contract, /parsed.origin !== 'https://urai.invalid'/)
+  assert.match(contract, /parsed\.origin !== 'https:\/\/urai\.invalid'/)
   assert.match(contract, /'\/life-map'/)
   assert.match(contract, /'\/focus'/)
   assert.match(contract, /'\/replay'/)

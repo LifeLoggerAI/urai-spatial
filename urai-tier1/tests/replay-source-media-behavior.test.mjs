@@ -55,7 +55,40 @@ test('source media admission cannot use demo art for a personal memory or interp
   assert.deepEqual(replayVisualAdmission(personal), { kind: 'neutral', media: null })
   assert.equal(replayVisualAdmission({ ...personal, sourceMedia: [{ kind: 'audio', url: 'https://example.invalid/source.ogg' }] }).kind, 'neutral')
   const source = { kind: 'image', url: 'https://example.invalid/photo.jpg', caption: 'Original photo' }
-  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }), { kind: 'recorded-source', media: source })
+  assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }), { kind: 'neutral', media: null })
+  assert.deepEqual(replayVisualAdmission({ ...demo, sourceMedia: [source] }), { kind: 'recorded-source', media: source })
+})
+
+
+test('historical private URLs do not become playback grants merely because the memory is owner-readable', () => {
+  const demo = buildExplicitDemoMemory('demo:legacy-private-url')
+  const personal = { ...demo, demo: false, ownerId: 'private-owner', id: 'private-memory' }
+  for (const privacy of ['private', 'shareable', 'hidden']) {
+    for (const url of [
+      'https://firebasestorage.googleapis.com/v0/b/old-bucket/o/asset?token=legacy',
+      'https://storage.googleapis.com/old-bucket/asset.jpg',
+      'blob:https://urai.app/previous-object-url',
+      'data:image/jpeg;base64,AA==',
+    ]) {
+      for (const kind of ['image', 'video']) {
+        assert.deepEqual(
+          replayVisualAdmission({ ...personal, privacy, sourceMedia: [{ kind, url }] }),
+          { kind: 'neutral', media: null },
+        )
+      }
+    }
+  }
+})
+
+test('Focus and Life Movie do not hand off document-level legacy private URLs', () => {
+  const focus = fs.readFileSync('src/app/focus/FocusChamberClient.tsx', 'utf8')
+  const movie = fs.readFileSync('src/app/life-movie/LifeMovieClient.tsx', 'utf8')
+  const visual = fs.readFileSync('src/app/replay/replayVisualAdmission.ts', 'utf8')
+  assert.match(fs.readFileSync('src/app/focus/focusMemoryAppearance.ts', 'utf8'), /imageUrl: memory\?\.demo/)
+  assert.match(movie, /useOwnedMemoryMediaPlayback/)
+  assert.match(movie, /const media = selectLifeMovieMedia\(active, ownedPlayback\)/)
+  assert.doesNotMatch(movie, /active\.sourceMedia\??\.find|active\.sourceMedia\[/)
+  assert.match(visual, /if \(!memory\.demo\) return \{ kind: 'neutral', media: null \}/)
 })
 
 test('owner, source, manifest, and privacy changes produce a new teardown boundary', () => {
@@ -261,7 +294,7 @@ test('recorded-source owner listens to canonical sensory policy and removes its 
   let safe = false
   let effect
   const video = new FakeVideo()
-  const refs = [{ current: null }, { current: video }, { current: true }]
+  const refs = [{ current: null }, { current: video }, { current: null }, { current: true }]
   const snapshots = []
   const sessions = []
   class Surface extends EventTarget {
@@ -278,7 +311,7 @@ test('recorded-source owner listens to canonical sensory policy and removes its 
     require: (id) => {
       if (id === 'react') return { useRef: () => refs.shift(), useEffect: (callback) => { effect = callback } }
       if (id === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) }
-      if (id === './replayMediaSession') return { createReplayVideoSession }
+      if (id === './replayMediaSession') return { createReplayMediaSession: createReplayVideoSession }
       assert.equal(id, '@/spatial/accessibility/SensorySafeRuntime')
       return { sensorySafeEnabled: () => safe, URAI_SENSORY_SAFE_EVENT: 'urai:sensory-safe-changed', URAI_SENSORY_SAFE_STORAGE_KEY: 'urai:sensory-safe:enabled-v1' }
     },
@@ -336,4 +369,57 @@ test('an unusable duration fails accessibly instead of exposing a fictitious med
   assert.equal(latest().status, 'error')
   assert.match(latest().error, /no usable duration/)
   controls.dispose()
+})
+
+test('an explicit spatial retry releases both failed fern cache entries before remounting', () => {
+  const client = fs.readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+  const syntax = ts.createSourceFile('CinematicReplayClient.tsx', client, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const hook = syntax.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'useReplayWebGL')
+  assert.ok(hook, 'execute the production retry callback, not a copied implementation')
+  const cache = new Map(), events = []
+  const clearEntry = kind => url => { events.push(kind); cache.delete(url) }
+  const helperSource = fs.readFileSync(new URL('../src/spatial/assets/useRecoveredFernAsset.ts', import.meta.url), 'utf8')
+  const helper = { exports: {} }
+  vm.runInNewContext(ts.transpileModule(helperSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, {
+    module: helper, exports: helper.exports,
+    require: id => {
+      if (id === '@react-three/drei') return { useGLTF: { clear: clearEntry('gltf') }, useTexture: { clear: clearEntry('alpha') } }
+      if (['react', '@react-three/fiber', 'three'].includes(id)) return {}
+      throw new Error(`Unexpected fern retry dependency: ${id}`)
+    },
+  })
+  const { RECOVERED_FERN_MODEL, RECOVERED_FERN_ALPHA, clearRecoveredFernAssetCache } = helper.exports
+  cache.set(RECOVERED_FERN_MODEL, new Error('temporary glTF request failure'))
+  cache.set(RECOVERED_FERN_ALPHA, new Error('temporary alpha request failure'))
+  const unrelated = '/assets/other-scene.glb'
+  cache.set(unrelated, 'already loaded')
+  const cells = []
+  const state = { exports: {} }
+  vm.runInNewContext(ts.transpileModule(hook.getText(syntax) + '\nmodule.exports = useReplayWebGL', {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText, {
+    module: state, clearRecoveredFernAssetCache,
+    useState: initial => {
+      const index = cells.length
+      cells.push(initial)
+      return [initial, next => {
+        cells[index] = typeof next === 'function' ? next(cells[index]) : next
+        events.push(index === 0 ? cells[index] : 'attempt')
+      }]
+    },
+    useEffect: () => {},
+    useCallback: callback => callback,
+  })
+  const lifecycle = state.exports()
+  assert.equal(cache.size, 3, 'ordinary mount must not discard shared assets')
+  lifecycle.fail()
+  assert.equal(cells[0], 'failed')
+  assert.equal(cache.size, 3, 'failure alone must preserve evidence for an explicit retry')
+  events.length = 0
+  lifecycle.retry()
+  assert.deepEqual(events, ['gltf', 'alpha', 'checking', 'attempt'])
+  assert.deepEqual(cells, ['checking', 1])
+  assert.equal(cache.has(RECOVERED_FERN_MODEL), false)
+  assert.equal(cache.has(RECOVERED_FERN_ALPHA), false)
+  assert.equal(cache.get(unrelated), 'already loaded')
 })

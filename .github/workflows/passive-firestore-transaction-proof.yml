@@ -1,0 +1,87 @@
+name: Passive Consent Real Firestore Transaction Proof
+
+on:
+  pull_request:
+    paths:
+      - 'apps/functions/src/passiveSignals.ts'
+      - 'apps/functions/test/passive-signals-firestore-transaction.test.js'
+      - 'apps/functions/test/fixtures/passiveSignals-before-consent-transaction.ts'
+      - 'apps/functions/package.json'
+      - 'apps/functions/tsconfig.json'
+      - 'tests/functions-native-acceptance.test.mjs'
+      - 'scripts/run-functions-native-acceptance.mjs'
+      - 'scripts/prepare-passive-firestore-proof.cjs'
+      - 'apps/functions/scripts/run-tests.mjs'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/passive-firestore-transaction-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: passive-firestore-proof-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  URAI_PROOF_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  GCLOUD_PROJECT: demo-urai-passive-consent-proof
+  URAI_PASSIVE_SIGNAL_EMULATOR_TEST: '1'
+  JAVA_TOOL_OPTIONS: '-Xms64m -Xmx256m'
+
+jobs:
+  actual-firestore-commit-ordering:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact proof source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_PROOF_SOURCE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Verify immutable source and no credential files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_PROOF_SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          test -z "${GOOGLE_APPLICATION_CREDENTIALS:-}"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - name: Setup native Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Select existing runner Java 21
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${JAVA_HOME_21_X64:-}"
+          test -x "$JAVA_HOME_21_X64/bin/java"
+          test -n "${RUNNER_TEMP:-}"
+          echo "FIREBASE_EMULATORS_PATH=$RUNNER_TEMP/urai-passive-emulators" >> "$GITHUB_ENV"
+          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
+          "$JAVA_HOME_21_X64/bin/java" -version
+      - name: Install actual locked CLI and Functions SDKs
+        run: pnpm --filter urai-functions... --filter urai-spatial-monorepo install --frozen-lockfile --ignore-scripts
+      - name: Run unified native Functions and real-Firestore acceptance
+        run: pnpm test:functions:native
+        env:
+          URAI_NATIVE_ACCEPTANCE_OUTPUT_PARENT: ${{ runner.temp }}
+      - name: Upload exact-source emulator receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: passive-firestore-consent-${{ env.URAI_PROOF_SOURCE_SHA }}
+          path: ${{ runner.temp }}/urai-functions-native-*
+          if-no-files-found: warn
+          retention-days: 90

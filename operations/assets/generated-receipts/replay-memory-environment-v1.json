@@ -4,13 +4,52 @@
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb",
   "bytes": 435544,
   "sha256": "fbc58c40c3b7ee18025e605aee72dfd97988747d169b923f690b363a409362b3",
-  "measured": {"triangleCount":10410,"nodeCount":131,"materialCount":8,"animationClips":["Replay_Idle","Replay_Enter","Replay_Play","Replay_Exit"]},
-  "compressionStatus": "meshopt",
+  "measured": {
+    "format": "glb",
+    "version": 2,
+    "generator": "URAI Labs Final GLB Forge 1.0",
+    "nodes": 131,
+    "meshes": 7,
+    "materials": 8,
+    "triangleCount": 10410,
+    "boundsMin": [
+      -10,
+      -1.6594792604446411,
+      -13.02591323852539
+    ],
+    "boundsMax": [
+      10,
+      6.274296283721924,
+      13
+    ],
+    "boundsMeters": [
+      20,
+      7.934,
+      26.026
+    ],
+    "extensionsUsed": [
+      "KHR_materials_clearcoat",
+      "KHR_materials_emissive_strength",
+      "KHR_materials_transmission"
+    ],
+    "extensionsRequired": []
+  },
+  "compressionStatus": "uncompressed-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-replay-theater",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "license": "URAI Labs internal production asset",
   "generatedBy": "URAI Labs Final GLB Forge 1.0; reconciled to urai-final-glb-production-pack-v1",
   "generatedAt": "2026-08-06T03:30:00Z",
-  "releaseState": "candidate-not-production-ready"
+  "releaseState": "candidate-not-production-ready",
+  "targetRoutes": [
+    "/replay"
+  ],
+  "measurementReconciliation": {
+    "sourceSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
+    "observedAt": "2026-10-06T17:20:57.484493+00:00",
+    "method": "audit-launch-critical-artifact.mjs actual-byte inspection",
+    "assetBytesChanged": false,
+    "finalReviewGranted": false
+  }
 }

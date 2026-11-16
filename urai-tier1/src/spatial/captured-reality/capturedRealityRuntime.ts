@@ -4,6 +4,8 @@ export type CapturedRealityQualityProfile = {
   tier: CapturedRealityDeviceTier
   maxRuntimeBytes: number
   targetFps: number
+  firstInteractiveBudgetMs: number
+  minimumFps: number
   chunkSize: number
   alphaHash: boolean
   reducedMotionCameraDriftAllowed: false
@@ -16,6 +18,8 @@ export const CAPTURED_REALITY_QUALITY_PROFILES: Record<CapturedRealityDeviceTier
     tier: 'mobile',
     maxRuntimeBytes: 64 * MiB,
     targetFps: 30,
+    firstInteractiveBudgetMs: 18_000,
+    minimumFps: 0,
     chunkSize: 16_000,
     alphaHash: true,
     reducedMotionCameraDriftAllowed: false,
@@ -23,7 +27,9 @@ export const CAPTURED_REALITY_QUALITY_PROFILES: Record<CapturedRealityDeviceTier
   desktop: {
     tier: 'desktop',
     maxRuntimeBytes: 160 * MiB,
-    targetFps: 45,
+    targetFps: 50,
+    firstInteractiveBudgetMs: 12_000,
+    minimumFps: 40,
     chunkSize: 25_000,
     alphaHash: true,
     reducedMotionCameraDriftAllowed: false,
@@ -32,6 +38,8 @@ export const CAPTURED_REALITY_QUALITY_PROFILES: Record<CapturedRealityDeviceTier
     tier: 'xr',
     maxRuntimeBytes: 96 * MiB,
     targetFps: 72,
+    firstInteractiveBudgetMs: 12_000,
+    minimumFps: 72,
     chunkSize: 16_000,
     alphaHash: true,
     reducedMotionCameraDriftAllowed: false,
@@ -44,6 +52,8 @@ export type CapturedRealityPerformanceReceipt = {
   sustainedFps: number
   sampleSeconds: number
   firstVisibleMs?: number
+  firstInteractiveMs?: number
+  minimumFps?: number
   peakGpuMemoryMb?: number
   peakCpuMemoryMb?: number
   deviceLabel: string
@@ -62,6 +72,9 @@ export function validateCapturedRealityPerformanceReceipt(receipt: CapturedReali
   if (!Number.isSafeInteger(receipt.runtimeBytes) || receipt.runtimeBytes <= 0) errors.push('RUNTIME_BYTES_REQUIRED')
   if (receipt.runtimeBytes > profile.maxRuntimeBytes) errors.push('RUNTIME_ASSET_OVER_BUDGET')
   if (!Number.isFinite(receipt.sustainedFps) || receipt.sustainedFps < profile.targetFps) errors.push('SUSTAINED_FPS_BELOW_BUDGET')
+  if (!Number.isFinite(receipt.firstInteractiveMs) || receipt.firstInteractiveMs! < 0) errors.push('FIRST_INTERACTIVE_MEASUREMENT_REQUIRED')
+  else if (receipt.firstInteractiveMs! > profile.firstInteractiveBudgetMs) errors.push('FIRST_INTERACTIVE_OVER_BUDGET')
+  if (profile.minimumFps > 0 && (!Number.isFinite(receipt.minimumFps) || receipt.minimumFps! < profile.minimumFps)) errors.push('PRIMARY_ROUTE_MINIMUM_FPS_BELOW_BUDGET')
   if (!Number.isFinite(receipt.sampleSeconds) || receipt.sampleSeconds < 30) errors.push('PERFORMANCE_SAMPLE_TOO_SHORT')
   if (typeof receipt.deviceLabel !== 'string' || !receipt.deviceLabel.trim()) errors.push('DEVICE_LABEL_REQUIRED')
   if (!Number.isFinite(Date.parse(receipt.measuredAt))) errors.push('MEASURED_AT_REQUIRED')

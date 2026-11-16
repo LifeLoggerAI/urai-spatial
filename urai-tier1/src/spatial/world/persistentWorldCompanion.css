@@ -235,6 +235,8 @@
   left: auto;
   right: max(18px, env(safe-area-inset-right));
   bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 20;
+  justify-items: end;
   transform: none;
 }
 

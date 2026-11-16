@@ -1,0 +1,65 @@
+# iOS first-launch source preparation
+
+The user explicitly included iOS in the first launch on October 7, 2026. This is an in-scope preparation lane. No eligible Apple team, enrollment, registered App ID, provisioning profile, Xcode build, TestFlight delivery or iPhone acceptance is established by this source.
+
+The pinned Capacitor 8.5.2 shell generates an Xcode/Swift Package Manager project from the same static Spatial export as Android. `com.urailabs.urai` is a proposed Apple bundle identity until the owner confirms its registration. The generated shell preserves Capacitor SceneDelegateProxy cold/warm URL and user-activity forwarding, includes the shared navigation listener, enables only `applinks:urai.app`, keeps App Transport Security enabled, and disables native bridge logging. An association file is generated only when a real Team ID and owner-confirmed bundle ID are supplied; no placeholder Team ID is committed or published.
+
+Source-only preparation, after the exact approved candidate has been checked out and its static export built:
+
+```sh
+export URAI_EXACT_HEAD="$(git rev-parse HEAD)"
+node scripts/prepare-ios-shell.mjs --optional
+corepack pnpm --dir distribution/ios-shell ios:add
+corepack pnpm --dir distribution/ios-shell ios:configure
+node scripts/prepare-native-links.mjs --association-output "$RUNNER_TEMP/urai-native-associations"
+```
+
+These commands generate source. They do not compile, sign, install or submit an iOS app. Capacitor 8 requires an eligible Mac with Xcode 26 or newer for a native build.
+
+## Native identity configuration
+
+Native iOS identity stays unavailable when genuine Apple/Firebase configuration is absent. Google and Apple ID tokens are exchanged through the existing Firebase JavaScript authority with `skipNativeAuth: true`. Apple uses the native SDK-generated raw nonce. Neither cancellation nor configuration failure falls back to a WebView provider popup; no custom credential store or credential URL handler is introduced.
+
+The primary account currently uses Google, so App Review guideline 4.8 requires an equivalent privacy-preserving login option unless an actual exemption applies. The source includes guarded native Sign in with Apple. An App Review exemption has not been established.
+
+Owner prerequisites for enabling it:
+
+1. Establish current Apple Developer enrollment/team/agreement authority and confirm the registered App ID and bundle identifier. Enable Associated Domains and Sign in with Apple capabilities on that identity.
+2. Register that exact iOS app in canonical Firebase project `urai-4dc1d`. Enable Apple Authentication with the genuine Apple provider configuration; configure Google if offered. Preserve Apple private-key custody in the provider configuration.
+3. Supply `URAI_APPLE_TEAM_ID`, `URAI_IOS_BUNDLE_ID`, protected `IOS_FIREBASE_GOOGLE_SERVICE_INFO_PLIST` (or `URAI_IOS_FIREBASE_CONFIG_PATH`) and the deliberate `URAI_IOS_APPLE_PROVIDER_ENABLED=true` configuration flag. The flag records supplied configuration; it does not prove live provider enablement.
+4. Before the web export, run `scripts/prepare-ios-shell.mjs --config-output <protected-file>` with `GITHUB_ENV` set by the authorized build, or deliberately export the resulting `URAI_IOS_*_AUTH_READY` and corresponding `NEXT_PUBLIC_URAI_IOS_*_AUTH_READY` values for the same validated configuration. Generate the project and run the preparation script with `--project distribution/ios-shell/ios`. It places the canonical plist in the Xcode Resources phase, applies the Google callback scheme when present, and adds the Sign in with Apple entitlement.
+5. On the eligible Mac, sync with the pinned CLI. The configuration selects only the Google SPM trait when Google is offered, or Lite for Apple-only sign-in, excludes Facebook, and enables the documented Firebase SPM symlink to avoid package identity collision. Resolve and retain native dependency lock evidence. Build using real provisioning/signing authority.
+6. With domain/deployment authorization, publish and independently verify the generated `apple-app-site-association` and Android `assetlinks.json` at their canonical HTTPS `.well-known` locations. Source generation alone does not establish OS link association.
+7. Retain exact-source native sign-in/cancellation, hidden-email account ownership, restart/account-switch/sign-out, private-route denial, session recovery, native Apple revocation on account deletion, cold/warm Universal Links, VoiceOver/keyboard, permission denial, privacy/logging and network-recovery evidence. Apple button branding, privacy manifests, App Store privacy declarations, review access and complete listing assets still require acceptance against the actual final SDK/build inventory.
+
+Native compilation, provider behavior, signing and delivery remain required. Browser and synthetic credential tests do not certify an iPhone or the App Store.
+
+Primary references: [Capacitor iOS](https://capacitorjs.com/docs/ios), [Firebase plugin setup](https://capawesome.io/docs/sdks/capacitor/firebase/authentication/), [Apple login requirement](https://developer.apple.com/app-store/review/guidelines/#login-services), [Firebase Apple identity](https://firebase.google.com/docs/auth/web/apple), [Associated Domains](https://developer.apple.com/documentation/xcode/supporting-associated-domains).
+
+## Complete source archive and exact-source transport
+
+The source preparation workflow now retains the entire generated `ios` directory, including the Xcode/SPM project, asset catalog, native resources and copied static web export. The complete archive includes `ios-source-receipt.json` and an embedded `ios-source-project-index.json` with every retained file's SHA256, exact source SHA and workflow run. A separate transport manifest binds the complete ZIP and bounded 24 MiB parts. The small `urai-ios-source-preparation-*` artifact remains selected evidence; it is not the complete project.
+
+After downloading and extracting the transport manifest and all numbered part artifacts into one directory, reconstruct and verify without transferring identity from another SHA:
+
+```sh
+python3 scripts/prepare-ios-source-archive.py reconstruct \
+  --manifest /absolute/path/ios-source-archive-transport.json \
+  --parts-directory /absolute/path/downloaded-parts \
+  --output /absolute/path/urai-ios-project-source.zip \
+  --source-sha "$EXACT_APPROVED_SOURCE_SHA"
+python3 scripts/prepare-ios-source-archive.py verify \
+  --archive /absolute/path/urai-ios-project-source.zip \
+  --source-sha "$EXACT_APPROVED_SOURCE_SHA"
+```
+
+Extract the ZIP into a clean directory on the eligible Mac and open `distribution/ios-shell/ios/App/App.xcodeproj`. Resolve the pinned remote SPM dependencies before building. Unconfigured source preparation supplies canonical public Firebase web configuration while deliberately omitting native Google/Apple authority. The archived receipt and fingerprint retain `compiled=false`, `signed=false` and no physical-device acceptance. Supplying genuine provider/signing configuration requires a new exact-source build and its own acceptance; it must not be retroactively claimed for this archive.
+
+
+## Self-contained source and unprovisioned compiler evidence
+
+The full source archive now vendors the exact locked Capacitor App8.1.2 local SPM package, native sources and license inside the generated project. It no longer requires an external node_modules package path. Capacitor core stays pinned to8.5.2; the compiler job validates its resolved commit0b6882e9a3288342aacf36348e5a94e4f1dd7b13 and retains Package.resolved.
+
+The same workflow verifies the complete exact-source ZIP on macos-latest, requires Xcode26+, and builds Release for generic iPhoneOS and iOS Simulator. Both builds set CODE_SIGNING_ALLOWED=NO, CODE_SIGNING_REQUIRED=NO and empty signing identity/team. The artifacts retain the actual .app, Mach-O executable hash, per-file index, Xcode/SDK versions, dependency lock, build log, copied static fingerprint and bounded transport. The receipt records actual application signature inspection; any linker ad-hoc signature carries no Apple team authority.
+
+These artifacts prove compilation only after their exact jobs succeed. They are unprovisioned and carry no physical-device, simulator-runtime, provider, TestFlight or App Store acceptance. Native Google/Apple authority remains deliberately unconfigured. Genuine provider configuration, provisioning, signing, review and devices require their own accepted exact-source build.

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Focus Chamber / focus-memory-chamber-mobile">
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Focus Memory Star / focus-memory-chamber-mobile">
   <defs>
     <radialGradient id="core" cx="50%" cy="46%" r="64%">
       <stop offset="0%" stop-color="hsl(10, 88%, 76%)" stop-opacity="0.84"/>
@@ -100,7 +100,7 @@
 
   <g transform="translate(120 805)">
     <rect x="0" y="0" width="820" height="150" rx="28" fill="rgba(3,8,18,0.58)" stroke="rgba(255,255,255,0.18)"/>
-    <text x="36" y="55" fill="rgba(255,255,255,0.92)" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="700">Focus Chamber</text>
+    <text x="36" y="55" fill="rgba(255,255,255,0.92)" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="700">Focus Memory Star</text>
     <text x="36" y="96" fill="rgba(255,255,255,0.70)" font-family="Inter, Arial, sans-serif" font-size="21">focus-memory-chamber-mobile</text>
     <text x="36" y="126" fill="rgba(255,255,255,0.50)" font-family="Inter, Arial, sans-serif" font-size="17">tier2 • focus • selected memory chamber, image inside star, replay entry</text>
   </g>

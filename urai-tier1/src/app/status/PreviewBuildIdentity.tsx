@@ -26,12 +26,13 @@ export default function PreviewBuildIdentity({ fullSha, shortSha }: PreviewBuild
   if (!isPreviewOrigin) return null
 
   return (
-    <aside
-      className="mb-5 rounded-2xl border border-violet-200/20 bg-violet-200/[0.07] px-5 py-4 text-violet-50/90"
+    <details
+      className="mt-8 rounded-2xl border border-violet-200/20 bg-violet-200/[0.07] px-5 py-4 text-violet-50/90"
       data-testid="urai-embedded-build-identity"
       data-preview-build-identity={fullSha}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <summary className="cursor-pointer py-2 text-sm font-semibold">Preview build details</summary>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.2em] text-violet-200">
             Embedded build identity · non-authoritative
@@ -44,6 +45,6 @@ export default function PreviewBuildIdentity({ fullSha, shortSha }: PreviewBuild
           This commit identity is exposed only on allowlisted non-production preview origins for diagnostics. It never substitutes for the protected urai.app release fingerprint and grants no production authority.
         </p>
       </div>
-    </aside>
+    </details>
   )
 }

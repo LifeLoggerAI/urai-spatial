@@ -39,18 +39,23 @@ test('Home keeps one capability-aware accessible fallback', () => {
   assert.match(runtime, /webglAvailable === false \|\| rendererState === 'failed'/)
   assert.match(runtime, /data-testid="urai-home-accessible-fallback"/)
   assert.match(runtime, /aria-label="Spatial Home fallback"/)
+  assert.match(runtime, /<section[\s\S]{0,180}role="main"[\s\S]{0,180}data-testid="urai-home-accessible-fallback"/)
   assert.match(runtime, /<HomeSemanticNavigation \/>/)
-  assert.match(runtime, /<HomeSpatialWorldFinal \/>/)
+  assert.match(runtime, /<HomeAccessibleSanctuaryFallback \/>/)
+  assert.match(runtime, /data-home-fallback-canon="inhabited-natural-sanctuary"/)
+  assert.doesNotMatch(runtime, /<HomeSpatialWorldFinal \/>/)
 })
 
 test('Home keeps direct semantic Ground, Orb, and Life Map navigation in the runtime boundary', () => {
   assert.match(runtime, /requestUraiWorldOrbOpen/)
-  assert.match(runtime, /aria-label="Open Ground directly"/)
+  assert.ok(runtime.includes("aria-label={locale.text('home.groundAction')}"))
+  const messages = read('src/lib/i18n/journeyMessages.ts')
+  assert.ok(messages.includes("'home.groundAction': { id:'home.groundAction', source:\"Open Ground directly\""))
   assert.match(runtime, /data-testid="home-semantic-ground"/)
-  assert.match(runtime, /href="\/ground\/\?entryPortal=home-ground&cameraCheckpoint=home-ground-descent"/)
-  assert.match(runtime, /aria-label="Open Life Map directly"/)
+  assert.match(runtime, /href=\{homeJourneyHref\('\/ground\/\?entryPortal=home-ground&cameraCheckpoint=home-ground-descent', currentSearch\)\}/)
+  assert.match(runtime, /aria-label=\{locale.text\('home.lifeMapAction'\)\}/)
   assert.match(runtime, /data-testid="home-semantic-life-map"/)
-  assert.match(runtime, /href="\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete"/)
+  assert.match(runtime, /href=\{homeJourneyHref\('\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete', currentSearch\)\}/)
 })
 
 test('Home world preserves separate bounded cinematic ascent and reduced-motion behavior', () => {
@@ -59,6 +64,15 @@ test('Home world preserves separate bounded cinematic ascent and reduced-motion 
   assert.match(world, /primeTransition\('sky'\)/)
   assert.match(world, /\/life-map\?from=home-sky/)
   assert.match(world, /prefers-reduced-motion: reduce/)
+})
+
+test('Home fallback keeps semantic destinations compact until keyboard focus', () => {
+  const css = runtime.split('<style jsx global>{`')[1]?.split('`}</style>')[0] ?? ''
+  assert.ok(css.includes('opacity:.015'), 'semantic destinations remain visually quiet before focus')
+  assert.ok(css.includes(':focus-within{opacity:1;width:min(240px,calc(100vw - 100px));grid-template-columns:minmax(0,1fr)}'))
+  assert.ok(css.includes(':focus-within :is(button,a){box-sizing:border-box;width:100%;height:auto;min-height:48px;'))
+  assert.equal(css.includes('data-webgl-ready="false"]>.home-semantic-navigation{'), false, 'the no-WebGL fallback must not replace the compact nav with a dominant rail')
+  assert.equal(css.includes('body.urai-home-webgl-active .home-semantic-navigation'), false, 'focus disclosure must also work in the fallback')
 })
 
 test('Home runtime handles WebGL loss and one recovery attempt before semantic fallback', () => {

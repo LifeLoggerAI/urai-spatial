@@ -128,7 +128,8 @@ function categoryOwner(category) {
 
 function routeFromSourcePath(relativePath) {
   const normalized = normalizePath(relativePath)
-  const appMatch = normalized.match(/urai-tier1\/src\/app\/([^/]+)/)
+  // An app-root stylesheet or shared component is not a route directory.
+  const appMatch = normalized.match(/urai-tier1\/src\/app\/([^/]+)\//)
   if (appMatch) return `/${appMatch[1]}`
   if (normalized.includes('/components/lifemap/') || normalized.includes('/spatial/lifemap/')) return '/life-map'
   if (normalized.includes('/app/ground/') || normalized.includes('GroundSpatial')) return '/ground'

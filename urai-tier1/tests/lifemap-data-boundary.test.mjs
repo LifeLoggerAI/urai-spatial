@@ -76,9 +76,11 @@ test('semantic Life Map fallback preserves the Focus and Replay journey without 
   assert.match(semanticNavigator, /destinationHref\('focus', selected\)/)
   assert.match(semanticNavigator, /destinationHref\('replay', selected\)/)
   assert.match(semanticNavigator, /next\.set\('from', 'life-map-semantic'\)/)
-  assert.match(semanticNavigator, /disabled=\{!selected\.replayAvailable \|\| selected\.locked\}/)
-  assert.match(semanticNavigator, />Enter Focus</)
-  assert.match(semanticNavigator, />Replay</)
+  assert.match(semanticNavigator, /disabled=\{!selected\.replayAvailable \|\| selected\.locked \|\| \(!explicitDemo && !selected\.authorizedMemory\)\}/)
+  assert.match(semanticNavigator, /locale.text\('lifeMap.enterFocus'\)/)
+  const messages = fs.readFileSync(new URL('../src/lib/i18n/journeyMessages.ts', import.meta.url), 'utf8')
+  assert.match(messages, /'lifeMap.enterFocus':\s*\{\s*id:'lifeMap.enterFocus',\s*source:"Enter Focus"/)
+  assert.match(semanticNavigator, /locale.text\('nav.replay'\)/)
 })
 
 
@@ -87,4 +89,36 @@ test('persistent Life Map route transactions use Firebase auth rather than impli
   assert.match(routeTransactionBridge, /setAuthenticatedUserId\(user\?\.uid \?\? null\)/)
   assert.match(routeTransactionBridge, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)/)
   assert.doesNotMatch(routeTransactionBridge, /localStorage\.getItem/)
+})
+
+test('a changed Firebase actor never renders previously cached private Life Map stars or eras', () => {
+  // Firestore unsubscribe happens after render. The current-actor fence must
+  // apply synchronously on render, before useEffect cleanup can run.
+  assert.match(source, /const currentOwner = explicitDemo \? 'demo-user' : resolvedUserId;/)
+  assert.match(source, /const currentNodes = nodesOwner === currentOwner \? nodes : \[\];/)
+  assert.match(source, /const currentEras = erasOwner === currentOwner \? eras : \[\];/)
+  assert.match(source, /return \{ nodes: resolvedNodes, eras: visibleEras, loading, error, usingSeedData: explicitDemo, sourceMode \};/)
+  assert.match(source, /setNodesOwner\(resolvedUserId\)/)
+  assert.match(source, /setErasOwner\(resolvedUserId\)/)
+  // Demo mode must be its own explicit source, never inherited from an owner.
+  assert.match(source, /setNodesOwner\('demo-user'\)/)
+  assert.match(source, /setErasOwner\('demo-user'\)/)
+})
+
+test('private Life Map joins only explicit owner-verified canonical memory documents', () => {
+  assert.match(source, /memoryId: sanitizeMemoryId\(typeof data\.memoryId === "string" \? data\.memoryId : null\)/)
+  assert.match(source, /collection\(getFirebaseDb\(\), "users", resolvedUserId, "memories"\)/)
+  assert.match(source, /parseSelectedMemory\(doc\.data\(\), resolvedUserId, doc\.id/)
+  // Hidden memories must remain excluded even when their canonical parser returns ready.
+  assert.match(source, /if \(parsed\.status === 'ready' && parsed\.memory\.privacy !== 'hidden'\) accepted\.set\(doc\.id, parsed\.memory\)/)
+  assert.doesNotMatch(source, /if \(parsed\.status === 'ready'\) accepted\.set\(doc\.id, parsed\.memory\)/)
+  assert.match(source, /const memoryId = sanitizeMemoryId\(node\.memoryId\)/)
+  assert.match(source, /memoryId && node\.type === "memory" \? visibleMemories\.get\(memoryId\)/)
+  assert.match(source, /if \(!authoritative\) return \[\{ \.\.\.node, authorizedMemory: false,/)
+  assert.match(source, /id: node\.id, memoryId: authoritative\.id/)
+  assert.match(source, /if \(node\.type === 'memory' && !authoritative\) return \[\];/)
+  assert.match(source, /if \(node\.privacyLevel === 'hidden'\) return \[\];/)
+  assert.match(source, /const visibleMemories = authorityKey !== null && memoriesAuthority === authorityKey \? currentMemories/)
+  assert.match(source, /replayAvailable: false, replayManifestId: undefined/)
+  assert.match(source, /replayManifestId: authoritative\.replayManifest\.id/)
 })

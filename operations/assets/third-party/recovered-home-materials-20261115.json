@@ -1,0 +1,515 @@
+{
+  "schema": "urai.recovered-home-materials.v1",
+  "recoveredAt": "2026-11-15",
+  "status": "recovered-candidate-awaiting-current-runtime-visual-review",
+  "sourceRepository": "LifeLoggerAI/urai-spatial",
+  "sourceCommit": "1b14dcbd9ce3a811e4d117921cbd8a00c7c42e66",
+  "sourcePullRequest": "https://github.com/LifeLoggerAI/urai-spatial/pull/1296",
+  "license": "CC0-1.0",
+  "historicalProvenance": [
+    {
+      "path": "operations/assets/home-fern-material-provenance.json",
+      "gitBlobSha": "17ec800b2aaba0a00e6900674666b76dbcc1c6ce",
+      "url": "https://github.com/LifeLoggerAI/urai-spatial/blob/1b14dcbd9ce3a811e4d117921cbd8a00c7c42e66/operations/assets/home-fern-material-provenance.json"
+    },
+    {
+      "path": "operations/assets/third-party/home-photographic-pbr-v1.json",
+      "gitBlobSha": "e1191e53f62e3ce0c325344d437c94a18973b992",
+      "url": "https://github.com/LifeLoggerAI/urai-spatial/blob/1b14dcbd9ce3a811e4d117921cbd8a00c7c42e66/operations/assets/third-party/home-photographic-pbr-v1.json"
+    }
+  ],
+  "files": [
+    {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf",
+      "bytes": 6899,
+      "sha256": "33974295ee19670af4877705fc7d91f33f42d6302f0d44a625e072271223031f",
+      "gitBlobSha": "ec7509ee8e280964d78eaeab28348d855c88d98d"
+    },
+    {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/fern_02/fern_02.bin",
+      "bytes": 176176,
+      "sha256": "fe1abb762bcbbc7ad9e86925c8080437a62add257d9280e9142fdc85c226e64c",
+      "gitBlobSha": "b6ae3752172b2f6d074f05d433accdc96b357f2a"
+    },
+    {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/fern_02/textures/fern_02_nor_gl_1k.jpg",
+      "bytes": 367222,
+      "sha256": "45bce132c6e96a0864bc89ab5da51361ab3f4afa83a6669ae499ab5ca811f621",
+      "gitBlobSha": "a1dcaeb21a65624912e95fbd102a09a5ed2c89f4"
+    },
+    {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/fern_02/textures/fern_02_diff_1k.jpg",
+      "bytes": 315705,
+      "sha256": "a828a6e7b4c01c826911e2eac4b3afc7457dab7b3b392a31c681ed88b7d50029",
+      "gitBlobSha": "2f0223cbf1a77daadd38813ffff1fa6d389d49ca"
+    },
+    {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/fern_02/textures/fern_02_arm_1k.jpg",
+      "bytes": 280359,
+      "sha256": "ebfb5d76ce9cbdaec20bcd22dce9b755f0b1b8650ef29ca13555e3e6961025d7",
+      "gitBlobSha": "37ed142c42ef6752152fd063163faec109cd1af7"
+    },
+    {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/fern_02/textures/fern_02_alpha_1k.png",
+      "bytes": 114589,
+      "sha256": "ea3c64284c7ebdeedf484d2d816eae92825ec526140c3bb83859ddc7a64001f9",
+      "gitBlobSha": "c11a9d873640a3dd7e6a5896424afc2260495fce"
+    },
+    {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.webp",
+      "bytes": 528248,
+      "sha256": "1d7a640e6caacc7f089642ec83a84905c47819bcc0332ab8c878349310e056f1",
+      "gitBlobSha": "e220ba3780164251575e75d015d6e07415579ae7"
+    },
+    {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.webp",
+      "bytes": 534440,
+      "sha256": "82816afc1957b1d1881ac5e3ec7335afcd33d67b1a676170b9af60beebaa33c3",
+      "gitBlobSha": "2bd45ebec22d35765a5b2241ecc08efa992b8605"
+    },
+    {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-arm-1k.webp",
+      "bytes": 373720,
+      "sha256": "e599141326de68502318a5e6a2f52347cb96abfcc1ac0ee0639c8aeabd66a4dd",
+      "gitBlobSha": "80235239ff6f1ee96e111a6a133368c0f361ae3a"
+    },
+    {
+      "path": "urai-tier1/public/assets/urai/ground-production/cc0/polyhaven-jacaranda-web-v1.glb",
+      "bytes": 1805940,
+      "sha256": "62b533f9fd8f5ac59916f50eb17518b551cebb6cbbef7c0f81f024ee7e5d9092",
+      "gitBlobSha": "050efee1d6d904d416372c91a2bb8b2bc9e6eb85"
+    }
+  ],
+  "recoveredAssetBytes": 4503298,
+  "fernCompatibility": {
+    "activeGeometryPath": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb",
+    "activeGeometryBytes": 179664,
+    "activeGeometrySha256": "9e3d29b1f917ec9f6e72f713fc7131f1d413ffecfbd3c96e7d72f92529f31a87",
+    "binBytes": 176176,
+    "binSha256": "fe1abb762bcbbc7ad9e86925c8080437a62add257d9280e9142fdc85c226e64c",
+    "binByteIdentical": true,
+    "nodeTransformsIdentical": true,
+    "matchedAccessors": [
+      {
+        "mesh": 0,
+        "primitive": 0,
+        "attribute": "POSITION",
+        "sha256": "9df872d55db8fe61a9f4ff00d4094f3bc282ffe4cba34a066387c6e329040b0b"
+      },
+      {
+        "mesh": 0,
+        "primitive": 0,
+        "attribute": "NORMAL",
+        "sha256": "60ae6051da6385d53849d8cdc05c6fcf9ad292ccdbdd8861f75de009d5aab021"
+      },
+      {
+        "mesh": 0,
+        "primitive": 0,
+        "attribute": "TEXCOORD_0",
+        "sha256": "829f97440aac02d95b8c042bf6fd1a622fb85c5d621e4dd759a785c6b4671a58"
+      },
+      {
+        "mesh": 0,
+        "primitive": 0,
+        "attribute": "indices",
+        "sha256": "0e7211d49365e48fc448fac009f87c15756d72527f06ae7d5fe9373347805562"
+      },
+      {
+        "mesh": 1,
+        "primitive": 0,
+        "attribute": "POSITION",
+        "sha256": "7155e146f564b0a3719a09456ed33ff6a90d4f465d6814cba863a4897639c13a"
+      },
+      {
+        "mesh": 1,
+        "primitive": 0,
+        "attribute": "NORMAL",
+        "sha256": "fd4fcd748b4aa4ecdc51dd8994f6a492686532b61e7ed0e9f7fd0feac714467d"
+      },
+      {
+        "mesh": 1,
+        "primitive": 0,
+        "attribute": "TEXCOORD_0",
+        "sha256": "5c0585b43040ae64a76e334e28abaf45c4254fc06c133b2bfa45216817ddca81"
+      },
+      {
+        "mesh": 1,
+        "primitive": 0,
+        "attribute": "indices",
+        "sha256": "4ce2f5a0882c1b519d7859eb6a1c5317a01e6765115873de0a121d8f4412dd6c"
+      },
+      {
+        "mesh": 2,
+        "primitive": 0,
+        "attribute": "POSITION",
+        "sha256": "0ecfe975adfc3cbf9fc74fd357bfb3efb22bfc7599289696b9a876b3edb47c94"
+      },
+      {
+        "mesh": 2,
+        "primitive": 0,
+        "attribute": "NORMAL",
+        "sha256": "4f1eccbb352cc465ce02010336afac94b0176cd473d2a8a4f704d3122762b7fe"
+      },
+      {
+        "mesh": 2,
+        "primitive": 0,
+        "attribute": "TEXCOORD_0",
+        "sha256": "d3bcf9b5c4a20f90a763e951e7e26c60effe703f3a554a011722209b457c3888"
+      },
+      {
+        "mesh": 2,
+        "primitive": 0,
+        "attribute": "indices",
+        "sha256": "88277e2c4928926b773a3f67f77c5884f113466707082d0371f2a84aee31d896"
+      },
+      {
+        "mesh": 3,
+        "primitive": 0,
+        "attribute": "POSITION",
+        "sha256": "805f2d40289b8b4defe0b98e5d143a5305d479ba3643b8d379024eee09c82243"
+      },
+      {
+        "mesh": 3,
+        "primitive": 0,
+        "attribute": "NORMAL",
+        "sha256": "520cd0ad204b483260474fbdcc03e3c5d121eebdd83fbd97f1505205d0609d17"
+      },
+      {
+        "mesh": 3,
+        "primitive": 0,
+        "attribute": "TEXCOORD_0",
+        "sha256": "dcccec91025f8460d6b506fd72323196f09a62f49b432ab84637f42749986742"
+      },
+      {
+        "mesh": 3,
+        "primitive": 0,
+        "attribute": "indices",
+        "sha256": "53acbb741a899a53c3904d86f168f9684d6a2266d2c0da8bca8cde0684f87569"
+      }
+    ]
+  },
+  "checks": {
+    "allNineFileByteCountsAndSha256MatchHistoricalReceipts": true,
+    "allNineGitBlobShasMatchGitHubSource": true,
+    "allGltfBufferAndImageUrisResolveLocally": true,
+    "allSevenImagesDecodeAt1024By1024": true,
+    "allTenGitBlobShasMatchGitHubSource": true,
+    "jacarandaByteCountAndGitBlobMatchHistoricalReceipt": true
+  },
+  "materialNotes": {
+    "fernDiffuse": "RGB photographic atlas; separate alpha map is required",
+    "fernAlpha": "1024x1024, 16-bit grayscale PNG; bind alphaMap with alphaTest 0.5",
+    "fernUv": "Recovered full-material model and active geometry-only model have identical UV accessors and geometry bytes",
+    "fernVariantNodes": [
+      "fern_02_b",
+      "fern_02_c",
+      "fern_02_a",
+      "fern_02_d"
+    ],
+    "fernTransforms": "Source glTF arranges four independent variants in a 2x2 display grid; runtime should place selected variants deliberately",
+    "stone": "Three optimized WebP maps: diffuse sRGB, OpenGL normal, packed AO/Roughness/Metalness; photographic candidate for existing UV surfaces"
+  },
+  "notRecovered": [],
+  "releaseAuthority": {
+    "historicalApprovalTransfers": false,
+    "productionArtApproval": false,
+    "publicDeployment": false
+  },
+  "jacarandaSourceInspection": {
+    "path": "urai-tier1/public/assets/urai/ground-production/cc0/polyhaven-jacaranda-web-v1.glb",
+    "bytes": 1805940,
+    "sha256": "62b533f9fd8f5ac59916f50eb17518b551cebb6cbbef7c0f81f024ee7e5d9092",
+    "gitBlobSha": "050efee1d6d904d416372c91a2bb8b2bc9e6eb85",
+    "primitives": [
+      {
+        "mesh": 0,
+        "primitive": 0,
+        "material": 0,
+        "vertices": 18959,
+        "triangles": 13264
+      },
+      {
+        "mesh": 0,
+        "primitive": 1,
+        "material": 1,
+        "vertices": 6376,
+        "triangles": 12860
+      },
+      {
+        "mesh": 0,
+        "primitive": 2,
+        "material": 2,
+        "vertices": 76974,
+        "triangles": 28829
+      }
+    ],
+    "totalTriangles": 54953,
+    "totalVertices": 102309,
+    "embeddedTextures": [
+      {
+        "index": 0,
+        "name": "jacaranda_tree_branches_nor_gl",
+        "mimeType": "image/ktx2",
+        "bytes": 73709,
+        "width": 256,
+        "height": 256,
+        "mipLevels": 9,
+        "supercompressionScheme": 2
+      },
+      {
+        "index": 1,
+        "name": "jacaranda_tree_branches_diff",
+        "mimeType": "image/ktx2",
+        "bytes": 59542,
+        "width": 512,
+        "height": 512,
+        "mipLevels": 10,
+        "supercompressionScheme": 1
+      },
+      {
+        "index": 2,
+        "name": "jacaranda_tree_branches_rough",
+        "mimeType": "image/ktx2",
+        "bytes": 43988,
+        "width": 512,
+        "height": 512,
+        "mipLevels": 10,
+        "supercompressionScheme": 1
+      },
+      {
+        "index": 3,
+        "name": "jacaranda_tree_trunk_nor_gl",
+        "mimeType": "image/ktx2",
+        "bytes": 75448,
+        "width": 256,
+        "height": 256,
+        "mipLevels": 9,
+        "supercompressionScheme": 2
+      },
+      {
+        "index": 4,
+        "name": "jacaranda_tree_trunk_diff",
+        "mimeType": "image/ktx2",
+        "bytes": 59472,
+        "width": 512,
+        "height": 512,
+        "mipLevels": 10,
+        "supercompressionScheme": 1
+      },
+      {
+        "index": 5,
+        "name": "jacaranda_tree_trunk_rough",
+        "mimeType": "image/ktx2",
+        "bytes": 60148,
+        "width": 512,
+        "height": 512,
+        "mipLevels": 10,
+        "supercompressionScheme": 1
+      },
+      {
+        "index": 6,
+        "name": "jacaranda_tree_leaves_nor_gl",
+        "mimeType": "image/ktx2",
+        "bytes": 66078,
+        "width": 256,
+        "height": 256,
+        "mipLevels": 9,
+        "supercompressionScheme": 2
+      },
+      {
+        "index": 7,
+        "name": "jacaranda_tree_leaves_diff-jacaranda_tree_leaves_alpha",
+        "mimeType": "image/ktx2",
+        "bytes": 39863,
+        "width": 512,
+        "height": 512,
+        "mipLevels": 10,
+        "supercompressionScheme": 1
+      },
+      {
+        "index": 8,
+        "name": "jacaranda_tree_leaves_rough",
+        "mimeType": "image/ktx2",
+        "bytes": 17589,
+        "width": 512,
+        "height": 512,
+        "mipLevels": 10,
+        "supercompressionScheme": 1
+      }
+    ],
+    "encodedTextureBytes": 495837,
+    "decodedGeometryBufferBytes": 2624708,
+    "extensionsRequired": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_mesh_quantization",
+      "KHR_texture_basisu"
+    ],
+    "noExternalBufferOrImageUris": true,
+    "leafAlphaMode": "OPAQUE",
+    "sourceMaterialCount": 3,
+    "lodCount": 1,
+    "sourceNode": {
+      "name": "jacaranda_tree_LOD0",
+      "translation": [
+        -0.7494707107543945,
+        9.516113705933094,
+        -0.5171065330505371
+      ],
+      "scale": [
+        11.971490859985352,
+        11.971490859985352,
+        11.971490859985352
+      ],
+      "mesh": 0
+    },
+    "historicalReceiptCorrection": "Actual exact donor binary contains nine embedded KTX2/Basis textures; historical receipt described a WebP optimization stage. Runtime needs KTX2/Basis and Meshopt support."
+  },
+  "recoveredScratchOnly": [
+    {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr",
+      "sha256": "f6a989f89432eb4eee3191364a9c1ceed195c4ec3544173a3c04fd96cb91d0ba",
+      "bytes": 1508872,
+      "bytesAvailableLocally": true,
+      "reason": "Recovered from existing historical Git blob and SHA256 verified; kept outside runtime candidate until visual use warrants staging.",
+      "stagedInIntegrationClone": false,
+      "scratchPath": "/workspace/scratch/fb91170340f7/recovered-assets/studio-small-08-1k.hdr"
+    },
+    {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-displacement-1k.png",
+      "sha256": "f7905e8868c68c2ca8ddd622b33d889eb69b656751d76e01f93f6011f79957e7",
+      "bytes": 1735460,
+      "width": 1024,
+      "height": 1024,
+      "bytesAvailableLocally": true,
+      "reason": "Recovered from existing historical Git blob and SHA256 verified; kept outside runtime candidate until visual use warrants staging.",
+      "stagedInIntegrationClone": false,
+      "scratchPath": "/workspace/scratch/fb91170340f7/recovered-assets/rock-tile-floor-displacement-1k.png"
+    }
+  ],
+  "jacarandaVisualInspection": {
+    "date": "2026-11-15",
+    "outcome": "rejected-for-close-range-runtime-integration",
+    "binaryUnchanged": true,
+    "runtimeIntegrationAdded": false,
+    "images": [
+      {
+        "view": "original",
+        "file": "jacaranda-original.jpg",
+        "bytes": 60323,
+        "sha256": "82f09d416ebc7357344d0c2f99fd580b7c6d47f1bcd49e2e8231e3de25b88640",
+        "width": 900,
+        "height": 650
+      },
+      {
+        "view": "alpha-test",
+        "file": "jacaranda-alpha-test.jpg",
+        "bytes": 60389,
+        "sha256": "0547a7e00205990f62888400d676dfdb752a2838e3005594aa67f9c964e6d234",
+        "width": 900,
+        "height": 650
+      },
+      {
+        "view": "closeup",
+        "file": "jacaranda-closeup.jpg",
+        "bytes": 148212,
+        "sha256": "c38ab92d97ddc2c4bc0cae7ce78245e418158aef7e1fc81ccef07b93aee89813",
+        "width": 900,
+        "height": 650
+      }
+    ],
+    "recipeFile": "render-jacaranda-vercel.cjs",
+    "recipeSha256": "8cd77a7402e661fd6017b3fe4b5c8e18149c3cd4e31754366ed2111bd3efd353",
+    "environment": {
+      "renderer": "Three.js WebGLRenderer, headless Chromium, SwiftShader",
+      "sourceLoadedWith": [
+        "GLTFLoader",
+        "MeshoptDecoder",
+        "KTX2Loader with bundled Basis transcoder"
+      ],
+      "browserEnv": {
+        "PLAYWRIGHT_HOST_PLATFORM_OVERRIDE": "ubuntu24.04-x64",
+        "PLAYWRIGHT_BROWSERS_PATH": "/vercel/sandbox/browsers"
+      },
+      "scope": "isolated public asset viewer; application source unchanged"
+    },
+    "observed": {
+      "treeDrawCalls": 3,
+      "treeTriangles": 54953,
+      "sourceBoundsMeters": [
+        23.942981719970703,
+        19.324931716301926,
+        18.851435450102976
+      ],
+      "leafMapFormat": 37492,
+      "leafMapFormatName": "RGB_ETC2_Format",
+      "leafAlphaChannelAvailable": false,
+      "alphaTestOverride": 0.5,
+      "alphaTestOverrideRestoresLeafCutouts": false,
+      "pageErrors": [],
+      "alphaTestPixelDifferenceBelowOverlay": {
+        "comparisonRegion": [
+          0,
+          140,
+          900,
+          650
+        ],
+        "differenceBounds": null,
+        "meanAbsoluteRgbDifference": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "findings": [
+      "Broad mature-tree silhouette is visible at overview distance.",
+      "Closeup exposes large opaque triangular foliage facets rather than natural leaf silhouettes.",
+      "Leaf diffuse KTX2 texture loads as RGB_ETC2 without an alpha channel; alpha-test override makes zero pixel difference below the text overlay in the captured overview.",
+      "Upstream source deliberately promotes Jacaranda foliage to OPAQUE and aggressively simplifies leaf geometry for distant background use; observed evidence does not establish that KTX conversion discarded an original alpha channel.",
+      "A less destructive source geometry/material combination must be inspected before close-range visual integration; changing alphaTest alone is insufficient."
+    ],
+    "performanceNotes": {
+      "lodCount": 1,
+      "trianglesPerTree": 54953,
+      "trianglesFor3Trees": 164859,
+      "trianglesFor6Trees": 329718,
+      "trianglesFor24Trees": 1318872,
+      "allMaterialsDoubleSided": true,
+      "devicePerformanceAcceptance": false
+    }
+  },
+  "jacarandaEarlierSourceLeads": {
+    "searchScope": "Bounded exact-path history at historical Spatial source commit and its pinned upstream derivative; no broad source download.",
+    "historicalSpatialImportCommit": "69847c28f3c91b4f4caaea375e80f6e9cdeaf262",
+    "separateLeafAlphaFoundInHistoricalSpatialAssetTree": false,
+    "upstreamOptimizationEvidence": "https://github.com/2600th/web-ocean-3d/commit/142320e178f7211922e2ef08cc2b606a7d86ec21",
+    "upstreamRawSource": {
+      "path": "assets/source/models/jacaranda_tree",
+      "committed": false,
+      "note": "Upstream commit explicitly excludes raw source assets and describes approximately 199 MB of Jacaranda geometry; not downloaded."
+    },
+    "candidates": [
+      {
+        "description": "Before KTX2 conversion; already after opaque foliage promotion",
+        "repository": "2600th/web-ocean-3d",
+        "commit": "15d3fe33d2ded9a3e1413e7ac8d67dc423d8f883",
+        "path": "public/models/dressing/jacaranda_tree.glb",
+        "gitBlobSha": "7ffb8d78450ae57b7350e4fe0cd472a9330fdbd9",
+        "url": "https://github.com/2600th/web-ocean-3d/blob/15d3fe33d2ded9a3e1413e7ac8d67dc423d8f883/public/models/dressing/jacaranda_tree.glb",
+        "recovered": false,
+        "status": "Metadata confirmed; source bytes omitted by connector and blob absent from known local Spatial clone."
+      },
+      {
+        "description": "Earlier optimized WebP-era tree, before explicit opaque foliage promotion",
+        "repository": "2600th/web-ocean-3d",
+        "commit": "11d07702518169809f51e781963d3a95e651d2f1",
+        "path": "public/models/dressing/jacaranda_tree.glb",
+        "gitBlobSha": "ad67a4a70a2b80842f1b9185088dce75a36b766e",
+        "url": "https://github.com/2600th/web-ocean-3d/blob/11d07702518169809f51e781963d3a95e651d2f1/public/models/dressing/jacaranda_tree.glb",
+        "recovered": false,
+        "status": "Metadata confirmed; source bytes omitted by connector. No alpha preservation or visual quality claim."
+      }
+    ]
+  }
+}

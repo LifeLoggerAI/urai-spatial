@@ -1,10 +1,14 @@
 'use client'
 
-import { Canvas } from '@react-three/fiber'
+import { useReducedMotion } from '@/hooks/useReducedMotion'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+import { requestUraiWorldOrbOpen, requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
+import { Canvas, useThree } from '@react-three/fiber'
 import { Float, Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot } from 'firebase/firestore'
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import {
   applyOperationalConsentPolicy,
@@ -12,10 +16,11 @@ import {
   cancelOperationalExportRequest,
   createOperationalDeletionRequest,
   createOperationalExportRequest,
-  getOperationalExportDownloadUrl,
+  downloadOperationalExportBytes,
   subscribeOperationalUserCollection,
   type PrivacyRow,
 } from '@/lib/privacy/operationalPrivacyClient'
+import { OperationalExportDownloadSession, type OperationalExportRequest } from '@/lib/privacy/authorizedExportDownload'
 import {
   consequenceSummary,
   defaultConsentPolicy,
@@ -63,39 +68,45 @@ function consentColor(mode: ConsentMode) {
   return '#657080'
 }
 
-function Chamber({ domain, policy, index, selected, onSelect }: {
+function Chamber({ domain, policy, index, selected, onSelect, reducedMotion }: {
   domain: ConsentDomain
   policy: ConsentDomainPolicy
   index: number
   selected: boolean
   onSelect: (domain: ConsentDomain) => void
+  reducedMotion: boolean
 }) {
   const angle = (index / DOMAIN_ORDER.length) * Math.PI * 2
   const radius = 5.2
   const color = consentColor(policy.mode)
   return (
     <group position={[Math.cos(angle) * radius, 0.2, Math.sin(angle) * radius]} rotation={[0, -angle + Math.PI / 2, 0]}>
-      <Float speed={policy.mode === 'paused' ? 0.2 : 0.65} rotationIntensity={0.05} floatIntensity={0.1}>
-        <RoundedBox
-          args={[2.4, 2.5, 0.7]}
-          radius={0.18}
-          smoothness={4}
-          onClick={(event) => { event.stopPropagation(); onSelect(domain) }}
-        >
-          <meshStandardMaterial
-            color={selected ? color : '#101923'}
-            emissive={color}
-            emissiveIntensity={selected ? 0.72 : policy.mode === 'denied' ? 0.03 : 0.16}
-            metalness={0.35}
-            roughness={0.4}
-          />
-        </RoundedBox>
-        <Html position={[0, 0.15, 0.38]} center transform distanceFactor={8}>
+      <Float speed={reducedMotion ? 0 : policy.mode === 'paused' ? 0.2 : 0.65} rotationIntensity={reducedMotion ? 0 : 0.05} floatIntensity={reducedMotion ? 0 : 0.1}>
+        <group onClick={(event) => { event.stopPropagation(); onSelect(domain) }}>
+          <RoundedBox args={[2.28, 2.42, 0.42]} radius={0.28} smoothness={8}>
+            <meshPhysicalMaterial
+              color={selected ? color : '#101923'}
+              emissive={color}
+              emissiveIntensity={selected ? 0.46 : policy.mode === 'denied' ? 0.025 : 0.12}
+              metalness={0.08}
+              roughness={0.24}
+              clearcoat={0.8}
+              clearcoatRoughness={0.22}
+              transparent
+              opacity={selected ? 0.96 : 0.88}
+            />
+          </RoundedBox>
+          <mesh position={[0, 0, -0.28]} scale={[1.08, 1.1, 1]}>
+            <ringGeometry args={[0.92, 1.02, 48, 1, Math.PI * 0.12, Math.PI * 1.76]} />
+            <meshBasicMaterial color={color} transparent opacity={selected ? 0.42 : 0.14} toneMapped={false} />
+          </mesh>
+        </group>
+        <Html position={[0, 0.15, 0.38]} center transform sprite distanceFactor={8}>
           <span style={{ display: 'block', width: '152px', color: '#f4f8fb', fontSize: '16px', fontWeight: 800, lineHeight: 1.1, textAlign: 'center', textShadow: '0 2px 12px #000', pointerEvents: 'none' }}>
             {DOMAIN_LABELS[domain]}
           </span>
         </Html>
-        <Html position={[0, -0.55, 0.38]} center transform distanceFactor={8}>
+        <Html position={[0, -0.55, 0.38]} center transform sprite distanceFactor={8}>
           <span style={{ display: 'block', color, fontSize: '12px', fontWeight: 900, letterSpacing: '.12em', textAlign: 'center', textShadow: '0 2px 12px #000', pointerEvents: 'none' }}>
             {policy.mode.toUpperCase()}
           </span>
@@ -103,6 +114,18 @@ function Chamber({ domain, policy, index, selected, onSelect }: {
       </Float>
     </group>
   )
+}
+
+function ConsentCameraFraming() {
+  const { camera, size, invalidate } = useThree()
+  useLayoutEffect(() => {
+    const scale = Math.max(1, Math.min(1.9, 1.6 / (size.width / size.height)))
+    camera.position.set(0, 7.2 * scale, 11.8 * scale)
+    camera.lookAt(0, 0, 0)
+    camera.updateProjectionMatrix()
+    invalidate()
+  }, [camera, size.width, size.height, invalidate])
+  return null
 }
 
 function SanctuaryWorld({ policy, selectedDomain, onSelect, reducedMotion }: {
@@ -115,33 +138,87 @@ function SanctuaryWorld({ policy, selectedDomain, onSelect, reducedMotion }: {
   const interrupted = policy.enforcement.state === 'failed' || policy.enforcement.state === 'partially-enforced'
   return (
     <Canvas camera={{ position: [0, 7.2, 11.8], fov: 48 }} dpr={[1, 1.6]} gl={{ antialias: true, alpha: false }}>
+      <ConsentCameraFraming />
       <color attach="background" args={['#02070c']} />
       <fog attach="fog" args={['#02070c', 10, 24]} />
       <ambientLight intensity={0.42} />
       <directionalLight position={[4, 9, 5]} intensity={1.25} color="#dffbff" />
       <pointLight position={[0, 2.4, 0]} intensity={interrupted ? 8 : 24} distance={12} color={interrupted ? '#ff9f7a' : consentColor(selected.mode)} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.1, 0]}>
-        <circleGeometry args={[9.4, 64]} />
-        <meshStandardMaterial color="#07121a" metalness={0.18} roughness={0.72} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.1, 0]} receiveShadow>
+        <circleGeometry args={[10.2, 96]} />
+        <meshStandardMaterial color="#07121a" metalness={0.05} roughness={0.82} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.05, 0]}>
-        <ringGeometry args={[2.3, 8.2, 64]} />
-        <meshBasicMaterial color={interrupted ? '#8b392c' : '#163c47'} transparent opacity={0.24} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.045, 0]}>
+        <ringGeometry args={[2.5, 8.75, 96]} />
+        <meshBasicMaterial color={interrupted ? '#8b392c' : '#1d5962'} transparent opacity={0.16} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.025, 0]}>
+        <ringGeometry args={[5.1, 5.16, 96]} />
+        <meshBasicMaterial color={consentColor(selected.mode)} transparent opacity={0.22} toneMapped={false} />
       </mesh>
       {DOMAIN_ORDER.map((domain, index) => (
-        <Chamber key={domain} domain={domain} policy={policy.domains[domain]} index={index} selected={domain === selectedDomain} onSelect={onSelect} />
+        <Chamber key={domain} domain={domain} policy={policy.domains[domain]} index={index} selected={domain === selectedDomain} onSelect={onSelect} reducedMotion={reducedMotion} />
       ))}
-      <group position={[0, 0.35, 0]}>
-        <Float speed={reducedMotion ? 0 : 0.9} rotationIntensity={reducedMotion ? 0 : 0.25} floatIntensity={reducedMotion ? 0 : 0.3}>
-          <mesh>
-            <icosahedronGeometry args={[0.82, 3]} />
-            <meshStandardMaterial color={interrupted ? '#ffb09b' : '#baf8ff'} emissive={interrupted ? '#9b382a' : '#63e7f5'} emissiveIntensity={1.4} transparent opacity={0.9} />
+      <group position={[0, 0.35, 0]} name="consent-living-core">
+        <Float speed={reducedMotion ? 0 : 0.65} rotationIntensity={reducedMotion ? 0 : 0.08} floatIntensity={reducedMotion ? 0 : 0.18}>
+          <mesh scale={[1.08, 1.18, 1.08]}>
+            <sphereGeometry args={[0.78, 64, 48]} />
+            <meshPhysicalMaterial
+              color={interrupted ? '#ffb09b' : '#c9fbff'}
+              emissive={interrupted ? '#9b382a' : '#54cfdd'}
+              emissiveIntensity={0.72}
+              roughness={0.12}
+              metalness={0}
+              transmission={0.22}
+              thickness={0.8}
+              clearcoat={1}
+              clearcoatRoughness={0.08}
+              transparent
+              opacity={0.92}
+            />
+          </mesh>
+          <mesh scale={1.42}>
+            <sphereGeometry args={[0.78, 48, 32]} />
+            <meshBasicMaterial color={consentColor(selected.mode)} transparent opacity={0.06} depthWrite={false} toneMapped={false} />
           </mesh>
         </Float>
       </group>
-      <OrbitControls enablePan enableZoom minDistance={7} maxDistance={17} maxPolarAngle={Math.PI * 0.48} minPolarAngle={Math.PI * 0.18} enableDamping={!reducedMotion} dampingFactor={0.08} />
+      <OrbitControls enablePan enableZoom minDistance={7} maxDistance={30} maxPolarAngle={Math.PI * 0.48} minPolarAngle={Math.PI * 0.18} enableDamping={!reducedMotion} dampingFactor={0.08} />
     </Canvas>
   )
+}
+
+function unresolvedPolicy(): ConsentPolicy {
+  const denied = (): ConsentDomainPolicy => ({
+    mode: 'denied',
+    retentionDays: null,
+    precise: false,
+    replayVisible: false,
+    lifeMapVisible: false,
+    modelContext: false,
+    sharingEnabled: false,
+    automationEnabled: false,
+    likenessEnabled: false,
+  })
+  return {
+    version: 2,
+    revision: 0,
+    ownerId: 'unresolved',
+    domains: {
+      memory: denied(),
+      location: denied(),
+      models: denied(),
+      exports: denied(),
+      workforce: denied(),
+      identity: denied(),
+    },
+    enforcement: {
+      state: 'pending',
+      jobId: null,
+      affectedTargets: [],
+      providerState: 'pending',
+    },
+  }
 }
 
 function demoPolicy() {
@@ -159,11 +236,13 @@ function errorCode(error: unknown) {
 }
 
 export default function ConsentSanctuaryClient() {
+  const { world, phase } = useUraiWorldState()
   const params = useMemo(() => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search), [])
   const explicitDemo = params.get('demo') === '1'
+  const authEpoch = useRef(0)
   const [user, setUser] = useState<User | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('loading')
-  const [policy, setPolicy] = useState<ConsentPolicy>(() => demoPolicy())
+  const [policy, setPolicy] = useState<ConsentPolicy>(() => unresolvedPolicy())
   const [selectedDomain, setSelectedDomain] = useState<ConsentDomain>('memory')
   const [pending, setPending] = useState<PendingChange | null>(null)
   const [mutationState, setMutationState] = useState<MutationState>('idle')
@@ -177,16 +256,36 @@ export default function ConsentSanctuaryClient() {
   const [deletionScope, setDeletionScope] = useState('memories')
   const [deletionConfirmation, setDeletionConfirmation] = useState('')
   const [operationBusy, setOperationBusy] = useState(false)
+  const [exportDownloading, setExportDownloading] = useState(false)
+  const exportDownloads = useRef<OperationalExportDownloadSession | null>(null)
+  if (!exportDownloads.current) exportDownloads.current = new OperationalExportDownloadSession()
+  const exportAuthorityRevision = useRef<number | null>(null)
   const confirmRef = useRef<HTMLButtonElement>(null)
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
-    const online = () => { setLoadState((state) => state === 'offline' ? 'loading' : state); setMessage('Connection restored. Rechecking server authority…') }
-    const offline = () => { setLoadState('offline'); setMessage('Offline. No change can be represented as saved or enforced.') }
+    const online = () => {
+      if (explicitDemo) {
+        setLoadState('demo')
+        setMessage('DEMONSTRATION — no personal data. Controls cannot write production state.')
+      } else if (!firebasePublicEnvReady) {
+        setLoadState('unavailable')
+        setMessage('The permission service is not configured. Controls remain unavailable rather than pretending to save.')
+      } else if (!user) {
+        setLoadState('signed-out')
+        setMessage('Sign in to inspect or change private consent state.')
+      } else {
+        setLoadState('loading')
+        setMessage('Connection restored. Rechecking server authority…')
+      }
+    }
+    const offline = () => { exportDownloads.current?.stop(); setExportDownloading(false); setLoadState('offline'); setMessage('Offline. No change can be represented as saved or enforced.') }
     window.addEventListener('online', online)
     window.addEventListener('offline', offline)
     return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline) }
-  }, [])
+  }, [explicitDemo, user])
+
+  useEffect(() => () => { authEpoch.current += 1; exportDownloads.current?.stop() }, [])
 
   useEffect(() => {
     try {
@@ -209,6 +308,19 @@ export default function ConsentSanctuaryClient() {
     }
     const auth = getAuth(app)
     return onAuthStateChanged(auth, (nextUser) => {
+      authEpoch.current += 1
+      exportDownloads.current?.stop()
+      exportAuthorityRevision.current = null
+      setExportDownloading(false)
+      setPolicy(unresolvedPolicy())
+      setReceipts([])
+      setExports([])
+      setDeletions([])
+      setPending(null)
+      setMutationState('idle')
+      setDeletionConfirmation('')
+      setOperationBusy(false)
+      setShowAudit(false)
       setUser(nextUser)
       if (!nextUser) {
         setLoadState('signed-out')
@@ -220,11 +332,30 @@ export default function ConsentSanctuaryClient() {
   }, [explicitDemo])
 
   useEffect(() => {
-    if (!user || explicitDemo || loadState === 'signed-out' || loadState === 'unavailable') return
+    if (!user || explicitDemo || loadState === 'signed-out' || loadState === 'unavailable' || loadState === 'offline') return
+    let active = true
+    const epoch = authEpoch.current
+    const current = () => active && epoch === authEpoch.current && navigator.onLine
     const policyRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current')
-    return onSnapshot(policyRef, (snapshot) => {
+    const unsubscribe = onSnapshot(policyRef, (snapshot) => {
+      if (!current()) return
       const rawPolicy = snapshot.data()
-      const next = snapshot.exists() && isConsentPolicy(rawPolicy, user.uid) ? rawPolicy : defaultConsentPolicy(user.uid)
+      if (!snapshot.exists() || !isConsentPolicy(rawPolicy, user.uid)) {
+        exportDownloads.current?.stop()
+        setExportDownloading(false)
+        setPolicy(unresolvedPolicy())
+        setPending(null)
+        setLoadState('unavailable')
+        setMutationState('failed')
+        setMessage('No valid server consent policy is available. Controls remain locked; enforcement is not verified.')
+        return
+      }
+      const next = rawPolicy
+      if (exportAuthorityRevision.current !== null && next.revision !== exportAuthorityRevision.current) {
+        exportDownloads.current?.stop()
+        setExportDownloading(false)
+      }
+      exportAuthorityRevision.current = next.revision
       setPolicy(next)
       setLoadState('private')
       const state = next.enforcement.state
@@ -236,32 +367,52 @@ export default function ConsentSanctuaryClient() {
         'Policy persisted. Enforcement is still pending.',
       )
     }, () => {
+      if (!current()) return
+      exportDownloads.current?.stop()
+      setExportDownloading(false)
+      setPolicy(unresolvedPolicy())
+      setPending(null)
       setLoadState('unavailable')
       setMessage('The consent authority could not be read. No private state was replaced with demo data.')
     })
+    return () => { active = false; unsubscribe() }
   }, [user, explicitDemo, loadState])
 
   useEffect(() => {
     if (!user || explicitDemo) return
+    let active = true
+    const epoch = authEpoch.current
+    const current = () => active && epoch === authEpoch.current
     const unsubscribers = [
-      subscribeOperationalUserCollection('privacyReceipts', user.uid, setReceipts, () => setMessage('Audit receipts are temporarily unavailable.')),
-      subscribeOperationalUserCollection('exportJobs', user.uid, setExports, () => setMessage('Export status is temporarily unavailable.')),
-      subscribeOperationalUserCollection('deletionJobs', user.uid, setDeletions, () => setMessage('Deletion status is temporarily unavailable.')),
+      subscribeOperationalUserCollection('privacyReceipts', user.uid, (rows) => { if (current()) setReceipts(rows) }, () => { if (current()) setMessage('Audit receipts are temporarily unavailable.') }),
+      subscribeOperationalUserCollection('exportJobs', user.uid, (rows) => { if (current()) setExports(rows) }, () => { if (current()) setMessage('Export status is temporarily unavailable.') }),
+      subscribeOperationalUserCollection('deletionJobs', user.uid, (rows) => { if (current()) setDeletions(rows) }, () => { if (current()) setMessage('Deletion status is temporarily unavailable.') }),
     ]
-    return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
+    return () => { active = false; unsubscribers.forEach((unsubscribe) => unsubscribe()) }
   }, [user, explicitDemo])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Home') { event.preventDefault(); setSelectedDomain('memory'); document.getElementById('consent-controls')?.focus() }
-      if (event.key !== 'Escape') return
+      if (event.key === 'Home') {
+        const target = event.target
+        const editing = target instanceof Element && (target.closest('input, textarea, select, [role="textbox"], [role="combobox"], [role="spinbutton"]') !== null
+          || (target instanceof HTMLElement && target.isContentEditable))
+        if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || editing) return
+        event.preventDefault()
+        setSelectedDomain('memory')
+        document.getElementById('consent-controls')?.focus()
+      }
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      event.preventDefault()
       if (pending) { setPending(null); setMutationState('idle'); return }
       if (showAudit) { setShowAudit(false); return }
-      if (window.history.length > 1) window.history.back(); else window.location.assign('/passport')
+      if (phase !== 'idle') return
+      if (world.previousDestination && world.previousDestination !== 'privacy-controls') requestUraiWorldReturn()
+      else requestUraiWorldTravel({ destination: 'passport', href: '/passport' })
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [pending, showAudit])
+  }, [pending, showAudit, phase, world.previousDestination])
 
   useEffect(() => { if (pending) requestAnimationFrame(() => confirmRef.current?.focus()) }, [pending])
 
@@ -273,6 +424,7 @@ export default function ConsentSanctuaryClient() {
   }
 
   const confirmChange = async () => {
+    const epoch = authEpoch.current
     if (!pending || !user || loadState !== 'private') return
     setMutationState('requested')
     setMessage('Requesting a revision-controlled policy change…')
@@ -282,10 +434,13 @@ export default function ConsentSanctuaryClient() {
         next: pending.next as unknown as Record<string, unknown>,
         expectedRevision: policy.revision,
       })
+      if (epoch !== authEpoch.current) return
       setPending(null)
       setMutationState('pending')
+      if (epoch !== authEpoch.current) return
       setMessage(`Request accepted. Enforcement job ${String(result.jobId ?? '').slice(0, 10)} is pending; no completion is claimed yet.`)
     } catch (error) {
+      if (epoch !== authEpoch.current) return
       const code = errorCode(error)
       setMutationState(code === 'conflict' ? 'conflict' : 'failed')
       setMessage(code === 'conflict' ? 'Another session changed this policy first. Current server authority must be reloaded.' : 'The change was not accepted. The prior server policy remains authoritative.')
@@ -293,28 +448,55 @@ export default function ConsentSanctuaryClient() {
   }
 
   const requestExport = async () => {
+    const epoch = authEpoch.current
     if (loadState !== 'private' || exportScopes.length === 0) return
     setOperationBusy(true)
     try {
       const result = await createOperationalExportRequest(exportScopes)
+      if (epoch !== authEpoch.current) return
       setMessage(`Export ${String(result.jobId ?? '').slice(0, 10)} queued. It is not ready until the server reports ready.`)
     } catch (error) {
+      if (epoch !== authEpoch.current) return
       setMessage(errorCode(error) === 'reauth' ? 'Recent reauthentication is required before an export can begin.' : 'Export request failed. No file was created or represented as ready.')
-    } finally { setOperationBusy(false) }
+    } finally { if (epoch === authEpoch.current) setOperationBusy(false) }
   }
 
   const requestDeletion = async () => {
+    const epoch = authEpoch.current
     if (loadState !== 'private') return
     const required = DELETION_SCOPES.find(([scope]) => scope === deletionScope)?.[2] ?? 'CONFIRM DELETE'
     if (deletionConfirmation !== required) { setMessage(`Type “${required}” exactly to confirm this scope.`); return }
+    exportDownloads.current?.stop()
+    setExportDownloading(false)
     setOperationBusy(true)
     try {
       const result = await createOperationalDeletionRequest({ scope: deletionScope, confirmation: deletionConfirmation })
+      if (epoch !== authEpoch.current) return
       setDeletionConfirmation('')
+      if (epoch !== authEpoch.current) return
       setMessage(`Deletion ${String(result.jobId ?? '').slice(0, 10)} entered ${String(result.state)}. Completion is not claimed until the trusted job reports completed.`)
     } catch (error) {
+      if (epoch !== authEpoch.current) return
       setMessage(errorCode(error) === 'reauth' ? 'Recent reauthentication is required before deletion can begin.' : 'Deletion request failed. No data was represented as deleted.')
-    } finally { setOperationBusy(false) }
+    } finally { if (epoch === authEpoch.current) setOperationBusy(false) }
+  }
+
+  const downloadExport = async (request: OperationalExportRequest) => {
+    const epoch = authEpoch.current
+    if (loadState !== 'private' || !user || !navigator.onLine) return
+    const session = exportDownloads.current!
+    setExportDownloading(true)
+    const transfer = session.download(request, () => epoch === authEpoch.current && navigator.onLine, downloadOperationalExportBytes)
+    const attempt = session.revision
+    try {
+      await transfer
+      if (epoch === authEpoch.current && attempt === session.revision) setMessage('Verified export transfer started. Files saved to your device remain under your control.')
+    } catch (error) {
+      if (epoch !== authEpoch.current || attempt !== session.revision) return
+      setMessage(error instanceof DOMException && error.name === 'AbortError' ? 'Export transfer stopped.' :
+        error instanceof Error && error.message === 'EXPORT_TOO_LARGE' ? 'This transfer supports exports up to 64 MiB. Request a smaller scope or contact support.' :
+        'Secure download was not authorized. Request a current export; no file was opened.')
+    } finally { if (epoch === authEpoch.current && attempt === session.revision) setExportDownloading(session.active) }
   }
 
   const selected = policy.domains[selectedDomain]
@@ -326,14 +508,16 @@ export default function ConsentSanctuaryClient() {
       <a className="consentSkip" href="#consent-controls">Skip to direct controls</a>
       <div className="consentWorld" aria-hidden="true">
         {webglAvailable ? <Suspense fallback={null}><SanctuaryWorld policy={policy} selectedDomain={selectedDomain} onSelect={setSelectedDomain} reducedMotion={reducedMotion} /></Suspense> : (
-          <div className="consentWorldFallback"><strong>Consent Sanctuary</strong><span>Semantic controls remain fully available without WebGL.</span></div>
+          <div className="consentWorldFallback" />
         )}
       </div>
       <header className="consentHeader">
         <p>UrAi Consent Sanctuary</p>
         <h1>Choose what the world may hold.</h1>
         <div className="consentStatus" role="status" aria-live="polite">{message}</div>
+        <button className="consentTravel" type="button" onClick={requestUraiWorldOrbOpen}>Open Orb travel controls</button>
         {loadState === 'demo' && <span className="consentDisclosure">DEMONSTRATION — no personal data</span>}
+        {!webglAvailable && <div className="consentFallbackNotice" role="note">Semantic controls remain fully available without WebGL.</div>}
       </header>
 
       <nav className="consentRealmNav" aria-label="Consent domains">
@@ -356,11 +540,11 @@ export default function ConsentSanctuaryClient() {
         <div className="consentActions"><button type="button" onClick={() => setShowAudit(true)}>Inspect receipts</button><a href="/passport">Open Ownership Vault</a><a href="/ground">Return to Ground</a></div>
 
         <hr />
-        <h3>Authenticated export</h3>
+        <h3>Authenticated export</h3><p>Cancelling stops this transfer. Files already saved to your device cannot be recalled.</p>{exportDownloading && <button type="button" onClick={() => { exportDownloads.current?.stop(); setExportDownloading(false) }}>Stop download</button>}
         <p>Choose scope. Tokens, credentials, raw secret fields and legally excepted records are excluded.</p>
         <div className="consentToggleGrid">{EXPORT_SCOPES.map((scope) => <label key={scope}><input type="checkbox" disabled={loadState !== 'private' || operationBusy} checked={exportScopes.includes(scope)} onChange={(event) => setExportScopes((items) => event.target.checked ? [...new Set([...items, scope])] : items.filter((item) => item !== scope))} /><span>{scope}</span></label>)}</div>
         <div className="consentActions"><button type="button" disabled={loadState !== 'private' || operationBusy || exportScopes.length === 0} onClick={() => void requestExport()}>Request export</button></div>
-        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id }); window.location.assign(String(result.url)) } catch { setMessage('Secure download could not be authorized.') } }}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id, file: 'runtime', assetId }); window.location.assign(String(result.url)) } catch { setMessage('Secure runtime download could not be authorized.') } }}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
+        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" disabled={exportDownloading} onClick={() => void downloadExport({ jobId: job.id })}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" disabled={exportDownloading} onClick={() => void downloadExport({ jobId: job.id, file: 'runtime', assetId })}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
 
         <hr />
         <h3>Scoped deletion</h3>
@@ -371,7 +555,7 @@ export default function ConsentSanctuaryClient() {
         <ol>{deletions.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {String(job.scope)} {['queued', 'awaiting-grace'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalDeletionRequest(job.id)}>Cancel</button>}</li>)}</ol>
       </section>
 
-      <aside className="consentOrb" aria-label="Enforcement status"><strong>{policy.enforcement.state}</strong><p>{policy.enforcement.affectedTargets.length ? `${policy.enforcement.affectedTargets.length} connected targets` : 'No active propagation job'}</p><small>Animations reflect the server state; they never prove backend completion.</small></aside>
+      <aside className="consentOrb" aria-label="Enforcement status"><strong>{policy.enforcement.state}</strong><p>{policy.enforcement.affectedTargets.length ? `${policy.enforcement.affectedTargets.length} connected targets` : 'No active propagation job'}</p><small>Animations reflect the server state; they never prove backend completion.</small><div className="consentCompanion"><AdamLauncherSlot name="privacy-enforcement" /></div></aside>
 
       {showAudit && <section className="consentAudit" aria-label="Privacy audit receipts"><div><h2>Append-only receipts</h2><button type="button" onClick={() => setShowAudit(false)}>Close</button></div><ol>{receipts.length ? receipts.map((entry) => <li key={entry.id}><strong>{String(entry.kind ?? 'privacy')}</strong><span>{String(entry.result ?? 'recorded')}</span><small>{entry.id.slice(0, 12)}</small></li>) : <li>No receipts exist for this owner.</li>}</ol></section>}
 

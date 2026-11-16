@@ -43,7 +43,7 @@ const sceneAssets: SceneAssetRoute[] = [
   {
     id: 'focus',
     tier: 'tier2',
-    canon: 'Focus Chamber',
+    canon: 'Focus Memory Star',
     asset: '/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg',
     blend: 'screen',
     opacity: 0.17,
@@ -52,7 +52,7 @@ const sceneAssets: SceneAssetRoute[] = [
   {
     id: 'replay',
     tier: 'tier2',
-    canon: 'Replay Realm',
+    canon: 'Replay',
     asset: '/assets/urai/final/tier2/replay/replay-cinematic-stage-desktop.svg',
     blend: 'screen',
     opacity: 0.18,

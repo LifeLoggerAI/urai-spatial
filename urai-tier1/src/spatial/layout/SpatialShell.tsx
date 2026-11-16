@@ -28,11 +28,11 @@ const modeCopy: Record<SpatialShellProps['mode'], { title: string; summary: stri
     summary: 'A constellation preview using public-safe sample moments until owner-scoped data is verified.',
   },
   replay: {
-    title: 'Replay Chamber',
+    title: 'Replay',
     summary: 'A guided symbolic replay preview with calm exits and no production data capture.',
   },
   detail: {
-    title: 'Focus Chamber',
+    title: 'Focus Memory Star',
     summary: 'A sealed detail surface for sample reflections, readiness copy, and provider-gated actions.',
   },
   export: {

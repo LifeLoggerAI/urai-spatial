@@ -67,12 +67,27 @@ export function validateCapturedRealityReplayBinding(args: {
   if (binding.returnContract.preserveSelectedMemory !== true) errors.push('RETURN_MUST_PRESERVE_SELECTED_MEMORY')
   if (!binding.memoryStarId) errors.push('MEMORY_STAR_REQUIRED')
 
+  // A source's presence in the owner's graph does not make it evidence for
+  // every memory or captured place. A spatial anchor must belong to BOTH the
+  // specific reconstruction and the selected memory before it can be shown.
+  const capturedSourceIds = new Set(Array.isArray(asset.sourceIds) ? asset.sourceIds : [])
+  const memorySourceIds = memory
+    ? new Set([...memory.sourceIds, ...memory.replaySourceIds])
+    : new Set<string>()
   const anchorIds = new Set<string>()
   for (const anchor of binding.anchors) {
     if (!anchor.id || anchorIds.has(anchor.id)) errors.push('DUPLICATE_OR_MISSING_ANCHOR_ID')
     anchorIds.add(anchor.id)
     if (!graph.sources[anchor.sourceId]) errors.push(`ANCHOR_SOURCE_MISSING:${anchor.sourceId}`)
-    if (!anchor.position.every(Number.isFinite)) errors.push(`ANCHOR_POSITION_INVALID:${anchor.id}`)
+    if (!capturedSourceIds.has(anchor.sourceId)) errors.push(`ANCHOR_NOT_IN_CAPTURED_SOURCE_SET:${anchor.id}`)
+    if (memory && !memorySourceIds.has(anchor.sourceId)) errors.push(`ANCHOR_NOT_IN_SELECTED_MEMORY:${anchor.id}`)
+    if (!Array.isArray(anchor.position) || anchor.position.length !== 3 || !anchor.position.every(Number.isFinite)) {
+      errors.push(`ANCHOR_POSITION_INVALID:${anchor.id}`)
+    }
+    if (anchor.rotation !== undefined && (!Array.isArray(anchor.rotation)
+      || anchor.rotation.length !== 3 || !anchor.rotation.every(Number.isFinite))) {
+      errors.push(`ANCHOR_ROTATION_INVALID:${anchor.id}`)
+    }
   }
 
   return errors

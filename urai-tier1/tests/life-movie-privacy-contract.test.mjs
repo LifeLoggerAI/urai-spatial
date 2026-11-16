@@ -10,7 +10,7 @@ const manifest = fs.readFileSync('../privacy/feature-manifests/life-movie.privac
 
 test('Life Movie reads the canonical owner-scoped private memories collection', () => {
   assert.match(lifeMovie, /collection\(getFirebaseDb\(\), 'users', user\.uid, 'memories'\)/)
-  assert.match(lifeMovie, /parseSelectedMemory\(item\.data\(\), user\.uid, item\.id, process\.env\.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET\)/)
+  assert.match(lifeMovie, /parseSelectedMemory\(item\.data\(\), user\.uid, item\.id, process\.env\.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET \?\? null\)/)
   assert.match(lifeMovie, /result\.memory && result\.status === 'ready'/)
 })
 
@@ -23,8 +23,9 @@ test('canonical private memories are owner-readable and server-write-only', () =
 })
 
 test('canonical memories are portable and included in deletion scopes', () => {
-  assert.match(privacy, /data\.memories = await collectionDocuments\(userRef\.collection\('memories'\)\)/)
-  assert.match(privacy, /memories: \['memories', 'replayEvents', 'spatialMemories', 'canonChains'\]/)
+  assert.match(privacy, /data\.memories = await collectionDocuments\(userRef\.collection\('memories'\), context\)/)
+  assert.match(privacy, /collectExportPages\(context\.transaction, ref, context\.budget/)
+  assert.match(privacy, /memories: \['memories', 'memoryMediaReceipts', 'replayEvents', 'spatialMemories', 'canonChains'\]/)
   const allData = privacy.match(/'all-repository-data': \[([\s\S]*?)\n\s*\],/)
   assert.ok(allData, 'missing all-repository-data deletion scope')
   assert.match(allData[1], /'memories'/)
@@ -39,6 +40,9 @@ test('Life Movie media is restricted to the configured Firebase Storage authorit
   assert.match(contract, /storage\.googleapis\.com/)
   assert.match(contract, /trustedStorageBucket/)
   assert.match(selected, /NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET/)
+  assert.match(selected, /NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET \?\? null/)
+  assert.match(lifeMovie, /parseSelectedMemory\(snapshot\.data\(\), user\.uid, chapter\.memoryId, process\.env\.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET \?\? null\)/)
+  assert.match(lifeMovie, /parseSelectedMemory\(item\.data\(\), user\.uid, item\.id, process\.env\.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET \?\? null\)/)
 })
 
 test('privacy inventory declares memory text and media as exportable and deletable', () => {

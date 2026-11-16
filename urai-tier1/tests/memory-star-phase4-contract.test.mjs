@@ -30,6 +30,8 @@ const lifeMapCanonical = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const lifeMapBoundary = read('src/components/lifemap/LifeMapRouteBoundary.tsx')
 const focusPage = read('src/app/focus/page.tsx')
 const focusClient = read('src/app/focus/FocusChamberClient.tsx')
+const photosphere = read('src/spatial/stellar/StellarPhotosphere.tsx')
+const memoryReveal = read('src/spatial/stellar/stellarMemoryReveal.ts')
 const replayPage = read('src/app/replay/page.tsx')
 
 test('memory star schema keeps final privacy and route fields', () => {
@@ -76,15 +78,16 @@ test('canonical LifeMap, Focus, and Replay final owners remain present', () => {
 })
 
 
-test('Focus photosphere rejects planetary low-frequency terrain and exposes the memory imprint', () => {
-  assert.ok(focusClient.includes('Low-frequency continents/terrain are suppressed so Focus cannot read as a planet.'))
-  assert.ok(focusClient.includes('noise(p * 93.0'))
-  assert.ok(focusClient.includes('noise(p * 151.0'))
-  assert.ok(!focusClient.includes('noise(p * 7.0'))
-  assert.ok(focusClient.includes('intensity={1.75}'))
-  assert.ok(focusClient.includes('vec3 revealedMemory = mix(warmMemory, image * (.92 + localContrast * .20), .80);'))
-  assert.ok(focusClient.includes('float alpha = veil * (.52 + luminance * .26 + core * .18);'))
-  assert.ok(focusClient.includes('<planeGeometry args={[2.08, 2.08]} />'))
+test('Focus retains stellar detail with the selected memory on the same photosphere', () => {
+  assert.match(photosphere, /stellarNoise\(p \* 93\.0/)
+  assert.match(photosphere, /stellarNoise\(p \* 151\.0/)
+  assert.doesNotMatch(photosphere, /stellarNoise\(p \* 7\.0/)
+  assert.match(photosphere, /surfaceWrap: true/)
+  assert.match(photosphere, /revealStellarMemory\(emitted, vNormalView/)
+  assert.match(photosphere, /uMemoryTexture/)
+  assert.match(memoryReveal, /uMemoryAspect/)
+  assert.doesNotMatch(focusClient, /MemoryImprint|Billboard|circleGeometry/)
+  assert.doesNotMatch(photosphere, /circleGeometry|planeGeometry|luminance-floor/)
 })
 
 async function renderSpatialMemory(nodeId) {
@@ -202,6 +205,8 @@ test('existing quiet-reset and generic explicit fixtures retain their disclosed 
   assert.equal(quiet.replayManifest.id, 'replay-recovery-thread')
   assert.equal(quiet.replayManifest.durationMs, 12_000)
   assert.equal(quiet.demo, true)
+  const routeAlias = buildNamedExplicitDemoMemory('quiet-reset')
+  assert.equal(routeAlias.occurredAt, '2026-05-09T12:00:00.000Z')
   const generic = buildNamedExplicitDemoMemory('demo:existing-generic-fixture')
   assert.equal(generic.id, 'demo:existing-generic-fixture')
   assert.equal(generic.title, 'Demonstration Memory')

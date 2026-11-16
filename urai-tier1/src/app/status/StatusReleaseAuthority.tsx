@@ -12,7 +12,7 @@ type Fingerprint = {
   rollbackSha: string
   firebaseProject: string
   liveUrl: string
-  deploymentScope: 'hosting-only'
+  deploymentScope: 'functions-and-hosting'
   certification: string
   workflowRunId: string | number
 }
@@ -49,7 +49,7 @@ function validate(value: unknown): Fingerprint {
   if (item.releaseSha === item.rollbackSha) throw new Error('Release and rollback authority must remain distinct.')
   if (item.firebaseProject !== 'urai-4dc1d') throw new Error('Firebase project is not canonical.')
   if (item.liveUrl !== 'https://urai.app') throw new Error('Public origin is not canonical.')
-  if (item.deploymentScope !== 'hosting-only') throw new Error('Deployment scope is not the protected hosting-only boundary.')
+  if (item.deploymentScope !== 'functions-and-hosting') throw new Error('Deployment scope is not the governed Functions + Hosting boundary.')
   if (item.certification === 'pending-post-deploy-smoke') throw new Error('Release fingerprint certification is pending post-deploy smoke.')
   if (item.certification !== 'verified-post-deploy-smoke') throw new Error('Release fingerprint certification state is not recognized.')
   const runId = item.workflowRunId
@@ -66,6 +66,11 @@ function badgeClass(label: string) {
 
 export default function StatusReleaseAuthority() {
   const [state, setState] = useState<AuthorityState>({ kind: 'loading' })
+  const [fromWaitlist, setFromWaitlist] = useState(false)
+
+  useEffect(() => {
+    setFromWaitlist(new URLSearchParams(window.location.search).get('from') === 'waitlist')
+  }, [])
 
   useEffect(() => {
     if (window.location.origin !== 'https://urai.app') {
@@ -97,13 +102,16 @@ export default function StatusReleaseAuthority() {
   return (
     <div data-authority-state={state.kind}>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_410px]">
-        <article className="rounded-[2rem] border border-cyan-100/15 bg-slate-950/60 p-8 shadow-2xl shadow-black/40 backdrop-blur-2xl md:p-12">
-          <p className="text-xs font-black uppercase tracking-[0.42em] text-cyan-200">URAI Status · Launch Truth Control Room</p>
-          <h1 className="mt-4 max-w-4xl text-6xl font-black leading-[0.82] tracking-[-0.1em] md:text-8xl">Launch locked. Proof before expansion.</h1>
+        <article className="min-w-0 rounded-[2rem] border border-cyan-100/15 bg-slate-950/60 p-6 shadow-2xl shadow-black/40 backdrop-blur-2xl md:p-12">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">UrAi · Availability</p>
+          <h1 className="mt-4 max-w-4xl text-4xl font-semibold leading-tight tracking-tight md:text-6xl">{fromWaitlist ? 'Be part of what comes next.' : 'Your world, with clear boundaries.'}</h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200">{fromWaitlist ? 'Explore the disclosed demo and learn about early access. Joining a list does not unlock private features or change release availability.' : 'Check what is available, explore a preview, and see which experiences still need verification.'}</p>
+          {fromWaitlist ? <div className="mt-5 flex flex-wrap gap-3"><Link href="/early-access" className="inline-flex min-h-12 items-center rounded-full bg-white px-5 py-3 font-semibold text-slate-950">Early access</Link><Link href="/demo" className="inline-flex min-h-12 items-center rounded-full border border-white/30 px-5 py-3 text-white">Explore the demo</Link></div> : null}
+          <h2 className="mt-6 text-lg font-semibold text-cyan-100">Launch locked. Proof before expansion.</h2>
           <p className="mt-6 max-w-3xl text-base font-semibold leading-8 text-slate-200/80">{isReady ? 'The canonical Spatial web release is verified live through the protected public fingerprint shown beside this statement. Unsupported expansion claims—physical XR, providers, autonomous actions, and the supporting estate—remain separately gated.' : unresolvedCopy}</p>
         </article>
         <article className="rounded-[2rem] border border-cyan-100/15 bg-slate-950/60 p-7 shadow-2xl shadow-cyan-950/30 backdrop-blur-2xl" data-testid="urai-status-release-authority" aria-live="polite">
-          <div className="mx-auto mb-8 h-44 w-44 rounded-full bg-[radial-gradient(circle_at_38%_28%,white_0_8%,rgba(255,255,255,0.45)_9%_18%,transparent_19%),radial-gradient(circle,#9af8ff_0_24%,#45bfff_44%,rgba(2,12,24,0.95)_100%)] shadow-[0_0_80px_rgba(122,246,255,0.68),0_0_160px_rgba(122,246,255,0.22)]" />
+          <div aria-hidden="true" className="mx-auto mb-6 h-20 w-20 rounded-full bg-[radial-gradient(circle_at_38%_28%,white_0_8%,rgba(255,255,255,0.45)_9%_18%,transparent_19%),radial-gradient(circle,#9af8ff_0_24%,#45bfff_44%,rgba(2,12,24,0.95)_100%)] shadow-[0_0_80px_rgba(122,246,255,0.68),0_0_160px_rgba(122,246,255,0.22)]" />
           {state.kind === 'loading' && <div className="rounded-2xl border border-cyan-100/15 bg-cyan-100/[0.06] p-5"><strong className="block text-2xl">Reading protected fingerprint…</strong><p className="mt-3 text-sm">The protected production release SHA is hidden while authority is unresolved; the separate embedded build identity remains diagnostic-only.</p></div>}
           {state.kind === 'preview' && <div className="rounded-2xl border border-violet-200/25 bg-violet-200/[0.08] p-5"><span className="text-xs font-black uppercase tracking-[0.18em] text-violet-200">Tracked {totalRoutes} public routes</span><strong className="mt-2 block text-2xl">Production fingerprint is read only on urai.app.</strong><p className="mt-3 text-sm">This proof origin does not request or substitute the protected production fingerprint; any embedded build identity is non-authoritative.</p></div>}
           {state.kind === 'error' && <div className="rounded-2xl border border-rose-200/25 bg-rose-200/[0.08] p-5" role="alert"><strong className="block text-2xl">Live certification cannot be displayed.</strong><p className="mt-3 text-sm">{state.message}</p></div>}
@@ -111,9 +119,9 @@ export default function StatusReleaseAuthority() {
         </article>
       </div>
       <section className="mt-6 rounded-[2rem] border border-cyan-100/15 bg-cyan-100/[0.06] p-6 text-sm font-semibold leading-7 text-cyan-50/90"><h2 className="text-xl font-black text-cyan-100">Launch truth</h2><p className="mt-2">Safe claim: {isReady ? launchTruth.safeClaim : unresolvedCopy}</p><p className="mt-3">Blocked claim: {launchTruth.unsafeClaim}</p></section>
-      <div className="mt-6 grid gap-5 lg:grid-cols-3">{groups.map((group) => <section key={group.title} className="rounded-[2rem] border border-white/10 bg-slate-950/58 p-5 shadow-2xl shadow-black/30 backdrop-blur-2xl"><h2 className="text-xl font-black tracking-tight">{group.title}</h2><div className="mt-5 grid gap-3">{group.items.map(([route, routeState, note]) => { const label = routeState === 'preview' ? 'preview' : isReady ? 'verified live' : 'authority unresolved'; return <article key={route} className="rounded-2xl border border-cyan-100/10 bg-white/[0.045] p-4"><div className="flex items-center justify-between gap-3"><code className="font-mono text-sm font-black text-cyan-100">{route}</code><span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${badgeClass(label)}`}>{label}</span></div><p className="mt-2 text-sm font-semibold leading-6 text-slate-200/76">{note}</p></article> })}</div></section>)}</div>
+      <div className="mt-6 grid gap-5 lg:grid-cols-3">{groups.map((group) => <section key={group.title} className="rounded-[2rem] border border-white/10 bg-slate-950/58 p-5 shadow-2xl shadow-black/30 backdrop-blur-2xl"><h2 className="text-xl font-black tracking-tight">{group.title}</h2><div className="mt-5 grid gap-3">{group.items.map(([route, routeState, note]) => { const label = routeState === 'preview' ? 'preview' : isReady ? 'verified live' : 'authority unresolved'; return <article key={route} className="rounded-2xl border border-cyan-100/10 bg-white/[0.045] p-4"><div className="flex flex-wrap items-center justify-between gap-3"><code className="font-mono text-sm font-black text-cyan-100">{route}</code><span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${badgeClass(label)}`}>{label}</span></div><p className="mt-2 text-sm font-semibold leading-6 text-slate-200/76">{note}</p></article> })}</div></section>)}</div>
       <section className={`mt-6 rounded-[2rem] border p-6 text-sm font-semibold leading-7 ${isReady ? 'border-emerald-200/20 bg-emerald-200/[0.07] text-emerald-50/90' : 'border-violet-200/20 bg-violet-200/[0.07] text-violet-50/90'}`}><h2 className={`text-xl font-black ${isReady ? 'text-emerald-100' : 'text-violet-100'}`}>Certification boundary</h2><p className="mt-2">{isReady ? 'Production: verified live for the canonical Spatial web release. Pending proof: physical Quest hardware, provider-backed assets, private supporting services, and the wider repository estate. Autonomous real-world actions are not enabled and remain human-approved only.' : 'Production certification is not displayed on this origin or state. Physical Quest hardware, provider-backed assets, private supporting services, the wider repository estate, and autonomous real-world actions remain separately blocked.'}</p></section>
-      <nav className="mt-6 flex flex-wrap gap-3" aria-label="Status route navigation"><Link className="rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950 no-underline" href="/home">Open Home</Link><Link className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/ground">Open Ground</Link><Link className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/life-map">Open Life Map</Link><Link className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/privacy-controls">Privacy Controls</Link><Link className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/spatial/ar-vr">Open XR preview</Link></nav>
+      <nav className="mt-6 flex flex-wrap gap-3" aria-label="Status route navigation"><Link style={{ minHeight: 48, minWidth: 48, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} className="rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950 no-underline" href="/home">Open Home</Link><Link style={{ minHeight: 48, minWidth: 48, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/ground">Open Ground</Link><Link style={{ minHeight: 48, minWidth: 48, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/life-map">Open Life Map</Link><Link style={{ minHeight: 48, minWidth: 48, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/privacy-controls">Privacy Controls</Link><Link style={{ minHeight: 48, minWidth: 48, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/spatial/ar-vr">Open XR preview</Link></nav>
     </div>
   )
 }

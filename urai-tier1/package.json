@@ -72,6 +72,9 @@
     "test:tier-lock-hardening": "node ../tests/spatial-tier-lock-hardening.mjs --suite=all"
   },
   "dependencies": {
+    "@capacitor-firebase/authentication": "8.5.2",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@react-three/postprocessing": "^3.0.4",
@@ -79,7 +82,7 @@
     "@tailwindcss/postcss": "^4.2.2",
     "firebase": "^12.11.0",
     "firebase-admin": "^13.7.0",
-    "next": "15.5.7",
+    "next": "15.5.27",
     "postprocessing": "^6.38.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -98,7 +101,7 @@
     "@types/three": "^0.183.1",
     "@types/ws": "^8.5.14",
     "eslint": "^9.39.2",
-    "eslint-config-next": "15.5.7",
+    "eslint-config-next": "15.5.27",
     "playwright": "^1.57.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"

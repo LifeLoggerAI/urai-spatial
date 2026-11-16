@@ -1,0 +1,60 @@
+{
+  "parent": "7b7faa07007164dcf5176e829d653c20781c4b78",
+  "donor": "3919023539674e152caf7c7c2a568947980568d3",
+  "pins": [
+    {
+      "path": ".github/workflows/passive-firestore-transaction-proof.yml",
+      "git_blob_sha": "0a1c8eec4478389a4216614f35d921c81e998389",
+      "sha256": "536bb287b0a8c40fde5bd9d20a55aef24d211c7b952eb444913fcc5b67a021ac",
+      "size_bytes": 11620
+    },
+    {
+      "path": "urai-tier1/scripts/run-unit-contract-tests-compact.mjs",
+      "git_blob_sha": "f6b4ae6b69145f87103d3594778ad254d3e8dd00",
+      "sha256": "e2d3c27d353bce58bae1014a10be44550c4a86fa0ef3dc31a6033726af06d122",
+      "size_bytes": 5948
+    },
+    {
+      "path": "urai-tier1/scripts/run-unit-contract-tests.mjs",
+      "git_blob_sha": "affafb3585ee1760a1e4bf251e8844e99f152895",
+      "sha256": "40a7ebb76fadb91575c6444bdfcfb3b502b6772d69991e76a23f9249ad363954",
+      "size_bytes": 2855
+    },
+    {
+      "path": "urai-tier1/src/spatial/memory/useSelectedMemory.ts",
+      "git_blob_sha": "914ce8cd2c75f2d319af72abe55c1ae0d901e4b4",
+      "sha256": "312255abe7aa48740ec064ed38dac0552e32708aa09cc006e43ab7ebe5bfad7f",
+      "size_bytes": 5177
+    },
+    {
+      "path": "urai-tier1/tests/launch-ungating-runtime-contract.test.mjs",
+      "git_blob_sha": "111dcdfd35d88efb0e434380a20015c3ac480fdb",
+      "sha256": "1eb7f882f813886e4e495b109b2fe8fac227b2d5a3692d4ec54d5b1a0a972488",
+      "size_bytes": 5676
+    },
+    {
+      "path": "urai-tier1/tests/selected-memory-live-lifecycle.test.mjs",
+      "git_blob_sha": "47e2807a86df9f346b732bf32b4a69f457535d71",
+      "sha256": "df51fc4f6f6ca82452b2919cb7d3cfb98d45baf15abc9a7edad2034843eb2040",
+      "size_bytes": 9451
+    },
+    {
+      "path": "urai-tier1/tests/unit-runner-coverage.test.mjs",
+      "git_blob_sha": "2dd02365cc0f974e94cb4d073f96b5b459a36a59",
+      "sha256": "db0dfa3070df03e938ee0682ff1260bb2e59b835c61b1485bceb9c2834db014a",
+      "size_bytes": 1709
+    },
+    {
+      "path": "urai-tier1/src/lib/browserLocationStore.ts",
+      "git_blob_sha": "0e4111302e96d0683f9b0d4c17c38097b21eeabe",
+      "sha256": "de37ac832f21106ed402b6dbe4218244a8626b26184a230a7da5ede07cf0e5f6",
+      "size_bytes": 2507
+    },
+    {
+      "path": "urai-tier1/tests/browser-location-store.test.mjs",
+      "git_blob_sha": "d533e09709db47ddf168e255fd2e85f12e9f4570",
+      "sha256": "925bd1612af2741f26a0274e665b04e6a2ad957fd8b7c7dd1960122eec6b4e50",
+      "size_bytes": 6239
+    }
+  ]
+}

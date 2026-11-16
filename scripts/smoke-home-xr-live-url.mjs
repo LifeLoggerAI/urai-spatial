@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { currentXrReleaseAuthority, verifyConditionalXrRoutes, inspectXrDeployProof } from './lib/xr-release-authority.mjs'
+const xrAuthority = currentXrReleaseAuthority()
 const baseUrl = (process.env.URAI_DEPLOY_URL || process.env.LIVE_URL || 'https://urai-4dc1d.web.app').replace(/\/$/, '')
 
 const checks = [
@@ -6,7 +8,6 @@ const checks = [
   { route: '/home', markers: [/URAI|Urai|Life Map|Home/i] },
   { route: '/spatial', markers: [/URAI|Urai|Spatial|Life Map/i] },
   { route: '/spatial/v1', markers: [/URAI|Urai|Spatial|World|Life Map/i] },
-  { route: '/spatial/ar-vr', markers: [/URAI|Urai|XR|AR|VR|Spatial|fallback/i] },
   { route: '/api/system/urai-spatial-lock', markers: [/urai|spatial|lock|ok/i] },
   { route: '/api/system/urai-spatial-3d-world', markers: [/urai|spatial|world|ok/i] },
 ]
@@ -44,6 +45,8 @@ for (const check of checks) {
   }
 }
 
+failures.push(...await verifyConditionalXrRoutes(baseUrl, xrAuthority))
+
 if (failures.length > 0) {
   console.error('[smoke:home-xr:live] failed:')
   for (const failure of failures) console.error(`- ${failure}`)
@@ -54,5 +57,6 @@ console.log(JSON.stringify({
   ok: true,
   service: 'urai-spatial-live-smoke',
   baseUrl,
-  checkedRoutes: checks.length,
+  checkedRoutes: checks.length + 4,
+  xrAuthority,
 }, null, 2))
