@@ -27,11 +27,17 @@
 .uraiV2OnboardingCard button { color: rgba(245,250,255,.78); background: transparent; cursor: pointer; }
 
 @media (max-width: 760px) {
-  .uraiV2OnboardingCard { inset-inline-end: max(10px, env(safe-area-inset-right)); bottom: max(70px, calc(env(safe-area-inset-bottom) + 58px)); max-height: calc(100svh - max(70px, calc(env(safe-area-inset-bottom) + 58px)) - max(10px, env(safe-area-inset-top))); width: calc(100vw - max(10px, env(safe-area-inset-left)) - max(10px, env(safe-area-inset-right))); }
+  .uraiV2OnboardingCard { inset-inline-end: max(10px, env(safe-area-inset-right)); bottom: max(70px, calc(env(safe-area-inset-bottom) + 58px)); max-height: calc(100svh - max(70px, calc(env(safe-area-inset-bottom) + 58px)) - max(10px, env(safe-area-inset-top))); width: min(320px, calc(100vw - max(10px, env(safe-area-inset-left)) - max(10px, env(safe-area-inset-right)))); }
 }
 
 .uraiV2OnboardingCard a:focus-visible,
 .uraiV2OnboardingCard button:focus-visible { outline: 2px solid #d8fff5; outline-offset: 2px; }
 html[dir='rtl'] .uraiV2OnboardingCard { inset-inline-end: max(18px, env(safe-area-inset-left)); }
-@media (max-width: 400px) { .uraiV2OnboardingCard > div { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) {
+  /* Keep the explorable Home world visible behind the first-run guidance. */
+  .uraiV2OnboardingCard img { height: 96px; }
+  .uraiV2OnboardingCard > div { grid-template-columns: minmax(0, 1fr) auto; padding: 12px; }
+  .uraiV2OnboardingCard strong { font-size: 18px; line-height: 1.15; }
+}
+@media (max-width: 340px) { .uraiV2OnboardingCard > div { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 760px) { html[dir='rtl'] .uraiV2OnboardingCard { inset-inline-end: max(10px, env(safe-area-inset-left)); } }

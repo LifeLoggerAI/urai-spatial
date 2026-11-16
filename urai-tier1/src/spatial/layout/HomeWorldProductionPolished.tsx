@@ -182,11 +182,17 @@ function makeAuthoredBoulderGeometry(salt: number, rings = 9, segments = 18) {
     for (let segment = 0; segment < segments; segment += 1) {
       const u = segment / segments
       const theta = u * Math.PI * 2
-      const radialNoise = .82
-        + seeded(ring * segments + segment, salt) * .23
-        + Math.sin(theta * 3 + salt) * .045
-        + Math.cos(phi * 2.6 + salt * .7) * .04
-      const squash = .86 + seeded(segment, salt + 19) * .16
+      // Layer broad fracture planes with finer weathering, instead of repeating
+      // the same rounded pebble silhouette at every sanctuary placement.
+      const fracture = Math.pow(Math.abs(Math.cos(theta * 3 + salt * .13)), 7)
+      const ridge = Math.sin(theta * 5 + phi * 2 + salt * .07)
+      const radialNoise = .78
+        + seeded(ring * segments + segment, salt) * .16
+        + Math.sin(theta * 3 + salt) * .075
+        + Math.cos(phi * 2.6 + salt * .7) * .065
+        + fracture * .13
+        + ridge * .045
+      const squash = .78 + seeded(segment, salt + 19) * .26
       positions.push(
         Math.sin(phi) * Math.cos(theta) * radialNoise * squash,
         Math.cos(phi) * radialNoise,
@@ -312,10 +318,12 @@ function StoneBatch({
   placements,
   indexOffset,
   castShadow,
+  geometry,
 }: {
   placements: readonly StonePlacement[]
   indexOffset: number
   castShadow: boolean
+  geometry: THREE.BufferGeometry
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const transform = useMemo(() => new THREE.Object3D(), [])
@@ -355,7 +363,7 @@ function StoneBatch({
   return (
     <instancedMesh
       ref={meshRef}
-      args={[SANCTUARY_BOULDER_CENTER, material, placements.length]}
+      args={[geometry, material, placements.length]}
       castShadow={castShadow}
       receiveShadow
       dispose={null}
@@ -365,8 +373,10 @@ function StoneBatch({
 
 function GroundDetail() {
   return <group name="home-ground-detail" userData={{ role: 'deterministic-natural-stone-scatter-instanced' }}>
-    <StoneBatch placements={STONE_SCATTER.slice(0, 12)} indexOffset={0} castShadow />
-    <StoneBatch placements={STONE_SCATTER.slice(12)} indexOffset={12} castShadow={false} />
+    {/* Three authored fracture silhouettes, batched for GPU efficiency rather than 34 identical stones. */}
+    <StoneBatch placements={STONE_SCATTER.slice(0, 12)} indexOffset={0} castShadow geometry={SANCTUARY_BOULDER_CENTER} />
+    <StoneBatch placements={STONE_SCATTER.slice(12, 23)} indexOffset={12} castShadow={false} geometry={SANCTUARY_BOULDER_LEFT} />
+    <StoneBatch placements={STONE_SCATTER.slice(23)} indexOffset={23} castShadow={false} geometry={SANCTUARY_BOULDER_RIGHT} />
   </group>
 }
 
