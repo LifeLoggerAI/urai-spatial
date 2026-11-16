@@ -72,7 +72,9 @@ const TERRAIN_GEOMETRY = makeTerrainGeometry();
 function prepareAuthoredSanctuary(source: THREE.Object3D) {
   const world = source.clone(true);
   const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth/i;
-  // Retain authored mountain silhouettes and waterfalls for genuine environmental depth.\n  // Keep synthetic village, avatar, memory-marker and decorative forge geometry excluded.\n  const rejectedForgeForms = /vault|monolith|bridge|grove|firefly|alcove|veil|vegetation|tree|sculpture/i;
+  // Retain authored mountain silhouettes and waterfalls for genuine environmental depth.
+  // Keep synthetic village, avatar, memory-marker and decorative forge geometry excluded.
+  const rejectedForgeForms = /vault|monolith|bridge|grove|firefly|alcove|veil|vegetation|tree|sculpture/i;
   let visibleMeshCount = 0;
   world.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
