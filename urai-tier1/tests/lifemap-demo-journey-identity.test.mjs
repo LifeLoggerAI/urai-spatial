@@ -72,6 +72,7 @@ function fixture(search, { component = 'navigator', memoryNodes = [node] } = {})
     '@/app/privacy-controls/consentModel':consentModel,
     '@/spatial/life-movie/privateLifeMovieRouteSelection':privateLifeMovieRouteSelection,
     './explicitDemoMemory':{buildNamedExplicitDemoMemory},
+    './serverConfirmedSnapshot':{isServerConfirmedSnapshot:()=>false},
   }
   const adamSlotModule = {exports:{}}
   vm.runInNewContext(adamSlotCompiled,{exports:adamSlotModule.exports,module:adamSlotModule,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]}},{filename:'actual-AdamLauncherSlot.tsx'})

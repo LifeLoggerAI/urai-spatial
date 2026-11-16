@@ -88,12 +88,16 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
   })
   const contract = load('selectedMemoryContract.ts', {}, { URL })
   const consentModel = load('../../app/privacy-controls/consentModel.ts', {})
+  const snapshotTrust = load('serverConfirmedSnapshot.ts', {})
   const owner = load('useSelectedMemory.ts', {
     react: driver.react,
     'firebase/auth': { getAuth: () => ({}), onAuthStateChanged(_auth, callback) { authCallback = callback; return () => { authStopped = true } } },
     'firebase/firestore': {
       doc: (...parts) => parts,
-      onSnapshot(ref, receive, error) {
+      onSnapshot(ref, optionsOrReceive, receiveOrError, maybeError) {
+        const withMetadataOptions = typeof optionsOrReceive === 'object'
+        const receive = withMetadataOptions ? receiveOrError : optionsOrReceive
+        const error = withMetadataOptions ? maybeError : receiveOrError
         const subscription = { ref, receive, error, stopped: false }
         if (ref.includes('privacyPolicy')) policySubscriptions.push(subscription)
         else subscriptions.push(subscription)
@@ -102,6 +106,7 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
     },
     '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true, getFirebaseDb: () => ({}) },
     './selectedMemoryContract': contract,
+    './serverConfirmedSnapshot': snapshotTrust,
     '@/app/privacy-controls/consentModel': consentModel,
     './explicitDemoMemory': { buildNamedExplicitDemoMemory: contract.buildExplicitDemoMemory },
     '@/hooks/useBrowserLocation': locationHook,
@@ -109,16 +114,16 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
   const render = () => driver.render(owner.useSelectedMemory)
   render()
   const data = (uid = 'account-a', id = 'memory-one') => ({ ...contract.buildExplicitDemoMemory(id), ownerId: uid, demo: false })
-  const snapshot = (value) => ({ exists: () => value !== null, data: () => value })
+  const snapshot = (value, metadata = {fromCache:false,hasPendingWrites:false}) => ({ exists: () => value !== null, data: () => value, metadata })
   let currentPolicy = null
   const seededPolicy = uid => ({ ...consentModel.defaultConsentPolicy(uid), revision: 1 })
-  const policySnapshot = value => ({ exists: () => value !== null, data: () => value })
+  const policySnapshot = (value, metadata = {fromCache:false,hasPendingWrites:false}) => ({ exists: () => value !== null, data: () => value, metadata })
   return {
     render, subscriptions, policySubscriptions, data,
     policy: () => currentPolicy,
-    emitPolicy(value, index = policySubscriptions.length - 1) {
+    emitPolicy(value, index = policySubscriptions.length - 1, metadata) {
       currentPolicy = value
-      policySubscriptions[index].receive(policySnapshot(value))
+      policySubscriptions[index].receive(policySnapshot(value, metadata))
       return render()
     },
     errorPolicy(index = policySubscriptions.length - 1) {
@@ -134,7 +139,7 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
       }
       return render()
     },
-    emit(index, value) { subscriptions[index].receive(snapshot(value)); return render() },
+    emit(index, value, metadata) { subscriptions[index].receive(snapshot(value, metadata)); return render() },
     error(index) { subscriptions[index].error(new Error('provider-private-details')); return render() },
     navigate(nextSearch) { browser.location.search = nextSearch; listeners.get('popstate')?.(); return render() },
     push(nextSearch) { browser.history.pushState({}, '', nextSearch); return render() },
@@ -143,6 +148,25 @@ function harness(search = '?memoryId=memory-one', pathname = '/focus') {
     unmount: () => driver.unmount(), authStopped: () => authStopped, listeners,
   }
 }
+
+
+test('cached or optimistic memory snapshots cannot become current private memories', () => {
+  const h = harness(); h.signIn('account-a')
+  const memory = h.data()
+  for (const metadata of [{fromCache:true,hasPendingWrites:false}, {fromCache:false,hasPendingWrites:true}]) {
+    const result = h.emit(0, memory, metadata)
+    assert.equal(result.status, 'unavailable')
+    assert.equal(result.memory, null)
+  }
+  assert.equal(h.emit(0, memory).status, 'ready')
+})
+
+test('cached policy confirmation withdraws previously rendered private memory', () => {
+  const h = harness(); h.signIn('account-a'); assert.equal(h.emit(0, h.data()).status, 'ready')
+  const result = h.emitPolicy(h.policy(), undefined, {fromCache:true,hasPendingWrites:false})
+  assert.equal(result.status, 'unavailable')
+  assert.equal(result.memory, null)
+})
 
 test('live private memory loads only from the authenticated owner path', () => {
   const h = harness()

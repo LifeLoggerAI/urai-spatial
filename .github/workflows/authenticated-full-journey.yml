@@ -7,6 +7,15 @@ on:
       - 'scripts/report-authenticated-journey.cjs'
       - 'scripts/report-authenticated-journey.test.cjs'
       - 'urai-tier1/src/lib/firebase/client.ts'
+      - 'urai-tier1/src/lib/firebase/configReadiness.ts'
+      - 'urai-tier1/src/lib/firebase/configReadiness.test.ts'
+      - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
+      - 'urai-tier1/src/spatial/memory/serverConfirmedSnapshot.ts'
+      - 'urai-tier1/src/components/lifemap/useLifeMapEvents.ts'
+      - 'urai-tier1/tests/lifemap-consent-gate.test.mjs'
+      - 'urai-tier1/tests/lifemap-data-boundary.test.mjs'
+      - 'scripts/server-confirmed-private-memory.test.mjs'
+      - 'scripts/prove-owner-memory-firestore-emulator.mjs'
       - 'urai-tier1/src/app/login/LoginClient.tsx'
   workflow_dispatch:
     inputs:
@@ -43,6 +52,8 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           node --check scripts/prove-authenticated-full-journey.mjs
+          node --experimental-strip-types --test urai-tier1/src/lib/firebase/configReadiness.test.ts
+          node --experimental-strip-types --test scripts/server-confirmed-private-memory.test.mjs
           node --test scripts/report-authenticated-journey.test.cjs
       - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
         with:
@@ -63,6 +74,10 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm --filter urai-functions build
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+      - name: Original Life Map source and consent regressions
+        run: pnpm --dir urai-tier1 exec node --test tests/lifemap-consent-gate.test.mjs tests/lifemap-canonical-memory-star.test.mjs tests/lifemap-data-boundary.test.mjs tests/lifemap-trust-loop.test.mjs tests/lifemap-route-transaction-identity.test.mjs
+      - name: Real Auth and owner-boundary Firestore Rules proof (nonrelease)
+        run: pnpm exec firebase emulators:exec --project demo-urai-auth-journey --only auth,firestore --config firebase.captured-reality-emulator.json 'node scripts/prove-owner-memory-firestore-emulator.mjs'
       - name: Nonrelease emulator integration proof
         run: pnpm exec firebase emulators:exec --project demo-urai-auth-journey --only auth,firestore,functions,storage --config firebase.captured-reality-emulator.json 'node scripts/prove-authenticated-full-journey.mjs'
       - name: Show bounded journey receipt classification

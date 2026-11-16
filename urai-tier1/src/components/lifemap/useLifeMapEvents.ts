@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { collection, doc, limit, onSnapshot, orderBy, query, type DocumentData } from "firebase/firestore";
 import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from "@/spatial/memory/selectedMemoryContract";
 import { isConsentPolicy } from "@/app/privacy-controls/consentModel";
+import { isServerConfirmedSnapshot } from "@/spatial/memory/serverConfirmedSnapshot";
 import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
 import { lifeMapDisplayPosition } from "./lifeMapLayout";
@@ -133,8 +134,11 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const currentOwner = explicitDemo ? 'demo-user' : resolvedUserId;
   const currentNodes = nodesOwner === currentOwner ? nodes : [];
   const currentMemories = memoriesOwner === currentOwner ? canonicalMemories : new Map<string, SelectedMemory>();
-  const visibleNodes = explicitDemo || (authorityKey !== null && nodesAuthority === authorityKey) ? currentNodes : [];
-  const visibleMemories = authorityKey !== null && memoriesAuthority === authorityKey ? currentMemories : new Map<string, SelectedMemory>();
+  // All three private data streams must be confirmed for the same consent revision.
+  const allStreamsCurrent = authorityKey !== null && nodesAuthority === authorityKey
+    && erasAuthority === authorityKey && memoriesAuthority === authorityKey;
+  const visibleNodes = explicitDemo || allStreamsCurrent ? currentNodes : [];
+  const visibleMemories = allStreamsCurrent ? currentMemories : new Map<string, SelectedMemory>();
   const resolvedNodes = useMemo(() => {
     if (explicitDemo) return visibleNodes;
     const fromEvents: LifeMapNode[] = visibleNodes.flatMap((node): LifeMapNode[] => {
@@ -189,11 +193,12 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     return fromEvents;
   }, [visibleNodes, visibleMemories, explicitDemo, authorityKey, nodesAuthority, erasAuthority, memoriesAuthority, resolvedUserId]);
   const currentEras = erasOwner === currentOwner ? eras : [];
-  const visibleEras = explicitDemo || (authorityKey !== null && erasAuthority === authorityKey) ? currentEras : [];
+  const visibleEras = explicitDemo || allStreamsCurrent ? currentEras : [];
   const [eventsLoading, setEventsLoading] = useState(!explicitDemo);
   const [erasLoading, setErasLoading] = useState(!explicitDemo);
   const [eventsError, setEventsError] = useState<string | null>(null);
   const [erasError, setErasError] = useState<string | null>(null);
+  const [memoriesError, setMemoriesError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -209,8 +214,9 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     };
     publish(false, false);
     try {
-      const unsubscribe = onSnapshot(doc(getFirebaseDb(), 'users', owner, 'privacyPolicy', 'current'), snapshot => {
+      const unsubscribe = onSnapshot(doc(getFirebaseDb(), 'users', owner, 'privacyPolicy', 'current'), { includeMetadataChanges: true }, snapshot => {
         if (cancelled) return;
+        if (!isServerConfirmedSnapshot(snapshot.metadata)) { publish(false); return; }
         const raw = snapshot.exists() ? snapshot.data() : null;
         if (!isConsentPolicy(raw, owner)) { deniedRevision = Math.max(deniedRevision ?? -1, revision); publish(false); return; }
         if (raw.revision < revision) { deniedRevision = revision; publish(false); return; }
@@ -261,8 +267,14 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     setEventsLoading(true);
     try {
       const eventsQuery = query(collection(getFirebaseDb(), "users", resolvedUserId, "lifeMapEvents"), orderBy("occurredAt", "desc"), limit(240));
-      const unsubscribe = onSnapshot(eventsQuery, (snapshot) => {
+      const unsubscribe = onSnapshot(eventsQuery, { includeMetadataChanges: true }, (snapshot) => {
         if (cancelled) return;
+        if (!isServerConfirmedSnapshot(snapshot.metadata)) {
+          setNodes([]); setNodesOwner(resolvedUserId); setNodesAuthority(null);
+          setEventsLoading(false);
+          setEventsError("Private Life Map events require current server confirmation.");
+          return;
+        }
         setNodes(snapshot.docs.map((doc) => mapLifeMapEventToNode(normalizeEvent(doc.id, doc.data(), resolvedUserId))));
         setNodesOwner(resolvedUserId);
         setNodesAuthority(authorityKey);
@@ -272,7 +284,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         if (cancelled) return;
         setNodes([]);
         setNodesOwner(resolvedUserId);
-        setNodesAuthority(authorityKey);
+        setNodesAuthority(null);
         setEventsLoading(false);
         setEventsError(snapshotError instanceof Error ? snapshotError.message : "Life Map events could not be loaded.");
       });
@@ -280,7 +292,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     } catch (caught) {
       setNodes([]);
       setNodesOwner(resolvedUserId);
-      setNodesAuthority(authorityKey);
+      setNodesAuthority(null);
       setEventsLoading(false);
       setEventsError(caught instanceof Error ? caught.message : "Life Map events could not be loaded.");
       return () => { cancelled = true; };
@@ -311,8 +323,14 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     setErasLoading(true);
     try {
       const erasQuery = query(collection(getFirebaseDb(), "users", resolvedUserId, "lifeMapEras"), limit(80));
-      const unsubscribe = onSnapshot(erasQuery, (snapshot) => {
+      const unsubscribe = onSnapshot(erasQuery, { includeMetadataChanges: true }, (snapshot) => {
         if (cancelled) return;
+        if (!isServerConfirmedSnapshot(snapshot.metadata)) {
+          setEras([]); setErasOwner(resolvedUserId); setErasAuthority(null);
+          setErasLoading(false);
+          setErasError("Private Life Map eras require current server confirmation.");
+          return;
+        }
         setEras(snapshot.docs.map((doc) => normalizeEra(doc.id, doc.data(), resolvedUserId)));
         setErasOwner(resolvedUserId);
         setErasAuthority(authorityKey);
@@ -322,7 +340,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         if (cancelled) return;
         setEras([]);
         setErasOwner(resolvedUserId);
-        setErasAuthority(authorityKey);
+        setErasAuthority(null);
         setErasLoading(false);
         setErasError(snapshotError instanceof Error ? snapshotError.message : "Life Map eras could not be loaded.");
       });
@@ -330,7 +348,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     } catch (caught) {
       setEras([]);
       setErasOwner(resolvedUserId);
-      setErasAuthority(authorityKey);
+      setErasAuthority(null);
       setErasLoading(false);
       setErasError(caught instanceof Error ? caught.message : "Life Map eras could not be loaded.");
       return () => { cancelled = true; };
@@ -342,21 +360,28 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     if (explicitDemo || !resolvedUserId || !firebasePublicEnvReady) {
       setCanonicalMemories(new Map());
       setMemoriesOwner(explicitDemo ? 'demo-user' : resolvedUserId);
-      setMemoriesLoading(false);
+      setMemoriesLoading(false); setMemoriesError(null);
       return () => { cancelled = true; };
     }
     if (!authorityKey) {
       setCanonicalMemories(new Map()); setMemoriesOwner(resolvedUserId);
-      setMemoriesAuthority(null); setMemoriesLoading(false);
+      setMemoriesAuthority(null); setMemoriesLoading(false); setMemoriesError(null);
       return () => { cancelled = true; };
     }
-    setMemoriesLoading(true);
+    setMemoriesLoading(true); setMemoriesError(null);
     // Canonical private memory documents are server-authored, owner-readable.
     // No data from this subscription is made accessible across account changes.
     const unsub = onSnapshot(
       query(collection(getFirebaseDb(), "users", resolvedUserId, "memories"), limit(240)),
+      { includeMetadataChanges: true },
       snapshot => {
         if (cancelled) return;
+        if (!isServerConfirmedSnapshot(snapshot.metadata)) {
+          setCanonicalMemories(new Map()); setMemoriesOwner(resolvedUserId); setMemoriesAuthority(null);
+          setMemoriesLoading(false);
+          setMemoriesError("Private memories require current server confirmation.");
+          return;
+        }
         const accepted = new Map<string, SelectedMemory>();
         for (const doc of snapshot.docs) {
           const parsed = parseSelectedMemory(doc.data(), resolvedUserId, doc.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
@@ -365,14 +390,15 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         setCanonicalMemories(accepted);
         setMemoriesOwner(resolvedUserId);
         setMemoriesAuthority(authorityKey);
-        setMemoriesLoading(false);
+        setMemoriesLoading(false); setMemoriesError(null);
       },
       () => {
         if (cancelled) return;
         setCanonicalMemories(new Map());
         setMemoriesOwner(resolvedUserId);
-        setMemoriesAuthority(authorityKey);
+        setMemoriesAuthority(null);
         setMemoriesLoading(false);
+        setMemoriesError("Private memories could not be loaded.");
       },
     );
     return () => { cancelled = true; unsub(); };
@@ -381,7 +407,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const loading = (Boolean(resolvedUserId) && !explicitDemo && (!consent.checked || consent.owner !== resolvedUserId))
     || (authorityKey !== null && (nodesAuthority !== authorityKey || erasAuthority !== authorityKey || memoriesAuthority !== authorityKey))
     || eventsLoading || erasLoading || memoriesLoading || (Boolean(resolvedUserId) && consentAllowed && (nodesOwner !== currentOwner || erasOwner !== currentOwner || memoriesOwner !== currentOwner));
-  const error = eventsError || erasError;
+  const error = eventsError || erasError || memoriesError;
   const sourceMode: LifeMapSourceMode = explicitDemo ? "explicit-demo" : !resolvedUserId ? "signed-out" : !firebasePublicEnvReady || (!consentAllowed && consent.checked) ? "unavailable" : error ? "error" : !loading && resolvedNodes.length === 0 ? "empty" : "private";
   return { nodes: resolvedNodes, eras: visibleEras, loading, error, usingSeedData: explicitDemo, sourceMode };
 }
