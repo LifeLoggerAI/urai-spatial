@@ -12,7 +12,7 @@ const sizes = [{name:'mobile',width:390,height:844},{name:'desktop',width:1280,h
 const errors = [];
 fs.mkdirSync(output,{recursive:true});
 (async()=>{
- const browser = await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+ const browser = await chromium.launch({headless:true,...(process.env.URAI_CHROMIUM_EXECUTABLE ? {executablePath:process.env.URAI_CHROMIUM_EXECUTABLE} : {}),args:['--no-sandbox','--disable-dev-shm-usage']});
  const results=[];
  for(const size of sizes) for(const route of routes){
   const page=await browser.newPage({viewport:{width:size.width,height:size.height},reducedMotion:'reduce'});
