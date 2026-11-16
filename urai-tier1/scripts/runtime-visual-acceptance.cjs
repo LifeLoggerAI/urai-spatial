@@ -36,7 +36,10 @@ fs.mkdirSync(output,{recursive:true});
    });
    const slug=route==='/'?'home':route.slice(1).replaceAll('/','-');
    const filename=path.join(output,size.name+'-'+slug+'.png');
-   await page.screenshot({path:filename,animations:'disabled',timeout:15000});
+   const cdp=await page.context().newCDPSession(page);
+   const capture=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false,fromSurface:true});
+   fs.writeFileSync(filename,Buffer.from(capture.data,'base64'));
+   await cdp.detach();
    const sha256=crypto.createHash('sha256').update(fs.readFileSync(filename)).digest('hex');
    const row={size:size.name,route,status:response.status(),url:page.url(),elapsedMs:Date.now()-started,
       ...data,pageErrors,screenshot:filename,sha256};
