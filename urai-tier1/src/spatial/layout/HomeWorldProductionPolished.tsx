@@ -318,10 +318,12 @@ function StoneBatch({
   placements,
   indexOffset,
   castShadow,
+  geometry,
 }: {
   placements: readonly StonePlacement[]
   indexOffset: number
   castShadow: boolean
+  geometry: THREE.BufferGeometry
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const transform = useMemo(() => new THREE.Object3D(), [])
@@ -361,7 +363,7 @@ function StoneBatch({
   return (
     <instancedMesh
       ref={meshRef}
-      args={[SANCTUARY_BOULDER_CENTER, material, placements.length]}
+      args={[geometry, material, placements.length]}
       castShadow={castShadow}
       receiveShadow
       dispose={null}
@@ -371,8 +373,10 @@ function StoneBatch({
 
 function GroundDetail() {
   return <group name="home-ground-detail" userData={{ role: 'deterministic-natural-stone-scatter-instanced' }}>
-    <StoneBatch placements={STONE_SCATTER.slice(0, 12)} indexOffset={0} castShadow />
-    <StoneBatch placements={STONE_SCATTER.slice(12)} indexOffset={12} castShadow={false} />
+    {/* Three authored fracture silhouettes, batched for GPU efficiency rather than 34 identical stones. */}
+    <StoneBatch placements={STONE_SCATTER.slice(0, 12)} indexOffset={0} castShadow geometry={SANCTUARY_BOULDER_CENTER} />
+    <StoneBatch placements={STONE_SCATTER.slice(12, 23)} indexOffset={12} castShadow={false} geometry={SANCTUARY_BOULDER_LEFT} />
+    <StoneBatch placements={STONE_SCATTER.slice(23)} indexOffset={23} castShadow={false} geometry={SANCTUARY_BOULDER_RIGHT} />
   </group>
 }
 
