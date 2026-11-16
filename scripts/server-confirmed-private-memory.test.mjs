@@ -20,9 +20,11 @@ test('missing or incomplete metadata fails closed', () => {
   assert.equal(isServerConfirmedSnapshot(undefined), false)
   assert.equal(isServerConfirmedSnapshot({}), false)
 })
-test('both Firestore listeners receive metadata-change events, including network changes', () => {
+test('both Firestore listeners use the real options-before-callback overload', () => {
   assert.equal((original.match(/includeMetadataChanges:\s*true/g) ?? []).length, 2)
   assert.equal((original.match(/isServerConfirmedSnapshot\(snapshot\.metadata\)/g) ?? []).length, 2)
+  assert.match(original, /doc\(getFirebaseDb\(\), 'users', user\.uid, 'memories', memoryId\),\s*\{ includeMetadataChanges: true \},\s*\(snapshot\) => \{/)
+  assert.match(original, /doc\(getFirebaseDb\(\), 'users', user\.uid, 'privacyPolicy', 'current'\),\s*\{ includeMetadataChanges: true \},\s*\(snapshot\) => \{/)
 })
 test('cached consent detaches the private memory listener before declining access', () => {
   assert.match(original, /if \(!isServerConfirmedSnapshot\(snapshot\.metadata\)\) \{\s*detachMemory\(\)\s*setResult\(unavailable\('Private memory consent requires a current server confirmation\.'\)\)/)
