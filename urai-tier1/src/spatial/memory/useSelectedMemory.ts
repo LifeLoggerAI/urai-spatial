@@ -7,6 +7,7 @@ import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/clien
 import { useBrowserLocation } from '@/hooks/useBrowserLocation'
 import { isConsentPolicy } from '@/app/privacy-controls/consentModel'
 import { buildNamedExplicitDemoMemory } from './explicitDemoMemory'
+import { isServerConfirmedSnapshot } from './serverConfirmedSnapshot'
 import {
   isExplicitDemoRequest,
   parseSelectedMemory,
@@ -120,6 +121,10 @@ export function useSelectedMemory(): SelectedMemoryResult {
             doc(getFirebaseDb(), 'users', user.uid, 'memories', memoryId),
             (snapshot) => {
               if (!isCurrentMemory()) return
+              if (!isServerConfirmedSnapshot(snapshot.metadata)) {
+                setResult(unavailable('Private memory requires a current server confirmation.'))
+                return
+              }
               if (!snapshot.exists()) {
                 setResult(unavailable('Selected memory could not be found.'))
                 return
@@ -135,6 +140,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
               if (!isCurrentMemory()) return
               setResult(unavailable('Selected memory could not be loaded.'))
             },
+            { includeMetadataChanges: true },
           )
         } catch {
           if (!isCurrentMemory()) return
@@ -147,6 +153,11 @@ export function useSelectedMemory(): SelectedMemoryResult {
           doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current'),
           (snapshot) => {
             if (!isCurrentOwner()) return
+            if (!isServerConfirmedSnapshot(snapshot.metadata)) {
+              detachMemory()
+              setResult(unavailable('Private memory consent requires a current server confirmation.'))
+              return
+            }
             const raw = snapshot.exists() ? snapshot.data() : undefined
             if (!isConsentPolicy(raw, user.uid)) {
               detachMemory()
@@ -189,6 +200,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
             detachMemory()
             setResult(unavailable('Private memory consent authority could not be loaded.'))
           },
+          { includeMetadataChanges: true },
         )
       } catch {
         if (!isCurrentOwner()) return
