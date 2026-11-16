@@ -9,6 +9,9 @@ on:
       - 'urai-tier1/src/lib/firebase/client.ts'
       - 'urai-tier1/src/lib/firebase/configReadiness.ts'
       - 'urai-tier1/src/lib/firebase/configReadiness.test.ts'
+      - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
+      - 'urai-tier1/src/spatial/memory/serverConfirmedSnapshot.ts'
+      - 'scripts/server-confirmed-private-memory.test.mjs'
       - 'urai-tier1/src/app/login/LoginClient.tsx'
   workflow_dispatch:
     inputs:
@@ -46,6 +49,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           node --check scripts/prove-authenticated-full-journey.mjs
           node --experimental-strip-types --test urai-tier1/src/lib/firebase/configReadiness.test.ts
+          node --experimental-strip-types --test scripts/server-confirmed-private-memory.test.mjs
           node --test scripts/report-authenticated-journey.test.cjs
       - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
         with:
