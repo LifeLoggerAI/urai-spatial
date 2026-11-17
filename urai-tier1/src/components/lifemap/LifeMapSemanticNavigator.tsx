@@ -49,7 +49,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
 
   const withIdentity = useCallback((next: URLSearchParams) => {
     if (explicitDemo) next.set('demo', '1')
-    const manifestId = params.get('manifestId') || 'replay-recovery-thread'
+    const manifestId = params.get('manifestId') || (explicitDemo ? 'replay-recovery-thread' : null)
     if (manifestId) next.set('manifestId', manifestId)
     return next
   }, [explicitDemo, params])
