@@ -37,11 +37,29 @@ const CHAMBER_CHARACTER: Record<GroundChamberForm, readonly [number, number, num
 function liftedMaterial(material: THREE.Material) {
   const clone = material.clone();
   if (clone instanceof THREE.MeshStandardMaterial) {
-    clone.color.multiplyScalar(1.08);
-    clone.emissive.copy(clone.color).multiplyScalar(0.035);
-    clone.emissiveIntensity = Math.max(clone.emissiveIntensity, 0.16);
-    clone.roughness = Math.max(clone.roughness, 0.5);
-    clone.metalness = Math.min(clone.metalness, 0.3);
+    const name = `${material.name} ${clone.name}`.toLowerCase();
+    clone.color.multiplyScalar(1.035);
+    const structuralMetal = /metal|steel|alloy|frame|ring|rune|nexus|conduit/.test(name);
+    const mineral = /stone|rock|terrain|ground|concrete|wall|floor|path/.test(name);
+    if (structuralMetal) {
+      clone.roughness = THREE.MathUtils.clamp(clone.roughness, 0.32, 0.58);
+      clone.metalness = Math.max(clone.metalness, 0.42);
+      clone.envMapIntensity = Math.max(clone.envMapIntensity, 1.08);
+      clone.emissive.copy(clone.color).multiplyScalar(0.018);
+      clone.emissiveIntensity = Math.max(clone.emissiveIntensity, 0.08);
+    } else if (mineral) {
+      clone.roughness = THREE.MathUtils.clamp(Math.max(clone.roughness, 0.78), 0.78, 0.96);
+      clone.metalness = 0;
+      clone.envMapIntensity = THREE.MathUtils.clamp(clone.envMapIntensity, 0.42, 0.72);
+      clone.emissive.copy(clone.color).multiplyScalar(0.008);
+      clone.emissiveIntensity = 0.04;
+    } else {
+      clone.roughness = THREE.MathUtils.clamp(Math.max(clone.roughness, 0.5), 0.5, 0.82);
+      clone.metalness = Math.min(clone.metalness, 0.24);
+      clone.envMapIntensity = THREE.MathUtils.clamp(clone.envMapIntensity, 0.58, 0.92);
+      clone.emissive.copy(clone.color).multiplyScalar(0.014);
+      clone.emissiveIntensity = Math.max(clone.emissiveIntensity, 0.07);
+    }
     clone.needsUpdate = true;
   }
   return clone;
@@ -55,9 +73,15 @@ function prepareModel(source: THREE.Object3D) {
     }
     if (object.name.endsWith("-signal-rune")) object.scale.multiplyScalar(0.62);
     if (!(object instanceof THREE.Mesh)) return;
+    object.geometry = object.geometry.clone();
+    object.geometry.computeVertexNormals();
     object.material = Array.isArray(object.material)
       ? object.material.map(liftedMaterial)
       : liftedMaterial(object.material);
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (material instanceof THREE.MeshStandardMaterial) material.flatShading = false;
+    }
     object.castShadow = true;
     object.receiveShadow = true;
     object.frustumCulled = false;
