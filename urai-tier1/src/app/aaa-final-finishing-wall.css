@@ -108,6 +108,11 @@ summary:focus-visible {
   line-height: 1.35;
 }
 
+/* Public sample copy must not imply these synthetic stars are private data. */
+[data-testid="urai-r3f-canonical-lifemap"][data-life-map-access="explicit-demo"] header::after {
+  content: "Disclosed sample constellation · fictional stars · Focus opens selection";
+}
+
 [data-route-polish="selected-memory-chamber"]::before,
 [data-route-polish="cinematic-memory-film"]::before,
 [data-route-polish="reflection-realm"]::before,
