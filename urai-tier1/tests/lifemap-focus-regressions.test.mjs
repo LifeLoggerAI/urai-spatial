@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -39,4 +40,13 @@ test('event dispatches fire with expected payloads', () => {
     value: 'chapter-return',
     ts: '2026-05-04T12:00:00.000Z',
   });
+});
+
+
+test('selected Life Map Escape unwinds overview then Home without reselecting retained node', () => {
+  const scene = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8');
+  assert.match(scene, /get\("overview"\) === "1"/);
+  assert.match(scene, /if \(overviewIsCurrent \|\| !selectedId\) router\.push\("\/home"\)/);
+  assert.match(scene, /else overview\(\)/);
+  assert.match(scene, /setSelectedId\(null\)/);
 });
