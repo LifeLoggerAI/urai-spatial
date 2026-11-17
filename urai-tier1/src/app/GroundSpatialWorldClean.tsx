@@ -172,7 +172,7 @@ function GroundWorld({ target, activeId, onSelect }: {
       <group name="ground-walkable-path-network" userData={{ authoredNodeFamily: "path-bridge-* engraved-path-*" }}>
         <group name="ground-central-nexus" userData={{ authoredNodeFamily: "ground-central-nexus nexus-core" }}>
           <group name="ground-workforce-and-council-presences" userData={{ authoredNodeFamily: "ground-destination-council council-* workforce-*" }}>
-            <primitive object={world} />
+            <primitive object={world} visible={false} />
           </group>
         </group>
       </group>
@@ -294,8 +294,6 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
 }) {
   return (
     <>
-      <color attach="background" args={["#102b38"]} />
-      <fogExp2 attach="fog" args={["#173843", 0.012]} />
       <ambientLight intensity={0.52} color="#d8f4f2" />
       <hemisphereLight args={["#eaf8ef", "#1f2d2c", 1.05]} />
       <directionalLight position={[9, 18, 12]} intensity={1.7} color="#ffd7a0" castShadow shadow-mapSize={[1024, 1024]} />
@@ -306,7 +304,6 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
       <Sparkles count={28} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={0.025} opacity={0.045} color="#f9e7ba" />
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
-      <ArchitecturalRouteLighting activeId={activeId} />
       <EffectComposer multisampling={0}>
         <Bloom intensity={0.24} luminanceThreshold={0.82} luminanceSmoothing={0.18} mipmapBlur />
         <Vignette eskil={false} offset={0.12} darkness={0.12} />
@@ -360,7 +357,7 @@ export default function GroundSpatialWorldClean() {
       data-testid="urai-ground-private-workforce-world"
       data-ground-visual-owner="shared-continuity-architecture"
       data-ground-runtime-owner="final-glb-infrastructure-world"
-      data-ground-runtime-assets="ground-world-terrain-v1.glb"
+      data-ground-runtime-assets="ground-world-main.webp ground-world-mobile.webp ground-world-terrain-v1.glb" data-ground-visual-presentation="cinematic-hybrid-live-navigation"
       data-ground-no-compositing-bands="true"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
@@ -370,13 +367,19 @@ export default function GroundSpatialWorldClean() {
       data-ground-enterable-thresholds={DESTINATIONS.map((destination) => `ground-enterable-threshold-${destination.id}`).join(" ")}
       {...look}
     >
+      <picture aria-hidden="true" className="ground-cinematic-backdrop">
+        <source media="(max-width: 700px)" srcSet="/assets/urai/ground/ground-world-mobile.webp" />
+        <img src="/assets/urai/ground/ground-world-main.webp" alt="" />
+      </picture>
+      <div aria-hidden="true" className="ground-cinematic-grade" />
       {webglUsable ? <Canvas
         shadows
         dpr={[1, 1.3]}
         camera={{ position: [0, 8.8, 25], fov: 52, near: 0.08, far: 180 }}
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-        onCreated={({ gl }) => {
-          gl.setClearColor(0x102b38, 1);
+        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+        onCreated={({ gl, scene }) => {
+          gl.setClearColor(0x000000, 0);
+          scene.background = null;
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.35;
@@ -442,7 +445,11 @@ export default function GroundSpatialWorldClean() {
         .ground-spatial-root[data-ground-renderer="fallback"] .ground-directory,.ground-spatial-root[data-ground-renderer="fallback"] .ground-prompt{display:none}
         .ground-spatial-root[data-ground-renderer="fallback"] .ground-home-return{z-index:16}
         @media(forced-colors:active){.ground-renderer-fallback{background:Canvas;color:CanvasText}.ground-renderer-fallback a{color:LinkText}}
-        .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#102b38;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
+        .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#0c1314;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
+        .ground-cinematic-backdrop{position:absolute;inset:0;z-index:0;overflow:hidden}
+        .ground-cinematic-backdrop img{width:100%;height:100%;object-fit:cover;object-position:center center;transform:scale(1.015);filter:saturate(1.06) contrast(1.025) brightness(.86)}
+        .ground-cinematic-grade{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 44%,rgba(0,0,0,0) 0%,rgba(0,0,0,.05) 56%,rgba(0,0,0,.38) 100%),linear-gradient(180deg,rgba(5,8,10,.06),rgba(5,8,10,0) 55%,rgba(5,8,10,.18))}
+        .ground-spatial-root canvas{z-index:2}
         .ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important;filter:saturate(1.02) contrast(1.015)}
         .ground-brand{position:absolute;z-index:10;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));display:grid;gap:4px;max-width:min(360px,62vw);pointer-events:none;text-shadow:0 10px 34px rgba(0,0,0,.58)}
         .ground-brand span{font:800 9px/1 system-ui;letter-spacing:.28em;color:rgba(197,246,255,.82)}
