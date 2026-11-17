@@ -25,10 +25,26 @@ test('URA-068 memory focus tunnel is the governed Focus to Replay travelling tra
 
 test('URA-069 replay return reuses deterministic reverse travel instead of bypassing Focus', () => {
   assert.match(replay, /const unwind = useCallback\(\(\) => requestUraiWorldReturn\(\), \[\]\)/)
-  assert.match(replay, /if \(event\.key === 'Escape'\) \{ pauseMemory\(\); event\.preventDefault\(\); unwind\(\); return \}/)
+  // Fullscreen Escape must close the video before any route unwind.
+  // This is a stronger behavioural ordering requirement than the legacy one-line handler.
+  const escapeHandlerStart = replay.indexOf("if (event.key === 'Escape') {")
+  const escapeHandlerEnd = replay.indexOf("if (!interactive &&", escapeHandlerStart)
+  assert.ok(escapeHandlerStart >= 0 && escapeHandlerEnd > escapeHandlerStart, 'Replay Escape handler must exist')
+  const escapeHandler = replay.slice(escapeHandlerStart, escapeHandlerEnd)
+  assert.match(escapeHandler, /if \(document\.fullscreenElement\)/)
+  assert.match(escapeHandler, /document\.exitFullscreen\(\)/)
+  assert.match(escapeHandler, /pauseMemory\(\); event\.preventDefault\(\); unwind\(\); return/)
+  assert.ok(escapeHandler.indexOf('document.exitFullscreen()') < escapeHandler.indexOf('unwind()'), 'Exit fullscreen before reverse travel')
+  assert.match(controller, /Boolean\(document\.fullscreenElement\)/)
+  // Focus and Life Map have their own realm-specific return owners; the
+  // shared fallback must not race them or bypass Replay -> Focus.
+  assert.match(controller, /currentWorld\.destination === 'focus'/)
   assert.match(controller, /const onReturn = \(\) => reverseTravel\(\)/)
   assert.match(controller, /if \(destination === 'replay'\) return 'focus'/)
-  assert.match(controller, /const destination = currentWorld\.previousDestination \?\? fallbackReturnDestination\(currentWorld\.destination\)/)
+  // Scenario returns are intentionally routed to their origin realm, while
+  // ordinary Replay returns use previousDestination or the Focus fallback.
+  assert.match(controller, /currentWorld\.destination === 'possible-futures' && currentWorld\.scenarioOrigin/)
+  assert.match(controller, /: currentWorld\.previousDestination \?\? fallbackReturnDestination\(currentWorld\.destination\)/)
   assert.match(controller, /executeTravel\(\{/)
   assert.match(provider, /previousDestination: state\.world\.destination/)
   assert.doesNotMatch(replay, /requestUraiWorldTravel\(\{ destination: 'life-map'.*unwind/)

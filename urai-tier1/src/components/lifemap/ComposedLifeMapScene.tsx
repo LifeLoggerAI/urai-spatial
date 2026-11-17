@@ -370,7 +370,12 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       if (event.defaultPrevented || event.key !== "Escape" || (event.target instanceof HTMLElement && event.target.matches("input,textarea,select,[role='textbox']"))) return;
       if (document.querySelector('#life-map-navigator, [role="dialog"][aria-modal="true"]')) return;
       event.preventDefault();
-      if (selectedId) overview(); else router.push("/home");
+      // The selected star remains in the URL as a return checkpoint after
+      // overview. Read live URL intent before local selection state, or a
+      // second Escape races the first and selects the same star again.
+      const overviewIsCurrent = new URLSearchParams(window.location.search).get("overview") === "1"
+      if (overviewIsCurrent || !selectedId) router.push("/home")
+      else overview()
     };
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
