@@ -37,9 +37,7 @@
   z-index: 2;
   width: 100% !important;
   height: 100% !important;
-  background:
-    radial-gradient(circle at 28% 15%, rgba(225, 207, 173, .14) 0 5%, rgba(104, 132, 128, .08) 28%, transparent 54%),
-    linear-gradient(180deg, #3a5158 0%, #314946 36%, #273d35 68%, #182821 100%);
+  background: transparent;
   filter: none;
 }
 
@@ -151,9 +149,7 @@
     opacity: 1;
   }
   .canvas {
-    background:
-      radial-gradient(circle at 28% 14%, rgba(225, 207, 173, .12) 0 5%, rgba(104, 132, 128, .07) 28%, transparent 54%),
-      linear-gradient(180deg, #3a5158 0%, #314946 36%, #273d35 68%, #182821 100%);
+    background: transparent;
     filter: none;
   }
   .brand {
