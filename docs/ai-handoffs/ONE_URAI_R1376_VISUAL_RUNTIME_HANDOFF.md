@@ -645,3 +645,49 @@ Remember: the protected host may require a newly generated Vercel share URL. Do 
 ## 14. One-sentence worker handoff
 
 **Resume from PR #2113 at exact visual candidate `47336d9dd16cda90a2cb54fd332b0278688adb84`; preserve the cinematic-hybrid Home/Ground architecture, canonical Orb and Ground contracts, signed-out privacy truth, and exact-head live-pixel certification process; do not regress to prototype-visible geometry or treat visual readiness as production authorization.**
+
+
+---
+
+## 15. Review-readiness update — 2026-11-17
+
+PR #2113 was reconciled again after the R1376 handoff.
+
+Current verified review state:
+- visual candidate remains `47336d9dd16cda90a2cb54fd332b0278688adb84`;
+- PR remains based on `main@da94837c2457b0a7590e26a7a644cd728de8afb8`;
+- PR is 35 commits ahead and 0 commits behind main;
+- diff remains limited to 9 visual/runtime files;
+- protected Vercel deployment `dpl_8AtV2LpyhCoqwS8SE926t2ioFdEQ` remains READY on the exact SHA;
+- PR was moved from draft to **ready for review**;
+- PR was **not merged**;
+- production authorization remains HOLD;
+- private-memory writes remain disabled.
+
+### GitHub Actions interpretation
+
+R1376 GitHub Actions are red, but representative jobs were inspected directly:
+
+- workspace install/preflight job `133819976907`;
+- URAI Spatial Verify job `133819975830`;
+- AAA Asset Governance job `133819975965`.
+
+Each job completed as failure with **zero workflow steps created**. Job log retrieval returned GitHub 404 / BlobNotFound. This is consistent with the known Actions startup/infrastructure failure condition and is **not evidence of an executed assertion/test regression**.
+
+Do not reinterpret these red runs as a product-code failure without new evidence showing actual job steps executed.
+
+### Review boundary
+
+Ready-for-review means:
+- visual/runtime candidate is suitable for human/independent review;
+- exact-head local and protected-Vercel evidence exists;
+- the branch is mergeable.
+
+Ready-for-review does **not** mean:
+- production promotion authorized;
+- protected CI restored;
+- security/privacy sign-off complete;
+- authenticated owner-positive lifecycle certified;
+- private-memory writes enabled.
+
+PR comment `6956117808` records this audit on #2113.
