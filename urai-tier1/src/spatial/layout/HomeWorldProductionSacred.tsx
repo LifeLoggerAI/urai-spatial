@@ -649,14 +649,26 @@ function SkyDome() {
   </mesh>
 }
 
-function MoonAndMist({ reducedMotion: _reducedMotion }: { reducedMotion: boolean }) {
+function MoonAndMist({ reducedMotion }: { reducedMotion: boolean }) {
   return <>
     <group name="home-mountain-horizon">
       <MountainRange />
       <group position={[-14.5,10.8,-48]}>
-        <mesh><sphereGeometry args={[0.86,48,48]} /><meshBasicMaterial color="#f0e7d2" toneMapped={false} /></mesh>
-        <mesh position={[0.34,0.05,0.22]}><sphereGeometry args={[0.86,48,48]} /><meshBasicMaterial color="#173039" /></mesh>
+        <mesh><sphereGeometry args={[0.92,64,64]} /><meshBasicMaterial color="#f5ead3" toneMapped={false} /></mesh>
+        <mesh position={[0.34,0.05,0.22]}><sphereGeometry args={[0.92,64,64]} /><meshBasicMaterial color="#173039" /></mesh>
+        <pointLight color="#c6d9e6" intensity={0.42} distance={42} decay={2} />
       </group>
+    </group>
+    <group name="home-volumetric-mist" position={[0,1.15,-18]} userData={{ treatment:'layered-atmospheric-depth' }}>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.25,0]} scale={[1.25,1.7,1]}>
+        <planeGeometry args={[52,38]} />
+        <meshBasicMaterial color="#9eb9b7" transparent opacity={0.032} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[-4,0.18,-18]} scale={[1.65,1.25,1]}>
+        <planeGeometry args={[58,32]} />
+        <meshBasicMaterial color="#d4c6a7" transparent opacity={0.021} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <Sparkles count={reducedMotion ? 8 : 24} scale={[32,6,40]} size={0.34} speed={reducedMotion ? 0 : 0.018} opacity={0.06} color="#cde5df" />
     </group>
   </>
 }
@@ -718,9 +730,12 @@ function HumanPresence({ root }: { root: MutableRefObject<THREE.Group | null> })
 }
 
 function PortalMembrane({ color }: { color: string }) {
-  return <group position={[0,1.34,0.1]}>
-    <mesh scale={[0.78,1.12,1]}><circleGeometry args={[1,64]} /><meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={0.1} transparent opacity={0.045} transmission={0.6} roughness={0.24} metalness={0} side={THREE.DoubleSide} depthWrite={false} /></mesh>
-    <pointLight color={color} intensity={0.28} distance={4} decay={2} />
+  return <group position={[0,1.34,0.1]} userData={{ treatment:'layered-refractive-threshold' }}>
+    <mesh scale={[0.78,1.12,1]}><circleGeometry args={[1,96]} /><meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={0.16} transparent opacity={0.065} transmission={0.72} thickness={0.18} roughness={0.16} metalness={0} clearcoat={0.42} clearcoatRoughness={0.18} side={THREE.DoubleSide} depthWrite={false} /></mesh>
+    <mesh scale={[0.92,1.29,1]} position={[0,0,-0.02]}><ringGeometry args={[0.985,1.018,96]} /><meshBasicMaterial color={color} transparent opacity={0.26} depthWrite={false} toneMapped={false} /></mesh>
+    <mesh scale={[1.06,1.46,1]} position={[0,0,-0.04]}><ringGeometry args={[0.99,1.006,96]} /><meshBasicMaterial color="#dffbff" transparent opacity={0.1} depthWrite={false} toneMapped={false} /></mesh>
+    <Sparkles count={10} scale={[1.9,2.5,0.45]} size={0.42} speed={0.025} opacity={0.12} color={color} />
+    <pointLight color={color} intensity={0.46} distance={5.4} decay={2} />
   </group>
 }
 
