@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { ContactShadows, Environment, Lightformer, Stars, useAnimations, useGLTF } from '@react-three/drei'
+import { ContactShadows, Environment, Lightformer, Sparkles, Stars, useAnimations, useGLTF } from '@react-three/drei'
 import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
@@ -386,9 +386,23 @@ function Horizon() {
     <mesh geometry={RIDGE_MID} position={[0, -1.35, -46]}><meshStandardMaterial color="#485e54" roughness={1} metalness={0} envMapIntensity={.2} /></mesh>
     <mesh geometry={RIDGE_NEAR} position={[0, -1.65, -39]}><meshStandardMaterial color="#405642" roughness={1} metalness={0} envMapIntensity={.2} /></mesh>
     <group position={[-17, 13.5, -52]}>
-      <mesh><sphereGeometry args={[1.5, 32, 32]} /><meshBasicMaterial color="#e5eee4" toneMapped={false} /></mesh>
+      <mesh><sphereGeometry args={[1.55, 48, 48]} /><meshBasicMaterial color="#edf3e8" toneMapped={false} /></mesh>
       <mesh scale={1.7}><sphereGeometry args={[1.5, 24, 24]} /><meshBasicMaterial color="#d9ede4" transparent opacity={.035} depthWrite={false} toneMapped={false} /></mesh>
     </group>
+  </group>
+}
+
+function AtmosphericMist({ reducedMotion }: { reducedMotion: boolean }) {
+  return <group name="home-atmospheric-depth" position={[0, 1.05, -17]} userData={{ treatment: 'layered-cinematic-mist-and-airborne-depth' }}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.18, 0]} scale={[1.35, 1.7, 1]}>
+      <planeGeometry args={[50, 36]} />
+      <meshBasicMaterial color="#b7cbc2" transparent opacity={.026} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </mesh>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-3.5, .22, -16]} scale={[1.5, 1.15, 1]}>
+      <planeGeometry args={[54, 30]} />
+      <meshBasicMaterial color="#d7c7a9" transparent opacity={.016} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </mesh>
+    <Sparkles count={reducedMotion ? 8 : 26} scale={[30, 6, 38]} size={.3} speed={reducedMotion ? 0 : .016} opacity={.055} color="#d5ebe4" />
   </group>
 }
 
@@ -751,6 +765,7 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     <Terrain target={props.target} />
     <SanctuaryPath />
     <Horizon />
+    <AtmosphericMist reducedMotion={props.reducedMotion} />
     <Vegetation />
     <GroundDetail />
     <SanctuaryPavilion />
