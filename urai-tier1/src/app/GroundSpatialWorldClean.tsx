@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Sparkles, useAnimations, useGLTF } from "@react-three/drei";
+import { Sparkles, useAnimations, useGLTF, useTexture } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
@@ -283,6 +283,24 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
   return null;
 }
 
+function CinematicGroundBackdrop() {
+  const { size } = useThree();
+  const desktop = useTexture("/assets/urai/ground/ground-world-main.webp");
+  const mobile = useTexture("/assets/urai/ground/ground-world-mobile.webp");
+  const texture = size.width <= 700 ? mobile : desktop;
+
+  useEffect(() => {
+    for (const candidate of [desktop, mobile]) {
+      candidate.colorSpace = THREE.SRGBColorSpace;
+      candidate.wrapS = THREE.ClampToEdgeWrapping;
+      candidate.wrapT = THREE.ClampToEdgeWrapping;
+      candidate.needsUpdate = true;
+    }
+  }, [desktop, mobile]);
+
+  return <primitive attach="background" object={texture} />;
+}
+
 function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }: {
   input: MovementInput;
   yaw: MutableRefObject<number>;
@@ -294,6 +312,7 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
 }) {
   return (
     <>
+      <CinematicGroundBackdrop />
       <ambientLight intensity={0.52} color="#d8f4f2" />
       <hemisphereLight args={["#eaf8ef", "#1f2d2c", 1.05]} />
       <directionalLight position={[9, 18, 12]} intensity={1.7} color="#ffd7a0" castShadow shadow-mapSize={[1024, 1024]} />
@@ -367,19 +386,13 @@ export default function GroundSpatialWorldClean() {
       data-ground-enterable-thresholds={DESTINATIONS.map((destination) => `ground-enterable-threshold-${destination.id}`).join(" ")}
       {...look}
     >
-      <picture aria-hidden="true" className="ground-cinematic-backdrop">
-        <source media="(max-width: 700px)" srcSet="/assets/urai/ground/ground-world-mobile.webp" />
-        <img src="/assets/urai/ground/ground-world-main.webp" alt="" />
-      </picture>
-      <div aria-hidden="true" className="ground-cinematic-grade" />
       {webglUsable ? <Canvas
         shadows
         dpr={[1, 1.3]}
         camera={{ position: [0, 8.8, 25], fov: 52, near: 0.08, far: 180 }}
-        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-        onCreated={({ gl, scene }) => {
-          gl.setClearColor(0x000000, 0);
-          scene.background = null;
+        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+        onCreated={({ gl }) => {
+          gl.setClearColor(0x102b38, 1);
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.35;
@@ -446,10 +459,7 @@ export default function GroundSpatialWorldClean() {
         .ground-spatial-root[data-ground-renderer="fallback"] .ground-home-return{z-index:16}
         @media(forced-colors:active){.ground-renderer-fallback{background:Canvas;color:CanvasText}.ground-renderer-fallback a{color:LinkText}}
         .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#0c1314;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
-        .ground-cinematic-backdrop{position:absolute;inset:0;z-index:0;overflow:hidden}
-        .ground-cinematic-backdrop img{width:100%;height:100%;object-fit:cover;object-position:center center;transform:scale(1.015);filter:saturate(1.06) contrast(1.025) brightness(.86)}
-        .ground-cinematic-grade{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 44%,rgba(0,0,0,0) 0%,rgba(0,0,0,.05) 56%,rgba(0,0,0,.38) 100%),linear-gradient(180deg,rgba(5,8,10,.06),rgba(5,8,10,0) 55%,rgba(5,8,10,.18))}
-        .ground-spatial-root canvas{z-index:2}
+
         .ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important;filter:saturate(1.02) contrast(1.015)}
         .ground-brand{position:absolute;z-index:10;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));display:grid;gap:4px;max-width:min(360px,62vw);pointer-events:none;text-shadow:0 10px 34px rgba(0,0,0,.58)}
         .ground-brand span{font:800 9px/1 system-ui;letter-spacing:.28em;color:rgba(197,246,255,.82)}
