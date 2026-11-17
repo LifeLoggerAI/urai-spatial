@@ -82,9 +82,22 @@ function LifeMapAccessGate() {
     const current = new URLSearchParams(query);
     if (current.get("demo") === "1") { setMode("explicit-demo"); setAuthenticatedUserId(null); return; }
 
+    // The signed-out public entrance should show an explicitly disclosed,
+    // synthetic sample, never an empty personal map or a user's private data.
+    // Retain the signed-out boundary for owner/deep-linked context, so an
+    // unknown private memory URL is never silently interpreted as a demo.
+    const enterPublicSample = () => {
+      if (["memoryId", "node", "manifestId", "userId", "ownerId"].some((key) => current.has(key))) return;
+      const next = new URLSearchParams(query);
+      next.set("demo", "1");
+      next.set("overview", "1");
+      router.replace(`/life-map?${next.toString()}`, { scroll: false });
+    };
+
     if (!firebasePublicEnvReady) {
       setAuthenticatedUserId(null);
       setMode("signed-out");
+      enterPublicSample();
       return;
     }
 
@@ -93,8 +106,9 @@ function LifeMapAccessGate() {
     return onAuthStateChanged(auth, (user) => {
       setAuthenticatedUserId(user?.uid ?? null);
       setMode(user ? "private" : "signed-out");
+      if (!user) enterPublicSample();
     });
-  }, [query]);
+  }, [query, router]);
 
   const openDemo = useCallback(() => {
     const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
