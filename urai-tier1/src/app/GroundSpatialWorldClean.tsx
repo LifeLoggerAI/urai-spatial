@@ -313,6 +313,7 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
   return (
     <>
       <color attach="background" args={["#102b38"]} />
+      <fogExp2 attach="fog" args={["#173843", 0.012]} />
       <CinematicGroundBackdrop />
       <ambientLight intensity={0.52} color="#d8f4f2" />
       <hemisphereLight args={["#eaf8ef", "#1f2d2c", 1.05]} />
@@ -459,7 +460,7 @@ export default function GroundSpatialWorldClean() {
         .ground-spatial-root[data-ground-renderer="fallback"] .ground-directory,.ground-spatial-root[data-ground-renderer="fallback"] .ground-prompt{display:none}
         .ground-spatial-root[data-ground-renderer="fallback"] .ground-home-return{z-index:16}
         @media(forced-colors:active){.ground-renderer-fallback{background:Canvas;color:CanvasText}.ground-renderer-fallback a{color:LinkText}}
-        .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#0c1314;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
+        .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#102b38;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
 
         .ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important;filter:saturate(1.02) contrast(1.015)}
         .ground-brand{position:absolute;z-index:10;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));display:grid;gap:4px;max-width:min(360px,62vw);pointer-events:none;text-shadow:0 10px 34px rgba(0,0,0,.58)}
