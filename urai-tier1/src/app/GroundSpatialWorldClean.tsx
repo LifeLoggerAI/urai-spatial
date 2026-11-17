@@ -312,6 +312,7 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
 }) {
   return (
     <>
+      <color attach="background" args={["#102b38"]} />
       <CinematicGroundBackdrop />
       <ambientLight intensity={0.52} color="#d8f4f2" />
       <hemisphereLight args={["#eaf8ef", "#1f2d2c", 1.05]} />
