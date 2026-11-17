@@ -24,7 +24,8 @@ const HOME_SCANNED_COMPOSITION_V1 = 'canonical-sanctuary-plus-cc0-fern-plus-livi
 const HOME_INTERPRETIVE_SPLAT_ASSET = resolveHomeInterpretiveSplatAsset(process.env.NEXT_PUBLIC_URAI_HOME_INTERPRETIVE_SPLAT_ASSET)
 const HOME_BOUNDS = { minX: -14, maxX: 14, minZ: -18, maxZ: 12 }
 const SPAWN = new THREE.Vector3(-0.85, 0, 8.4)
-const ORB = new THREE.Vector3(0, 0.34, -4.25)
+const ORB = new THREE.Vector3(0, 0.82, -4.25)
+const ORB_VISUAL_Y = ORB.y - .48
 const GROUND_THRESHOLD = new THREE.Vector3(-5.4, 0, -10.8)
 const LIFE_MAP_LOOKOUT = new THREE.Vector3(5.4, 0, -10.8)
 const ASCENT_DURATION_SECONDS = 3.4
@@ -584,11 +585,11 @@ function SacredOrb({ state, reducedMotion, reducedStimulation, onOpen }: { state
     if (!root.current) return
     const speed = state === 'speaking' ? 2.4 : state === 'thinking' ? 1.8 : state === 'listening' ? 1.25 : state === 'transition' ? 1.45 : .82
     if (staticPresentation) {
-      root.current.position.y = ORB.y
+      root.current.position.y = ORB_VISUAL_Y
       root.current.rotation.y = 0
       root.current.scale.setScalar(1)
     } else {
-      root.current.position.y = ORB.y + Math.sin(clock.elapsedTime * speed) * .028
+      root.current.position.y = ORB_VISUAL_Y + Math.sin(clock.elapsedTime * speed) * .028
       root.current.rotation.y = clock.elapsedTime * .018
       root.current.scale.setScalar(1)
     }
