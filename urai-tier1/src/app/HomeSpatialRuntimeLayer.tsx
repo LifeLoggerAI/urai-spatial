@@ -6,19 +6,29 @@ import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
 import HomeSceneRenderBoundary from './home/HomeSceneRenderBoundary'
-import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
+import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { clearHomeAssetCache, isHomeAssetLoadError } from '@/spatial/layout/HomeWorldProductionPolished'
 
 type RendererState = 'ready' | 'recovering' | 'failed'
 
 const HOME_TELEMETRY_SELECTOR = '.urai-asset-home-world[data-home-primary-owner="asset-driven"], .urai-final-home-world'
 
-function HomeSemanticNavigation() {
+function HomeSemanticNavigation({ spatialAvailable, spatialReady }: { spatialAvailable: boolean; spatialReady: boolean }) {
+  const ascendToLifeMap = () => requestUraiWorldTravel({
+    destination: 'life-map',
+    href: '/life-map/?from=home-sky',
+    entryPortal: 'home-sky',
+    cameraCheckpoint: 'home-sky-ascent',
+  })
   return (
     <nav className="home-semantic-navigation" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
       <button type="button" aria-label="Open URAI Orb companion" data-testid="home-semantic-orb" onClick={requestUraiWorldOrbOpen}>Orb</button>
       <a href="/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent" aria-label="Open Ground directly" data-testid="home-semantic-ground">Ground</a>
-      <a href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete" aria-label="Open Life Map directly" data-testid="home-semantic-life-map">Life Map</a>
+      {spatialAvailable ? (
+        <button type="button" aria-label="Ascend through Home sky to Life Map" data-testid="home-semantic-life-map" data-home-ascent-authority="governed-scene-transition" disabled={!spatialReady} onClick={ascendToLifeMap}>Life Map</button>
+      ) : (
+        <a href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete" aria-label="Open Life Map directly without WebGL" data-testid="home-semantic-life-map">Life Map</a>
+      )}
     </nav>
   )
 }
@@ -200,7 +210,7 @@ export default function HomeSpatialRuntimeLayer() {
               : 'The spatial renderer could not recover. Accessible Home controls remain available.'}
           {!unavailable ? <button type="button" data-testid="home-retry-assets" onClick={retryHome}>Retry loading Home</button> : null}
         </div>
-        <HomeSemanticNavigation />
+        <HomeSemanticNavigation spatialAvailable={false} spatialReady={false} />
         <HomeSpatialWorldFinal />
         <style jsx global>{runtimeStyles}</style>
         <style jsx>{`.home-runtime-recovery{position:absolute;left:50%;top:max(24px,env(safe-area-inset-top));transform:translateX(-50%);z-index:50;display:grid;gap:12px;width:min(560px,calc(100vw - 32px));padding:18px;border:1px solid rgba(230,246,240,.3);border-radius:18px;background:rgba(6,18,19,.94);color:#f3fbf8;font:600 14px/1.5 system-ui;text-align:center}.home-runtime-recovery button{min-height:48px;padding:10px 18px;border:1px solid rgba(230,246,240,.45);border-radius:12px;background:#173d33;color:#f3fbf8;font:700 14px/1.4 system-ui;cursor:pointer;touch-action:manipulation}.home-runtime-recovery button:focus-visible{outline:2px solid #fff;outline-offset:3px}`}</style>
@@ -210,7 +220,7 @@ export default function HomeSpatialRuntimeLayer() {
 
   return (
     <>
-      <HomeSemanticNavigation />
+      <HomeSemanticNavigation spatialAvailable spatialReady={assetsReady} />
       <section
       ref={runtimeRef}
       className="urai-home-spatial-runtime-layer"
