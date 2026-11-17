@@ -448,7 +448,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
 
     <nav className="life-map-return-controls" aria-label="Life Map return controls">
       {phase !== "overview" ? <button type="button" data-life-map-accessible-overview="true" onClick={overview}>Overview</button> : null}
-      {phase === "overview" ? <button type="button" data-life-map-overview-home-return="true" onClick={() => router.push(homeReturnHref)}>Home</button> : null}
+      <button type="button" data-life-map-overview-home-return="true" onClick={() => router.push(homeReturnHref)}>Home</button>
     </nav>
 
     {thresholdsVisible ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}>
