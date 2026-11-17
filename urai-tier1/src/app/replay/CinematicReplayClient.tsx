@@ -14,7 +14,6 @@ const replayProofSurfaceStyle = {
   border: 0,
 } as const
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useAnimations, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { replayAssets } from '@/spatial/assets/uraiAssets'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
@@ -150,58 +149,6 @@ function ReplayTimelineField({ memory, progress }: { memory: SelectedMemory; pro
   )
 }
 
-const REPLAY_ENVIRONMENT_MODEL = '/assets/urai/generated/models/replay-memory-environment-v1.glb'
-
-function AuthoredReplayEnvironment({ accent, reducedMotion, playing }: { accent: string; reducedMotion: boolean; playing: boolean }) {
-  const { scene, animations } = useGLTF(REPLAY_ENVIRONMENT_MODEL)
-  const root = useRef<THREE.Group>(null)
-  const model = useMemo(() => {
-    const clone = scene.clone(true)
-    const accentColor = new THREE.Color(accent)
-    clone.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return
-      object.castShadow = true
-      object.receiveShadow = true
-      const source = Array.isArray(object.material) ? object.material : [object.material]
-      const materials = source.map((material) => {
-        const next = material.clone()
-        if (next instanceof THREE.MeshStandardMaterial) {
-          next.roughness = THREE.MathUtils.clamp(next.roughness, .34, .78)
-          next.metalness = THREE.MathUtils.clamp(next.metalness, 0, .52)
-          next.envMapIntensity = Math.max(next.envMapIntensity, .72)
-          next.emissive.lerp(accentColor, .16)
-          next.emissiveIntensity = Math.max(next.emissiveIntensity, .1)
-        }
-        return next
-      })
-      object.material = Array.isArray(object.material) ? materials : materials[0]
-    })
-    return clone
-  }, [accent, scene])
-  const { actions } = useAnimations(animations, root)
-
-  useEffect(() => {
-    const action = playing ? (actions.Replay_Play ?? actions.Replay_Idle) : (actions.Replay_Idle ?? actions.Replay_Enter)
-    if (!action) return
-    action.reset().play()
-    action.paused = reducedMotion
-    if (reducedMotion) action.time = action.getClip().duration * .35
-    return () => { action.stop() }
-  }, [actions, playing, reducedMotion])
-
-  return (
-    <group
-      ref={root}
-      name="replay-authored-memory-theater"
-      position={[0, -1.25, -5.8]}
-      scale={0.94}
-      userData={{ runtimeAsset: REPLAY_ENVIRONMENT_MODEL, truthClass: 'generic-replay-theater-not-recorded-place' }}
-    >
-      <primitive object={model} />
-    </group>
-  )
-}
-
 function ReplaySpatialScene({ memory, progressMs, onMediaState }: { memory: SelectedMemory; progressMs: number; onMediaState: (state: ReplayImageState) => void }) {
   const reducedMotion = useReducedMotion()
   const progress = memory.replayManifest.durationMs > 0 ? progressMs / memory.replayManifest.durationMs : 0
@@ -215,7 +162,6 @@ function ReplaySpatialScene({ memory, progressMs, onMediaState }: { memory: Sele
       <directionalLight position={[-4, 7, 6]} intensity={1.3} color={memory.visuals.light} castShadow />
       <directionalLight position={[4, 2, -3]} intensity={0.42} color={memory.visuals.accent} />
       <pointLight position={[0, 1.4, -4.6]} intensity={3.4} distance={14} color={memory.visuals.accent} />
-      <AuthoredReplayEnvironment accent={memory.visuals.accent} reducedMotion={reducedMotion} playing={progressMs > 0} />
       {memory.demo ? <MemoryMediaDome url={replayAssets.primary.src} onState={onMediaState} /> : null}
       <ReplayMemoryAtmosphere memory={memory} reducedMotion={reducedMotion} />
       <ReplayTimelineField memory={memory} progress={progress} />
@@ -232,7 +178,6 @@ function ReplayNeutralSpatialScene() {
       <ambientLight intensity={0.24} />
       <hemisphereLight intensity={0.44} color="#bff8ff" groundColor="#07121d" />
       <pointLight position={[0, 1.4, -5]} intensity={2.8} distance={14} color="#70dcec" />
-      <AuthoredReplayEnvironment accent="#70dcec" reducedMotion playing={false} />
       <mesh name="replay-neutral-memory-field">
         <sphereGeometry args={[24, 72, 48]} />
         <meshBasicMaterial color="#07121d" side={THREE.BackSide} />
@@ -389,7 +334,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-runtime-model={REPLAY_ENVIRONMENT_MODEL} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
     {admission.kind !== 'recorded-source' && webgl.state === 'ready' ? <ReplayCanvasBoundary key={`${webgl.attempt}:${mediaAttempt}`} onFailure={webgl.fail}>
       <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
         {demoEnvironment ? <ReplaySpatialScene memory={memory} progressMs={progressMs} onMediaState={onImageState} /> : <ReplayNeutralSpatialScene />}
