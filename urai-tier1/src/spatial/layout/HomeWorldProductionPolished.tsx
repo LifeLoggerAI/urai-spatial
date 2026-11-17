@@ -734,9 +734,42 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
   return null
 }
 
+const HOME_READY_OBJECTS = [
+  'home-authored-terrain',
+  'home-authored-embodied-self',
+  'home-orb-sanctuary',
+  'home-ground-environmental-threshold',
+  'home-life-map-sky-lookout',
+  'home-mountain-horizon',
+  'home-living-vegetation',
+  'home-sanctuary-pavilion',
+  'home-sanctuary-path',
+] as const
+
 function SceneReady({ onReady }: { onReady: () => void }) {
-  const { scene } = useThree(); const frames = useRef(0); const done = useRef(false)
-  useFrame(() => { if (done.current || ++frames.current < 4) return; const required = ['home-authored-terrain','home-authored-embodied-self','home-orb-sanctuary','home-ground-environmental-threshold','home-life-map-sky-lookout','home-mountain-horizon','home-living-vegetation','home-sanctuary-pavilion','home-sanctuary-path']; if (!required.every((name) => scene.getObjectByName(name))) return; done.current = true; onReady() })
+  const { scene } = useThree()
+  const done = useRef(false)
+
+  useEffect(() => {
+    let timer: number | undefined
+    const check = () => {
+      if (done.current) return
+      const missing = HOME_READY_OBJECTS.filter((name) => !scene.getObjectByName(name))
+      scene.userData.uraiHomeMissingReadyObjects = missing
+      if (missing.length === 0) {
+        done.current = true
+        scene.userData.uraiHomeReady = true
+        onReady()
+        return
+      }
+      timer = window.setTimeout(check, 60)
+    }
+    check()
+    return () => {
+      if (timer !== undefined) window.clearTimeout(timer)
+    }
+  }, [onReady, scene])
+
   return null
 }
 
