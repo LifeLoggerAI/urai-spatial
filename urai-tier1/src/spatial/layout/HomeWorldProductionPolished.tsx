@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { ContactShadows, Environment, Lightformer, Sparkles, Stars, useAnimations, useGLTF } from '@react-three/drei'
+import { ContactShadows, Environment, Lightformer, Sparkles, Stars, useAnimations, useGLTF, useTexture } from '@react-three/drei'
 import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
@@ -381,14 +381,22 @@ function GroundDetail() {
 }
 
 function Horizon() {
-  return <group name="home-mountain-horizon" userData={{ source: 'original-three-dimensional-runtime-landform', photographicEvidence: false }}>
-    <mesh geometry={RIDGE_FAR} position={[0, -1.05, -54]}><meshStandardMaterial color="#536967" roughness={1} metalness={0} envMapIntensity={.2} /></mesh>
-    <mesh geometry={RIDGE_MID} position={[0, -1.35, -46]}><meshStandardMaterial color="#485e54" roughness={1} metalness={0} envMapIntensity={.2} /></mesh>
-    <mesh geometry={RIDGE_NEAR} position={[0, -1.65, -39]}><meshStandardMaterial color="#405642" roughness={1} metalness={0} envMapIntensity={.2} /></mesh>
-    <group position={[-17, 13.5, -52]}>
-      <mesh><sphereGeometry args={[1.55, 48, 48]} /><meshBasicMaterial color="#edf3e8" toneMapped={false} /></mesh>
-      <mesh scale={1.7}><sphereGeometry args={[1.5, 24, 24]} /><meshBasicMaterial color="#d9ede4" transparent opacity={.035} depthWrite={false} toneMapped={false} /></mesh>
-    </group>
+  const texture = useTexture(HOME_PROVIDER_ENVIRONMENT)
+  useEffect(() => {
+    texture.colorSpace = THREE.SRGBColorSpace
+    texture.wrapS = THREE.ClampToEdgeWrapping
+    texture.wrapT = THREE.ClampToEdgeWrapping
+    texture.needsUpdate = true
+  }, [texture])
+  return <group name="home-mountain-horizon" userData={{ source: 'provider-atmospheric-support-only', photographicEvidence: false, primitiveRidges: false }}>
+    <mesh position={[0, 8.5, -58]} scale={[1.22, 1, 1]} renderOrder={-3}>
+      <planeGeometry args={[54, 30]} />
+      <meshBasicMaterial map={texture} color="#9fb8b2" transparent opacity={.22} depthWrite={false} toneMapped={false} />
+    </mesh>
+    <mesh position={[0, 7.8, -57.6]} renderOrder={-2}>
+      <planeGeometry args={[58, 32]} />
+      <meshBasicMaterial color="#071315" transparent opacity={.3} depthWrite={false} />
+    </mesh>
   </group>
 }
 
@@ -475,42 +483,38 @@ function RooflessCourtyard() {
 }
 
 function SanctuaryPavilion() {
-  return <group name="home-sanctuary-pavilion" userData={{ role: 'open-air-inhabited-resting-place-without-ceiling', ceiling: false, skyDominant: true }}>
+  return <group name="home-sanctuary-pavilion" userData={{ role: 'natural-open-sanctuary-with-authored-glb-as-primary-architecture', ceiling: false, skyDominant: true, primitiveFurniture: false }}>
     <mesh geometry={ORB_CLEARING_GEOMETRY} receiveShadow>
-      <HomeSurfaceMaterial kind="ground" color="#64715f" roughness={.95} metalness={0} envMapIntensity={.32} />
+      <HomeSurfaceMaterial kind="ground" color="#59675a" roughness={.98} metalness={0} envMapIntensity={.26} />
     </mesh>
-    <mesh geometry={SANCTUARY_BOULDER_LEFT} position={[-2.85, terrainHeight(-2.85,-6.15) + .42, -6.15]} rotation={[.18,.38,-.14]} scale={[1.2,.58,.82]} castShadow receiveShadow>
-      <HomeSurfaceMaterial color="#727b70" roughness={.96} metalness={0} />
+    <mesh geometry={SANCTUARY_BOULDER_LEFT} position={[-2.85, terrainHeight(-2.85,-6.15) + .42, -6.15]} rotation={[.18,.38,-.14]} scale={[1.28,.62,.9]} castShadow receiveShadow>
+      <HomeSurfaceMaterial color="#626d63" roughness={.98} metalness={0} />
     </mesh>
-    <mesh geometry={SANCTUARY_BOULDER_RIGHT} position={[2.75, terrainHeight(2.75,-6.35) + .4, -6.35]} rotation={[-.12,-.42,.17]} scale={[1.08,.52,.76]} castShadow receiveShadow>
-      <HomeSurfaceMaterial color="#68756b" roughness={.97} metalness={0} />
+    <mesh geometry={SANCTUARY_BOULDER_RIGHT} position={[2.75, terrainHeight(2.75,-6.35) + .4, -6.35]} rotation={[-.12,-.42,.17]} scale={[1.14,.56,.82]} castShadow receiveShadow>
+      <HomeSurfaceMaterial color="#5d695f" roughness={.98} metalness={0} />
     </mesh>
-    <RooflessCourtyard />
-    <group name="home-lived-in-stone-seating" userData={{ treatment: 'irregular-authored-stone-no-proof-cylinders' }}>
-      <mesh geometry={SANCTUARY_BOULDER_LEFT} position={[-7, terrainHeight(-7, -7) + .3, -7]} scale={[1.1, .35, .8]} castShadow receiveShadow>
-        <HomeSurfaceMaterial color="#8b8576" roughness={.96} metalness={0} />
+    <group name="home-lived-in-stone-seating" userData={{ treatment: 'irregular-authored-stone-resting-points' }}>
+      <mesh geometry={SANCTUARY_BOULDER_LEFT} position={[-7, terrainHeight(-7, -7) + .3, -7]} scale={[1.16, .34, .86]} rotation={[.04,.38,-.08]} castShadow receiveShadow>
+        <HomeSurfaceMaterial color="#756f63" roughness={.98} metalness={0} />
       </mesh>
-      <mesh geometry={SANCTUARY_BOULDER_RIGHT} position={[7, terrainHeight(7, -7) + .3, -7]} scale={[1.1, .35, .8]} castShadow receiveShadow>
-        <HomeSurfaceMaterial color="#8a8070" roughness={.96} metalness={0} />
+      <mesh geometry={SANCTUARY_BOULDER_RIGHT} position={[7, terrainHeight(7, -7) + .3, -7]} scale={[1.12, .33, .82]} rotation={[-.03,-.31,.06]} castShadow receiveShadow>
+        <HomeSurfaceMaterial color="#70685d" roughness={.98} metalness={0} />
       </mesh>
     </group>
-    <group name="home-stone-hearth" position={[2.55, terrainHeight(2.55,-5.55) + .09, -5.55]} userData={{ treatment: 'irregular-stone-ring' }}>
-      {Array.from({ length: 10 }, (_, index) => {
-        const angle = index / 10 * Math.PI * 2
-        const radius = .58 + Math.sin(index * 2.17) * .035
-        return <mesh
-          key={index}
-          geometry={SANCTUARY_BOULDER_CENTER}
-          castShadow
-          receiveShadow
-          position={[Math.cos(angle) * radius, .12 + (index % 2) * .018, Math.sin(angle) * radius]}
-          rotation={[(index % 3) * .07, angle + .24, (index % 2 ? -.08 : .06)]}
-          scale={[.23 + (index % 3) * .018, .14 + (index % 2) * .015, .19 + ((index + 1) % 3) * .012]}
-        ><HomeSurfaceMaterial color={index % 2 ? "#626860" : "#707269"} roughness={.98} metalness={0} /></mesh>
+    <group name="home-stone-hearth" position={[2.55, terrainHeight(2.55,-5.55) + .09, -5.55]} userData={{ treatment: 'restrained-natural-hearth' }}>
+      {Array.from({ length: 9 }, (_, index) => {
+        const angle = index / 9 * Math.PI * 2
+        const radius = .54 + Math.sin(index * 2.17) * .03
+        return <mesh key={index} geometry={SANCTUARY_BOULDER_CENTER} castShadow receiveShadow
+          position={[Math.cos(angle) * radius, .11 + (index % 2) * .015, Math.sin(angle) * radius]}
+          rotation={[(index % 3) * .06, angle + .2, (index % 2 ? -.07 : .05)]}
+          scale={[.21 + (index % 3) * .014, .13 + (index % 2) * .012, .18 + ((index + 1) % 3) * .01]}>
+          <HomeSurfaceMaterial color={index % 2 ? "#585e58" : "#646760"} roughness={.99} metalness={0} />
+        </mesh>
       })}
-      <mesh position={[0,.105,0]} rotation={[-Math.PI / 2,0,0]}><circleGeometry args={[.43,48]} /><meshStandardMaterial color="#292824" roughness={1} /></mesh>
-      <mesh position={[0,.25,0]}><sphereGeometry args={[.16,32,20]} /><meshBasicMaterial color="#d38a54" transparent opacity={.42} toneMapped={false} /></mesh>
-      <pointLight position={[0,.56,0]} color="#e7a46c" intensity={.42} distance={4.5} decay={2} />
+      <mesh position={[0,.11,0]} rotation={[-Math.PI / 2,0,0]}><circleGeometry args={[.4,48]} /><meshStandardMaterial color="#191a18" roughness={1} /></mesh>
+      <mesh position={[0,.22,0]}><sphereGeometry args={[.11,24,16]} /><meshBasicMaterial color="#d49a67" transparent opacity={.24} toneMapped={false} /></mesh>
+      <pointLight position={[0,.48,0]} color="#e6ad79" intensity={.26} distance={3.8} decay={2} />
     </group>
   </group>
 }
@@ -777,13 +781,13 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
   const phase = useSceneStore((state) => state.phase)
   const cosmic = phase === 'ASCENT'
   return <>
-    <color attach="background" args={[cosmic ? '#01050b' : '#304f4b']} />
+    <color attach="background" args={[cosmic ? '#01050b' : '#0a1718']} />
     {!cosmic ? <HomeSkyGradient /> : null}
-    <Stars radius={190} depth={90} count={cosmic ? 2200 : 220} factor={cosmic ? 2.7 : .58} saturation={.12} fade speed={props.reducedMotion ? 0 : .02} />
-    <fogExp2 attach="fog" args={[cosmic ? '#050b14' : '#2a4540', cosmic ? .0017 : .0048]} />
-    <ambientLight intensity={cosmic ? .13 : .28} color="#d9e7dc" />
-    <hemisphereLight args={['#c8dddc','#273126',cosmic ? .22 : .62]} />
-    <directionalLight position={[8,18,7]} intensity={cosmic ? .34 : 1.85} color="#f2ecd8" castShadow shadow-mapSize={[1024,1024]} shadow-camera-left={-18} shadow-camera-right={18} shadow-camera-top={18} shadow-camera-bottom={-18} shadow-camera-near={1} shadow-camera-far={60} shadow-normalBias={.025} shadow-bias={-.00015} />
+    <Stars radius={190} depth={90} count={cosmic ? 2200 : 90} factor={cosmic ? 2.7 : .42} saturation={.1} fade speed={props.reducedMotion ? 0 : .015} />
+    <fogExp2 attach="fog" args={[cosmic ? '#050b14' : '#0d2020', cosmic ? .0017 : .0095]} />
+    <ambientLight intensity={cosmic ? .13 : .18} color="#c7d8d2" />
+    <hemisphereLight args={['#bfd7d8','#121912',cosmic ? .22 : .44]} />
+    <directionalLight position={[8,18,7]} intensity={cosmic ? .34 : 1.35} color="#f2ecd8" castShadow shadow-mapSize={[1024,1024]} shadow-camera-left={-18} shadow-camera-right={18} shadow-camera-top={18} shadow-camera-bottom={-18} shadow-camera-near={1} shadow-camera-far={60} shadow-normalBias={.025} shadow-bias={-.00015} />
     <directionalLight position={[-10,7,-8]} intensity={cosmic ? .1 : .22} color="#bacac4" />
     {!cosmic ? <Environment resolution={128} frames={1} background={false}>
       <Lightformer form="rect" intensity={1.7} color="#f0dfbd" position={[0,8,5]} scale={[18,8,1]} />
@@ -889,7 +893,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const context = phase === 'ASCENT' ? 'Ascending through the sky' : groundDescent ? 'Descending into Ground' : nearby === 'orb' ? 'The Orb is here' : nearby === 'ground' ? 'The path descends' : nearby === 'life-map' ? 'Look to the sky' : null
 
   return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="atmospheric-support-only" data-home-provider-regions="home-atmospheric-horizon" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-orb-reduced-stimulation={reducedStimulation ? 'true' : 'false'} data-home-orb-playback={orbSensory.movement === 'settled' ? 'stopped' : 'playing'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
-    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
+    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
     {context ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" style={{ zIndex:3 }}>{context}</div> : null}
     {!transitioning && mobileControls ? <MobileMovementPad input={input} label="Home movement controls" /> : null}
