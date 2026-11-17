@@ -83,7 +83,13 @@ test('Home Gold Master ground detail preserves density with bounded instanced re
   assert.match(homeProduction, /mesh\.setMatrixAt\(localIndex, transform\.matrix\)/)
   assert.match(homeProduction, /mesh\.setColorAt\(localIndex, color\)/)
   assert.match(homeProduction, /STONE_SCATTER\.slice\(0, 12\)/)
-  assert.match(homeProduction, /STONE_SCATTER\.slice\(12\)/)
+  // The approved visual controller diversified the original tail into two
+  // additional instanced boulder geometries. Verify the exact contiguous
+  // 0..12, 12..23, 23..34 partition so no stone is lost or rendered twice.
+  assert.match(homeProduction, /STONE_SCATTER\.slice\(12, 23\)\} indexOffset=\{12\}/)
+  assert.match(homeProduction, /STONE_SCATTER\.slice\(23\)\} indexOffset=\{23\}/)
+  assert.match(homeProduction, /geometry=\{SANCTUARY_BOULDER_LEFT\}/)
+  assert.match(homeProduction, /geometry=\{SANCTUARY_BOULDER_RIGHT\}/)
   assert.match(homeProduction, /castShadow=\{castShadow\}/)
   assert.match(homeProduction, /receiveShadow/)
   assert.doesNotMatch(homeProduction, /STONE_SCATTER\.map\([\s\S]{0,220}<mesh/)
