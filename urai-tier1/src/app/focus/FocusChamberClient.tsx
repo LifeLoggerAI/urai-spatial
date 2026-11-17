@@ -2,7 +2,7 @@
 
 import StellarCorona from '@/spatial/stellar/StellarCorona'
 
-import { Billboard, Html, OrbitControls, Sparkles, Stars, useAnimations, useGLTF, useTexture } from '@react-three/drei'
+import { Billboard, Html, OrbitControls, Sparkles, Stars, useTexture } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import * as THREE from 'three'
@@ -481,58 +481,6 @@ function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivat
   )
 }
 
-const FOCUS_CHAMBER_MODEL = '/assets/urai/generated/models/focus-memory-chamber-v1.glb'
-
-function AuthoredFocusChamber({ accent, reducedMotion }: { accent: string; reducedMotion: boolean }) {
-  const { scene, animations } = useGLTF(FOCUS_CHAMBER_MODEL)
-  const root = useRef<THREE.Group>(null)
-  const model = useMemo(() => {
-    const clone = scene.clone(true)
-    const accentColor = new THREE.Color(accent)
-    clone.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return
-      object.castShadow = true
-      object.receiveShadow = true
-      const source = Array.isArray(object.material) ? object.material : [object.material]
-      const materials = source.map((material) => {
-        const next = material.clone()
-        if (next instanceof THREE.MeshStandardMaterial) {
-          next.roughness = THREE.MathUtils.clamp(next.roughness, .38, .82)
-          next.metalness = THREE.MathUtils.clamp(next.metalness, 0, .5)
-          next.envMapIntensity = Math.max(next.envMapIntensity, .7)
-          next.emissive.lerp(accentColor, .18)
-          next.emissiveIntensity = Math.max(next.emissiveIntensity, .12)
-        }
-        return next
-      })
-      object.material = Array.isArray(object.material) ? materials : materials[0]
-    })
-    return clone
-  }, [accent, scene])
-  const { actions } = useAnimations(animations, root)
-
-  useEffect(() => {
-    const action = actions.Focus_Breathing ?? actions.Focus_Arrival
-    if (!action) return
-    action.reset().play()
-    action.paused = reducedMotion
-    if (reducedMotion) action.time = action.getClip().duration * .42
-    return () => { action.stop() }
-  }, [actions, reducedMotion])
-
-  return (
-    <group
-      ref={root}
-      name="focus-authored-memory-chamber"
-      position={[0, -1.15, -3.1]}
-      scale={0.96}
-      userData={{ runtimeAsset: FOCUS_CHAMBER_MODEL, truthClass: 'generic-focus-architecture-not-memory-reconstruction' }}
-    >
-      <primitive object={model} />
-    </group>
-  )
-}
-
 function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null }) {
   const accent = memory?.visuals.accent ?? '#79dfff'
   const light = memory?.visuals.light ?? '#e7fbff'
@@ -547,7 +495,6 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
     <directionalLight position={[5, 8, 7]} intensity={1.35} color={light} castShadow={profile.shadows} />
     <pointLight position={[0, 1, -1.5]} intensity={3.4} color={accent} distance={14} />
     <Stars radius={65} depth={45} count={profile.reducedMotion ? 500 : profile.particleCount * 3} factor={2.5} saturation={0.25} fade speed={profile.reducedMotion ? 0 : 0.12} />
-    <AuthoredFocusChamber accent={accent} reducedMotion={profile.reducedMotion} />
     <StellarPhotosphere accent={accent} light={light} reducedMotion={profile.reducedMotion} />
     {memoryImageUrl ? <MemoryImprint url={memoryImageUrl} /> : null}
     <MemoryTraces memory={memory} accent={accent} reducedMotion={profile.reducedMotion} />
@@ -607,7 +554,7 @@ export default function FocusChamberClient() {
   const style = { '--memory-accent': memory?.visuals.accent ?? '#79dfff', '--memory-light': memory?.visuals.light ?? '#e7fbff', '--memory-sky': memory?.visuals.sky ?? '#020712', '--memory-ground': memory?.visuals.ground ?? '#07121c', '--focus-asset': assetCssStack(focusAssets.primary) } as CSSProperties
   const webglUsable = webglAvailable === true && webglState !== 'failed'
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-runtime-architecture="authored-focus-chamber-v1" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-runtime-model={FOCUS_CHAMBER_MODEL} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
     <h1 className="srOnly">URAI Focus stellar memory field</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     <div className="focusFog" aria-hidden="true" />
