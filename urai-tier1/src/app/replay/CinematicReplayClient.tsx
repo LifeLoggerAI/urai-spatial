@@ -255,8 +255,12 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   }, [memory.demo, memory.id])
   const onVideoSession = useCallback((session: ReplayVideoSession | null) => {
     videoSession.current = session
-    if (session && memory.demo) void session.play()
-  }, [memory.demo])
+    if (session && memory.demo) {
+      try {
+        if (window.sessionStorage.getItem(`urai-replay-demo-was-playing-v1:${memory.id}`) !== '0') void session.play()
+      } catch { void session.play() }
+    }
+  }, [memory.demo, memory.id])
   useEffect(() => {
     if (!video || !memory.demo || demoResumeApplied.current || !videoSnapshot.durationMs || !videoSession.current) return
     demoResumeApplied.current = true
@@ -381,7 +385,12 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       style={replayProofSurfaceStyle}
     />
     <div className="replayAtmosphere" aria-hidden="true" />
-    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : lifeModelAuthority.available ? `${memory.privacy} replay · ${lifeModelAuthority.decision}` : `${memory.privacy} archive replay · reconstruction held`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={() => { pauseMemory(); unwind() }}>{world.previousDestination === 'life-movie' ? '← Life Movie' : '← Focus'}</button><button className="replayLifeMovieEntry" type="button" onClick={continueLifeMovie}>Continue Life Movie</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? generatedWorldEntry?.href ?? memoryWorldHref} onClick={pauseMemory} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : generatedWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? generatedWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : generatedWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}</header>
+    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : lifeModelAuthority.available ? `${memory.privacy} replay · ${lifeModelAuthority.decision}` : `${memory.privacy} archive replay · reconstruction held`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={() => { pauseMemory(); unwind() }}>{world.previousDestination === 'life-movie' ? '← Life Movie' : '← Focus'}</button><button className="replayLifeMovieEntry" type="button" onClick={continueLifeMovie}>Continue Life Movie</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? generatedWorldEntry?.href ?? memoryWorldHref} onClick={() => {
+      if (memory.demo) {
+        try { window.sessionStorage.setItem(`urai-replay-demo-was-playing-v1:${memory.id}`, playing ? '1' : '0') } catch {}
+      }
+      pauseMemory()
+    }} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : generatedWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? generatedWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : generatedWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}</header>
     {admission.kind !== 'disclosed-demo' || mediaStatus !== 'ready' || webgl.state !== 'ready' ? <section className="replaySourceStatus" role="status" aria-live="polite" data-replay-source-status={mediaStatus}>
       {media ? <><strong>{memory.demo ? 'Synthetic demonstration film · not a personal recording' : 'Recorded source · original framing'}</strong><span>{memory.demo ? 'This sample is made from fictional artwork, not footage of an actual event.' : 'A spatial reconstruction is not established by this source. Use the world entry when an admitted place is available.'}</span></> : admission.kind === 'neutral' ? <><strong>No recorded visual source</strong><span>The memory text and controls remain accessible. No reconstructed place is being shown.</span></> : null}
       {mediaStatus === 'loading' ? <span>{video ? 'Loading recorded video…' : demoEnvironment ? 'Loading demonstration environment…' : 'Loading recorded image…'}</span> : mediaStatus === 'buffering' ? <span>Buffering recorded video. Memory time follows the source.</span> : null}
