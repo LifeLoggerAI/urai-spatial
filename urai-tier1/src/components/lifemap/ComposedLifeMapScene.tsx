@@ -241,6 +241,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     antialias: false,
   }), [adaptiveProfile, softwareRenderer]);
   const explicitDemoRequested = params.get("demo") === "1";
+  const homeReturnHref = explicitDemoRequested ? "/home?demo=1" : "/home";
   const overviewRequested = params.get("overview") === "1";
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : authenticatedUserId ?? undefined);
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
@@ -374,12 +375,12 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       // overview. Read live URL intent before local selection state, or a
       // second Escape races the first and selects the same star again.
       const overviewIsCurrent = new URLSearchParams(window.location.search).get("overview") === "1"
-      if (overviewIsCurrent || !selectedId) router.push("/home")
+      if (overviewIsCurrent || !selectedId) router.push(homeReturnHref)
       else overview()
     };
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
-  }, [overview, router, selectedId]);
+  }, [homeReturnHref, overview, router, selectedId]);
 
   useEffect(() => () => { document.body.style.cursor = ""; }, []);
 
@@ -459,7 +460,7 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
       <h2>{webglState === "lost" ? "Visual field paused safely" : "Restoring visual field"}</h2>
       <p>Your selected memory, privacy state, and return position remain preserved.</p>
       <button onClick={overview}>Open semantic overview</button>
-      <button onClick={() => router.push("/home")}>Return Home</button>
+      <button onClick={() => router.push(homeReturnHref)}>Return Home</button>
     </section> : null}
 
     <style jsx>{`
