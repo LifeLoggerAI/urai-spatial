@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Sparkles, useAnimations, useGLTF } from "@react-three/drei";
+import { Sparkles, useAnimations, useGLTF, useTexture } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
@@ -37,11 +37,29 @@ const CHAMBER_CHARACTER: Record<GroundChamberForm, readonly [number, number, num
 function liftedMaterial(material: THREE.Material) {
   const clone = material.clone();
   if (clone instanceof THREE.MeshStandardMaterial) {
-    clone.color.multiplyScalar(1.08);
-    clone.emissive.copy(clone.color).multiplyScalar(0.035);
-    clone.emissiveIntensity = Math.max(clone.emissiveIntensity, 0.16);
-    clone.roughness = Math.max(clone.roughness, 0.5);
-    clone.metalness = Math.min(clone.metalness, 0.3);
+    const name = `${material.name} ${clone.name}`.toLowerCase();
+    clone.color.multiplyScalar(1.035);
+    const structuralMetal = /metal|steel|alloy|frame|ring|rune|nexus|conduit/.test(name);
+    const mineral = /stone|rock|terrain|ground|concrete|wall|floor|path/.test(name);
+    if (structuralMetal) {
+      clone.roughness = THREE.MathUtils.clamp(clone.roughness, 0.32, 0.58);
+      clone.metalness = Math.max(clone.metalness, 0.42);
+      clone.envMapIntensity = Math.max(clone.envMapIntensity, 1.08);
+      clone.emissive.copy(clone.color).multiplyScalar(0.018);
+      clone.emissiveIntensity = Math.max(clone.emissiveIntensity, 0.08);
+    } else if (mineral) {
+      clone.roughness = THREE.MathUtils.clamp(Math.max(clone.roughness, 0.78), 0.78, 0.96);
+      clone.metalness = 0;
+      clone.envMapIntensity = THREE.MathUtils.clamp(clone.envMapIntensity, 0.42, 0.72);
+      clone.emissive.copy(clone.color).multiplyScalar(0.008);
+      clone.emissiveIntensity = 0.04;
+    } else {
+      clone.roughness = THREE.MathUtils.clamp(Math.max(clone.roughness, 0.5), 0.5, 0.82);
+      clone.metalness = Math.min(clone.metalness, 0.24);
+      clone.envMapIntensity = THREE.MathUtils.clamp(clone.envMapIntensity, 0.58, 0.92);
+      clone.emissive.copy(clone.color).multiplyScalar(0.014);
+      clone.emissiveIntensity = Math.max(clone.emissiveIntensity, 0.07);
+    }
     clone.needsUpdate = true;
   }
   return clone;
@@ -55,9 +73,15 @@ function prepareModel(source: THREE.Object3D) {
     }
     if (object.name.endsWith("-signal-rune")) object.scale.multiplyScalar(0.62);
     if (!(object instanceof THREE.Mesh)) return;
+    object.geometry = object.geometry.clone();
+    object.geometry.computeVertexNormals();
     object.material = Array.isArray(object.material)
       ? object.material.map(liftedMaterial)
       : liftedMaterial(object.material);
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (material instanceof THREE.MeshStandardMaterial) material.flatShading = false;
+    }
     object.castShadow = true;
     object.receiveShadow = true;
     object.frustumCulled = false;
@@ -148,7 +172,7 @@ function GroundWorld({ target, activeId, onSelect }: {
       <group name="ground-walkable-path-network" userData={{ authoredNodeFamily: "path-bridge-* engraved-path-*" }}>
         <group name="ground-central-nexus" userData={{ authoredNodeFamily: "ground-central-nexus nexus-core" }}>
           <group name="ground-workforce-and-council-presences" userData={{ authoredNodeFamily: "ground-destination-council council-* workforce-*" }}>
-            <primitive object={world} />
+            <primitive object={world} visible={false} />
           </group>
         </group>
       </group>
@@ -259,6 +283,24 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
   return null;
 }
 
+function CinematicGroundBackdrop() {
+  const { size } = useThree();
+  const desktop = useTexture("/assets/urai/ground/ground-world-main.webp");
+  const mobile = useTexture("/assets/urai/ground/ground-world-mobile.webp");
+  const texture = size.width <= 700 ? mobile : desktop;
+
+  useEffect(() => {
+    for (const candidate of [desktop, mobile]) {
+      candidate.colorSpace = THREE.SRGBColorSpace;
+      candidate.wrapS = THREE.ClampToEdgeWrapping;
+      candidate.wrapT = THREE.ClampToEdgeWrapping;
+      candidate.needsUpdate = true;
+    }
+  }, [desktop, mobile]);
+
+  return <primitive attach="background" object={texture} />;
+}
+
 function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }: {
   input: MovementInput;
   yaw: MutableRefObject<number>;
@@ -272,17 +314,17 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
     <>
       <color attach="background" args={["#102b38"]} />
       <fogExp2 attach="fog" args={["#173843", 0.012]} />
+      <CinematicGroundBackdrop />
       <ambientLight intensity={0.52} color="#d8f4f2" />
       <hemisphereLight args={["#eaf8ef", "#1f2d2c", 1.05]} />
-      <directionalLight position={[9, 18, 12]} intensity={3.25} color="#ffd7a0" castShadow shadow-mapSize={[1024, 1024]} />
+      <directionalLight position={[9, 18, 12]} intensity={1.7} color="#ffd7a0" castShadow shadow-mapSize={[1024, 1024]} />
       <directionalLight position={[-11, 9, -8]} intensity={0.9} color="#9edcff" />
-      <pointLight position={[0, 4.2, -1]} intensity={3.2} distance={24} decay={2} color="#ffc479" />
-      <pointLight position={[7.5, 3.1, -15]} intensity={1.6} distance={22} decay={2} color="#8fe5ff" />
-      <pointLight position={[-8.2, 3.4, -23]} intensity={1.4} distance={22} decay={2} color="#cabdff" />
+      <pointLight position={[0, 4.2, -1]} intensity={1.35} distance={24} decay={2} color="#ffc479" />
+      <pointLight position={[7.5, 3.1, -15]} intensity={0.85} distance={22} decay={2} color="#8fe5ff" />
+      <pointLight position={[-8.2, 3.4, -23]} intensity={0.8} distance={22} decay={2} color="#cabdff" />
       <Sparkles count={28} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={0.025} opacity={0.045} color="#f9e7ba" />
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
-      <ArchitecturalRouteLighting activeId={activeId} />
       <EffectComposer multisampling={0}>
         <Bloom intensity={0.24} luminanceThreshold={0.82} luminanceSmoothing={0.18} mipmapBlur />
         <Vignette eskil={false} offset={0.12} darkness={0.12} />
@@ -336,7 +378,7 @@ export default function GroundSpatialWorldClean() {
       data-testid="urai-ground-private-workforce-world"
       data-ground-visual-owner="shared-continuity-architecture"
       data-ground-runtime-owner="final-glb-infrastructure-world"
-      data-ground-runtime-assets="ground-world-terrain-v1.glb"
+      data-ground-runtime-assets="ground-world-main.webp ground-world-mobile.webp ground-world-terrain-v1.glb" data-ground-visual-presentation="cinematic-hybrid-live-navigation"
       data-ground-no-compositing-bands="true"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
@@ -419,6 +461,7 @@ export default function GroundSpatialWorldClean() {
         .ground-spatial-root[data-ground-renderer="fallback"] .ground-home-return{z-index:16}
         @media(forced-colors:active){.ground-renderer-fallback{background:Canvas;color:CanvasText}.ground-renderer-fallback a{color:LinkText}}
         .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#102b38;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
+
         .ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important;filter:saturate(1.02) contrast(1.015)}
         .ground-brand{position:absolute;z-index:10;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));display:grid;gap:4px;max-width:min(360px,62vw);pointer-events:none;text-shadow:0 10px 34px rgba(0,0,0,.58)}
         .ground-brand span{font:800 9px/1 system-ui;letter-spacing:.28em;color:rgba(197,246,255,.82)}
