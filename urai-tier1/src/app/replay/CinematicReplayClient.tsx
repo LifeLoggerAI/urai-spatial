@@ -242,8 +242,29 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const [mediaAttempt, setMediaAttempt] = useState(0)
   const videoSession = useRef<ReplayVideoSession | null>(null)
   const onImageState = useCallback((state: ReplayImageState) => setImageState(state), [])
-  const onVideoSnapshot = useCallback((state: ReplayVideoSnapshot) => setVideoSnapshot(state), [])
-  const onVideoSession = useCallback((session: ReplayVideoSession | null) => { videoSession.current = session }, [])
+  const demoResumeApplied = useRef(false)
+  const onVideoSnapshot = useCallback((state: ReplayVideoSnapshot) => {
+    setVideoSnapshot(state)
+    if (memory.demo && state.durationMs && state.currentTimeMs > 100) {
+      try {
+        const key = `urai-replay-demo-time-v1:${memory.id}`
+        if (state.status === 'ended') window.sessionStorage.removeItem(key)
+        else window.sessionStorage.setItem(key, String(state.currentTimeMs))
+      } catch { /* Optional fictional-sample position only. */ }
+    }
+  }, [memory.demo, memory.id])
+  const onVideoSession = useCallback((session: ReplayVideoSession | null) => {
+    videoSession.current = session
+    if (session && memory.demo) void session.play()
+  }, [memory.demo])
+  useEffect(() => {
+    if (!video || !memory.demo || demoResumeApplied.current || !videoSnapshot.durationMs || !videoSession.current) return
+    demoResumeApplied.current = true
+    try {
+      const saved = Number(window.sessionStorage.getItem(`urai-replay-demo-time-v1:${memory.id}`))
+      if (Number.isFinite(saved) && saved > 0 && saved < videoSnapshot.durationMs - 300) videoSession.current.seek(saved)
+    } catch { /* Sample resumes from zero. */ }
+  }, [memory.demo, memory.id, video, videoSnapshot.durationMs])
   const mediaStatus = video ? videoSnapshot.status : admission.kind === 'neutral' ? 'absent' : imageState.status
   const mediaReady = video ? videoSnapshot.ready : admission.kind !== 'neutral' && imageState.status === 'ready'
   const canPlay = video ? videoSnapshot.durationMs !== null && videoSnapshot.status !== 'loading' && videoSnapshot.status !== 'error' : admission.kind === 'neutral' || imageState.status === 'ready'
@@ -315,7 +336,14 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     const onKey = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null
       const interactive = Boolean(target?.closest('button, input, textarea, select, summary, a, [role="button"]'))
-      if (event.key === 'Escape') { pauseMemory(); event.preventDefault(); unwind(); return }
+      if (event.key === 'Escape') {
+        if (document.fullscreenElement) {
+          event.preventDefault()
+          void document.exitFullscreen().catch(() => {})
+          return
+        }
+        pauseMemory(); event.preventDefault(); unwind(); return
+      }
       if (!interactive && (event.key === ' ' || event.key === 'Enter')) { event.preventDefault(); togglePlayback() }
     }
     window.addEventListener('keydown', onKey)
@@ -324,7 +352,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
 
   const percent = Math.round((progressMs / duration) * 100)
   const demoEnvironment = admission.kind === 'disclosed-demo'
-  const visualOwner = admission.kind === 'recorded-source' ? 'recorded-source-original-framing' : demoEnvironment && webgl.state === 'ready' ? 'r3f-immersive-memory-field' : demoEnvironment ? 'disclosed-demo-asset-fallback' : 'neutral-memory-horizon'
+  const visualOwner = video && memory.demo ? 'synthetic-demo-video-film' : admission.kind === 'recorded-source' ? 'recorded-source-original-framing' : demoEnvironment && webgl.state === 'ready' ? 'r3f-immersive-memory-field' : demoEnvironment ? 'disclosed-demo-asset-fallback' : 'neutral-memory-horizon'
   const mediaError = video ? videoSnapshot.error : imageState.error
   const style = {
     '--replay-accent': memory.visuals.accent,
@@ -334,7 +362,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-kind={video ? 'video' : media?.kind ?? 'none'} data-replay-media-origin={memory.demo ? 'fictional-synthetic-demo' : 'owner-source'} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
     {admission.kind !== 'recorded-source' && webgl.state === 'ready' ? <ReplayCanvasBoundary key={`${webgl.attempt}:${mediaAttempt}`} onFailure={webgl.fail}>
       <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
         {demoEnvironment ? <ReplaySpatialScene memory={memory} progressMs={progressMs} onMediaState={onImageState} /> : <ReplayNeutralSpatialScene />}
@@ -355,7 +383,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     <div className="replayAtmosphere" aria-hidden="true" />
     <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : lifeModelAuthority.available ? `${memory.privacy} replay · ${lifeModelAuthority.decision}` : `${memory.privacy} archive replay · reconstruction held`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={() => { pauseMemory(); unwind() }}>{world.previousDestination === 'life-movie' ? '← Life Movie' : '← Focus'}</button><button className="replayLifeMovieEntry" type="button" onClick={continueLifeMovie}>Continue Life Movie</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? generatedWorldEntry?.href ?? memoryWorldHref} onClick={pauseMemory} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : generatedWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? generatedWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : generatedWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}</header>
     {admission.kind !== 'disclosed-demo' || mediaStatus !== 'ready' || webgl.state !== 'ready' ? <section className="replaySourceStatus" role="status" aria-live="polite" data-replay-source-status={mediaStatus}>
-      {media ? <><strong>{memory.demo ? 'Demonstration source' : 'Recorded source'} · original framing</strong><span>A spatial reconstruction is not established by this source. Use the world entry when an admitted place is available.</span></> : admission.kind === 'neutral' ? <><strong>No recorded visual source</strong><span>The memory text and controls remain accessible. No reconstructed place is being shown.</span></> : null}
+      {media ? <><strong>{memory.demo ? 'Synthetic demonstration film · not a personal recording' : 'Recorded source · original framing'}</strong><span>{memory.demo ? 'This sample is made from fictional artwork, not footage of an actual event.' : 'A spatial reconstruction is not established by this source. Use the world entry when an admitted place is available.'}</span></> : admission.kind === 'neutral' ? <><strong>No recorded visual source</strong><span>The memory text and controls remain accessible. No reconstructed place is being shown.</span></> : null}
       {mediaStatus === 'loading' ? <span>{video ? 'Loading recorded video…' : demoEnvironment ? 'Loading demonstration environment…' : 'Loading recorded image…'}</span> : mediaStatus === 'buffering' ? <span>Buffering recorded video. Memory time follows the source.</span> : null}
       {mediaError ? <span>{mediaError}</span> : null}
       {mediaStatus === 'error' ? <button type="button" onClick={retryMedia}>Retry {demoEnvironment ? 'demonstration environment' : 'recorded source'}</button> : null}
@@ -369,12 +397,20 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       <span className="memoryTrace" aria-hidden="true"><i style={{ width: `${percent}%` }} /></span>
       <input className="memorySeek" type="range" min={0} max={duration} step={100} value={progressMs} disabled={video && !videoSnapshot.durationMs} onChange={(event) => seek(Number(event.currentTarget.value))} aria-label={`Move through memory time, ${percent} percent complete`} aria-valuetext={`${replayTimeLabel(progressMs)} of ${replayTimeLabel(duration)}`} />
       <output className="srOnly">{percent}% through memory</output>
+      {video ? <output className="replayVideoTime" aria-live="off">{replayTimeLabel(progressMs)} / {replayTimeLabel(duration)}</output> : null}
+      {video ? <button className="replayFullscreen" type="button" onClick={() => {
+        const element = document.querySelector<HTMLVideoElement>('.replayRecordedSource video')
+        if (!element) return
+        if (element.requestFullscreen) void element.requestFullscreen().catch(() => {})
+        else (element as HTMLVideoElement & { webkitEnterFullscreen?: () => void }).webkitEnterFullscreen?.()
+      }}>Fullscreen</button> : null}
       {video ? <button className="memoryAudio" type="button" disabled={!videoSnapshot.audioAllowed} onClick={() => videoSession.current?.setMuted(!videoSnapshot.muted)} aria-label={!videoSnapshot.audioAllowed ? 'Recorded audio is off while low stimulation is on' : videoSnapshot.muted ? 'Enable recorded audio' : 'Mute recorded audio'} aria-pressed={!videoSnapshot.muted}>{!videoSnapshot.audioAllowed ? 'Audio off: low stimulation' : videoSnapshot.muted ? 'Enable audio' : 'Mute audio'}</button> : null}
     </section>
     <ReplayProductControls memory={memory} />
     {lifeModelAuthority.available ? <ReplayPersonPresence people={lifeModelAuthority.people} /> : null}
     {memory.replayManifest.transcript ? <details className="transcript"><summary>Transcript</summary><p>{memory.replayManifest.transcript}</p></details> : null}
     <style>{replayCss}</style>
+    {video ? <style>{replayVideoCss}</style> : null}
   </main>
 }
 
@@ -400,6 +436,8 @@ export default function CinematicReplayClient() {
   if (!memory) return <ReplayMemoryHorizon memoryStatus={result.status} message={result.message} quality={quality} />
   return <ReplayMemoryExperience key={replaySessionIdentity(memory)} memory={memory} memoryStatus={result.status} quality={quality} />
 }
+
+const replayVideoCss = `.replayWorld[data-replay-media-kind="video"] .memoryTrace{display:none}.replayWorld[data-replay-media-kind="video"] .memorySeek{position:static;width:min(180px,32vw);height:48px;opacity:1;pointer-events:auto;accent-color:var(--replay-light)}.replayWorld[data-replay-media-kind="video"] .memoryTempo{width:min(650px,calc(100vw - 26px));padding:8px 10px;border:1px solid rgba(220,248,255,.2);border-radius:22px;background:rgba(2,8,17,.78);backdrop-filter:blur(18px);bottom:max(82px,calc(env(safe-area-inset-bottom) + 75px));flex-wrap:wrap;gap:7px}.replayWorld[data-replay-media-kind="video"] .replayVideoTime{font-size:12px;font-variant-numeric:tabular-nums;color:#dceef5;white-space:nowrap}.replayWorld[data-replay-media-kind="video"] .replayFullscreen{min-height:48px;padding:0 12px;border-radius:999px;background:#0b2535;color:#eaffff;border:1px solid rgba(220,248,255,.3)}.replayWorld[data-replay-media-kind="video"] .caption{bottom:clamp(196px,28svh,270px)}@media(max-width:700px){.replayWorld[data-replay-media-kind="video"] .memorySeek{width:min(140px,38vw)}.replayWorld[data-replay-media-kind="video"] .memoryTempo{gap:5px}.replayWorld[data-replay-media-kind="video"] .caption{bottom:clamp(205px,29svh,278px)}}`
 
 const stateCss = `.replayState{position:fixed;inset:0;overflow:hidden;display:grid;place-items:center;padding:24px;background:#02060d;color:#fff;isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayState:after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,transparent 0 22%,rgba(1,5,12,.28) 48%,rgba(1,5,12,.8) 100%);pointer-events:none}.replayState section{z-index:2;text-align:center;max-width:620px;padding:28px 30px;border:1px solid rgba(220,248,255,.12);border-radius:28px;background:linear-gradient(145deg,rgba(2,8,16,.7),rgba(2,8,16,.24));backdrop-filter:blur(18px);text-shadow:0 3px 24px #000}.replayState section p{margin:0 0 9px;color:#c9f7ff;font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.replayState section h1{margin:0;font:500 clamp(1.7rem,4.6vw,3.6rem)/1.02 var(--font-sans);letter-spacing:-.045em}.replayState section span{display:block;max-width:520px;margin:12px auto 0;color:rgba(235,247,255,.72);font-size:13px;line-height:1.55}.replayState button{min-height:48px;margin-top:20px;padding:0 22px;border-radius:999px;border:1px solid rgba(210,248,255,.32);background:linear-gradient(135deg,#dffbff,#8fe5ef);color:#041019;font-weight:900}.replayState button:focus-visible{outline:3px solid #fff;outline-offset:4px}@media(max-width:700px){.replayState section{max-width:calc(100vw - 32px);padding:24px 20px}}@media(prefers-reduced-motion:reduce){.replayState section{backdrop-filter:none}}@media(forced-colors:active){.replayState section,.replayState button{border:2px solid CanvasText}}`
 

@@ -536,7 +536,25 @@ export default function FocusChamberClient() {
     setCommitted(true)
     requestUraiWorldTravel({ destination: 'replay', href: replayHref, entryPortal: 'focus-memory-aperture', cameraCheckpoint: `focus:${memory.star.id}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
   }, [committed, memory, replayHref])
-  const unwind = useCallback(() => requestUraiWorldReturn(), [])
+  const unwind = useCallback(() => {
+    const query = new URLSearchParams()
+    if (memory?.demo) query.set('demo', '1')
+    if (memory) {
+      query.set('memoryId', memory.demo ? memory.star.id : memory.id)
+      query.set('node', memory.star.id)
+      query.set('manifestId', memory.replayManifest.id)
+    }
+    requestUraiWorldTravel({
+      destination: 'life-map',
+      href: `/life-map?${query.toString()}`,
+      entryPortal: 'focus-life-map-return',
+      cameraCheckpoint: 'life-map-overview',
+      context: memory ? {
+        memoryId: memory.demo ? memory.star.id : memory.id,
+        replayManifestId: memory.replayManifest.id,
+      } : undefined,
+    })
+  }, [memory])
 
   useEffect(() => {
     const onEscape = (event: KeyboardEvent) => {

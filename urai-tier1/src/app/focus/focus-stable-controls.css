@@ -38,3 +38,10 @@
     opacity: 1;
   }
 }
+
+
+/* R1432: mobile users already have the same 48px Replay CTA in Focus controls.
+   Do not stack an additional floating canvas CTA over the memory details. */
+@media (max-width: 700px) {
+  .focus-spatial-aperture-button { display: none !important; }
+}
