@@ -6,6 +6,7 @@ import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
+import { operationalPrivacyContractSelected } from '@/lib/privacy/privacyContractAuthority'
 import {
   applyOperationalConsentPolicy,
   cancelOperationalDeletionRequest,
@@ -163,6 +164,7 @@ function errorCode(error: unknown) {
 export default function ConsentSanctuaryClient() {
   const params = useMemo(() => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search), [])
   const explicitDemo = params.get('demo') === '1'
+  const operationalContractReady = operationalPrivacyContractSelected(process.env.NEXT_PUBLIC_URAI_PRIVACY_CONTRACT)
   const [user, setUser] = useState<User | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [policy, setPolicy] = useState<ConsentPolicy>(() => demoPolicy())
@@ -209,6 +211,11 @@ export default function ConsentSanctuaryClient() {
       setMessage('The permission service is not configured. Controls remain unavailable rather than pretending to save.')
       return
     }
+    if (!operationalContractReady) {
+      setLoadState('unavailable')
+      setMessage('Privacy controls require the operational-v1 callable contract. Canonical account-wide deletion is not interchangeable with scoped deletion; requests are disabled.')
+      return
+    }
     const auth = getAuth(app)
     return onAuthStateChanged(auth, (nextUser) => {
       setUser(nextUser)
@@ -219,10 +226,10 @@ export default function ConsentSanctuaryClient() {
       }
       setLoadState(navigator.onLine ? 'loading' : 'offline')
     })
-  }, [explicitDemo])
+  }, [explicitDemo, operationalContractReady])
 
   useEffect(() => {
-    if (!user || explicitDemo || loadState === 'signed-out' || loadState === 'unavailable') return
+    if (!user || explicitDemo || !operationalContractReady || loadState === 'signed-out' || loadState === 'unavailable') return
     const policyRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current')
     return onSnapshot(policyRef, (snapshot) => {
       const rawPolicy = snapshot.data()
@@ -250,17 +257,17 @@ export default function ConsentSanctuaryClient() {
       setLoadState('unavailable')
       setMessage('The consent authority could not be read. No private state was replaced with demo data.')
     })
-  }, [user, explicitDemo, loadState])
+  }, [user, explicitDemo, operationalContractReady, loadState])
 
   useEffect(() => {
-    if (!user || explicitDemo) return
+    if (!user || explicitDemo || !operationalContractReady) return
     const unsubscribers = [
       subscribeOperationalUserCollection('privacyReceipts', user.uid, setReceipts, () => setMessage('Audit receipts are temporarily unavailable.')),
       subscribeOperationalUserCollection('exportJobs', user.uid, setExports, () => setMessage('Export status is temporarily unavailable.')),
       subscribeOperationalUserCollection('deletionJobs', user.uid, setDeletions, () => setMessage('Deletion status is temporarily unavailable.')),
     ]
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
-  }, [user, explicitDemo])
+  }, [user, explicitDemo, operationalContractReady])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

@@ -3,6 +3,7 @@
 import { collection, limit, onSnapshot, orderBy, query, type DocumentData, type Unsubscribe } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { functions, getFirebaseDb } from '@/lib/firebase/client'
+import { requireOperationalPrivacyContract } from './privacyContractAuthority'
 
 export type PrivacyRow = DocumentData & { id: string }
 export type PrivacyCallableResult = Record<string, unknown>
@@ -36,6 +37,7 @@ function operationId(prefix: string) {
 }
 
 export async function callOperationalPrivacyFunction<T extends PrivacyCallableResult = PrivacyCallableResult>(name: string, payload?: Record<string, unknown>): Promise<T> {
+  requireOperationalPrivacyContract(process.env.NEXT_PUBLIC_URAI_PRIVACY_CONTRACT)
   const callable = httpsCallable<Record<string, unknown> | undefined, T>(functions, name)
   const response = await callable(payload)
   return response.data
@@ -57,6 +59,7 @@ export function createOperationalDeletionRequest(payload: { scope: string; confi
 export function cancelOperationalDeletionRequest(jobId: string) { return callOperationalPrivacyFunction('cancelDeletionRequest', { jobId }) }
 
 export function subscribeOperationalUserCollection(collectionName: string, uid: string, onRows: (rows: PrivacyRow[]) => void, onError: (error: Error) => void): Unsubscribe {
+  requireOperationalPrivacyContract(process.env.NEXT_PUBLIC_URAI_PRIVACY_CONTRACT)
   requireUserCollection(collectionName)
   const base = collection(getFirebaseDb(), 'users', uid, collectionName)
   const orderedCollections = new Set(['privacyReceipts', 'exportJobs', 'deletionJobs'])
