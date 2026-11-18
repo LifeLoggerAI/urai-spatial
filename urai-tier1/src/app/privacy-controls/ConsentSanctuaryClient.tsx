@@ -63,16 +63,17 @@ function consentColor(mode: ConsentMode) {
   return '#657080'
 }
 
-function Chamber({ domain, policy, index, selected, onSelect }: {
+function Chamber({ domain, policy, index, selected, onSelect, displayMode }: {
   domain: ConsentDomain
   policy: ConsentDomainPolicy
   index: number
   selected: boolean
   onSelect: (domain: ConsentDomain) => void
+  displayMode: 'actual' | 'sample' | 'unverified'
 }) {
   const angle = (index / DOMAIN_ORDER.length) * Math.PI * 2
   const radius = 5.2
-  const color = consentColor(policy.mode)
+  const color = displayMode === 'unverified' ? '#657080' : consentColor(policy.mode)
   return (
     <group position={[Math.cos(angle) * radius, 0.2, Math.sin(angle) * radius]} rotation={[0, -angle + Math.PI / 2, 0]}>
       <Float speed={policy.mode === 'paused' ? 0.2 : 0.65} rotationIntensity={0.05} floatIntensity={0.1}>
@@ -97,7 +98,7 @@ function Chamber({ domain, policy, index, selected, onSelect }: {
         </Html>
         <Html position={[0, -0.55, 0.38]} center transform distanceFactor={8}>
           <span style={{ display: 'block', color, fontSize: '12px', fontWeight: 900, letterSpacing: '.12em', textAlign: 'center', textShadow: '0 2px 12px #000', pointerEvents: 'none' }}>
-            {policy.mode.toUpperCase()}
+            {displayMode === 'unverified' ? 'UNVERIFIED' : displayMode === 'sample' ? 'SAMPLE ' + policy.mode.toUpperCase() : policy.mode.toUpperCase()}
           </span>
         </Html>
       </Float>
@@ -105,21 +106,22 @@ function Chamber({ domain, policy, index, selected, onSelect }: {
   )
 }
 
-function SanctuaryWorld({ policy, selectedDomain, onSelect, reducedMotion }: {
+function SanctuaryWorld({ policy, selectedDomain, onSelect, reducedMotion, displayMode }: {
   policy: ConsentPolicy
   selectedDomain: ConsentDomain
   onSelect: (domain: ConsentDomain) => void
   reducedMotion: boolean
+  displayMode: 'actual' | 'sample' | 'unverified'
 }) {
   const selected = policy.domains[selectedDomain]
-  const interrupted = policy.enforcement.state === 'failed' || policy.enforcement.state === 'partially-enforced'
+  const interrupted = displayMode === 'actual' && (policy.enforcement.state === 'failed' || policy.enforcement.state === 'partially-enforced')
   return (
     <Canvas camera={{ position: [0, 7.2, 11.8], fov: 48 }} dpr={[1, 1.6]} gl={{ antialias: true, alpha: false }}>
       <color attach="background" args={['#02070c']} />
       <fog attach="fog" args={['#02070c', 10, 24]} />
       <ambientLight intensity={0.42} />
       <directionalLight position={[4, 9, 5]} intensity={1.25} color="#dffbff" />
-      <pointLight position={[0, 2.4, 0]} intensity={interrupted ? 8 : 24} distance={12} color={interrupted ? '#ff9f7a' : consentColor(selected.mode)} />
+      <pointLight position={[0, 2.4, 0]} intensity={interrupted ? 8 : 24} distance={12} color={interrupted ? '#ff9f7a' : displayMode === 'unverified' ? '#657080' : consentColor(selected.mode)} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.1, 0]}>
         <circleGeometry args={[9.4, 64]} />
         <meshStandardMaterial color="#07121a" metalness={0.18} roughness={0.72} />
@@ -129,7 +131,7 @@ function SanctuaryWorld({ policy, selectedDomain, onSelect, reducedMotion }: {
         <meshBasicMaterial color={interrupted ? '#8b392c' : '#163c47'} transparent opacity={0.24} />
       </mesh>
       {DOMAIN_ORDER.map((domain, index) => (
-        <Chamber key={domain} domain={domain} policy={policy.domains[domain]} index={index} selected={domain === selectedDomain} onSelect={onSelect} />
+        <Chamber key={domain} domain={domain} policy={policy.domains[domain]} index={index} selected={domain === selectedDomain} onSelect={onSelect} displayMode={displayMode} />
       ))}
       <group position={[0, 0.35, 0]}>
         <Float speed={reducedMotion ? 0 : 0.9} rotationIntensity={reducedMotion ? 0 : 0.25} floatIntensity={reducedMotion ? 0 : 0.3}>
@@ -318,14 +320,16 @@ export default function ConsentSanctuaryClient() {
   }
 
   const selected = policy.domains[selectedDomain]
+  const displayMode = loadState === 'private' ? 'actual' : loadState === 'demo' ? 'sample' : 'unverified'
+  const displayedStatus = (mode: ConsentMode) => displayMode === 'unverified' ? 'UNVERIFIED' : displayMode === 'sample' ? 'SAMPLE ' + mode.toUpperCase() : mode.toUpperCase()
   const canWrite = loadState === 'private' && mutationState !== 'requested'
   const requiredDeletionText = DELETION_SCOPES.find(([scope]) => scope === deletionScope)?.[2] ?? 'CONFIRM DELETE'
 
   return (
-    <main className="consentSanctuary" data-route-owner="consent-sanctuary" data-privacy-source={loadState} data-enforcement-state={policy.enforcement.state}>
+    <main className="consentSanctuary" data-route-owner="consent-sanctuary" data-privacy-source={loadState} data-enforcement-state={displayMode === 'actual' ? policy.enforcement.state : 'unverified'} data-consent-display-mode={displayMode}>
       <a className="consentSkip" href="#consent-controls">Skip to direct controls</a>
       <div className="consentWorld" aria-hidden="true">
-        {webglAvailable ? <Suspense fallback={null}><SanctuaryWorld policy={policy} selectedDomain={selectedDomain} onSelect={setSelectedDomain} reducedMotion={reducedMotion} /></Suspense> : (
+        {webglAvailable ? <Suspense fallback={null}><SanctuaryWorld policy={policy} selectedDomain={selectedDomain} onSelect={setSelectedDomain} reducedMotion={reducedMotion} displayMode={displayMode} /></Suspense> : (
           <div className="consentWorldFallback"><strong>Consent Sanctuary</strong><span>Semantic controls remain fully available without WebGL.</span></div>
         )}
       </div>
@@ -337,12 +341,12 @@ export default function ConsentSanctuaryClient() {
       </header>
 
       <nav className="consentRealmNav" aria-label="Consent domains">
-        {DOMAIN_ORDER.map((domain) => <button key={domain} type="button" aria-pressed={domain === selectedDomain} onClick={() => setSelectedDomain(domain)}><span>{DOMAIN_LABELS[domain]}</span><small>{policy.domains[domain].mode}</small></button>)}
+        {DOMAIN_ORDER.map((domain) => <button key={domain} type="button" aria-pressed={domain === selectedDomain} onClick={() => setSelectedDomain(domain)}><span>{DOMAIN_LABELS[domain]}</span><small>{displayedStatus(policy.domains[domain].mode)}</small></button>)}
       </nav>
 
       <section id="consent-controls" tabIndex={-1} className="consentPanel" aria-label={`${DOMAIN_LABELS[selectedDomain]} controls`}>
-        <div className="consentPanelHeading"><div><p>Revision {policy.revision}</p><h2>{DOMAIN_LABELS[selectedDomain]}</h2></div><span className="consentMode" data-mode={selected.mode}>{selected.mode}</span></div>
-        <p><strong>Enforcement:</strong> {policy.enforcement.state}; provider state: {policy.enforcement.providerState}.</p>
+        <div className="consentPanelHeading"><div><p>Revision {policy.revision}</p><h2>{DOMAIN_LABELS[selectedDomain]}</h2></div><span className="consentMode" data-mode={displayMode === 'actual' ? selected.mode : 'unverified'}>{displayedStatus(selected.mode)}</span></div>
+        <p><strong>Enforcement:</strong> {displayMode === 'actual' ? policy.enforcement.state + '; provider state: ' + policy.enforcement.providerState + '.' : displayMode === 'sample' ? 'Sample illustration only; no private authority verified.' : 'Unverified: sign in and connect the consent authority to inspect actual permissions.'}</p>
         <fieldset disabled={!canWrite}><legend>Authority level</legend><div className="consentChoiceGrid">{MODE_OPTIONS.map((mode) => <button type="button" key={mode} aria-pressed={selected.mode === mode} onClick={() => propose(selectedDomain, { mode })}>{mode}</button>)}</div></fieldset>
         <div className="consentToggleGrid">
           {selectedDomain === 'location' && <label><input disabled={!canWrite} type="checkbox" checked={selected.precise} onChange={(event) => propose(selectedDomain, { precise: event.target.checked })} /><span>Allow precise private location</span></label>}
