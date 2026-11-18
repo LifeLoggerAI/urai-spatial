@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp, type FirebaseOptions } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
 import { getFunctions } from 'firebase/functions'
 
 const PUBLIC_FIREBASE_ENV = {
@@ -36,4 +36,18 @@ const firebaseConfig: FirebaseOptions = {
 
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
 export const functions = getFunctions(app)
-export const getFirebaseDb = () => getFirestore(app)
+let disposableEmulatorConnected = false
+export function getFirebaseDb() {
+  const db = getFirestore(app)
+  // Review-only local lab: never allow global Spatial listeners to reach hosted Firestore.
+  if (typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+      process.env.NEXT_PUBLIC_URAI_CANONICAL_PRIVACY_LAB === 'true' &&
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === 'urai-privacy-r1512-disposable' &&
+      app.options.projectId === 'urai-privacy-r1512-disposable' &&
+      !disposableEmulatorConnected) {
+    connectFirestoreEmulator(db, '127.0.0.1', 8080)
+    disposableEmulatorConnected = true
+  }
+  return db
+}
