@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
+import { auditFocusReturnContract } from './check-focus-return-contract.mjs'
 
 const root = process.cwd()
 const appRoot = path.join(root, 'urai-tier1', 'src', 'app')
@@ -101,7 +102,6 @@ for (const token of [
   "destination: 'replay'",
   "entryPortal: 'focus-memory-aperture'",
   'replayManifestId: memory.replayManifest.id',
-  'requestUraiWorldReturn()',
   'aria-label={`Open Replay for ${memory.title}`}',
   'data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx"',
   'data-focus-spatial="inside-memory-star"',
@@ -110,6 +110,10 @@ for (const token of [
 ]) {
   if (!focusClientSource.includes(token)) failures.push(`${focusClientPath} is missing: ${token}`)
 }
+for (const problem of auditFocusReturnContract(focusClientSource)) {
+  failures.push(`${focusClientPath} ${problem}`)
+}
+
 for (const [label, pattern] of [
   ['memory identity', /data-memory-id=\{memory(?:\?\.)?id\}/],
   ['star identity', /data-star-id=\{memory(?:\?\.)?star\.id\}/],
@@ -188,3 +192,4 @@ if (failures.length) {
   process.exit(1)
 }
 console.log('Production route exposure v2 passed')
+
