@@ -226,7 +226,16 @@ export default function ConsentSanctuaryClient() {
     const policyRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current')
     return onSnapshot(policyRef, (snapshot) => {
       const rawPolicy = snapshot.data()
-      const next = snapshot.exists() && isConsentPolicy(rawPolicy, user.uid) ? rawPolicy : defaultConsentPolicy(user.uid)
+      // A missing or invalid private policy is NOT an authorization grant.
+      // Do not replace absent server authority with a seeded local default:
+      // the default is for disclosed demos only, never authenticated controls.
+      if (!snapshot.exists() || !isConsentPolicy(rawPolicy, user.uid)) {
+        setMutationState('failed')
+        setLoadState('unavailable')
+        setMessage('No verified private consent policy is available. Changes, export, and deletion controls remain disabled until server authority is established.')
+        return
+      }
+      const next = rawPolicy
       setPolicy(next)
       setLoadState('private')
       const state = next.enforcement.state
