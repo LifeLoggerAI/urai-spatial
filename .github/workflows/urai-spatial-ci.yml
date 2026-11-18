@@ -61,7 +61,7 @@ jobs:
       - name: Source integrity
         run: pnpm check:source-integrity
       - name: Hosting response header regression (review source only)
-        run: node scripts/check-hosting-response-headers.mjs && node --test tests/hosting-response-headers.test.mjs
+        run: node scripts/check-hosting-response-headers.mjs && node --test tests/hosting-response-headers.test.mjs && node --test tests/next-response-header-parity.test.mjs
       - name: Production route exposure
         run: pnpm check:production-routes
       - name: Preflight
@@ -179,7 +179,7 @@ jobs:
       - name: Source integrity
         run: pnpm check:source-integrity
       - name: Hosting response header regression (review source only)
-        run: node scripts/check-hosting-response-headers.mjs && node --test tests/hosting-response-headers.test.mjs
+        run: node scripts/check-hosting-response-headers.mjs && node --test tests/hosting-response-headers.test.mjs && node --test tests/next-response-header-parity.test.mjs
       - name: Production route exposure
         run: pnpm check:production-routes
       - name: Typecheck
