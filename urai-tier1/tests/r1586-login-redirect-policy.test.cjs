@@ -29,7 +29,7 @@ test('Login only redirects as fallback for approved errors; authenticated redire
  const login=fs.readFileSync(path.join(__dirname,'../src/app/login/LoginClient.tsx'),'utf8')
  assert.match(login,/if \(popupRequiresFullPageRedirect\(error\)\) \{\s*await enterFullPage\(\)/)
  assert.match(login,/getRedirectResult\(auth\)\.catch/)
- assert.match(login,/await signInWithRedirect\(getAuth\(app\), googleProvider\(\)\)/)
+ assert.match(login,/await signInWithRedirect\(getUrAiAuth\(\), googleProvider\(\)\)/)
  assert.match(login,/disabled=\{state==='unavailable'\|\|state==='working'\}/)
  assert.match(login,/Your private world remains closed/)
 })

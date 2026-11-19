@@ -130,7 +130,7 @@ function prepareNaturalSanctuary(source: THREE.Object3D) {
     object.visible = !rejected.test(object.name)
     if (!object.visible) return
     const name = object.name.toLowerCase()
-    const grounded = /basin|path|ground|terrain|stone|floor/.test(name)
+    const grounded = /basin|path|ground|terrain|stone|floor|earth|landing/.test(name)
     if (grounded) {
       object.geometry = projectHomeTerrainGeometry(object.geometry, object.matrixWorld)
       object.userData.homeProjectedGround = true
@@ -786,7 +786,7 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     {HOME_INTERPRETIVE_SPLAT_ASSET ? <HomeInterpretiveSplatEnvironment src={HOME_INTERPRETIVE_SPLAT_ASSET} /> : null}
     <Terrain target={props.target} />
     <SanctuaryPath />
-    <Horizon />
+    {!cosmic ? <Horizon /> : null}
     <AtmosphericMist reducedMotion={props.reducedMotion} />
     <Vegetation />
     <GroundDetail />
