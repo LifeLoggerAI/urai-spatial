@@ -7,9 +7,9 @@
  * No production private-memory writes or privileged processing are enabled.
  */
 import { useCallback, useEffect, useState } from 'react'
-import { getAuth, connectAuthEmulator, createUserWithEmailAndPassword, onAuthStateChanged, signOut, type User } from 'firebase/auth'
-import { connectFunctionsEmulator, httpsCallable, type Functions } from 'firebase/functions'
-import { app, firebasePublicEnvReady, functions } from '@/lib/firebase/client'
+import { createUserWithEmailAndPassword, onAuthStateChanged, signOut, type User } from 'firebase/auth'
+import { httpsCallable, type Functions } from 'firebase/functions'
+import { app, disposableFirebaseReviewAuthorized, firebasePublicEnvReady, functions, getUrAiAuth } from '@/lib/firebase/client'
 
 const DISPOSABLE_PROJECT = 'urai-privacy-r1512-disposable'
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1'])
@@ -21,23 +21,12 @@ type ConsentStatus = 'granted' | 'denied' | 'revoked'
 type CanonicalResult = { status?: string; consentId?: string; requestId?: string; exportJobId?: string; allowed?: boolean; reason?: string }
 
 function locallyAuthorized() {
-  return typeof window !== 'undefined' &&
-    LOCAL_HOSTS.has(window.location.hostname) &&
-    activeFlag && firebasePublicEnvReady &&
-    configuredProject === DISPOSABLE_PROJECT &&
-    app.options.projectId === DISPOSABLE_PROJECT
+  return disposableFirebaseReviewAuthorized()
 }
 
-let initialized = false
-function emulatorServices(): { auth: ReturnType<typeof getAuth>; functions: Functions } {
+function emulatorServices(): { auth: ReturnType<typeof getUrAiAuth>; functions: Functions } {
   if (!locallyAuthorized()) throw new Error('LOCAL_EMULATOR_ONLY')
-  const auth = getAuth(app)
-  if (!initialized) {
-    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
-    connectFunctionsEmulator(functions, '127.0.0.1', 5001)
-    initialized = true
-  }
-  return { auth, functions }
+  return { auth: getUrAiAuth(), functions }
 }
 
 async function canonicalCall(name: 'setCanonicalConsent' | 'evaluateCanonicalConsent' | 'createExportRequest' | 'createDeletionRequest' | 'getExportDownloadUrl', payload: Record<string, unknown> = {}): Promise<CanonicalResult> {
