@@ -40,6 +40,9 @@ export function HomeInterpretiveSplatEnvironment({
     const textureWidth = Math.min(gl.capabilities.maxTextureSize, 16_384)
     const session = createCapturedRealitySplatSession({
       url: approvedSrc,
+      // Public, allowlisted Home asset may use the same-origin SSO cookie.
+      // Private Captured Reality fetches remain credential-free elsewhere.
+      fetcher: (input, init) => fetch(input, { ...init, credentials: 'same-origin' }),
       maxBytes: (mobile ? 64 : 160) * MiB,
       chunkSize: textureWidth,
       alphaHash: true,

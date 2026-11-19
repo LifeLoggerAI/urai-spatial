@@ -42,3 +42,12 @@ test('guest Home splat texture chunks align to the GPU texture row width', () =>
   assert.match(source, /maxTextureSize: textureWidth/)
   assert.doesNotMatch(source, /chunkSize: mobile \? 16_000 : 25_000/)
 })
+
+test('public static Home asset is allowed same-origin preview authentication without changing private streaming', () => {
+  const home = readFileSync(resolve(root, 'urai-tier1/src/spatial/home/HomeInterpretiveSplat.tsx'), 'utf8')
+  const stream = readFileSync(resolve(root, 'urai-tier1/src/spatial/captured-reality/capturedRealitySplatStream.ts'), 'utf8')
+  const policy = readFileSync(resolve(root, 'urai-tier1/src/spatial/home/homeInterpretiveSplatPolicy.ts'), 'utf8')
+  assert.match(home, /fetcher: \(input, init\) => fetch\(input, \{ \.\.\.init, credentials: 'same-origin' \}\)/)
+  assert.match(stream, /credentials: 'omit'/)
+  assert.match(policy, /\/assets\/urai\/home-production\/interpretive\//)
+})
