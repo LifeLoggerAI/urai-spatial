@@ -8,7 +8,8 @@ import {
   URAI_WORLD_RETURN_EVENT,
   URAI_WORLD_TRAVEL_EVENT,
 } from './worldEvents'
-import type { UraiDestination, UraiOriginRealm, UraiWorldTravelRequest } from './worldTypes'
+import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
+import { resolveWorldReturnDestination } from './worldReturnDestination'
 
 const CONTEXT_KEYS = [
   'memoryId',
@@ -87,19 +88,6 @@ function isEditableTarget(target: EventTarget | null) {
   return target.isContentEditable || target.matches('input, textarea, select, [role="textbox"]')
 }
 
-function destinationFromOriginRealm(origin: UraiOriginRealm): UraiDestination {
-  if (origin === 'ground') return 'infrastructure-hub'
-  return origin
-}
-
-function fallbackReturnDestination(destination: UraiDestination): UraiDestination {
-  if (destination === 'focus') return 'life-map'
-  if (destination === 'replay') return 'focus'
-  if (destination === 'life-movie') return 'replay'
-  if (destination === 'infrastructure-hub') return 'home'
-  return 'infrastructure-hub'
-}
-
 export function WorldTransitionController() {
   const router = useRouter()
   const { world, phase, beginTravel } = useUraiWorldState()
@@ -156,9 +144,7 @@ export function WorldTransitionController() {
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
     if (phaseRef.current !== 'idle') return
-    const destination = currentWorld.destination === 'possible-futures' && currentWorld.scenarioOrigin
-      ? destinationFromOriginRealm(currentWorld.scenarioOrigin)
-      : currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
+    const destination = resolveWorldReturnDestination(currentWorld)
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
