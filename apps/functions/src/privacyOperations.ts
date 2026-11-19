@@ -298,7 +298,7 @@ export const getOperationalPrivacyCapabilities = functions.https.onCall(async (_
 })
 
 export const applyConsentPolicy = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   const operationId = requireOperationId(data?.operationId)
   const domain = String(data?.domain ?? '') as ConsentDomain
   if (!CONSENT_DOMAINS.includes(domain)) {
@@ -868,7 +868,7 @@ export const getExportDownloadUrl = functions.https.onCall(async (data, context)
 })
 
 export const cancelExportRequest = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   const jobId = requireString(data?.jobId, 'jobId', 80)
   const jobRef = db.doc(`users/${uid}/exportJobs/${jobId}`)
   await db.runTransaction(async (transaction) => {
@@ -1141,7 +1141,7 @@ export const processDeletionGraceQueue = functions.pubsub
   })
 
 export const cancelDeletionRequest = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   const jobId = requireString(data?.jobId, 'jobId', 80)
   const jobRef = db.doc(`users/${uid}/deletionJobs/${jobId}`)
   const queueRef = db.doc(`deletionQueue/${jobId}`)
@@ -1183,7 +1183,7 @@ function safeRows(snapshot: FirebaseFirestore.QuerySnapshot, kind: string) {
 }
 
 export const getPassportSnapshot = functions.https.onCall(async (_data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   const userRef = db.doc(`users/${uid}`)
   const [user, policy, sources, devices, providers, exports, deletions, receipts] = await Promise.all([
     userRef.get(),

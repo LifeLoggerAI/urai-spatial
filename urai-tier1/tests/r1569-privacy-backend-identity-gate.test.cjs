@@ -59,7 +59,7 @@ function harness({answer = capability(), uid = 'owner-1', projectId = 'project-1
 
 test('backend exposes authenticated scoped-capability handshake and public entrypoint', () => {
   assert.match(backend, /export const getOperationalPrivacyCapabilities = functions\.https\.onCall/)
-  assert.match(backend, /getOperationalPrivacyCapabilities[\s\S]*?requireUid\(context\)/)
+  assert.match(backend, /getOperationalPrivacyCapabilities[\s\S]*?requireCurrentPrivacyOwner\(context\)/)
   assert.match(exportsSource, /getOperationalPrivacyCapabilities/)
 })
 test('scoped export is denied before canonical same-name callable can be invoked', async () => {
@@ -111,4 +111,20 @@ test('verified operational backend preserves exact requested scopes and confirma
   assert.deepEqual(calls[1].payload,{scopes:['consent','audit'],operationId:'export-safe-1234'})
   assert.deepEqual(calls[3].payload,{scope:'memories',confirmation:'CONFIRM DELETE',operationId:'delete-safe-1234'})
   assert.deepEqual(calls[5].payload,{jobId:'synthetic-job',file:'manifest'})
+})
+
+
+test('all owner Privacy API entry points require current identity before operations', () => {
+  for (const name of [
+    'getOperationalPrivacyCapabilities', 'applyConsentPolicy',
+    'createExportRequest', 'cancelExportRequest', 'getExportDownloadUrl',
+    'createDeletionRequest', 'cancelDeletionRequest', 'getPassportSnapshot',
+  ]) {
+    const marker = 'export const ' + name + ' = functions.https.onCall(async '
+    const start = backend.indexOf(marker)
+    assert.ok(start >= 0, name + ' entrypoint absent')
+    const region = backend.slice(start, start + 310)
+    assert.match(region, /const uid = await requireCurrentPrivacyOwner\(context\)/,
+      name + ' must check current identity before operations')
+  }
 })
