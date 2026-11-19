@@ -1,0 +1,122 @@
+{
+  "schemaVersion": "urai-r1546-integrated-acceptance-v1",
+  "deployment": {
+    "id": "dpl_3h9p8zrreTa7xVMmgfe41dcmWxba",
+    "url": "https://urai-genesis-private-app-review-r1193-kf901fchw.vercel.app",
+    "preserved": true,
+    "buildLogCheckout": "4ba1f7a6200bdbeff2dd0953cbb98e786c58ca46",
+    "advertisedSha": "791bd415030b2755030134dff41908af9de10e7d",
+    "sourceAttribution": "FAIL",
+    "ssoProtection": "all",
+    "newDeployment": false
+  },
+  "spatial": {
+    "sourceGuardFix": "053aa0c5a9cb7a46288c2f37377d740eb6dc1124",
+    "archiveHead": "6c572290867e8bb4798a1d88ddf760963006f000",
+    "guardChecks": "16/16 on Node22 Runpod; full receipt committed",
+    "visualHarnessChanges": "not deployed; independent acceptance still pending"
+  },
+  "privacy": {
+    "testedSource": "2a3ae01e6353bea95d83166b88f28d74f061436b",
+    "tree": "62a683a496a4dcd68589487ee88c55aba7d35d21",
+    "evidenceCommit": "5f45994b073bd55c2f06597fc7afe5847d8b207d",
+    "receipt": "https://github.com/LifeLoggerAI/urai-privacy/blob/5f45994b073bd55c2f06597fc7afe5847d8b207d/docs/evidence/r1546/native-acceptance.json",
+    "result": "PARTIAL; native grouped checks7, assertions23; exit0",
+    "completed": [
+      "synthetic export package with manifest hashes",
+      "canonical deletion with terminal record audit tombstone zero scoped residuals",
+      "foreign isolation",
+      "consent revocation denial",
+      "post-deletion consent recreation denial"
+    ],
+    "notVerified": [
+      "authorized owner signed URL/download",
+      "expiration and post-deletion bearer URL denial",
+      "hosted user journey",
+      "live IAM"
+    ]
+  },
+  "hardware": {
+    "pod": "9c1hr1flmzla2m",
+    "gpu": "NVIDIA RTX PRO 4000 Blackwell",
+    "browser": "Chromium148.0.7778.96",
+    "renderer": "ANGLE NVIDIA Vulkan1.4.329",
+    "driver": "595.112.07",
+    "probe": "PASS WebGL1/2 exact test pixels; SwiftShader disabled",
+    "applicationScenes": "NOT_TESTED",
+    "accessBlocker": "Automatic approval review rejected creating a Vercel temporary public share link outside SSO; no retry via alternate share mechanism. Need existing authenticated GPU browser/accepted project identity without public sharing."
+  },
+  "contracts": {
+    "spatialSource": "4ba1f7a6200bdbeff2dd0953cbb98e786c58ca46",
+    "privacyTestedSource": "2a3ae01e6353bea95d83166b88f28d74f061436b",
+    "status": "BLOCKED_NOT_COMPATIBLE_BY_CONFIGURATION_ALONE",
+    "differences": [
+      {
+        "surface": "Consent",
+        "spatial": "applyConsentPolicy(domain,next,expectedRevision,operationId)",
+        "privacy": "setCanonicalConsent(purpose,status,surface); evaluateCanonicalConsent(purpose,correlationId)",
+        "required": "Explicit reviewed purpose/scope and revision semantics; no silent mapping"
+      },
+      {
+        "surface": "Export",
+        "spatial": "scopes[] and operationId; subscriptions users/{uid}/exportJobs",
+        "privacy": "account-wide createExportRequest; top-level exportJobs/privacyRequests",
+        "required": "Explicit account-wide UI and canonical status adapter; preserve selected-scope semantics for operational-v1"
+      },
+      {
+        "surface": "Deletion",
+        "spatial": "scope/confirmation/operationId; cancellation; users/{uid}/deletionJobs",
+        "privacy": "account-wide reason/requestId; privileged processing; top-level deletionRequests",
+        "required": "Explicit full-account confirmation; canonical terminal state readback; no browser admin claim"
+      },
+      {
+        "surface": "Download",
+        "spatial": "export, manifest, runtime/assetId",
+        "privacy": "export or manifest only; owner-or-admin signer",
+        "required": "Do not discard runtime export intent or fake provider URL"
+      },
+      {
+        "surface": "Existing canonical lab",
+        "spatial": "Explicit localhost + lab flag + disposable project; request-only",
+        "privacy": "Native canonical calls validated separately",
+        "required": "Hosted URL cannot activate localhost-only lab; don't remove boundary"
+      }
+    ]
+  },
+  "resources": {
+    "scratchPod": "6wjqgu8fj931ww",
+    "status": "EXITED",
+    "uptimeSeconds": 403,
+    "hourlyRateUSD": 0.16,
+    "nominalComputeEstimateUSD": 0.01791111111111111,
+    "estimateIsInvoice": false,
+    "evidencePreservedBeforeStop": true,
+    "olderPodsPreserved": true,
+    "restartAttempt": {
+      "pod": "saob7odq6v8bvc",
+      "result": "400 not enough free vcpu on original host"
+    }
+  },
+  "gates": {
+    "credentialIncident": "BLOCKED",
+    "independentWorkloadIdentity": "BLOCKED",
+    "protectedCIIndependentReview": "BLOCKED",
+    "deploymentProvenance": "FAIL",
+    "liveGCSIAM": "BLOCKED",
+    "canonicalConsent": "PARTIAL_EMULATOR",
+    "studioJobsReplay": "BLOCKED",
+    "exportDeletion": "PARTIAL_EMULATOR_DOWNLOAD_OPEN",
+    "assetsVisualAccessibility": "PARTIAL_HARDWARE_PROBE_ONLY",
+    "deviceRollbackOperations": "BLOCKED",
+    "independentCertificationRelease": "BLOCKED"
+  },
+  "independentReviewers": [],
+  "production": "HOLD / NO-GO",
+  "productionPrivateMemoryWrites": "DISABLED",
+  "nextActions": [
+    "Review fail-closed non-Git source custody; current unsigned JSON mechanism rejected",
+    "Implement explicit canonical consumer adapter without discarding scope semantics",
+    "Use authorized isolated canary signer; verify owner issuance, URL expiry/revocation/deletion without logging tokens",
+    "Use SSO-authenticated GPU session for actual immutable preview scene acceptance"
+  ]
+}
