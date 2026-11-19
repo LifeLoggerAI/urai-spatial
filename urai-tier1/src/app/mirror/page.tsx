@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import './mirror-mobile-inspection.css'
 import MirrorBareEntryGuard from './MirrorBareEntryGuard'
 import MirrorSpatialClient from './MirrorSpatialClient'
@@ -25,7 +26,7 @@ export default function MirrorRoutePage() {
         Mirror embodied reflection chamber. Evidence-aware patterns. Replay and Passport continuity.
       </span>
       <MirrorBareEntryGuard>
-        <MirrorSpatialClient />
+        <Suspense fallback={<main role="status">Opening Mirror…</main>}><MirrorSpatialClient /></Suspense>
       </MirrorBareEntryGuard>
     </>
   )

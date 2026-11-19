@@ -18,6 +18,17 @@ test('canonical private memories are owner-readable and server-write-only', () =
   const block = rules.match(/match \/memories\/\{memoryId\} \{([\s\S]*?)\n\s*\}/)
   assert.ok(block, 'missing users/{uid}/memories Firestore rules block')
   assert.match(block[1], /allow read: if isSelf\(uid\);/)
+  assert.match(rules, /function deletionFenceInactive\(uid\)/)
+  assert.match(rules, /function isSelf\(uid\)\s*\{[\s\S]*?deletionFenceInactive\(uid\)/)
+  assert.match(rules, /function isManifestOwner\(\)\s*\{[\s\S]*?isSelf\(request\.auth\.uid\)/)
+  assert.match(rules, /function isSelf\(uid\)\s*\{[\s\S]*?hasActiveUserRecord\(uid\)[\s\S]*?hasNoAccountDeletionFence\(uid\)[\s\S]*?deletionFenceInactive\(uid\)/)
+  assert.match(rules, /privacyDeletionTombstones\/\$\(uid\)/)
+  const movies = [...rules.matchAll(/match \/lifeMovies\/\{movieId\} \{([\s\S]*?)\n\s*\}/g)]
+  assert.ok(movies.length >= 1, 'missing Life Movie access rules')
+  for (const match of movies) {
+    assert.match(match[1], /allow read: if isSelf\(uid\);/)
+    assert.doesNotMatch(match[1], /allow read: if true;/)
+  }
   assert.doesNotMatch(block[1], /isAdmin\(\)/)
   assert.match(block[1], /allow write: if false;/)
 })

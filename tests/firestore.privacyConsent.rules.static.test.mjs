@@ -27,6 +27,7 @@ const trustedCollections = [
   'providerRevocationQueue',
   'deletionQueue',
   'deletionReceipts',
+  'accountDeletionFences',
 ]
 
 test('owner privacy records are readable only inside users/{uid} and remain server-write-only', () => {
@@ -61,4 +62,11 @@ test('privacy rules end in a default-deny boundary', () => {
   const publicFeatureFlags = /match \/features\/\{flagId\} \{[\s\S]*?\n    \}/
   assert.match(rules, /match \/features\/\{flagId\} \{\s*allow read: if true;\s*allow write: if isAdmin\(\);\s*\}/)
   assert.doesNotMatch(rules.replace(publicFeatureFlags, ''), /allow\s+(read|write|create|update|delete)[^;]*:\s*if\s+true\s*;/i)
+})
+
+
+test('owner reads require an active parent record and no account deletion fence', () => {
+  assert.match(rules, /function hasActiveUserRecord\(uid\).*exists\(\/databases\/\$\(database\)\/documents\/users\/\$\(uid\)\)/)
+  assert.match(rules, /function hasNoAccountDeletionFence\(uid\).*accountDeletionFences\/\$\(uid\)/)
+  assert.match(rules, /function isSelf\(uid\).*hasActiveUserRecord\(uid\).*hasNoAccountDeletionFence\(uid\)/)
 })

@@ -90,20 +90,34 @@ test('the immutable author and verifier retain all eight receipt-bound GLBs', ()
   assert.deepEqual(receipt.assets.map((asset) => asset.fileName).sort(), Object.keys(budgets).sort())
   for (const record of receipt.assets) {
     has(verifier, record.fileName)
-    const payload = fs.readFileSync(`public/assets/urai/generated/models/${record.fileName}`)
-    assert.equal(payload.length, record.bytes)
-    assert.equal(createHash('sha256').update(payload).digest('hex'), record.sha256)
+    const governedPath = path.resolve('../operations/assets/production-receipts', record.fileName.replace(/\.glb$/, '.json'))
+    const governed = fs.existsSync(governedPath) ? JSON.parse(read(governedPath)) : null
+    if (governed) {
+      assert.equal(governed.releaseState, 'production-ready')
+      assert.equal(governed.fixedPath, 'urai-tier1/public/assets/urai/generated/models/' + record.fileName)
+    }
+    const expected = governed ?? record
+    const payload = fs.readFileSync('public/assets/urai/generated/models/' + record.fileName)
+    assert.equal(payload.length, expected.bytes)
+    assert.equal(createHash('sha256').update(payload).digest('hex'), expected.sha256)
     assert.equal(payload.readUInt32LE(0), 0x46546c67)
     assert.equal(payload.readUInt32LE(4), 2)
     assert.equal(payload.readUInt32LE(8), payload.length)
     assert.equal(payload.readUInt32LE(16), 0x4e4f534a)
     const json = JSON.parse(payload.subarray(20, 20 + payload.readUInt32LE(12)).toString('utf8').trim())
-    assert.equal(json.asset.generator, 'URAI Labs Final GLB Forge 1.0')
-    for (const extension of ['KHR_materials_emissive_strength', 'KHR_materials_transmission', 'KHR_materials_clearcoat']) {
-      assert.ok(json.extensionsUsed.includes(extension), `${record.fileName} is missing ${extension}`)
+    if (governed) {
+      assert.equal(json.asset.generator, 'glTF-Transform v4.4.2')
+      assert.ok(json.extensionsUsed.includes('EXT_meshopt_compression'))
+      assert.equal(json.nodes.length, governed.measured.nodeCount)
+      assert.deepEqual(json.animations.map((clip) => clip.name).sort(), [...governed.measured.animationClips].sort())
+    } else {
+      assert.equal(json.asset.generator, 'URAI Labs Final GLB Forge 1.0')
+      for (const extension of ['KHR_materials_emissive_strength', 'KHR_materials_transmission', 'KHR_materials_clearcoat']) {
+        assert.ok(json.extensionsUsed.includes(extension), record.fileName + ' is missing ' + extension)
+      }
+      assert.equal(json.nodes.length, record.nodes)
+      assert.deepEqual(json.animations.map((clip) => clip.name).sort(), [...record.animations].sort())
     }
-    assert.equal(json.nodes.length, record.nodes)
-    assert.deepEqual(json.animations.map((clip) => clip.name).sort(), [...record.animations].sort())
     let triangles = 0
     for (const mesh of json.meshes) for (const primitive of mesh.primitives) {
       assert.equal(primitive.mode ?? 4, 4, 'authored meshes must retain their triangle topology')
@@ -111,7 +125,7 @@ test('the immutable author and verifier retain all eight receipt-bound GLBs', ()
       assert.equal(count % 3, 0)
       triangles += count / 3
     }
-    assert.equal(triangles, record.triangleCount)
+    assert.equal(triangles, governed ? governed.measured.triangleCount : record.triangleCount)
     assert.ok(triangles > 0 && triangles <= budgets[record.fileName])
   }
   for (const script of ['author-final-glb-pack.mjs', 'verify-final-glb-pack.mjs']) {
@@ -154,7 +168,7 @@ test('the immutable author rejects missing or altered inputs without generating 
     for (const field of ['sha256', 'bytes']) {
       const candidate = structuredClone(receipt)
       candidate.assets[0][field] = field === 'sha256' ? '0'.repeat(64) : candidate.assets[0].bytes + 1
-      rejectReceipt(candidate, /immutable authored binary does not match its receipt/)
+      rejectReceipt(candidate, /immutable authored binary does not match its generated-candidate receipt/)
     }
     const missing = path.join(fixtureModels, receipt.assets[0].fileName)
     fs.unlinkSync(missing)

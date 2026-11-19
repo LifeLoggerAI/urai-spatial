@@ -1,12 +1,13 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { createHash } from 'node:crypto'
 
 if (!admin.apps.length) admin.initializeApp()
 
 const db = admin.firestore()
-const fieldValue = admin.firestore.FieldValue
-const timestamp = admin.firestore.Timestamp
+const fieldValue = FieldValue
+const timestamp = Timestamp
 
 const CONSENT_DOMAINS = ['memory', 'location', 'models', 'exports', 'workforce', 'identity'] as const
 const CONSENT_MODES = ['granted', 'limited', 'paused', 'denied'] as const
@@ -58,9 +59,63 @@ const EXPORT_EXPIRY_MS = 15 * 60 * 1000
 const ACCOUNT_GRACE_MS = 24 * 60 * 60 * 1000
 const MAX_EXPORT_DOCUMENTS_PER_COLLECTION = 500
 
+function accountDeletionFenceRef(uid: string) {
+  return db.doc(`accountDeletionFences/${uid}`)
+}
+
+async function fenceAccountDeletion(uid: string, source: 'account-deletion', jobId: string) {
+  await accountDeletionFenceRef(uid).set({
+    uid, state: 'revoked', source, jobId,
+    fencedAt: fieldValue.serverTimestamp(),
+    updatedAt: fieldValue.serverTimestamp(),
+  }, { merge: true })
+}
+
+export const fenceOperationalPrivacyAccessOnAuthDelete = functions.auth.user().onDelete(async (user) => {
+  await accountDeletionFenceRef(user.uid).set({
+    uid: user.uid, state: 'revoked',
+    authDeletedAt: fieldValue.serverTimestamp(),
+    updatedAt: fieldValue.serverTimestamp(),
+  }, { merge: true })
+})
+
 function requireUid(context: functions.https.CallableContext): string {
   const uid = context.auth?.uid
   if (!uid) throw new functions.https.HttpsError('unauthenticated', 'Authentication is required.')
+  return uid
+}
+
+async function requireCurrentPrivacyOwner(context: functions.https.CallableContext): Promise<string> {
+  const uid = requireUid(context)
+  const authTimeSeconds = Number(context.auth?.token.auth_time ?? 0)
+  if (!Number.isFinite(authTimeSeconds) || authTimeSeconds <= 0) {
+    throw new functions.https.HttpsError('unauthenticated', 'Operational Privacy credential is invalid.')
+  }
+  // Signed ID tokens can outlive a deleted or disabled Auth account.
+  let owner: admin.auth.UserRecord
+  try {
+    owner = await admin.auth().getUser(uid)
+  } catch {
+    throw new functions.https.HttpsError('permission-denied', 'Current owner identity is unavailable.')
+  }
+  if (owner.disabled) {
+    throw new functions.https.HttpsError('permission-denied', 'Owner account is disabled.')
+  }
+  const validAfterMs = owner.tokensValidAfterTime ? Date.parse(owner.tokensValidAfterTime) : Number.NaN
+  if (Number.isFinite(validAfterMs) && authTimeSeconds * 1000 < validAfterMs) {
+    throw new functions.https.HttpsError('permission-denied', 'Operational Privacy credential has been revoked.')
+  }
+  const [rootUser, deletionFence, tombstone] = await Promise.all([
+    db.doc('users/' + uid).get(),
+    accountDeletionFenceRef(uid).get(),
+    db.doc('privacyDeletionTombstones/' + uid).get(),
+  ])
+  if (!rootUser.exists || deletionFence.exists) {
+    throw new functions.https.HttpsError('permission-denied', 'Current owner is deletion-fenced or unavailable.')
+  }
+  if (tombstone.get('active') === true) {
+    throw new functions.https.HttpsError('permission-denied', 'Owner deletion fence is active.')
+  }
   return uid
 }
 
@@ -253,8 +308,25 @@ function publicJobState(data: JsonMap) {
   }
 }
 
+// Disambiguate Spatial's scoped Privacy backend from account-wide callables.
+// Authentication and the actual Firebase project must match the caller.
+export const getOperationalPrivacyCapabilities = functions.https.onCall(async (_data, context) => {
+  const uid = await requireCurrentPrivacyOwner(context)
+  const projectId = admin.app().options.projectId || process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT
+  if (!projectId) {
+    throw new functions.https.HttpsError('failed-precondition', 'Operational Privacy project identity unavailable.')
+  }
+  return {
+    schema: 'urai-operational-privacy-capabilities-v1',
+    contract: 'operational-v1',
+    uid,
+    projectId,
+    capabilities: { scopedExports: true, scopedDeletion: true, ownerExportDownload: true },
+  }
+})
+
 export const applyConsentPolicy = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   const operationId = requireOperationId(data?.operationId)
   const domain = String(data?.domain ?? '') as ConsentDomain
   if (!CONSENT_DOMAINS.includes(domain)) {
@@ -598,7 +670,7 @@ async function copyCapturedRealityRuntimeExports(
 }
 
 export const createExportRequest = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   requireRecentAuthentication(context)
   const operationId = requireOperationId(data?.operationId)
   const scopes = parseExportScopes(data?.scopes)
@@ -773,7 +845,7 @@ export const processExportJob = functions.firestore
   .onCreate(async (snapshot) => buildExport(snapshot))
 
 export const getExportDownloadUrl = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   requireRecentAuthentication(context)
   const jobId = requireString(data?.jobId, 'jobId', 80)
   const file = data?.file === 'manifest' ? 'manifest' : data?.file === 'runtime' ? 'runtime' : 'export'
@@ -824,7 +896,7 @@ export const getExportDownloadUrl = functions.https.onCall(async (data, context)
 })
 
 export const cancelExportRequest = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   const jobId = requireString(data?.jobId, 'jobId', 80)
   const jobRef = db.doc(`users/${uid}/exportJobs/${jobId}`)
   await db.runTransaction(async (transaction) => {
@@ -856,7 +928,7 @@ function deletionConfirmation(scope: DeletionScope): string {
 }
 
 export const createDeletionRequest = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   requireRecentAuthentication(context)
   const operationId = requireOperationId(data?.operationId)
   const scope = parseDeletionScope(data?.scope)
@@ -1034,6 +1106,9 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
     const userRef = db.doc(`users/${uid}`)
     const deletedCollections: string[] = []
     if (scope === 'account') {
+      // Fence client reads before any destructive step. If deletion is partial,
+      // old tokens cannot read residual user subcollections.
+      await fenceAccountDeletion(uid, 'account-deletion', snapshot.id)
       await deleteCapturedRealityStorage(uid, { deleteAllExports: true })
       await db.recursiveDelete(userRef)
       await admin.auth().deleteUser(uid)
@@ -1097,7 +1172,7 @@ export const processDeletionGraceQueue = functions.pubsub
   })
 
 export const cancelDeletionRequest = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   const jobId = requireString(data?.jobId, 'jobId', 80)
   const jobRef = db.doc(`users/${uid}/deletionJobs/${jobId}`)
   const queueRef = db.doc(`deletionQueue/${jobId}`)
@@ -1139,7 +1214,7 @@ function safeRows(snapshot: FirebaseFirestore.QuerySnapshot, kind: string) {
 }
 
 export const getPassportSnapshot = functions.https.onCall(async (_data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   const userRef = db.doc(`users/${uid}`)
   const [user, policy, sources, devices, providers, exports, deletions, receipts] = await Promise.all([
     userRef.get(),
