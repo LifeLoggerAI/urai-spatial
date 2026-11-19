@@ -1,0 +1,137 @@
+{
+  "schema": "urai-r1548-existing-pipeline-local-v1",
+  "scope": "REVIEW_ONLY_LOCAL_TECHNICAL_PROOF_NOT_RELEASE",
+  "baseHead": "9a12e640dbe355bd88bfb4938ee60fafe3c9d81b",
+  "baseTree": "d0c453395718d45e7f7f342d49654a326ecd8fa5",
+  "upstreamDonors": {
+    "splatPR2133": "23f81450d3a7f5a82eba640e33b0c53e7845801c",
+    "digitalHumanPR1850": "0c973b959f6de23d78945c2fb78636a1d9b2eaa5"
+  },
+  "localChecks": {
+    "focusedNodeTests": "19/19_PASS",
+    "typescript": "PASS",
+    "nextOptimizedBuildExit": 0,
+    "nextConfigSourceGuard": "UNCHANGED",
+    "hostedFixtureGeneration": "DENIED",
+    "defaultFixtureGeneration": "SKIPPED"
+  },
+  "hardwareBrowser": {
+    "schema": "urai-r1548-native-browser-v1",
+    "mode": "isolated-local-review",
+    "base": "http://127.0.0.1:4398",
+    "home": {
+      "route": "URAI \u2014 Your private world",
+      "gpu": {
+        "canvas": true,
+        "gl": true,
+        "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA RTX PRO 4000 Blackwell (0x00002C34)), NVIDIA)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "webglWorld": 1,
+      "canvas": 1,
+      "splatResponses": [
+        {
+          "path": "/assets/urai/home-production/interpretive/sanctuary-golden-grove-v1.splat",
+          "status": 200
+        }
+      ],
+      "screenshotSha256": "e3da0fba9be7375e87afb92895f0c5a5b17aaa34239eea32862a474fb1a866d8"
+    },
+    "council": {
+      "before": {
+        "gpu": {
+          "canvas": true,
+          "gl": true,
+          "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA RTX PRO 4000 Blackwell (0x00002C34)), NVIDIA)",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+        },
+        "avatarNodes": 1,
+        "morphBindings": "60",
+        "faceVisible": "true",
+        "resources": [
+          {
+            "path": "/assets/urai/home-production/interpretive/sanctuary-golden-grove-v1.splat",
+            "status": 200
+          },
+          {
+            "path": "/__digital-human-dev/anonymous-face-morph-v1.glb",
+            "status": 200
+          }
+        ]
+      },
+      "faceRegion": {
+        "cx": 720.248035557219,
+        "cy": 412.62346048917306,
+        "rx": 111.37132500239879,
+        "ry": 189.75688209066413
+      },
+      "during": {
+        "weight": "0.32588125660010997",
+        "time": "0.278422",
+        "playing": "true",
+        "faceVisible": "true",
+        "resources": [
+          {
+            "path": "/assets/urai/home-production/interpretive/sanctuary-golden-grove-v1.splat",
+            "status": 200
+          },
+          {
+            "path": "/__digital-human-dev/anonymous-face-morph-v1.glb",
+            "status": 200
+          }
+        ]
+      },
+      "screenshotSha256": {
+        "neutral": "2d114c6ffdec1dc8c702bea32fa5b01b2b9ceb9f772a5aba76ed9fa447fe95b5",
+        "active": "b88c7670e12eddad8f2d8d669a00ef61362fda0e12c7e3b491624cb900ceeb73"
+      },
+      "pixelComparison": {
+        "changed": 4266,
+        "checked": 66397,
+        "meanRgbDelta": 9.420772022832358,
+        "roi": {
+          "left": 608,
+          "top": 222,
+          "right": 832,
+          "bottom": 603
+        }
+      },
+      "after": {
+        "weight": "0"
+      },
+      "proof": true
+    },
+    "errors": [],
+    "production": false
+  },
+  "syntheticAssets": {
+    "splat": {
+      "bytes": 2667520,
+      "sha256": "83a449dec1670fd42a13b0d82883365765b57a30773b84df22c88c417670da98",
+      "committed": false
+    },
+    "face": {
+      "bytes": 1364336,
+      "sha256": "3a6a44f9a2d7a666c15cb345852977c663d17f688eec8816def2237a53fd16bc",
+      "committed": false
+    }
+  },
+  "notProven": [
+    "reconstructed real place",
+    "photoreal person",
+    "conversation aligned visemes",
+    "SSO protected exact commit deployment",
+    "hardware mobile device acceptance",
+    "private user journey",
+    "live IAM",
+    "approved provider signer",
+    "independent release review"
+  ],
+  "deployment": {
+    "performed": false,
+    "lastHostedShaAttribution": "FAIL",
+    "ssoProtection": "PRESERVED"
+  },
+  "production": "HOLD_NO_GO",
+  "privateMemoryWrites": "DISABLED"
+}

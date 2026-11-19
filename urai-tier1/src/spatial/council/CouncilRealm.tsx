@@ -6,6 +6,8 @@ import { Component, Suspense, useEffect, useRef, useState, type MutableRefObject
 import * as THREE from 'three'
 import { COUNCIL_AGENTS } from './councilAgentSchema'
 import CouncilConversationPanel from './CouncilConversationPanel'
+import AnonymousFacialFixture, { type AnonymousRenderFrame } from '@/spatial/digital-human/AnonymousFacialFixture'
+import AnonymousCalibrationControls from '@/spatial/digital-human/AnonymousCalibrationControls'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import {
@@ -218,6 +220,16 @@ class CouncilRenderBoundary extends Component<{ children: ReactNode }, { failed:
 function CouncilStage() {
   const [selected, setSelected] = useState(0)
   const [dragging, setDragging] = useState(false)
+  // REVIEW ONLY: anonymous technical face; not an authorized person or speech.
+  const [faceLabEnabled, setFaceLabEnabled] = useState(false)
+  const [faceLabMedia, setFaceLabMedia] = useState<HTMLAudioElement | null>(null)
+  const [faceLabMuted, setFaceLabMuted] = useState(false)
+  const [faceLabFrozen, setFaceLabFrozen] = useState(false)
+  const [faceLabFrame, setFaceLabFrame] = useState<AnonymousRenderFrame | null>(null)
+  useEffect(() => {
+    const allowed = process.env.NEXT_PUBLIC_URAI_ANONYMOUS_FACE_CALIBRATION === 'true'
+    setFaceLabEnabled(allowed && new URLSearchParams(window.location.search).get('anonymousFaceLab') === '1')
+  }, [])
   const selectedAgent = COUNCIL_AGENTS[selected] ?? COUNCIL_AGENTS[0]
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
@@ -301,6 +313,15 @@ function CouncilStage() {
               />
             ))}
 
+            {faceLabEnabled ? (
+              <Suspense fallback={null}>
+                <AnonymousFacialFixture
+                  media={faceLabMedia} muted={faceLabMuted}
+                  reducedMotion={reducedMotion} freezeMorphs={faceLabFrozen}
+                  onFrame={setFaceLabFrame}
+                />
+              </Suspense>
+            ) : null}
             {quality.tier === 'low' ? null : <ContactShadows position={[0, 0.01, -0.8]} opacity={0.48} scale={10} blur={2.7} far={7} />}
             <Environment resolution={128} environmentIntensity={environmentIntensity}>
               <Lightformer position={[-4, 5, 2]} rotation={[0, Math.PI / 4, 0]} scale={[4, 5, 1]} color="#ffe4bd" intensity={2} />
@@ -323,6 +344,12 @@ function CouncilStage() {
         </div>
       </section>
 
+      {faceLabEnabled ? (
+        <AnonymousCalibrationControls
+          onMedia={setFaceLabMedia} onMute={setFaceLabMuted}
+          onFreeze={setFaceLabFrozen} onFrame={faceLabFrame}
+        />
+      ) : null}
       <MovementHelp realm="Council" summary="Walk around the chamber and choose a Council presence." controls="WASD or arrows move. Drag to look. Tap a Council person to select them. Escape returns. Mobile movement controls appear on touch devices." />
       <MobileMovementPad input={input} label="Move through Council" />
       <style jsx global>{`
