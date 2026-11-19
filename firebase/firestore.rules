@@ -3,18 +3,22 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() { return request.auth != null; }
-    function isSelf(uid) { return isSignedIn() && request.auth.uid == uid; }
-    function isSelfWithActiveDeletionFence(uid) {
-      return isSelf(uid)
-        && (!exists(/databases/$(database)/documents/privacyDeletionTombstones/$(uid))
-          || get(/databases/$(database)/documents/privacyDeletionTombstones/$(uid)).data.active != true);
+    function deletionFenceInactive(uid) {
+      return !exists(/databases/$(database)/documents/privacyDeletionTombstones/$(uid))
+        || get(/databases/$(database)/documents/privacyDeletionTombstones/$(uid)).data.active != true;
+    }
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid && deletionFenceInactive(uid);
     }
     function isAdmin() {
       return isSignedIn() && (request.auth.token.admin == true || request.auth.token.founder == true);
     }
     function isLaunchDemoOwner(ownerId) { return ownerId == 'launch-demo'; }
     function isManifestOwner() {
-      return isSignedIn() && resource.data.ownerId is string && resource.data.ownerId == request.auth.uid;
+      return isSignedIn()
+        && resource.data.ownerId is string
+        && resource.data.ownerId == request.auth.uid
+        && deletionFenceInactive(request.auth.uid);
     }
     function isValidSpatialManifestCreate() {
       return request.resource.data.manifestId is string
@@ -130,7 +134,7 @@ service cloud.firestore {
       match /capturedRealityAssets/{assetId} {
         // Full Captured Reality manifests contain private provenance/storage metadata.
         // They are owner-only; administrative operations use server authority and redacted evidence surfaces.
-        allow read: if isSelfWithActiveDeletionFence(uid);
+        allow read: if isSelf(uid);
         allow write: if false;
       }
       match /exportJobs/{jobId} {
@@ -172,7 +176,7 @@ service cloud.firestore {
       match /memories/{memoryId} {
         // Canonical private memory documents used by Home personalization and Life Movie.
         // Writes are server-authoritative; owners can read only their own memory records.
-        allow read: if isSelfWithActiveDeletionFence(uid);
+        allow read: if isSelf(uid);
         allow write: if false;
       }
 
@@ -187,13 +191,13 @@ service cloud.firestore {
 
       match /lifeMovies/{movieId} {
         // Canonical private Life Movie manifests. Server-authoritative; owner-only reads.
-        allow read: if isSelfWithActiveDeletionFence(uid);
+        allow read: if isSelf(uid);
         allow write: if false;
       }
 
       match /lifeMovies/{movieId} {
         // Canonical private Life Movie manifests. Server-authoritative; owner-only reads.
-        allow read: if isSelfWithActiveDeletionFence(uid);
+        allow read: if isSelf(uid);
         allow write: if false;
       }
 
