@@ -1,0 +1,108 @@
+{"node":"v22.23.5","scope":"isolated-source-guard-only","files":{"urai-tier1/next.config.mjs":"42f9f63ee8345ac037a0ad156c96add5287397316bc64c59df0f0e8e9d889756","tests/source-sha-guard-regression.mjs":"29180da29caa618de2de055725ee82d644533b981b2ff05fb22455c42653e37d","tests/r1534-vercel-source-sha-guard.test.mjs":"e01c65d34e99a433a38d92e3afaa22ff94b49623d02b513fdcf850a8e5b2a3b9"}}
+TAP version 13
+# Subtest: Vercel source labels must match provider Git SHA exactly
+ok 1 - Vercel source labels must match provider Git SHA exactly
+  ---
+  duration_ms: 232.581361
+  type: 'test'
+  ...
+# Subtest: Local development does not require Vercel Git SHA; strict local check can be enabled
+ok 2 - Local development does not require Vercel Git SHA; strict local check can be enabled
+  ---
+  duration_ms: 101.848496
+  type: 'test'
+  ...
+# Subtest: matching Git source
+ok 3 - matching Git source
+  ---
+  duration_ms: 41.071495
+  type: 'test'
+  ...
+# Subtest: explicit local enforcement matches
+ok 4 - explicit local enforcement matches
+  ---
+  duration_ms: 36.887296
+  type: 'test'
+  ...
+# Subtest: ordinary local development
+ok 5 - ordinary local development
+  ---
+  duration_ms: 36.48292
+  type: 'test'
+  ...
+# Subtest: rejects stale advertised SHA
+ok 6 - rejects stale advertised SHA
+  ---
+  duration_ms: 47.092087
+  type: 'test'
+  ...
+# Subtest: rejects missing provider SHA
+ok 7 - rejects missing provider SHA
+  ---
+  duration_ms: 35.810834
+  type: 'test'
+  ...
+# Subtest: rejects malformed provider SHA
+ok 8 - rejects malformed provider SHA
+  ---
+  duration_ms: 36.059428
+  type: 'test'
+  ...
+# Subtest: rejects missing advertised SHA
+ok 9 - rejects missing advertised SHA
+  ---
+  duration_ms: 35.716808
+  type: 'test'
+  ...
+# Subtest: rejects malformed advertised SHA
+ok 10 - rejects malformed advertised SHA
+  ---
+  duration_ms: 38.192525
+  type: 'test'
+  ...
+# Subtest: rejects self-authored attestation and missing provider
+ok 11 - rejects self-authored attestation and missing provider
+  ---
+  duration_ms: 36.47793
+  type: 'test'
+  ...
+# Subtest: rejects self-authored attestation and stale label
+ok 12 - rejects self-authored attestation and stale label
+  ---
+  duration_ms: 36.533424
+  type: 'test'
+  ...
+# Subtest: rejects malformed Git identity cannot downgrade
+ok 13 - rejects malformed Git identity cannot downgrade
+  ---
+  duration_ms: 36.276824
+  type: 'test'
+  ...
+# Subtest: rejects missing label cannot downgrade
+ok 14 - rejects missing label cannot downgrade
+  ---
+  duration_ms: 35.641287
+  type: 'test'
+  ...
+# Subtest: rejects production cannot use self-authored attestation
+ok 15 - rejects production cannot use self-authored attestation
+  ---
+  duration_ms: 45.464124
+  type: 'test'
+  ...
+# Subtest: rejects local enforcement cannot use self-authored attestation
+ok 16 - rejects local enforcement cannot use self-authored attestation
+  ---
+  duration_ms: 44.167481
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 639.532175
+
