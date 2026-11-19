@@ -11,6 +11,7 @@ import {
 import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 import { resolveWorldReturnDestination } from './worldReturnDestination'
 import { prepareFocusViewHandoff } from './focusViewReturn'
+import { claimWorldReturn } from './worldReturnGuard'
 
 const CONTEXT_KEYS = [
   'memoryId',
@@ -144,7 +145,10 @@ export function WorldTransitionController() {
 
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
-    if (phaseRef.current !== 'idle') return
+    // Claim the return synchronously. React reducer updates are batched, so a
+    // second same-tick Escape/return event must not consume the one-time ticket
+    // or replace the already scheduled authenticated view-only navigation.
+    if (!claimWorldReturn(phaseRef)) return
     const destination = resolveWorldReturnDestination(currentWorld)
     const definition = definitionForDestination(destination)
     const handoff = destination === 'focus' && currentWorld.destination === 'replay' &&
