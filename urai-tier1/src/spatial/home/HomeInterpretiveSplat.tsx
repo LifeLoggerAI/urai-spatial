@@ -11,6 +11,28 @@ import { resolveHomeInterpretiveSplatAsset } from './homeInterpretiveSplatPolicy
 export { HOME_INTERPRETIVE_SPLAT_PREFIX, resolveHomeInterpretiveSplatAsset } from './homeInterpretiveSplatPolicy'
 
 const MiB = 1024 * 1024
+// Exact R1535 synthetic review asset only; never inferred from private URLs.
+const SYNTHETIC_HOME_ASSET = '/assets/urai/home-production/interpretive/sanctuary-golden-grove-v1.splat'
+const SYNTHETIC_HOME_DECODED_BYTES = 2_667_520
+
+const fetchHomeStaticSplat: typeof fetch = async (input, init) => {
+  const response = await fetch(input, { ...init, credentials: 'same-origin' })
+  if (input !== SYNTHETIC_HOME_ASSET || response.status !== 200 || !response.body) return response
+  const headers = new Headers(response.headers)
+  const encoding = (headers.get('content-encoding') || 'identity').toLowerCase()
+  if (!['br', 'gzip', 'identity'].includes(encoding)) throw new Error('HOME_STATIC_SPLAT_ENCODING_DENIED')
+  // Browsers decompress Brotli/gzip automatically but Vercel omits the decoded
+  // Content-Length. Preserve the original strict stream byte-count check by
+  // specifying the verified deterministic decoded length for this one asset.
+  if (encoding === 'identity' && headers.has('content-length') &&
+    Number(headers.get('content-length')) !== SYNTHETIC_HOME_DECODED_BYTES) {
+    throw new Error('HOME_STATIC_SPLAT_SIZE_DENIED')
+  }
+  headers.delete('content-encoding')
+  headers.delete('transfer-encoding')
+  headers.set('content-length', String(SYNTHETIC_HOME_DECODED_BYTES))
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
+}
 
 export function HomeInterpretiveSplatEnvironment({
   src,
@@ -42,7 +64,7 @@ export function HomeInterpretiveSplatEnvironment({
       url: approvedSrc,
       // Public, allowlisted Home asset may use the same-origin SSO cookie.
       // Private Captured Reality fetches remain credential-free elsewhere.
-      fetcher: (input, init) => fetch(input, { ...init, credentials: 'same-origin' }),
+      fetcher: fetchHomeStaticSplat,
       maxBytes: (mobile ? 64 : 160) * MiB,
       chunkSize: textureWidth,
       alphaHash: true,
