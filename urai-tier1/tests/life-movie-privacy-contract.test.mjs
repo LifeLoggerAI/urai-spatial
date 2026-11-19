@@ -17,7 +17,15 @@ test('Life Movie reads the canonical owner-scoped private memories collection', 
 test('canonical private memories are owner-readable and server-write-only', () => {
   const block = rules.match(/match \/memories\/\{memoryId\} \{([\s\S]*?)\n\s*\}/)
   assert.ok(block, 'missing users/{uid}/memories Firestore rules block')
-  assert.match(block[1], /allow read: if isSelf\(uid\);/)
+  assert.match(block[1], /allow read: if isSelfWithActiveDeletionFence\(uid\);/)
+  assert.match(rules, /function isSelfWithActiveDeletionFence\(uid\)/)
+  assert.match(rules, /privacyDeletionTombstones\/\$\(uid\)/)
+  const movies = [...rules.matchAll(/match \/lifeMovies\/\{movieId\} \{([\s\S]*?)\n\s*\}/g)]
+  assert.ok(movies.length >= 1, 'missing Life Movie access rules')
+  for (const match of movies) {
+    assert.match(match[1], /allow read: if isSelfWithActiveDeletionFence\(uid\);/)
+    assert.doesNotMatch(match[1], /allow read: if isSelf\(uid\);/)
+  }
   assert.doesNotMatch(block[1], /isAdmin\(\)/)
   assert.match(block[1], /allow write: if false;/)
 })
