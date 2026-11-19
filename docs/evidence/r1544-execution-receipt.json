@@ -5,7 +5,8 @@
   "source": {
     "parentHead": "55e5d64212eb9d5e6c2960a53fa88763e344729b",
     "candidateHead": "66bbc19837a33f0f6017b9dd2362f3d74e2dd800",
-    "gitTree": "42ec0c4cb2607d541aaf4b46a54cab29a88b31d7"
+    "gitTree": "42ec0c4cb2607d541aaf4b46a54cab29a88b31d7",
+    "evidenceCommit": "8ff4add6ad90a7b92e8735ed7dec5bb8a9fb6252"
   },
   "worker": {
     "podId": "h1qwwxo33augxp",
@@ -40,7 +41,8 @@
       "home": "e402340d4f545d470b14d773f55441e226df86b28f71d8cc1b35b257e0a48304",
       "lifeMap": "b10a4102adc4baac1e0b2def4bdf6d208eef9f1564f5be5c546c2b2fc2af48d8",
       "focus": "58601e9325f19373bba2b21ea99f60b549f58bfdb54af6ac4123e60ae7ab7a1f",
-      "replay": "253b2f6b6c9a338b778dae4a7117bfcf24b27ba017419966c06bb3659bedd237"
+      "replay": "253b2f6b6c9a338b778dae4a7117bfcf24b27ba017419966c06bb3659bedd237",
+      "lifeMapMobile": "935645848a4838dca61e2323f651050934c5be0a00fb8030fdcfe882fbd3a0be"
     }
   },
   "browser": {
@@ -60,7 +62,8 @@
       "triangles": 105160
     },
     "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
-    "hardwareGpuCertification": "OPEN"
+    "hardwareGpuCertification": "OPEN",
+    "lifeMapToHome": "/home?demo=1"
   },
   "release": {
     "vercelProtectedPreview": "BLOCKED: existing Git-connected attempt returns no_github_account_connected; existing READY deployment is older source",
