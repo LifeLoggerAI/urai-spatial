@@ -1,12 +1,13 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { createHash } from 'node:crypto'
 
 if (!admin.apps.length) admin.initializeApp()
 
 const db = admin.firestore()
-const fieldValue = admin.firestore.FieldValue
-const timestamp = admin.firestore.Timestamp
+const fieldValue = FieldValue
+const timestamp = Timestamp
 
 const CONSENT_DOMAINS = ['memory', 'location', 'models', 'exports', 'workforce', 'identity'] as const
 const CONSENT_MODES = ['granted', 'limited', 'paused', 'denied'] as const
@@ -57,6 +58,26 @@ const REAUTH_WINDOW_SECONDS = 5 * 60
 const EXPORT_EXPIRY_MS = 15 * 60 * 1000
 const ACCOUNT_GRACE_MS = 24 * 60 * 60 * 1000
 const MAX_EXPORT_DOCUMENTS_PER_COLLECTION = 500
+
+function accountDeletionFenceRef(uid: string) {
+  return db.doc(`accountDeletionFences/${uid}`)
+}
+
+async function fenceAccountDeletion(uid: string, source: 'account-deletion', jobId: string) {
+  await accountDeletionFenceRef(uid).set({
+    uid, state: 'revoked', source, jobId,
+    fencedAt: fieldValue.serverTimestamp(),
+    updatedAt: fieldValue.serverTimestamp(),
+  }, { merge: true })
+}
+
+export const fenceOperationalPrivacyAccessOnAuthDelete = functions.auth.user().onDelete(async (user) => {
+  await accountDeletionFenceRef(user.uid).set({
+    uid: user.uid, state: 'revoked',
+    authDeletedAt: fieldValue.serverTimestamp(),
+    updatedAt: fieldValue.serverTimestamp(),
+  }, { merge: true })
+})
 
 function requireUid(context: functions.https.CallableContext): string {
   const uid = context.auth?.uid
@@ -1076,6 +1097,9 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
     const userRef = db.doc(`users/${uid}`)
     const deletedCollections: string[] = []
     if (scope === 'account') {
+      // Fence client reads before any destructive step. If deletion is partial,
+      // old tokens cannot read residual user subcollections.
+      await fenceAccountDeletion(uid, 'account-deletion', snapshot.id)
       await deleteCapturedRealityStorage(uid, { deleteAllExports: true })
       await db.recursiveDelete(userRef)
       await admin.auth().deleteUser(uid)
