@@ -59,7 +59,11 @@ function harness({answer = capability(), uid = 'owner-1', projectId = 'project-1
 
 test('backend exposes authenticated scoped-capability handshake and public entrypoint', () => {
   assert.match(backend, /export const getOperationalPrivacyCapabilities = functions\.https\.onCall/)
-  assert.match(backend, /getOperationalPrivacyCapabilities[\s\S]*?requireUid\(context\)/)
+  assert.match(backend, /getOperationalPrivacyCapabilities[\s\S]*?requireActiveOperationalPrivacyUid\(context\)/)
+  assert.match(backend, /requireActiveOperationalPrivacyUid[\s\S]*?admin\.auth\(\)\.getUser\(uid\)/)
+  assert.match(backend, /createExportRequest[\s\S]*?await requireActiveOperationalPrivacyUid\(context\)/)
+  assert.match(backend, /createDeletionRequest[\s\S]*?await requireActiveOperationalPrivacyUid\(context\)/)
+  assert.match(backend, /getExportDownloadUrl[\s\S]*?await requireActiveOperationalPrivacyUid\(context\)/)
   assert.match(exportsSource, /getOperationalPrivacyCapabilities/)
 })
 test('scoped export is denied before canonical same-name callable can be invoked', async () => {
