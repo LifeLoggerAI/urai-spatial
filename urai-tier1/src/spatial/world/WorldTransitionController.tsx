@@ -184,7 +184,12 @@ export function WorldTransitionController() {
   }, [executeTravel])
 
   useLayoutEffect(() => {
-    const onTravel = (event: WindowEventMap[typeof URAI_WORLD_TRAVEL_EVENT]) => executeTravel(event.detail)
+    const onTravel = (event: WindowEventMap[typeof URAI_WORLD_TRAVEL_EVENT]) => {
+      // Normal travel shares the same synchronous claim as reverse travel.
+      // Otherwise a same-tick travel+return pair can replace its timer.
+      if (!claimWorldReturn(phaseRef)) return
+      executeTravel(event.detail)
+    }
     const onReturn = () => reverseTravel()
     const onKeyDown = (event: KeyboardEvent) => {
       const currentWorld = worldRef.current
