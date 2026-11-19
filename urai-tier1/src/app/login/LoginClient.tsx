@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { getAuth, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, type User } from 'firebase/auth'
-import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, type User } from 'firebase/auth'
+import { firebasePublicEnvReady, getUrAiAuth } from '@/lib/firebase/client'
 import { popupRequiresFullPageRedirect } from './popupRedirectPolicy'
 
 type AuthState = 'checking' | 'signed-out' | 'working' | 'signed-in' | 'unavailable' | 'error'
@@ -15,7 +15,7 @@ export default function LoginClient() {
 
   useEffect(() => {
     if (!firebasePublicEnvReady) return
-    const auth = getAuth(app)
+    const auth = getUrAiAuth()
     void getRedirectResult(auth).catch(() => {
       setState((previous) => previous === 'signed-in' ? previous : 'error')
       setMessage('Full-page sign-in could not be verified. No private account has been opened.')
@@ -41,7 +41,7 @@ export default function LoginClient() {
     setState('working')
     setMessage('Continuing through the secure identity provider in this browser...')
     try {
-      await signInWithRedirect(getAuth(app), googleProvider())
+      await signInWithRedirect(getUrAiAuth(), googleProvider())
     } catch {
       setState('error')
       setMessage('Full-page sign-in was not completed. Your private world remains closed.')
@@ -53,7 +53,7 @@ export default function LoginClient() {
     setState('working')
     setMessage('Opening the secure identity provider...')
     try {
-      await signInWithPopup(getAuth(app), googleProvider())
+      await signInWithPopup(getUrAiAuth(), googleProvider())
     } catch (error) {
       if (popupRequiresFullPageRedirect(error)) {
         await enterFullPage()
@@ -65,7 +65,7 @@ export default function LoginClient() {
   }
 
   const leave = async () => {
-    try { await signOut(getAuth(app)) } catch { setMessage('Sign-out could not be confirmed. Refresh before assuming the private session is closed.') }
+    try { await signOut(getUrAiAuth()) } catch { setMessage('Sign-out could not be confirmed. Refresh before assuming the private session is closed.') }
   }
 
   return (
