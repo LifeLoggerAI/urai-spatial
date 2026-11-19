@@ -12,6 +12,7 @@ import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityPr
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { saveFocusViewFrame, takeFocusViewFrame } from '@/spatial/world/focusViewReturn'
 
 const focusAccessibilityCss = `
 .focusControls button:focus-visible,.focusHelp summary:focus-visible,.neutralActions button:focus-visible,.webglRecovery button:focus-visible,.focus-spatial-aperture-button:focus-visible{outline:3px solid #e7fbff;outline-offset:3px}
@@ -28,7 +29,7 @@ const CAMERA_LIMIT = 8.8
 
 type ChamberState = 'neutral' | 'loading' | 'ready' | 'unavailable' | 'unauthorized' | 'corrupt' | 'deleted'
 type WebGLState = 'ready' | 'lost' | 'restoring' | 'failed'
-type EntryCameraFrame = { position: [number, number, number]; target: [number, number, number]; fov: number }
+type EntryCameraFrame = { position: [number, number, number]; target: [number, number, number]; fov: number; returnFrame?: boolean; source?: 'renderer' | 'fallback' }
 
 function parseEntryVector(value: string | null): [number, number, number] | null {
   if (!value) return null
@@ -162,7 +163,7 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
   }, [])
 
   useEffect(() => {
-    const useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion
+    const useEntryFrame = recenterSignal === 0 && entryFrame && (entryFrame.returnFrame || !reducedMotion)
     if (useEntryFrame) {
       camera.position.set(...entryFrame.position)
       controls.current?.target.set(...entryFrame.target)
@@ -170,7 +171,7 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
         camera.fov = entryFrame.fov
         camera.updateProjectionMatrix()
       }
-      entryBlendActive.current = true
+      entryBlendActive.current = !entryFrame.returnFrame
     } else {
       camera.position.set(...DEFAULT_CAMERA)
       controls.current?.target.set(...DEFAULT_TARGET)
@@ -233,6 +234,13 @@ function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reduce
       shell.dataset.focusCameraX = camera.position.x.toFixed(3)
       shell.dataset.focusCameraY = camera.position.y.toFixed(3)
       shell.dataset.focusCameraZ = camera.position.z.toFixed(3)
+      const actualTarget = controls.current?.target
+      if (actualTarget) {
+        shell.dataset.focusTargetX = actualTarget.x.toFixed(3)
+        shell.dataset.focusTargetY = actualTarget.y.toFixed(3)
+        shell.dataset.focusTargetZ = actualTarget.z.toFixed(3)
+      }
+      if (camera instanceof THREE.PerspectiveCamera) shell.dataset.focusFov = camera.fov.toFixed(3)
       shell.dataset.focusDistance = camera.position.distanceTo(defaultCamera).toFixed(3)
       shell.dataset.focusMoving = moving ? 'true' : 'false'
     }
@@ -516,13 +524,27 @@ export default function FocusChamberClient() {
   const [directEntry, setDirectEntry] = useState<boolean | null>(null)
   const [entryFrame, setEntryFrame] = useState<EntryCameraFrame | null>(null)
   const [webglState, setWebglState] = useState<WebGLState>('ready')
+  const returnConsumed = useRef(false)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setDirectEntry(!params.get('memoryId') && !params.get('node'))
-    setEntryFrame(parseEntryCameraFrame(params))
+    const checkpoint = params.get('cameraCheckpoint') || ''
+    if (!checkpoint.startsWith('focus-return:')) {
+      setEntryFrame(parseEntryCameraFrame(params))
+    } else if (memory && !returnConsumed.current) {
+      returnConsumed.current = true
+      // A copied URL never contains the view. The one-time session frame must
+      // also match the actual selected memory, manifest and node.
+      const frame = takeFocusViewFrame(memory.id, memory.replayManifest.id, memory.star.id)
+      const bound = checkpoint === 'focus-return:' + memory.star.id &&
+        params.get('manifestId') === memory.replayManifest.id &&
+        params.get('node') === memory.star.id &&
+        (params.get('memoryId') === memory.star.id || params.get('memoryId') === memory.id)
+      setEntryFrame(frame && bound ? { position: frame.position, target: frame.target, fov: frame.fov, returnFrame: true, source: frame.source } : null)
+    }
     return () => { document.body.style.cursor = '' }
-  }, [])
+  }, [memory])
 
   const replayHref = useMemo(() => {
     if (!memory) return null
@@ -533,9 +555,21 @@ export default function FocusChamberClient() {
 
   const enterReplay = useCallback(() => {
     if (!memory || !replayHref || committed) return
+    const orbit = controls.current
+    const camera = orbit?.object
+    const rendered = webglState === 'ready' && camera instanceof THREE.PerspectiveCamera
+    const p = rendered ? camera.position : null
+    const t = rendered && orbit ? orbit.target : null
+    saveFocusViewFrame({
+      memoryId: memory.id, manifestId: memory.replayManifest.id, nodeId: memory.star.id,
+      source: rendered ? 'renderer' : 'fallback',
+      position: p ? [p.x, p.y, p.z] : entryFrame?.position ?? DEFAULT_CAMERA,
+      target: t ? [t.x, t.y, t.z] : entryFrame?.target ?? DEFAULT_TARGET,
+      fov: rendered ? camera.fov : entryFrame?.fov ?? 48,
+    })
     setCommitted(true)
     requestUraiWorldTravel({ destination: 'replay', href: replayHref, entryPortal: 'focus-memory-aperture', cameraCheckpoint: `focus:${memory.star.id}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
-  }, [committed, memory, replayHref])
+  }, [committed, entryFrame, memory, replayHref, webglState])
   const unwind = useCallback(() => {
     const query = new URLSearchParams()
     if (memory?.demo) query.set('demo', '1')
@@ -572,7 +606,7 @@ export default function FocusChamberClient() {
   const style = { '--memory-accent': memory?.visuals.accent ?? '#79dfff', '--memory-light': memory?.visuals.light ?? '#e7fbff', '--memory-sky': memory?.visuals.sky ?? '#020712', '--memory-ground': memory?.visuals.ground ?? '#07121c', '--focus-asset': assetCssStack(focusAssets.primary) } as CSSProperties
   const webglUsable = webglAvailable === true && webglState !== 'failed'
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame?.returnFrame ? 'focus-return' : entryFrame ? 'life-map-arrival' : 'default'} data-focus-return-source={entryFrame?.returnFrame ? entryFrame.source : undefined} data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
     <h1 className="srOnly">URAI Focus stellar memory field</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     <div className="focusFog" aria-hidden="true" />
