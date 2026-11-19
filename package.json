@@ -143,5 +143,19 @@
   },
   "devDependencies": {
     "firebase-tools": "^15.22.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "websocket-driver": "0.7.5",
+      "proxy-addr": "2.0.8",
+      "form-data@2.5.5": "2.5.6",
+      "sharp": "0.35.5",
+      "postcss": "8.5.33",
+      "nanoid@3.3.12": "3.3.20",
+      "@grpc/grpc-js": "1.14.7",
+      "@fastify/busboy": "3.2.6",
+      "source-map-js": "1.2.4",
+      "body-parser@1.20.5": "1.20.9"
+    }
   }
 }
