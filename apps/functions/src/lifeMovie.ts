@@ -213,7 +213,7 @@ async function requireReadyLifeModelAuthority(
 
 export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
-  await requireMemoryDomainProcessingConsent(db, uid)
+  await requireMemoryDomainProcessingConsent(db, uid, context)
   const movieId = requireToken(data?.movieId, 'movieId')
   const status = data?.status === 'ready' ? 'ready' : 'draft'
   const requested = requestedChapters(data?.chapters)

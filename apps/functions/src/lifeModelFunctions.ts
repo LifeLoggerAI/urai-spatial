@@ -583,7 +583,7 @@ export const revokeLifeEntity = lifeModelFunctions.https.onCall(async (data, con
 
 export const getReplayLifeModelAuthority = lifeModelFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
-  await requireMemoryDomainProcessingConsent(db, uid)
+  await requireMemoryDomainProcessingConsent(db, uid, context)
   const memoryId = requireToken(data?.memoryId, 'memoryId')
   const memory = await db.doc(`users/${uid}/memories/${memoryId}`).get()
   if (!memory.exists || (memory.get('ownerId') ?? memory.get('userId')) !== uid || memory.get('deleted') === true) {
