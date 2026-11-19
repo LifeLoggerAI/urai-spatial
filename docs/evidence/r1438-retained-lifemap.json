@@ -1,0 +1,23 @@
+{
+  "head": "56b171ee1074999025b98bb6f2f6eeb4910f2259",
+  "tree": "3cf5cebc7734b08303ae22494e7866a0fe00732c",
+  "patchSha256": "7c02249080d5c8706c290b7723fc6073af739a6d8234f8fa09d374459de5d340",
+  "files": {
+    "urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx": {
+      "sha256": "f20c96bdc1425ddede5c180bef65d425cb0e08f1a6bcd9aa5fe8231f08513b13",
+      "gitBlob": "56ce1ad1947468c210748cb2c81a224d17bbc412"
+    },
+    "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx": {
+      "sha256": "5fa8aa3aa4cc9ef653e478a8915eba43c39df79224471a4deef45cc5da4479ed",
+      "gitBlob": "6c0465043cc9104f1ef34abb42cbdc58c06434c7"
+    }
+  },
+  "pod": "9c1hr1flmzla2m",
+  "origin": "/tmp/urai-r1438-gpu/semantic-manifest-fix",
+  "classification": "retained uncommitted historical source; not integrated or tested",
+  "owner": "original worker attribution not established",
+  "review": "storage/custody review only; no behavior approval",
+  "currentCandidate": "053aa0c5a9cb7a46288c2f37377d740eb6dc1124",
+  "production": "HOLD",
+  "resourceAction": "preserved; no stop/restart/termination"
+}
