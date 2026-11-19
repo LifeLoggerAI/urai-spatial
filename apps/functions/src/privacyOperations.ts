@@ -64,6 +64,25 @@ function requireUid(context: functions.https.CallableContext): string {
   return uid
 }
 
+async function requireCurrentPrivacyOwner(context: functions.https.CallableContext): Promise<string> {
+  const uid = requireUid(context)
+  // Signed ID tokens can outlive a deleted or disabled Auth account.
+  let owner: admin.auth.UserRecord
+  try {
+    owner = await admin.auth().getUser(uid)
+  } catch {
+    throw new functions.https.HttpsError('permission-denied', 'Current owner identity is unavailable.')
+  }
+  if (owner.disabled) {
+    throw new functions.https.HttpsError('permission-denied', 'Owner account is disabled.')
+  }
+  const tombstone = await db.doc('privacyDeletionTombstones/' + uid).get()
+  if (tombstone.get('active') === true) {
+    throw new functions.https.HttpsError('permission-denied', 'Owner deletion fence is active.')
+  }
+  return uid
+}
+
 function requireRecentAuthentication(context: functions.https.CallableContext) {
   requireUid(context)
   const authTime = Number(context.auth?.token.auth_time ?? 0)
@@ -256,7 +275,7 @@ function publicJobState(data: JsonMap) {
 // Disambiguate Spatial's scoped Privacy backend from account-wide callables.
 // Authentication and the actual Firebase project must match the caller.
 export const getOperationalPrivacyCapabilities = functions.https.onCall(async (_data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   const projectId = admin.app().options.projectId || process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT
   if (!projectId) {
     throw new functions.https.HttpsError('failed-precondition', 'Operational Privacy project identity unavailable.')
@@ -615,7 +634,7 @@ async function copyCapturedRealityRuntimeExports(
 }
 
 export const createExportRequest = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   requireRecentAuthentication(context)
   const operationId = requireOperationId(data?.operationId)
   const scopes = parseExportScopes(data?.scopes)
@@ -790,7 +809,7 @@ export const processExportJob = functions.firestore
   .onCreate(async (snapshot) => buildExport(snapshot))
 
 export const getExportDownloadUrl = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   requireRecentAuthentication(context)
   const jobId = requireString(data?.jobId, 'jobId', 80)
   const file = data?.file === 'manifest' ? 'manifest' : data?.file === 'runtime' ? 'runtime' : 'export'
@@ -873,7 +892,7 @@ function deletionConfirmation(scope: DeletionScope): string {
 }
 
 export const createDeletionRequest = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireCurrentPrivacyOwner(context)
   requireRecentAuthentication(context)
   const operationId = requireOperationId(data?.operationId)
   const scope = parseDeletionScope(data?.scope)
