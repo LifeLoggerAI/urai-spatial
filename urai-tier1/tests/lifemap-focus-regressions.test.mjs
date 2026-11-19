@@ -46,7 +46,8 @@ test('event dispatches fire with expected payloads', () => {
 test('selected Life Map Escape unwinds overview then Home without reselecting retained node', () => {
   const scene = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8');
   assert.match(scene, /get\("overview"\) === "1"/);
-  assert.match(scene, /if \(overviewIsCurrent \|\| !selectedId\) router\.push\("\/home"\)/);
+  assert.match(scene, /const homeReturnHref = explicitDemoRequested \? "\/home\?demo=1" : "\/home"/);
+  assert.match(scene, /if \(overviewIsCurrent \|\| !selectedId\) router\.push\(homeReturnHref\)/);
   assert.match(scene, /else overview\(\)/);
   assert.match(scene, /setSelectedId\(null\)/);
 });
