@@ -135,7 +135,7 @@ async function assertPersistentWorldRoute(page, mode) {
   }
   if (!matched) throw new Error(`No user-visible persistent-world contract matched for ${mode}`);
   await assertNoBlankLoadingFlash(page);
-  const manifest = page.locator('[href*="urai-final-assets.json"], [src*="urai-final-assets.json"]').first();
+  const manifest = page.locator('[data-testid="urai-final-asset-spine-manifest"], [href*="urai-final-assets.json"], [src*="urai-final-assets.json"]').first();
   if (!(await manifest.count())) {
     throw new Error(`Governed asset manifest was not present for ${mode}`);
   }
