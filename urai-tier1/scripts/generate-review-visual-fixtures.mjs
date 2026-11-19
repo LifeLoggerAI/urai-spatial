@@ -9,7 +9,7 @@ const home = '/assets/urai/home-production/interpretive/sanctuary-golden-grove-v
 const enabled = process.env.URAI_REVIEW_VISUAL_FIXTURES === 'true'
 const face = process.env.NEXT_PUBLIC_URAI_ANONYMOUS_FACE_CALIBRATION === 'true'
 const splat = process.env.NEXT_PUBLIC_URAI_HOME_INTERPRETIVE_SPLAT_ASSET === home
-const hostedOrRelease = process.env.VERCEL === '1' || process.env.URAI_PRODUCTION_RELEASE === 'true'
+const hostedOrRelease = process.env.VERCEL === '1' || process.env.URAI_PRODUCTION_RELEASE === 'true' || process.env.URAI_FIREBASE_STATIC_EXPORT === 'true'
 // A reused workspace can retain binaries from an earlier local review build.
 // A skipped generator MUST NOT allow a default or release build to package them.
 const homeOutput = resolve(base, 'public' + home)
