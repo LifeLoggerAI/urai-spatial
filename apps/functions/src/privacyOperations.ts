@@ -66,6 +66,10 @@ function requireUid(context: functions.https.CallableContext): string {
 
 async function requireCurrentPrivacyOwner(context: functions.https.CallableContext): Promise<string> {
   const uid = requireUid(context)
+  const authTimeSeconds = Number(context.auth?.token.auth_time ?? 0)
+  if (!Number.isFinite(authTimeSeconds) || authTimeSeconds <= 0) {
+    throw new functions.https.HttpsError('unauthenticated', 'Operational Privacy credential is invalid.')
+  }
   // Signed ID tokens can outlive a deleted or disabled Auth account.
   let owner: admin.auth.UserRecord
   try {
@@ -75,6 +79,10 @@ async function requireCurrentPrivacyOwner(context: functions.https.CallableConte
   }
   if (owner.disabled) {
     throw new functions.https.HttpsError('permission-denied', 'Owner account is disabled.')
+  }
+  const validAfterMs = owner.tokensValidAfterTime ? Date.parse(owner.tokensValidAfterTime) : Number.NaN
+  if (Number.isFinite(validAfterMs) && authTimeSeconds * 1000 < validAfterMs) {
+    throw new functions.https.HttpsError('permission-denied', 'Operational Privacy credential has been revoked.')
   }
   const tombstone = await db.doc('privacyDeletionTombstones/' + uid).get()
   if (tombstone.get('active') === true) {

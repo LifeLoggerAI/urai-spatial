@@ -80,6 +80,33 @@ async function call(c,name,data){return (await httpsCallable(c.fn,name,{timeout:
     e=>e&&e.code==='functions/not-found')
   checks.push('healthy-owner-direct-download-reaches-authorized-handler')
 
+  const disabled=client('disabled-r1582')
+  const dc=await createUserWithEmailAndPassword(disabled.auth,'r1582-disabled@example.test','Disposable123!')
+  await adminAuth(admin).updateUser(dc.user.uid,{disabled:true})
+  await assert.rejects(call(disabled,'getOperationalPrivacyCapabilities'),
+    e=>e&&['functions/unauthenticated','functions/permission-denied'].includes(e.code))
+  checks.push('disabled-user-capability-denied')
+
+  const refresh=client('refresh-r1582')
+  const rr=await createUserWithEmailAndPassword(refresh.auth,'r1582-refresh@example.test','Disposable123!')
+  await rr.user.getIdToken(true)
+  await new Promise(resolve=>setTimeout(resolve,1600))
+  await adminAuth(admin).revokeRefreshTokens(rr.user.uid)
+  await assert.rejects(call(refresh,'getOperationalPrivacyCapabilities'),
+    e=>e&&['functions/unauthenticated','functions/permission-denied'].includes(e.code))
+  checks.push('refreshtoken-revoked-old-credential-denied')
+  await assert.rejects(call(refresh,'createExportRequest',{
+    operationId:'r1582-refresh-export-0001',scopes:['consent']
+  }),e=>e&&['functions/permission-denied','functions/unauthenticated'].includes(e.code))
+  checks.push('refresh-revoked-direct-export-denied')
+  await assert.rejects(call(refresh,'createDeletionRequest',{
+    operationId:'r1582-refresh-delete-0001',scope:'memories',confirmation:'CONFIRM DELETE'
+  }),e=>e&&['functions/permission-denied','functions/unauthenticated'].includes(e.code))
+  checks.push('refresh-revoked-direct-deletion-denied')
+  await assert.rejects(call(refresh,'getExportDownloadUrl',{jobId:'not-found'}),
+    e=>e&&['functions/permission-denied','functions/unauthenticated'].includes(e.code))
+  checks.push('refresh-revoked-direct-download-denied')
+
   console.log('R1580_OPERATIONAL_EMULATOR_RESULT '+JSON.stringify({
    checksPassed:checks.length,checks,baseSource:'d5786fcab2148a77cb896a613ba9fb7c68c9db7a',candidate:'R1580 local source correction',
    project,destructiveDeletionExecuted:false,productionWrites:false
