@@ -92,7 +92,7 @@ function isEditableTarget(target: EventTarget | null) {
 
 export function WorldTransitionController() {
   const router = useRouter()
-  const { world, phase, beginTravel } = useUraiWorldState()
+  const { world, phase, beginTravel, pendingTravel } = useUraiWorldState()
   const timer = useRef<number | null>(null)
   const navigationWatchdog = useRef<number | null>(null)
   const worldRef = useRef(world)
@@ -132,20 +132,28 @@ export function WorldTransitionController() {
       }
     }
 
-    const href = buildTravelHref(request)
+    // The provider retains the pending destination and its single-use focus ticket.
+    // Navigation is scheduled by the effect below so StrictMode effect cleanup
+    // cannot permanently erase a transition after an immediate remount.
+
+  }, [clearTimer])
+
+  useEffect(() => {
+    if (phase === 'idle' || !pendingTravel) return
+    const href = buildTravelHref(pendingTravel)
     const targetPathname = normalizedPathname(new URL(href, window.location.origin).pathname)
     timer.current = window.setTimeout(() => {
       router.push(href)
       timer.current = null
-
       navigationWatchdog.current = window.setTimeout(() => {
         navigationWatchdog.current = null
         if (normalizedPathname(window.location.pathname) !== targetPathname) {
           window.location.assign(href)
         }
       }, 2500)
-    }, transitionDuration(request.destination))
-  }, [clearTimer, router])
+    }, transitionDuration(pendingTravel.destination))
+    return clearTimer
+  }, [phase, pendingTravel, clearTimer, router])
 
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
