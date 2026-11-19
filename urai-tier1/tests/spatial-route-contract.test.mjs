@@ -65,7 +65,8 @@ test('Life Map selection enters Focus and Replay without a parallel mode router'
 
 test('Escape and unwind recover to canonical safe owners', () => {
   assert.match(files.lifeMapScene, /event\.key !== "Escape"/)
-  assert.match(files.lifeMapScene, /router\.push\("\/home"\)/)
+  assert.match(files.lifeMapScene, /const homeReturnHref = explicitDemoRequested \? "\/home\?demo=1" : "\/home"/);
+  assert.match(files.lifeMapScene, /if \(overviewIsCurrent \|\| !selectedId\) router\.push\(homeReturnHref\)/)
   assert.match(files.unwind, /redirect\('\/life-map\?from=unwind&overview=1'\)/)
   assert.doesNotMatch(files.unwind, /TierOneExperience|Canvas/)
 })
@@ -94,8 +95,7 @@ test('retired parallel product runtimes stay removed', () => {
 test('Firestore, constellation listener, and manifest renderer remain production safe', () => {
   assert.match(files.rules, /match \/assetManifests\/\{manifestId\}/)
   assert.match(files.rules, /allow get, list: if isAdmin\(\) \|\| isManifestOwner\(\) \|\| isLaunchDemoOwner\(resource\.data\.ownerId\);/)
-  assert.match(files.rules, /allow create: if isAdmin\(\) && isValidSpatialManifestCreate\(\);/)
-  assert.match(files.rules, /allow update: if isAdmin\(\) && isValidSpatialManifestCreate\(\);/)
+  assert.match(files.rules, /allow create, update: if isAdmin\(\) && isValidSpatialManifestCreate\(\);/)
   assert.match(files.rules, /allow delete: if isAdmin\(\);/)
 
   assert.match(files.manifests, /where\('ownerId', '==', ownerId\)/)
