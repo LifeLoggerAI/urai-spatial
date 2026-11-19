@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import CinematicReplayClient from './CinematicReplayClient'
 
 const FinalReplayFilm = CinematicReplayClient
@@ -24,7 +25,7 @@ export default function ReplayRoutePage() {
       >
         Replay the thread. Film beats. Cinematic memory camera film.
       </span>
-      <FinalReplayFilm />
+      <Suspense fallback={<main role="status">Opening Replay…</main>}><FinalReplayFilm /></Suspense>
     </>
   )
 }

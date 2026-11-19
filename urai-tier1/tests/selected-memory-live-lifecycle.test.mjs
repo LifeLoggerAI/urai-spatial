@@ -69,6 +69,7 @@ function harness(search = '?memoryId=memory-one') {
   const contract = load('selectedMemoryContract.ts', {}, { URL })
   const owner = load('useSelectedMemory.ts', {
     react: driver.react,
+    'next/navigation': { useSearchParams: () => new URLSearchParams(browser.location.search) },
     'firebase/auth': { getAuth: () => ({}), onAuthStateChanged(_auth, callback) { authCallback = callback; return () => { authStopped = true } } },
     'firebase/firestore': {
       doc: (...parts) => parts,
@@ -92,6 +93,7 @@ function harness(search = '?memoryId=memory-one') {
     emit(index, value) { subscriptions[index].receive(snapshot(value)); return render() },
     error(index) { subscriptions[index].error(new Error('provider-private-details')); return render() },
     navigate(nextSearch) { browser.location.search = nextSearch; listeners.get('popstate')?.(); return render() },
+    nextNavigate(nextSearch) { browser.location.search = nextSearch; return render() },
     unmount: () => driver.unmount(), authStopped: () => authStopped, listeners,
   }
 }
@@ -145,6 +147,17 @@ test('snapshot permission/network errors clear memory without exposing provider 
 test('same-path Back/Forward query changes detach the old selection before new data', () => {
   const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
   assert.equal(h.navigate('?memoryId=memory-two').memory, null)
+  assert.equal(h.subscriptions[0].stopped, true)
+  h.signIn('account-a')
+  assert.deepEqual(h.subscriptions[1].ref.slice(1), ['users', 'account-a', 'memories', 'memory-two'])
+  h.emit(1, h.data('account-a', 'memory-two'))
+  assert.equal(h.emit(0, h.data()).memory.id, 'memory-two')
+})
+
+test('same-path Next router push without popstate detaches the previous private memory', () => {
+  const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+  const result = h.nextNavigate('?memoryId=memory-two')
+  assert.equal(result.memory, null)
   assert.equal(h.subscriptions[0].stopped, true)
   h.signIn('account-a')
   assert.deepEqual(h.subscriptions[1].ref.slice(1), ['users', 'account-a', 'memories', 'memory-two'])

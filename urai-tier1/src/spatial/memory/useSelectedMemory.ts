@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
@@ -28,13 +29,7 @@ function asDemoMemoryId(memoryId: string | null) {
 }
 
 export function useSelectedMemory(): SelectedMemoryResult {
-  const [search, setSearch] = useState('')
-  useEffect(() => {
-    const hydrateSelection = () => setSearch(window.location.search)
-    hydrateSelection()
-    window.addEventListener('popstate', hydrateSelection)
-    return () => window.removeEventListener('popstate', hydrateSelection)
-  }, [])
+  const search = useSearchParams().toString()
   const params = useMemo(
     () => new URLSearchParams(search),
     [search],
