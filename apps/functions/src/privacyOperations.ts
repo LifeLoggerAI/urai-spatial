@@ -253,6 +253,23 @@ function publicJobState(data: JsonMap) {
   }
 }
 
+// Disambiguate Spatial's scoped Privacy backend from account-wide callables.
+// Authentication and the actual Firebase project must match the caller.
+export const getOperationalPrivacyCapabilities = functions.https.onCall(async (_data, context) => {
+  const uid = requireUid(context)
+  const projectId = admin.app().options.projectId || process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT
+  if (!projectId) {
+    throw new functions.https.HttpsError('failed-precondition', 'Operational Privacy project identity unavailable.')
+  }
+  return {
+    schema: 'urai-operational-privacy-capabilities-v1',
+    contract: 'operational-v1',
+    uid,
+    projectId,
+    capabilities: { scopedExports: true, scopedDeletion: true, ownerExportDownload: true },
+  }
+})
+
 export const applyConsentPolicy = functions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   const operationId = requireOperationId(data?.operationId)

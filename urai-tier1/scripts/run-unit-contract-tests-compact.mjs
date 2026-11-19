@@ -97,6 +97,7 @@ const tests = [
   'tests/tier0-world-navigation-canon.test.mjs',
   'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
+  'tests/r1569-privacy-backend-identity-gate.test.cjs',
   'tests/v2-asset-gating.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
   'tests/xr-static-gate-diagnostics-contract.test.mjs',
