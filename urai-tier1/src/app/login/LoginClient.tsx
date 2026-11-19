@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth'
+import { getAuth, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, type User } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { popupRequiresFullPageRedirect } from './popupRedirectPolicy'
 
 type AuthState = 'checking' | 'signed-out' | 'working' | 'signed-in' | 'unavailable' | 'error'
 
@@ -15,6 +16,10 @@ export default function LoginClient() {
   useEffect(() => {
     if (!firebasePublicEnvReady) return
     const auth = getAuth(app)
+    void getRedirectResult(auth).catch(() => {
+      setState((previous) => previous === 'signed-in' ? previous : 'error')
+      setMessage('Full-page sign-in could not be verified. No private account has been opened.')
+    })
     return onAuthStateChanged(auth, (nextUser) => {
       setUser(nextUser)
       setState(nextUser ? 'signed-in' : 'signed-out')
@@ -25,15 +30,35 @@ export default function LoginClient() {
     })
   }, [])
 
+  const googleProvider = () => {
+    const provider = new GoogleAuthProvider()
+    provider.setCustomParameters({ prompt: 'select_account' })
+    return provider
+  }
+
+  const enterFullPage = async () => {
+    if (!firebasePublicEnvReady) return
+    setState('working')
+    setMessage('Continuing through the secure identity provider in this browser...')
+    try {
+      await signInWithRedirect(getAuth(app), googleProvider())
+    } catch {
+      setState('error')
+      setMessage('Full-page sign-in was not completed. Your private world remains closed.')
+    }
+  }
+
   const enter = async () => {
     if (!firebasePublicEnvReady) return
     setState('working')
     setMessage('Opening the secure identity provider...')
     try {
-      const provider = new GoogleAuthProvider()
-      provider.setCustomParameters({ prompt: 'select_account' })
-      await signInWithPopup(getAuth(app), provider)
-    } catch {
+      await signInWithPopup(getAuth(app), googleProvider())
+    } catch (error) {
+      if (popupRequiresFullPageRedirect(error)) {
+        await enterFullPage()
+        return
+      }
       setState('signed-out')
       setMessage('Sign-in was not completed. Your private world remains closed.')
     }
@@ -57,7 +82,7 @@ export default function LoginClient() {
             <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:24}}><Link href="/home" style={primary}>Open Home</Link><Link href="/passport" style={secondary}>Passport</Link><button type="button" onClick={() => void leave()} style={buttonSecondary}>Sign out</button></div>
           </div>
         ) : (
-          <div style={{marginTop:24}}><button type="button" disabled={state==='unavailable'||state==='working'} onClick={() => void enter()} style={buttonPrimary}>{state==='working'?'Opening provider...':'Continue securely'}</button></div>
+          <div style={{marginTop:24,display:'flex',gap:12,flexWrap:'wrap'}}><button type="button" disabled={state==='unavailable'||state==='working'} onClick={() => void enter()} style={buttonPrimary}>{state==='working'?'Opening provider...':'Continue securely'}</button><button type="button" disabled={state==='unavailable'||state==='working'} onClick={() => void enterFullPage()} style={buttonSecondary}>Use full-page sign-in</button></div>
         )}
 
         <p style={{margin:'34px 0 0',fontSize:12,lineHeight:1.55,color:'#7897a0'}}>Identity verification happens with the configured Firebase provider. URAI does not collect the provider password or create demo identity. Private routes remain fail-closed when account authority is unavailable.</p>
