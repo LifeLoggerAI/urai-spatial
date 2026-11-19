@@ -10,6 +10,7 @@ import {
 } from './worldEvents'
 import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 import { resolveWorldReturnDestination } from './worldReturnDestination'
+import { prepareFocusViewHandoff } from './focusViewReturn'
 
 const CONTEXT_KEYS = [
   'memoryId',
@@ -146,12 +147,19 @@ export function WorldTransitionController() {
     if (phaseRef.current !== 'idle') return
     const destination = resolveWorldReturnDestination(currentWorld)
     const definition = definitionForDestination(destination)
+    const handoff = destination === 'focus' && currentWorld.destination === 'replay' &&
+      currentWorld.memoryId && currentWorld.replayManifestId
+      ? prepareFocusViewHandoff(currentWorld.memoryId, currentWorld.replayManifestId) : null
+    const target = new URL(definition.href, window.location.origin)
+    if (handoff) {
+      target.searchParams.set('node', handoff.nodeId)
+      target.searchParams.set('focusTicket', handoff.ticket)
+    }
     executeTravel({
       destination,
-      href: definition.href,
+      href: handoff ? target.pathname + target.search : definition.href,
       entryPortal: currentWorld.entryPortal ?? definition.entryPortal,
-      cameraCheckpoint: destination === 'focus' && currentWorld.destination === 'replay'
-        ? `focus-return:${(currentWorld.memoryId || '').replace(/^demo:/, '')}`
+      cameraCheckpoint: handoff ? `focus-return:${handoff.nodeId}`
         : destination === 'home' ? 'home-threshold' : definition.cameraCheckpoint,
       context: {
         memoryId: currentWorld.memoryId,
