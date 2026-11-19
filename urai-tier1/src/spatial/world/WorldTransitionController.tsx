@@ -120,12 +120,16 @@ export function WorldTransitionController() {
     beginTravelRef.current(request)
 
     if (currentWorld.destination === 'home') {
-      window.sessionStorage.setItem('urai-world-home-checkpoint', JSON.stringify({
-        destination: currentWorld.destination,
-        entryPortal: request.entryPortal ?? 'ground-gateway',
-        cameraCheckpoint: currentWorld.cameraCheckpoint ?? 'home-threshold',
-        savedAt: Date.now(),
-      }))
+      try {
+        window.sessionStorage.setItem('urai-world-home-checkpoint', JSON.stringify({
+          destination: currentWorld.destination,
+          entryPortal: request.entryPortal ?? 'ground-gateway',
+          cameraCheckpoint: currentWorld.cameraCheckpoint ?? 'home-threshold',
+          savedAt: Date.now(),
+        }))
+      } catch {
+        // Camera continuity is optional: storage denial must not block navigation.
+      }
     }
 
     const href = buildTravelHref(request)
