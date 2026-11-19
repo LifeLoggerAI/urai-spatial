@@ -64,6 +64,31 @@ function requireUid(context: functions.https.CallableContext): string {
   return uid
 }
 
+async function requireActiveOperationalPrivacyUid(context: functions.https.CallableContext): Promise<string> {
+  const uid = requireUid(context)
+  const authTimeSeconds = Number(context.auth?.token.auth_time ?? 0)
+  if (!Number.isFinite(authTimeSeconds) || authTimeSeconds <= 0) {
+    throw new functions.https.HttpsError('unauthenticated', 'Operational Privacy credential is invalid.')
+  }
+  try {
+    const user = await admin.auth().getUser(uid)
+    const tokensValidAfterMs = user.tokensValidAfterTime ? Date.parse(user.tokensValidAfterTime) : Number.NaN
+    if (user.disabled || (Number.isFinite(tokensValidAfterMs) && authTimeSeconds * 1000 < tokensValidAfterMs)) {
+      throw new functions.https.HttpsError('unauthenticated', 'Operational Privacy credential is no longer valid.')
+    }
+  } catch (error) {
+    if (error instanceof functions.https.HttpsError) throw error
+    const code = error && typeof error === 'object' && 'code' in error
+      ? String((error as { code?: unknown }).code ?? '')
+      : ''
+    if (code === 'auth/user-not-found' || code === 'auth/user-disabled') {
+      throw new functions.https.HttpsError('unauthenticated', 'Operational Privacy credential is no longer valid.')
+    }
+    throw new functions.https.HttpsError('internal', 'Operational Privacy credential verification failed.')
+  }
+  return uid
+}
+
 function requireRecentAuthentication(context: functions.https.CallableContext) {
   requireUid(context)
   const authTime = Number(context.auth?.token.auth_time ?? 0)
@@ -256,7 +281,7 @@ function publicJobState(data: JsonMap) {
 // Disambiguate Spatial's scoped Privacy backend from account-wide callables.
 // Authentication and the actual Firebase project must match the caller.
 export const getOperationalPrivacyCapabilities = functions.https.onCall(async (_data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireActiveOperationalPrivacyUid(context)
   const projectId = admin.app().options.projectId || process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT
   if (!projectId) {
     throw new functions.https.HttpsError('failed-precondition', 'Operational Privacy project identity unavailable.')
@@ -615,7 +640,7 @@ async function copyCapturedRealityRuntimeExports(
 }
 
 export const createExportRequest = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireActiveOperationalPrivacyUid(context)
   requireRecentAuthentication(context)
   const operationId = requireOperationId(data?.operationId)
   const scopes = parseExportScopes(data?.scopes)
@@ -790,7 +815,7 @@ export const processExportJob = functions.firestore
   .onCreate(async (snapshot) => buildExport(snapshot))
 
 export const getExportDownloadUrl = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireActiveOperationalPrivacyUid(context)
   requireRecentAuthentication(context)
   const jobId = requireString(data?.jobId, 'jobId', 80)
   const file = data?.file === 'manifest' ? 'manifest' : data?.file === 'runtime' ? 'runtime' : 'export'
@@ -873,7 +898,7 @@ function deletionConfirmation(scope: DeletionScope): string {
 }
 
 export const createDeletionRequest = functions.https.onCall(async (data, context) => {
-  const uid = requireUid(context)
+  const uid = await requireActiveOperationalPrivacyUid(context)
   requireRecentAuthentication(context)
   const operationId = requireOperationId(data?.operationId)
   const scope = parseDeletionScope(data?.scope)
