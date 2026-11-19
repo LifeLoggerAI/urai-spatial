@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "r1544.v1",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "reviewOnly": true,
+  "source": {
+    "parentHead": "55e5d64212eb9d5e6c2960a53fa88763e344729b",
+    "candidateHead": "66bbc19837a33f0f6017b9dd2362f3d74e2dd800",
+    "gitTree": "42ec0c4cb2607d541aaf4b46a54cab29a88b31d7"
+  },
+  "worker": {
+    "podId": "h1qwwxo33augxp",
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "oldWorkerPreserved": "u7efpw44681cza"
+  },
+  "checks": {
+    "frozenInstall": 0,
+    "sourceIntegrity": 0,
+    "hostingHeaderTests": "12/12",
+    "nextHeaderParity": "3/3",
+    "sourceShaGuard": 0,
+    "typecheck": 0,
+    "finalGlbPack": "8/8, zero errors",
+    "receiptRegression": "3/3",
+    "optimizedBuild": 0,
+    "localRoutes": {
+      "/": 200,
+      "/home": 200,
+      "/life-map": 200,
+      "/focus": 200,
+      "/replay": 200,
+      "/privacy-controls": 200,
+      "/status": 200
+    }
+  },
+  "artifacts": {
+    "buildLogSha256": "ff18baf223888a9a9b342be6c04c060d89a87c6198df030c10a2ced688824166",
+    "sourceGatesLogSha256": "082991eead161978d7e1151708058c3d46bff35c539b1777b8d75b20a4657098",
+    "browserEvidenceJsonSha256": "814bb1e620de4cdfbcfc00255db70936759f094da221e6ca7bbd9843c9b9f896",
+    "screenshots": {
+      "home": "e402340d4f545d470b14d773f55441e226df86b28f71d8cc1b35b257e0a48304",
+      "lifeMap": "b10a4102adc4baac1e0b2def4bdf6d208eef9f1564f5be5c546c2b2fc2af48d8",
+      "focus": "58601e9325f19373bba2b21ea99f60b549f58bfdb54af6ac4123e60ae7ab7a1f",
+      "replay": "253b2f6b6c9a338b778dae4a7117bfcf24b27ba017419966c06bb3659bedd237"
+    }
+  },
+  "browser": {
+    "routes": [
+      "/",
+      "/life-map",
+      "/focus?manifestId=seed-memory-bloom",
+      "/replay?manifestId=seed-memory-bloom"
+    ],
+    "consoleAndPageErrors": 0,
+    "homeToLifeMap": "/life-map?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete&demo=1&overview=1",
+    "lifeMapRender": {
+      "webglState": "ready",
+      "renderReady": true,
+      "visibleObjects": 290,
+      "visibleAnchors": 37,
+      "triangles": 105160
+    },
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "hardwareGpuCertification": "OPEN"
+  },
+  "release": {
+    "vercelProtectedPreview": "BLOCKED: existing Git-connected attempt returns no_github_account_connected; existing READY deployment is older source",
+    "authenticatedLifecycle": "BOUNDED: prior native emulator/request-only receipts; completed export/deletion and live IAM not claimed",
+    "production": "HOLD / NO-GO",
+    "privateMemoryWrites": "DISABLED"
+  }
+}
