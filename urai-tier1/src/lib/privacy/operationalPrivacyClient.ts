@@ -1,9 +1,11 @@
 'use client'
 
 import { collection, limit, onSnapshot, orderBy, query, type DocumentData, type Unsubscribe } from 'firebase/firestore'
+import { getAuth } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
-import { functions, getFirebaseDb } from '@/lib/firebase/client'
+import { app, functions, getFirebaseDb } from '@/lib/firebase/client'
 import { requireOperationalPrivacyContract } from './privacyContractAuthority'
+import { assertOperationalPrivacyBackendCapabilities } from './privacyBackendCapability'
 
 export type PrivacyRow = DocumentData & { id: string }
 export type PrivacyCallableResult = Record<string, unknown>
@@ -36,8 +38,22 @@ function operationId(prefix: string) {
   return `${prefix}-${random}`.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 96)
 }
 
+const SCOPED_COLLISION_CALLABLES = new Set(['createExportRequest', 'createDeletionRequest', 'getExportDownloadUrl'])
+
+async function verifyScopedOperationalPrivacyBackend(): Promise<void> {
+  const uid = getAuth(app).currentUser?.uid
+  const projectId = app.options.projectId
+  if (!uid || !projectId) throw new Error('OPERATIONAL_PRIVACY_BACKEND_UNVERIFIED')
+  const prove = httpsCallable<undefined, unknown>(functions, 'getOperationalPrivacyCapabilities')
+  const response = await prove()
+  assertOperationalPrivacyBackendCapabilities(response.data, { uid, projectId })
+}
+
 export async function callOperationalPrivacyFunction<T extends PrivacyCallableResult = PrivacyCallableResult>(name: string, payload?: Record<string, unknown>): Promise<T> {
   requireOperationalPrivacyContract(process.env.NEXT_PUBLIC_URAI_PRIVACY_CONTRACT)
+  // Shared callable names are unsafe unless THIS authenticated backend proves
+  // it is the scoped operational authority. Failure produces no private writes.
+  if (SCOPED_COLLISION_CALLABLES.has(name)) await verifyScopedOperationalPrivacyBackend()
   const callable = httpsCallable<Record<string, unknown> | undefined, T>(functions, name)
   const response = await callable(payload)
   return response.data
