@@ -150,7 +150,9 @@ export function WorldTransitionController() {
       destination,
       href: definition.href,
       entryPortal: currentWorld.entryPortal ?? definition.entryPortal,
-      cameraCheckpoint: destination === 'home' ? 'home-threshold' : definition.cameraCheckpoint,
+      cameraCheckpoint: destination === 'focus' && currentWorld.destination === 'replay'
+        ? `focus-return:${(currentWorld.memoryId || '').replace(/^demo:/, '')}`
+        : destination === 'home' ? 'home-threshold' : definition.cameraCheckpoint,
       context: {
         memoryId: currentWorld.memoryId,
         threadId: currentWorld.threadId,
