@@ -1,6 +1,8 @@
 import { getApp, getApps, initializeApp, type FirebaseOptions } from 'firebase/app'
+import { connectAuthEmulator, getAuth } from 'firebase/auth'
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
-import { getFunctions } from 'firebase/functions'
+import { connectFunctionsEmulator, getFunctions } from 'firebase/functions'
+import { connectStorageEmulator, getStorage } from 'firebase/storage'
 
 const PUBLIC_FIREBASE_ENV = {
   NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -50,4 +52,32 @@ export function getFirebaseDb() {
     disposableEmulatorConnected = true
   }
   return db
+}
+
+
+// A single, strictly local synthetic Firebase identity for integration review.
+// The emulator may never activate in a hosted app, another Firebase project,
+// or a build without the explicit disposable privacy-lab flag.
+export function disposableFirebaseReviewAuthorized(): boolean {
+  return typeof window !== 'undefined' &&
+    (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') &&
+    process.env.NEXT_PUBLIC_URAI_CANONICAL_PRIVACY_LAB === 'true' &&
+    firebasePublicEnvReady &&
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === 'urai-privacy-r1512-disposable' &&
+    app.options.projectId === 'urai-privacy-r1512-disposable'
+}
+
+let disposableServicesConnected = false
+export function getUrAiAuth() {
+  const auth = getAuth(app)
+  if (disposableFirebaseReviewAuthorized() && !disposableServicesConnected) {
+    // Connect before any provider request. Same Auth instance is shared by
+    // /login, the local canonical Privacy lab, and client-only listeners.
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+    getFirebaseDb() // Connect Firestore on the same disposable project.
+    connectFunctionsEmulator(functions, '127.0.0.1', 5001)
+    connectStorageEmulator(getStorage(app), '127.0.0.1', 9199)
+    disposableServicesConnected = true
+  }
+  return auth
 }
