@@ -55,9 +55,10 @@ function hooks() {
   }
 }
 
-function harness(search = '?memoryId=memory-one') {
+function harness(search = '?memoryId=memory-one', { autoPolicy = true } = {}) {
   const driver = hooks()
   const subscriptions = []
+  const policies = []
   let authCallback
   let authStopped = false
   const listeners = new Map()
@@ -75,12 +76,22 @@ function harness(search = '?memoryId=memory-one') {
       doc: (...parts) => parts,
       onSnapshot(ref, receive, error) {
         const subscription = { ref, receive, error, stopped: false }
-        subscriptions.push(subscription)
+        if (ref.includes('privacyPolicy')) {
+          policies.push(subscription)
+          // Existing legacy checks exercise a granted, fully enforced owner.
+          if (autoPolicy) receive({ exists: () => true, data: () => ({
+            ownerId: ref[2], domains: { memory: { mode: 'granted' } },
+            enforcement: { state: 'fully-enforced' },
+          }) })
+        } else {
+          subscriptions.push(subscription)
+        }
         return () => { subscription.stopped = true }
       },
     },
     '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true, getFirebaseDb: () => ({}) },
     './selectedMemoryContract': contract,
+    './memoryConsentAdmission': load('memoryConsentAdmission.ts', {}),
     './explicitDemoMemory': { buildNamedExplicitDemoMemory: contract.buildExplicitDemoMemory },
   }, { window: browser, URLSearchParams, process: { env: { NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'governed-bucket' } } })
   const render = () => driver.render(owner.useSelectedMemory)
@@ -88,7 +99,12 @@ function harness(search = '?memoryId=memory-one') {
   const data = (uid = 'account-a', id = 'memory-one') => ({ ...contract.buildExplicitDemoMemory(id), ownerId: uid, demo: false })
   const snapshot = (value) => ({ exists: () => value !== null, data: () => value })
   return {
-    render, subscriptions, data,
+    render, subscriptions, policies, data,
+    policyData(uid = 'account-a', mode = 'granted', state = 'fully-enforced') {
+      return { ownerId: uid, domains: { memory: { mode } }, enforcement: { state } }
+    },
+    policy(index, value) { policies[index].receive(snapshot(value)); return render() },
+    policyError(index) { policies[index].error(new Error('sensitive-remote-details')); return render() },
     signIn(uid) { authCallback(uid ? { uid } : null); return render() },
     emit(index, value) { subscriptions[index].receive(snapshot(value)); return render() },
     error(index) { subscriptions[index].error(new Error('provider-private-details')); return render() },
@@ -128,6 +144,54 @@ test('observed consent revocation clears a previously loaded memory immediately'
   const revoked = h.emit(0, { ...h.data(), consentState: 'revoked' })
   assert.equal(revoked.status, 'unauthorized')
   assert.equal(revoked.memory, null)
+})
+
+test('no private memory subscription starts until current owner policy explicitly admits it', () => {
+  const h = harness('?memoryId=memory-one', { autoPolicy: false })
+  assert.equal(h.signIn('account-a').status, 'loading')
+  assert.equal(h.subscriptions.length, 0)
+  assert.equal(h.policy(0, h.policyData('account-a', 'denied')).status, 'unauthorized')
+  assert.equal(h.subscriptions.length, 0)
+  assert.equal(h.policy(0, h.policyData('account-a', 'granted')).status, 'loading')
+  assert.equal(h.subscriptions.length, 1)
+  assert.equal(h.emit(0, h.data()).status, 'ready')
+})
+
+test('domain-level revocation hides a loaded memory even when the memory document remains granted', () => {
+  const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+  assert.equal(h.policy(0, h.policyData('account-a', 'denied')).status, 'unauthorized')
+  assert.equal(h.emit(0, h.data()).memory, null)
+  assert.equal(h.policy(0, h.policyData('account-a', 'granted')).status, 'loading')
+  assert.equal(h.subscriptions[0].stopped, true)
+  assert.equal(h.emit(0, h.data()).memory, null, 'revoked subscription callback must stay stale')
+  assert.equal(h.emit(1, h.data()).status, 'ready', 'fresh subscription can restore consented memory')
+})
+
+test('policy pending, absent, failed and wrong-owner all deny, without leaking the last memory', () => {
+  const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+  for (const policy of [
+    h.policyData('account-a', 'granted', 'pending'),
+    h.policyData('account-a', 'granted', 'partially-enforced'),
+    h.policyData('account-a', 'granted', 'failed'),
+    h.policyData('account-b', 'granted'),
+    null,
+  ]) {
+    const result = h.policy(0, policy)
+    assert.equal(result.status, 'unauthorized')
+    assert.equal(result.memory, null)
+  }
+  const fault = h.policyError(0)
+  assert.equal(fault.memory, null)
+  assert.doesNotMatch(fault.message, /sensitive-remote-details/)
+})
+
+test('stale owner policy callbacks cannot restore an old memory after account switch', () => {
+  const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+  h.signIn('account-b')
+  assert.equal(h.policies[0].stopped, true)
+  assert.equal(h.policy(0, h.policyData('account-a')).memory, null)
+  h.emit(1, h.data('account-b'))
+  assert.equal(h.policy(1, h.policyData('account-b')).status, 'ready')
 })
 
 test('deleted or missing snapshots remove loaded media identity', () => {

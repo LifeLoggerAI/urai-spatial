@@ -6,6 +6,7 @@ import { doc, onSnapshot } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import { buildNamedExplicitDemoMemory } from './explicitDemoMemory'
+import { memoryConsentAdmission, type MemoryConsentAdmission } from './memoryConsentAdmission'
 import {
   isExplicitDemoRequest,
   parseSelectedMemory,
@@ -47,13 +48,16 @@ export function useSelectedMemory(): SelectedMemoryResult {
     let cancelled = false
     let generation = 0
     let unsubscribeMemory: (() => void) | undefined
+    let unsubscribePolicy: (() => void) | undefined
 
     // Invalidate callbacks before detaching their source. A queued Firestore
     // callback must never restore a previous account or revoked memory.
     const detachMemory = () => {
       generation += 1
       unsubscribeMemory?.()
+      unsubscribePolicy?.()
       unsubscribeMemory = undefined
+      unsubscribePolicy = undefined
     }
 
     if (!memoryId) {
@@ -88,30 +92,83 @@ export function useSelectedMemory(): SelectedMemoryResult {
       }
 
       setResult(LOADING)
-      try {
+      let policyAdmission: MemoryConsentAdmission = 'pending'
+      let latestMemory: SelectedMemoryResult | null = null
+      const publish = () => {
+        if (!isCurrent()) return
+        if (policyAdmission === 'denied') {
+          setResult({ status: 'unauthorized', memory: null, message: 'Memory-domain consent is unavailable or revoked.' })
+        } else if (policyAdmission === 'allowed' && latestMemory) {
+          setResult(latestMemory)
+        } else {
+          setResult(LOADING)
+        }
+      }
+      let memoryGeneration = 0
+      const stopMemory = () => {
+        memoryGeneration += 1
+        unsubscribeMemory?.()
+        unsubscribeMemory = undefined
+        latestMemory = null
+      }
+      const startMemory = () => {
+        if (!isCurrent() || policyAdmission !== 'allowed' || unsubscribeMemory) return
+        const activeMemoryGeneration = ++memoryGeneration
         unsubscribeMemory = onSnapshot(
           doc(getFirebaseDb(), 'users', user.uid, 'memories', memoryId),
           (snapshot) => {
-            if (!isCurrent()) return
+            if (!isCurrent() || memoryGeneration !== activeMemoryGeneration || policyAdmission !== 'allowed') return
             if (!snapshot.exists()) {
-              setResult(unavailable('Selected memory could not be found.'))
+              latestMemory = unavailable('Selected memory could not be found.')
+              publish()
               return
             }
             const parsed = parseSelectedMemory(snapshot.data(), user.uid, memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
             if (parsed.memory && manifestId && parsed.memory.replayManifest.id !== manifestId) {
-              setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this memory.' })
+              latestMemory = { status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this memory.' }
+              publish()
               return
             }
-            setResult(parsed)
+            latestMemory = parsed
+            publish()
+          },
+          () => {
+            if (!isCurrent() || memoryGeneration !== activeMemoryGeneration) return
+            latestMemory = unavailable('Selected memory could not be loaded.')
+            publish()
+          },
+        )
+      }
+      try {
+        // Policy is authoritative for private Focus, Replay, Mirror and Memory World.
+        // A revoked policy detaches the private source and discards the old frame;
+        // restoration must obtain a *new* memory snapshot before showing data.
+        unsubscribePolicy = onSnapshot(
+          doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current'),
+          (snapshot) => {
+            if (!isCurrent()) return
+            const next = memoryConsentAdmission(
+              snapshot.exists(),
+              snapshot.exists() ? snapshot.data() : null,
+              user.uid,
+            )
+            if (next !== 'allowed') stopMemory()
+            policyAdmission = next
+            if (next === 'allowed') startMemory()
+            publish()
           },
           () => {
             if (!isCurrent()) return
-            setResult(unavailable('Selected memory could not be loaded.'))
+            stopMemory()
+            policyAdmission = 'denied'
+            publish()
           },
         )
       } catch {
         if (!isCurrent()) return
-        setResult(unavailable('Selected memory could not be loaded.'))
+        stopMemory()
+        policyAdmission = 'denied'
+        publish()
       }
     })
 
