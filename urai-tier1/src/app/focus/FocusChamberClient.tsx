@@ -490,6 +490,7 @@ function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivat
 }
 
 function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null }) {
+  const { gl } = useThree()
   const accent = memory?.visuals.accent ?? '#79dfff'
   const light = memory?.visuals.light ?? '#e7fbff'
   const memoryImageUrl = memory?.sourceMedia.find((media) => media.kind === 'image')?.url ?? (memory?.demo ? replayAssets.primary.src : null)
@@ -507,7 +508,7 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
     {memoryImageUrl ? <MemoryImprint url={memoryImageUrl} /> : null}
     <MemoryTraces memory={memory} accent={accent} reducedMotion={profile.reducedMotion} />
     <MemoryStarInteraction memory={memory} accent={accent} light={light} reducedMotion={profile.reducedMotion} onActivate={onActivate} />
-    <OrbitControls ref={controls} makeDefault enableDamping={!profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={3.4} maxDistance={11.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
+    <OrbitControls ref={controls} domElement={gl.domElement} makeDefault enableDamping={!profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={3.4} maxDistance={11.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
     <FocusCameraRig controls={controls} recenterSignal={recenterSignal} shellRef={shellRef} entryFrame={entryFrame} reducedMotion={profile.reducedMotion} />
   </>
 }
