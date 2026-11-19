@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "urai-r1545-provenance-correction-v1",
+  "parentCommit": "83e28477a1e79ff516b9182c0c462bc6065f49e8",
+  "reviewedDeployment": {
+    "id": "dpl_3h9p8zrreTa7xVMmgfe41dcmWxba",
+    "url": "https://urai-genesis-private-app-review-r1193-kf901fchw.vercel.app/home",
+    "projectId": "prj_pt7oOQLnCFki8vJb4ph9XhIjiLwZ",
+    "state": "READY",
+    "target": "staging",
+    "ssoProtection": "all",
+    "httpStatus": 200,
+    "advertisedSha": "791bd415030b2755030134dff41908af9de10e7d",
+    "buildLogCheckout": "4ba1f7a6200bdbeff2dd0953cbb98e786c58ca46",
+    "buildLogTree": "9f221e140255fa8d715507b4fe03831b70056533",
+    "provenanceGate": "FAIL",
+    "reason": "HTTP metadata and body source identity disagree with provider build checkout; unsigned JSON guard did not bind identity to checkout.",
+    "headers": {
+      "content-security-policy": "base-uri 'self'; object-src 'none'; frame-ancestors 'self'",
+      "date": "Thu, 19 Nov 2026 06:44:12 GMT",
+      "referrer-policy": "no-referrer",
+      "x-content-type-options": "nosniff",
+      "x-vercel-id": "cle1:iad1::jbgdp-1795070652226-c6be87e188d3"
+    }
+  },
+  "regression": {
+    "before": {
+      "tests": 14,
+      "pass": 8,
+      "fail": 6,
+      "reason": "Six crafted unsigned attestation cases accepted invalid source evidence."
+    },
+    "after": {
+      "tests": 16,
+      "pass": 16,
+      "fail": 0,
+      "scope": "Source guard and Next baseline headers only. Not a full application build or hosted acceptance."
+    },
+    "pod": "u7efpw44681cza",
+    "node": "v22.23.5",
+    "exitCode": 0,
+    "executionDurationMs": 802,
+    "sourceHashes": {
+      "urai-tier1/next.config.mjs": "42f9f63ee8345ac037a0ad156c96add5287397316bc64c59df0f0e8e9d889756",
+      "tests/source-sha-guard-regression.mjs": "29180da29caa618de2de055725ee82d644533b981b2ff05fb22455c42653e37d",
+      "tests/r1534-vercel-source-sha-guard.test.mjs": "e01c65d34e99a433a38d92e3afaa22ff94b49623d02b513fdcf850a8e5b2a3b9"
+    },
+    "independence": "Separate execution host; same-author tests. Not independent approval or security certification.",
+    "command": "node --test --test-reporter=tap tests/source-sha-guard-regression.mjs tests/r1534-vercel-source-sha-guard.test.mjs"
+  },
+  "resource": {
+    "newPods": 0,
+    "existingPodHourlyRateUSD": 0.16,
+    "disk": "94% used; isolated kilobyte-scale temporary test removed after completion",
+    "invoiceCost": "not established"
+  },
+  "remaining": {
+    "nonGitDeployment": "BLOCKED pending separately reviewed immutable checkout/artifact attestation; do not spoof provider Git SHA",
+    "fullBuild": "not rerun for this guard-only correction",
+    "hardwareGPU": "OPEN",
+    "authenticatedLifecycle": "OPEN",
+    "liveIAM": "OPEN",
+    "protectedCI": "OPEN",
+    "credentialIncident": "OPEN",
+    "independentCertification": "OPEN"
+  },
+  "production": "HOLD / NO-GO",
+  "productionPrivateMemoryWrites": "DISABLED; unchanged",
+  "deploymentChanges": 0
+}

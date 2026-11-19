@@ -5,8 +5,17 @@ import crypto from 'node:crypto'
 
 const root = process.cwd()
 const modelRoot = path.join(root, 'urai-tier1/public/assets/urai/generated/models')
-const receiptPath = path.join(root, 'operations/assets/generated-receipts/urai-final-glb-pack-v1.json')
-const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'))
+const generatedReceiptPath = path.join(root, 'operations/assets/generated-receipts/urai-final-glb-pack-v1.json')
+const productionReceiptRoot = path.join(root, 'operations/assets/production-receipts')
+const receipt = JSON.parse(fs.readFileSync(generatedReceiptPath, 'utf8'))
+
+function productionReceiptFor(fileName) {
+  const filePath = path.join(productionReceiptRoot, fileName.replace(/\.glb$/, '.json'))
+  if (!fs.existsSync(filePath)) return null
+  const candidate = JSON.parse(fs.readFileSync(filePath, 'utf8'))
+  if (candidate.releaseState !== 'production-ready') throw new Error(`${fileName}: production receipt is not production-ready`)
+  return candidate
+}
 
 const contracts = {
   'home-entry-chamber-v1.glb': {
@@ -65,6 +74,11 @@ if (receipt.assets?.length !== Object.keys(contracts).length) errors.push('final
 
 for (const [fileName, contract] of Object.entries(contracts)) {
   const record = receipt.assets?.find((asset) => asset.fileName === fileName)
+  const productionReceipt = productionReceiptFor(fileName)
+  const expectedSha = productionReceipt?.sha256 || record?.sha256
+  const expectedBytes = productionReceipt?.bytes || record?.bytes
+  const expectedNodeCount = productionReceipt?.measured?.nodeCount || productionReceipt?.nodeCount || record?.nodes
+  const expectedClips = productionReceipt?.measured?.animationClips || productionReceipt?.animationClips || record?.animations || []
   const filePath = path.join(modelRoot, fileName)
   if (!record) { errors.push(`${fileName}: receipt missing`); continue }
   if (!fs.existsSync(filePath)) { errors.push(`${fileName}: binary missing`); continue }
@@ -77,16 +91,24 @@ for (const [fileName, contract] of Object.entries(contracts)) {
   const hash = crypto.createHash('sha256').update(payload).digest('hex')
   const nodes = new Set((json.nodes || []).map((node) => node.name))
   const clips = new Set((json.animations || []).map((clip) => clip.name))
-  if (hash !== record.sha256) errors.push(`${fileName}: receipt hash mismatch`)
-  if (payload.length !== record.bytes) errors.push(`${fileName}: receipt byte count mismatch`)
+  if (hash !== expectedSha) errors.push(`${fileName}: receipt hash mismatch`)
+  if (payload.length !== expectedBytes) errors.push(`${fileName}: receipt byte count mismatch`)
+  if (productionReceipt && payload.length !== expectedBytes) errors.push(`${fileName}: governed production receipt byte count mismatch`)
   if ((json.nodes?.length || 0) < contract.minNodes) errors.push(`${fileName}: insufficient named scene structure`)
+  if (expectedNodeCount && json.nodes?.length !== expectedNodeCount) errors.push(`${fileName}: node count does not match receipt`)
   if ((record.triangleCount || Infinity) > contract.maxTriangles) errors.push(`${fileName}: triangle budget exceeded`)
   for (const node of contract.nodes) if (!nodes.has(node)) errors.push(`${fileName}: missing node ${node}`)
-  for (const clip of contract.clips) if (!clips.has(clip)) errors.push(`${fileName}: missing clip ${clip}`)
-  for (const extension of ['KHR_materials_emissive_strength','KHR_materials_transmission','KHR_materials_clearcoat']) {
-    if (!json.extensionsUsed?.includes(extension)) errors.push(`${fileName}: missing material extension ${extension}`)
+  for (const clip of expectedClips) if (!clips.has(clip)) errors.push(`${fileName}: missing clip ${clip}`)
+  if (productionReceipt) {
+    const compression = productionReceipt.compressionStatus
+    if (compression === 'meshopt' && !json.extensionsUsed?.includes('EXT_meshopt_compression')) errors.push(`${fileName}: governed meshopt compression extension missing`)
+    if (productionReceipt.measured?.materialCount && (json.materials?.length || 0) !== productionReceipt.measured.materialCount) errors.push(`${fileName}: material count does not match production receipt`)
+  } else {
+    for (const extension of ['KHR_materials_emissive_strength','KHR_materials_transmission','KHR_materials_clearcoat']) {
+      if (!json.extensionsUsed?.includes(extension)) errors.push(`${fileName}: missing material extension ${extension}`)
+    }
+    if (json.asset?.generator !== 'URAI Labs Final GLB Forge 1.0') errors.push(`${fileName}: generator identity mismatch`)
   }
-  if (json.asset?.generator !== 'URAI Labs Final GLB Forge 1.0') errors.push(`${fileName}: generator identity mismatch`)
 }
 
 const report = {

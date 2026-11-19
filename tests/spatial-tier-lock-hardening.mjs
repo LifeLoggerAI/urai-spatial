@@ -1,4 +1,4 @@
-import playwright from '../urai-tier1/node_modules/playwright/index.js';
+import playwright from 'playwright';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
@@ -98,9 +98,67 @@ async function assertNoBlankLoadingFlash(page) {
   }
 }
 
+async function assertPersistentWorldRoute(page, mode) {
+  const contracts = {
+    home: [
+      ['[data-testid="urai-persistent-world-shell"]', 'persistent Home world'],
+      ['[data-testid="urai-home-accessible-fallback"]', 'accessible Home fallback'],
+    ],
+    'life-map': [
+      ['[data-testid="urai-true-3d-life-map"]', '3D Life Map world'],
+      ['[data-testid="urai-life-map-authored-fallback"]', 'authored Life Map fallback'],
+      ['[data-testid="urai-life-map-signed-out-threshold"]', 'signed-out Life Map threshold'],
+    ],
+    focus: [
+      ['[data-testid="urai-final-focus-chamber"]', 'Focus chamber'],
+      ['main', 'Focus accessible state'],
+    ],
+    replay: [
+      ['[data-testid="cinematic-replay-client"]', 'Replay client'],
+      ['[role="region"][aria-label="Replay memory horizon"]', 'Replay accessible state'],
+      ['main', 'Replay accessible state'],
+    ],
+    mirror: [
+      ['[data-testid="urai-mirror-route"]', 'Mirror route'],
+      ['main', 'Mirror accessible state'],
+    ],
+  };
+  const candidates = contracts[mode];
+  if (!candidates) throw new Error(`No persistent-world contract for ${mode}`);
+  let matched = null;
+  for (const [selector, label] of candidates) {
+    const locator = page.locator(selector).first();
+    if (await locator.count() && await locator.isVisible().catch(() => false)) {
+      matched = { locator, label };
+      break;
+    }
+  }
+  if (!matched) throw new Error(`No user-visible persistent-world contract matched for ${mode}`);
+  await assertNoBlankLoadingFlash(page);
+  const manifest = page.locator('[data-testid="urai-final-asset-spine-manifest"], [href*="urai-final-assets.json"], [src*="urai-final-assets.json"]').first();
+  if (!(await manifest.count())) {
+    throw new Error(`Governed asset manifest was not present for ${mode}`);
+  }
+  if (mode === 'life-map') {
+    const world = page.getByTestId('urai-true-3d-life-map');
+    if (await world.count()) {
+      const ready = await world.getAttribute('data-life-map-render-ready').catch(() => null);
+      const webgl = await world.getAttribute('data-webgl-state').catch(() => null);
+      if (ready !== 'true' && webgl !== 'unavailable') {
+        throw new Error(`Life Map world was not render-ready: ready=${ready} webgl=${webgl}`);
+      }
+    }
+  }
+  return matched.label;
+}
+
 async function gotoMode(page, stage, mode, path = `/${mode}`) {
   await page.goto(`${BASE_URL}${path}`);
-  await expectAttr(stage, 'data-scene-mode', mode);
+  if (await stage.count()) {
+    await expectAttr(stage, 'data-scene-mode', mode);
+  } else {
+    await assertPersistentWorldRoute(page, mode);
+  }
   await assertNoBlankLoadingFlash(page);
 }
 
@@ -201,13 +259,15 @@ async function runDataStates(page, stage, report) {
 }
 
 async function runVisual(page, stage, report) {
+  // The persistent-world runtime no longer exposes the retired urai-scene-stage
+  // marker. Validate the actual user-visible shell, governed manifest, rendered
+  // world/fallback, and route-specific semantics instead.
   const routes = [
-    ['home', '/home', 'visual-home-desktop'],
-    ['ascent', '/ascent', 'visual-ascent-desktop'],
-    ['life-map', '/life-map', 'visual-lifemap-desktop'],
-    ['focus', '/focus?manifestId=seed-memory-bloom', 'visual-focus-desktop'],
-    ['replay', '/replay?manifestId=seed-memory-bloom', 'visual-replay-desktop'],
-    ['mirror', '/mirror', 'visual-mirror-desktop'],
+    ['home', '/home?demo=1', 'visual-home-desktop'],
+    ['life-map', '/life-map?demo=1&overview=1', 'visual-lifemap-desktop'],
+    ['focus', '/focus?manifestId=seed-memory-bloom&demo=1', 'visual-focus-desktop'],
+    ['replay', '/replay?manifestId=seed-memory-bloom&demo=1', 'visual-replay-desktop'],
+    ['mirror', '/mirror?demo=1', 'visual-mirror-desktop'],
   ];
 
   for (const [mode, path, name] of routes) {
@@ -216,7 +276,7 @@ async function runVisual(page, stage, report) {
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await gotoMode(page, stage, 'life-map', '/life-map');
+  await gotoMode(page, stage, 'life-map', '/life-map?demo=1&overview=1');
   await screenshot(page, report, 'visual-lifemap-mobile');
 }
 

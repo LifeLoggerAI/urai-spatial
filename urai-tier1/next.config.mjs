@@ -1,8 +1,8 @@
-// Vercel Git deployments must not claim an arbitrary source SHA supplied through
-// NEXT_PUBLIC_URAI_BUILD_SHA. Compare that label with Vercel's provider Git
-// revision before any Next.js compilation begins. This is build-time consistency,
-// not signed supply-chain attestation or release approval.
+// Non-Git uploads must not use a builder-authored JSON document as source proof.
+// Until a separately reviewed checkout/artifact attestation contract exists,
+// keep these builds blocked; never fabricate VERCEL_GIT_COMMIT_SHA to proceed.
 const onVercel = process.env.VERCEL === '1'
+
 if (onVercel || process.env.URAI_ENFORCE_SOURCE_SHA_MATCH === 'true') {
   const providerSha = (process.env.VERCEL_GIT_COMMIT_SHA || '').trim()
   const advertisedSha = (process.env.NEXT_PUBLIC_URAI_BUILD_SHA || '').trim()
