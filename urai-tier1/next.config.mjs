@@ -7,6 +7,22 @@ const nextConfig = {
         trailingSlash: true,
       }
     : {}),
+  // Firebase static exports use firebase.static.json. Dynamic Next/Vercel
+  // responses need this same limited baseline at their serving boundary.
+  ...(process.env.URAI_FIREBASE_STATIC_EXPORT === 'true'
+    ? {}
+    : {
+        async headers() {
+          return [{
+            source: '/:path*',
+            headers: [
+              { key: 'X-Content-Type-Options', value: 'nosniff' },
+              { key: 'Referrer-Policy', value: 'no-referrer' },
+              { key: 'Content-Security-Policy', value: "base-uri 'self'; object-src 'none'; frame-ancestors 'self'" },
+            ],
+          }]
+        },
+      }),
   webpack(config) {
     // URAI Spatial builds frequently run in constrained preview/Nix containers where
     // webpack's filesystem cache can exhaust the writable volume before compilation
