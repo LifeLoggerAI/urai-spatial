@@ -10,7 +10,7 @@ const productionReceiptRoot = path.join(root, 'operations/assets/production-rece
 const receipt = JSON.parse(fs.readFileSync(generatedReceiptPath, 'utf8'))
 
 function productionReceiptFor(fileName) {
-  const filePath = path.join(productionReceiptRoot, fileName.replace(/\\.glb$/, '.json'))
+  const filePath = path.join(productionReceiptRoot, fileName.replace(/\.glb$/, '.json'))
   if (!fs.existsSync(filePath)) return null
   const candidate = JSON.parse(fs.readFileSync(filePath, 'utf8'))
   if (candidate.releaseState !== 'production-ready') throw new Error(`${fileName}: production receipt is not production-ready`)
