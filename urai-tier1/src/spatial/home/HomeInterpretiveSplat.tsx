@@ -35,12 +35,15 @@ export function HomeInterpretiveSplatEnvironment({
     setResource(null)
     setFailed(false)
     const mobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)
+    // Keep incremental updates on full texture-row boundaries. Arbitrary
+    // 16k/25k splat chunks produced invalid texSubImage2D regions on WebGL2.
+    const textureWidth = Math.min(gl.capabilities.maxTextureSize, 16_384)
     const session = createCapturedRealitySplatSession({
       url: approvedSrc,
       maxBytes: (mobile ? 64 : 160) * MiB,
-      chunkSize: mobile ? 16_000 : 25_000,
+      chunkSize: textureWidth,
       alphaHash: true,
-      maxTextureSize: gl.capabilities.maxTextureSize,
+      maxTextureSize: textureWidth,
       onResource(next) { if (active) setResource(next) },
       onFailure() { if (active) setFailed(true) },
     })

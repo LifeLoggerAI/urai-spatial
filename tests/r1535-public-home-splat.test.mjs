@@ -34,3 +34,11 @@ test('guest-only interpretive splat generator is deterministic, safe, and binary
     assert.match(intended, /^\/assets\/urai\/home-production\/interpretive\/[^/]+\.splat$/)
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
+
+test('guest Home splat texture chunks align to the GPU texture row width', () => {
+  const source = readFileSync(resolve(root, 'urai-tier1/src/spatial/home/HomeInterpretiveSplat.tsx'), 'utf8')
+  assert.match(source, /const textureWidth = Math\.min\(gl\.capabilities\.maxTextureSize, 16_384\)/)
+  assert.match(source, /chunkSize: textureWidth/)
+  assert.match(source, /maxTextureSize: textureWidth/)
+  assert.doesNotMatch(source, /chunkSize: mobile \? 16_000 : 25_000/)
+})
