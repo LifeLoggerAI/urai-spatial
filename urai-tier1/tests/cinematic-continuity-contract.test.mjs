@@ -26,11 +26,12 @@ test('cinematic continuity is carried by canonical route owners, not a global Ti
 })
 
 test('Home and Life Map preserve atmospheric and reduced-motion continuity', () => {
-  assert.match(homeRuntime, /home-world-context/)
+  assert.match(homeRuntime, /data-home-visual-owner="asset-driven-personalized-sanctuary"/)
   assert.match(homeRuntime, /prefers-reduced-motion:reduce/)
-  assert.match(lifeMap, /life-map__threshold-bloom/)
+  assert.match(lifeMap, /life-map-thresholds/)
   assert.match(lifeMap, /profile\.reducedMotion/)
-  assert.match(lifeMap, /aria-label="URAI Life Map"/)
+  assert.match(lifeMap, /aria-label="Life Map return controls"/)
+  assert.match(lifeMap, /aria-label="Selected memory actions"/)
 })
 
 test('Life Map navigation speaks in symbolic layer language instead of mechanical UI language only', () => {

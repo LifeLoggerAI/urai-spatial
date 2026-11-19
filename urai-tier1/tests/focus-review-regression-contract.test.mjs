@@ -41,5 +41,7 @@ test('selected Memory Star arrival framing is carried into Focus without a hard 
   assert.match(focusClient, /cameraCheckpoint.*startsWith\('life-map-arrival:'\)/)
   assert.match(focusClient, /entryBlendActive/)
   assert.match(focusClient, /THREE\.MathUtils\.damp\(camera\.position\.x, defaultCamera\.x/)
-  assert.match(focusClient, /reducedMotion.*DEFAULT_CAMERA|useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion/)
+  assert.match(focusClient, /const useEntryFrame = recenterSignal === 0 && entryFrame && \(entryFrame\.returnFrame \|\| !reducedMotion\)/)
+  assert.match(focusClient, /entryBlendActive\.current = !entryFrame\.returnFrame/)
+  assert.match(focusClient, /cameraCheckpoint.*startsWith\('life-map-arrival:'\)/)
 })
