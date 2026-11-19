@@ -20,3 +20,11 @@ test('current committed authored pack verifies without substitutes', () => {
   assert.deepEqual(receipt.governedProductionReceipts, ['home-entry-chamber-v1.glb'])
   assert.equal(receipt.generatedSubstitutes, 0)
 })
+
+
+test('final GLB verifier honors governed production metadata without weakening generated candidates', () => {
+  const verifier = fs.readFileSync('scripts/verify-final-glb-pack.mjs', 'utf8')
+  assert.match(verifier, /production-receipts/)
+  assert.match(verifier, /governed meshopt compression extension missing/)
+  assert.match(verifier, /KHR_materials_emissive_strength/)
+})
