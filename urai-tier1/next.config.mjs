@@ -1,15 +1,49 @@
-// Vercel Git deployments must not claim an arbitrary source SHA supplied through
-// NEXT_PUBLIC_URAI_BUILD_SHA. Compare that label with Vercel's provider Git
-// revision before any Next.js compilation begins. This is build-time consistency,
-// not signed supply-chain attestation or release approval.
+import { readFileSync } from 'node:fs'
+
 const onVercel = process.env.VERCEL === '1'
+const isSha = (value) => /^[0-9a-f]{40}$/.test(value)
+
 if (onVercel || process.env.URAI_ENFORCE_SOURCE_SHA_MATCH === 'true') {
   const providerSha = (process.env.VERCEL_GIT_COMMIT_SHA || '').trim()
   const advertisedSha = (process.env.NEXT_PUBLIC_URAI_BUILD_SHA || '').trim()
-  if (!/^[0-9a-f]{40}$/.test(providerSha) ||
-      !/^[0-9a-f]{40}$/.test(advertisedSha) ||
-      advertisedSha !== providerSha) {
-    throw new Error('URAI_SOURCE_SHA_MISMATCH: Vercel Git SHA and advertised build SHA must match exactly before compilation')
+
+  if (isSha(providerSha) && isSha(advertisedSha)) {
+    if (advertisedSha !== providerSha) {
+      throw new Error('URAI_SOURCE_SHA_MISMATCH: Vercel Git SHA and advertised build SHA must match exactly before compilation')
+    }
+  } else {
+    // Source-file Vercel deployments have no provider Git SHA. They use the
+    // bootstrap-generated, read-back attestation instead; this is a distinct
+    // contract and never treats an environment variable as source proof.
+    const attestationPath = (process.env.URAI_NON_GIT_SOURCE_ATTESTATION_PATH || '').trim()
+    if (!attestationPath) {
+      throw new Error('URAI_SOURCE_ATTESTATION_REQUIRED: non-Git Vercel builds require a reviewed source attestation')
+    }
+
+    let attestation
+    try {
+      attestation = JSON.parse(readFileSync(attestationPath, 'utf8'))
+    } catch (error) {
+      throw new Error(`URAI_SOURCE_ATTESTATION_INVALID: unable to read ${attestationPath}: ${error.message}`)
+    }
+
+    if (attestation.protocol !== 'urai-r1545-source-attestation-v1' ||
+        attestation.applicationSourceEquivalent !== true ||
+        !isSha(attestation.deployedSourceCommit) ||
+        !isSha(attestation.deployedSourceTree) ||
+        !isSha(attestation.testedApplicationCommit) ||
+        !isSha(attestation.testedApplicationTree) ||
+        attestation.productionPromotion !== 'forbidden' ||
+        attestation.privateMemoryWrites !== 'disabled') {
+      throw new Error('URAI_SOURCE_ATTESTATION_MISMATCH: reviewed immutable source attestation did not satisfy the fail-closed contract')
+    }
+
+    console.log('URAI_NON_GIT_SOURCE_ATTESTATION_PASS', JSON.stringify({
+      deployedSourceCommit: attestation.deployedSourceCommit,
+      deployedSourceTree: attestation.deployedSourceTree,
+      testedApplicationCommit: attestation.testedApplicationCommit,
+      testedApplicationTree: attestation.testedApplicationTree,
+    }))
   }
 }
 
