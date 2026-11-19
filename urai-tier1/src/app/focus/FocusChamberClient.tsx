@@ -12,7 +12,7 @@ import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityPr
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
-import { saveFocusViewFrame, takeFocusViewFrame } from '@/spatial/world/focusViewReturn'
+import { saveFocusViewFrame, consumeFocusViewHandoff } from '@/spatial/world/focusViewReturn'
 
 const focusAccessibilityCss = `
 .focusControls button:focus-visible,.focusHelp summary:focus-visible,.neutralActions button:focus-visible,.webglRecovery button:focus-visible,.focus-spatial-aperture-button:focus-visible{outline:3px solid #e7fbff;outline-offset:3px}
@@ -536,7 +536,8 @@ export default function FocusChamberClient() {
       returnConsumed.current = true
       // A copied URL never contains the view. The one-time session frame must
       // also match the actual selected memory, manifest and node.
-      const frame = takeFocusViewFrame(memory.id, memory.replayManifest.id, memory.star.id)
+      const ticket = params.get('focusTicket')
+      const frame = ticket ? consumeFocusViewHandoff(ticket, memory.id, memory.replayManifest.id, memory.star.id) : null
       const bound = checkpoint === 'focus-return:' + memory.star.id &&
         params.get('manifestId') === memory.replayManifest.id &&
         params.get('node') === memory.star.id &&
