@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/require-runtime-deps.mjs && next dev",
-    "build": "node scripts/require-runtime-deps.mjs && next build",
+    "build": "node scripts/generate-public-home-splat.mjs && node scripts/require-runtime-deps.mjs && next build",
     "start": "node scripts/require-runtime-deps.mjs && next start",
     "check:spatial-copy": "corepack pnpm --dir .. check:spatial-copy",
     "check:types": "node scripts/require-runtime-deps.mjs && tsc --noEmit -p tsconfig.runtime.json",
