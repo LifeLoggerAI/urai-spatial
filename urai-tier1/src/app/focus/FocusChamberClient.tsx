@@ -1,6 +1,7 @@
 'use client'
 
 import StellarCorona from '@/spatial/stellar/StellarCorona'
+import { useSearchParams } from 'next/navigation'
 
 import { Billboard, Html, OrbitControls, Sparkles, Stars, useTexture } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
@@ -525,28 +526,39 @@ export default function FocusChamberClient() {
   const [directEntry, setDirectEntry] = useState<boolean | null>(null)
   const [entryFrame, setEntryFrame] = useState<EntryCameraFrame | null>(null)
   const [webglState, setWebglState] = useState<WebGLState>('ready')
-  const returnConsumed = useRef(false)
+  const returnConsumed = useRef<string | null>(null)
+  const locationSearch = useSearchParams().toString()
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setDirectEntry(!params.get('memoryId') && !params.get('node'))
     const checkpoint = params.get('cameraCheckpoint') || ''
     if (!checkpoint.startsWith('focus-return:')) {
+      returnConsumed.current = null
       setEntryFrame(parseEntryCameraFrame(params))
-    } else if (memory && !returnConsumed.current) {
-      returnConsumed.current = true
-      // A copied URL never contains the view. The one-time session frame must
-      // also match the actual selected memory, manifest and node.
+    } else if (!memory) {
+      // A reused Focus client must not display its previous memory's camera while hydrating.
+      setEntryFrame(null)
+    } else {
       const ticket = params.get('focusTicket')
-      const frame = ticket ? consumeFocusViewHandoff(ticket, memory.id, memory.replayManifest.id, memory.star.id) : null
-      const bound = checkpoint === 'focus-return:' + memory.star.id &&
-        params.get('manifestId') === memory.replayManifest.id &&
-        params.get('node') === memory.star.id &&
-        (params.get('memoryId') === memory.star.id || params.get('memoryId') === memory.id)
-      setEntryFrame(frame && bound ? { position: frame.position, target: frame.target, fov: frame.fov, returnFrame: true, source: frame.source } : null)
+      const returnKey = JSON.stringify([
+        checkpoint, ticket, params.get('memoryId'), params.get('manifestId'), params.get('node'),
+        memory.id, memory.replayManifest.id, memory.star.id,
+      ])
+      if (returnConsumed.current !== returnKey) {
+        returnConsumed.current = returnKey
+        const bound = !!ticket &&
+          checkpoint === 'focus-return:' + memory.star.id &&
+          params.get('manifestId') === memory.replayManifest.id &&
+          params.get('node') === memory.star.id &&
+          (params.get('memoryId') === memory.star.id || params.get('memoryId') === memory.id)
+        // Do not spend a single-use ticket on an unrelated or malformed URL.
+        const frame = bound ? consumeFocusViewHandoff(ticket!, memory.id, memory.replayManifest.id, memory.star.id) : null
+        setEntryFrame(frame ? { position: frame.position, target: frame.target, fov: frame.fov, returnFrame: true, source: frame.source } : null)
+      }
     }
     return () => { document.body.style.cursor = '' }
-  }, [memory])
+  }, [memory, locationSearch])
 
   const replayHref = useMemo(() => {
     if (!memory) return null

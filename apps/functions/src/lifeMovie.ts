@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { requireMemoryDomainProcessingConsent } from './memoryDomainConsentGuard'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -212,6 +213,7 @@ async function requireReadyLifeModelAuthority(
 
 export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
+  await requireMemoryDomainProcessingConsent(db, uid, context)
   const movieId = requireToken(data?.movieId, 'movieId')
   const status = data?.status === 'ready' ? 'ready' : 'draft'
   const requested = requestedChapters(data?.chapters)

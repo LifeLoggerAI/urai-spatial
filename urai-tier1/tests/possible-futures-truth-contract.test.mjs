@@ -12,6 +12,7 @@ const route=fs.readFileSync(new URL('../src/app/possible-futures/PossibleFutures
 const calibration=fs.readFileSync(new URL('../../apps/functions/src/scenarioCalibration.ts',import.meta.url),'utf8')
 const worldState=fs.readFileSync(new URL('../src/spatial/world/WorldStateProvider.tsx',import.meta.url),'utf8')
 const transitions=fs.readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx',import.meta.url),'utf8')
+const returnResolver=fs.readFileSync(new URL('../src/spatial/world/worldReturnDestination.ts',import.meta.url),'utf8')
 const privacyOps=fs.readFileSync(new URL('../../apps/functions/src/privacyOperations.ts',import.meta.url),'utf8')
 const consentSurface=fs.readFileSync(new URL('../src/app/privacy-controls/ConsentSanctuaryClient.tsx',import.meta.url),'utf8')
 const passportSurface=fs.readFileSync(new URL('../src/app/passport/PassportVaultClient.tsx',import.meta.url),'utf8')
@@ -30,7 +31,9 @@ test('launch outcome calibration never claims predictive accuracy or updates per
 test('scenario travel preserves origin and cannot leak scenario truth into reality routes',()=>{
   assert.match(transitions,/context\?\.scenarioBasisRevision/)
   assert.match(transitions,/scenarioOrigin/)
-  assert.match(transitions,/destinationFromOriginRealm/)
+  assert.match(transitions,/resolveWorldReturnDestination\(currentWorld\)/)
+  assert.match(returnResolver,/world\.destination === 'possible-futures' && world\.scenarioOrigin/)
+  assert.match(returnResolver,/world\.scenarioOrigin === 'ground' \? 'infrastructure-hub' : world\.scenarioOrigin/)
   assert.match(worldState,/action\.destination === 'possible-futures'/)
   assert.match(worldState,/\? 'scenario'/)
   assert.match(worldState,/: 'reality'/)

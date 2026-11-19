@@ -15,6 +15,8 @@ export {
 } from './googleWorkspaceOAuth'
 export {
   applyConsentPolicy,
+  getOperationalPrivacyCapabilities,
+  fenceOperationalPrivacyAccessOnAuthDelete,
   cancelDeletionRequest,
   cancelExportRequest,
   createDeletionRequest,

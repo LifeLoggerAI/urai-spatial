@@ -13,6 +13,8 @@ const projectId = `urai-privacy-rules-${Date.now()}`
 const rules = fs.readFileSync(path.resolve('firebase/firestore.rules'), 'utf8')
 const ownerId = 'privacy-owner-a'
 const otherOwnerId = 'privacy-owner-b'
+const orphanOwnerId = 'privacy-owner-orphan'
+const fencedOwnerId = 'privacy-owner-fenced'
 
 let env
 
@@ -35,6 +37,8 @@ test.before(async () => {
   env = await initializeTestEnvironment({ projectId, firestore: { rules } })
   await env.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore()
+    await setDoc(doc(db, 'users', ownerId), { uid: ownerId, state: 'active' })
+    await setDoc(doc(db, 'users', otherOwnerId), { uid: otherOwnerId, state: 'active' })
     for (const [collectionName, documentId, payload] of ownerDocuments) {
       await setDoc(doc(db, 'users', ownerId, collectionName, documentId), payload)
       await setDoc(doc(db, 'users', otherOwnerId, collectionName, documentId), {
@@ -98,6 +102,7 @@ test('trusted queues and durable deletion receipts are never client-accessible',
       ['providerRevocationQueue', 'provider-a'],
       ['deletionQueue', 'deletion-a'],
       ['deletionReceipts', 'receipt-a'],
+      ['accountDeletionFences', ownerId],
     ]) {
       const ref = doc(db, collectionName, documentId)
       await assertFails(getDoc(ref))
@@ -106,4 +111,40 @@ test('trusted queues and durable deletion receipts are never client-accessible',
       await assertFails(deleteDoc(ref))
     }
   }
+})
+
+
+test('authenticated owner can create the parent user record before active-self reads begin', async () => {
+  const freshOwnerId = 'privacy-owner-fresh'
+  const db = env.authenticatedContext(freshOwnerId).firestore()
+  await assertSucceeds(setDoc(doc(db, 'users', freshOwnerId), { uid: freshOwnerId, state: 'active' }))
+})
+
+test('old owner identity cannot read an orphaned private child after the parent user record is removed', async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore()
+    await setDoc(doc(db, 'users', orphanOwnerId), { uid: orphanOwnerId, state: 'active' })
+    await setDoc(doc(db, 'users', orphanOwnerId, 'memories', 'survivor'), { ownerId: orphanOwnerId, title: 'Synthetic survivor' })
+    await deleteDoc(doc(db, 'users', orphanOwnerId))
+  })
+  const db = env.authenticatedContext(orphanOwnerId).firestore()
+  await assertFails(getDoc(doc(db, 'users', orphanOwnerId, 'memories', 'survivor')))
+})
+
+
+test('account deletion fence denies owner reads even while parent and private child still exist', async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore()
+    await setDoc(doc(db, 'users', fencedOwnerId), { uid: fencedOwnerId, state: 'active' })
+    await setDoc(doc(db, 'users', fencedOwnerId, 'memories', 'survivor'), { ownerId: fencedOwnerId, title: 'Synthetic survivor' })
+    await setDoc(doc(db, 'accountDeletionFences', fencedOwnerId), { uid: fencedOwnerId, state: 'revoked' })
+  })
+  const db = env.authenticatedContext(fencedOwnerId).firestore()
+  await assertFails(getDoc(doc(db, 'users', fencedOwnerId, 'memories', 'survivor')))
+  await assertFails(getDoc(doc(db, 'users', fencedOwnerId)))
+  await assertFails(getDoc(doc(db, 'accountDeletionFences', fencedOwnerId)))
+  await env.withSecurityRulesDisabled(async (context) => {
+    await deleteDoc(doc(context.firestore(), 'users', fencedOwnerId))
+  })
+  await assertFails(setDoc(doc(db, 'users', fencedOwnerId), { uid: fencedOwnerId, state: 'recreated' }))
 })
