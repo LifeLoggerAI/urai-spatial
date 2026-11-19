@@ -88,7 +88,9 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
   assert.match(focus, /entryPortal: 'focus-memory-aperture'/)
   assert.match(focus, /cameraCheckpoint: `focus:\$\{memory\.star\.id\}`/)
   assert.match(focus, /replayManifestId: memory\.replayManifest\.id/)
-  assert.match(focus, /requestUraiWorldReturn\(\)/)
+  // Focus Escape is a directed Life Map travel in the current implementation.
+  assert.match(focus, /requestUraiWorldTravel\(\{[\s\S]*?destination: 'life-map'/)
+  assert.match(focus, /onClick=\{unwind\}/)
   assert.match(focus, /data-memory-id=\{memory\?\.id\}/)
   assert.match(focus, /data-manifest-id=\{memory\?\.replayManifest\.id\}/)
   assert.match(focus, /data-star-id=\{memory\?\.star\.id\}/)
