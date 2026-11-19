@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import ConsentSanctuaryClient from './ConsentSanctuaryClient'
 
 export const metadata = {
@@ -6,5 +7,5 @@ export const metadata = {
 }
 
 export default function PrivacyControlsRoutePage() {
-  return <ConsentSanctuaryClient />
+  return <Suspense fallback={<main aria-busy="true">Loading privacy controls...</main>}><ConsentSanctuaryClient /></Suspense>
 }

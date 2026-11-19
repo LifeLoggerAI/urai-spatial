@@ -4,7 +4,8 @@ import { Canvas } from '@react-three/fiber'
 import { Float, Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot } from 'firebase/firestore'
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import { operationalPrivacyContractSelected } from '@/lib/privacy/privacyContractAuthority'
 import {
@@ -162,7 +163,7 @@ function errorCode(error: unknown) {
 }
 
 export default function ConsentSanctuaryClient() {
-  const params = useMemo(() => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search), [])
+  const params = useSearchParams()
   const explicitDemo = params.get('demo') === '1'
   const operationalContractReady = operationalPrivacyContractSelected(process.env.NEXT_PUBLIC_URAI_PRIVACY_CONTRACT)
   const [user, setUser] = useState<User | null>(null)
