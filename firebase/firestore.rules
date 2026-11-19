@@ -3,7 +3,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() { return request.auth != null; }
-    function isSelf(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function isIdentitySelf(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function hasActiveUserRecord(uid) { return exists(/databases/$(database)/documents/users/$(uid)); }
+    function hasNoAccountDeletionFence(uid) { return !exists(/databases/$(database)/documents/accountDeletionFences/$(uid)); }
+    function isSelf(uid) { return isIdentitySelf(uid) && hasActiveUserRecord(uid) && hasNoAccountDeletionFence(uid); }
     function isAdmin() {
       return isSignedIn() && (request.auth.token.admin == true || request.auth.token.founder == true);
     }
@@ -93,7 +96,8 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if isSelf(uid) || isAdmin();
-      allow create: if isSelf(uid)
+      allow create: if isIdentitySelf(uid)
+        && hasNoAccountDeletionFence(uid)
         && !('entitlementTier' in request.resource.data)
         && !('isAdmin' in request.resource.data)
         && !('founderOverride' in request.resource.data)
@@ -355,6 +359,7 @@ service cloud.firestore {
     match /providerRevocationQueue/{docId} { allow read, write: if false; }
     match /deletionQueue/{docId} { allow read, write: if false; }
     match /deletionReceipts/{docId} { allow read, write: if false; }
+    match /accountDeletionFences/{docId} { allow read, write: if false; }
     match /spatial/{doc=**} { allow read, write: if isAdmin(); }
     match /{document=**} { allow read, write: if false; }
   }

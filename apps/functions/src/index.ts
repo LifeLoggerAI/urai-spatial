@@ -16,6 +16,7 @@ export {
 export {
   applyConsentPolicy,
   getOperationalPrivacyCapabilities,
+  fenceOperationalPrivacyAccessOnAuthDelete,
   cancelDeletionRequest,
   cancelExportRequest,
   createDeletionRequest,
