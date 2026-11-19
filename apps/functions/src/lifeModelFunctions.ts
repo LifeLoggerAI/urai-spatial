@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { requireMemoryDomainProcessingConsent } from './memoryDomainConsentGuard'
 import { createHash } from 'node:crypto'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -582,6 +583,7 @@ export const revokeLifeEntity = lifeModelFunctions.https.onCall(async (data, con
 
 export const getReplayLifeModelAuthority = lifeModelFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
+  await requireMemoryDomainProcessingConsent(db, uid)
   const memoryId = requireToken(data?.memoryId, 'memoryId')
   const memory = await db.doc(`users/${uid}/memories/${memoryId}`).get()
   if (!memory.exists || (memory.get('ownerId') ?? memory.get('userId')) !== uid || memory.get('deleted') === true) {
