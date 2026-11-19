@@ -27,7 +27,11 @@ if (onVercel || process.env.URAI_ENFORCE_SOURCE_SHA_MATCH === 'true') {
       throw new Error(`URAI_SOURCE_ATTESTATION_INVALID: unable to read ${attestationPath}: ${error.message}`)
     }
 
-    if (attestation.protocol !== 'urai-r1545-source-attestation-v1' ||
+    const validProtocol = attestation.protocol === 'urai-r1545-source-attestation-v2'
+    const validDelta = Array.isArray(attestation.reviewedSourceDelta) &&
+      attestation.reviewedSourceDelta.length === 1 &&
+      attestation.reviewedSourceDelta[0] === 'urai-tier1/next.config.mjs'
+    if (!validProtocol || !validDelta ||
         attestation.applicationSourceEquivalent !== true ||
         !isSha(attestation.deployedSourceCommit) ||
         !isSha(attestation.deployedSourceTree) ||
@@ -43,6 +47,7 @@ if (onVercel || process.env.URAI_ENFORCE_SOURCE_SHA_MATCH === 'true') {
       deployedSourceTree: attestation.deployedSourceTree,
       testedApplicationCommit: attestation.testedApplicationCommit,
       testedApplicationTree: attestation.testedApplicationTree,
+      reviewedSourceDelta: attestation.reviewedSourceDelta,
     }))
   }
 }
@@ -67,7 +72,7 @@ const nextConfig = {
             headers: [
               { key: 'X-Content-Type-Options', value: 'nosniff' },
               { key: 'Referrer-Policy', value: 'no-referrer' },
-              { key: 'Content-Security-Policy', value: "base-uri 'self'; object-src 'none'; frame-ancestors 'self'" },
+              { key: 'Content-Security-Policy', value: \"base-uri 'self'; object-src 'none'; frame-ancestors 'self'\" },
             ],
           }]
         },
