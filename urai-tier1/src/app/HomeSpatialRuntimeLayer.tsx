@@ -25,7 +25,11 @@ function HomeSemanticNavigation({ spatialAvailable, spatialReady }: { spatialAva
       <button type="button" aria-label="Open URAI Orb companion" data-testid="home-semantic-orb" onClick={requestUraiWorldOrbOpen}>Orb</button>
       <a href="/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent" aria-label="Open Ground directly" data-testid="home-semantic-ground">Ground</a>
       {spatialAvailable ? (
-        <button type="button" aria-label="Ascend through Home sky to Life Map" data-testid="home-semantic-life-map" data-home-ascent-authority="governed-scene-transition" disabled={!spatialReady} onClick={ascendToLifeMap}>Life Map</button>
+        spatialReady ? (
+          <button type="button" aria-label="Ascend through Home sky to Life Map" data-testid="home-semantic-life-map" data-home-ascent-authority="governed-scene-transition" disabled={!spatialReady} onClick={ascendToLifeMap}>Life Map</button>
+        ) : (
+          <a href="/life-map/?from=home-semantic&entryPortal=home-semantic-safe-fallback&cameraCheckpoint=home-assets-not-ready" aria-label="Open Life Map directly while Home visuals are not ready" data-testid="home-semantic-life-map" data-home-ascent-authority="semantic-fallback-when-assets-unready">Life Map</a>
+        )
       ) : (
         <a href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete" aria-label="Open Life Map directly without WebGL" data-testid="home-semantic-life-map">Life Map</a>
       )}
