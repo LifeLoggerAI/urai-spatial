@@ -30,6 +30,7 @@ test('Login only redirects as fallback for approved errors; authenticated redire
  assert.match(login,/if \(popupRequiresFullPageRedirect\(error\)\) \{\s*await enterFullPage\(\)/)
  assert.match(login,/getRedirectResult\(auth\)\.catch/)
  assert.match(login,/await signInWithRedirect\(getUrAiAuth\(\), googleProvider\(\)\)/)
+ assert.match(login,/import \{ firebasePublicEnvReady, getUrAiAuth \} from/ )
  assert.match(login,/disabled=\{state==='unavailable'\|\|state==='working'\}/)
  assert.match(login,/Your private world remains closed/)
 })
