@@ -162,11 +162,11 @@ function isRecord(value: unknown): value is JsonMap {
 
 function defaultDomain(): ConsentDomainPolicy {
   return {
-    mode: 'limited',
-    retentionDays: 365,
+    mode: 'denied',
+    retentionDays: null,
     precise: false,
-    replayVisible: true,
-    lifeMapVisible: true,
+    replayVisible: false,
+    lifeMapVisible: false,
     modelContext: false,
     sharingEnabled: false,
     automationEnabled: false,
@@ -175,23 +175,24 @@ function defaultDomain(): ConsentDomainPolicy {
 }
 
 function defaultPolicy(uid: string): ConsentPolicy {
+  // Absence is not authorization. A first update changes only the named domain.
   return {
     version: 2,
     revision: 0,
     ownerId: uid,
     domains: {
-      memory: { ...defaultDomain(), mode: 'granted', modelContext: true },
-      location: { ...defaultDomain(), mode: 'limited' },
-      models: { ...defaultDomain(), mode: 'limited', modelContext: true },
-      exports: { ...defaultDomain(), mode: 'denied' },
-      workforce: { ...defaultDomain(), mode: 'paused' },
-      identity: { ...defaultDomain(), mode: 'limited' },
+      memory: defaultDomain(),
+      location: defaultDomain(),
+      models: defaultDomain(),
+      exports: defaultDomain(),
+      workforce: defaultDomain(),
+      identity: defaultDomain(),
     },
     enforcement: {
-      state: 'fully-enforced',
+      state: 'pending',
       jobId: null,
       affectedTargets: [],
-      providerState: 'not-applicable',
+      providerState: 'pending',
     },
   }
 }
@@ -235,26 +236,50 @@ function parseDomainPolicy(value: unknown): ConsentDomainPolicy {
 }
 
 function parseStoredPolicy(value: unknown, uid: string): ConsentPolicy {
-  if (!isRecord(value) || value.ownerId !== uid || !isRecord(value.domains)) return defaultPolicy(uid)
+  const invalid = () => new functions.https.HttpsError(
+    'failed-precondition', 'STORED_CONSENT_POLICY_INVALID',
+  )
+  // A corrupt or foreign authority record must never become a fresh policy.
+  if (!isRecord(value) || value.version !== 2 || value.ownerId !== uid
+      || typeof value.revision !== 'number' || !Number.isSafeInteger(value.revision)
+      || value.revision < 0 || !isRecord(value.domains) || !isRecord(value.enforcement)) {
+    throw invalid()
+  }
   const domains = {} as Record<ConsentDomain, ConsentDomainPolicy>
-  for (const domain of CONSENT_DOMAINS) domains[domain] = parseDomainPolicy(value.domains[domain])
-  const enforcement = isRecord(value.enforcement) ? value.enforcement : {}
+  for (const domain of CONSENT_DOMAINS) {
+    const stored = value.domains[domain]
+    if (!isRecord(stored) || typeof stored.mode !== 'string'
+        || (stored.retentionDays !== null && typeof stored.retentionDays !== 'number')) {
+      throw invalid()
+    }
+    try {
+      domains[domain] = parseDomainPolicy(stored)
+    } catch {
+      throw invalid()
+    }
+  }
+  const enforcement = value.enforcement
+  if (typeof enforcement.state !== 'string'
+      || !['pending', 'partially-enforced', 'fully-enforced', 'failed', 'conflicted'].includes(enforcement.state)
+      || typeof enforcement.providerState !== 'string'
+      || !['not-applicable', 'pending', 'partial', 'complete', 'failed'].includes(enforcement.providerState)
+      || (enforcement.jobId !== null
+        && (typeof enforcement.jobId !== 'string' || enforcement.jobId.length === 0 || enforcement.jobId.length > 240))
+      || !Array.isArray(enforcement.affectedTargets)
+      || enforcement.affectedTargets.length > 100
+      || enforcement.affectedTargets.some((item) => typeof item !== 'string' || item.length === 0 || item.length > 240)) {
+    throw invalid()
+  }
   return {
     version: 2,
-    revision: Number(value.revision ?? 0),
+    revision: value.revision,
     ownerId: uid,
     domains,
     enforcement: {
-      state: ['pending', 'partially-enforced', 'fully-enforced', 'failed', 'conflicted'].includes(String(enforcement.state))
-        ? (String(enforcement.state) as ConsentPolicy['enforcement']['state'])
-        : 'fully-enforced',
-      jobId: typeof enforcement.jobId === 'string' ? enforcement.jobId : null,
-      affectedTargets: Array.isArray(enforcement.affectedTargets)
-        ? enforcement.affectedTargets.filter((item): item is string => typeof item === 'string')
-        : [],
-      providerState: ['not-applicable', 'pending', 'partial', 'complete', 'failed'].includes(String(enforcement.providerState))
-        ? (String(enforcement.providerState) as ConsentPolicy['enforcement']['providerState'])
-        : 'not-applicable',
+      state: enforcement.state as ConsentPolicy['enforcement']['state'],
+      jobId: enforcement.jobId as string | null,
+      affectedTargets: enforcement.affectedTargets as string[],
+      providerState: enforcement.providerState as ConsentPolicy['enforcement']['providerState'],
     },
   }
 }
@@ -334,7 +359,7 @@ export const applyConsentPolicy = functions.https.onCall(async (data, context) =
   }
   const next = parseDomainPolicy(data?.next)
   const expectedRevision = Number(data?.expectedRevision)
-  if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
+  if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) {
     throw new functions.https.HttpsError('invalid-argument', 'Invalid expected revision.')
   }
 
@@ -357,6 +382,10 @@ export const applyConsentPolicy = functions.https.onCall(async (data, context) =
       throw new functions.https.HttpsError('aborted', 'CONSENT_REVISION_CONFLICT', {
         currentRevision: current.revision,
       })
+    }
+
+    if (current.revision === Number.MAX_SAFE_INTEGER) {
+      throw new functions.https.HttpsError('failed-precondition', 'CONSENT_REVISION_EXHAUSTED')
     }
 
     const nextPolicy: ConsentPolicy = {
@@ -1191,7 +1220,7 @@ export const cancelDeletionRequest = functions.https.onCall(async (data, context
 })
 
 function safeTimestamp(value: unknown): string | null {
-  if (value instanceof admin.firestore.Timestamp) return value.toDate().toISOString()
+  if (value instanceof Timestamp) return value.toDate().toISOString()
   if (typeof value === 'string') return value
   return null
 }
