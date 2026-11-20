@@ -11,6 +11,7 @@ import {
   executeReplayOperation,
   readReplayOperationState,
   writeReplayOperationState,
+  volatileReplayStorage,
   type ReplayOperation,
 } from '@/spatial/replay/replayOperations'
 import { createAuthenticatedReplayTransport } from '@/spatial/replay/replayServerTransport'
@@ -93,16 +94,16 @@ export function MemoryWorldAuthoringTools({
     }
 
     if (!navigator.onLine) {
-      const queued = applyReplayOperation(readReplayOperationState(window.localStorage, memory.ownerId, memory.id), operation)
-      writeReplayOperationState(window.localStorage, memory.ownerId, memory.id, queued)
-      setStatus('Correction recorded locally and queued for Replay audit sync.')
+      const queued = applyReplayOperation(readReplayOperationState(volatileReplayStorage, memory.ownerId, memory.id), operation)
+      writeReplayOperationState(volatileReplayStorage, memory.ownerId, memory.id, queued)
+      setStatus('Correction queued in this tab only; keep it open to retry. Refresh discards the unsent change.')
       setValue('')
       return
     }
 
     setStatus('Saving Memory World correction…')
     const settled = await executeReplayOperation({
-      storage: window.localStorage,
+      storage: volatileReplayStorage,
       transport,
       operation,
     })

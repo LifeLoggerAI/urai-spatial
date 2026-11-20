@@ -562,7 +562,7 @@ export default function FocusChamberClient() {
           params.get('node') === memory.star.id &&
           (params.get('memoryId') === memory.star.id || params.get('memoryId') === memory.id)
         // Do not spend a single-use ticket on an unrelated or malformed URL.
-        const frame = bound ? consumeFocusViewHandoff(ticket!, memory.id, memory.replayManifest.id, memory.star.id) : null
+        const frame = bound ? consumeFocusViewHandoff(ticket!, memory.ownerId, memory.id, memory.replayManifest.id, memory.star.id) : null
         setEntryFrame(frame ? { position: frame.position, target: frame.target, fov: frame.fov, returnFrame: true, source: frame.source } : null)
       }
     }
@@ -584,7 +584,7 @@ export default function FocusChamberClient() {
     const p = rendered ? camera.position : null
     const t = rendered && orbit ? orbit.target : null
     saveFocusViewFrame({
-      memoryId: memory.id, manifestId: memory.replayManifest.id, nodeId: memory.star.id,
+      ownerId: memory.ownerId, memoryId: memory.id, manifestId: memory.replayManifest.id, nodeId: memory.star.id,
       source: rendered ? 'renderer' : 'fallback',
       position: p ? [p.x, p.y, p.z] : entryFrame?.position ?? DEFAULT_CAMERA,
       target: t ? [t.x, t.y, t.z] : entryFrame?.target ?? DEFAULT_TARGET,

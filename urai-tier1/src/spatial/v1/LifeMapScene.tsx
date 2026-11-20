@@ -80,9 +80,9 @@ function replayUrlForNode(nodeId: string, replayPathId: string) {
   return `/replay?memoryId=${encodeURIComponent(nodeId)}&manifestId=${encodeURIComponent(replayPathId)}`;
 }
 
-function rememberMemoryId(nodeId: string) {
-  if (typeof window === 'undefined') return;
-  window.sessionStorage.setItem('urai-lifemap-selected-memory-id', nodeId);
+function rememberMemoryId(_nodeId: string) {
+  // Selection is already represented by the URL and current React state.
+  // Never copy a private memory identifier into browser session storage.
 }
 
 function useReducedMotionPreference() {
@@ -255,7 +255,6 @@ export function LifeMapScene({
 
   const startReplay = useCallback(() => {
     rememberMemoryId(focusNodeId);
-    if (typeof window !== 'undefined') window.sessionStorage.setItem('urai-replay-return-manifest-id', replayPath.id);
     onStartReplay();
     router.push(replayUrlForNode(focusNodeId, replayPath.id));
   }, [focusNodeId, onStartReplay, replayPath.id, router]);

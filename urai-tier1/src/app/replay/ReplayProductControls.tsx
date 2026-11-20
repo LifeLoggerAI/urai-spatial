@@ -2,12 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import {
   applyReplayOperation,
   executeReplayOperation,
   flushReplayOperationQueue,
   readReplayOperationState,
   writeReplayOperationState,
+  volatileReplayStorage,
+  clearVolatileReplayState,
   type ReplayCorrection,
   type ReplayOperation,
   type ReplayOperationState,
@@ -22,13 +26,13 @@ const emptyState = (): ReplayOperationState => ({ saved: false, hidden: false, p
 const draftKey = (ownerId: string, memoryId: string) => `urai-replay-correction-draft-v1:${encodeURIComponent(ownerId)}:${encodeURIComponent(memoryId)}`
 
 function safeReadDraft(ownerId: string, memoryId: string) {
-  try { return window.localStorage.getItem(draftKey(ownerId, memoryId)) ?? '' } catch { return '' }
+  try { return volatileReplayStorage.getItem(draftKey(ownerId, memoryId)) ?? '' } catch { return '' }
 }
 
 function safeWriteDraft(ownerId: string, memoryId: string, value: string) {
   try {
-    if (value) window.localStorage.setItem(draftKey(ownerId, memoryId), value)
-    else window.localStorage.removeItem(draftKey(ownerId, memoryId))
+    if (value) volatileReplayStorage.setItem(draftKey(ownerId, memoryId), value)
+    else volatileReplayStorage.removeItem(draftKey(ownerId, memoryId))
   } catch { /* Persistence failure is surfaced by the operation state, not by draft typing. */ }
 }
 
@@ -68,6 +72,24 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
   const transport = useMemo(() => createAuthenticatedReplayTransport(), [])
 
   useEffect(() => {
+    if (!firebasePublicEnvReady) return
+    const auth = getAuth(app)
+    let previousUid = auth.currentUser?.uid ?? null
+    return onAuthStateChanged(auth, user => {
+      const uid = user?.uid ?? null
+      if (previousUid !== uid) {
+        clearVolatileReplayState()
+        operationVersion.current += 1
+        setOperations(emptyState())
+        setCorrectionText('')
+        setCorrecting(false)
+      }
+      previousUid = uid
+    }, () => clearVolatileReplayState())
+  }, [])
+
+
+  useEffect(() => {
     let cancelled = false
     if (!mutable) {
       setOperations(emptyState())
@@ -75,7 +97,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
       return () => { cancelled = true }
     }
 
-    const local = readReplayOperationState(window.localStorage, memory.ownerId, memory.id)
+    const local = readReplayOperationState(volatileReplayStorage, memory.ownerId, memory.id)
     setOperations(local)
     setStatus(local.pending.length ? `${local.pending.length} change${local.pending.length === 1 ? '' : 's'} waiting to sync.` : 'Replay controls ready.')
 
@@ -83,9 +105,9 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
     readAuthenticatedReplayServerState(memory.ownerId, memory.id)
       .then((server) => {
         if (cancelled || activeIdentity.current !== identity || operationVersion.current !== requestedVersion) return
-        const current = readReplayOperationState(window.localStorage, memory.ownerId, memory.id)
+        const current = readReplayOperationState(volatileReplayStorage, memory.ownerId, memory.id)
         const merged = mergeState(current, server)
-        writeReplayOperationState(window.localStorage, memory.ownerId, memory.id, merged)
+        writeReplayOperationState(volatileReplayStorage, memory.ownerId, memory.id, merged)
         setOperations(merged)
         setStatus(merged.pending.length ? `${merged.pending.length} change${merged.pending.length === 1 ? '' : 's'} waiting to sync.` : 'Replay changes are synchronized.')
       })
@@ -103,7 +125,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
     const requestedIdentity = identity
     setStatus('Retrying pending Replay changes…')
     const next = await flushReplayOperationQueue({
-      storage: window.localStorage,
+      storage: volatileReplayStorage,
       transport,
       ownerId: memory.ownerId,
       memoryId: memory.id,
@@ -144,10 +166,10 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
     }
 
     if (!navigator.onLine) {
-      const queued = applyReplayOperation(readReplayOperationState(window.localStorage, memory.ownerId, memory.id), operation)
-      writeReplayOperationState(window.localStorage, memory.ownerId, memory.id, queued)
+      const queued = applyReplayOperation(readReplayOperationState(volatileReplayStorage, memory.ownerId, memory.id), operation)
+      writeReplayOperationState(volatileReplayStorage, memory.ownerId, memory.id, queued)
       setOperations(queued)
-      setStatus(`${kind === 'hide' && options.hidden === false ? 'restore' : kind} queued offline. It will retry when the connection returns.`)
+      setStatus(`${kind === 'hide' && options.hidden === false ? 'restore' : kind} queued in this tab only. Keep it open until it reconnects; a refresh discards the unsent change.`)
       return true
     }
 
@@ -156,7 +178,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
       if (activeIdentity.current === requestedIdentity) setOperations(state)
     }
     const next = await executeReplayOperation({
-      storage: window.localStorage,
+      storage: volatileReplayStorage,
       transport,
       operation,
       onOptimistic: applyIfCurrent,
@@ -200,7 +222,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
       <label htmlFor="replay-correction-summary">Corrected summary</label>
       <textarea id="replay-correction-summary" autoFocus value={correctionText} maxLength={1000} onChange={(event) => { const value = event.currentTarget.value; setCorrectionText(value); safeWriteDraft(memory.ownerId, memory.id, value) }} />
       <small>{correctionText.length}/1000</small>
-      <div><button type="button" onClick={() => setCorrecting(false)}>Keep draft and close</button><button type="button" disabled={correctionText.trim().length < 3 || pendingCorrection} onClick={async () => {
+      <div><button type="button" onClick={() => setCorrecting(false)}>Keep draft in this tab</button><button type="button" disabled={correctionText.trim().length < 3 || pendingCorrection} onClick={async () => {
         const saved = await submit('correct', { correction: { field: 'summary', previousValue: memory.summary, nextValue: correctionText.trim(), reason: 'owner correction' } })
         if (saved) { safeWriteDraft(memory.ownerId, memory.id, ''); setCorrecting(false) }
       }}>Save correction</button></div>

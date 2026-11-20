@@ -31,6 +31,8 @@ import { ReplayPersonPresence } from './ReplayPersonPresence'
 import { ReplayRecordedSource, type ReplayImageState } from './ReplayRecordedSource'
 import { initialReplayVideoSnapshot, type ReplayVideoSession, type ReplayVideoSnapshot } from './replayMediaSession'
 import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmission'
+import { clearFocusViewReturn } from '@/spatial/world/focusViewReturn'
+import { clearVolatileReplayState } from '@/spatial/replay/replayOperations'
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
 
@@ -242,33 +244,14 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const [mediaAttempt, setMediaAttempt] = useState(0)
   const videoSession = useRef<ReplayVideoSession | null>(null)
   const onImageState = useCallback((state: ReplayImageState) => setImageState(state), [])
-  const demoResumeApplied = useRef(false)
+  // Optional synthetic demo playback is deliberately ephemeral. Navigation
+  // does not persist play position or playback identity to browser storage.
   const onVideoSnapshot = useCallback((state: ReplayVideoSnapshot) => {
     setVideoSnapshot(state)
-    if (memory.demo && state.durationMs && state.currentTimeMs > 100) {
-      try {
-        const key = `urai-replay-demo-time-v1:${memory.id}`
-        if (state.status === 'ended') window.sessionStorage.removeItem(key)
-        else window.sessionStorage.setItem(key, String(state.currentTimeMs))
-      } catch { /* Optional fictional-sample position only. */ }
-    }
-  }, [memory.demo, memory.id])
+  }, [])
   const onVideoSession = useCallback((session: ReplayVideoSession | null) => {
     videoSession.current = session
-    if (session && memory.demo) {
-      try {
-        if (window.sessionStorage.getItem(`urai-replay-demo-was-playing-v1:${memory.id}`) !== '0') void session.play()
-      } catch { void session.play() }
-    }
-  }, [memory.demo, memory.id])
-  useEffect(() => {
-    if (!video || !memory.demo || demoResumeApplied.current || !videoSnapshot.durationMs || !videoSession.current) return
-    demoResumeApplied.current = true
-    try {
-      const saved = Number(window.sessionStorage.getItem(`urai-replay-demo-time-v1:${memory.id}`))
-      if (Number.isFinite(saved) && saved > 0 && saved < videoSnapshot.durationMs - 300) videoSession.current.seek(saved)
-    } catch { /* Sample resumes from zero. */ }
-  }, [memory.demo, memory.id, video, videoSnapshot.durationMs])
+  }, [])
   const mediaStatus = video ? videoSnapshot.status : admission.kind === 'neutral' ? 'absent' : imageState.status
   const mediaReady = video ? videoSnapshot.ready : admission.kind !== 'neutral' && imageState.status === 'ready'
   const canPlay = video ? videoSnapshot.durationMs !== null && videoSnapshot.status !== 'loading' && videoSnapshot.status !== 'error' : admission.kind === 'neutral' || imageState.status === 'ready'
@@ -386,9 +369,6 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     />
     <div className="replayAtmosphere" aria-hidden="true" />
     <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : lifeModelAuthority.available ? `${memory.privacy} replay · ${lifeModelAuthority.decision}` : `${memory.privacy} archive replay · reconstruction held`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={() => { pauseMemory(); unwind() }}>{world.previousDestination === 'life-movie' ? '← Life Movie' : '← Focus'}</button><button className="replayLifeMovieEntry" type="button" onClick={continueLifeMovie}>Continue Life Movie</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? generatedWorldEntry?.href ?? memoryWorldHref} onClick={() => {
-      if (memory.demo) {
-        try { window.sessionStorage.setItem(`urai-replay-demo-was-playing-v1:${memory.id}`, playing ? '1' : '0') } catch {}
-      }
       pauseMemory()
     }} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : generatedWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? generatedWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : generatedWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}</header>
     {admission.kind !== 'disclosed-demo' || mediaStatus !== 'ready' || webgl.state !== 'ready' ? <section className="replaySourceStatus" role="status" aria-live="polite" data-replay-source-status={mediaStatus}>
@@ -443,6 +423,14 @@ export default function CinematicReplayClient() {
   const result = useSelectedMemory()
   const memory = result.memory
   const quality = useAdaptiveSpatialQuality()
+  useEffect(() => {
+    // Policy revocation/deletion and unavailable owner content invalidate
+    // in-flight camera and local correction hints. Never resurrect them.
+    if (result.status === 'unauthorized' || result.status === 'unavailable' || result.status === 'corrupt') {
+      clearFocusViewReturn()
+      clearVolatileReplayState()
+    }
+  }, [result.status])
   if (!memory) return <ReplayMemoryHorizon memoryStatus={result.status} message={result.message} quality={quality} />
   return <ReplayMemoryExperience key={replaySessionIdentity(memory)} memory={memory} memoryStatus={result.status} quality={quality} />
 }

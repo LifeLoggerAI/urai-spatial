@@ -19,7 +19,7 @@ test('Replay preserves cinematic identity while keeping Save Hide Correct and Hi
 
 test('Replay controls expose truthful accessible pending offline error and recovery states', () => {
   assert.match(controls, /role="status" aria-live="polite"/)
-  assert.match(controls, /queued offline/)
+  assert.match(controls, /queued in this tab only/)
   assert.match(controls, /Retrying pending Replay changes/)
   assert.match(controls, />Retry<\/button>/)
   assert.match(controls, /next\.error/)
@@ -45,7 +45,7 @@ test('correction workflow preserves original history and unsent owner-scoped dra
   assert.match(controls, /Corrected: \{String\(item\.correction\.nextValue \?\? ''\)\}/)
   assert.match(controls, /urai-replay-correction-draft-v1:/)
   assert.match(controls, /encodeURIComponent\(ownerId\).*encodeURIComponent\(memoryId\)/)
-  assert.match(controls, /Keep draft and close/)
+  assert.match(controls, /Keep draft in this tab/)
   assert.match(controls, /maxLength=\{1000\}/)
   assert.doesNotMatch(controls, /String\([^)]*\?\? undefined\)/)
 })
@@ -67,7 +67,7 @@ test('authenticated persistence is owner-scoped idempotent transactional and acc
   assert.match(controls, /const requestedVersion = operationVersion\.current/)
   assert.match(controls, /operationVersion\.current !== requestedVersion/)
   assert.match(controls, /operationVersion\.current \+= 1/)
-  assert.match(controls, /const current = readReplayOperationState\(window\.localStorage, memory\.ownerId, memory\.id\)/)
+  assert.match(controls, /const current = readReplayOperationState\(volatileReplayStorage, memory\.ownerId, memory\.id\)/)
   assert.match(controls, /const operationVersion = useRef\(0\)/)
   assert.match(controls, /operationVersion\.current !== requestedVersion/)
   assert.match(controls, /operationVersion\.current \+= 1/)
