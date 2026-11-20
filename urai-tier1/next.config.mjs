@@ -1,6 +1,9 @@
 // Non-Git uploads must not use a builder-authored JSON document as source proof.
 // Until a separately reviewed checkout/artifact attestation contract exists,
 // keep these builds blocked; never fabricate VERCEL_GIT_COMMIT_SHA to proceed.
+import { assertReviewFirebaseBoundary } from './scripts/verify-hosted-firebase-review.mjs'
+assertReviewFirebaseBoundary(process.env)
+
 const onVercel = process.env.VERCEL === '1'
 
 if (onVercel || process.env.URAI_ENFORCE_SOURCE_SHA_MATCH === 'true') {
