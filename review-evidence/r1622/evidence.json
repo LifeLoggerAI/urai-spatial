@@ -1,0 +1,60 @@
+{
+  "candidate": "0dadfb6c1f81388615b9757fc6a7b83e2008729f",
+  "parent": "d6f0b60a821faecde247cf23e962b1083d0ff2bb",
+  "worker": "ou8xboa3c8vj19",
+  "testRun": "isolated localhost, synthetic/public Home only",
+  "screens": [
+    {
+      "id": "desktop",
+      "viewport": "1440x900",
+      "reducedMotion": false
+    },
+    {
+      "id": "mobile",
+      "viewport": "390x844",
+      "reducedMotion": true
+    }
+  ],
+  "checks": {
+    "tests": "13/13 PASS",
+    "typecheck": "exit 0",
+    "optimizedBuild": "exit 0",
+    "chromium": "2/2 HTTP 200; canvas=1; no JS page errors",
+    "readyHomeOverlay": "display:none",
+    "unreadyHomeOverlay": "display:block",
+    "production": "HOLD; memory writes OFF"
+  },
+  "rawFiles": [
+    {
+      "name": "r1622-desktop.png",
+      "sha256": "7d10d2df11ec79143db25ca1f26fe1e1042668c3ccc7eca44cfaaadde3ef356a"
+    },
+    {
+      "name": "r1622-mobile.png",
+      "sha256": "cecb17276ac77cea08362eda298d739c70e12557aacbd9918ffb79b4413bd6e5"
+    },
+    {
+      "name": "r1622-browser.json",
+      "sha256": "8d03a1cc9f17ff55147d531556a9fd53e2678770e6b49a510a242e6269d55f0f"
+    },
+    {
+      "name": "targeted-tests.log",
+      "sha256": "eeb4173ea2fa08c616cb32aff0294d7cae2bf9e1b985701d08c462e8c82f11c1"
+    },
+    {
+      "name": "build.log",
+      "sha256": "ecf09ffc88437f5280dc6171c8267b96a566727b3f12f06ffc834c8a44c56ca2"
+    }
+  ],
+  "comparisons": [
+    {
+      "file": "home-desktop-before-after.jpg",
+      "sha256": "ca39640731a52afcf742ccf5f7996ec2eee11bc20abc9b44bef120c5514f5271"
+    },
+    {
+      "file": "home-mobile-before-after.jpg",
+      "sha256": "7c4fa5b02e273907f655ea361a340a6f0c4b84dfa2b820a647f0768916097e89"
+    }
+  ],
+  "visualAcceptance": "PARTIAL: CSS sky band removed; low-detail foreground, hard terrain silhouette and external AAA art review remain unresolved"
+}
