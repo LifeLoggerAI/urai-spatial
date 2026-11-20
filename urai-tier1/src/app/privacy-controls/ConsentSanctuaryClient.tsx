@@ -29,6 +29,7 @@ import {
   type ConsentMode,
   type ConsentPolicy,
 } from './consentModel'
+import CanonicalConsentCompanion from './CanonicalConsentCompanion'
 import './consent-sanctuary.css'
 
 type LoadState = 'loading' | 'private' | 'demo' | 'signed-out' | 'unavailable' | 'offline'
@@ -350,6 +351,7 @@ export default function ConsentSanctuaryClient() {
           <div className="consentWorldFallback"><strong>Consent Sanctuary</strong><span>Semantic controls remain fully available without WebGL.</span></div>
         )}
       </div>
+      <CanonicalConsentCompanion />
       <header className="consentHeader">
         <p>UrAi Consent Sanctuary</p>
         <h1>Choose what the world may hold.</h1>
