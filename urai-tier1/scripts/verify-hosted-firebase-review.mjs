@@ -2,6 +2,8 @@
 const read = (e,k) => String(e[k] ?? '').trim()
 const required=['NEXT_PUBLIC_FIREBASE_API_KEY','NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN','NEXT_PUBLIC_FIREBASE_PROJECT_ID','NEXT_PUBLIC_FIREBASE_APP_ID','NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET']
 export function assertReviewFirebaseBoundary(env=process.env) {
+  const markedPreview = read(env,'VERCEL_ENV')==='preview' || read(env,'NEXT_PUBLIC_URAI_PREVIEW_MODE')==='true'
+  if(markedPreview && read(env,'URAI_REVIEW_ONLY')!=='true')throw Error('URAI_PREVIEW_REVIEW_MODE_REQUIRED')
   if(read(env,'URAI_REVIEW_ONLY')!=='true')return 'outside-review'
   if(read(env,'URAI_PRIVATE_MEMORY_WRITES_ENABLED')!=='false')throw Error('URAI_REVIEW_WRITES_MUST_BE_OFF')
   const configured=required.filter(k=>read(env,k))

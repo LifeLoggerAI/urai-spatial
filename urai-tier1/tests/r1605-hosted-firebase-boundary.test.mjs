@@ -15,3 +15,8 @@ test('wrong auth domain denied',()=>fails({...good,NEXT_PUBLIC_FIREBASE_AUTH_DOM
 test('wrong bucket denied',()=>fails({...good,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET:'urai-4dc1d.appspot.com'},'URAI_REVIEW_STAGING_STORAGE_BUCKET_MISMATCH'))
 test('complete synthetic identity boundary passes config-only',()=>assert.equal(gate(good),'staging-config-matched-not-certified'))
 test('non-review mode untouched',()=>assert.equal(gate({URAI_REVIEW_ONLY:'false'}),'outside-review'))
+
+test('Vercel preview without explicit review mode fails closed',()=>fails({...good,VERCEL_ENV:'preview',URAI_REVIEW_ONLY:'false'},'URAI_PREVIEW_REVIEW_MODE_REQUIRED'))
+test('UrAi preview marker without explicit review mode fails closed',()=>fails({...good,NEXT_PUBLIC_URAI_PREVIEW_MODE:'true',URAI_REVIEW_ONLY:''},'URAI_PREVIEW_REVIEW_MODE_REQUIRED'))
+test('Vercel preview requires writes off',()=>fails({...base,VERCEL_ENV:'preview',URAI_PRIVATE_MEMORY_WRITES_ENABLED:'true'},'URAI_REVIEW_WRITES_MUST_BE_OFF'))
+test('ordinary development without preview marker remains unaffected',()=>assert.equal(gate({NODE_ENV:'development'}),'outside-review'))
