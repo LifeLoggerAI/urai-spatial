@@ -33,17 +33,19 @@ function runModule(source, mocks) {
   return module.exports
 }
 function harness({answer = capability(), uid = 'owner-1', projectId = 'project-1',
-                  handshakeError = null, env = 'operational-v1'} = {}) {
+                  handshakeError = null, env = 'operational-v1', onCallable = null} = {}) {
   const calls = []
   process.env.NEXT_PUBLIC_URAI_PRIVACY_CONTRACT = env
   const contract = runModule(read('src/lib/privacy/privacyContractAuthority.ts'), {})
   const helper = runModule(helperSource, {})
   const app = { options: { projectId } }
+  const auth = { currentUser: uid ? { uid } : null }
   const m = {
     'firebase/firestore': { collection: ()=>{}, limit:()=>{}, orderBy:()=>{}, query:()=>{}, onSnapshot:()=>{} },
-    'firebase/auth': { getAuth: () => ({ currentUser: uid ? { uid } : null }) },
+    'firebase/auth': { getAuth: () => auth },
     'firebase/functions': { httpsCallable: (_instance, name) => async payload => {
       calls.push({ name, payload })
+      if (onCallable) await onCallable(name, payload)
       if (name === 'getOperationalPrivacyCapabilities') {
         if (handshakeError) throw handshakeError
         return { data: answer }
@@ -54,7 +56,7 @@ function harness({answer = capability(), uid = 'owner-1', projectId = 'project-1
     './privacyContractAuthority': contract,
     './privacyBackendCapability': helper,
   }
-  return { client: runModule(clientSource, m), calls, helper }
+  return { client: runModule(clientSource, m), calls, helper, auth, app }
 }
 
 test('backend exposes authenticated scoped-capability handshake and public entrypoint', () => {
@@ -127,4 +129,50 @@ test('all owner Privacy API entry points require current identity before operati
     assert.match(region, /const uid = await requireCurrentPrivacyOwner\(context\)/,
       name + ' must check current identity before operations')
   }
+})
+
+
+test('account switch while verifying scoped backend blocks export before dispatch', async () => {
+  let h
+  h = harness({ onCallable: async name => {
+    if (name === 'getOperationalPrivacyCapabilities') h.auth.currentUser = { uid: 'owner-2' }
+  } })
+  await assert.rejects(h.client.createOperationalExportRequest(['audit']), /OPERATIONAL_PRIVACY_AUTH_CHANGED/)
+  assert.deepEqual(h.calls.map(x => x.name), ['getOperationalPrivacyCapabilities'])
+})
+
+test('same UID replacement user while capability fetch is pending denies stale request', async () => {
+  let h
+  h = harness({ onCallable: async name => {
+    if (name === 'getOperationalPrivacyCapabilities') h.auth.currentUser = { uid: 'owner-1' }
+  } })
+  await assert.rejects(h.client.createOperationalDeletionRequest({ scope:'memories', confirmation:'CONFIRM DELETE' }), /OPERATIONAL_PRIVACY_AUTH_CHANGED/)
+  assert.deepEqual(h.calls.map(x => x.name), ['getOperationalPrivacyCapabilities'])
+})
+
+test('sign out while capability response is pending cannot start scoped download', async () => {
+  let h
+  h = harness({ onCallable: async name => {
+    if (name === 'getOperationalPrivacyCapabilities') h.auth.currentUser = null
+  } })
+  await assert.rejects(h.client.getOperationalExportDownloadUrl({ jobId:'export-1' }), /OPERATIONAL_PRIVACY_AUTH_CHANGED/)
+  assert.deepEqual(h.calls.map(x => x.name), ['getOperationalPrivacyCapabilities'])
+})
+
+test('account replacement while operation is in flight cannot expose returned data', async () => {
+  let h
+  h = harness({ onCallable: async name => {
+    if (name === 'getPassportSnapshot') h.auth.currentUser = { uid: 'owner-2' }
+  } })
+  await assert.rejects(h.client.getOperationalPassportSnapshot(), /OPERATIONAL_PRIVACY_AUTH_CHANGED/)
+  assert.deepEqual(h.calls.map(x=>x.name), ['getPassportSnapshot'])
+})
+
+test('project identity changes before scoped handshake resolves fail closed', async () => {
+  let h
+  h = harness({ onCallable: async name => {
+    if (name === 'getOperationalPrivacyCapabilities') h.app.options.projectId = 'different-project'
+  } })
+  await assert.rejects(h.client.createOperationalExportRequest(['consent']), /OPERATIONAL_PRIVACY_AUTH_CHANGED/)
+  assert.deepEqual(h.calls.map(x=>x.name), ['getOperationalPrivacyCapabilities'])
 })
