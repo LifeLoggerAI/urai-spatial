@@ -64,11 +64,32 @@ export function HomeSurfaceMaterial({ kind = 'stone', ...props }: MaterialProps)
 }
 
 export function HomeSkyGradient() {
+  // Original, procedural living sky: continuous horizon without a pale hard
+  // band, no remote/recorded imagery and no extra GPU texture allocations.
+  // The shader keeps the same outside-facing celestial shell and pure markup.
   return <mesh name="home-original-living-sky" scale={150} renderOrder={-100}>
-    <sphereGeometry args={[1, 32, 16]} />
+    <sphereGeometry args={[1, 48, 24]} />
     <shaderMaterial side={THREE.BackSide} depthWrite={false} fog={false} toneMapped={false}
       vertexShader={`varying vec3 vHomeSkyDirection; void main() { vHomeSkyDirection = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`}
-      fragmentShader={`varying vec3 vHomeSkyDirection; void main() { float height = clamp(normalize(vHomeSkyDirection).y, 0.0, 1.0); vec3 horizon = vec3(.41, .51, .48); vec3 zenith = vec3(.075, .16, .19); vec3 sky = mix(horizon, zenith, pow(height, .42)); gl_FragColor = vec4(sky, 1.0); #include <colorspace_fragment> }`.replace('#include <colorspace_fragment>', '\n#include <colorspace_fragment>\n')}
+      fragmentShader={`
+        varying vec3 vHomeSkyDirection;
+        void main() {
+          vec3 dir = normalize(vHomeSkyDirection);
+          float altitude = clamp(dir.y * .5 + .5, 0.0, 1.0);
+          float upper = smoothstep(.45, .99, altitude);
+          vec3 horizon = vec3(.115, .225, .297);
+          vec3 zenith = vec3(.019, .056, .102);
+          vec3 sky = mix(horizon, zenith, pow(upper, .76));
+          // Wide, low contrast luminous atmospheric layer. It never replaces
+          // or flattens the real scene models, ground geometry or sky controls.
+          float glow = exp(-pow((altitude - .51) / .16, 2.0));
+          float drift = .57 + .43 * sin(dir.x * 7.0 + dir.z * 4.2);
+          sky += vec3(.025, .063, .084) * glow * drift;
+          float twilight = exp(-pow((altitude - .51) / .085, 2.0));
+          sky += vec3(.035, .018, .019) * twilight * max(0.0, dir.x);
+          gl_FragColor = vec4(sky, 1.0);
+          #include <colorspace_fragment>
+        }`.replace('#include <colorspace_fragment>', '\n#include <colorspace_fragment>\n')}
     />
   </mesh>
 }
