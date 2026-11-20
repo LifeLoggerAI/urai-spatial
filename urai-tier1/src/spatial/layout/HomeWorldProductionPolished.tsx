@@ -776,7 +776,7 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
   return <>
     {cosmic ? <color attach="background" args={['#01050b']} /> : null}
     <Stars radius={190} depth={90} count={cosmic ? 2200 : 90} factor={cosmic ? 2.7 : .42} saturation={.1} fade speed={props.reducedMotion ? 0 : .015} />
-    <fogExp2 attach="fog" args={[cosmic ? '#050b14' : '#0d2020', cosmic ? .0017 : .0095]} />
+    <fogExp2 attach="fog" args={[cosmic ? '#050b14' : '#638ca0', cosmic ? .0017 : .0095]} />
     <ambientLight intensity={cosmic ? .13 : .18} color="#c7d8d2" />
     <hemisphereLight args={['#bfd7d8','#121912',cosmic ? .22 : .44]} />
     <directionalLight position={[8,18,7]} intensity={cosmic ? .34 : 1.35} color="#f2ecd8" castShadow shadow-mapSize={[1024,1024]} shadow-camera-left={-18} shadow-camera-right={18} shadow-camera-top={18} shadow-camera-bottom={-18} shadow-camera-near={1} shadow-camera-far={60} shadow-normalBias={.025} shadow-bias={-.00015} />
