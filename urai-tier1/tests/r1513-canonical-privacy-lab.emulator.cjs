@@ -36,7 +36,7 @@ async function run() {
     await page.getByText('Signed into local Auth emulator.').waitFor({ timeout: 18000 })
     trace('disposable Firebase Auth account created')
 
-    await page.getByLabel('Status').selectOption('granted')
+    await page.getByRole('combobox', { name: /^Status/ }).selectOption('granted')
     await page.getByRole('button', { name: 'Submit canonical consent' }).click()
     await resultContains('"status": "granted"')
     trace('server canonical memory consent accepted')

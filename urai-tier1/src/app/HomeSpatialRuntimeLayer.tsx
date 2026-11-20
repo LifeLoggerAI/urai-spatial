@@ -14,6 +14,22 @@ type RendererState = 'ready' | 'recovering' | 'failed'
 const HOME_TELEMETRY_SELECTOR = '.urai-asset-home-world[data-home-primary-owner="asset-driven"], .urai-final-home-world'
 
 function HomeSemanticNavigation({ spatialAvailable, spatialReady }: { spatialAvailable: boolean; spatialReady: boolean }) {
+  const lifeMapControlRef = useRef<HTMLAnchorElement | HTMLButtonElement | null>(null)
+  const restoreLifeMapFocusRef = useRef(false)
+  const bindLifeMapControl = useCallback((control: HTMLAnchorElement | HTMLButtonElement | null) => {
+    if (control === null) {
+      const previous = lifeMapControlRef.current
+      // React detaches the outgoing ref before replacing the focused host node.
+      restoreLifeMapFocusRef.current = previous !== null && previous.ownerDocument.activeElement === previous
+      lifeMapControlRef.current = null
+      return
+    }
+    lifeMapControlRef.current = control
+    if (restoreLifeMapFocusRef.current) {
+      restoreLifeMapFocusRef.current = false
+      control.focus({ preventScroll: true })
+    }
+  }, [])
   const ascendToLifeMap = () => requestUraiWorldTravel({
     destination: 'life-map',
     href: '/life-map/?from=home-sky',
@@ -26,12 +42,12 @@ function HomeSemanticNavigation({ spatialAvailable, spatialReady }: { spatialAva
       <a href="/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent" aria-label="Open Ground directly" data-testid="home-semantic-ground">Ground</a>
       {spatialAvailable ? (
         spatialReady ? (
-          <button type="button" aria-label="Ascend through Home sky to Life Map" data-testid="home-semantic-life-map" data-home-ascent-authority="governed-scene-transition" disabled={!spatialReady} onClick={ascendToLifeMap}>Life Map</button>
+          <button type="button" aria-label="Ascend through Home sky to Life Map" data-testid="home-semantic-life-map" ref={bindLifeMapControl} data-home-ascent-authority="governed-scene-transition" disabled={!spatialReady} onClick={ascendToLifeMap}>Life Map</button>
         ) : (
-          <a href="/life-map/?from=home-semantic&entryPortal=home-semantic-safe-fallback&cameraCheckpoint=home-assets-not-ready" aria-label="Open Life Map directly while Home visuals are not ready" data-testid="home-semantic-life-map" data-home-ascent-authority="semantic-fallback-when-assets-unready">Life Map</a>
+          <a href="/life-map/?from=home-semantic&entryPortal=home-semantic-safe-fallback&cameraCheckpoint=home-assets-not-ready" aria-label="Open Life Map directly while Home visuals are not ready" data-testid="home-semantic-life-map" ref={bindLifeMapControl} data-home-ascent-authority="semantic-fallback-when-assets-unready">Life Map</a>
         )
       ) : (
-        <a href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete" aria-label="Open Life Map directly without WebGL" data-testid="home-semantic-life-map">Life Map</a>
+        <a href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete" aria-label="Open Life Map directly without WebGL" data-testid="home-semantic-life-map" ref={bindLifeMapControl}>Life Map</a>
       )}
     </nav>
   )
