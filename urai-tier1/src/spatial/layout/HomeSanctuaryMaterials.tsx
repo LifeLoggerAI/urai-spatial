@@ -33,10 +33,26 @@ vHomeSurfacePosition = (modelMatrix * homeSurfacePoint).xyz;`)
     const grain = kind === 'timber'
       ? 'vec2(vHomeSurfacePosition.x * 48.0 + vHomeSurfacePosition.z * 5.0, vHomeSurfacePosition.y * 17.0 + vHomeSurfacePosition.z * 1.8)'
       : 'vec2(vHomeSurfacePosition.x + vHomeSurfacePosition.z * .73, vHomeSurfacePosition.y + vHomeSurfacePosition.z * .43) * 32.0'
+    // Original offline mineral/soil variation; no added texture or remote asset.
+    const surfaceColor = kind === 'ground' ? `
+float homeSoil = homeDetailNoise(vHomeSurfacePosition.xz * 1.35);
+float homeGreen = homeDetailNoise(vHomeSurfacePosition.xz * 4.8 + vec2(1.7, 8.4));
+float homeFine = homeDetailNoise(vHomeSurfacePosition.xz * 28.0);
+vec3 homeEarthTint = mix(vec3(.76, .72, .59), vec3(.96, 1.055, .88), smoothstep(.19, .83, homeSoil));
+homeEarthTint *= mix(.91, 1.07, homeGreen) * mix(.964, 1.035, homeFine);
+diffuseColor.rgb *= homeEarthTint;`
+      : kind === 'stone' ? `
+float homeVein = homeDetailNoise(vHomeSurfacePosition.xz * 7.1 + vHomeSurfacePosition.y * 2.8);
+float homeMottle = homeDetailNoise(vHomeSurfacePosition.xz * 19.0 + vHomeSurfacePosition.y * 4.2);
+vec3 homeMineralTint = mix(vec3(.82, .85, .78), vec3(1.1, 1.045, .98), smoothstep(.22, .86, homeVein));
+homeMineralTint *= mix(.88, 1.105, homeMottle);
+diffuseColor.rgb *= homeMineralTint;`
+      : ''
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\n${DETAIL_FUNCTIONS}`).replace('#include <color_fragment>', `#include <color_fragment>
 float homeGrain = homeDetailNoise(${grain});
 float homeBroad = homeDetailNoise(vHomeSurfacePosition.xz * 2.4);
-diffuseColor.rgb *= mix(.89, 1.08, homeBroad) * mix(.94, 1.05, homeGrain);`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (homeGrain - .5) * .065, .72, 1.0);').replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = homeDetailNormal(-vViewPosition, normal, homeGrain * .0025);')
+diffuseColor.rgb *= mix(.89, 1.08, homeBroad) * mix(.94, 1.05, homeGrain);
+${surfaceColor}`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (homeGrain - .5) * .065, .72, 1.0);').replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = homeDetailNormal(-vViewPosition, normal, homeGrain * .0025);')
   }
 }
 
@@ -46,8 +62,8 @@ export const HOME_SURFACE_SHADERS = {
   timber: compileOriginalDetail('timber'),
 }
 const PROGRAM_KEYS = {
-  ground: () => 'urai-original-home-ground-detail-v1',
-  stone: () => 'urai-original-home-stone-detail-v1',
+  ground: () => 'urai-original-home-ground-detail-v2-earth',
+  stone: () => 'urai-original-home-stone-detail-v2-mineral',
   timber: () => 'urai-original-home-timber-detail-v1',
 }
 
