@@ -7,6 +7,18 @@
   isolation: isolate;
 }
 
+/**
+ * A fully ready asset-driven Home renders its own living sky and terrain in R3F.
+ * The persistent CSS sky/horizon painted over that world and created a hard
+ * horizontal line in desktop and mobile screenshots.
+ * Keep this layer during loading/fallback and throughout all other realms.
+ */
+.urai-world-runtime[data-world-destination='home']:has(
+  .urai-asset-home-world[data-home-primary-owner='asset-driven'][data-home-assets-ready='true']
+) > .urai-world-atmosphere {
+  display: none;
+}
+
 .urai-world-atmosphere > span {
   position: absolute;
   inset: 0;
