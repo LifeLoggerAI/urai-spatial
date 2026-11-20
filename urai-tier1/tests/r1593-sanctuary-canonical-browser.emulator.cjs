@@ -51,7 +51,7 @@ async function run() {
     await page.getByText('Signed into local Auth emulator.').waitFor({ timeout: 18000 })
 
 
-    await page.getByLabel('Status').selectOption('granted')
+    await page.getByRole('combobox', { name: /^Status/ }).selectOption('granted')
     await page.getByRole('button', { name: 'Submit canonical consent' }).click()
     await resultContains('"status": "granted"')
     trace('server canonical memory consent accepted')
@@ -76,18 +76,22 @@ async function run() {
     await resultContains('"exportJobId"')
     trace('account-wide export request queued, not completed')
 
-    await page.getByRole('button', { name: 'Check completed export availability' }).click()
-    await page.getByText('Owner download eligibility check failed; no completion is claimed.').waitFor({ timeout: 16000 })
-    trace('unfinished export download rejected')
+    await page.locator('[data-canonical-export-status="pending"]').waitFor({ timeout: 16000 })
+    assert.equal(await page.getByRole('button', { name: 'Check completed export availability' }).isDisabled(), true)
+    assert.equal(await page.getByRole('link', { name: 'Download completed account export' }).count(), 0)
+    trace('server-observed pending export cannot request a download')
 
     await page.getByLabel('Type REQUEST ACCOUNT DELETION').fill('REQUEST ACCOUNT DELETION')
     await page.getByRole('button', { name: 'Submit pending account deletion request' }).click()
     await resultContains('"requestId"')
+    await page.locator('[data-canonical-deletion-status="pending"]').waitFor({ timeout: 16000 })
     trace('pending account deletion request only')
 
     await page.getByRole('button', { name: 'Sign out' }).click()
     await page.getByText('No local test identity signed in.').waitFor({ timeout: 16000 })
-    trace('local account signed out')
+    await page.waitForFunction(() => document.querySelector('pre[aria-label="Canonical callable response"]')?.textContent === 'No local authority verified.')
+    assert.equal(await page.getByRole('link', { name: 'Download completed account export' }).count(), 0)
+    trace('local account signed out and previous request results cleared')
 
     assert.equal(steps.length, 13)
     assert.deepEqual(pageErrors, [])
