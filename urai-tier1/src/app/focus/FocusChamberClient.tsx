@@ -16,7 +16,7 @@ import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/
 import { saveFocusViewFrame, consumeFocusViewHandoff } from '@/spatial/world/focusViewReturn'
 
 const focusAccessibilityCss = `
-.focusControls button:focus-visible,.focusHelp summary:focus-visible,.neutralActions button:focus-visible,.webglRecovery button:focus-visible,.focus-spatial-aperture-button:focus-visible{outline:3px solid #e7fbff;outline-offset:3px}
+.focusHeading:focus-visible,.focusControls button:focus-visible,.focusHelp summary:focus-visible,.neutralActions button:focus-visible,.webglRecovery button:focus-visible,.focus-spatial-aperture-button:focus-visible{outline:3px solid #e7fbff;outline-offset:3px}
 .focusHeading,.focusNarration,.memoryMeaning{overflow-wrap:anywhere}
 .focusControls button{min-width:0;white-space:normal;line-height:1.2}
 .focusStatus{max-width:calc(100vw - 32px);text-align:center;white-space:normal}
@@ -24,8 +24,12 @@ const focusAccessibilityCss = `
 @media(max-width:760px){
   .focusWorld[data-chamber-state="ready"] .focusStatus{width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   html[data-urai-preview="true"] .focusWorld{top:64px;height:auto;min-height:0}
+  .focusHelp{bottom:max(84px,calc(env(safe-area-inset-bottom) + 72px))}
+  body:has(.focusWorld) [data-urai-adam-launcher="true"]{left:max(16px,env(safe-area-inset-left));right:auto;top:auto;bottom:max(84px,calc(env(safe-area-inset-bottom) + 72px));transform:none}
 }
 @media(max-width:380px),(max-height:500px){.focusHeading{max-height:40svh;overflow-y:auto}.focusNarration{font-size:14px}.focusHelp[open]{max-height:40svh;max-width:calc(100vw - 32px);overflow:auto}.memoryMeaning{max-height:22svh;overflow:auto}}
+/* Bound the scrollable summary above the context card on narrow phones. */
+@media(max-width:380px){.focusHeading{max-height:min(40svh,calc(100% - 22svh - 174px));overflow-y:auto;pointer-events:auto}}
 @media(forced-colors:active){.focusControls button,.focusHelp,.neutralActions button,.webglRecovery button,.focus-spatial-aperture-button{background:Canvas;color:CanvasText;border:2px solid CanvasText}.focusControls button:focus-visible,.focusHelp summary:focus-visible,.neutralActions button:focus-visible,.webglRecovery button:focus-visible,.focus-spatial-aperture-button:focus-visible{outline:3px solid Highlight;outline-offset:3px}}
 `
 
@@ -632,7 +636,7 @@ export default function FocusChamberClient() {
     <div className="focusCanvas" aria-label="Focus memory star. Drag to orbit, scroll or pinch to move through depth, and use W A S D or arrow keys to travel.">
       {webglAvailable === null ? <div className="focusFallback" role="status">Preparing stellar memory field…</div> : webglUsable ? <Suspense fallback={<div className="focusFallback" role="status">Opening stellar memory field…</div>}><Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'always' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }}><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={setWebglState} shellRef={shellRef} entryFrame={entryFrame} /></Canvas></Suspense> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong>Spatial view unavailable</strong><span>The memory remains accessible through the controls and memory details.</span></div>}
     </div>
-    <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS MEMORY STAR'}</p><h2>{heading}</h2>{memory ? <span>{dateLabel(memory.occurredAt)}</span> : null}<div className="focusNarration"><small>{memory ? 'Selected memory' : 'Memory star threshold'}</small><strong>{description}</strong></div></header>
+    <header className="focusHeading" tabIndex={0} aria-label="Selected memory summary"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS MEMORY STAR'}</p><h2>{heading}</h2>{memory ? <span>{dateLabel(memory.occurredAt)}</span> : null}<div className="focusNarration"><small>{memory ? 'Selected memory' : 'Memory star threshold'}</small><strong>{description}</strong></div></header>
     {!webglUsable && <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral stellar Focus field'} data-focus-visual-owner="stellar-photosphere-corona" aria-hidden="true">
       <div className="focusPhotosphereVisual" />
     </section>}
