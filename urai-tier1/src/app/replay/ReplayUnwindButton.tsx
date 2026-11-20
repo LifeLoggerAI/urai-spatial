@@ -2,16 +2,19 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 
-const DEFAULT_REPLAY_MANIFEST_ID = 'seed-memory-bloom'
-
-function focusUrlForManifest(manifestId: string) {
-  return `/focus?manifestId=${encodeURIComponent(manifestId)}`
+function focusUrlForManifest(manifestId: string, memoryId: string, nodeId: string, demo: boolean) {
+  const query = new URLSearchParams({ memoryId, node: nodeId, manifestId })
+  if (demo) query.set('demo', '1')
+  return `/focus?${query.toString()}`
 }
 
 export function ReplayUnwindButton() {
   const router = useRouter()
   const params = useSearchParams()
-  const manifestId = params?.get('manifestId') || DEFAULT_REPLAY_MANIFEST_ID
+  const manifestId = params?.get('manifestId') ?? ''
+  const memoryId = params?.get('memoryId') ?? ''
+  const nodeId = params?.get('node') ?? memoryId
+  const demo = params?.get('demo') === '1'
 
   return (
     <button
@@ -19,8 +22,10 @@ export function ReplayUnwindButton() {
       data-testid="replay-unwind-button"
       data-route-action="replay-unwind-route-action"
       onClick={() => {
-        window.sessionStorage.setItem('urai-replay-return-manifest-id', manifestId)
-        router.push(focusUrlForManifest(manifestId))
+        // The target is an untrusted locator, never an access grant. Focus
+        // rechecks Firebase auth, owner consent and the memory document.
+        if (manifestId && memoryId && nodeId) router.push(focusUrlForManifest(manifestId, memoryId, nodeId, demo))
+        else router.push('/life-map')
       }}
       style={{
         position: 'fixed',

@@ -10,7 +10,9 @@ import {
 } from './worldEvents'
 import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 import { resolveWorldReturnDestination } from './worldReturnDestination'
-import { prepareFocusViewHandoff } from './focusViewReturn'
+import { prepareFocusViewHandoff, clearFocusViewReturn } from './focusViewReturn'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { claimWorldReturn } from './worldReturnGuard'
 
 const CONTEXT_KEYS = [
@@ -90,6 +92,12 @@ function isEditableTarget(target: EventTarget | null) {
   return target.isContentEditable || target.matches('input, textarea, select, [role="textbox"]')
 }
 
+function currentOwnerId(demo: boolean): string | null {
+  if (demo) return 'explicit-demo'
+  if (!firebasePublicEnvReady) return null
+  try { return getAuth(app).currentUser?.uid ?? null } catch { return null }
+}
+
 export function WorldTransitionController() {
   const router = useRouter()
   const { world, phase, beginTravel, pendingTravel } = useUraiWorldState()
@@ -98,6 +106,19 @@ export function WorldTransitionController() {
   const worldRef = useRef(world)
   const phaseRef = useRef(phase)
   const beginTravelRef = useRef(beginTravel)
+
+  // Logout/account change discards all old owner camera hints before another
+  // authenticated memory can be admitted.
+  useEffect(() => {
+    if (!firebasePublicEnvReady) return
+    const auth = getAuth(app)
+    let prior = auth.currentUser?.uid ?? null
+    return onAuthStateChanged(auth, user => {
+      const next = user?.uid ?? null
+      if (next !== prior) clearFocusViewReturn()
+      prior = next
+    }, () => clearFocusViewReturn())
+  }, [])
 
   useEffect(() => { worldRef.current = world }, [world])
   useEffect(() => { phaseRef.current = phase }, [phase])
@@ -163,9 +184,10 @@ export function WorldTransitionController() {
     if (!claimWorldReturn(phaseRef)) return
     const destination = resolveWorldReturnDestination(currentWorld)
     const definition = definitionForDestination(destination)
+    const ownerId = currentOwnerId(Boolean(currentWorld.demo))
     const handoff = destination === 'focus' && currentWorld.destination === 'replay' &&
-      currentWorld.memoryId && currentWorld.replayManifestId
-      ? prepareFocusViewHandoff(currentWorld.memoryId, currentWorld.replayManifestId) : null
+      currentWorld.memoryId && currentWorld.replayManifestId && ownerId
+      ? prepareFocusViewHandoff(ownerId, currentWorld.memoryId, currentWorld.replayManifestId) : null
     const target = new URL(definition.href, window.location.origin)
     if (handoff) {
       target.searchParams.set('node', handoff.nodeId)

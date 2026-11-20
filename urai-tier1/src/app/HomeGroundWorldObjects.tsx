@@ -38,7 +38,6 @@ const stones = [
 
 function rememberLaunchMemory() {
   if (typeof window === "undefined") return;
-  window.sessionStorage.setItem("urai-lifemap-selected-memory-id", launchMemoryId);
 }
 
 export default function HomeGroundWorldObjects() {

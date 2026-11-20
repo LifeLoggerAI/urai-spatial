@@ -30,6 +30,16 @@ export type ReplayOperationState = {
 export type ReplayOperationTransport = { persist(operation: ReplayOperation): Promise<void> }
 export type ReplayOperationStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
+// No private-memory corrections, owner identifiers, or offline queue entries
+// are persisted into readable browser storage. A refresh discards unsent work.
+const volatileItems = new Map<string, string>()
+export const volatileReplayStorage: ReplayOperationStorage = {
+  getItem: key => volatileItems.get(key) ?? null,
+  setItem: (key, value) => { volatileItems.set(key, value) },
+  removeItem: key => { volatileItems.delete(key) },
+}
+export function clearVolatileReplayState() { volatileItems.clear() }
+
 const STORAGE_PREFIX = 'urai-replay-operations-v1:'
 const MAX_AUDIT_ENTRIES = 100
 const CORRECTION_FIELDS = new Set<ReplayCorrection['field']>(['title', 'summary', 'emotion', 'people', 'place'])
