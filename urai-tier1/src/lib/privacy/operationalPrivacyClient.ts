@@ -40,22 +40,35 @@ function operationId(prefix: string) {
 
 const SCOPED_COLLISION_CALLABLES = new Set(['createExportRequest', 'createDeletionRequest', 'getExportDownloadUrl'])
 
-async function verifyScopedOperationalPrivacyBackend(): Promise<void> {
-  const uid = getAuth(app).currentUser?.uid
-  const projectId = app.options.projectId
-  if (!uid || !projectId) throw new Error('OPERATIONAL_PRIVACY_BACKEND_UNVERIFIED')
+/** Fail closed when Firebase switches accounts while a scoped request is pending. */
+function assertSameOwner(auth: ReturnType<typeof getAuth>, owner: NonNullable<ReturnType<typeof getAuth>['currentUser']>, projectId: string): void {
+  if (!owner.uid || !projectId || auth.currentUser !== owner || auth.currentUser?.uid !== owner.uid || app.options.projectId !== projectId) {
+    throw new Error('OPERATIONAL_PRIVACY_AUTH_CHANGED')
+  }
+}
+
+async function verifyScopedOperationalPrivacyBackend(owner: NonNullable<ReturnType<typeof getAuth>['currentUser']>, projectId: string, assertCurrent: () => void): Promise<void> {
+  assertCurrent()
   const prove = httpsCallable<undefined, unknown>(functions, 'getOperationalPrivacyCapabilities')
   const response = await prove()
-  assertOperationalPrivacyBackendCapabilities(response.data, { uid, projectId })
+  assertCurrent()
+  assertOperationalPrivacyBackendCapabilities(response.data, { uid: owner.uid, projectId })
 }
 
 export async function callOperationalPrivacyFunction<T extends PrivacyCallableResult = PrivacyCallableResult>(name: string, payload?: Record<string, unknown>): Promise<T> {
   requireOperationalPrivacyContract(process.env.NEXT_PUBLIC_URAI_PRIVACY_CONTRACT)
-  // Shared callable names are unsafe unless THIS authenticated backend proves
-  // it is the scoped operational authority. Failure produces no private writes.
-  if (SCOPED_COLLISION_CALLABLES.has(name)) await verifyScopedOperationalPrivacyBackend()
+  const auth = getAuth(app)
+  const owner = auth.currentUser
+  const projectId = app.options.projectId
+  if (!owner?.uid || !projectId) throw new Error('OPERATIONAL_PRIVACY_BACKEND_UNVERIFIED')
+  const assertCurrent = () => assertSameOwner(auth, owner, projectId)
+  assertCurrent()
+  // A canonical purpose grant cannot impersonate operational scoped authority.
+  if (SCOPED_COLLISION_CALLABLES.has(name)) await verifyScopedOperationalPrivacyBackend(owner, projectId, assertCurrent)
+  assertCurrent()
   const callable = httpsCallable<Record<string, unknown> | undefined, T>(functions, name)
   const response = await callable(payload)
+  assertCurrent() // Never expose an obsolete account result after an auth switch.
   return response.data
 }
 
