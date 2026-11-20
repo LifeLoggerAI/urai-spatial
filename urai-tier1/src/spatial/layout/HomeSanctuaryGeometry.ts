@@ -97,6 +97,72 @@ export function makeHomeTerrainGeometry(retainedGround?: { minX: number; maxX: n
   return result
 }
 
+
+/**
+ * Distant original landform extension stitched to the exact 90m terrain edge.
+ *
+ * A square annulus avoids holes at the corners of the walkable ground and
+ * postpones the outer mesh boundary until distance fog has almost completely
+ * concealed it. No new collision surface, private data, texture or asset.
+ */
+export function makeHomeVistaGeometry() {
+  const edgeSegments = 90
+  const ringOffsets = [0, 3, 7, 13, 22, 35, 52, 75, 104, 140, 175] as const
+  const ringSize = edgeSegments * 4
+  const vertexCount = ringSize * ringOffsets.length
+  const positions = new Float32Array(vertexCount * 3)
+  const colors = new Float32Array(vertexCount * 3)
+  const uv = new Float32Array(vertexCount * 2)
+  const triangles: number[] = []
+  const color = new THREE.Color()
+  const distantColor = new THREE.Color('#425c57')
+
+  for (let ring = 0; ring < ringOffsets.length; ring += 1) {
+    const half = 45 + ringOffsets[ring]
+    const rise = THREE.MathUtils.smoothstep(half, 45, 70)
+    const fall = 1 - THREE.MathUtils.smoothstep(half, 145, 215)
+    const atmosphericTint = THREE.MathUtils.smoothstep(half, 45, 200) * .32
+
+    for (let side = 0; side < 4; side += 1) {
+      for (let segment = 0; segment < edgeSegments; segment += 1) {
+        const t = segment / edgeSegments * 2 - 1
+        // Clockwise square perimeter; matching points across every ring.
+        const x = side === 0 ? half * t : side === 1 ? half : side === 2 ? -half * t : -half
+        const z = side === 0 ? -half : side === 1 ? half * t : side === 2 ? half : -half * t
+        const vertex = ring * ringSize + side * edgeSegments + segment
+        const relief = Math.max(.85,
+          3.35 + Math.sin(x * .063 + z * .017) * 1.18
+          + Math.cos(z * .047 - x * .029) * .91
+          + Math.sin(x * .14 + z * .112) * .49)
+        positions.set([x, homeTerrainHeight(x, z) + rise * fall * relief, z], vertex * 3)
+        homeTerrainColor(x, z, color).lerp(distantColor, atmosphericTint)
+        colors.set([color.r, color.g, color.b], vertex * 3)
+        uv.set([x, z], vertex * 2)
+      }
+    }
+  }
+
+  for (let ring = 0; ring < ringOffsets.length - 1; ring += 1) {
+    for (let segment = 0; segment < ringSize; segment += 1) {
+      const a = ring * ringSize + segment
+      const b = ring * ringSize + (segment + 1) % ringSize
+      const c = (ring + 1) * ringSize + segment
+      const d = (ring + 1) * ringSize + (segment + 1) % ringSize
+      triangles.push(a, b, c, b, d, c)
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+  geometry.setIndex(triangles)
+  geometry.computeVertexNormals()
+  geometry.computeBoundingBox()
+  geometry.computeBoundingSphere()
+  return geometry
+}
+
 export function makeHomeRibbonGeometry(points: readonly HomePathPoint[], width: number) {
   const positions: number[] = []
   const indices: number[] = []

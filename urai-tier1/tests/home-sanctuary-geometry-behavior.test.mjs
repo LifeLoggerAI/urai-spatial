@@ -5,7 +5,7 @@ import { stepEmbodiedMotion } from '../src/spatial/navigation/EmbodiedNavigation
 import {
   HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL,
   homeCourtyardFloorHeight, homeCourtyardPoint, homeTerrainHeight, homeWalkSurfaceHeight,
-  makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry,
+  makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, makeHomeVistaGeometry,
   projectHomeTerrainGeometry, resolveHomeSolidPenetration,
 } from '../src/spatial/layout/HomeSanctuaryGeometry.ts'
 
@@ -42,6 +42,44 @@ test('terrain extension removes its duplicate interior and retains the outside w
   }
   assert.ok(exterior > 1000)
   extension.dispose(); whole.dispose()
+})
+
+
+test('original distant vista seals all four terrain edges without adding an inner collision surface', () => {
+  const ground = makeHomeTerrainGeometry()
+  const vista = makeHomeVistaGeometry()
+  const ringSize = 360
+  const p = vista.attributes.position
+  assert.equal(p.count, ringSize * 11)
+  assert.equal(vista.index.count, ringSize * 10 * 6)
+  assert.equal(vista.attributes.color.count, p.count)
+  assert.equal(vista.attributes.uv.count, p.count)
+  assert.ok(vista.boundingBox.max.x >= 220 && vista.boundingBox.min.z <= -220)
+  const groundBorder = new Map()
+  const groundPoints = ground.attributes.position
+  const key = (x, z) => `${x.toFixed(3)}:${z.toFixed(3)}`
+  for (let vertex = 0; vertex < groundPoints.count; vertex += 1) {
+    const x = groundPoints.getX(vertex), z = groundPoints.getZ(vertex)
+    if (Math.abs(Math.max(Math.abs(x), Math.abs(z)) - 45) < .0001) {
+      groundBorder.set(key(x, z), groundPoints.getY(vertex))
+    }
+  }
+  for (let vertex = 0; vertex < p.count; vertex += 1) {
+    const x = p.getX(vertex), z = p.getZ(vertex)
+    const outerDistance = Math.max(Math.abs(x), Math.abs(z))
+    assert.ok(outerDistance >= 45 - .0001, 'vista must not cover walkable terrain')
+    assert.ok(vista.attributes.normal.getY(vertex) > .45, 'hills must retain upward-facing terrain normals')
+    if (vertex < ringSize) {
+      assert.ok(groundBorder.has(key(x, z)), 'all vista seam vertices must match retained terrain samples')
+      close(p.getY(vertex), groundBorder.get(key(x, z)), .0001)
+    }
+  }
+  let relief = 0
+  for (let vertex = ringSize; vertex < p.count - ringSize; vertex += 1) {
+    relief = Math.max(relief, p.getY(vertex) - homeTerrainHeight(p.getX(vertex), p.getZ(vertex)))
+  }
+  assert.ok(relief > 2, 'distant geometry must create physical rolling hills, not a flat masking plane')
+  vista.dispose(); ground.dispose()
 })
 
 test('path edges and interior rows follow the hillside rather than their center elevation', () => {
