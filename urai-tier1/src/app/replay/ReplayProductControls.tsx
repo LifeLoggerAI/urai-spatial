@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
-import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { onAuthStateChanged } from 'firebase/auth'
+import { getUrAiAuth, firebasePublicEnvReady } from '@/lib/firebase/client'
 import {
   applyReplayOperation,
   executeReplayOperation,
@@ -73,7 +73,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
 
   useEffect(() => {
     if (!firebasePublicEnvReady) return
-    const auth = getAuth(app)
+    const auth = getUrAiAuth()
     let previousUid = auth.currentUser?.uid ?? null
     return onAuthStateChanged(auth, user => {
       const uid = user?.uid ?? null

@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { doc, onSnapshot } from 'firebase/firestore'
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
-import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
+import { onAuthStateChanged } from 'firebase/auth'
+import { getUrAiAuth, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import { buildNamedExplicitDemoMemory } from './explicitDemoMemory'
 import { memoryConsentAdmission, type MemoryConsentAdmission } from './memoryConsentAdmission'
 import {
@@ -80,7 +80,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
       return () => { cancelled = true }
     }
 
-    const auth = getAuth(app)
+    const auth = getUrAiAuth()
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (cancelled) return
       detachMemory()

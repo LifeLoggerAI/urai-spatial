@@ -11,8 +11,8 @@ import {
 import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 import { resolveWorldReturnDestination } from './worldReturnDestination'
 import { prepareFocusViewHandoff, clearFocusViewReturn } from './focusViewReturn'
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
-import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { onAuthStateChanged } from 'firebase/auth'
+import { getUrAiAuth, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { claimWorldReturn } from './worldReturnGuard'
 
 const CONTEXT_KEYS = [
@@ -95,7 +95,7 @@ function isEditableTarget(target: EventTarget | null) {
 function currentOwnerId(demo: boolean): string | null {
   if (demo) return 'explicit-demo'
   if (!firebasePublicEnvReady) return null
-  try { return getAuth(app).currentUser?.uid ?? null } catch { return null }
+  try { return getUrAiAuth().currentUser?.uid ?? null } catch { return null }
 }
 
 export function WorldTransitionController() {
@@ -111,7 +111,7 @@ export function WorldTransitionController() {
   // authenticated memory can be admitted.
   useEffect(() => {
     if (!firebasePublicEnvReady) return
-    const auth = getAuth(app)
+    const auth = getUrAiAuth()
     let prior = auth.currentUser?.uid ?? null
     return onAuthStateChanged(auth, user => {
       const next = user?.uid ?? null
