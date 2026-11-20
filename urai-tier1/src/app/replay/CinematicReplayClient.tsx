@@ -367,7 +367,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       data-manifest-id={memory.replayManifest.id}
       style={replayProofSurfaceStyle}
     />
-    <div className="replayAtmosphere" aria-hidden="true" />
+    <div className="replayAtmosphere" aria-hidden="true" /><div className="replayVisualSeparation" aria-hidden="true" />
     <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : lifeModelAuthority.available ? `${memory.privacy} replay · ${lifeModelAuthority.decision}` : `${memory.privacy} archive replay · reconstruction held`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={() => { pauseMemory(); unwind() }}>{world.previousDestination === 'life-movie' ? '← Life Movie' : '← Focus'}</button><button className="replayLifeMovieEntry" type="button" onClick={continueLifeMovie}>Continue Life Movie</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? generatedWorldEntry?.href ?? memoryWorldHref} onClick={() => {
       pauseMemory()
     }} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : generatedWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? generatedWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : generatedWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}</header>
@@ -398,7 +398,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     <ReplayProductControls memory={memory} />
     {lifeModelAuthority.available ? <ReplayPersonPresence people={lifeModelAuthority.people} /> : null}
     {memory.replayManifest.transcript ? <details className="transcript"><summary>Transcript</summary><p>{memory.replayManifest.transcript}</p></details> : null}
-    <style>{replayCss}</style>
+    <style>{replayCss + replayAAAReviewCss}</style>
     {video ? <style>{replayVideoCss}</style> : null}
     <style>{replayMobileSourceCss}</style>
   </main>
@@ -472,3 +472,14 @@ const replayMobileSourceCss = `
   body:has(.replayWorld.replayWithSource) [data-urai-adam-launcher="true"]{top:auto;bottom:max(24px,calc(env(safe-area-inset-bottom) + 16px));transform:none}
 }
 `
+
+const replayAAAReviewCss = `
+.replayVisualSeparation{position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(90deg,rgba(1,6,17,.52),transparent 46%,transparent 77%,rgba(1,6,17,.17)),linear-gradient(180deg,rgba(1,6,17,.4),transparent 32% 60%,rgba(1,6,17,.65))}
+.replayWorld header{box-sizing:border-box;width:min(365px,42vw);max-width:calc(100vw - 36px);padding:14px 17px 18px;border:1px solid rgba(170,230,255,.2);border-radius:20px;background:linear-gradient(135deg,rgba(2,9,23,.92),rgba(2,9,23,.57));box-shadow:0 15px 64px rgba(0,0,0,.4);backdrop-filter:blur(12px)}
+.replayWorld header h1{font-size:clamp(1.45rem,3vw,2.35rem);line-height:1.1;text-wrap:balance}
+.replayWorld .caption{box-sizing:border-box;bottom:clamp(195px,29svh,285px);width:min(560px,57vw);padding:14px 22px;border:1px solid rgba(185,231,255,.23);border-radius:21px;background:linear-gradient(135deg,rgba(2,9,23,.88),rgba(2,9,23,.57));box-shadow:0 15px 55px rgba(0,0,0,.37);backdrop-filter:blur(10px)}
+.replayWorld .caption strong{font-size:clamp(1.15rem,2.2vw,1.85rem);line-height:1.2}
+.replayWorld .memoryTempo{padding:6px 10px;border:1px solid rgba(185,231,255,.22);border-radius:999px;background:rgba(2,8,20,.8)}
+@media(max-width:760px){.replayWorld header{width:min(330px,calc(100vw - 32px));padding:8px 12px}.replayWorld .caption{bottom:clamp(172px,28svh,250px);width:calc(100vw - 28px);padding:11px 13px;max-height:24svh;overflow:auto}.replayWorld .caption strong{font-size:1.15rem}.replayWorld .memoryTempo{bottom:max(83px,calc(env(safe-area-inset-bottom) + 75px));width:calc(100vw - 28px)}}
+@media(prefers-reduced-motion:reduce){.replayWorld .caption,.replayWorld header{backdrop-filter:none}}
+`;
