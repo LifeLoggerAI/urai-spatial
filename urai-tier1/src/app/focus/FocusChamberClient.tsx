@@ -20,6 +20,11 @@ const focusAccessibilityCss = `
 .focusHeading,.focusNarration,.memoryMeaning{overflow-wrap:anywhere}
 .focusControls button{min-width:0;white-space:normal;line-height:1.2}
 .focusStatus{max-width:calc(100vw - 32px);text-align:center;white-space:normal}
+/* Keep the redundant ready announcement available to assistive technology without covering mobile memory context. */
+@media(max-width:760px){
+  .focusWorld[data-chamber-state="ready"] .focusStatus{width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  html[data-urai-preview="true"] .focusWorld{top:64px;height:auto;min-height:0}
+}
 @media(max-width:380px),(max-height:500px){.focusHeading{max-height:40svh;overflow-y:auto}.focusNarration{font-size:14px}.focusHelp[open]{max-height:40svh;max-width:calc(100vw - 32px);overflow:auto}.memoryMeaning{max-height:22svh;overflow:auto}}
 @media(forced-colors:active){.focusControls button,.focusHelp,.neutralActions button,.webglRecovery button,.focus-spatial-aperture-button{background:Canvas;color:CanvasText;border:2px solid CanvasText}.focusControls button:focus-visible,.focusHelp summary:focus-visible,.neutralActions button:focus-visible,.webglRecovery button:focus-visible,.focus-spatial-aperture-button:focus-visible{outline:3px solid Highlight;outline-offset:3px}}
 `
