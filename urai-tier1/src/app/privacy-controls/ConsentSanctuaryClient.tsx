@@ -394,7 +394,17 @@ export default function ConsentSanctuaryClient() {
         <ol>{deletions.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {String(job.scope)} {['queued', 'awaiting-grace'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalDeletionRequest(job.id)}>Cancel</button>}</li>)}</ol>
       </section>
 
-      <aside className="consentOrb" aria-label="Enforcement status"><strong>{policy.enforcement.state}</strong><p>{policy.enforcement.affectedTargets.length ? `${policy.enforcement.affectedTargets.length} connected targets` : 'No active propagation job'}</p><small>Animations reflect the server state; they never prove backend completion.</small></aside>
+      <aside className="consentOrb" aria-label="Enforcement status">
+        <strong>{displayMode === 'actual' ? policy.enforcement.state : displayMode === 'sample' ? `SAMPLE ${policy.enforcement.state}` : 'UNVERIFIED'}</strong>
+        <p>{displayMode === 'actual'
+          ? policy.enforcement.affectedTargets.length ? `${policy.enforcement.affectedTargets.length} connected targets` : 'No active propagation job'
+          : displayMode === 'sample'
+            ? policy.enforcement.affectedTargets.length ? `${policy.enforcement.affectedTargets.length} sample targets` : 'No sample propagation job'
+            : 'No server authority verified'}</p>
+        <small>{displayMode === 'actual' ? 'Animations reflect the server state; they never prove backend completion.'
+          : displayMode === 'sample' ? 'Sample illustration only; no private authority verified.'
+            : 'Connect the consent authority to inspect actual enforcement.'}</small>
+      </aside>
 
       {showAudit && <section className="consentAudit" aria-label="Privacy audit receipts"><div><h2>Append-only receipts</h2><button type="button" onClick={() => setShowAudit(false)}>Close</button></div><ol>{receipts.length ? receipts.map((entry) => <li key={entry.id}><strong>{String(entry.kind ?? 'privacy')}</strong><span>{String(entry.result ?? 'recorded')}</span><small>{entry.id.slice(0, 12)}</small></li>) : <li>No receipts exist for this owner.</li>}</ol></section>}
 
