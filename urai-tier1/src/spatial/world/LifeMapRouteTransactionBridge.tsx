@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { onAuthStateChanged } from 'firebase/auth'
 import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
-import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { getUrAiAuth, firebasePublicEnvReady } from '@/lib/firebase/client'
 
 function routeHref(params: URLSearchParams) {
   const query = params.toString()
@@ -31,7 +31,7 @@ export function LifeMapRouteTransactionBridge() {
       setAuthenticatedUserId(null)
       return
     }
-    return onAuthStateChanged(getAuth(app), (user) => {
+    return onAuthStateChanged(getUrAiAuth(), (user) => {
       setAuthenticatedUserId(user?.uid ?? null)
     })
   }, [])
