@@ -1,0 +1,168 @@
+{
+  "status": "read-only-validation-not-AAA-acceptance",
+  "source": "R1635 local worktree based on R1623 evidence head",
+  "sourceBase": "b42a2fcc1eb5a641e0c47cea2c2ddd9ca5cd823b",
+  "license": "CC0",
+  "sourceAssets": [
+    "https://polyhaven.com/a/dirt",
+    "https://polyhaven.com/a/rock_2"
+  ],
+  "files": [
+    {
+      "file": "dirt_diff_1k.jpg",
+      "bytes": 730425,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirt/dirt_diff_1k.jpg",
+      "hashPass": true,
+      "bytesPass": true
+    },
+    {
+      "file": "dirt_nor_gl_1k.jpg",
+      "bytes": 1202783,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirt/dirt_nor_gl_1k.jpg",
+      "hashPass": true,
+      "bytesPass": true
+    },
+    {
+      "file": "dirt_rough_1k.jpg",
+      "bytes": 253549,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dirt/dirt_rough_1k.jpg",
+      "hashPass": true,
+      "bytesPass": true
+    },
+    {
+      "file": "rock_2_diff_1k.jpg",
+      "bytes": 828020,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_2/rock_2_diff_1k.jpg",
+      "hashPass": true,
+      "bytesPass": true
+    },
+    {
+      "file": "rock_2_nor_gl_1k.jpg",
+      "bytes": 1241241,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_2/rock_2_nor_gl_1k.jpg",
+      "hashPass": true,
+      "bytesPass": true
+    },
+    {
+      "file": "rock_2_rough_1k.jpg",
+      "bytes": 266988,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_2/rock_2_rough_1k.jpg",
+      "hashPass": true,
+      "bytesPass": true
+    }
+  ],
+  "structural": {
+    "zeroAlphaShoulders": true,
+    "partialAlphaNextToShoulders": true,
+    "opaqueMiddle": true,
+    "vertexColors4": true,
+    "allThreePathSegments": true,
+    "materialFeatherEdges": true,
+    "noRuntimeExternalPbrUrls": true
+  },
+  "limitations": [
+    "This source is uncommitted and other workers are testing it concurrently",
+    "Material and geometry structural checks do not prove temporal continuity or blend quality",
+    "Browser screenshot evidence needs explicit review",
+    "No production or merge approval"
+  ],
+  "motion": {
+    "http": 200,
+    "viewport": "1440x900 reduced-motion",
+    "captures": [
+      {
+        "name": "r1635-desktop-initial",
+        "bytes": 1002319,
+        "sha256": "6f0409245ec1de12c551e8d281bcbdcedea9a447c65363310c7e48d32e3aa1b5"
+      },
+      {
+        "name": "r1635-desktop-look-right",
+        "bytes": 819178,
+        "sha256": "a9c6c69061afae8c28446021367b426640c8aec8ad2f56b0e3e5af7f08ef6f38"
+      },
+      {
+        "name": "r1635-desktop-look-left",
+        "bytes": 923691,
+        "sha256": "1e0e1b346be27ee4219073d08d51832a4088172e60522c174fcfee50e094e11b"
+      },
+      {
+        "name": "r1635-desktop-after-forward",
+        "bytes": 923691,
+        "sha256": "1e0e1b346be27ee4219073d08d51832a4088172e60522c174fcfee50e094e11b"
+      }
+    ],
+    "states": [
+      {
+        "cameraMode": "embodied-first-person",
+        "ready": "true",
+        "phase": "HOME",
+        "canvas": 1,
+        "overflow": false,
+        "nav": [
+          "Orb",
+          "Ground",
+          "Life Map"
+        ]
+      },
+      {
+        "cameraMode": "embodied-first-person",
+        "ready": "true",
+        "phase": "HOME",
+        "canvas": 1,
+        "overflow": false,
+        "nav": [
+          "Orb",
+          "Ground",
+          "Life Map"
+        ]
+      },
+      {
+        "cameraMode": "embodied-first-person",
+        "ready": "true",
+        "phase": "HOME",
+        "canvas": 1,
+        "overflow": false,
+        "nav": [
+          "Orb",
+          "Ground",
+          "Life Map"
+        ]
+      },
+      {
+        "cameraMode": "embodied-first-person",
+        "ready": "true",
+        "phase": "HOME",
+        "canvas": 1,
+        "overflow": false,
+        "nav": [
+          "Orb",
+          "Ground",
+          "Life Map"
+        ]
+      }
+    ],
+    "errors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "forwardStepVerified": false,
+    "forwardScreenshotIdenticalToLookLeft": true
+  },
+  "visual": {
+    "path": "visibly higher-detail earth/stone path and softened edges compared to R1623; provisional partial improvement",
+    "water": "flat pale blue angular geometry and dark wedge visible during right and left camera turn; exact mesh attribution pending",
+    "rockVegetation": "still visibly stylized low-detail",
+    "aaaCertificate": false
+  },
+  "montages": [
+    {
+      "file": "r1635-home-mobile-baseline-vs-path.jpg",
+      "sha256": "4f79c63fbe97959a084eafe178ba5912f954b1c888bd9391efa725dc8cf3bf72",
+      "bytes": 53911
+    },
+    {
+      "file": "r1635-desktop-navigation-defect.jpg",
+      "sha256": "e3d55e8acda3e247b9f5ff703a28173ef526c32bf6d3507627ed0a1b06f1de39",
+      "bytes": 75947
+    }
+  ]
+}
