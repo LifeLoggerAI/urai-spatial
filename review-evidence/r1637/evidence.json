@@ -1,0 +1,97 @@
+{
+  "sourceBase": "3a341648482c24492f044595b5325335f57b3fbc",
+  "testedSourceIdentity": "121a279f84e42c1f8566ea7ebde4b0eb3ab97509",
+  "worker": "ou8xboa3c8vj19",
+  "parentScene": "R1623 source; R1635 path PBR experiment intentionally not included",
+  "checks": {
+    "targetedTests": "12/12 PASS",
+    "typecheck": "EXIT 0",
+    "optimizedBuild": "EXIT 0; 147 routes",
+    "browserExit": "0",
+    "desktopAndMobile": [
+      {
+        "name": "desktop",
+        "http": 200,
+        "state": {
+          "ready": "true",
+          "canvas": 1,
+          "overlay": "none",
+          "orb": true,
+          "nav": [
+            "Orb",
+            "Ground",
+            "Life Map"
+          ],
+          "overflow": false
+        },
+        "errors": [],
+        "image": "/workspace/r1637-final-home-gap-infill-candidate/evidence/r1637-final-desktop-look-right.png",
+        "bytes": 826378,
+        "sha256": "07220536b9889494b7eaeff0814c6156455d4c72e6f7c2fd91cd5c9f2e9c1171"
+      },
+      {
+        "name": "mobile",
+        "http": 200,
+        "state": {
+          "ready": "true",
+          "canvas": 1,
+          "overlay": "none",
+          "orb": true,
+          "nav": [
+            "Orb",
+            "Ground",
+            "Life Map"
+          ],
+          "overflow": false
+        },
+        "errors": [],
+        "image": "/workspace/r1637-final-home-gap-infill-candidate/evidence/r1637-final-mobile-initial.png",
+        "bytes": 241000,
+        "sha256": "7333135f1ed9cc997258c16dc438fb8b605d9aec84b3f0e57006373790091ea3"
+      }
+    ],
+    "sourceHashesMatchGitHub": true
+  },
+  "sourceFiles": [
+    [
+      "HomeSanctuaryGeometry.ts",
+      "bf816e4efe0224ffd7507c7bd211d3452aa855ea78105eac74c602bf0204a90b"
+    ],
+    [
+      "HomeWorldProductionPolished.tsx",
+      "389b936f3c33ead28842e553a81fa4595871595ed729b3d4b4ad8cfc4eacfe90"
+    ],
+    [
+      "home-retained-ground-gap-infill.test.mjs",
+      "fd6221047ec23c5cf8857304025f68c62365de53f9c029342428b043c1de607e"
+    ]
+  ],
+  "comparison": {
+    "file": "home-desktop-camera-turn-before-after.jpg",
+    "sha256": "bed50cc3571e6e59db7792053ec4ae82daa6b7b5f2686249e84485f0e89e0c21"
+  },
+  "rawEvidence": [
+    {
+      "name": "evidence/geometry-tests.log",
+      "sha256": "7abd2246418e1651b1661e392400e6f59686acabbe02ba40cff2b4aaba0315d6"
+    },
+    {
+      "name": "evidence/final-geometry-tests.log",
+      "sha256": "299b3396891c721e0ac9c85c1a7aafa7fa6b5cbfaeed3565277c3cceb81d002d"
+    },
+    {
+      "name": "evidence/final-typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "evidence/final-build.log",
+      "sha256": "f2e43d9c536ddb7b3d6f522e03bb51e4d18f12528d6703666a633ab8300d4824"
+    },
+    {
+      "name": "evidence/final-browser.log",
+      "sha256": "74a90520006351796daccbb0b6cc715a5c4788a7a5b60b85581e89acb151153e"
+    }
+  ],
+  "visual": "desktop right-look blue hole removed; mobile initial smoke passed; additional angle/motion/device/art acceptance still open",
+  "release": "DRAFT HOLD; private writes OFF; no merge/deploy/security changes"
+}

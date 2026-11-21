@@ -222,6 +222,17 @@ export function makeHomePatchGeometry(centerX: number, centerZ: number, radiusX:
   return geometry
 }
 
+/** Low-cost noninteractive visual underlay for uncovered retained GLB ground.
+ * Deliberately recessed beneath authored and extension terrain, without
+ * editing their geometry, physics, input targets, or source assets. */
+export function makeHomeTerrainGapInfillGeometry() {
+  const plane=new THREE.PlaneGeometry(90,90,90,90)
+  plane.rotateX(-Math.PI/2)
+  const infill=projectHomeTerrainGeometry(plane,new THREE.Matrix4(),-.06)
+  plane.dispose()
+  return infill
+}
+
 export function makeHomeHorizonGeometry(width: number, amplitude: number, salt: number, segments = 72) {
   const geometry = new THREE.PlaneGeometry(width, 18, segments, 12)
   geometry.rotateX(-Math.PI / 2)

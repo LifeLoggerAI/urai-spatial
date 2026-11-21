@@ -12,7 +12,7 @@ import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world
 import { HomeInterpretiveSplatEnvironment, resolveHomeInterpretiveSplatAsset } from '@/spatial/home/HomeInterpretiveSplat'
 import { sensorySafeEnabled, URAI_SENSORY_SAFE_EVENT, URAI_SENSORY_SAFE_STORAGE_KEY } from '@/spatial/accessibility/SensorySafeRuntime'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
-import { HOME_COURTYARD, HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL, homeCourtyardFloorHeight, homeTerrainHeight, homeWalkSurfaceHeight, makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, makeHomeVistaGeometry, projectHomeTerrainGeometry, resolveHomeSolidPenetration } from './HomeSanctuaryGeometry'
+import { HOME_COURTYARD, HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL, homeCourtyardFloorHeight, homeTerrainHeight, homeWalkSurfaceHeight, makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, makeHomeTerrainGapInfillGeometry, makeHomeVistaGeometry, projectHomeTerrainGeometry, resolveHomeSolidPenetration } from './HomeSanctuaryGeometry'
 import { applyOriginalHomeSurfaceDetail, HomeSkyGradient, HomeSurfaceMaterial } from './HomeSanctuaryMaterials'
 import styles from './HomeWorldProduction.module.css'
 import { missingHomeVisualGeometry } from './homeVisibleGeometry'
@@ -262,6 +262,9 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
   const authored = useMemo(() => prepareNaturalSanctuary(sanctuary.scene), [sanctuary.scene])
   const extension = useMemo(() => makeHomeTerrainGeometry(authored.userData.groundBounds), [authored])
   const vista = useMemo(() => makeHomeVistaGeometry(), [])
+  const infill = useMemo(() => authored.userData.groundBounds
+    ? makeHomeTerrainGapInfillGeometry() : null, [authored])
+  useEffect(() => () => { infill?.dispose() }, [infill])
   useEffect(() => () => {
     vista.dispose()
   }, [vista])
@@ -281,6 +284,9 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
   }
   return <group name="home-authored-terrain" userData={{ geometryOwner: 'retained-glb-ground-topology-plus-original-terrain-extension', materialOwner: 'original-procedural-detail-not-photographic-pbr', sharedElevation: true }}>
     <primitive object={authored} />
+    {infill ? <mesh name="home-retained-ground-gap-infill" geometry={infill} receiveShadow raycast={() => null} userData={{ role: 'recessed-noninteractive-authored-ground-coverage' }}>
+      <HomeSurfaceMaterial kind="ground" color="#ffffff" vertexColors roughness={.98} metalness={0} envMapIntensity={.24} />
+    </mesh> : null}
     <mesh name="home-vista-terrain" geometry={vista} userData={{ role: 'stitched-noninteractive-distant-hills' }}>
       <HomeSurfaceMaterial kind="ground" color="#ffffff" vertexColors roughness={.98} metalness={0} envMapIntensity={.22} />
     </mesh>
