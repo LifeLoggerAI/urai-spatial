@@ -1,0 +1,48 @@
+diff --git a/urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx b/urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+index 8dbf908bb..b1f2ed6e0 100644
+--- a/urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
++++ b/urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+@@ -1,7 +1,7 @@
+ 'use client'
+ 
+ import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+-import { Environment, Lightformer, Sparkles, Stars, useAnimations, useGLTF } from '@react-three/drei'
++import { Environment, Lightformer, Sparkles, Stars, useAnimations, useGLTF, useTexture } from '@react-three/drei'
+ import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
+ import * as THREE from 'three'
+ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+@@ -303,11 +303,29 @@ function SanctuaryPath() {
+ 
+ function Vegetation() {
+   const fern = useGLTF(HOME_FERN_MODEL)
+-  const materials = useMemo(() => [
+-    new THREE.MeshStandardMaterial({ color: '#6f8d68', roughness: .96, metalness: 0, side: THREE.DoubleSide }),
+-    new THREE.MeshStandardMaterial({ color: '#819b72', roughness: .94, metalness: 0, side: THREE.DoubleSide }),
+-    new THREE.MeshStandardMaterial({ color: '#5f7c61', roughness: .97, metalness: 0, side: THREE.DoubleSide }),
+-  ], [])
++  // Reuse the approved CC0 fern_02 UV geometry with verified matching
++  // Poly Haven source textures. A single cached atlas serves all 72 plants.
++  const [diffuse, normal, arm] = useTexture([
++    '/assets/urai/home-production/cc0/fern_02_diff_1k.png',
++    '/assets/urai/home-production/cc0/fern_02_nor_gl_1k.jpg',
++    '/assets/urai/home-production/cc0/fern_02_arm_1k.jpg',
++  ])
++  useEffect(() => {
++    diffuse.colorSpace = THREE.SRGBColorSpace
++    for (const map of [diffuse, normal, arm]) {
++      map.flipY = false
++      map.anisotropy = 4
++      map.needsUpdate = true
++    }
++  }, [diffuse, normal, arm])
++  const materials = useMemo(() => ['#e1e9dc', '#f1f0e2', '#d6e5d2'].map(color =>
++    new THREE.MeshStandardMaterial({
++      color, map: diffuse, normalMap: normal,
++      roughnessMap: arm, roughness: .95, metalness: 0,
++      side: THREE.DoubleSide, depthWrite: true,
++      normalScale: new THREE.Vector2(.55, .55),
++    })
++  ), [diffuse, normal, arm])
+   useEffect(() => () => materials.forEach((material) => material.dispose()), [materials])
+   const instances = useMemo(() => FERN_PLACEMENTS.map(([x,z,scale,rotation], index) => {
+     const object = fern.scene.clone(true)

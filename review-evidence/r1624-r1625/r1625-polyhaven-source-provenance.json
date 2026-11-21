@@ -1,0 +1,28 @@
+{
+  "assetId": "home-polyhaven-fern-02-source-matched-pbr-atlas-v1",
+  "license": "CC0-1.0",
+  "originalSource": "https://polyhaven.com/a/fern_02",
+  "officialApi": "https://api.polyhaven.com/files/fern_02",
+  "sourceModel": "home-polyhaven-fern-02-geometry-v1",
+  "referenceGltf": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/fern_02/fern_02_1k.gltf",
+  "runtimeExternalRequests": false,
+  "promotionState": "isolated-draft-unverified-art-acceptance",
+  "files": {
+    "fern_02_diff_1k.png": {
+      "map": "diffuse",
+      "md5": "49925bd8393b4a7c93380ab7474764ab",
+      "sha256": "f8f504bce117647f1df386cd7bc99a79c664bb49f82d1dd6412c83a700c48e94"
+    },
+    "fern_02_nor_gl_1k.jpg": {
+      "map": "normal-opengl",
+      "md5": "43aed63dff79554f6064627515afd9d7",
+      "sha256": "45bce132c6e96a0864bc89ab5da51361ab3f4afa83a6669ae499ab5ca811f621"
+    },
+    "fern_02_arm_1k.jpg": {
+      "map": "packed-ambient-roughness-metallic",
+      "md5": "1bbb2b22951f450720d28e17d93a2987",
+      "sha256": "ebfb5d76ce9cbdaec20bcd22dce9b755f0b1b8650ef29ca13555e3e6961025d7"
+    }
+  },
+  "materialPolicy": "original glTF 1k diffuse/normal/ARM references, no additional alpha mask"
+}

@@ -1,0 +1,74 @@
+diff --git a/urai-tier1/src/spatial/layout/HomeSanctuaryGeometry.ts b/urai-tier1/src/spatial/layout/HomeSanctuaryGeometry.ts
+index b000647dd..d62677195 100644
+--- a/urai-tier1/src/spatial/layout/HomeSanctuaryGeometry.ts
++++ b/urai-tier1/src/spatial/layout/HomeSanctuaryGeometry.ts
+@@ -72,6 +72,42 @@ export function projectHomeTerrainGeometry(source: THREE.BufferGeometry, worldTr
+   return geometry
+ }
+ 
++/** Keep original GLB untouched; densify selected coarse authored ground before projection. */
++export function projectRefinedHomeGroundGeometry(source: THREE.BufferGeometry, worldTransform = new THREE.Matrix4(), subdivisions = 5) {
++  const steps = Math.max(1, Math.min(8, Math.floor(subdivisions)))
++  if (steps === 1) return projectHomeTerrainGeometry(source, worldTransform)
++  const src = source.getAttribute('position') as THREE.BufferAttribute
++  const srcIndices = source.index
++  const triangles = srcIndices ? Math.floor(srcIndices.count / 3) : Math.floor(src.count / 3)
++  const positions: number[] = [], indices: number[] = []
++  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3()
++  for (let triangle = 0; triangle < triangles; triangle += 1) {
++    const index = (j: number) => srcIndices ? srcIndices.getX(triangle * 3 + j) : triangle * 3 + j
++    a.fromBufferAttribute(src, index(0)); b.fromBufferAttribute(src, index(1)); c.fromBufferAttribute(src, index(2))
++    const rows: number[][] = []
++    for (let i = 0; i <= steps; i += 1) {
++      rows[i] = []
++      for (let j = 0; j <= steps - i; j += 1) {
++        const u = i / steps, v = j / steps
++        rows[i][j] = positions.length / 3
++        positions.push(a.x * (1-u-v) + b.x*u + c.x*v,
++          a.y * (1-u-v) + b.y*u + c.y*v,
++          a.z * (1-u-v) + b.z*u + c.z*v)
++      }
++    }
++    for (let i = 0; i < steps; i += 1) for (let j = 0; j < steps-i; j += 1) {
++      indices.push(rows[i][j], rows[i+1][j], rows[i][j+1])
++      if (j < steps-i-1) indices.push(rows[i+1][j], rows[i+1][j+1], rows[i][j+1])
++    }
++  }
++  const dense = new THREE.BufferGeometry()
++  dense.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
++  dense.setIndex(indices)
++  const result = projectHomeTerrainGeometry(dense, worldTransform)
++  dense.dispose()
++  return result
++}
++
+ export function makeHomeTerrainGeometry(retainedGround?: { minX: number; maxX: number; minZ: number; maxZ: number }) {
+   const geometry = new THREE.PlaneGeometry(90, 90, 180, 180)
+   geometry.rotateX(-Math.PI / 2)
+diff --git a/urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx b/urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+index 8dbf908bb..23b24f4ea 100644
+--- a/urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
++++ b/urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+@@ -12,7 +12,7 @@ import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world
+ import { HomeInterpretiveSplatEnvironment, resolveHomeInterpretiveSplatAsset } from '@/spatial/home/HomeInterpretiveSplat'
+ import { sensorySafeEnabled, URAI_SENSORY_SAFE_EVENT, URAI_SENSORY_SAFE_STORAGE_KEY } from '@/spatial/accessibility/SensorySafeRuntime'
+ import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
+-import { HOME_COURTYARD, HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL, homeCourtyardFloorHeight, homeTerrainHeight, homeWalkSurfaceHeight, makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, makeHomeVistaGeometry, projectHomeTerrainGeometry, resolveHomeSolidPenetration } from './HomeSanctuaryGeometry'
++import { HOME_COURTYARD, HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL, homeCourtyardFloorHeight, homeTerrainHeight, homeWalkSurfaceHeight, makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, makeHomeVistaGeometry, projectHomeTerrainGeometry, projectRefinedHomeGroundGeometry, resolveHomeSolidPenetration } from './HomeSanctuaryGeometry'
+ import { applyOriginalHomeSurfaceDetail, HomeSkyGradient, HomeSurfaceMaterial } from './HomeSanctuaryMaterials'
+ import styles from './HomeWorldProduction.module.css'
+ import { missingHomeVisualGeometry } from './homeVisibleGeometry'
+@@ -132,7 +132,12 @@ function prepareNaturalSanctuary(source: THREE.Object3D) {
+     const name = object.name.toLowerCase()
+     const grounded = /basin|path|ground|terrain|stone|floor|earth|landing/.test(name)
+     if (grounded) {
+-      object.geometry = projectHomeTerrainGeometry(object.geometry, object.matrixWorld)
++      // Retain source GLB boundaries while letting coarse foreground ground
++      // share the full-resolution natural terrain height field.
++      const refine = /^(sanctuary-terrain|sanctuary-inner-earth)$/.test(name)
++      object.geometry = refine
++        ? projectRefinedHomeGroundGeometry(object.geometry, object.matrixWorld, /terrain|inner-earth/.test(name) ? 4 : 7)
++        : projectHomeTerrainGeometry(object.geometry, object.matrixWorld)
+       object.userData.homeProjectedGround = true
+       groundBounds.union(new THREE.Box3().setFromBufferAttribute(object.geometry.attributes.position as THREE.BufferAttribute).applyMatrix4(object.matrixWorld))
+     }
