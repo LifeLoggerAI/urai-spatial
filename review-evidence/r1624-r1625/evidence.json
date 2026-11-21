@@ -1,0 +1,81 @@
+{
+  "baselineSource": "b42a2fcc1eb5a641e0c47cea2c2ddd9ca5cd823b",
+  "baselineTestedImplementation": "a99217e885702bce0aa799a6ac79085af352d9da",
+  "worker": "ou8xboa3c8vj19",
+  "noProductionChanges": true,
+  "r1624": {
+    "status": "REJECTED_VISIBLE_REGRESSION",
+    "changes": "local-only subdivision of retained ground and path GLB meshes",
+    "tests": "13/13 PASS",
+    "typescript": "PASS",
+    "build": "PASS after clean build cache",
+    "browser": "mobile 390x844 Chromium first-view capture HTTP 200; desktop NOT certified for this rejected variant",
+    "reason": "unexpected pale cross-path in Home foreground remained when subdivision was restricted to retained terrain alone",
+    "assetsAltered": false
+  },
+  "r1625": {
+    "status": "NOT_ART_ACCEPTED",
+    "changes": "local-only official Poly Haven fern_02 CC0 UV-matched diffuse/normal/ARM materials",
+    "tests": "15/15 PASS",
+    "typescript": "PASS",
+    "build": "147-route PASS",
+    "browser": "desktop 1440x900 and mobile 390x844, HTTP 200, canvas 1, zero page errors",
+    "reason": "desktop fern clusters appear dark/sparse and mobile first view almost unchanged; no AAA+++ improvement proven",
+    "assetProvenance": "https://polyhaven.com/a/fern_02",
+    "runtimeExternalRequests": false
+  },
+  "comparisons": [
+    {
+      "name": "r1624-rejected-ground-mobile.jpg",
+      "sha256": "7c7a7447bf237424e3e942fce0078fc4bd1f942a86642c817c333fab1d6597c9",
+      "bytes": 63784
+    },
+    {
+      "name": "r1625-fern-materials-desktop.jpg",
+      "sha256": "b57cc0a54b8b0e321eea86ea5a656576224d566243c8e85c486b5f3c6562bf53",
+      "bytes": 74916
+    },
+    {
+      "name": "r1625-fern-materials-mobile.jpg",
+      "sha256": "ea251c50f5d184aad81b45145dd57afba46e77a99e938d2fc02593259672be6a",
+      "bytes": 41650
+    }
+  ],
+  "raw": [
+    {
+      "path": "/workspace/r1623-2188-exact-review/evidence/r1623-desktop.png",
+      "sha256": "9dc81353f93b13340ff72a04a55bd2e28d4f9c91ecb718424a485b1047826b33"
+    },
+    {
+      "path": "/workspace/r1623-2188-exact-review/evidence/r1623-mobile.png",
+      "sha256": "7333135f1ed9cc997258c16dc438fb8b605d9aec84b3f0e57006373790091ea3"
+    },
+    {
+      "path": "/workspace/r1624-home-ground-subdivision-isolation/evidence/restricted-mobile.png",
+      "sha256": "b4d267aee46fb63f3bc26e796bd83905385c7749d75a0a2e5b4d874024d04218"
+    },
+    {
+      "path": "/workspace/r1625-fern-pbr-isolation/evidence/source-matched-desktop.png",
+      "sha256": "0f9d56d40d64d4a0d406961945f381b6c6fe7cd75be688e5fa912738c6f23b08"
+    },
+    {
+      "path": "/workspace/r1625-fern-pbr-isolation/evidence/source-matched-mobile.png",
+      "sha256": "7333135f1ed9cc997258c16dc438fb8b605d9aec84b3f0e57006373790091ea3"
+    }
+  ],
+  "release": "DRAFT/NO-GO; private writes OFF; no merge, deployment, added worker, security changes",
+  "sourcePatches": [
+    {
+      "name": "r1624-rejected-mesh.patch",
+      "sha256": "529fa139592890a514d5c21d008d234e6c0135d73a4c1de18d433a86c0e305d9"
+    },
+    {
+      "name": "r1625-fern-pbr-prototype.patch",
+      "sha256": "21d56ef477f75b7779d0e7459d045f98357d8407447162620aafa33bc5673b8b"
+    },
+    {
+      "name": "r1625-polyhaven-source-provenance.json",
+      "sha256": "afc825d3972fa5452875d03cbb4d19bc6df790fef4b9e82278636641ec4f86b3"
+    }
+  ]
+}

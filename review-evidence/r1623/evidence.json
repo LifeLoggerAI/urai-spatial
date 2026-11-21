@@ -1,0 +1,54 @@
+{
+  "candidate": "a99217e885702bce0aa799a6ac79085af352d9da",
+  "base": "e9bed8960c0a61b82a830934a6c80a09ff24b4c1",
+  "worker": "ou8xboa3c8vj19",
+  "checks": {
+    "exactSource": true,
+    "tests": "15/15 PASS",
+    "typecheck": "exit 0",
+    "optimizedBuild": "exit 0; 147 routes",
+    "chromium": "desktop 1440x900 and mobile 390x844 reduced motion; HTTP 200; canvas 1; zero page errors; no horizontal overflow; orb/nav present",
+    "production": "HOLD; no deploy; private writes OFF"
+  },
+  "files": [
+    {
+      "name": "targeted-tests.log",
+      "sha256": "e8e5ed093f36053086bc1c2443fe5da6300b51c4439e8d40f96cbf232a55115c"
+    },
+    {
+      "name": "typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "build.log",
+      "sha256": "7c316919800baa0febbef363efbad410d57a78b3b1299fd5826d8b6d507256b6"
+    },
+    {
+      "name": "browser.log",
+      "sha256": "1301980095e3ebe7308c65615b6bbd6f167be7812c0ae33703fa1c5c8c3e4c76"
+    },
+    {
+      "name": "r1623-desktop.png",
+      "sha256": "9dc81353f93b13340ff72a04a55bd2e28d4f9c91ecb718424a485b1047826b33"
+    },
+    {
+      "name": "r1623-mobile.png",
+      "sha256": "7333135f1ed9cc997258c16dc438fb8b605d9aec84b3f0e57006373790091ea3"
+    },
+    {
+      "name": "r1623-browser.json",
+      "sha256": "24ec68c26fd8932809b261d5c5ebbfadac1da233bacada589cd7ff483e5304d8"
+    }
+  ],
+  "comparisons": [
+    {
+      "name": "home-desktop-before-after.jpg",
+      "sha256": "8241d2052cd6e4a4a433dea8a33ceb63e9322c96fc383fa18d10b94f477d9203"
+    },
+    {
+      "name": "home-mobile-before-after.jpg",
+      "sha256": "b7a0e5e5d9df2bbf50a2286f5912c8b357246f5f6a7ffa10217356d6587ec9b6"
+    }
+  ],
+  "visualAcceptance": "PARTIAL: distant fog blends landscape to sky on desktop/mobile; low-detail close terrain, stones, vegetation and asset certification remain unresolved"
+}
