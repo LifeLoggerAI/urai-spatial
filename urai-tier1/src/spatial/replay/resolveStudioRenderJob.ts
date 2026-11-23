@@ -33,6 +33,7 @@ export type CanonicalRenderBinding = {
   jobId: string
   renderPlanDigest: string
   decisionReceiptId: string
+  revoked: boolean
 }
 export type CurrentCanonicalRenderGrant = {
   issuer: 'urai-privacy'
@@ -91,9 +92,15 @@ function record(value: unknown): value is Record<string, unknown> {
 
 function selectionOf(value: unknown): SpatialRenderSelection | null {
   if (!record(value)) return null
-  const keys = Object.keys(value)
+  const keys = Reflect.ownKeys(value)
   if (keys.length !== 2 || !keys.includes('memoryId') || !keys.includes('manifestId')) return null
-  const { memoryId, manifestId } = value
+  // Reject untrusted accessors without invoking their code. Source identity is
+  // parsed as inert data; a claimed job or tenant is never an accepted input.
+  const fields = Object.getOwnPropertyDescriptors(value)
+  if (!fields.memoryId?.enumerable || !fields.manifestId?.enumerable
+    || !Object.hasOwn(fields.memoryId, 'value') || !Object.hasOwn(fields.manifestId, 'value')) return null
+  const memoryId = fields.memoryId.value
+  const manifestId = fields.manifestId.value
   if (typeof memoryId !== 'string' || !MEMORY_ID.test(memoryId) || memoryId.startsWith('demo:')) return null
   if (typeof manifestId !== 'string' || !MEMORY_ID.test(manifestId) || manifestId.startsWith('demo:')) return null
   return { memoryId, manifestId }
@@ -122,6 +129,37 @@ function grantMatches(grant: CurrentCanonicalRenderGrant | null, session: Verifi
  * Even a reference-only result MUST go through Studio's freshly authenticated
  * playback API and Jobs' current consent/deletion/signing checks.
  */
+function memoryMatches(
+  memory: OwnerMemory | null, uid: string, selected: SpatialRenderSelection, version?: number,
+): memory is OwnerMemory {
+  return Boolean(memory && memory.ownerId === uid && memory.id === selected.memoryId
+    && memory.demo === false && memory.deleted === false
+    && memory.replayManifest?.id === selected.manifestId
+    && Number.isSafeInteger(memory.replayManifest.version) && memory.replayManifest.version > 0
+    && (version === undefined || memory.replayManifest.version === version))
+}
+
+function bindingMatches(
+  binding: CanonicalRenderBinding | null, uid: string, tenantId: string,
+  selected: SpatialRenderSelection, version: number,
+): binding is CanonicalRenderBinding {
+  return Boolean(binding && binding.sourceSystem === 'urai-jobs' && binding.revoked === false
+    && binding.ownerUid === uid && binding.tenantId === tenantId
+    && binding.memoryId === selected.memoryId && binding.manifestId === selected.manifestId
+    && binding.manifestVersion === version && JOB_ID.test(binding.jobId)
+    && DIGEST.test(binding.renderPlanDigest) && DIGEST.test(binding.decisionReceiptId))
+}
+
+function jobMatches(job: BoundJobsRender | null, jobId: string, uid: string,
+  tenantId: string, plan: string, receipt: string): boolean {
+  return Boolean(job && job.jobId === jobId && job.ownerUid === uid
+    && job.tenantId === tenantId && job.sourceSystem === 'urai-studio'
+    && job.jobType === 'studio.render.video' && job.status === 'SUCCESS'
+    && job.outputDeleted === false && job.renderPlanDigest === plan
+    && job.consent?.purpose === 'life-movie.render' && job.consent.policyVersion === '1.1.0'
+    && job.consent.decisionReceiptId === receipt)
+}
+
 export async function resolveStudioRenderJob(
   untrustedSelection: unknown,
   readers: TrustedStudioRenderReaders,
@@ -132,45 +170,48 @@ export async function resolveStudioRenderJob(
 
     const session = await readers.currentVerifiedTenantSession()
     if (!sessionMatches(session)) return unavailable
-    const memory = await readers.readOwnerMemory(session.uid, selected.memoryId)
-    if (!memory || memory.ownerId !== session.uid || memory.id !== selected.memoryId
-      || memory.demo !== false || memory.deleted !== false
-      || memory.replayManifest?.id !== selected.manifestId
-      || !Number.isSafeInteger(memory.replayManifest.version) || memory.replayManifest.version < 1) return unavailable
+    // Capture immutable identity scalars. An upstream reader may reuse and
+    // mutate its session object while awaits are pending.
+    const uid = session.uid, tenantId = session.tenantId
+    const memory = await readers.readOwnerMemory(uid, selected.memoryId)
+    if (!memoryMatches(memory, uid, selected)) return unavailable
+    const manifestVersion = memory.replayManifest.version
 
-    const admission = await readers.readCurrentMemoryAdmission(session.uid, selected.memoryId)
-    if (!admissionMatches(admission, session.uid, selected.memoryId)) return unavailable
+    const admission = await readers.readCurrentMemoryAdmission(uid, selected.memoryId)
+    if (!admissionMatches(admission, uid, selected.memoryId)) return unavailable
 
-    // The lookup MUST be an independently verified, immutable, server-owned
-    // record; 'sourceSystem' is a consistency check, not cryptographic proof.
-    const binding = await readers.readCanonicalRenderBinding(session.uid, selected.memoryId, selected.manifestId)
-    if (!binding || binding.sourceSystem !== 'urai-jobs' || binding.ownerUid !== session.uid
-      || binding.tenantId !== session.tenantId || binding.memoryId !== selected.memoryId
-      || binding.manifestId !== selected.manifestId || binding.manifestVersion !== memory.replayManifest.version
-      || !JOB_ID.test(binding.jobId) || !DIGEST.test(binding.renderPlanDigest)
-      || !DIGEST.test(binding.decisionReceiptId)) return unavailable
+    // The binding MUST be independently authenticated, immutable and server
+    // owned. Its sourceSystem label alone is not issuer/provenance evidence.
+    const binding = await readers.readCanonicalRenderBinding(uid, selected.memoryId, selected.manifestId)
+    if (!bindingMatches(binding, uid, tenantId, selected, manifestVersion)) return unavailable
+    const { jobId, renderPlanDigest, decisionReceiptId } = binding
 
-    const firstGrant = await readers.readCurrentCanonicalRenderGrant(session.uid, session.tenantId, binding.decisionReceiptId)
-    if (!grantMatches(firstGrant, session, binding.decisionReceiptId)) return unavailable
+    const grant = await readers.readCurrentCanonicalRenderGrant(uid, tenantId, decisionReceiptId)
+    if (!grantMatches(grant, { uid, tenantId }, decisionReceiptId)) return unavailable
 
-    const job = await readers.readBoundJobsRender(session.tenantId, session.uid, binding.jobId)
-    if (!job || job.jobId !== binding.jobId || job.ownerUid !== session.uid
-      || job.tenantId !== session.tenantId || job.sourceSystem !== 'urai-studio'
-      || job.jobType !== 'studio.render.video' || job.status !== 'SUCCESS'
-      || job.outputDeleted !== false || job.renderPlanDigest !== binding.renderPlanDigest
-      || job.consent?.purpose !== 'life-movie.render' || job.consent.policyVersion !== '1.1.0'
-      || job.consent.decisionReceiptId !== binding.decisionReceiptId) return unavailable
+    const job = await readers.readBoundJobsRender(tenantId, uid, jobId)
+    if (!jobMatches(job, jobId, uid, tenantId, renderPlanDigest, decisionReceiptId)) return unavailable
 
-    // Recheck after awaited reads: revoked owner/consent or switched tenant must
-    // not yield a job reference. This is still NOT a playback authorization.
+    // Long-running reads can outlive manifest edits, binding revocation, Jobs
+    // deletion, Privacy revocation, or a changed Firebase/tenant session.
+    // Revalidate the entire read-only join. This still does NOT authorize a
+    // playback URL: Studio and Jobs must enforce their own current checks.
+    const lastMemory = await readers.readOwnerMemory(uid, selected.memoryId)
+    if (!memoryMatches(lastMemory, uid, selected, manifestVersion)) return unavailable
+    const lastBinding = await readers.readCanonicalRenderBinding(uid, selected.memoryId, selected.manifestId)
+    if (!bindingMatches(lastBinding, uid, tenantId, selected, manifestVersion)
+      || lastBinding.jobId !== jobId || lastBinding.renderPlanDigest !== renderPlanDigest
+      || lastBinding.decisionReceiptId !== decisionReceiptId) return unavailable
+    const lastJob = await readers.readBoundJobsRender(tenantId, uid, jobId)
+    if (!jobMatches(lastJob, jobId, uid, tenantId, renderPlanDigest, decisionReceiptId)) return unavailable
+    const lastAdmission = await readers.readCurrentMemoryAdmission(uid, selected.memoryId)
+    if (!admissionMatches(lastAdmission, uid, selected.memoryId)) return unavailable
+    const lastGrant = await readers.readCurrentCanonicalRenderGrant(uid, tenantId, decisionReceiptId)
+    if (!grantMatches(lastGrant, { uid, tenantId }, decisionReceiptId)) return unavailable
     const lastSession = await readers.currentVerifiedTenantSession()
-    if (!sessionMatches(lastSession) || lastSession.uid !== session.uid || lastSession.tenantId !== session.tenantId) return unavailable
-    const lastAdmission = await readers.readCurrentMemoryAdmission(session.uid, selected.memoryId)
-    if (!admissionMatches(lastAdmission, session.uid, selected.memoryId)) return unavailable
-    const lastGrant = await readers.readCurrentCanonicalRenderGrant(session.uid, session.tenantId, binding.decisionReceiptId)
-    if (!grantMatches(lastGrant, session, binding.decisionReceiptId)) return unavailable
+    if (!sessionMatches(lastSession) || lastSession.uid !== uid || lastSession.tenantId !== tenantId) return unavailable
 
-    return { status: 'reference-only', jobId: binding.jobId, memoryId: selected.memoryId, manifestId: selected.manifestId }
+    return { status: 'reference-only', jobId, memoryId: selected.memoryId, manifestId: selected.manifestId }
   } catch {
     return unavailable
   }
