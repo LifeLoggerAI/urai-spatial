@@ -140,9 +140,12 @@ async function readVerifiedJoin(
   ids: {memoryId: string; manifestId: string},
 ): Promise<{candidate: Extract<Resolution, {status:'candidate'}>; stamp: string} | null> {
   const memory = await readers.readOwnerMemory(ownerUid, ids.memoryId, ids.manifestId)
-  if (!dataRecord(memory)) return null
+  // A trusted reader must return the EXACT requested selection. Otherwise
+  // internally consistent records for another Memory Star could be promoted
+  // into a candidate for the wrong Focus selection (confused deputy).
+  if (!dataRecord(memory) || memory.id !== ids.memoryId || memory.ownerId !== ownerUid) return null
   const manifest = memory.replayManifest
-  if (!dataRecord(manifest)) return null
+  if (!dataRecord(manifest) || manifest.id !== ids.manifestId) return null
 
   // These records MUST be returned from trusted protected-server providers,
   // not from a JSON body or Studio's deliberately sanitized status endpoint.
