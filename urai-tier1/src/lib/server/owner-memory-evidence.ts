@@ -45,7 +45,7 @@ const deny = (reason: string): Denial => ({ status: 'unavailable', reason })
  */
 async function readCanonicalMemorySelection(input: Selection, reader: Reader): Promise<
   | Denial
-  | { status: 'ready'; selectedMemory: SafeMemory; manifestVersion: unknown }
+  | { status: 'ready'; selectedMemory: SafeMemory; manifestVersion: unknown; sourceDemo: unknown }
 > {
   const owner = input.verifiedOwnerUid
   const memoryId = input.memoryId
@@ -75,7 +75,7 @@ async function readCanonicalMemorySelection(input: Selection, reader: Reader): P
     return { status: 'ready', selectedMemory: {
       id: memoryId, ownerId: owner, deleted: false, demo: false,
       replayManifest: { id: manifestId }
-    }, manifestVersion: (manifest as Record<string, unknown>).version }
+    }, manifestVersion: (manifest as Record<string, unknown>).version, sourceDemo: raw.demo }
   } catch { return deny('protected_read_unavailable') }
 }
 
@@ -97,6 +97,10 @@ export async function readOwnerMemoryRenderEvidence(
 ): Promise<ReadOwnerMemoryRenderEvidence> {
   const result = await readCanonicalMemorySelection(input, reader)
   if (result.status !== 'ready') return result
+  // A missing or malformed demo marker is not affirmative private-memory
+  // evidence. Keep the narrow legacy identity read unchanged, but prevent
+  // the future private render join from silently treating unknown as false.
+  if (result.sourceDemo !== false) return deny('explicit_private_memory_required')
   const version = result.manifestVersion
   if (typeof version !== 'number' || !Number.isSafeInteger(version) || version < 1) {
     return deny('manifest_version_unavailable')
