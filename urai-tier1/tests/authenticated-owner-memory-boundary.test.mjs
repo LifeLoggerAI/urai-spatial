@@ -18,7 +18,7 @@ test('valid owner returns only minimal IDs and no-store',async()=>{
  const f=fixture(),r=await handle(f.request(),f.deps),body=await r.json()
  assert.equal(r.status,200);assert.deepEqual(body,{ok:true,code:'memory_identity_verified',memoryId:'memoryA',manifestId:'manifestA'})
  assert.match(r.headers.get('cache-control'),/no-store/)
- assert.deepEqual(f.readPaths,['users/ownerA/memories/memoryA','users/ownerA/privacyPolicy/current'])
+ assert.deepEqual(f.readPaths,['users/ownerA/memories/memoryA','users/ownerA/privacyPolicy/current','users/ownerA/memories/memoryA','users/ownerA/privacyPolicy/current'])
  assert.ok(!JSON.stringify(body).includes('studio'))
 })
 const rejects=[
@@ -61,4 +61,69 @@ test('revoked policy is nonenumerating denied',async()=>{
  const f=fixture();f.docs['users/ownerA/privacyPolicy/current'].domains.memory.mode='revoked'
  const r=await handle(f.request(),f.deps)
  assert.equal(r.status,404);assert.deepEqual(await r.json(),{ok:false,code:'memory_unavailable'})
+})
+test('revocation between database read and response denies previous bearer',async()=>{
+ const f=fixture()
+ let count=0
+ f.deps.verifyOwner=async()=>++count===1?'ownerA':null
+ const result=await handle(f.request(),f.deps)
+ assert.equal(result.status,401)
+ assert.deepEqual(await result.json(),{ok:false,code:'unauthorized'})
+ assert.equal(count,2)
+})
+test('owner identity changes during read denies result',async()=>{
+ const f=fixture()
+ let count=0
+ f.deps.verifyOwner=async()=>++count===1?'ownerA':'ownerB'
+ const result=await handle(f.request(),f.deps)
+ assert.equal(result.status,401)
+})
+test('manifest replaced after first read denies stale identity',async()=>{
+ const f=fixture()
+ let call=0
+ const original=f.deps.readOwnerMemory
+ f.deps.readOwnerMemory=async (...args)=>{
+   const result=await original(...args)
+   if(++call===1)f.docs['users/ownerA/memories/memoryA'].replayManifest.id='replaced'
+   return result
+ }
+ const result=await handle(f.request(),f.deps)
+ assert.equal(result.status,404)
+ assert.deepEqual(await result.json(),{ok:false,code:'memory_unavailable'})
+})
+test('memory deletion after first read denies stale identity',async()=>{
+ const f=fixture()
+ let call=0
+ const original=f.deps.readOwnerMemory
+ f.deps.readOwnerMemory=async (...args)=>{
+   const result=await original(...args)
+   if(++call===1)f.docs['users/ownerA/memories/memoryA'].deleted=true
+   return result
+ }
+ const result=await handle(f.request(),f.deps)
+ assert.equal(result.status,404)
+})
+test('policy revocation after first read denies stale identity',async()=>{
+ const f=fixture()
+ let call=0
+ const original=f.deps.readOwnerMemory
+ f.deps.readOwnerMemory=async (...args)=>{
+   const result=await original(...args)
+   if(++call===1)f.docs['users/ownerA/privacyPolicy/current'].domains.memory.mode='revoked'
+   return result
+ }
+ const result=await handle(f.request(),f.deps)
+ assert.equal(result.status,404)
+})
+test('second protected read service failure denies without leaking data',async()=>{
+ const f=fixture()
+ let calls=0
+ const original=f.deps.reader
+ f.deps.reader=async()=>{
+   if(++calls===2)throw Error('second backend unavailable')
+   return original()
+ }
+ const result=await handle(f.request(),f.deps)
+ assert.equal(result.status,503)
+ assert.deepEqual(await result.json(),{ok:false,code:'protected_read_unavailable'})
 })
