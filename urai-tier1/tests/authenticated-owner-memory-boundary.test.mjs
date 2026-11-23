@@ -62,3 +62,69 @@ test('revoked policy is nonenumerating denied',async()=>{
  const r=await handle(f.request(),f.deps)
  assert.equal(r.status,404);assert.deepEqual(await r.json(),{ok:false,code:'memory_unavailable'})
 })
+
+
+test('R1707 verifies original owner twice and rereads Memory plus policy before success',async()=>{
+ const f=fixture(),r=await handle(f.request(),f.deps)
+ assert.equal(r.status,200)
+ assert.equal(f.stats().verified,2)
+ assert.equal(f.stats().reads,2)
+ assert.deepEqual(f.readPaths,[
+  'users/ownerA/memories/memoryA','users/ownerA/privacyPolicy/current',
+  'users/ownerA/memories/memoryA','users/ownerA/privacyPolicy/current',
+ ])
+})
+test('R1707 refuses policy revoked after initial read',async()=>{
+ const f=fixture(),original=f.deps.readOwnerMemory;let n=0
+ f.deps.readOwnerMemory=async(...args)=>{
+  const result=await original(...args)
+  if(++n===1)f.docs['users/ownerA/privacyPolicy/current'].domains.memory.mode='revoked'
+  return result
+ }
+ const r=await handle(f.request(),f.deps)
+ assert.equal(r.status,404)
+ assert.deepEqual(await r.json(),{ok:false,code:'memory_unavailable'})
+})
+test('R1707 refuses Memory deletion after initial read',async()=>{
+ const f=fixture(),original=f.deps.readOwnerMemory;let n=0
+ f.deps.readOwnerMemory=async(...args)=>{
+  const result=await original(...args)
+  if(++n===1)f.docs['users/ownerA/memories/memoryA'].deleted=true
+  return result
+ }
+ assert.equal((await handle(f.request(),f.deps)).status,404)
+})
+test('R1707 refuses manifest swap after initial read',async()=>{
+ const f=fixture(),original=f.deps.readOwnerMemory;let n=0
+ f.deps.readOwnerMemory=async(...args)=>{
+  const result=await original(...args)
+  if(++n===1)f.docs['users/ownerA/memories/memoryA'].replayManifest.id='changed'
+  return result
+ }
+ assert.equal((await handle(f.request(),f.deps)).status,404)
+})
+test('R1707 refuses original bearer revoked while protected reads await',async()=>{
+ const f=fixture();let n=0
+ f.deps.verifyOwner=async()=>++n===1?'ownerA':null
+ const r=await handle(f.request(),f.deps)
+ assert.equal(r.status,401)
+ assert.equal(n,2)
+ assert.deepEqual(await r.json(),{ok:false,code:'unauthorized'})
+})
+test('R1707 refuses owner change on final original bearer verification',async()=>{
+ const f=fixture();let n=0
+ f.deps.verifyOwner=async()=>++n===1?'ownerA':'ownerB'
+ assert.equal((await handle(f.request(),f.deps)).status,401)
+})
+test('R1707 fails closed when final token verification service errors',async()=>{
+ const f=fixture();let n=0
+ f.deps.verifyOwner=async()=>{if(++n===2)throw Error('temporary unavailable');return 'ownerA'}
+ const r=await handle(f.request(),f.deps)
+ assert.equal(r.status,503)
+ assert.deepEqual(await r.json(),{ok:false,code:'authentication_unavailable'})
+})
+test('R1707 fails closed when second protected Memory/policy read errors',async()=>{
+ const f=fixture(),original=f.deps.reader;let n=0
+ f.deps.reader=async()=>{if(++n===2)throw Error('read unavailable');return original()}
+ assert.equal((await handle(f.request(),f.deps)).status,503)
+})
