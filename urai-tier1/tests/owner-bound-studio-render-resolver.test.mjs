@@ -238,3 +238,18 @@ test('R1710 backend read exception fails closed without exposing provider secret
   assert.equal(result.status,'unavailable')
   assert.doesNotMatch(JSON.stringify(result),/gs:\/\/|token/i)
 })
+
+test('R1711 deny reader returning a different memory than the requested selection', async()=>{
+  const f=readFixture()
+  f.state.selectedMemory.id='memory-02'
+  f.state.protectedBinding.memoryId='memory-02'
+  const actual=await resolveCurrent(chosen,f.readers)
+  assert.equal(actual.status,'unavailable')
+})
+test('R1711 deny reader returning a different manifest than the requested selection', async()=>{
+  const f=readFixture()
+  f.state.selectedMemory.replayManifest.id='manifest-02'
+  f.state.protectedBinding.replayManifestId='manifest-02'
+  const actual=await resolveCurrent(chosen,f.readers)
+  assert.equal(actual.status,'unavailable')
+})
