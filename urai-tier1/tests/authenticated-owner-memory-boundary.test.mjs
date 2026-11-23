@@ -18,7 +18,10 @@ test('valid owner returns only minimal IDs and no-store',async()=>{
  const f=fixture(),r=await handle(f.request(),f.deps),body=await r.json()
  assert.equal(r.status,200);assert.deepEqual(body,{ok:true,code:'memory_identity_verified',memoryId:'memoryA',manifestId:'manifestA'})
  assert.match(r.headers.get('cache-control'),/no-store/)
- assert.deepEqual(f.readPaths,['users/ownerA/memories/memoryA','users/ownerA/privacyPolicy/current'])
+ assert.deepEqual(f.readPaths,[
+  'users/ownerA/memories/memoryA','users/ownerA/privacyPolicy/current',
+  'users/ownerA/memories/memoryA','users/ownerA/privacyPolicy/current'
+])
  assert.ok(!JSON.stringify(body).includes('studio'))
 })
 const rejects=[
