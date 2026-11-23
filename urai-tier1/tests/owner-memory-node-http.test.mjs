@@ -51,3 +51,45 @@ test('HTTP exceptions never leak provider details',async()=>{
  assert.match(r.headers.get('cache-control'),/no-store/)
  })
 })
+
+test('R1708 HTTP rejects a bearer revoked after initial protected read',async()=>{
+ const docs={
+  'users/ownerA/memories/memoryA':{ownerId:'ownerA',deleted:false,demo:false,replayManifest:{id:'manifestA'}},
+  'users/ownerA/privacyPolicy/current':{ownerId:'ownerA',domains:{memory:{mode:'granted'}},enforcement:{state:'fully-enforced'}},
+ }
+ let authChecks=0
+ const deps={
+  verifyOwner:async()=>++authChecks===1?'ownerA':null,
+  readOwnerMemory:readOwnerMemoryEvidence,
+  reader:async()=>({doc:path=>({get:async()=>({exists:Object.hasOwn(docs,path),data:()=>docs[path]})})}),
+ }
+ await withServer(createOwnerMemoryNodeHttpHandler(req=>handleAuthenticatedOwnerMemoryRequest(req,deps)),async origin=>{
+  const r=await fetch(origin+'/internal/owner-memory?memoryId=memoryA&manifestId=manifestA',{headers:{authorization:'Bearer original'}})
+  assert.equal(r.status,401)
+  assert.deepEqual(await r.json(),{ok:false,code:'unauthorized'})
+  assert.equal(authChecks,2)
+ })
+})
+
+test('R1708 HTTP rejects policy revoked between protected reads',async()=>{
+ const docs={
+  'users/ownerA/memories/memoryA':{ownerId:'ownerA',deleted:false,demo:false,replayManifest:{id:'manifestA'}},
+  'users/ownerA/privacyPolicy/current':{ownerId:'ownerA',domains:{memory:{mode:'granted'}},enforcement:{state:'fully-enforced'}},
+ }
+ let reads=0
+ const deps={
+  verifyOwner:async()=> 'ownerA',
+  readOwnerMemory:async (...args)=>{
+    const v=await readOwnerMemoryEvidence(...args)
+    if(++reads===1)docs['users/ownerA/privacyPolicy/current'].domains.memory.mode='revoked'
+    return v
+  },
+  reader:async()=>({doc:path=>({get:async()=>({exists:Object.hasOwn(docs,path),data:()=>docs[path]})})}),
+ }
+ await withServer(createOwnerMemoryNodeHttpHandler(req=>handleAuthenticatedOwnerMemoryRequest(req,deps)),async origin=>{
+  const r=await fetch(origin+'/internal/owner-memory?memoryId=memoryA&manifestId=manifestA',{headers:{authorization:'Bearer original'}})
+  assert.equal(r.status,404)
+  assert.deepEqual(await r.json(),{ok:false,code:'memory_unavailable'})
+  assert.equal(reads,2)
+ })
+})
