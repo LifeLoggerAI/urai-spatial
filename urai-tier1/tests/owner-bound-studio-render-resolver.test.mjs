@@ -8,6 +8,12 @@ const good = () => ({
   authenticatedOwnerUid: 'owner_01',
   activeStudioTenantId: 'tenant_01',
   ownerDeletionFenced: false,
+  currentStudioAuthority: {
+    ownerUid:'owner_01',tenantId:'tenant_01',
+    studioUser:{uid:'owner_01',role:'owner',disabled:false,revoked:false},
+    membership:{uid:'owner_01',studioId:'tenant_01',role:'creator',active:true,disabled:false,revoked:false},
+    ownerDeletionFenced:false,deletionTombstoneFenced:false,
+  },
   selectedMemory: { id:'memory-01', ownerId:'owner_01', deleted:false, demo:false,
     replayManifest: { id:'manifest-01', version:7 } },
   protectedBinding: { authority:'protected-server-record', sourceSystem:'urai-jobs',
@@ -126,6 +132,10 @@ function readFixture() {
       calls.push('identity')
       return {uid:state.authenticatedOwnerUid,tenantId:state.activeStudioTenantId}
     },
+    async readCurrentStudioAuthority(uid,tenantId) {
+      calls.push(['studio',uid,tenantId])
+      return state.currentStudioAuthority && structuredClone(state.currentStudioAuthority)
+    },
     async readOwnerMemory(uid,memoryId,manifestId) {
       calls.push(['memory',uid,memoryId,manifestId])
       return structuredClone(state.selectedMemory)
@@ -158,7 +168,7 @@ test('R1710 approved-reader fixture: two full protected passes return reference 
   const out=await resolveCurrent(chosen,f.readers)
   assert.deepEqual(out,{status:'candidate',tenantId:'tenant_01',jobId:'render_1234567890'})
   assert.equal(f.calls.filter(x=>x==='identity').length,2)
-  for(const key of ['memory','binding','grant','deletion','job']) {
+  for(const key of ['studio','memory','binding','grant','deletion','job']) {
     assert.equal(f.calls.filter(x=>Array.isArray(x)&&x[0]===key).length,2)
   }
   assert.doesNotMatch(JSON.stringify(out),/url|signed|video|grant|token/i)
@@ -252,4 +262,63 @@ test('R1711 deny reader returning a different manifest than the requested select
   f.state.protectedBinding.replayManifestId='manifest-02'
   const actual=await resolveCurrent(chosen,f.readers)
   assert.equal(actual.status,'unavailable')
+})
+
+for (const [name, mutate] of [
+  ['no current Studio membership',v=>{v.currentStudioAuthority=null}],
+  ['foreign Studio identity',v=>{v.currentStudioAuthority.ownerUid='owner_other'}],
+  ['foreign Studio tenant',v=>{v.currentStudioAuthority.tenantId='tenant_other'}],
+  ['Studio user UID mismatch',v=>{v.currentStudioAuthority.studioUser.uid='other'}],
+  ['Studio global viewer',v=>{v.currentStudioAuthority.studioUser.role='viewer'}],
+  ['Studio global account disabled',v=>{v.currentStudioAuthority.studioUser.disabled=true}],
+  ['Studio global account revoked',v=>{v.currentStudioAuthority.studioUser.revoked=true}],
+  ['Studio membership UID mismatch',v=>{v.currentStudioAuthority.membership.uid='other'}],
+  ['Studio membership tenant mismatch',v=>{v.currentStudioAuthority.membership.studioId='tenant_other'}],
+  ['Studio membership viewer role',v=>{v.currentStudioAuthority.membership.role='viewer'}],
+  ['Studio membership inactive',v=>{v.currentStudioAuthority.membership.active=false}],
+  ['Studio membership inactive unknown',v=>{delete v.currentStudioAuthority.membership.active}],
+  ['Studio membership revoked',v=>{v.currentStudioAuthority.membership.revoked=true}],
+  ['Studio membership disabled',v=>{v.currentStudioAuthority.membership.disabled=true}],
+  ['Studio owner deletion fence',v=>{v.currentStudioAuthority.ownerDeletionFenced=true}],
+  ['Studio deletion tombstone',v=>{v.currentStudioAuthority.deletionTombstoneFenced=true}],
+  ['Studio tombstone state absent',v=>{delete v.currentStudioAuthority.deletionTombstoneFenced}],
+  ['Studio global role missing',v=>{delete v.currentStudioAuthority.studioUser.role}],
+]) test('R1713 strict Studio authority denial: '+name,()=>{
+  const fixture=good();mutate(fixture)
+  assert.equal(resolve(fixture).status,'unavailable')
+})
+
+test('R1713 rejects accessor-backed Studio membership without calling getter',()=>{
+  const f=good();let invocations=0
+  f.currentStudioAuthority.membership = Object.defineProperty({},'role',{
+    enumerable:true,get(){invocations++;throw Error('unsafe')}})
+  assert.equal(resolve(f).status,'unavailable')
+  assert.equal(invocations,0)
+})
+
+test('R1713 missing Studio membership fails before reading any Memory/provenance',async()=>{
+  const f=readFixture();f.state.currentStudioAuthority=null
+  assert.equal((await resolveCurrent(chosen,f.readers)).status,'unavailable')
+  assert.equal(f.calls.some(x=>Array.isArray(x)&&x[0]==='memory'),false)
+})
+
+for (const [name,mutate] of [
+  ['Studio membership revoked after first Jobs read',s=>{s.currentStudioAuthority.membership.revoked=true}],
+  ['Studio member loses edit role',s=>{s.currentStudioAuthority.membership.role='viewer'}],
+  ['Studio global user disabled',s=>{s.currentStudioAuthority.studioUser.disabled=true}],
+  ['Studio owner deletion fence raised',s=>{s.currentStudioAuthority.ownerDeletionFenced=true}],
+  ['Studio tombstone raised',s=>{s.currentStudioAuthority.deletionTombstoneFenced=true}],
+  ['Studio tenant changed',s=>{s.currentStudioAuthority.tenantId='other_tenant'}],
+  ['Studio authority reader missing',s=>{s.currentStudioAuthority=null}],
+  ['Studio membership role changes but both remain allowed',s=>{s.currentStudioAuthority.membership.role='owner'}],
+]) test('R1713 refreshed Studio authority prevents '+name,async()=>{
+  const f=readFixture();f.afterFirstJob(()=>mutate(f.state))
+  assert.equal((await resolveCurrent(chosen,f.readers)).status,'unavailable')
+})
+
+test('R1713 Studio read exception fails closed without exposing provider detail',async()=>{
+  const f=readFixture();f.readers.readCurrentStudioAuthority=async()=>{throw Error('private membership path')}
+  const out=await resolveCurrent(chosen,f.readers)
+  assert.equal(out.status,'unavailable')
+  assert.doesNotMatch(JSON.stringify(out),/private membership path/)
 })
