@@ -9,19 +9,44 @@ import { sanitizeMemoryId } from '../../spatial/memory/selectedMemoryContract'
 
 type Snapshot = { exists: boolean; data(): Record<string, unknown> | undefined }
 type Reader = { doc(path: string): { get(): Promise<Snapshot> } }
-export type ReadOwnerMemoryEvidence =
-  | { status: 'unavailable'; reason: string }
-  | { status: 'ready'; selectedMemory: {
-      id: string; ownerId: string; deleted: false; demo: false
-      replayManifest: { id: string }
-    } }
-const deny = (reason: string): ReadOwnerMemoryEvidence => ({ status: 'unavailable', reason })
-
-export async function readOwnerMemoryEvidence(input: {
+type Selection = {
   verifiedOwnerUid: unknown
   memoryId: unknown
   expectedManifestId: unknown
-}, reader: Reader): Promise<ReadOwnerMemoryEvidence> {
+}
+type SafeMemory = {
+  id: string; ownerId: string; deleted: false; demo: false
+  replayManifest: { id: string }
+}
+type Denial = { status: 'unavailable'; reason: string }
+export type ReadOwnerMemoryEvidence =
+  | Denial
+  | { status: 'ready'; selectedMemory: SafeMemory }
+
+/** R1715: render provenance MUST use an explicit integer manifest version.
+ * Unlike the existing browser Replay parser, this authority boundary does
+ * NOT default an absent or invalid version to 1. Such a guess could bind a
+ * different immutable render plan to the selected Memory Star.
+ * Returns no source media, Jobs ID, storage references or playback capability.
+ */
+export type ReadOwnerMemoryRenderEvidence =
+  | Denial
+  | { status: 'ready'; selectedMemory: SafeMemory & {
+    replayManifest: { id: string; version: number }
+  } }
+
+const deny = (reason: string): Denial => ({ status: 'unavailable', reason })
+
+/** Reuse ONE authoritative Memory+policy snapshot pair for both projections.
+ * The legacy HTTP-facing read below stays byte-compatible in its returned
+ * shape, while the resolver-facing read includes the independently stored
+ * version and fails closed if it is missing. No second Memory read is used to
+ * fill a missing version after policy approval (avoids a time-of-check race).
+ */
+async function readCanonicalMemorySelection(input: Selection, reader: Reader): Promise<
+  | Denial
+  | { status: 'ready'; selectedMemory: SafeMemory; manifestVersion: unknown }
+> {
   const owner = input.verifiedOwnerUid
   const memoryId = input.memoryId
   const manifestId = input.expectedManifestId
@@ -50,6 +75,37 @@ export async function readOwnerMemoryEvidence(input: {
     return { status: 'ready', selectedMemory: {
       id: memoryId, ownerId: owner, deleted: false, demo: false,
       replayManifest: { id: manifestId }
-    } }
+    }, manifestVersion: (manifest as Record<string, unknown>).version }
   } catch { return deny('protected_read_unavailable') }
+}
+
+/** Original narrow Memory identity API; its response shape is preserved. */
+export async function readOwnerMemoryEvidence(
+  input: Selection, reader: Reader,
+): Promise<ReadOwnerMemoryEvidence> {
+  const result = await readCanonicalMemorySelection(input, reader)
+  if (result.status !== 'ready') return result
+  return { status: 'ready', selectedMemory: result.selectedMemory }
+}
+
+/** Additional server-only projection for the governed render resolver.
+ * Original request identity, Studio membership, canonical Privacy render
+ * purpose and Jobs provenance are STILL separate mandatory approvals.
+ */
+export async function readOwnerMemoryRenderEvidence(
+  input: Selection, reader: Reader,
+): Promise<ReadOwnerMemoryRenderEvidence> {
+  const result = await readCanonicalMemorySelection(input, reader)
+  if (result.status !== 'ready') return result
+  const version = result.manifestVersion
+  if (typeof version !== 'number' || !Number.isSafeInteger(version) || version < 1) {
+    return deny('manifest_version_unavailable')
+  }
+  return {
+    status: 'ready',
+    selectedMemory: {
+      ...result.selectedMemory,
+      replayManifest: { id: result.selectedMemory.replayManifest.id, version },
+    },
+  }
 }
