@@ -81,7 +81,7 @@ export async function readCurrentStudioAuthorityEvidence(
       || (user.role !== 'owner' && user.role !== 'admin')
       || (member.role !== 'owner' && member.role !== 'creator')
       || user.disabled === true || user.revoked === true
-      || member.disabled === true || member.revoked === true || member.active === false) return null
+      || member.disabled === true || member.revoked === true || member.active !== true) return null
 
     if (fenceSnap?.exists) {
       const fence = fenceSnap.data()
