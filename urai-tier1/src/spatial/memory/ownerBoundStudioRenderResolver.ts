@@ -108,3 +108,101 @@ export function resolveOwnerBoundStudioRender(input: OwnerBoundStudioRenderEvide
     return deny('authority_unavailable')
   }
 }
+
+/** R1710 review-only read orchestration; no live adapter or issuer registered.
+ * Implementations MUST independently verify identity, Studio tenant membership,
+ * original Firebase token revocation, Jobs-issued protected provenance, and
+ * Privacy's current APPROVED render grant. No client-provided binding objects.
+ */
+export type VerifiedRenderReaders = Readonly<{
+  currentVerifiedIdentity(): Promise<{uid: string; tenantId: string} | null>
+  readOwnerMemory(uid: string, memoryId: string, manifestId: string): Promise<unknown>
+  readProtectedBinding(uid: string, tenantId: string, memoryId: string, manifestId: string): Promise<unknown>
+  readCurrentRenderGrant(uid: string, tenantId: string, receiptId: string): Promise<unknown>
+  readOwnerDeletionFence(uid: string): Promise<boolean | null>
+  readBoundJobsRecord(uid: string, tenantId: string, jobId: string): Promise<unknown>
+}>
+
+function selectedIds(value: unknown): {memoryId: string; manifestId: string} | null {
+  if (!dataRecord(value)) return null
+  const fields = Object.keys(value)
+  if (fields.length !== 2 || !fields.includes('memoryId') || !fields.includes('manifestId')) return null
+  const { memoryId, manifestId } = value
+  if (!valid(memoryId) || !valid(manifestId) || memoryId.startsWith('demo:')
+    || manifestId.startsWith('demo:')) return null
+  return {memoryId, manifestId}
+}
+
+async function readVerifiedJoin(
+  readers: VerifiedRenderReaders,
+  ownerUid: string,
+  tenantId: string,
+  ids: {memoryId: string; manifestId: string},
+): Promise<{candidate: Extract<Resolution, {status:'candidate'}>; stamp: string} | null> {
+  const memory = await readers.readOwnerMemory(ownerUid, ids.memoryId, ids.manifestId)
+  if (!dataRecord(memory)) return null
+  const manifest = memory.replayManifest
+  if (!dataRecord(manifest)) return null
+
+  // These records MUST be returned from trusted protected-server providers,
+  // not from a JSON body or Studio's deliberately sanitized status endpoint.
+  const binding = await readers.readProtectedBinding(ownerUid, tenantId, ids.memoryId, ids.manifestId)
+  if (!dataRecord(binding) || !valid(binding.jobId, JOB)
+    || !valid(binding.decisionReceiptId, HASH)) return null
+  const grant = await readers.readCurrentRenderGrant(ownerUid, tenantId, binding.decisionReceiptId)
+  if (!dataRecord(grant)) return null
+  const fenced = await readers.readOwnerDeletionFence(ownerUid)
+  if (fenced !== false) return null
+  const job = await readers.readBoundJobsRecord(ownerUid, tenantId, binding.jobId)
+  if (!dataRecord(job) || !dataRecord(job.output) || !dataRecord(job.consent)) return null
+
+  const candidate = resolveOwnerBoundStudioRender({
+    authenticatedOwnerUid: ownerUid, activeStudioTenantId: tenantId,
+    selectedMemory: memory, protectedBinding: binding,
+    currentJobsReadback: job, currentRenderConsent: grant,
+    ownerDeletionFenced: fenced,
+  })
+  if (candidate.status !== 'candidate') return null
+  // Capture immutable scalar evidence BEFORE the next awaited read. Never
+  // compare live object references (upstream readers may reuse/mutate them).
+  const stamp = JSON.stringify([
+    ownerUid, tenantId, ids.memoryId, ids.manifestId,
+    manifest.version, binding.jobId, binding.renderPlanDigest,
+    binding.decisionReceiptId, job.status, job.output.renderPlanDigest,
+    job.consent.decisionReceiptId, grant.status, grant.revoked,
+  ])
+  return { candidate, stamp }
+}
+
+/** A candidate is never playback authorization. Studio and Jobs must still
+ * re-check the original actor, purpose and deletion fences at media delivery.
+ * This exported helper performs no network access unless an authorized host
+ * explicitly supplies reviewed readers; none are provided in this draft.
+ */
+export async function resolveCurrentOwnerBoundStudioRender(
+  untrustedSelection: unknown,
+  readers: VerifiedRenderReaders,
+): Promise<Resolution> {
+  try {
+    const ids = selectedIds(untrustedSelection)
+    if (!ids) return deny('current_authority_unavailable')
+    const firstIdentity = await readers.currentVerifiedIdentity()
+    if (!dataRecord(firstIdentity) || !valid(firstIdentity.uid)
+      || !valid(firstIdentity.tenantId)) return deny('current_authority_unavailable')
+    const uid = firstIdentity.uid
+    const tenant = firstIdentity.tenantId
+
+    const first = await readVerifiedJoin(readers, uid, tenant, ids)
+    if (!first) return deny('current_authority_unavailable')
+    const last = await readVerifiedJoin(readers, uid, tenant, ids)
+    if (!last || last.stamp !== first.stamp
+      || last.candidate.jobId !== first.candidate.jobId) return deny('current_authority_unavailable')
+    const finalIdentity = await readers.currentVerifiedIdentity()
+    if (!dataRecord(finalIdentity) || finalIdentity.uid !== uid
+      || finalIdentity.tenantId !== tenant) return deny('current_authority_unavailable')
+
+    return first.candidate
+  } catch {
+    return deny('current_authority_unavailable')
+  }
+}
