@@ -155,7 +155,11 @@
       "@grpc/grpc-js": "1.14.7",
       "@fastify/busboy": "3.2.6",
       "source-map-js": "1.2.4",
-      "body-parser@1.20.5": "1.20.9"
+      "body-parser@1.20.5": "1.20.9",
+      "protobufjs": "7.6.6",
+      "qs": "6.16.1",
+      "fflate": "0.6.11",
+      "fast-xml-parser": "5.12.0"
     }
   }
 }
