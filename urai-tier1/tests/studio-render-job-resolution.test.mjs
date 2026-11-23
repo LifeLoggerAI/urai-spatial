@@ -17,7 +17,7 @@ function fixture() {
     admission: { ownerUid: 'owner-alpha', memoryId: 'memory-alpha', consentState: 'allowed', deletionFenced: false },
     binding: { sourceSystem: 'urai-jobs', ownerUid: 'owner-alpha', tenantId: 'studio-one',
       memoryId: 'memory-alpha', manifestId: 'manifest-alpha', manifestVersion: 3, jobId,
-      renderPlanDigest: digest, decisionReceiptId: receipt },
+      renderPlanDigest: digest, decisionReceiptId: receipt, revoked: false },
     grant: { issuer: 'urai-privacy', ownerUid: 'owner-alpha', tenantId: 'studio-one',
       purpose: 'life-movie.render', policyVersion: '1.1.0', decisionReceiptId: receipt,
       status: 'granted', revoked: false },
@@ -87,6 +87,8 @@ for (const [label, change] of [
   ['invalid job ref', s => { s.binding.jobId = '../evil' }],
   ['missing plan digest', s => { s.binding.renderPlanDigest = '' }],
   ['invalid consent receipt', s => { s.binding.decisionReceiptId = 'fabricated' }],
+  ['revoked provenance binding', s => { s.binding.revoked = true }],
+  ['missing binding revocation evidence', s => { delete s.binding.revoked }],
   ['missing canonical render issuer', s => { s.grant = null }],
   ['incorrect issuer', s => { s.grant.issuer = 'client' }],
   ['unapproved purpose', s => { s.grant.purpose = 'memory.storage' }],
@@ -155,4 +157,80 @@ test('no HTTP route, credential, media signing or private write introduced', () 
   const source = readFileSync(new URL('../src/spatial/replay/resolveStudioRenderJob.ts', import.meta.url), 'utf8')
   assert.doesNotMatch(source, /getSignedUrl\(|getStorage\(|fetch\(|onRequest\(|onCall\(|\.set\(|\.update\(|\.delete\(/)
   assert.doesNotMatch(source, /URAI_STUDIO_JOBS_DISPATCH_ENABLED|URAI_STUDIO_JOBS_BRIDGE_TOKEN/)
+})
+
+// These tests exercise races at actual awaited reader boundaries, not only
+// static shape checks against fabricated data.
+test('preflight refuses accessor identity without invoking its getter', async () => {
+  const { readers, calls } = fixture()
+  let touches = 0
+  const malicious = Object.defineProperties({}, {
+    memoryId: { enumerable: true, get() { touches++; throw Error('accessor evaluated') } },
+    manifestId: { enumerable: true, value: 'manifest-alpha' },
+  })
+  assert.deepEqual(await resolveStudioRenderJob(malicious, readers), unavailable)
+  assert.equal(touches, 0)
+  assert.deepEqual(calls, [])
+})
+
+test('preflight rejects symbol-keyed surplus without touching readers', async () => {
+  const { readers, calls } = fixture()
+  const evil = { ...selection, [Symbol('authority')]: 'extra' }
+  assert.deepEqual(await resolveStudioRenderJob(evil, readers), unavailable)
+  assert.deepEqual(calls, [])
+})
+
+test('deny owner session mutated in place during asynchronous job read', async () => {
+  const { state, readers } = fixture()
+  const original = readers.readBoundJobsRender
+  readers.readBoundJobsRender = async (...args) => {
+    const response = await original(...args)
+    state.session.tenantId = 'studio-other'
+    return response
+  }
+  assert.deepEqual(await resolveStudioRenderJob(selection, readers), unavailable)
+})
+
+test('deny manifest changed between first and final Memory read', async () => {
+  const { readers } = fixture()
+  let calls = 0
+  const original = readers.readOwnerMemory
+  readers.readOwnerMemory = async (...args) => {
+    const memory = await original(...args)
+    return ++calls === 1 ? memory : { ...memory, replayManifest: { id: 'manifest-alpha', version: 4 } }
+  }
+  assert.deepEqual(await resolveStudioRenderJob(selection, readers), unavailable)
+})
+
+test('deny binding switched to another valid owner render job after first check', async () => {
+  const { readers } = fixture()
+  let calls = 0
+  const original = readers.readCanonicalRenderBinding
+  readers.readCanonicalRenderBinding = async (...args) => {
+    const binding = await original(...args)
+    return ++calls === 1 ? binding : { ...binding, jobId: 'otherOwnerValidJob1234' }
+  }
+  assert.deepEqual(await resolveStudioRenderJob(selection, readers), unavailable)
+})
+
+test('deny binding revoked while awaiting Jobs readback', async () => {
+  const { state, readers } = fixture()
+  const original = readers.readBoundJobsRender
+  readers.readBoundJobsRender = async (...args) => {
+    const result = await original(...args)
+    state.binding.revoked = true
+    return result
+  }
+  assert.deepEqual(await resolveStudioRenderJob(selection, readers), unavailable)
+})
+
+test('deny Jobs success flipped to deleted output after initial readback', async () => {
+  const { readers } = fixture()
+  let reads = 0
+  const original = readers.readBoundJobsRender
+  readers.readBoundJobsRender = async (...args) => {
+    const job = await original(...args)
+    return ++reads === 1 ? { ...job } : { ...job, outputDeleted: true }
+  }
+  assert.deepEqual(await resolveStudioRenderJob(selection, readers), unavailable)
 })
