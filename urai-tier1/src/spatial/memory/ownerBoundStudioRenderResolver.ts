@@ -18,6 +18,7 @@ type Resolution = { status: 'unavailable'; reason: string } | {
 export type OwnerBoundStudioRenderEvidence = {
   authenticatedOwnerUid: unknown
   activeStudioTenantId: unknown
+  currentStudioAuthority: unknown
   selectedMemory: unknown
   protectedBinding: unknown
   currentJobsReadback: unknown
@@ -44,6 +45,24 @@ function dataRecord(value: unknown): value is Record<string, unknown> {
   })
 }
 
+/** A normalized, independently verified snapshot of the server-owned
+ * Studio users/memberships and BOTH deletion fences. Raw records, client claims
+ * and Studio's public-safe job status must not be supplied here. This pure
+ * shape check is NOT a replacement for Studio's requireStudioLongformAuth.
+ */
+function studioAuthorityMatches(value: unknown, uid: string, tenant: string): boolean {
+  if (!dataRecord(value) || value.ownerUid !== uid || value.tenantId !== tenant
+    || value.ownerDeletionFenced !== false || value.deletionTombstoneFenced !== false) return false
+  const user = value.studioUser
+  const member = value.membership
+  return dataRecord(user) && dataRecord(member)
+    && user.uid === uid && (user.role === 'owner' || user.role === 'admin')
+    && user.disabled === false && user.revoked === false
+    && member.uid === uid && member.studioId === tenant
+    && (member.role === 'owner' || member.role === 'creator')
+    && member.active === true && member.disabled === false && member.revoked === false
+}
+
 /**
  * Pure consistency check. Caller must independently verify the authenticity,
  * freshness, source and owner of EACH input BEFORE invoking this function and
@@ -57,6 +76,9 @@ export function resolveOwnerBoundStudioRender(input: OwnerBoundStudioRenderEvide
 
     const uid = input.authenticatedOwnerUid
     const tenant = input.activeStudioTenantId
+    if (!studioAuthorityMatches(input.currentStudioAuthority, uid, tenant)) {
+      return deny('studio_current_membership_required')
+    }
     const memory = input.selectedMemory
     const binding = input.protectedBinding
     const job = input.currentJobsReadback
@@ -116,6 +138,9 @@ export function resolveOwnerBoundStudioRender(input: OwnerBoundStudioRenderEvide
  */
 export type VerifiedRenderReaders = Readonly<{
   currentVerifiedIdentity(): Promise<{uid: string; tenantId: string} | null>
+  /** Caller must use current, server-owned Studio user + membership + fences.
+   * Do not substitute browser JWT role claims or sanitized job status. */
+  readCurrentStudioAuthority(uid: string, tenantId: string): Promise<unknown>
   readOwnerMemory(uid: string, memoryId: string, manifestId: string): Promise<unknown>
   readProtectedBinding(uid: string, tenantId: string, memoryId: string, manifestId: string): Promise<unknown>
   readCurrentRenderGrant(uid: string, tenantId: string, receiptId: string): Promise<unknown>
@@ -139,6 +164,8 @@ async function readVerifiedJoin(
   tenantId: string,
   ids: {memoryId: string; manifestId: string},
 ): Promise<{candidate: Extract<Resolution, {status:'candidate'}>; stamp: string} | null> {
+  const studioAuthority = await readers.readCurrentStudioAuthority(ownerUid, tenantId)
+  if (!studioAuthorityMatches(studioAuthority, ownerUid, tenantId)) return null
   const memory = await readers.readOwnerMemory(ownerUid, ids.memoryId, ids.manifestId)
   // A trusted reader must return the EXACT requested selection. Otherwise
   // internally consistent records for another Memory Star could be promoted
@@ -161,6 +188,7 @@ async function readVerifiedJoin(
 
   const candidate = resolveOwnerBoundStudioRender({
     authenticatedOwnerUid: ownerUid, activeStudioTenantId: tenantId,
+    currentStudioAuthority: studioAuthority,
     selectedMemory: memory, protectedBinding: binding,
     currentJobsReadback: job, currentRenderConsent: grant,
     ownerDeletionFenced: fenced,
@@ -168,8 +196,11 @@ async function readVerifiedJoin(
   if (candidate.status !== 'candidate') return null
   // Capture immutable scalar evidence BEFORE the next awaited read. Never
   // compare live object references (upstream readers may reuse/mutate them).
+  const roleEvidence = studioAuthority as Record<string, unknown>
+  if (!dataRecord(roleEvidence.studioUser) || !dataRecord(roleEvidence.membership)) return null
   const stamp = JSON.stringify([
     ownerUid, tenantId, ids.memoryId, ids.manifestId,
+    roleEvidence.studioUser.role, roleEvidence.membership.role,
     manifest.version, binding.jobId, binding.renderPlanDigest,
     binding.decisionReceiptId, job.status, job.output.renderPlanDigest,
     job.consent.decisionReceiptId, grant.status, grant.revoked,
