@@ -35,9 +35,26 @@ export async function handleAuthenticatedOwnerMemoryRequest(
       verifiedOwnerUid: owner, memoryId: search.get('memoryId'), expectedManifestId: search.get('manifestId'),
     }, await dependencies.reader())
     if (evidence.status !== 'ready') return reply(404, 'memory_unavailable')
-    return reply(200, 'memory_identity_verified', {
+    // Firestore and Auth are independently asynchronous. An owner can be
+    // revoked or the selected memory/manifest replaced while the first read
+    // is running. Reverify the original bearer and the exact current memory
+    // identity before even returning this read-only result.
+    const currentOwner = await dependencies.verifyOwner(request)
+    if (!currentOwner || currentOwner !== owner) return reply(401, 'unauthorized')
+    const currentEvidence = await dependencies.readOwnerMemory({
+      verifiedOwnerUid: currentOwner,
       memoryId: evidence.selectedMemory.id,
-      manifestId: evidence.selectedMemory.replayManifest.id,
+      expectedManifestId: evidence.selectedMemory.replayManifest.id,
+    }, await dependencies.reader())
+    if (currentEvidence.status !== 'ready'
+      || currentEvidence.selectedMemory.ownerId !== owner
+      || currentEvidence.selectedMemory.id !== evidence.selectedMemory.id
+      || currentEvidence.selectedMemory.replayManifest.id !== evidence.selectedMemory.replayManifest.id) {
+      return reply(404, 'memory_unavailable')
+    }
+    return reply(200, 'memory_identity_verified', {
+      memoryId: currentEvidence.selectedMemory.id,
+      manifestId: currentEvidence.selectedMemory.replayManifest.id,
     })
   } catch { return reply(503, 'protected_read_unavailable') }
 }
