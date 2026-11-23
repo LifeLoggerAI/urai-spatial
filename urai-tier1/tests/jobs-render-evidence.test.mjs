@@ -232,3 +232,44 @@ for(const [name,field,value] of [
    assert.equal(await readJob(uid,tenant,jobId,f.reader),null)
  })
 }
+
+
+// R1722 HOLD: a bounded Jobs consent receipt is data, never a Privacy grant.
+// Even a matching Jobs record cannot supply the missing independently issued
+// Memory-to-Jobs binding or canonical render-purpose authority.
+test('R1722 nondefault opaque Jobs consent readback cannot create a Memory render binding', async()=>{
+  const f=fixture()
+  f.record.consent.policyVersion='2.0.3'
+  f.record.consent.decisionReceiptId='render-decision_2026-v2'
+  const readback=await readJob(uid,tenant,jobId,f.reader)
+  assert.equal(readback?.consent.policyVersion,'2.0.3')
+  assert.equal(readback?.consent.decisionReceiptId,'render-decision_2026-v2')
+  const outcome=await resolve(selected,seamReaders(f,null))
+  assert.equal(outcome.status,'unavailable')
+  assert.equal('jobId' in outcome,false)
+  assert.deepEqual(f.calls,['jobs/'+jobId])
+})
+test('R1722 fake SHA binding cannot launder opaque Jobs receipt into private render',async()=>{
+  const f=fixture()
+  f.record.consent.decisionReceiptId='render-decision_2026-v2'
+  const result=await resolve(selected,seamReaders(f,fakeBinding()))
+  assert.equal(result.status,'unavailable')
+  assert.equal('jobId' in result,false)
+})
+test('R1722 synthetic binding with opaque receipt cannot masquerade as approved issuer',async()=>{
+  const f=fixture()
+  f.record.consent.decisionReceiptId='render-decision_2026-v2'
+  const binding=fakeBinding()
+  binding.decisionReceiptId='render-decision_2026-v2'
+  const result=await resolve(selected,seamReaders(f,binding))
+  assert.equal(result.status,'unavailable')
+  assert.equal('jobId' in result,false)
+  assert.deepEqual(f.calls,[])
+})
+test('R1722 nondefault Jobs policy is not silently upgraded to synthetic Privacy consent',async()=>{
+  const f=fixture()
+  f.record.consent.policyVersion='2.0.3'
+  const outcome=await resolve(selected,seamReaders(f,fakeBinding()))
+  assert.equal(outcome.status,'unavailable')
+  assert.equal('jobId' in outcome,false)
+})
