@@ -185,3 +185,17 @@ test('R1714 seam denies a tombstone planning lease raised between checks',async(
   })
   assert.equal((await resolveCurrentOwnerBoundStudioRender(selected,readers)).status,'unavailable')
 })
+
+
+// R1717: the Studio #207 owner-auth read strictly requires active === true.
+// Spatial must not normalize absent/ambiguous active flags into authority.
+for (const [label, change] of [
+  ['missing active', member => {delete member.active}],
+  ['null active', member => {member.active=null}],
+  ['string active', member => {member.active='true'}],
+  ['numeric active', member => {member.active=1}],
+]) test('R1717 refuses ambiguous member active flag: '+label, async()=>{
+  const f=fixture()
+  change(f.records[paths[1]])
+  await denied(f)
+})
