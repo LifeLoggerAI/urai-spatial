@@ -72,8 +72,11 @@ export function projectHomeTerrainGeometry(source: THREE.BufferGeometry, worldTr
   return geometry
 }
 
+const HOME_TERRAIN_WIDTH = 90
+const HOME_TERRAIN_SEGMENTS = 180
+
 export function makeHomeTerrainGeometry(retainedGround?: { minX: number; maxX: number; minZ: number; maxZ: number }) {
-  const geometry = new THREE.PlaneGeometry(90, 90, 180, 180)
+  const geometry = new THREE.PlaneGeometry(HOME_TERRAIN_WIDTH, HOME_TERRAIN_WIDTH, HOME_TERRAIN_SEGMENTS, HOME_TERRAIN_SEGMENTS)
   geometry.rotateX(-Math.PI / 2)
   const result = projectHomeTerrainGeometry(geometry, new THREE.Matrix4(), 0)
   geometry.dispose()
@@ -226,10 +229,43 @@ export function makeHomePatchGeometry(centerX: number, centerZ: number, radiusX:
  * Deliberately recessed beneath authored and extension terrain, without
  * editing their geometry, physics, input targets, or source assets. */
 export function makeHomeTerrainGapInfillGeometry() {
-  const plane=new THREE.PlaneGeometry(90,90,90,90)
-  plane.rotateX(-Math.PI/2)
-  const infill=projectHomeTerrainGeometry(plane,new THREE.Matrix4(),-.06)
+  const segments = HOME_TERRAIN_SEGMENTS / 2
+  const recess = .06
+  const plane = new THREE.PlaneGeometry(HOME_TERRAIN_WIDTH, HOME_TERRAIN_WIDTH, segments, segments)
+  plane.rotateX(-Math.PI / 2)
+  const infill = projectHomeTerrainGeometry(plane, new THREE.Matrix4(), -recess)
   plane.dispose()
+
+  const position = infill.getAttribute('position')
+  const lowering = new Float32Array(position.count)
+  const stride = segments + 1
+
+  // The detailed grid has a vertex at each coarse edge midpoint. Lower both
+  // ends by the excess there so the entire coarse triangle clears its four
+  // detailed triangles, even at a sharply curved pond bank.
+  function clearMidpoint(a: number, b: number) {
+    const x = (position.getX(a) + position.getX(b)) / 2
+    const z = (position.getZ(a) + position.getZ(b)) / 2
+    const midpointY = (position.getY(a) + position.getY(b)) / 2
+    const excess = midpointY - (homeTerrainHeight(x, z) - recess)
+    lowering[a] = Math.max(lowering[a], excess)
+    lowering[b] = Math.max(lowering[b], excess)
+  }
+
+  for (let row = 0; row <= segments; row++) {
+    for (let column = 0; column <= segments; column++) {
+      const vertex = row * stride + column
+      if (column < segments) clearMidpoint(vertex, vertex + 1)
+      if (row < segments) clearMidpoint(vertex, vertex + stride)
+      if (column < segments && row < segments) clearMidpoint(vertex + 1, vertex + stride)
+    }
+  }
+  for (let vertex = 0; vertex < position.count; vertex++) {
+    position.setY(vertex, position.getY(vertex) - lowering[vertex])
+  }
+  infill.computeVertexNormals()
+  infill.computeBoundingBox()
+  infill.computeBoundingSphere()
   return infill
 }
 
