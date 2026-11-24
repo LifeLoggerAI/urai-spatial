@@ -2,6 +2,7 @@
 
 // Canonical account-wide requests, restricted to the existing disposable local lab.
 // This does not translate named-purpose consent into operational-v1 authority.
+import { notifyManualWeatherRevocation } from '@/lib/uraiEmotion/manualWeatherSession'
 import type { User } from 'firebase/auth'
 import { doc, onSnapshot, type Unsubscribe } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
@@ -55,6 +56,7 @@ export function createCanonicalAccountPrivacySession(owner: User) {
 
   async function call(name: string, payload: Result = {}): Promise<Result> {
     assertCurrent()
+    if (name === 'setCanonicalConsent' || name === 'createDeletionRequest') notifyManualWeatherRevocation()
     const callable = httpsCallable<Result, unknown>(functions, name, { timeout: 30000 })
     assertCurrent()
     const result = await callable(payload)

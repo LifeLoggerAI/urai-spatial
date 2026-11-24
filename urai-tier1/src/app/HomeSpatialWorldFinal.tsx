@@ -67,6 +67,7 @@ const thresholdLabelStyle: CSSProperties = {
 
 export default function HomeSpatialWorldFinal() {
   const homeRef = useRef<HTMLElement | null>(null);
+  const orbButtonRef = useRef<HTMLButtonElement | null>(null);
   const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [orbOpen, setOrbOpen] = useState(false);
   const [transitionTarget, setTransitionTarget] = useState<HomeTransitionTarget | null>(null);
@@ -241,7 +242,7 @@ export default function HomeSpatialWorldFinal() {
 
       <div className="urai-genesis-home__memory-orbit" aria-label="Home threshold status"><strong>Threshold online</strong><span>body grounded · camera travels</span></div>
 
-      <button type="button" className="urai-genesis-home__orb" aria-label="Open URAI orb companion" aria-expanded={orbOpen} aria-controls="urai-orb-companion-panel" onClick={() => { primeTransition('orb'); setOrbOpen((open) => !open); }}>
+      <button ref={orbButtonRef} type="button" className="urai-genesis-home__orb" aria-label="Open URAI orb companion" aria-expanded={orbOpen} aria-controls="urai-orb-companion-panel" onClick={() => { primeTransition('orb'); setOrbOpen((open) => !open); }}>
         <span className="urai-genesis-home__orb-aura" />
         <span className="urai-genesis-home__orb-shell" />
         <span className="urai-genesis-home__orb-ring urai-genesis-home__orb-ring--outer" />
@@ -249,7 +250,16 @@ export default function HomeSpatialWorldFinal() {
         <span className="urai-genesis-home__orb-label">Orb · O</span>
       </button>
 
-      <aside id="urai-orb-companion-panel" className="urai-genesis-home__orb-panel" data-open={orbOpen ? "true" : "false"} aria-live="polite">
+      <aside
+        id="urai-orb-companion-panel"
+        className="urai-genesis-home__orb-panel"
+        data-open={orbOpen ? "true" : "false"}
+        inert={!orbOpen}
+        aria-live="polite"
+        onKeyDown={(event) => {
+          if (event.key === "Escape") orbButtonRef.current?.focus();
+        }}
+      >
         <p>URAI orb</p>
         <strong>The orb stays anchored at Home. Ground and Life Map are camera moves.</strong>
         <div>

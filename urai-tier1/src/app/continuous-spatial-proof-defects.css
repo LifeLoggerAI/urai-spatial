@@ -4,12 +4,39 @@
    hero as an accessible overlay; old orb, gates and docks must not veil it. */
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__threshold-gate,
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__memory-orbit,
-body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb,
-body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb-panel,
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__portals,
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__bottom-dock,
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__skip {
   display: none !important;
+}
+
+/* The fallback Home owns its keyboard Orb and realm links when the canvas
+   is unavailable. Suppress those duplicates only alongside the live world. */
+body:has(.urai-home-spatial-runtime-layer:not([data-urai-home-runtime^="accessible-fallback-"])) .urai-home-spatial-world-final :is(.urai-genesis-home__orb, .urai-genesis-home__orb-panel) {
+  display: none !important;
+}
+
+.urai-home-spatial-runtime-layer[data-urai-home-runtime^="accessible-fallback-"] :is(.urai-genesis-home__orb, .urai-genesis-home__orb-panel[data-open="true"]) {
+  pointer-events: auto;
+}
+
+/* The narrow fallback already uses the lower viewport for onboarding and
+   Home destinations. Keep the Orb and its scrollable links above them. */
+@media (max-width: 700px) {
+  .urai-home-spatial-runtime-layer[data-urai-home-runtime^="accessible-fallback-"] .urai-genesis-home__orb {
+    left: max(12px, env(safe-area-inset-left)) !important;
+    top: max(110px, calc(env(safe-area-inset-top) + 96px)) !important;
+    bottom: auto !important;
+    width: 54px !important;
+    height: 54px !important;
+    transform: none !important;
+  }
+
+  .urai-home-spatial-runtime-layer[data-urai-home-runtime^="accessible-fallback-"] .urai-genesis-home__orb-panel {
+    inset: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) auto max(78px, calc(env(safe-area-inset-left) + 66px)) !important;
+    max-height: 50dvh;
+    overflow-y: auto;
+  }
 }
 
 /* No DOM veil, rounded mask, blur or inherited visual effect may sit between the

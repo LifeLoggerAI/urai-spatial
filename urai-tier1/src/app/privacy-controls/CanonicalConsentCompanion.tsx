@@ -1,5 +1,6 @@
 'use client'
 // R1593: localhost disposable consent authority; NOT operational-v1.
+import { notifyManualWeatherRevocation } from '@/lib/uraiEmotion/manualWeatherSession'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
 import { useEffect, useRef, useState } from 'react'
@@ -84,6 +85,8 @@ export default function CanonicalConsentCompanion() {
       && pendingMutation.current === operation
     setBusy(true); setAllowed(null); setStatus('Awaiting server receipt')
     try {
+      if (!isCurrent()) return
+      notifyManualWeatherRevocation()
       const fn = httpsCallable<{ purpose: Purpose; status: string; surface: string }, { status: string }>(functions, 'setCanonicalConsent')
       // This fences client initiation and completion. An already admitted SDK
       // request may still settle on the server; this is not server-side binding.

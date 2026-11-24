@@ -53,6 +53,7 @@ function harness({answer = capability(), uid = 'owner-1', projectId = 'project-1
       return { data: { jobId: 'synthetic-job', state: 'queued' } }
     } },
     '@/lib/firebase/client': { app, functions: { fake: true }, getFirebaseDb:()=>{} },
+    '@/lib/uraiEmotion/manualWeatherSession': {notifyManualWeatherRevocation: () => {}},
     './privacyContractAuthority': contract,
     './privacyBackendCapability': helper,
   }

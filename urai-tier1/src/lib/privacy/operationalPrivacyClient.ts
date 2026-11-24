@@ -4,6 +4,7 @@ import { collection, limit, onSnapshot, orderBy, query, type DocumentData, type 
 import { getAuth } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
 import { app, functions, getFirebaseDb } from '@/lib/firebase/client'
+import { notifyManualWeatherRevocation } from '@/lib/uraiEmotion/manualWeatherSession'
 import { requireOperationalPrivacyContract } from './privacyContractAuthority'
 import { assertOperationalPrivacyBackendCapabilities } from './privacyBackendCapability'
 
@@ -73,6 +74,7 @@ export async function callOperationalPrivacyFunction<T extends PrivacyCallableRe
 }
 
 export function applyOperationalConsentPolicy(payload: { domain: string; next: Record<string, unknown>; expectedRevision: number; operationId?: string }) {
+  notifyManualWeatherRevocation()
   return callOperationalPrivacyFunction('applyConsentPolicy', { ...payload, operationId: payload.operationId ?? operationId('consent') })
 }
 
@@ -83,6 +85,7 @@ export function createOperationalExportRequest(scopes: string[], suppliedOperati
 export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' | 'runtime'; assetId?: string }) { return callOperationalPrivacyFunction('getExportDownloadUrl', payload) }
 export function cancelOperationalExportRequest(jobId: string) { return callOperationalPrivacyFunction('cancelExportRequest', { jobId }) }
 export function createOperationalDeletionRequest(payload: { scope: string; confirmation: string; reason?: string; operationId?: string }) {
+  notifyManualWeatherRevocation()
   return callOperationalPrivacyFunction('createDeletionRequest', { ...payload, operationId: payload.operationId ?? operationId('deletion') })
 }
 export function cancelOperationalDeletionRequest(jobId: string) { return callOperationalPrivacyFunction('cancelDeletionRequest', { jobId }) }

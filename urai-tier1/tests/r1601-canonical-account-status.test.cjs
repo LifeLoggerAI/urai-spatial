@@ -13,7 +13,7 @@ function harness() {
   const auth = { currentUser: owner }
   const app = { options: { projectId: 'urai-privacy-r1512-disposable' } }
   let authorized = true
-  const calls = [], listeners = [], handlers = {}
+  const calls = [], listeners = [], handlers = {}, weatherClears = []
   const expiry = Date.now() + 600000
   const responses = {
     createExportRequest: { requestId: 'request-1', exportJobId: 'export-1', status: 'pending' },
@@ -26,6 +26,7 @@ function harness() {
       onSnapshot: (ref, options, next, error) => { const item = { ref, options, next, error, stopped: false }; listeners.push(item); return () => { item.stopped = true } },
     },
     'firebase/functions': { httpsCallable: (_fn, name) => async payload => { calls.push({ name, payload }); return { data: handlers[name] ? await handlers[name](payload) : responses[name] } } },
+    '@/lib/uraiEmotion/manualWeatherSession': { notifyManualWeatherRevocation: () => weatherClears.push(calls.length) },
     '@/lib/firebase/client': { app, functions: {}, getFirebaseDb: () => ({}), getUrAiAuth: () => auth, disposableFirebaseReviewAuthorized: () => authorized },
   }
   const mod = { exports: {} }
@@ -36,7 +37,7 @@ function harness() {
     listener.next({ id: listener.ref.documentId, exists: () => data !== null, data: () => data, metadata })
   }
   const complete = () => ({ uid: owner.uid, requestId: 'request-1', status: 'completed', complete: true, packageExpiresAt: { toMillis: () => expiry } })
-  return { owner, auth, app, calls, listeners, handlers, responses, expiry, emit, complete, session, linkCurrent: mod.exports.canonicalDownloadIsCurrent, disable: () => { authorized = false } }
+  return { owner, auth, app, calls, listeners, handlers, responses, weatherClears, expiry, emit, complete, session, linkCurrent: mod.exports.canonicalDownloadIsCurrent, disable: () => { authorized = false } }
 }
 const exportRequest = { requestId: 'request-1', exportJobId: 'export-1', status: 'pending' }
 const deletionRequest = { requestId: 'deletion-1', status: 'pending' }
@@ -70,6 +71,7 @@ test('canonical requests dispatch only exact account-wide payloads and return pe
   assert.deepEqual(h.calls, [{ name: 'createExportRequest', payload: {} }, { name: 'createDeletionRequest', payload: { reason: 'Disposable account removal' } }])
   await assert.rejects(session.requestDeletion('long enough', 'DELETE MEMORY'), /CONFIRMATION_REQUIRED/)
   assert.equal(h.calls.length, 2)
+  assert.deepEqual(h.weatherClears, [1])
 })
 
 test('creation response cannot announce completion or carry malformed identifiers', async () => {
@@ -194,6 +196,7 @@ test('unregistered purpose never dispatches and a closed session cannot mutate c
   await assert.rejects(session.setConsent('storytime.family_share', 'granted'), /INPUT_INVALID/)
   session.close()
   await assert.rejects(session.setConsent('memory.storage', 'granted'), /AUTH_CHANGED/)
+  assert.deepEqual(h.weatherClears, [])
   assert.equal(h.calls.length, 0)
 })
 

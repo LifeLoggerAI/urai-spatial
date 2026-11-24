@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { ManualEmotionalWeatherControls } from '@/lib/uraiEmotion/ManualEmotionalWeatherControls'
 import { useEffect, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
@@ -163,6 +164,8 @@ export default function DeviceSettingsClient() {
       <div style={{maxWidth:860,margin:'0 auto'}}>
         <nav aria-label="Settings navigation" style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'center',flexWrap:'wrap'}}><Link href="/home" style={{display:'inline-flex',alignItems:'center',minWidth:48,minHeight:48,color:'#c9eef3',textDecoration:'none'}}>← Home</Link><Link href="/passport" style={{display:'inline-flex',alignItems:'center',minWidth:48,minHeight:48,color:'#c9eef3',textDecoration:'none'}}>Passport</Link></nav>
         <header style={{padding:'clamp(42px,8vw,92px) 0 34px'}}><p style={{letterSpacing:'.22em',textTransform:'uppercase',fontSize:11,color:'#8fb4bd'}}>Device feel</p><h1 style={{fontSize:'clamp(42px,8vw,78px)',lineHeight:.94,letterSpacing:'-.055em',margin:'10px 0 18px'}}>How URAI meets you.</h1><p style={{maxWidth:620,fontSize:'clamp(16px,2vw,20px)',lineHeight:1.6,color:'#c4d1d6'}}>Local sensory preferences live on this device. Private data permissions remain in the Consent Sanctuary, and ownership controls remain in Passport.</p></header>
+
+        <ManualEmotionalWeatherControls />
 
         <section aria-labelledby="sensory-safe-heading" style={{border:'1px solid rgba(197,242,247,.16)',borderRadius:28,padding:'clamp(22px,4vw,34px)',background:'rgba(9,20,28,.66)',backdropFilter:'blur(18px)'}}>
           <div style={{display:'flex',justifyContent:'space-between',gap:24,alignItems:'start',flexWrap:'wrap'}}>

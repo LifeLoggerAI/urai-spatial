@@ -4,6 +4,7 @@ import fs from 'node:fs'
 const focusedContractTests = [
   'tests/r1594-home-semantic-ascent-fallback.test.mjs',
   'tests/r1601-canonical-account-status.test.cjs',
+  'tests/manual-emotional-weather-session.test.mjs',
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/asset-factory-phase6-contract.test.mjs',
   'tests/automatic-hosting-recovery-contract.test.mjs',
