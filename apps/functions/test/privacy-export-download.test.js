@@ -462,4 +462,3 @@ test('deployment source guard rejects canonical namespace, wrong project, wrong 
   ]
   for(const sample of samples)assert.ok(verify(sample).length>0)
 })
-
