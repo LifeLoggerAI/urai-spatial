@@ -80,7 +80,7 @@ test('canonical controller loads only promoted production audio paths', () => {
 })
 
 test('shared world runtime owns explicit consent, mute, route ambience and accessible equivalents', () => {
-  assert.match(shell, /<SpatialAmbientRuntime \/>/)
+  assert.match(shell, /<SpatialAmbientRuntime onPlayback=\{setAmbientPlayback\} retryRef=\{retryAmbient\} \/>/)
   assert.match(runtime, /urai:spatial-audio-consent-v1/)
   assert.match(runtime, /urai:spatial-audio-muted-v1/)
   assert.match(runtime, /destination\s*===\s*'infrastructure-hub'[\s\S]*return\s*'GROUND'/)

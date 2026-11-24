@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
-test.use({ launchOptions: { args: ['--disable-webgl'] }, reducedMotion: 'reduce' })
+test.use({ launchOptions: { args: ['--disable-webgl'] }, contextOptions: { reducedMotion: 'reduce' } })
 
 async function tabTo(page: Page, target: Locator) {
   const limit = await page.locator('a[href], button, input, [tabindex]').count() + 2
@@ -22,6 +22,7 @@ for (const viewport of viewports) {
   test(`fallback Home Orb opens Shadow and restores focus at ${viewport.width}×${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport)
     await page.goto('/home/')
+    expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true)
     const home = page.locator('[data-urai-home-runtime="accessible-fallback-without-webgl"]')
     const trigger = home.locator('button[aria-controls="urai-orb-companion-panel"]')
     const panel = home.locator('#urai-orb-companion-panel')
@@ -55,5 +56,48 @@ for (const viewport of viewports) {
     await expect(page).toHaveURL(/\/home\/?(?:\?|$)/)
     await expect(trigger).toBeVisible()
     await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  })
+}
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 667, height: 375 }]) {
+  test(`selected Weather and fallback navigation receive separate pointer targets at ${viewport.width}×${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport)
+    await page.goto('/settings/')
+    const settings = page.locator('[data-manual-weather-preference="session-only"]:visible')
+    await settings.getByRole('checkbox').check()
+    const select = settings.getByRole('combobox')
+    await select.selectOption({ index: 1 })
+    const choice = await select.inputValue()
+    const documentStart = await page.evaluate(() => performance.timeOrigin)
+    const homeLink = page.locator('nav[aria-label="Settings navigation"] a[href="/home"]:visible')
+    await homeLink.press('Enter')
+
+    const home = page.locator('[data-urai-home-runtime="accessible-fallback-without-webgl"]')
+    const status = home.locator('[data-home-emotional-weather="manual"]')
+    const change = status.getByRole('link', { name: 'Change or turn off' })
+    await expect(status).toContainText(choice)
+    await expect(change).toBeInViewport({ ratio: 1 })
+    await home.getByTestId('home-semantic-life-map').click({ trial: true })
+
+    await page.keyboard.press('o')
+    const shadow = home.locator('#urai-orb-companion-panel').getByRole('link', { name: 'Shadow' })
+    await shadow.click({ trial: true })
+    await page.keyboard.press('Escape')
+    await expect(change).toBeVisible()
+    const center = await change.evaluate(link => {
+      const box = link.getBoundingClientRect()
+      const x = box.x + box.width / 2
+      const y = box.y + box.height / 2
+      return { x, y, receivesPointer: link.contains(document.elementFromPoint(x, y)) }
+    })
+    expect(center.receivesPointer).toBe(true)
+    await page.mouse.click(center.x, center.y)
+    await expect(select).toHaveValue(choice)
+    expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentStart)
+
+    await settings.getByRole('button', { name: 'Reset and turn off' }).click()
+    await homeLink.press('Enter')
+    await expect(home).toBeVisible()
+    await expect(status).toHaveCount(0)
   })
 }

@@ -43,7 +43,7 @@ test('Home interpretive Gaussian layer preserves truth, collision, interaction a
   assert.match(adapter, /provenanceOwner: 'asset-factory'/)
   assert.match(home, /NEXT_PUBLIC_URAI_HOME_INTERPRETIVE_SPLAT_ASSET/)
   assert.ok(home.includes('HOME_INTERPRETIVE_SPLAT_ASSET ? <HomeInterpretiveSplatEnvironment'))
-  assert.ok(home.includes('<Terrain target={props.target} />'))
+  assert.match(home, /<Terrain target=\{props.target\} onSourceChange=\{props.onTerrainSourceChange\} \/>/)
   assert.match(home, /<Thresholds onGround=/)
   assert.match(home, /<PlayerRig input=/)
 })

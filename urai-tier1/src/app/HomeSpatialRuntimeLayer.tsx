@@ -223,13 +223,15 @@ export default function HomeSpatialRuntimeLayer() {
         data-home-assets-ready="false"
         aria-label="Spatial Home fallback"
       >
-        <HomeManualEmotionalWeatherStatus />
-        <div role="status" aria-live="polite" className="home-runtime-recovery">
-          {unavailable
-            ? 'WebGL is unavailable. Accessible Home controls remain available.'
-            : assetLoadFailed
-              ? 'Home assets could not load. Accessible Home controls remain available.'
-              : 'The spatial renderer could not recover. Accessible Home controls remain available.'}
+        <div className="home-runtime-recovery">
+          <HomeManualEmotionalWeatherStatus />
+          <div role="status" aria-live="polite">
+            {unavailable
+              ? 'WebGL is unavailable. Accessible Home controls remain available.'
+              : assetLoadFailed
+                ? 'Home assets could not load. Accessible Home controls remain available.'
+                : 'The spatial renderer could not recover. Accessible Home controls remain available.'}
+          </div>
           {!unavailable ? <button type="button" data-testid="home-retry-assets" onClick={retryHome}>Retry loading Home</button> : null}
         </div>
         <HomeSemanticNavigation spatialAvailable={false} spatialReady={false} />

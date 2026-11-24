@@ -75,9 +75,10 @@ function loadOwner(relative, imports, globals = {}) {
   return module.exports
 }
 
-function controllerHarness() {
+function controllerHarness({ playResult } = {}) {
   const driver = hookDriver()
   const elements = []
+  const outcomes = []
   const frames = new Map()
   let frameId = 0
   let now = 0
@@ -88,7 +89,7 @@ function controllerHarness() {
     paused = true
     playCount = 0
     constructor(src = '') { this.src = src; elements.push(this) }
-    play() { this.paused = false; this.playCount += 1; return Promise.resolve() }
+    play() { this.paused = false; this.playCount += 1; return playResult?.(this) ?? Promise.resolve() }
     pause() { this.paused = true }
   }
   const owner = loadOwner('useAudioController.ts', {
@@ -101,17 +102,17 @@ function controllerHarness() {
     requestAnimationFrame: (callback) => { frames.set(++frameId, callback); return frameId },
     cancelAnimationFrame: (id) => frames.delete(id),
   })
-  const audio = driver.render(owner.useAudioController)
+  const audio = driver.render(() => owner.useAudioController(outcome => outcomes.push(outcome)))
   const advance = (milliseconds) => {
     now += milliseconds
     const queued = [...frames.values()]
     frames.clear()
     queued.forEach((callback) => callback(now))
   }
-  return { audio, elements, frames, advance }
+  return { audio, elements, frames, advance, outcomes }
 }
 
-function ambientHarness({ consented = true, muted = false, safe = false } = {}) {
+function ambientHarness({ consented = true, muted = false, safe = false, controller } = {}) {
   const driver = hookDriver()
   const listeners = new Map()
   const storage = new Map([
@@ -121,7 +122,8 @@ function ambientHarness({ consented = true, muted = false, safe = false } = {}) 
   const plays = []
   const state = { destination: 'home', phase: 'idle' }
   let stops = 0
-  const audio = { setAmbientPhase: (phase) => plays.push(phase), stopAmbient: () => stops++, stopAllAudio: () => stops++ }
+  const retryRef = { current: null }
+  const audio = controller ?? { setAmbientPhase: (phase) => plays.push(phase), stopAmbient: () => stops++, stopAllAudio: () => stops++ }
   const owner = loadOwner('SpatialAmbientRuntime.tsx', {
     react: driver.react,
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }) },
@@ -135,11 +137,12 @@ function ambientHarness({ consented = true, muted = false, safe = false } = {}) 
       removeEventListener(name, listener) { listeners.get(name)?.delete(listener) },
     },
   })
-  const render = () => driver.render(owner.SpatialAmbientRuntime)
+  const render = () => driver.render(() => owner.SpatialAmbientRuntime({ onPlayback: () => {}, retryRef }))
   render()
   return {
-    plays, state, render, stops: () => stops,
-    event(name, detail) { listeners.get(name)?.forEach((listener) => listener({ detail })); return render() },
+    plays, state, render, retry: () => retryRef.current?.(), stops: () => stops,
+    dispatch(name, detail) { listeners.get(name)?.forEach((listener) => listener({ detail })) },
+    event(name, detail) { this.dispatch(name, detail); return render() },
   }
 }
 
@@ -210,6 +213,34 @@ test('returning Home during a Focus crossfade leaves Home as the sole active amb
   assert.equal(active.length, 1)
   assert.ok(active[0].src.endsWith('/home-ambient-v1.opus'))
   assert.equal(h.frames.size, 0)
+})
+
+test('rejected ambience can retry the same route without leaving a stale crossfade', async () => {
+  let attempts = 0
+  const h = controllerHarness({ playResult: () => ++attempts === 1 ? Promise.reject(new Error('playback denied')) : Promise.resolve() })
+  h.audio.setAmbientPhase('HOME')
+  await settleCue()
+  assert.equal(h.frames.size, 0)
+  assert.ok(h.elements.every((element) => element.paused && element.src === ''))
+  h.audio.setAmbientPhase('HOME')
+  h.advance(2000)
+  assert.equal(attempts, 2)
+  const active = h.elements.filter((element) => !element.paused && element.src)
+  assert.equal(active.length, 1)
+  assert.ok(active[0].src.endsWith('/home-ambient-v1.opus'))
+})
+
+test('a retired ambience rejection cannot silence a newer destination', async () => {
+  let rejectOld, attempts = 0
+  const h = controllerHarness({ playResult: () => ++attempts === 1 ? new Promise((_, reject) => { rejectOld = reject }) : Promise.resolve() })
+  h.audio.setAmbientPhase('HOME')
+  h.audio.setAmbientPhase('FOCUS')
+  rejectOld(new Error('retired playback denied'))
+  await settleCue()
+  h.advance(2000)
+  const active = h.elements.filter((element) => !element.paused && element.src)
+  assert.equal(active.length, 1)
+  assert.ok(active[0].src.endsWith('/focus-ambient-v1.opus'))
 })
 
 test('repeated phase requests preserve the ongoing crossfade and mute cancels it', () => {
@@ -302,4 +333,123 @@ test('unmount cancels a pending cue decode before it can create a sound source',
   h.releaseDecode()
   await settleCue()
   assert.equal(h.sources.filter((source) => source.started).length, 0)
+})
+
+function soundControls(ambientPlayback, { enabled = true, retry = () => {}, toggle = () => {} } = {}) {
+  const jsx = (type, props) => ({ type, props })
+  const owner = loadOwner('../world/PersistentWorldCompanion.tsx', {
+    react: {}, 'react/jsx-runtime': { jsx, jsxs: jsx }, 'next/navigation': {},
+    '@/app/home/orbStateController': {}, '@/spatial/orb/OrbConversationPanel': {},
+    './destinationRegistry': {}, './worldEvents': {}, './WorldStateProvider': {},
+  })
+  const controls = owner.SpatialSoundControls({ ambientPlayback, onRetryAmbient: retry,
+    hydrated: true, audioEnabled: enabled, toggleAudio: toggle })
+  return controls.props.children.filter(Boolean)
+}
+
+function mediaFailure(name) {
+  return Object.assign(new Error('synthetic media boundary'), { name })
+}
+
+test('a browser activation rejection offers a user gesture retry without changing consent', async () => {
+  let attempts = 0
+  const h = controllerHarness({ playResult: () => ++attempts === 1
+    ? Promise.reject(mediaFailure('NotAllowedError')) : Promise.resolve() })
+  const runtime = ambientHarness({ controller: h.audio, consented: false, muted: true })
+  assert.equal(attempts,0)
+  assert.equal(soundControls('unattempted',{enabled:false})[1].props.children,'Sound is off.')
+  runtime.event('urai:audio-consent',{enabled:true})
+  await settleCue()
+  assert.equal(h.outcomes.at(-1),'blocked')
+  const [preference, status, retry] = soundControls('blocked',{retry:runtime.retry})
+  assert.match(status.props.children,/browser blocked/i)
+  assert.equal(preference.props['aria-disabled'],false)
+  assert.equal(retry.props.children,'Retry spatial sound')
+  retry.props.onClick()
+  assert.equal(attempts,2)
+  await settleCue()
+  assert.equal(h.outcomes.at(-1),'playing')
+  assert.equal(soundControls('playing')[1].props.children,'Ambience is playing.')
+})
+
+for (const [name, code, expected] of [
+  ['network error',2,'unavailable'], ['decode error',3,'unavailable'],
+  ['unsupported source',4,'unavailable'], ['aborted media',1,'interrupted'],
+]) test(name + ' from the active media element is reflected after successful play', async () => {
+  const h = controllerHarness()
+  h.audio.setAmbientPhase('HOME')
+  await settleCue()
+  assert.equal(h.outcomes.at(-1),'playing')
+  const active = h.elements.find(element => element.src.endsWith('home-ambient-v1.opus'))
+  active.error = {code}
+  active.onerror()
+  assert.equal(h.outcomes.at(-1),expected)
+  assert.equal(h.frames.size,0)
+  let retries = 0, toggles = 0
+  const [primary,status,retry,off] = soundControls(expected,{retry:()=>retries++,toggle:()=>toggles++})
+  assert.equal(status.props.role,'status')
+  assert.equal(status.props['aria-live'],'polite')
+  assert.equal(primary.props['aria-disabled'],expected==='unavailable')
+  if (expected === 'unavailable') {
+    assert.equal(primary.props.onClick,undefined)
+    assert.match(status.props.children,/track is unavailable/i)
+    off.props.onClick()
+    assert.equal(toggles,1)
+  }
+  retry.props.onClick()
+  assert.equal(retries,1)
+})
+
+test('unsupported playback or interrupted playback uses only the observed error', async () => {
+  for (const [name,outcome] of [['NotSupportedError','unavailable'],['AbortError','interrupted'],['Error','interrupted']]) {
+    const h = controllerHarness({playResult:()=>Promise.reject(mediaFailure(name))})
+    h.audio.setAmbientPhase('HOME')
+    await settleCue()
+    assert.deepEqual(h.outcomes,['starting',outcome])
+  }
+})
+
+test('a retired play success, media error, or rejection cannot relabel a successor or a muted session', async () => {
+  let resolveOld
+  const h = controllerHarness({playResult:element=>element.src.includes('home-ambient')
+    ? new Promise(resolve=>{resolveOld=resolve}) : Promise.resolve()})
+  h.audio.setAmbientPhase('HOME')
+  const old = h.elements.find(element=>element.src.includes('home-ambient'))
+  const oldError = old.onerror
+  h.audio.setAmbientPhase('FOCUS')
+  await settleCue()
+  const before = h.outcomes.length
+  old.error = {code:3}
+  oldError()
+  resolveOld()
+  await settleCue()
+  assert.equal(h.outcomes.length,before)
+  assert.equal(h.outcomes.at(-1),'playing')
+  const current = h.elements.find(element=>element.src.includes('focus-ambient'))
+  const lateError = current.onerror
+  h.audio.stopAmbient()
+  current.error={code:2}
+  lateError()
+  assert.equal(h.outcomes.at(-1),'unattempted')
+})
+
+test('pending playback and unavailable states preserve the preference and its explicit off control', () => {
+  for (const outcome of ['unattempted','starting','blocked','unavailable','interrupted']) {
+    const [primary,status] = soundControls(outcome)
+    assert.equal(primary.props['aria-pressed'],true)
+    assert.doesNotMatch(status.props.children,/is playing/i)
+  }
+})
+
+test('retry is synchronously fenced by mute, withdrawal and sensory-safe before rerender', () => {
+  for (const [name,detail] of [['urai:audio-mute',{muted:true}],['urai:audio-consent',{enabled:false}],['urai:sensory-safe-changed',{enabled:true}]]) {
+    const h = ambientHarness()
+    const count=h.plays.length
+    h.dispatch(name,detail)
+    h.retry()
+    assert.equal(h.plays.length,count)
+    h.render()
+    h.retry()
+    assert.equal(h.plays.length,count)
+  }
 })

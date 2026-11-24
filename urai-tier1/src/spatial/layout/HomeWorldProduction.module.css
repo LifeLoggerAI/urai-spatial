@@ -72,6 +72,61 @@
   font-weight: 760;
 }
 
+.explanationTrigger,
+.explanationDialog button,
+.explanationDialog a {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.5rem 1rem;
+  color: #f4fbf6;
+  font: 600 0.875rem/1.4 system-ui, sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.explanationTrigger,
+.explanationDialog button {
+  border: 1px solid #a5c6b7;
+  border-radius: 0.75rem;
+  background: #15332c;
+}
+
+.explanationTrigger {
+  position: absolute;
+  z-index: 10;
+  inset-block-start: max(3.5rem, calc(env(safe-area-inset-top) + 2.75rem));
+  inset-inline-start: max(1rem, env(safe-area-inset-left));
+}
+
+.explanationDialog {
+  box-sizing: border-box;
+  width: min(30rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 1.25rem;
+  overflow: auto;
+  border: 1px solid #a5c6b7;
+  border-radius: 1rem;
+  background: #102720;
+  color: #f4fbf6;
+  font: 1rem/1.5 system-ui, sans-serif;
+  cursor: auto;
+  touch-action: pan-y;
+}
+
+.explanationDialog h2 { margin-block: 0 0.5rem; font-size: 1.25rem; }
+.explanationDialog::backdrop { background: rgb(5 15 12 / 70%); }
+.explanationDialog a { margin-inline-end: 0.5rem; text-decoration: underline; }
+
+.explanationTrigger:focus-visible,
+.explanationDialog :is(button, a):focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
 .worldHint {
   left: 50%;
   bottom: max(22px, env(safe-area-inset-bottom));

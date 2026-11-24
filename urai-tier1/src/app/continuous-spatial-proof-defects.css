@@ -20,6 +20,49 @@ body:has(.urai-home-spatial-runtime-layer:not([data-urai-home-runtime^="accessib
   pointer-events: auto;
 }
 
+/* Lay a selected description out with the fallback notice. The destinations
+   keep their own full-size native targets at the bottom of the viewport. */
+.home-runtime-recovery:has([data-home-emotional-weather="manual"]) {
+  box-sizing: border-box;
+  max-height: 45dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.home-runtime-recovery > [data-home-emotional-weather="manual"] {
+  position: static !important;
+  width: 100%;
+  max-width: none !important;
+  padding: 0 0 6px !important;
+  border-bottom: 1px solid rgba(230, 246, 240, .28);
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+@media (max-width: 900px) {
+  .urai-home-spatial-runtime-layer .home-runtime-recovery:has([data-home-emotional-weather="manual"]) {
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    left: max(78px, calc(env(safe-area-inset-left) + 66px));
+    width: auto;
+    max-height: 44dvh;
+    padding: 8px 12px;
+    gap: 6px;
+    transform: none;
+  }
+
+  /* The open Orb uses this area until Escape or a destination restores Home. */
+  .urai-home-spatial-runtime-layer:has(.urai-genesis-home__orb-panel[data-open="true"]) .home-runtime-recovery:has([data-home-emotional-weather="manual"]) {
+    visibility: hidden;
+  }
+}
+
+@media (max-width: 700px) and (max-height: 500px) {
+  .urai-home-spatial-runtime-layer .home-runtime-recovery:has([data-home-emotional-weather="manual"]) {
+    max-height: calc(100dvh - 238px);
+  }
+}
+
 /* The narrow fallback already uses the lower viewport for onboarding and
    Home destinations. Keep the Orb and its scrollable links above them. */
 @media (max-width: 700px) {
