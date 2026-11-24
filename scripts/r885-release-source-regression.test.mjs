@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 
 const workflow = readFileSync('.github/workflows/spatial-governed-wif-deploy.yml', 'utf8')
 const smoke = readFileSync('scripts/urai-post-deploy-smoke.mjs', 'utf8')
@@ -32,6 +33,10 @@ test('R880: missing or uncertified rollback fingerprint must block publication',
   assert.match(capture, /verified-post-deploy-smoke/)
   assert.match(capture, /fingerprint_status" = valid/)
   assert.doesNotMatch(capture, /--location/)
+})
+
+test('live-channel release selection respects site disable and event ordering', () => {
+  execFileSync('python3', ['-B', '-m', 'unittest', 'tests/test_r882_live_release.py'])
 })
 
 test('R882: verified custom domain owner and live channel replace preview-mixed history', () => {

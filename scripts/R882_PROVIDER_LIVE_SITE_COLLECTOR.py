@@ -80,25 +80,49 @@ def safe_release(x):
         'releaseTime':x.get('releaseTime'), 'versionName':version.get('name'),
     }.items() if isinstance(v,str)}
 
-def time_key(x):
-    raw=x.get('releaseTime')
-    if not isinstance(raw,str):raise EvidenceError('release missing timestamp')
+def time_key(release):
+    raw = release.get('releaseTime')
+    if not isinstance(raw, str):
+        raise EvidenceError('release missing timestamp')
+    match = re.fullmatch(
+        r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)',
+        raw,
+    )
+    if not match:
+        raise EvidenceError('invalid release timestamp')
+    seconds, fraction, zone = match.groups()
     try:
-        return datetime.fromisoformat(raw.replace('Z','+00:00')).timestamp()
-    except ValueError as e:
-        raise EvidenceError('invalid release timestamp') from e
+        instant = datetime.fromisoformat(seconds + ('+00:00' if zone == 'Z' else zone))
+    except ValueError as error:
+        raise EvidenceError('invalid release timestamp') from error
+    # Firebase release times can differ inside one Python datetime microsecond.
+    return instant, int((fraction or '').ljust(9, '0'))
 
 def choose_live_release(releases):
-    candidates=[safe_release(x) for x in releases if x.get('type')!='SITE_DISABLE']
-    if not candidates:
+    if not releases:
         return None, 'HOLD_NO_LIVE_RELEASE'
-    for r in candidates:
-        if not r.get('versionName') or not r.get('releaseTime'):
+
+    timeline = []
+    for raw in releases:
+        if 'type' in raw and not isinstance(raw['type'], str):
+            raise EvidenceError('invalid release type')
+        event = safe_release(raw)
+        if event.get('type') != 'SITE_DISABLE' and not event.get('versionName'):
             raise EvidenceError('live release missing required identity')
-    candidates.sort(key=time_key, reverse=True)
-    if len(candidates)>1 and time_key(candidates[0])==time_key(candidates[1]) and candidates[0]['versionName'] != candidates[1]['versionName']:
+        timeline.append((time_key(event), event))
+
+    newest = max(when for when, _ in timeline)
+    latest = [event for when, event in timeline if when == newest]
+    types = {event.get('type') for event in latest}
+    if types == {'SITE_DISABLE'}:
+        return None, 'HOLD_SITE_DISABLED'
+    if 'SITE_DISABLE' in types:
         return None, 'HOLD_AMBIGUOUS_LIVE_RELEASE'
-    return candidates[0], 'READBACK_LIVE_RELEASE_METADATA_ONLY'
+    if types - {None, 'TYPE_UNSPECIFIED', 'DEPLOY', 'ROLLBACK'}:
+        return None, 'HOLD_UNKNOWN_LIVE_RELEASE_TYPE'
+    if len({event['versionName'] for event in latest}) > 1:
+        return None, 'HOLD_AMBIGUOUS_LIVE_RELEASE'
+    return latest[0], 'READBACK_LIVE_RELEASE_METADATA_ONLY'
 
 def exact_domain_name(x, verified_project_number):
     name=x.get('name')
