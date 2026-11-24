@@ -16,7 +16,9 @@ export function focusMemoryAppearance(memory: SelectedMemory | null, demoFallbac
   return {
     accent: sample?.accent ?? memory?.visuals.accent ?? '#79dfff',
     light: sample?.light ?? memory?.visuals.light ?? '#e7fbff',
-    imageUrl: memory?.sourceMedia.find((media) => media.kind === 'image')?.url
-      ?? sample?.imageUrl ?? (memory?.demo ? demoFallback : null),
+    // Do not reveal private memory source textures without an independent playback grant.
+    imageUrl: memory?.demo
+      ? (memory.sourceMedia.find((media) => media.kind === 'image')?.url ?? sample?.imageUrl ?? demoFallback)
+      : null,
   }
 }

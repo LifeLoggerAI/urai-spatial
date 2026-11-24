@@ -34,11 +34,11 @@ test('an ordinary memory with a sample-like identifier keeps its own appearance 
   assert.deepEqual(appearance, { accent: '#123456', light: '#abcdef', imageUrl: null })
 })
 
-test('an admitted source image remains authoritative for both sample and ordinary memories', () => {
+test('disclosed demo textures display but private source textures remain denied without grant', () => {
   for (const demo of [true, false]) {
     const selected = memory('seed-calm-return', demo)
     selected.sourceMedia = [{ kind: 'audio', url: '/synthetic.wav' }, { kind: 'image', url: '/synthetic-owner-image.webp' }]
-    assert.equal(focusMemoryAppearance(selected, fallback).imageUrl, '/synthetic-owner-image.webp')
+    assert.equal(focusMemoryAppearance(selected, fallback).imageUrl, demo ? '/synthetic-owner-image.webp' : null)
   }
 })
 

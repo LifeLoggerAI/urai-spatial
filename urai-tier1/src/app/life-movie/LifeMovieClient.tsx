@@ -27,6 +27,9 @@ type MovieState =
   | { kind: 'error'; message: string }
 
 function mediaFor(memory: SelectedMemory) {
+  // The canonical private document contains metadata, not permission to replay
+  // persistent Storage URLs. Only disclosed demo media may use this legacy path.
+  if (!memory.demo) return null
   return memory.sourceMedia.find((item) => item.kind === 'video')
     ?? memory.sourceMedia.find((item) => item.kind === 'image')
     ?? memory.sourceMedia.find((item) => item.kind === 'audio')
@@ -107,7 +110,7 @@ export default function LifeMovieClient() {
           const ordered = await Promise.all(runtimeManifest.manifest.chapters.map(async (chapter: LifeMovieRuntimeChapter) => {
             const snapshot = await getDoc(doc(getFirebaseDb(), 'users', user.uid, 'memories', chapter.memoryId))
             if (!snapshot.exists()) return null
-            const result = parseSelectedMemory(snapshot.data(), user.uid, chapter.memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
+            const result = parseSelectedMemory(snapshot.data(), user.uid, chapter.memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? null)
             return result.memory && result.status === 'ready' ? { memory: result.memory, chapter } : null
           }))
           if (cancelled) return
@@ -116,7 +119,7 @@ export default function LifeMovieClient() {
           const snapshot = await getDocs(query(collection(getFirebaseDb(), 'users', user.uid, 'memories'), limit(36)))
           if (cancelled) return
           parsed = snapshot.docs.flatMap((item) => {
-            const result = parseSelectedMemory(item.data(), user.uid, item.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
+            const result = parseSelectedMemory(item.data(), user.uid, item.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? null)
             return result.memory && result.status === 'ready' ? [result.memory] : []
           })
           parsed.sort((left, right) => safeOccurredAt(right) - safeOccurredAt(left))
