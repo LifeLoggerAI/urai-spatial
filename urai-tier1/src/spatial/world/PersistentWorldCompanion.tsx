@@ -252,6 +252,7 @@ export function PersistentWorldCompanion({ambientPlayback, onRetryAmbient}: Ambi
         <nav className="urai-world-companion__secondary" aria-label="Travel to private URAI realms">{destinationButtons(secondaryDestinations)}</nav>
         <section className="urai-world-companion__estate" aria-labelledby="urai-public-estate-title">
           <h2 id="urai-public-estate-title">Public constellation</h2>
+          <a href="/launch">Explore destinations</a>
           <ul>
             {PUBLIC_ESTATE.map((entry) => (
               <li key={entry.id} data-estate-id={entry.id} data-estate-status={entry.status}>

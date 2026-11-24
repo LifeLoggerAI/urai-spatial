@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { publicStorytimeSampleAvailable } from './lib/storytime/publicSampleAvailable'
 
 function enabled(...values: Array<string | undefined>) {
   return values.some((value) => value === 'true')
 }
 
 function routeAllowed(pathname: string) {
+  if (pathname === '/demo/storytime' || pathname === '/demo/storytime/') return publicStorytimeSampleAvailable()
   if (process.env.NODE_ENV !== 'production') return true
 
   if (pathname.startsWith('/admin')) {

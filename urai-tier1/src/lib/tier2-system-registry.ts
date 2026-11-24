@@ -22,7 +22,7 @@ export const tier2Systems: Tier2System[] = [
     status: 'tier2-ready',
     tier1Dependency: 'URAI Spatial immutable foundation canon',
     publicSafe: true,
-    routes: ['/focus', '/replay', '/mirror', '/unwind'],
+    routes: ['/focus', '/replay', '/mirror', '/unwind', '/demo/storytime'],
     api: [],
     dataCollections: ['lifemap_replays', 'storytime_sessions'],
     guarantees: ['Explicit user action before replay', 'Non-clinical reflection copy', 'Deterministic demo fallback when private memory is unavailable'],

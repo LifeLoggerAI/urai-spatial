@@ -271,6 +271,7 @@ export default function HomeSpatialWorldFinal() {
           <Link href="/council">Council</Link>
           <Link href="/life-movie">Life Movie</Link>
           <Link href="/xr">XR</Link>
+          <Link href="/launch" prefetch={false}>Explore destinations</Link>
         </div>
       </aside>
 

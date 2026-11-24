@@ -1,0 +1,34 @@
+.reader {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  height: 100svh;
+  overflow-y: auto;
+  padding: clamp(1rem, 5vw, 4rem);
+  color: #f5f3ee;
+  background: #0a101a;
+}
+.backdrop { position: absolute; inset: 0; pointer-events: none; }
+.backdrop img { width: 100%; height: 100%; object-fit: cover; opacity: .26; }
+.content { position: relative; max-width: 42rem; margin: 0 auto; }
+.content nav { margin-bottom: 2rem; }
+.content a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 1rem;
+  color: inherit;
+  border: 1px solid currentColor;
+  border-radius: 2rem;
+}
+.content a:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+.disclosure { color: #ffdbac; font-weight: 650; }
+.content h1 { margin: .5rem 0; font: 500 clamp(2.2rem, 6vw, 4rem) / 1.1 Georgia, serif; }
+.content p { line-height: 1.55; }
+.content section { border-top: 1px solid #a6afbd; padding: .4rem 0; }
+.content h2 { font-size: 1.35rem; }
+@media (forced-colors: active) {
+  .reader { background: Canvas; color: CanvasText; }
+  .backdrop { display: none; }
+  .disclosure { color: CanvasText; }
+}

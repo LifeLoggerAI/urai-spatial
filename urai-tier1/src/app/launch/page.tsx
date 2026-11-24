@@ -1,3 +1,5 @@
+import { publicStorytimeSampleAvailable } from '@/lib/storytime/publicSampleAvailable'
+
 const launchDestinations = [
   ['/login', 'Enter your private world', 'Sign in or create your UrAi identity.'],
   ['/life-map', 'Life Map', 'Navigate your private memories, people, places, and chapters.'],
@@ -26,6 +28,7 @@ export default function LaunchPage() {
         </p>
         <div className="launchActions">
           <a href="/login">Enter UrAi</a>
+          <a href="/home">Return Home</a>
           <a href="/demo">Open disclosed demo</a>
         </div>
       </section>
@@ -39,6 +42,12 @@ export default function LaunchPage() {
               <span>{detail}</span>
             </a>
           ))}
+          {publicStorytimeSampleAvailable() && (
+            <a id="storytime-sample" href="/demo/storytime">
+              <strong>Storytime sample</strong>
+              <span>Read The Quiet Reset, a four-chapter demonstration.</span>
+            </a>
+          )}
         </div>
       </section>
 
