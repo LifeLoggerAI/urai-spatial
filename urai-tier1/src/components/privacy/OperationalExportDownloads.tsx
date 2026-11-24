@@ -2,50 +2,18 @@
 
 import { getAuth, type User } from 'firebase/auth'
 import { useLayoutEffect, useRef, useState } from 'react'
-import { app } from '@/lib/firebase/client'
+import { app, privacyExportEmulatorOrigin } from '@/lib/firebase/client'
+import { fetchAuthorizedOperationalExport, OperationalExportDownloadSession, validateOperationalExportDescriptor, type OperationalExportDescriptor } from '@/lib/privacy/authorizedExportDownload'
 import type { getOperationalExportDownloadUrl, PrivacyRow } from '@/lib/privacy/operationalPrivacyClient'
 
 type DownloadRequest = Parameters<typeof getOperationalExportDownloadUrl>[0]
 
-function exportDestination(
-  job: PrivacyRow,
-  owner: User,
-  request: DownloadRequest,
-  result: Record<string, unknown>,
-): string {
-  const bucket = app.options.storageBucket
-  const file = request.assetId ? 'runtime' : 'export'
-  const expiresAt = typeof result.expiresAt === 'string' ? Date.parse(result.expiresAt) : NaN
-  const packageExpiry = job.expiresAt
-  const now = Date.now()
-  if (!bucket || job.uid !== owner.uid || job.state !== 'ready' || result.jobId !== job.id
-    || result.file !== file || result.assetId !== (request.assetId ?? null)
-    || typeof result.url !== 'string' || !Number.isFinite(expiresAt) || expiresAt <= now
-    || (packageExpiry && (typeof packageExpiry.toMillis !== 'function' || !(packageExpiry.toMillis() > now)))) {
-    throw new Error('EXPORT_DOWNLOAD_UNAVAILABLE')
-  }
-
-  let object = 'export.json'
-  if (request.assetId) {
-    const asset = Array.isArray(job.runtimeExports)
-      ? job.runtimeExports.find(entry => entry?.assetId === request.assetId)
-      : undefined
-    if (typeof result.checksum !== 'string' || !/^[a-f0-9]{64}$/.test(result.checksum)
-      || asset?.runtimeSha256 !== result.checksum) throw new Error('EXPORT_DOWNLOAD_UNAVAILABLE')
-    object = `spatial/captured-reality/${request.assetId}/${result.checksum}.splat`
-  } else if (job.checksum && result.checksum !== job.checksum) {
-    throw new Error('EXPORT_DOWNLOAD_UNAVAILABLE')
-  }
-
-  const path = `/private-exports/${owner.uid}/${job.id}/${object}`
-  const url = new URL(result.url)
-  const pathname = decodeURIComponent(url.pathname)
-  const expectedObject = (url.hostname === 'storage.googleapis.com' && pathname === '/' + bucket + path)
-    || (url.hostname === bucket + '.storage.googleapis.com' && pathname === path)
-  if (url.protocol !== 'https:' || url.username || url.password || url.port || url.hash || !expectedObject) {
-    throw new Error('EXPORT_DOWNLOAD_UNAVAILABLE')
-  }
-  return url.href
+function sameSelectedBytes(job: PrivacyRow, request: DownloadRequest, descriptor: OperationalExportDescriptor): boolean {
+  const rowExpiry = job.expiresAt
+  if (typeof rowExpiry?.toMillis !== 'function' || rowExpiry.toMillis() !== descriptor.packageExpiresAt) return false
+  if (!request.assetId) return job.checksum === descriptor.checksum && job.exportGeneration === descriptor.storageGeneration && job.exportBytes === descriptor.byteLength
+  const matches = Array.isArray(job.runtimeExports) ? job.runtimeExports.filter(entry => entry?.assetId === request.assetId) : []
+  return matches.length === 1 && matches[0].runtimeSha256 === descriptor.checksum && matches[0].exportGeneration === descriptor.storageGeneration && matches[0].runtimeBytes === descriptor.byteLength
 }
 
 export default function OperationalExportDownloads({ job, owner, requestDownload, onError }: {
@@ -54,6 +22,7 @@ export default function OperationalExportDownloads({ job, owner, requestDownload
   requestDownload: typeof getOperationalExportDownloadUrl
   onError: (message: string) => void
 }) {
+  const [session] = useState(() => new OperationalExportDownloadSession())
   const current = useRef<object | null>(null)
   const pending = useRef<object | null>(null)
   const [busy, setBusy] = useState(false)
@@ -62,20 +31,29 @@ export default function OperationalExportDownloads({ job, owner, requestDownload
     current.current = {}
     pending.current = null
     setBusy(false)
-    return () => { current.current = null }
-  }, [job, owner])
+    const offline = () => session.stop()
+    window.addEventListener('offline', offline)
+    return () => { current.current = null; session.stop(); window.removeEventListener('offline', offline) }
+  }, [job, owner, session])
 
   async function download(assetId?: string) {
     const view = current.current
-    const isCurrent = () => view !== null && current.current === view && navigator.onLine
+    const projectId = app.options.projectId
+    const isCurrent = () => !!projectId && app.options.projectId === projectId && view !== null && current.current === view && navigator.onLine
       && getAuth(app).currentUser === owner
     if (!isCurrent() || pending.current || job.state !== 'ready' || job.uid !== owner.uid) return
     pending.current = view
     setBusy(true)
     try {
       const request: DownloadRequest = assetId ? { jobId: job.id, file: 'runtime', assetId } : { jobId: job.id }
-      const receipt = await requestDownload(request)
-      if (isCurrent()) window.location.assign(exportDestination(job, owner, request, receipt))
+      await session.download(request, isCurrent, async (_selection, lifecycle) => {
+        const receipt = await requestDownload(request)
+        const emulatorOrigin = privacyExportEmulatorOrigin()
+        const descriptor = validateOperationalExportDescriptor(receipt, request, projectId ?? '', Date.now(), emulatorOrigin)
+        if (!lifecycle.isCurrent() || descriptor.ownerId !== owner.uid || !sameSelectedBytes(job, request, descriptor)) throw new Error('EXPORT_DOWNLOAD_UNAVAILABLE')
+        return fetchAuthorizedOperationalExport({ descriptor, request, projectId: projectId ?? '', emulatorOrigin,
+          ...lifecycle, getIdToken: () => owner.getIdToken(true) })
+      })
     } catch {
       if (isCurrent()) onError('Secure export download could not be authorized.')
     } finally {
@@ -91,6 +69,7 @@ export default function OperationalExportDownloads({ job, owner, requestDownload
     : []
   return <>
     <button type="button" disabled={busy} onClick={() => void download()}>Secure download</button>{' '}
+    {busy && <button type="button" onClick={() => session.stop()}>Cancel download</button>}
     {assetIds.map(assetId => <button key={assetId} type="button" disabled={busy}
       onClick={() => void download(assetId)}>Runtime {assetId.slice(0, 8)}</button>)}
   </>

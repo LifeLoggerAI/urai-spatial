@@ -67,6 +67,12 @@ export function disposableFirebaseReviewAuthorized(): boolean {
     app.options.projectId === 'urai-privacy-r1512-disposable'
 }
 
+const disposableFunctionsHost = '127.0.0.1'
+const disposableFunctionsPort = 5001
+export function privacyExportEmulatorOrigin(): string | undefined {
+  return disposableFirebaseReviewAuthorized() ? `http://${disposableFunctionsHost}:${disposableFunctionsPort}` : undefined
+}
+
 let disposableServicesConnected = false
 export function getUrAiAuth() {
   const auth = getAuth(app)
@@ -75,7 +81,7 @@ export function getUrAiAuth() {
     // /login, the local canonical Privacy lab, and client-only listeners.
     connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
     getFirebaseDb() // Connect Firestore on the same disposable project.
-    connectFunctionsEmulator(functions, '127.0.0.1', 5001)
+    connectFunctionsEmulator(functions, disposableFunctionsHost, disposableFunctionsPort)
     connectStorageEmulator(getStorage(app), '127.0.0.1', 9199)
     disposableServicesConnected = true
   }

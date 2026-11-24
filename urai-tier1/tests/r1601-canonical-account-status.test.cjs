@@ -15,19 +15,29 @@ function harness() {
   let authorized = true
   const calls = [], listeners = [], handlers = {}, weatherClears = []
   const expiry = Date.now() + 600000
+  const body = new TextEncoder().encode('{"fixture":"canonical-owner"}')
+  const sha256 = require('node:crypto').createHash('sha256').update(body).digest('hex')
+  const authorityHash = 'b'.repeat(64), downloadExpiresAt = expiry - 1000
+  const query = new URLSearchParams({ jobId: 'export-1', file: 'export', expiresAt: String(downloadExpiresAt), authorityHash, auditId: 'audit-1' })
   const responses = {
     createExportRequest: { requestId: 'request-1', exportJobId: 'export-1', status: 'pending' },
     createDeletionRequest: { requestId: 'deletion-1', status: 'pending' },
-    getExportDownloadUrl: { jobId: 'export-1', requestId: 'request-1', file: 'export', url: 'https://storage.googleapis.com/disposable/exports/test?signature=synthetic', signedUrlExpiresAt: expiry - 1000, packageExpiresAt: expiry },
+    getExportDownloadUrl: { schemaVersion: 'urai-canonical-export-download-v1', requiresAuthorization: true, uid: owner.uid,
+      jobId: 'export-1', requestId: 'request-1', file: 'export', url: 'http://127.0.0.1:5001/urai-privacy-r1512-disposable/us-central1/downloadExportPackage?' + query,
+      downloadExpiresAt, packageExpiresAt: expiry, auditId:'audit-1', authorityHash, generation:'123', sha256, byteLength:body.length },
   }
+  const transport = {exports:{}}
+  const transportSource = fs.readFileSync(path.join(__dirname, '../src/lib/privacy/authorizedExportDownload.ts'), 'utf8')
+  new Function('module','exports',ts.transpileModule(transportSource,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText)(transport,transport.exports)
   const mocks = {
+    './authorizedExportDownload': transport.exports,
     'firebase/firestore': {
       doc: (_db, collection, documentId) => ({ collection, documentId }),
       onSnapshot: (ref, options, next, error) => { const item = { ref, options, next, error, stopped: false }; listeners.push(item); return () => { item.stopped = true } },
     },
     'firebase/functions': { httpsCallable: (_fn, name) => async payload => { calls.push({ name, payload }); return { data: handlers[name] ? await handlers[name](payload) : responses[name] } } },
     '@/lib/uraiEmotion/manualWeatherSession': { notifyManualWeatherRevocation: () => weatherClears.push(calls.length) },
-    '@/lib/firebase/client': { app, functions: {}, getFirebaseDb: () => ({}), getUrAiAuth: () => auth, disposableFirebaseReviewAuthorized: () => authorized },
+    '@/lib/firebase/client': { app, functions: {}, getFirebaseDb: () => ({}), getUrAiAuth: () => auth, privacyExportEmulatorOrigin: () => 'http://127.0.0.1:5001', disposableFirebaseReviewAuthorized: () => authorized },
   }
   const mod = { exports: {} }
   new Function('require', 'module', 'exports', compiled)(name => { if (!(name in mocks)) throw Error('Unexpected import ' + name); return mocks[name] }, mod, mod.exports)
@@ -36,8 +46,8 @@ function harness() {
     const listener = listeners[index]
     listener.next({ id: listener.ref.documentId, exists: () => data !== null, data: () => data, metadata })
   }
-  const complete = () => ({ uid: owner.uid, requestId: 'request-1', status: 'completed', complete: true, packageExpiresAt: { toMillis: () => expiry } })
-  return { owner, auth, app, calls, listeners, handlers, responses, weatherClears, expiry, emit, complete, session, linkCurrent: mod.exports.canonicalDownloadIsCurrent, disable: () => { authorized = false } }
+  const complete = () => ({ uid: owner.uid, requestId: 'request-1', status: 'completed', complete: true, exportSha256:sha256, packageExpiresAt: { toMillis: () => expiry } })
+  return { owner, auth, app, calls, listeners, handlers, responses, weatherClears, expiry, emit, complete, session, body, linkCurrent: mod.exports.canonicalDownloadIsCurrent, disable: () => { authorized = false } }
 }
 const exportRequest = { requestId: 'request-1', exportJobId: 'export-1', status: 'pending' }
 const deletionRequest = { requestId: 'deletion-1', status: 'pending' }
@@ -92,7 +102,7 @@ test('export listener follows pending, processing and complete server records wi
   h.emit(0, h.complete())
   assert.deepEqual(states.map(x => [x.status, x.downloadEligible]), [['pending', false], ['processing', false], ['completed', true]])
   const download = await session.getDownload(exportRequest)
-  assert.equal(download.url, h.responses.getExportDownloadUrl.url)
+  assert.deepEqual(Object.keys(download).sort(), ['downloadExpiresAt', 'jobId', 'requestId'])
   assert.deepEqual(h.calls.map(x => x.name), ['getExportDownloadUrl'])
   assert.equal(errors.length, 0)
 })
@@ -109,7 +119,7 @@ test('foreign owner, wrong request link and unknown statuses invalidate previous
 })
 
 test('cached, pending-write, incomplete and expired documents cannot enable a download', async () => {
-  for (const variant of ['cache', 'pending-write', 'incomplete', 'expired', 'missing-expiry']) {
+  for (const variant of ['cache', 'pending-write', 'incomplete', 'expired', 'missing-expiry','missing-checksum']) {
     const h = harness(), session = h.session(), states = []
     session.watchExport(exportRequest, x => states.push(x), () => {})
     const value = h.complete(), metadata = { fromCache: false, hasPendingWrites: false }
@@ -117,6 +127,7 @@ test('cached, pending-write, incomplete and expired documents cannot enable a do
     if (variant === 'pending-write') metadata.hasPendingWrites = true
     if (variant === 'incomplete') value.complete = false
     if (variant === 'expired') value.packageExpiresAt = { toMillis: () => Date.now() - 1000 }
+    if (variant === 'missing-checksum') delete value.exportSha256
     if (variant === 'missing-expiry') delete value.packageExpiresAt
     h.emit(0, value, metadata)
     assert.equal(states.at(-1).downloadEligible, false)
@@ -132,8 +143,10 @@ test('backend refusal cannot be replaced by a constructed download link', async 
   await assert.rejects(session.getDownload(exportRequest), /failed-precondition/)
 })
 
-test('backend download response must match the request, expiry and HTTPS storage origin', async () => {
-  for (const change of [d => ({ ...d, jobId: 'other' }), d => ({ ...d, url: 'javascript:alert(1)' }), d => ({ ...d, url: 'https://example.test/download' }), d => ({ ...d, signedUrlExpiresAt: Date.now() - 1 })]) {
+test('backend download response must match the request, expiry and configured authenticated endpoint', async () => {
+  for (const change of [d => ({ ...d, jobId: 'other' }), d => ({ ...d, url: 'javascript:alert(1)' }), d => ({ ...d, url: 'https://example.test/download' }), d => ({...d, downloadExpiresAt: Date.now() - 1}), d => ({...d, uid: 'foreign'}), d=>({...d, requiresAuthorization:false}), d=>({...d, sha256:'invalid'}), d=>({...d, sha256:'0'.repeat(64)}),
+    d=>({...d, url:d.url.replace(':5001',':6001')}), d=>({...d, url:d.url.replace('downloadExportPackage','downloadOperationalExportPackage')}),
+    d=>({...d,url:d.url+'&file=export'}), d=>({...d,url:d.url.replace('audit-1','other-audit')}), d=>({...d,url:'https://storage.googleapis.com/fixture/job?old'})]) {
     const h = harness(), session = h.session()
     session.watchExport(exportRequest, () => {}, () => {}); h.emit(0, h.complete())
     h.responses.getExportDownloadUrl = change(h.responses.getExportDownloadUrl)
@@ -202,13 +215,38 @@ test('unregistered purpose never dispatches and a closed session cannot mutate c
 
 test('rendered download link stays bound to the exact issuing session across account replacement', () => {
   const h = harness(), original = h.session(), sameAccountNewSession = h.session()
-  const link = { receipt: h.responses.getExportDownloadUrl, issuingSession: original }
+  const link = { receipt: { downloadExpiresAt:h.responses.getExportDownloadUrl.downloadExpiresAt }, issuingSession: original }
   assert.equal(h.linkCurrent(link, original), true)
   assert.equal(sameAccountNewSession.isCurrent(), true)
   assert.equal(h.linkCurrent(link, sameAccountNewSession), false)
   const foreignSession = { isCurrent: () => true }
   assert.equal(h.linkCurrent(link, foreignSession), false)
-  assert.equal(h.linkCurrent(link, original, link.receipt.signedUrlExpiresAt), false)
+  assert.equal(h.linkCurrent(link, original, link.receipt.downloadExpiresAt), false)
   original.close()
   assert.equal(h.linkCurrent(link, original), false)
+})
+
+async function ready(h) {
+  const session = h.session()
+  session.watchExport(exportRequest, () => {}, () => {}); h.emit(0,h.complete())
+  const grant = await session.getDownload(exportRequest)
+  return {session,grant}
+}
+test('a copied or foreign-session download grant cannot request an owner token', async () => {
+  const h=harness(), {session,grant}=await ready(h)
+  h.owner.getIdToken=()=>{ throw Error('must not request a token') }
+  await assert.rejects(session.saveDownload({...grant}),/STATE_CHANGED/)
+  await assert.rejects(h.session().saveDownload(grant),/STATE_CHANGED/)
+})
+test('same-UID owner replacement during forced token refresh prevents the HTTP request', async () => {
+  const h=harness(), {session,grant}=await ready(h), token=later()
+  h.owner.getIdToken=force=>{assert.equal(force,true);return token.promise}
+  const save=session.saveDownload(grant)
+  h.auth.currentUser={uid:h.owner.uid};token.resolve('synthetic')
+  await assert.rejects(save,/stopped|AUTH_CHANGED|STATE_CHANGED/i)
+})
+test('new server status invalidates the original grant before token acquisition', async () => {
+  const h=harness(), {session,grant}=await ready(h)
+  h.emit(0,{uid:h.owner.uid,requestId:'request-1',status:'expired',complete:false})
+  await assert.rejects(session.saveDownload(grant),/STATE_CHANGED/)
 })

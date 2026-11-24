@@ -39,7 +39,7 @@ function operationId(prefix: string) {
   return `${prefix}-${random}`.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 96)
 }
 
-const SCOPED_COLLISION_CALLABLES = new Set(['createExportRequest', 'createDeletionRequest', 'getExportDownloadUrl'])
+const SCOPED_COLLISION_CALLABLES = new Set(['createSpatialExportRequest', 'createSpatialDeletionRequest', 'getOperationalExportDownloadUrl'])
 
 /** Fail closed when Firebase switches accounts while a scoped request is pending. */
 function assertSameOwner(auth: ReturnType<typeof getAuth>, owner: NonNullable<ReturnType<typeof getAuth>['currentUser']>, projectId: string): void {
@@ -80,15 +80,15 @@ export function applyOperationalConsentPolicy(payload: { domain: string; next: R
 
 export function getOperationalPassportSnapshot() { return callOperationalPrivacyFunction('getPassportSnapshot') }
 export function createOperationalExportRequest(scopes: string[], suppliedOperationId?: string) {
-  return callOperationalPrivacyFunction('createExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })
+  return callOperationalPrivacyFunction('createSpatialExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })
 }
-export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' | 'runtime'; assetId?: string }) { return callOperationalPrivacyFunction('getExportDownloadUrl', payload) }
-export function cancelOperationalExportRequest(jobId: string) { return callOperationalPrivacyFunction('cancelExportRequest', { jobId }) }
+export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' | 'runtime'; assetId?: string }) { return callOperationalPrivacyFunction('getOperationalExportDownloadUrl', payload) }
+export function cancelOperationalExportRequest(jobId: string) { return callOperationalPrivacyFunction('cancelSpatialExportRequest', { jobId }) }
 export function createOperationalDeletionRequest(payload: { scope: string; confirmation: string; reason?: string; operationId?: string }) {
   notifyManualWeatherRevocation()
-  return callOperationalPrivacyFunction('createDeletionRequest', { ...payload, operationId: payload.operationId ?? operationId('deletion') })
+  return callOperationalPrivacyFunction('createSpatialDeletionRequest', { ...payload, operationId: payload.operationId ?? operationId('deletion') })
 }
-export function cancelOperationalDeletionRequest(jobId: string) { return callOperationalPrivacyFunction('cancelDeletionRequest', { jobId }) }
+export function cancelOperationalDeletionRequest(jobId: string) { return callOperationalPrivacyFunction('cancelSpatialDeletionRequest', { jobId }) }
 
 export function subscribeOperationalUserCollection(collectionName: string, uid: string, onRows: (rows: PrivacyRow[]) => void, onError: (error: Error) => void): Unsubscribe {
   requireOperationalPrivacyContract(process.env.NEXT_PUBLIC_URAI_PRIVACY_CONTRACT)
