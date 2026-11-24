@@ -136,6 +136,12 @@ const fingerprint = writeAuthoritativeFingerprint()
 const sourceFiles = walkRegularFiles(sourceDirectory)
 if (!sourceFiles.length) throw new Error('Static output directory is empty')
 if (!sourceFiles.some((entry) => entry.relative === 'index.html')) throw new Error('Static output is missing index.html')
+const requiredPublicRoutePages = ['login/index.html', 'privacy-policy/index.html', 'support/index.html']
+for (const routePage of requiredPublicRoutePages) {
+  if (!sourceFiles.some((entry) => entry.relative === routePage)) {
+    throw new Error(`Static output is missing required public route: ${routePage}`)
+  }
+}
 if (!sourceFiles.some((entry) => entry.relative === 'release-fingerprint.json')) {
   throw new Error('Static output is missing release-fingerprint.json')
 }
