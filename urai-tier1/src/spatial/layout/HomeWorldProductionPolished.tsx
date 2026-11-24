@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Environment, Lightformer, Sparkles, Stars, useAnimations, useGLTF } from '@react-three/drei'
-import { Component, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
+import { Component, Suspense, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { isOrbState, resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
@@ -841,6 +841,12 @@ function HomeSourceExplanation({ terrain, splatMounted, open, onOpenChange }: {
     onOpenChange(true)
   }
 
+  function closeExplanation() {
+    dialog.current?.close()
+    onOpenChange(false)
+    trigger.current?.focus({ preventScroll: true })
+  }
+
   return <>
     <button className={styles.explanationTrigger} type="button" ref={trigger}
       aria-haspopup="dialog" aria-controls={id} aria-expanded={open}
@@ -848,8 +854,11 @@ function HomeSourceExplanation({ terrain, splatMounted, open, onOpenChange }: {
       Why am I seeing this?
     </button>
     <dialog className={styles.explanationDialog} id={id} ref={dialog} aria-labelledby={id + '-title'}
-      onClose={() => { onOpenChange(false); trigger.current?.focus({ preventScroll: true }) }}
-      onKeyDown={(event) => event.stopPropagation()}
+      onCancel={(event) => { event.preventDefault(); closeExplanation() }}
+      onKeyDown={(event) => {
+        event.stopPropagation()
+        if (event.key === 'Escape') { event.preventDefault(); closeExplanation() }
+      }}
       onPointerDown={(event) => event.stopPropagation()}>
       <h2 id={id + '-title'}>Home source explanation</h2>
       <p>This explanation covers the ground and the optional interpretive scenery in Home.</p>
@@ -860,7 +869,7 @@ function HomeSourceExplanation({ terrain, splatMounted, open, onOpenChange }: {
         {!terrain && !splatMounted && <p>Neither layer is currently displayed.</p>}
       </div>
       <a href="/privacy-controls">Review consent</a>
-      <button type="button" ref={closeControl} onClick={() => dialog.current?.close()}>Close</button>
+      <button type="button" ref={closeControl} onClick={closeExplanation}>Close</button>
     </dialog>
   </>
 }
@@ -948,7 +957,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
       <img src={phase === 'ASCENT' ? '/assets/urai/home/home-sky-ascent.webp' : groundDescent ? '/assets/urai/home/home-ground-portal.webp' : HOME_PROVIDER_ENVIRONMENT} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center center', transform:'scale(1.018)', filter:'saturate(1.1) contrast(1.035) brightness(.94)' }} />
     </picture>
     <div aria-hidden="true" style={{ position:'absolute', inset:0, zIndex:0, background:'radial-gradient(circle at 50% 44%, rgba(2,6,12,0) 0%, rgba(2,6,12,.04) 54%, rgba(1,3,8,.32) 100%), linear-gradient(180deg, rgba(1,4,9,.05), rgba(1,4,9,0) 58%, rgba(1,4,9,.18))' }} />
-    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} style={{ background: 'transparent' }} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:true, powerPreference:'high-performance' }} onCreated={({ gl, scene }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.shadowMap.type = THREE.PCFSoftShadowMap; gl.setClearColor(0x000000,0); scene.background = null; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene onTerrainSourceChange={setTerrainSource} onSplatMountChange={setSplatMounted} input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
+    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Suspense fallback={null}><Canvas className={styles.canvas} style={{ background: 'transparent' }} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:true, powerPreference:'high-performance' }} onCreated={({ gl, scene }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.shadowMap.type = THREE.PCFSoftShadowMap; gl.setClearColor(0x000000,0); scene.background = null; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene onTerrainSourceChange={setTerrainSource} onSplatMountChange={setSplatMounted} input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></Suspense></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
     <HomeSourceExplanation terrain={terrainSource} splatMounted={splatMounted} open={explanationOpen} onOpenChange={setExplanationOpen} />
     {context ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" style={{ zIndex:3 }}>{context}</div> : null}
