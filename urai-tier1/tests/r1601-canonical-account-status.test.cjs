@@ -250,3 +250,18 @@ test('new server status invalidates the original grant before token acquisition'
   h.emit(0,{uid:h.owner.uid,requestId:'request-1',status:'expired',complete:false})
   await assert.rejects(session.saveDownload(grant),/STATE_CHANGED/)
 })
+
+test('canonical range support is mandatory only above one Gen2 response and has a clear browser memory limit', async () => {
+  for (const [size, rangeSize, reason] of [
+    [10000000,undefined,null], [10000000,4194304,'RECEIPT_INVALID'],
+    [10000001,undefined,'RECEIPT_INVALID'], [10000001,4194303,'RECEIPT_INVALID'],
+    [10000001,4194304,null], [64*1024*1024,4194304,null], [64*1024*1024+1,4194304,'64 MiB'],
+  ]) {
+    const h = harness(), session=h.session()
+    h.responses.getExportDownloadUrl.byteLength=size
+    if(rangeSize!==undefined) h.responses.getExportDownloadUrl.rangeSize=rangeSize
+    session.watchExport(exportRequest,()=>{},()=>{}); h.emit(0,h.complete())
+    if(reason) await assert.rejects(session.getDownload(exportRequest),new RegExp(reason))
+    else assert.equal((await session.getDownload(exportRequest)).jobId,'export-1')
+  }
+})

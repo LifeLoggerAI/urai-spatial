@@ -17,6 +17,8 @@ export type OperationalExportDescriptor = {
 
 // A browser Blob transfer is bounded independently of server streaming capacity.
 export const MAX_OPERATIONAL_EXPORT_BYTES = 64 * 1024 * 1024
+export const CANONICAL_SINGLE_RESPONSE_BYTES = 10_000_000
+export const CANONICAL_EXPORT_RANGE_BYTES = 4 * 1024 * 1024
 const MAX_DELIVERY_TTL_MS = 15 * 60 * 1000
 const MAX_TRANSFER_TIME_MS = 120_000
 export class OperationalExportDownloadError extends Error {
@@ -85,58 +87,78 @@ export function matchesExportEndpoint(url: URL, projectId: string, handler: 'dow
   return url.origin === `https://us-central1-${projectId}.cloudfunctions.net` && url.pathname === `/${handler}`
 }
 
-type Delivery = Pick<OperationalExportDescriptor, 'url' | 'file' | 'jobId' | 'checksum' | 'contentType' | 'byteLength' | 'downloadExpiresAt'>
+type Delivery = Pick<OperationalExportDescriptor, 'url' | 'file' | 'jobId' | 'checksum' | 'contentType' | 'byteLength' | 'downloadExpiresAt'> & {
+  range?: { size: typeof CANONICAL_EXPORT_RANGE_BYTES; generation: string }
+}
 export async function fetchVerifiedExport(options: {
   descriptor: Delivery; signal: AbortSignal; isCurrent: () => boolean; getIdToken: () => Promise<string>;
   validate: () => unknown; fetcher?: typeof fetch
 }): Promise<{ blob: Blob; filename: string; expiresAt: number }> {
-  const { descriptor } = options
-  options.validate()
-  current(options.signal, options.isCurrent)
-  const token = await options.getIdToken()
-  current(options.signal, options.isCurrent)
-  options.validate()
-  if (!token || /[\r\n]/.test(token)) throw new OperationalExportDownloadError('AUTH_REQUIRED')
-  const response = await (options.fetcher ?? fetch)(descriptor.url, {
-    method: 'GET', headers: { Authorization: `Bearer ${token}` }, signal: options.signal,
-    credentials: 'omit', redirect: 'error', cache: 'no-store', referrerPolicy: 'no-referrer',
-  })
-  try {
-    current(options.signal, options.isCurrent)
-    if (!response.ok || response.redirected || (response.url && response.url !== descriptor.url)) throw new OperationalExportDownloadError('EXPORT_UNAVAILABLE')
-    const mime = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase()
-    if (mime !== descriptor.contentType || !response.body) throw new OperationalExportDownloadError('EXPORT_CONTENT_INVALID')
-    const statedLength = response.headers.get('content-length')
-    if (statedLength !== null && (!/^[0-9]+$/.test(statedLength) || Number(statedLength) !== descriptor.byteLength)) throw new OperationalExportDownloadError('EXPORT_CONTENT_INVALID')
-  } catch (error) { await response.body?.cancel().catch(() => undefined); throw error }
-  const reader = response.body.getReader()
-  const cancel = () => { void reader.cancel().catch(() => undefined) }
-  options.signal.addEventListener('abort', cancel, { once: true })
-  const chunks: Uint8Array[] = []
-  let length = 0
-  try {
-    while (true) {
-      current(options.signal, options.isCurrent)
-      if (Date.now() >= descriptor.downloadExpiresAt) throw new OperationalExportDownloadError('EXPORT_EXPIRED')
-      const next = await reader.read()
-      current(options.signal, options.isCurrent)
-      if (next.done) break
-      length += next.value.byteLength
-      if (length > descriptor.byteLength) throw new OperationalExportDownloadError('EXPORT_CONTENT_INVALID')
-      chunks.push(next.value)
-    }
-  } finally {
-    options.signal.removeEventListener('abort', cancel)
-    await reader.cancel().catch(() => undefined)
-    reader.releaseLock()
+  const { descriptor, signal } = options
+  function assertCurrent() {
+    current(signal, options.isCurrent)
+    if (Date.now() >= descriptor.downloadExpiresAt) throw new OperationalExportDownloadError('EXPORT_EXPIRED')
+    options.validate()
   }
-  if (length !== descriptor.byteLength || !globalThis.crypto?.subtle) throw new OperationalExportDownloadError('EXPORT_INTEGRITY_FAILED')
-  const bytes = new Uint8Array(length)
+  assertCurrent()
+  if (!Number.isSafeInteger(descriptor.byteLength) || descriptor.byteLength < 1 || descriptor.byteLength > MAX_OPERATIONAL_EXPORT_BYTES) {
+    throw new OperationalExportDownloadError('EXPORT_TOO_LARGE')
+  }
+  if (descriptor.range && (descriptor.range.size !== CANONICAL_EXPORT_RANGE_BYTES
+    || descriptor.byteLength <= CANONICAL_SINGLE_RESPONSE_BYTES || !/^[1-9][0-9]{0,29}$/.test(descriptor.range.generation))) {
+    throw new OperationalExportDownloadError('EXPORT_RANGE_INVALID')
+  }
+  const bytes = new Uint8Array(descriptor.byteLength)
   let offset = 0
-  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength }
+  while (offset < bytes.length) {
+    assertCurrent()
+    const start = offset
+    const range = descriptor.range
+    const end = range ? Math.min(start + range.size, bytes.length) - 1 : bytes.length - 1
+    const token = await options.getIdToken()
+    assertCurrent()
+    if (!token || /[\r\n]/.test(token)) throw new OperationalExportDownloadError('AUTH_REQUIRED')
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}` }
+    if (range) headers.Range = `bytes=${start}-${end}`
+    const response = await (options.fetcher ?? fetch)(descriptor.url, {
+      method: 'GET', headers, signal, credentials: 'omit', redirect: 'error', cache: 'no-store', referrerPolicy: 'no-referrer',
+    })
+    try {
+      assertCurrent()
+      if (response.status !== (range ? 206 : 200) || response.redirected || (response.url && response.url !== descriptor.url)) {
+        throw new OperationalExportDownloadError('EXPORT_UNAVAILABLE')
+      }
+      const mime = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase()
+      if (mime !== descriptor.contentType || !response.body) throw new OperationalExportDownloadError('EXPORT_CONTENT_INVALID')
+      const statedLength = response.headers.get('content-length')
+      if (statedLength !== null && (!/^[0-9]+$/.test(statedLength) || Number(statedLength) !== end - start + 1)) throw new OperationalExportDownloadError('EXPORT_CONTENT_INVALID')
+      if (range && (statedLength === null || response.headers.get('content-range') !== `bytes ${start}-${end}/${bytes.length}`
+        || response.headers.get('etag') !== `"${range.generation}"`
+        || ![null, 'identity'].includes(response.headers.get('content-encoding')))) throw new OperationalExportDownloadError('EXPORT_RANGE_INVALID')
+    } catch (error) { await response.body?.cancel().catch(() => undefined); throw error }
+    const reader = response.body!.getReader()
+    const cancel = () => { void reader.cancel().catch(() => undefined) }
+    signal.addEventListener('abort', cancel, { once: true })
+    try {
+      for (;;) {
+        assertCurrent()
+        const next = await reader.read()
+        assertCurrent()
+        if (next.done) break
+        if (offset + next.value.byteLength > end + 1) throw new OperationalExportDownloadError('EXPORT_CONTENT_INVALID')
+        bytes.set(next.value, offset)
+        offset += next.value.byteLength
+      }
+    } finally {
+      signal.removeEventListener('abort', cancel)
+      await reader.cancel().catch(() => undefined)
+      reader.releaseLock()
+    }
+    if (offset !== end + 1) throw new OperationalExportDownloadError('EXPORT_INTEGRITY_FAILED')
+  }
+  if (!globalThis.crypto?.subtle) throw new OperationalExportDownloadError('EXPORT_INTEGRITY_FAILED')
   const hash = await crypto.subtle.digest('SHA-256', bytes)
-  current(options.signal, options.isCurrent)
-  options.validate()
+  assertCurrent()
   if (Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('') !== descriptor.checksum) throw new OperationalExportDownloadError('EXPORT_INTEGRITY_FAILED')
   return { blob: new Blob([bytes], { type: descriptor.contentType }), filename: `urai-${descriptor.file}-${descriptor.jobId}.${descriptor.file === 'runtime' ? 'bin' : 'json'}`, expiresAt: descriptor.downloadExpiresAt }
 }

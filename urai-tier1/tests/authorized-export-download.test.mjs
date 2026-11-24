@@ -100,3 +100,56 @@ test('local Blob URL lifetime is bounded and cleanup is idempotent', async () =>
   cleanup.fn(); session.stop()
   assert.deepEqual(f.revoked, f.saved); assert.equal(scheduled.size, 0)
 })
+
+const rangePayload = Buffer.from('{"fixture":"' + 'x'.repeat(10_000_015) + '"}')
+const partSize = 4_194_304
+function rangeFixture(mode) {
+  const f = fixture(), seen = [], controller = new AbortController()
+  let tokens = 0, current = true
+  const descriptor = { url: origin + '/downloadExportPackage?fixture=1', jobId: 'fixture-job', file: 'export',
+    range: { size: partSize, generation: '789' }, byteLength: rangePayload.length, contentType: 'application/json',
+    checksum: createHash('sha256').update(rangePayload).digest('hex'), downloadExpiresAt: f.now() + 600000 }
+  const run = () => f.exports.fetchVerifiedExport({ descriptor, validate: () => {}, signal: controller.signal,
+    isCurrent: () => current, getIdToken: async () => {
+      tokens++
+      if (mode === 'changed account' && tokens === 2) current = false
+      return 'synthetic-owner-' + tokens
+    }, fetcher: async (url, init) => {
+      const start = seen.length * partSize, end = Math.min(start + partSize, rangePayload.length) - 1
+      assert.equal(url, descriptor.url)
+      assert.equal(init.headers.Authorization, 'Bearer synthetic-owner-' + tokens)
+      assert.equal(init.headers.Range, 'bytes=' + start + '-' + end)
+      assert.equal(init.redirect, 'error'); assert.equal(init.credentials, 'omit'); assert.equal(init.referrerPolicy, 'no-referrer')
+      seen.push([start, end])
+      const headers = { 'content-type': 'application/json', 'content-length': String(end - start + 1),
+        'content-range': 'bytes ' + start + '-' + end + '/' + rangePayload.length, etag: '"789"' }
+      let body = rangePayload.subarray(start, end + 1), status = 206
+      if (seen.length === 2) {
+        if (mode === 'generation changed') headers.etag = '"790"'
+        if (mode === 'weak ETag') headers.etag = 'W/"789"'
+        if (mode === 'wrong offset') headers['content-range'] = headers['content-range'].replace('4194304-', '4194303-')
+        if (mode === 'wrong total') headers['content-range'] += '0'
+        if (mode === 'missing length') delete headers['content-length']
+        if (mode === 'compressed bytes') headers['content-encoding'] = 'gzip'
+        if (mode === 'ignored range') status = 200
+        if (mode === 'revoked') status = 403
+        if (mode === 'interrupted') body = body.subarray(0,100)
+        if (mode === 'changed bytes') { body = Buffer.from(body); body[0] ^= 1 }
+      }
+      return new Response(body, {status, headers})
+    } })
+  return {run,seen, tokens:()=>tokens}
+}
+test('canonical export verifies all aligned ranges and the final short range before creating one Blob', async () => {
+  const f = rangeFixture('normal'), delivery = await f.run()
+  assert.deepEqual(Buffer.from(await delivery.blob.arrayBuffer()), rangePayload)
+  assert.deepEqual(f.seen, [[0,4194303],[4194304,8388607],[8388608,rangePayload.length-1]])
+  assert.equal(f.tokens(),3)
+})
+for (const failure of ['generation changed','weak ETag','wrong offset','wrong total','missing length','compressed bytes','ignored range','revoked','interrupted','changed bytes','changed account']) {
+  test('canonical range transfer discards all accumulated data after ' + failure,async()=>{
+    const f=rangeFixture(failure)
+    await assert.rejects(f.run())
+    assert.equal(f.seen.length, failure==='changed account'?1:failure==='changed bytes'?3:2)
+  })
+}

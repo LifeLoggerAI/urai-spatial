@@ -2,7 +2,7 @@
 
 // Canonical account-wide requests, restricted to the existing disposable local lab.
 // This does not translate named-purpose consent into operational-v1 authority.
-import { fetchVerifiedExport, matchesExportEndpoint, MAX_OPERATIONAL_EXPORT_BYTES, OperationalExportDownloadSession } from './authorizedExportDownload'
+import { fetchVerifiedExport, matchesExportEndpoint, CANONICAL_EXPORT_RANGE_BYTES, CANONICAL_SINGLE_RESPONSE_BYTES, MAX_OPERATIONAL_EXPORT_BYTES, OperationalExportDownloadSession } from './authorizedExportDownload'
 import { notifyManualWeatherRevocation } from '@/lib/uraiEmotion/manualWeatherSession'
 import type { User } from 'firebase/auth'
 import { doc, onSnapshot, type Unsubscribe } from 'firebase/firestore'
@@ -103,17 +103,21 @@ export function createCanonicalAccountPrivacySession(owner: User) {
       || !id(auditId) || typeof authorityHash !== 'string' || !/^[a-f0-9]{64}$/.test(authorityHash)
       || typeof generation !== 'string' || !/^[1-9][0-9]{0,29}$/.test(generation)
       || typeof sha256 !== 'string' || sha256 !== state.exportSha256 || !/^[a-f0-9]{64}$/.test(sha256)
-      || typeof byteLength !== 'number' || !Number.isSafeInteger(byteLength) || byteLength < 1 || byteLength > MAX_OPERATIONAL_EXPORT_BYTES
+      || typeof byteLength !== 'number' || !Number.isSafeInteger(byteLength) || byteLength < 1
       || typeof downloadExpiresAt !== 'number' || !Number.isSafeInteger(downloadExpiresAt) || downloadExpiresAt <= now
       || downloadExpiresAt > Math.min(now + 15 * 60 * 1000, state.packageExpiresAt) || packageExpiresAt !== state.packageExpiresAt
       || typeof value.url !== 'string' || value.url.length > 3000) throw new Error('CANONICAL_DOWNLOAD_RECEIPT_INVALID')
+    if (byteLength > MAX_OPERATIONAL_EXPORT_BYTES) throw new Error('This browser can download exports up to 64 MiB. Your export package has not been downloaded.')
+    const needsRanges = byteLength > CANONICAL_SINGLE_RESPONSE_BYTES
+    if (needsRanges ? value.rangeSize !== CANONICAL_EXPORT_RANGE_BYTES : value.rangeSize !== undefined) throw new Error('CANONICAL_DOWNLOAD_RECEIPT_INVALID')
+    const range = needsRanges ? { size: CANONICAL_EXPORT_RANGE_BYTES, generation } as const : undefined
     let url: URL
     try { url = new URL(value.url) } catch { throw new Error('CANONICAL_DOWNLOAD_URL_INVALID') }
     const expected = { jobId: state.jobId, file, expiresAt: String(downloadExpiresAt), authorityHash, auditId }
     if (!projectId || !matchesExportEndpoint(url, projectId, 'downloadExportPackage', privacyExportEmulatorOrigin())
       || [...url.searchParams.keys()].length !== Object.keys(expected).length
       || Object.entries(expected).some(([k, v]) => url.searchParams.getAll(k).length !== 1 || url.searchParams.get(k) !== v)) throw new Error('CANONICAL_DOWNLOAD_URL_INVALID')
-    return { url: url.href, file, jobId: state.jobId, checksum: sha256, contentType: 'application/json', byteLength, downloadExpiresAt } as const
+    return { url: url.href, file, jobId: state.jobId, checksum: sha256, contentType: 'application/json', byteLength, downloadExpiresAt, range } as const
   }
   return {
     isCurrent,
