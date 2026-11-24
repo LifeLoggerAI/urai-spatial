@@ -52,6 +52,21 @@ test('R882: verified custom domain owner and live channel replace preview-mixed 
   assert.doesNotMatch(rollback, /releases\?pageSize=100/)
 })
 
+test('both Hosting publications name the verified target and recheck its source mapping', () => {
+  const commands = [...workflow.matchAll(/--only\s+([^\n]*hosting[^\n]*)/g)].map(match => match[1].trim())
+  assert.deepEqual(commands, Array(2).fill('"hosting:${VERIFIED_HOSTING_TARGET:?}" \\'))
+  const selection = section('Authenticate and resolve actual Hosting site and live-channel source')
+  assert.match(selection, /VERIFIED_HOSTING_TARGET=.*sourceConfig\.hostingTarget/)
+  assert.match(selection, /sourceConfig\.configuredSiteId == \.selectedSiteId/)
+  for (const id of ['deploy-hosting', 'deploy-certified-fingerprint']) {
+    const start = workflow.indexOf('      - id: ' + id + '\n')
+    assert.ok(start >= 0)
+    const step = workflow.slice(start, workflow.indexOf('\n      - ', start + 1))
+    assert.ok(step.indexOf('git diff --exit-code "$RELEASE_SHA" -- .firebaserc firebase.static.json') >= 0)
+    assert.ok(step.indexOf('git diff --exit-code') < step.indexOf('npx --yes firebase-tools'))
+  }
+})
+
 test('R883: attestation is checked before deploying Functions or Hosting bytes', () => {
   assert.match(workflow, /R883_VERIFY_FUNCTIONS_BUILD\.mjs/)
   assert.match(workflow, /--mode attest/)

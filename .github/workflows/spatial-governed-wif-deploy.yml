@@ -272,6 +272,7 @@ jobs:
           jq -e --arg project "$FIREBASE_PROJECT" '
             .classification == "READBACK_ONLY_NO_PRODUCTION_GO"
             and .selectedSiteId == $project
+            and .sourceConfig.configuredSiteId == .selectedSiteId
             and .selectedSiteType == "DEFAULT_SITE"
             and (.latestLiveRelease.versionName | type == "string")
             and (.holdReasons | length == 0)
@@ -280,6 +281,7 @@ jobs:
             exit 1
           }
           echo "VERIFIED_HOSTING_SITE_ID=$(jq -r '.selectedSiteId' deployment-receipt/predeploy/site-readback.json)" >> "$GITHUB_ENV"
+          echo "VERIFIED_HOSTING_TARGET=$(jq -r '.sourceConfig.hostingTarget' deployment-receipt/predeploy/site-readback.json)" >> "$GITHUB_ENV"
 
       - name: Capture current live Hosting rollback authority
         shell: bash
@@ -348,8 +350,10 @@ jobs:
             --collect --acknowledge-readonly-cloud-access \
             --output deployment-receipt/predeploy/site-readback-final.json
           jq -e --arg site "$VERIFIED_HOSTING_SITE_ID" \
+            --arg target "$VERIFIED_HOSTING_TARGET" \
             --arg version "$(cat deployment-receipt/predeploy/version-name.txt)" '
               .selectedSiteId == $site and .latestLiveRelease.versionName == $version
+              and .sourceConfig.configuredSiteId == $site and .sourceConfig.hostingTarget == $target
               and (.holdReasons | length == 0)
             ' deployment-receipt/predeploy/site-readback-final.json >/dev/null || {
               echo 'HOLD: live Hosting site or version drift before mutation.' >&2
@@ -409,8 +413,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p deployment-receipt/deploy
+          git diff --exit-code "$RELEASE_SHA" -- .firebaserc firebase.static.json >/dev/null
           npx --yes firebase-tools@15.22.3 deploy \
-            --only hosting \
+            --only "hosting:${VERIFIED_HOSTING_TARGET:?}" \
             --project "$FIREBASE_PROJECT" \
             --config firebase.static.json \
             --non-interactive \
@@ -469,8 +474,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git diff --exit-code "$RELEASE_SHA" -- .firebaserc firebase.static.json >/dev/null
           npx --yes firebase-tools@15.22.3 deploy \
-            --only hosting \
+            --only "hosting:${VERIFIED_HOSTING_TARGET:?}" \
             --project "$FIREBASE_PROJECT" \
             --config firebase.static.json \
             --non-interactive \
@@ -507,7 +513,8 @@ jobs:
             --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
             --header 'Content-Type: application/json' \
             --data "$(jq -nc --arg message "URAI automatic Hosting rollback after failed exact-head release run $GITHUB_RUN_ID" '{message:$message}')" \
-            "https://firebasehosting.googleapis.com/v1beta1/sites/$VERIFIED_HOSTING_SITE_ID/releases?versionName=$version_name" \
+            --url-query "versionName=$version_name" \
+            "https://firebasehosting.googleapis.com/v1beta1/sites/$VERIFIED_HOSTING_SITE_ID/releases" \
             > deployment-receipt/rollback/restore-result.json
           test "$(jq -r '.version.name // empty' deployment-receipt/rollback/restore-result.json)" = "$version_name"
 
@@ -550,6 +557,8 @@ jobs:
             echo "pull_request=$PR_NUMBER"
             echo "workflow_run_id=$GITHUB_RUN_ID"
             echo "firebase_project=$FIREBASE_PROJECT"
+            echo "hosting_site=${VERIFIED_HOSTING_SITE_ID:-}"
+            echo "hosting_target=${VERIFIED_HOSTING_TARGET:-}"
             echo "live_url=$LIVE_URL"
             echo "credential_class=github-oidc-wif-external-account"
             echo "deployment_scope=functions-and-hosting"

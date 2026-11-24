@@ -9,6 +9,7 @@ written to the output. All network calls are HTTPS GET to fixed Google APIs.
 from __future__ import annotations
 import argparse
 from datetime import datetime
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -19,6 +20,8 @@ from urllib.request import Request, HTTPRedirectHandler, build_opener
 
 PROJECT = 'urai-4dc1d'
 TARGET_DOMAIN = 'urai.app'
+HOSTING_TARGET = 'urai-live'
+SOURCE_ROOT = Path(__file__).resolve().parent.parent
 REGION = 'us-central1'
 # Do not confuse the WIF pool's project number with the Firebase production project number.
 # The real Firebase project number must be read independently from projects.get.
@@ -33,6 +36,36 @@ SCHEMA = 'urai-r882-provider-live-site-evidence-v1'
 
 class EvidenceError(Exception):
     pass
+
+def hosting_source_binding(root: Path):
+    """Read exactly the source config and target mapping used by the Hosting CLI."""
+    def read_config(name):
+        path = root / name
+        if path.is_symlink() or not path.is_file():
+            raise EvidenceError(f'invalid Hosting config file: {name}')
+        data = path.read_bytes()
+        document = json.loads(data)
+        if not isinstance(document, dict):
+            raise EvidenceError(f'invalid Hosting config object: {name}')
+        header = f'blob {len(data)}\0'.encode('ascii')
+        blob = hashlib.sha1(header + data, usedforsecurity=False).hexdigest()
+        return document, blob
+
+    config, config_blob = read_config('firebase.static.json')
+    rc, rc_blob = read_config('.firebaserc')
+    hosting = config.get('hosting')
+    if not isinstance(hosting, dict) or hosting.get('target') != HOSTING_TARGET or 'site' in hosting:
+        raise EvidenceError('static config must specify the single governed Hosting target')
+    mapping = rc.get('targets')
+    for key in (PROJECT, 'hosting', HOSTING_TARGET):
+        mapping = mapping.get(key) if isinstance(mapping, dict) else None
+    if mapping != [PROJECT]:
+        raise EvidenceError('governed Hosting target must resolve only to the expected site')
+    return {
+        'hostingTarget': HOSTING_TARGET, 'configuredSiteId': mapping[0],
+        'firebaseStaticExplicitSite': False, 'firebaseStaticExplicitHostingTarget': True,
+        'firebaseRcHostingTargetsEmpty': False, 'pinnedConfigBlob': config_blob, 'pinnedRcBlob': rc_blob,
+    }
 
 def site_id_from_resource(value: object, verified_project_number: str) -> str:
     if not isinstance(value, str):
@@ -98,7 +131,7 @@ def time_key(release):
     # Firebase release times can differ inside one Python datetime microsecond.
     return instant, int((fraction or '').ljust(9, '0'))
 
-def choose_live_release(releases):
+def choose_live_release(releases, *, expected_site_id=None):
     if not releases:
         return None, 'HOLD_NO_LIVE_RELEASE'
 
@@ -122,6 +155,17 @@ def choose_live_release(releases):
         return None, 'HOLD_UNKNOWN_LIVE_RELEASE_TYPE'
     if len({event['versionName'] for event in latest}) > 1:
         return None, 'HOLD_AMBIGUOUS_LIVE_RELEASE'
+    if expected_site_id is not None:
+        # Both documented live release resource names are valid. A version from a
+        # different site cannot be used as this site's rollback authority.
+        segment = r'(?!\.{1,2}$)[A-Za-z0-9._~-]+'
+        site = re.escape(expected_site_id)
+        release_pattern = rf'sites/{site}/(?:channels/live/)?releases/{segment}'
+        version_pattern = rf'sites/{site}/versions/{segment}'
+        for event in latest:
+            if not (re.fullmatch(release_pattern, event.get('name', ''))
+                    and re.fullmatch(version_pattern, event['versionName'])):
+                return None, 'HOLD_LIVE_RELEASE_RESOURCE_MISMATCH'
     return latest[0], 'READBACK_LIVE_RELEASE_METADATA_ONLY'
 
 def exact_domain_name(x, verified_project_number):
@@ -131,11 +175,12 @@ def exact_domain_name(x, verified_project_number):
     if not match or match.group(1) not in (PROJECT, verified_project_number):return None
     return match.group(2), match.group(3).lower().rstrip('.')
 
-def collect(fetch_json):
+def collect(fetch_json, *, source_root=SOURCE_ROOT):
     """Collect site/domain/live-release metadata, with no provider writes.
 
     This collector never asserts GO or source-to-deployment equivalence.
     """
+    binding = hosting_source_binding(source_root)
     management=fetch_json(f'https://{MANAGEMENT_HOST}{MANAGEMENT_PATH}')
     if not isinstance(management,dict) or management.get('projectId')!=PROJECT:
         raise EvidenceError('Firebase project identity mismatch')
@@ -181,13 +226,7 @@ def collect(fetch_json):
         'project':PROJECT,
         'verifiedProjectNumber':project_number,
         'expectedDomain':TARGET_DOMAIN,
-        'sourceConfig':{
-            'firebaseStaticExplicitSite':False,
-            'firebaseStaticExplicitHostingTarget':False,
-            'firebaseRcHostingTargetsEmpty':True,
-            'pinnedConfigBlob':'3bf2e673913b70ef513a794017bac255679b7383',
-            'pinnedRcBlob':'0d4fc68d65f23254829cc0502621a6ffe2215788',
-        },
+        'sourceConfig':binding,
         'sitePageCount':pages, 'domainPageCount':domain_pages,
         'siteCount':len(entries), 'sites':entries,
         'domainMatches':len(matches),
@@ -205,9 +244,9 @@ def collect(fetch_json):
     result['selectedSiteId']=sid
     result['selectedSiteType']=owner['siteType']
     if owner['siteType']!='DEFAULT_SITE':
-        result['holdReasons'].append('implicit Hosting configuration does not explicitly bind non-default custom-domain site')
-    if sid!=PROJECT:
-        result['holdReasons'].append('workflow hardcodes project ID as Hosting site ID without provider confirmation')
+        result['holdReasons'].append('expected custom domain must belong to the default Hosting site')
+    if sid != binding['configuredSiteId']:
+        result['holdReasons'].append('custom domain owner differs from the configured Hosting target')
     if owner['domain'].get('hostState')!='HOST_ACTIVE':
         result['holdReasons'].append('custom domain hostState is not independently HOST_ACTIVE')
     if owner['domain'].get('ownershipState')!='OWNERSHIP_ACTIVE':
@@ -223,7 +262,7 @@ def collect(fetch_json):
     releases,rpages=strict_page_walk(fetch_json,f'/v1beta1/sites/{sid}/channels/live/releases','releases')
     result['liveReleasePageCount']=rpages
     result['liveReleases']=[safe_release(r) for r in releases]
-    latest,code=choose_live_release(releases)
+    latest,code=choose_live_release(releases, expected_site_id=sid)
     result['latestLiveRelease']=latest
     if code.startswith('HOLD_'):result['holdReasons'].append(code)
     if not result['holdReasons']:
