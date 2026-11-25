@@ -1,0 +1,13 @@
+{
+  "functions": { "source": "apps/functions/test/export-native-runtime" },
+  "firestore": { "rules": "firebase/firestore.rules" },
+  "storage": { "rules": "firebase/storage.rules" },
+  "emulators": {
+    "auth": { "host": "127.0.0.1", "port": 19097 },
+    "firestore": { "host": "127.0.0.1", "port": 18082 },
+    "functions": { "host": "127.0.0.1", "port": 15002 },
+    "storage": { "host": "127.0.0.1", "port": 19199 },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
+  }
+}

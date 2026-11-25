@@ -155,7 +155,7 @@ test('the immutable author rejects missing or altered inputs without generating 
   try {
     fs.mkdirSync(path.dirname(fixtureReceiptPath), { recursive: true })
     fs.mkdirSync(fixtureModels, { recursive: true })
-    for (const asset of receipt.assets) fs.symlinkSync(path.resolve(`public/assets/urai/generated/models/${asset.fileName}`), path.join(fixtureModels, asset.fileName))
+    for (const asset of receipt.assets) fs.copyFileSync(path.resolve(`public/assets/urai/generated/models/${asset.fileName}`), path.join(fixtureModels, asset.fileName))
     const rejectReceipt = (candidate, expected) => {
       fs.writeFileSync(fixtureReceiptPath, JSON.stringify(candidate))
       const result = spawnSync(process.execPath, [authorPath], { cwd: fixtureRoot, encoding: 'utf8' })
@@ -170,6 +170,15 @@ test('the immutable author rejects missing or altered inputs without generating 
       candidate.assets[0][field] = field === 'sha256' ? '0'.repeat(64) : candidate.assets[0].bytes + 1
       rejectReceipt(candidate, /immutable authored binary does not match its generated-candidate receipt/)
     }
+    // Canonical receipt paths stay POSIX on every host; normalization must not
+    // permit a production receipt to bind a different runtime object.
+    const productionPath = path.join(fixtureRoot, 'operations/assets/production-receipts', receipt.assets[0].fileName.replace(/\.glb$/, '.json'))
+    fs.mkdirSync(path.dirname(productionPath), { recursive: true })
+    fs.writeFileSync(productionPath, JSON.stringify({
+      ...receipt.assets[0], releaseState: 'production-ready', fixedPath: 'wrong/runtime/path.glb',
+    }))
+    rejectReceipt(receipt, /production receipt path does not match the canonical runtime path/)
+    fs.unlinkSync(productionPath)
     const missing = path.join(fixtureModels, receipt.assets[0].fileName)
     fs.unlinkSync(missing)
     rejectReceipt(receipt, /authored binary is missing; no procedural fallback will be generated/)

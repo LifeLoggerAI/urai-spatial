@@ -17,7 +17,7 @@ function governedExpectedAsset(asset) {
   const productionReceiptPath = path.join(productionReceiptRoot, asset.fileName.replace(/\.glb$/, '.json'))
   if (!fs.existsSync(productionReceiptPath)) return { ...asset, receiptSource: 'generated-candidate' }
   const productionReceipt = JSON.parse(fs.readFileSync(productionReceiptPath, 'utf8'))
-  const expectedPath = path.relative(root, path.join(modelRoot, asset.fileName))
+  const expectedPath = path.relative(root, path.join(modelRoot, asset.fileName)).split(path.sep).join('/')
   if (productionReceipt.releaseState !== 'production-ready') {
     throw new Error(`${asset.fileName}: production receipt exists but is not production-ready.`)
   }

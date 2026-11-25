@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
-const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
-const readRoot = (path) => fs.readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8')
+const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8').replace(/\r\n?/g, '\n')
+const readRoot = (path) => fs.readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8').replace(/\r\n?/g, '\n')
 const contract = read('src/spatial/memory/selectedMemoryContract.ts')
 const hook = read('src/spatial/memory/useSelectedMemory.ts')
 const focus = read('src/app/focus/FocusChamberClient.tsx')

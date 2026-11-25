@@ -91,6 +91,18 @@ export type OperationalLifeMapVisibility = {
 export function getOperationalLifeMapVisibility() {
   return callOperationalPrivacyFunction<OperationalLifeMapVisibility>('getPassportSnapshot', { view: 'life-map-visibility' })
 }
+export type OperationalLifeMapSnapshot = {
+  view: 'life-map'
+  owner: string
+  state: 'available' | 'denied'
+  validUntil?: number
+  issuedAt?: number
+  events: Array<Record<string, unknown> & { id: string; userId: string }>
+  eras: never[]
+}
+export function getOperationalLifeMapSnapshot() {
+  return callOperationalPrivacyFunction<OperationalLifeMapSnapshot>('getPassportSnapshot', { view: 'life-map' })
+}
 export function getOperationalPassportSnapshot() { return callOperationalPrivacyFunction('getPassportSnapshot') }
 export function createOperationalExportRequest(scopes: string[], suppliedOperationId?: string) {
   return callOperationalPrivacyFunction('createSpatialExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })

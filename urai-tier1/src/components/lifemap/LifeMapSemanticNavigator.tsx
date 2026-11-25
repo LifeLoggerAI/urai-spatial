@@ -49,9 +49,10 @@ export default function LifeMapSemanticNavigator({
   const showSampleSelection = sampleFallback && sourceMode === 'explicit-demo'
   const SelectedHeading = showSampleSelection ? 'h1' : 'h2'
   const privateView = Boolean(authenticatedUserId) && !explicitDemo
-  const readFailed = privateView && (sourceMode === 'error' || sourceMode === 'unavailable')
+  const readFailed = privateView && (sourceMode === 'error' || sourceMode === 'unavailable' || sourceMode === 'denied')
   let readNotice = ''
-  if (readFailed) readNotice = 'Your private Life Map could not be loaded.'
+  if (sourceMode === 'denied') readNotice = 'Your private Life Map needs current memory consent and confirmed visibility permission.'
+  else if (readFailed) readNotice = 'Your private Life Map could not be loaded.'
   else if (privateView && loading) readNotice = 'Loading your private Life Map…'
   else if (privateView && sourceMode === 'empty') readNotice = 'No Memory Stars are visible in your Life Map.'
   else if (semanticOnly) readNotice = 'The 3D view is unavailable. Use search to explore your Life Map.'
@@ -181,6 +182,13 @@ export default function LifeMapSemanticNavigator({
       if (event.defaultPrevented) return
       if (event.key === 'Escape' && open) { event.preventDefault(); closeNavigator(); return }
       if (event.altKey || event.ctrlKey || event.metaKey || isEditableTarget(event.target)) return
+      if (event.key === 'Escape' && (sampleFallback || semanticOnly)) {
+        event.preventDefault()
+        const current = new URLSearchParams(window.location.search)
+        if (current.get('overview') !== '1' && (current.get('node') || current.get('memoryId'))) overview()
+        else router.push('/home')
+        return
+      }
       // Search controls own their keys while open. World shortcuts must not change
       // the selected memory while someone is navigating filters or reading results.
       if (open) return
@@ -203,7 +211,7 @@ export default function LifeMapSemanticNavigator({
       window.removeEventListener('keydown', onKeyDown, true)
       window.removeEventListener('urai:life-map-step', onStepRequest as EventListener)
     }
-  }, [closeNavigator, open, overview, step])
+  }, [closeNavigator, open, overview, router, sampleFallback, semanticOnly, step])
 
   const related = selected ? nodes.filter((node) => selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)) : []
 
@@ -267,3 +275,4 @@ export default function LifeMapSemanticNavigator({
     `}</style>
   </>, document.body)
 }
+

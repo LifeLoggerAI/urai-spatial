@@ -59,7 +59,7 @@ function fixture(options = {}) {
   const db = { doc, collection,
     async runTransaction(callback) {
       const writes = [], id = ++stats.transactions
-      const tx = { get: async ref => { assert.equal(writes.length, 0, 'no read after transaction writes'); return ref.query ? ref.get() : snapshot(ref) },
+      const tx = { delete: ref => writes.push(() => ref.delete()), get: async ref => { assert.equal(writes.length, 0, 'no read after transaction writes'); return ref.query ? ref.get() : snapshot(ref) },
         create: (ref, value) => writes.push(() => { assert.ok(!records.has(ref.path)); records.set(ref.path, clone(value)) }),
         update: (ref, value) => writes.push(() => ref.update(value)), set: (ref, value, settings) => writes.push(() => ref.set(value, settings)) }
       const result = await callback(tx)
@@ -95,6 +95,7 @@ function fixture(options = {}) {
       if (name === 'firebase-admin') return admin
       if (name === 'firebase-admin/firestore') return {Timestamp,FieldValue:admin.firestore.FieldValue}
       if (name === 'node:crypto') return crypto
+      if (name === './lifeMapProjection') return require('../lib/apps/functions/src/lifeMapProjection.js')
       if (name === 'node:stream/promises') return options.realPipeline ? require(name) : { pipeline: async (source, guard, response) => {
         assert.ok([...records.keys()].some(k => k.includes('/privacyAudit/') && records.get(k).action === 'export_download_authorized'), 'audit must commit before stream')
         try {
@@ -124,6 +125,37 @@ function fixture(options = {}) {
   }
   return { records, objects, stats, context, descriptor, deliver, handlers: module.exports, db, Timestamp }
 }
+
+function prepareLifeMap(f) {
+  f.records.set(prefix, { uid })
+  const policy = f.records.get(policyPath)
+  policy.enforcement.jobId = 'synthetic-map-job'
+  policy.enforcement.affectedTargets = ['life-map-visibility']
+  f.records.set(`consentRecords/${uid}_memory_storage`, { uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: 'a'.repeat(64), expiresAt: now + 60000 })
+  f.records.set(`${prefix}/privacyRuntime/life-map-visibility`, { ownerId: uid, domain: 'memory', target: 'life-map-visibility', revision: 4, sourceJobId: 'synthetic-map-job', mode: 'granted', enabled: true, lifeMapVisible: true })
+  f.records.set(`${prefix}/memories/synthetic-memory`, { ownerId: uid, demo: false, deleted: false, consentState: 'authorized', title: 'Synthetic memory', summary: 'Synthetic content', occurredAt: now - 1000 })
+  f.records.set(`${prefix}/lifeMapEvents/seed-only`, { userId: uid, title: 'Must not read seed event' })
+}
+
+test('actual Passport callable reads canonical memories with both authorities and no seed substitution', async () => {
+  const f = fixture(); prepareLifeMap(f)
+  const result = await f.handlers.getPassportSnapshot({ view: 'life-map' }, f.context)
+  assert.equal(result.state, 'available')
+  assert.equal(result.events.length, 1)
+  assert.equal(result.events[0].id, 'synthetic-memory')
+  assert.equal(result.events[0].replayAvailable, false)
+  assert.equal(JSON.stringify(result).includes('seed-only'), false)
+  assert.equal(f.stats.signed, 0)
+})
+
+test('actual Passport callable discards canonical memory rows after withdrawal during its query', async () => {
+  const f = fixture({ afterQuery: (location, records) => {
+    if (location === `${prefix}/memories`) records.get(`consentRecords/${uid}_memory_storage`).status = 'revoked'
+  } }); prepareLifeMap(f)
+  const result = await f.handlers.getPassportSnapshot({ view: 'life-map' }, f.context)
+  assert.equal(result.state, 'denied')
+  assert.equal(result.events.length, 0)
+})
 
 test('completed owner descriptor uses revocable authenticated delivery and committed audit', async () => {
   const f = fixture(), result = await f.descriptor()
@@ -268,6 +300,86 @@ test('a stale queued deletion event cannot execute after current owner cancellat
   await f.handlers.processDeletionQueueItem(queued)
   assert.equal(f.records.get(`${prefix}/deletionJobs/${created.jobId}`).state,'cancelled')
   assert.ok(f.records.has(`${prefix}/memories/private-synthetic`));assert.equal(f.stats.deleted.length,0)
+})
+
+for (const [label, mutate] of [
+  ['queue scope replaced', (queue, owner) => { queue.scope = owner.scope = 'account' }],
+  ['owner scope diverges', (_queue, owner) => { owner.scope = 'intelligence' }],
+  ['receipt replaced', (queue, owner) => { queue.receiptId = owner.receiptId = 'different-receipt' }],
+  ['owner receipt diverges', (_queue, owner) => { owner.receiptId = 'different-receipt' }],
+  ['job identity replaced', (queue, owner) => { queue.jobId = owner.jobId = 'different-job' }],
+  ['subject replaced', (queue, owner) => { queue.uid = owner.uid = 'different-owner' }],
+]) test(`stale deletion cannot claim changed identity: ${label}`, async () => {
+  const f = fixture()
+  const created = await f.handlers.createDeletionRequest({ operationId: 'synthetic-bound-delete', scope: 'memories', confirmation: 'CONFIRM DELETE' }, f.context)
+  const queuePath = `deletionQueue/${created.jobId}`, ownerPath = `${prefix}/deletionJobs/${created.jobId}`
+  const event = await f.db.doc(queuePath).get()
+  f.records.set(`${prefix}/memories/retained`, { synthetic: true })
+  // Firestore trigger snapshots retain the old values after authoritative edits.
+  const currentQueue = { ...f.records.get(queuePath) }, currentOwner = { ...f.records.get(ownerPath) }
+  mutate(currentQueue, currentOwner)
+  f.records.set(queuePath, currentQueue); f.records.set(ownerPath, currentOwner)
+  await f.handlers.processDeletionQueueItem(event)
+  assert.equal(f.stats.deleted.length, 0)
+  assert.ok(f.records.has(`${prefix}/memories/retained`))
+  assert.equal(f.records.get(queuePath).state, 'queued')
+  assert.equal(f.records.get(ownerPath).state, 'queued')
+  assert.equal([...f.records.keys()].some(key => key.startsWith('deletionReceipts/')), false)
+})
+
+for (const scope of ['memories', 'account']) for (const uncertain of [false, true]) {
+  test(`${scope} deletion completion is atomic when final commit ${uncertain ? 'reply is lost' : 'fails'}`, async () => {
+    // create request=1, claim=2, finalization=3, failure/readback=4.
+    const clock = { value: now }
+    const f = fixture({ clock, [uncertain ? 'failAfterCommit' : 'failCommit']: 3 })
+    const created = await f.handlers.createDeletionRequest({ operationId: 'synthetic-atomic-delete', scope,
+      confirmation: scope === 'account' ? 'DELETE MY URAI ACCOUNT' : 'CONFIRM DELETE' }, f.context)
+    clock.value += 8 * 24 * 60 * 60 * 1000
+    const queuePath = `deletionQueue/${created.jobId}`, ownerPath = `${prefix}/deletionJobs/${created.jobId}`
+    const receiptId = f.records.get(queuePath).receiptId
+    f.records.set(`${prefix}/memories/removed`, { synthetic: true })
+    const execute = f.handlers.processDeletionQueueItem(await f.db.doc(queuePath).get())
+    if (uncertain) await execute
+    else await assert.rejects(execute, /synthetic audit commit outage/)
+    assert.equal(f.records.has(`${prefix}/memories/removed`), false)
+    if (uncertain) {
+      assert.equal(f.records.get(`deletionReceipts/${receiptId}`).result, 'completed')
+      assert.equal(f.records.get(`deletionReceipts/${receiptId}`).jobId, created.jobId)
+      if (scope === 'account') assert.equal(f.records.has(queuePath), false)
+      else {
+        assert.equal(f.records.get(queuePath).state, 'completed')
+        assert.equal(f.records.get(ownerPath).state, 'completed')
+        assert.equal(f.records.get(`${prefix}/privacyReceipts/${receiptId}`).result, 'completed')
+        assert.equal(Object.hasOwn(f.records.get(fencePath).pendingDeletions, created.jobId), false)
+      }
+    } else {
+      assert.equal(f.records.has(`deletionReceipts/${receiptId}`), false)
+      assert.equal(f.records.get(queuePath).state, 'failed')
+      if (scope !== 'account') {
+        assert.equal(f.records.get(ownerPath).state, 'failed')
+        assert.equal(f.records.get(fencePath).pendingDeletions[created.jobId], true)
+      }
+    }
+    if (scope === 'account') {
+      assert.equal([...f.records.keys()].some(key => key === prefix || key.startsWith(prefix + '/')), false)
+      assert.equal(f.records.get(`accountDeletionFences/${uid}`).state, 'revoked')
+    }
+  })
+}
+
+for (const replaceOwner of [false, true]) test(`deletion failure cannot overwrite replaced ${replaceOwner ? 'owner' : 'queue'} authority`, async () => {
+  let replacedPath, replacement
+  const f = fixture({ afterTransaction: (id, records) => {
+    if (id !== 2) return
+    replacedPath = [...records.keys()].find(key => replaceOwner ? key.startsWith(prefix + '/deletionJobs/') : key.startsWith('deletionQueue/'))
+    replacement = { ...records.get(replacedPath), scope: 'intelligence', receiptId: 'replacement-receipt', state: 'queued' }
+    records.set(replacedPath, replacement)
+  } })
+  const created = await f.handlers.createDeletionRequest({ operationId: 'synthetic-replaced-finalize', scope: 'memories', confirmation: 'CONFIRM DELETE' }, f.context)
+  await assert.rejects(f.handlers.processDeletionQueueItem(await f.db.doc(`deletionQueue/${created.jobId}`).get()), /Deletion completion identity changed/)
+  assert.deepEqual(f.records.get(replacedPath), replacement)
+  assert.equal([...f.records.keys()].some(key => key.startsWith('deletionReceipts/')), false)
+  assert.equal(f.records.get(`${prefix}/privacyReceipts/${created.receiptId}`).result, 'queued')
 })
 
 test('export publication requires the same current request revision after all Storage writes', async () => {
@@ -450,7 +562,7 @@ test('actual Node pipeline obeys byte integrity/backpressure and stops canonical
 
 test('deployment source guard rejects canonical namespace, wrong project, wrong route and Storage credentials',async()=>{
   const root=path.resolve(__dirname,'../../..')
-  const {verifySpatialExportDeploymentBoundary:verify}=await import(path.join(root,'scripts/check-spatial-export-deployment-boundary.mjs'))
+  const {verifySpatialExportDeploymentBoundary:verify}=await import(require('node:url').pathToFileURL(path.join(root,'scripts/check-spatial-export-deployment-boundary.mjs')).href)
   const baseline={index:fs.readFileSync(path.join(root,'apps/functions/src/index.ts'),'utf8'),operations:fs.readFileSync(path.join(root,'apps/functions/src/privacyOperations.ts'),'utf8'),firebase:JSON.parse(fs.readFileSync(path.join(root,'firebase.json'),'utf8')),projects:JSON.parse(fs.readFileSync(path.join(root,'.firebaserc'),'utf8'))}
   assert.deepEqual(verify(baseline),[])
   const samples=[

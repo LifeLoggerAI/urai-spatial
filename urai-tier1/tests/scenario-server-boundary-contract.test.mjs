@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
-const ops = fs.readFileSync(new URL('../../apps/functions/src/scenarioOperations.ts', import.meta.url), 'utf8')
-const provider = fs.readFileSync(new URL('../../apps/functions/src/scenarioProvider.ts', import.meta.url), 'utf8')
-const ledger = fs.readFileSync(new URL('../../apps/functions/src/aiLedgerOperations.ts', import.meta.url), 'utf8')
-const index = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8')
-const rules = fs.readFileSync(new URL('../../firebase/firestore.rules', import.meta.url), 'utf8')
+const ops = fs.readFileSync(new URL('../../apps/functions/src/scenarioOperations.ts', import.meta.url), 'utf8').replace(/\r\n?/g, '\n')
+const provider = fs.readFileSync(new URL('../../apps/functions/src/scenarioProvider.ts', import.meta.url), 'utf8').replace(/\r\n?/g, '\n')
+const ledger = fs.readFileSync(new URL('../../apps/functions/src/aiLedgerOperations.ts', import.meta.url), 'utf8').replace(/\r\n?/g, '\n')
+const index = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8').replace(/\r\n?/g, '\n')
+const rules = fs.readFileSync(new URL('../../firebase/firestore.rules', import.meta.url), 'utf8').replace(/\r\n?/g, '\n')
 
 test('Scenario server API is owner-scoped, revision-aware and manual-fallback truthful', () => {
   assert.match(ops, /users\/\$\{ownerId\}\/scenarios\/\$\{scenarioId\}/)

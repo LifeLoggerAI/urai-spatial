@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
+import { lifeMapAuthorityBinding, readLifeMapProjection } from './lifeMapProjection'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -994,7 +995,7 @@ async function readDownloadAuthority(transaction: FirebaseFirestore.Transaction,
   const { jobId, file, assetId } = selection
   const { job, subject } = await readBoundExport(transaction, uid, jobId, 'ready')
   const expiresAt = job.get('expiresAt')
-  const packageExpiresAt = expiresAt instanceof admin.firestore.Timestamp ? expiresAt.toMillis() : Number.NaN
+  const packageExpiresAt = expiresAt instanceof Timestamp ? expiresAt.toMillis() : Number.NaN
   if (!Number.isSafeInteger(packageExpiresAt) || packageExpiresAt <= Date.now() || packageExpiresAt > subject.canonicalExportConsentExpiresAt) {
     throw new functions.https.HttpsError('failed-precondition', 'Export has expired or its authority lifetime changed.')
   }
@@ -1435,6 +1436,12 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
       if (!current.exists || current.get('uid') !== uid || !ownerJob.exists || ownerJob.get('uid') !== uid
         || !['queued', 'awaiting-grace'].includes(String(current.get('state')))
         || current.get('state') !== ownerJob.get('state')) return false
+      // Trigger snapshots may be stale. Claim only the same immutable request
+      // identity in both current records before using its destructive scope.
+      if (job.jobId !== snapshot.id || typeof job.receiptId !== 'string'
+        || !/^[A-Za-z0-9_-]{1,160}$/.test(job.receiptId)
+        || [current, ownerJob].some(record => record.get('jobId') !== snapshot.id
+          || record.get('scope') !== scope || record.get('receiptId') !== receiptId)) return false
       const deadline = current.get('executeAfter')
       if (!(deadline instanceof Timestamp) || !Number.isSafeInteger(deadline.toMillis()) || deadline.toMillis() > Date.now()) return false
       const generation = fence.exists ? fence.get('generation') : 0
@@ -1474,35 +1481,63 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
       }
     }
     const finalReceipt = {
-      receiptId,
+      receiptId, jobId: snapshot.id,
       ownerDigest: ownerDigest(uid),
-      kind: 'deletion',
-      scope,
-      result: 'completed',
-      deletedCollections,
+      kind: 'deletion', scope, result: 'completed', deletedCollections,
       retainedExceptions: Array.isArray(job.retainedExceptions) ? job.retainedExceptions : [],
-      completedAt: fieldValue.serverTimestamp(),
-      createdAt: fieldValue.serverTimestamp(),
+      completedAt: fieldValue.serverTimestamp(), createdAt: fieldValue.serverTimestamp(),
     }
-    await durableReceiptRef.set(finalReceipt)
-    if (scope !== 'account') {
-      await Promise.all([
-        snapshot.ref.update({ state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }),
-        userJobRef.set({ state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-        userReceiptRef.set({ result: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-      ])
-      await finishExportDeletionFence(uid, snapshot.id)
-    } else {
-      await snapshot.ref.delete()
-    }
+    // Local completion and its durable evidence commit together. This receipt
+    // does not certify downstream providers or cross-system deletion.
+    await db.runTransaction(async transaction => {
+      const current = await transaction.get(snapshot.ref)
+      const owner = scope === 'account' ? null : await transaction.get(userJobRef)
+      const fence = scope === 'account' ? null : await transaction.get(exportFenceRef(uid))
+      if (!current.exists || current.get('uid') !== uid || current.get('jobId') !== snapshot.id
+        || current.get('scope') !== scope || current.get('receiptId') !== receiptId
+        || current.get('state') !== 'in-progress'
+        || (owner && (!owner.exists || owner.get('uid') !== uid || owner.get('jobId') !== snapshot.id
+          || owner.get('scope') !== scope || owner.get('receiptId') !== receiptId || owner.get('state') !== 'in-progress')))
+        throw new functions.https.HttpsError('failed-precondition', 'Deletion completion identity changed.')
+      if (fence && (!fence.exists || !isRecord(fence.get('pendingDeletions'))
+        || fence.get('pendingDeletions')[snapshot.id] !== true))
+        throw new functions.https.HttpsError('failed-precondition', 'Deletion completion fence changed.')
+      transaction.set(durableReceiptRef, finalReceipt)
+      if (scope === 'account') transaction.delete(snapshot.ref)
+      else {
+        const completed = { state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }
+        transaction.update(snapshot.ref, completed)
+        transaction.update(userJobRef, completed)
+        transaction.set(userReceiptRef, { result: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true })
+        const pending = { ...fence!.get('pendingDeletions') as JsonMap }
+        delete pending[snapshot.id]
+        transaction.update(exportFenceRef(uid), { pendingDeletions: pending, updatedAt: fieldValue.serverTimestamp() })
+      }
+    })
   } catch (error) {
     const failure = error instanceof Error ? error.message.slice(0, 240) : 'UNKNOWN_DELETION_FAILURE'
-    await Promise.all([
-      snapshot.ref.set({ state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-      userJobRef.set({ state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-      userReceiptRef.set({ result: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-    ])
-    throw error
+    const completed = await db.runTransaction(async transaction => {
+      const durable = await transaction.get(durableReceiptRef)
+      // A commit can succeed even when its reply is lost. Do not replace that
+      // atomic completion with failure or recreate an erased account subtree.
+      if (durable.exists && durable.get('result') === 'completed'
+        && durable.get('jobId') === snapshot.id && durable.get('receiptId') === receiptId
+        && durable.get('scope') === scope && durable.get('ownerDigest') === ownerDigest(uid)) return true
+      const current = await transaction.get(snapshot.ref)
+      const owner = scope === 'account' ? null : await transaction.get(userJobRef)
+      const stillClaimed = (record: FirebaseFirestore.DocumentSnapshot) => record.exists
+        && record.get('uid') === uid && record.get('jobId') === snapshot.id
+        && record.get('scope') === scope && record.get('receiptId') === receiptId
+        && record.get('state') === 'in-progress'
+      if (!stillClaimed(current) || (owner && !stillClaimed(owner))) return false
+      transaction.set(snapshot.ref, { state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true })
+      if (scope !== 'account') {
+        transaction.set(userJobRef, { state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true })
+        transaction.set(userReceiptRef, { result: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true })
+      }
+      return false
+    })
+    if (!completed) throw error
   }
 }
 
@@ -1566,6 +1601,31 @@ function safeRows(snapshot: FirebaseFirestore.QuerySnapshot, kind: string) {
 export const getPassportSnapshot = functions.https.onCall(async (data, context) => {
   const uid = await requireCurrentPrivacyOwner(context)
   const userRef = db.doc(`users/${uid}`)
+  if (data?.view === 'life-map') {
+    async function readProjectionAuthority(transaction: FirebaseFirestore.Transaction) {
+      const [user, accountFence, tombstone, grant, policy, applied, deletions] = await Promise.all([
+        transaction.get(userRef), transaction.get(accountDeletionFenceRef(uid)),
+        transaction.get(db.doc(`privacyDeletionTombstones/${uid}`)),
+        transaction.get(db.doc(`consentRecords/${uid}_memory_storage`)),
+        transaction.get(userRef.collection('privacyPolicy').doc('current')),
+        transaction.get(userRef.collection('privacyRuntime').doc('life-map-visibility')),
+        transaction.get(userRef.collection('deletionJobs').where('state', 'in', ['awaiting-grace', 'queued', 'in-progress', 'failed']).limit(1)),
+      ])
+      return { user: user.data(), accountFence: accountFence.exists, tombstone: tombstone.data(),
+        grant: grant.data(), policy: policy.data(), applied: applied.data(), pendingDeletion: !deletions.empty }
+    }
+    return readLifeMapProjection(uid, {
+      verifyOwner: async () => { await requireCurrentPrivacyOwner(context) },
+      now: () => Date.now(),
+      readAuthority: () => db.runTransaction(readProjectionAuthority),
+      // Canonical rows and both authorities belong to one consistent Firestore snapshot.
+      readMemories: () => db.runTransaction(async transaction => {
+        if (!lifeMapAuthorityBinding(uid, await readProjectionAuthority(transaction), Date.now())) return []
+        const memories = await transaction.get(userRef.collection('memories').limit(240))
+        return memories.docs.map(item => ({ id: item.id, data: item.data() }))
+      }),
+    })
+  }
   if (data?.view === 'life-map-visibility') {
     // This subset of the existing owner Passport omits identity, device, provider and audit rows.
     const visibility = await db.runTransaction(async transaction => {

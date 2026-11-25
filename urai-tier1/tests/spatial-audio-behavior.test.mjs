@@ -340,6 +340,7 @@ function soundControls(ambientPlayback, { enabled = true, retry = () => {}, togg
   const owner = loadOwner('../world/PersistentWorldCompanion.tsx', {
     react: {}, 'react/jsx-runtime': { jsx, jsxs: jsx }, 'next/navigation': {},
     '@/app/home/orbStateController': {}, '@/spatial/orb/OrbConversationPanel': {},
+    '@/spatial/scenario/PossibleFuturesOrbEntry': {},
     './destinationRegistry': {}, './worldEvents': {}, './WorldStateProvider': {},
   })
   const controls = owner.SpatialSoundControls({ ambientPlayback, onRetryAmbient: retry,
