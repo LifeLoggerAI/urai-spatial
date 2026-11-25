@@ -67,7 +67,11 @@ test('privacy export and deletion lifecycle includes captured reality records, r
   assert.match(privacy, /copyCapturedRealityRuntimeExports/)
   assert.match(privacy, /capturedRealityRuntimeAssets/)
   assert.match(privacy, /runtimeExports/)
-  assert.match(privacy, /data\?\.file === 'runtime'/)
+  // The authenticated descriptor and byte reader share validated selection;
+  // runtime files must still bind an asset ID to exactly one exported object.
+  assert.match(privacy, /const selection = exportSelection\(data \?\? \{\}\)/)
+  assert.match(privacy, /const assetId = file === 'runtime' \? requireDocumentId\(data\.assetId, 'assetId', 128\) : null/)
+  assert.match(privacy, /if \(file === 'runtime'\) \{[\s\S]*?job\.get\('runtimeExports'\)[\s\S]*?entry\.assetId === assetId[\s\S]*?matches\.length === 1/)
   assert.match(privacy, /private-captured-reality/)
   assert.match(privacy, /private-exports/)
   assert.match(privacy, /deleteFiles/)

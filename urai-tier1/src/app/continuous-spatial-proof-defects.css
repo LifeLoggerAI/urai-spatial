@@ -72,6 +72,16 @@ body:has(.urai-home-spatial-runtime-layer:not([data-urai-home-runtime^="accessib
   }
 }
 
+/* A short landscape viewport has room for three destinations side by side.
+   Keeping the portrait column here made its high-priority navigation surface
+   cover the lower edge of the scrollable Orb menu. Preserve separate hit areas
+   instead of changing either control's stacking or shrinking its touch target. */
+@media (max-width: 700px) and (max-height: 500px) and (orientation: landscape) {
+  .urai-home-spatial-runtime-layer[data-webgl-ready="false"] > .home-semantic-navigation[data-home-navigation-owner="runtime-boundary"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 /* The narrow fallback already uses the lower viewport for onboarding and
    Home destinations. Keep the Orb and its scrollable links above them. */
 @media (max-width: 700px) {

@@ -95,6 +95,7 @@ function fixture(options = {}) {
       if (name === 'firebase-admin') return admin
       if (name === 'firebase-admin/firestore') return {Timestamp,FieldValue:admin.firestore.FieldValue}
       if (name === 'node:crypto') return crypto
+      if (name === './lifeMapProjection') return require('../lib/apps/functions/src/lifeMapProjection.js')
       if (name === 'node:stream/promises') return options.realPipeline ? require(name) : { pipeline: async (source, guard, response) => {
         assert.ok([...records.keys()].some(k => k.includes('/privacyAudit/') && records.get(k).action === 'export_download_authorized'), 'audit must commit before stream')
         try {
@@ -124,6 +125,37 @@ function fixture(options = {}) {
   }
   return { records, objects, stats, context, descriptor, deliver, handlers: module.exports, db, Timestamp }
 }
+
+function prepareLifeMap(f) {
+  f.records.set(prefix, { uid })
+  const policy = f.records.get(policyPath)
+  policy.enforcement.jobId = 'synthetic-map-job'
+  policy.enforcement.affectedTargets = ['life-map-visibility']
+  f.records.set(`consentRecords/${uid}_memory_storage`, { uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0', status: 'granted', receiptHash: 'a'.repeat(64), expiresAt: now + 60000 })
+  f.records.set(`${prefix}/privacyRuntime/life-map-visibility`, { ownerId: uid, domain: 'memory', target: 'life-map-visibility', revision: 4, sourceJobId: 'synthetic-map-job', mode: 'granted', enabled: true, lifeMapVisible: true })
+  f.records.set(`${prefix}/memories/synthetic-memory`, { ownerId: uid, demo: false, deleted: false, consentState: 'authorized', title: 'Synthetic memory', summary: 'Synthetic content', occurredAt: now - 1000 })
+  f.records.set(`${prefix}/lifeMapEvents/seed-only`, { userId: uid, title: 'Must not read seed event' })
+}
+
+test('actual Passport callable reads canonical memories with both authorities and no seed substitution', async () => {
+  const f = fixture(); prepareLifeMap(f)
+  const result = await f.handlers.getPassportSnapshot({ view: 'life-map' }, f.context)
+  assert.equal(result.state, 'available')
+  assert.equal(result.events.length, 1)
+  assert.equal(result.events[0].id, 'synthetic-memory')
+  assert.equal(result.events[0].replayAvailable, false)
+  assert.equal(JSON.stringify(result).includes('seed-only'), false)
+  assert.equal(f.stats.signed, 0)
+})
+
+test('actual Passport callable discards canonical memory rows after withdrawal during its query', async () => {
+  const f = fixture({ afterQuery: (location, records) => {
+    if (location === `${prefix}/memories`) records.get(`consentRecords/${uid}_memory_storage`).status = 'revoked'
+  } }); prepareLifeMap(f)
+  const result = await f.handlers.getPassportSnapshot({ view: 'life-map' }, f.context)
+  assert.equal(result.state, 'denied')
+  assert.equal(result.events.length, 0)
+})
 
 test('completed owner descriptor uses revocable authenticated delivery and committed audit', async () => {
   const f = fixture(), result = await f.descriptor()
@@ -450,7 +482,7 @@ test('actual Node pipeline obeys byte integrity/backpressure and stops canonical
 
 test('deployment source guard rejects canonical namespace, wrong project, wrong route and Storage credentials',async()=>{
   const root=path.resolve(__dirname,'../../..')
-  const {verifySpatialExportDeploymentBoundary:verify}=await import(path.join(root,'scripts/check-spatial-export-deployment-boundary.mjs'))
+  const {verifySpatialExportDeploymentBoundary:verify}=await import(require('node:url').pathToFileURL(path.join(root,'scripts/check-spatial-export-deployment-boundary.mjs')).href)
   const baseline={index:fs.readFileSync(path.join(root,'apps/functions/src/index.ts'),'utf8'),operations:fs.readFileSync(path.join(root,'apps/functions/src/privacyOperations.ts'),'utf8'),firebase:JSON.parse(fs.readFileSync(path.join(root,'firebase.json'),'utf8')),projects:JSON.parse(fs.readFileSync(path.join(root,'.firebaserc'),'utf8'))}
   assert.deepEqual(verify(baseline),[])
   const samples=[

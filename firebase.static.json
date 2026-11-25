@@ -74,6 +74,13 @@
     ],
     "rewrites": [
       {
+        "source": "/api/privacy/export/download",
+        "function": {
+          "functionId": "downloadOperationalExportPackage",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "/api/google/oauth/start",
         "function": {
           "functionId": "googleOAuthStart",

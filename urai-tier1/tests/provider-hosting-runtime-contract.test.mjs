@@ -32,6 +32,7 @@ const staticProviderRoutes = [
 
 test('static Hosting rewrites every live provider URL to secret-bound Firebase Functions', () => {
   assert.deepEqual(firebaseConfig.hosting.rewrites, [
+    { source: '/api/privacy/export/download', function: { functionId: 'downloadOperationalExportPackage', region: 'us-central1' } },
     { source: '/api/google/oauth/start', function: { functionId: 'googleOAuthStart', region: 'us-central1' } },
     { source: '/api/google/oauth/callback', function: { functionId: 'googleOAuthCallback', region: 'us-central1' } },
     { source: '/api/google/oauth/status', function: { functionId: 'googleOAuthStatus', region: 'us-central1' } },
@@ -48,6 +49,7 @@ test('static Hosting rewrites every live provider URL to secret-bound Firebase F
   ])
   assert.deepEqual(staticFirebaseConfig.hosting.rewrites.slice(0, firebaseConfig.hosting.rewrites.length), firebaseConfig.hosting.rewrites)
   assert.equal(staticFirebaseConfig.hosting.rewrites.some((rewrite) => rewrite.source === '**' || rewrite.source === '/**'), false)
+  assert.match(functionsIndex, /\bdownloadOperationalExportPackage\b/)
   assert.match(functionsIndex, /elevenLabsVoiceProvider, openAiOrbProvider/)
   assert.match(functionsIndex, /adamFounderVoiceProvider, adamPresenceProvider/)
   for (const handler of ['anthropicCouncilProvider', 'geminiCouncilProvider', 'mistralCouncilProvider', 'xaiCouncilProvider']) {

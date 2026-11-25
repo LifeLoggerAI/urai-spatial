@@ -5,30 +5,48 @@ import { useEffect, useState } from 'react'
 import { getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, type User } from 'firebase/auth'
 import { firebasePublicEnvReady, getUrAiAuth } from '@/lib/firebase/client'
 import { popupRequiresFullPageRedirect } from './popupRedirectPolicy'
+import { ensureOwnerProfile } from '@/lib/firebase/ownerProfile'
 
 type AuthState = 'checking' | 'signed-out' | 'working' | 'signed-in' | 'unavailable' | 'error'
 
 export default function LoginClient() {
   const [user, setUser] = useState<User | null>(null)
+  const [enrollmentAttempt, setEnrollmentAttempt] = useState(0)
   const [state, setState] = useState<AuthState>(firebasePublicEnvReady ? 'checking' : 'unavailable')
   const [message, setMessage] = useState(firebasePublicEnvReady ? 'Checking account state...' : 'Private sign-in is unavailable because Firebase public configuration is not present.')
 
   useEffect(() => {
     if (!firebasePublicEnvReady) return
     const auth = getUrAiAuth()
+    let active = true
+    let revision = 0
     void getRedirectResult(auth).catch(() => {
+      if (!active || auth.currentUser) return
       setState((previous) => previous === 'signed-in' ? previous : 'error')
       setMessage('Full-page sign-in could not be verified. No private account has been opened.')
     })
-    return onAuthStateChanged(auth, (nextUser) => {
+    const stop = onAuthStateChanged(auth, (nextUser) => {
+      const observed = ++revision
       setUser(nextUser)
-      setState(nextUser ? 'signed-in' : 'signed-out')
-      setMessage(nextUser ? 'Your private world is ready.' : 'Continue through the configured Firebase identity provider. URAI never receives your provider password.')
+      setState(nextUser ? 'working' : 'signed-out')
+      setMessage(nextUser ? 'Preparing your account...' : 'Continue through the configured Firebase identity provider. URAI never receives your provider password.')
+      if (nextUser) void ensureOwnerProfile(nextUser).then(() => {
+        if (!active || observed !== revision || auth.currentUser !== nextUser) return
+        setState('signed-in')
+        setMessage('Your account is ready. Memory permissions remain under your control.')
+      }).catch(() => {
+        if (!active || observed !== revision || auth.currentUser !== nextUser) return
+        setState('error')
+        setMessage('Account setup could not be confirmed. Retry or sign out; no memory permissions have been granted.')
+      })
     }, () => {
+      ++revision
+      setUser(null)
       setState('error')
       setMessage('Account authority could not be read. No private state has been opened.')
     })
-  }, [])
+    return () => { active = false; ++revision; stop() }
+  }, [enrollmentAttempt])
 
   const googleProvider = () => {
     const provider = new GoogleAuthProvider()
@@ -81,6 +99,8 @@ export default function LoginClient() {
             <p style={{color:'#d9f5f8'}}>Signed in as <strong><bdi>{user.email ?? 'your private account'}</bdi></strong>.</p>
             <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:24}}><Link href="/home" style={primary}>Open Home</Link><Link href="/passport" style={secondary}>Passport</Link><button type="button" onClick={() => void leave()} style={buttonSecondary}>Sign out</button></div>
           </div>
+        ) : user ? (
+          <div style={{marginTop:24,display:'flex',gap:12,flexWrap:'wrap'}}><button type="button" disabled={state==='working'} onClick={() => setEnrollmentAttempt(value => value + 1)} style={buttonPrimary}>{state==='working'?'Preparing account...':'Retry account setup'}</button><button type="button" onClick={() => void leave()} style={buttonSecondary}>Sign out</button></div>
         ) : (
           <div style={{marginTop:24,display:'flex',gap:12,flexWrap:'wrap'}}><button type="button" disabled={state==='unavailable'||state==='working'} onClick={() => void enter()} style={buttonPrimary}>{state==='working'?'Opening provider...':'Continue securely'}</button><button type="button" disabled={state==='unavailable'||state==='working'} onClick={() => void enterFullPage()} style={buttonSecondary}>Use full-page sign-in</button></div>
         )}

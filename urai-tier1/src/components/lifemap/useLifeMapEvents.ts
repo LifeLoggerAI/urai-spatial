@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { collection, limit, onSnapshot, orderBy, query, type DocumentData } from "firebase/firestore";
-import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
+import type { DocumentData } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { firebasePublicEnvReady, getUrAiAuth } from "../../lib/firebase/client";
+import { getOperationalLifeMapSnapshot } from "../../lib/privacy/operationalPrivacyClient";
+import { MANUAL_WEATHER_RESET_EVENT } from "../../lib/uraiEmotion/manualWeatherSession";
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
 import { lifeMapDisplayPosition } from "./lifeMapLayout";
 import {
@@ -16,7 +19,7 @@ import {
   type LifeMapNodeType,
 } from "./lifeMapData";
 
-export type LifeMapSourceMode = "private" | "explicit-demo" | "signed-out" | "unavailable" | "empty" | "error";
+export type LifeMapSourceMode = "private" | "explicit-demo" | "signed-out" | "unavailable" | "empty" | "denied" | "error";
 
 type LifeMapEventState = {
   nodes: LifeMapNode[];
@@ -120,6 +123,8 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const [eventsError, setEventsError] = useState<string | null>(null);
   const [erasError, setErasError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [denied, setDenied] = useState(false);
+  const [dataOwner, setDataOwner] = useState<object | null>(null);
 
   useEffect(() => {
     if (!resolvedUserId) return;
@@ -127,11 +132,13 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     // Retry all three from the same gesture without reloading the page.
     function retry() {
       setNodes([]);
+      setDataOwner(null);
       setEras([]);
       setEventsLoading(true);
       setErasLoading(true);
       setEventsError(null);
       setErasError(null);
+      setDenied(false);
       setAttempt((previous) => previous + 1);
     }
     window.addEventListener(retryEvent, retry);
@@ -140,86 +147,106 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
 
   useEffect(() => {
     let cancelled = false;
+    let requestEpoch = 0;
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+    setNodes([]);
+    setDataOwner(null);
+    setEras([]);
+    setDenied(false);
+    setEventsError(null);
+    setErasError(null);
     if (explicitDemo) {
       setNodes(positionedDemoNodes);
+      setEras(lifeMapEras);
       setEventsLoading(false);
+      setErasLoading(false);
       setEventsError(null);
       return () => { cancelled = true; };
     }
     if (!resolvedUserId) {
       setNodes([]);
       setEventsLoading(false);
+      setErasLoading(false);
       setEventsError("Sign in to open your private Life Map.");
       return () => { cancelled = true; };
     }
     if (!firebasePublicEnvReady) {
       setNodes([]);
       setEventsLoading(false);
+      setErasLoading(false);
       setEventsError("Your private Life Map is temporarily unavailable.");
       return () => { cancelled = true; };
     }
-    try {
-      const eventsQuery = query(collection(getFirebaseDb(), "users", resolvedUserId, "lifeMapEvents"), orderBy("occurredAt", "desc"), limit(240));
-      const unsubscribe = onSnapshot(eventsQuery, (snapshot) => {
-        if (cancelled) return;
-        setNodes(snapshot.docs.map((doc) => mapLifeMapEventToNode(normalizeEvent(doc.id, doc.data(), resolvedUserId))));
-        setEventsLoading(false);
-        setEventsError(null);
-      }, (snapshotError) => {
-        if (cancelled) return;
-        setNodes([]);
-        setEventsLoading(false);
-        setEventsError(snapshotError instanceof Error ? snapshotError.message : "Life Map events could not be loaded.");
-      });
-      return () => { cancelled = true; unsubscribe(); };
-    } catch (caught) {
+    setEventsLoading(true);
+    setErasLoading(false);
+    const owner = getUrAiAuth().currentUser;
+    const current = () => !cancelled && owner?.uid === resolvedUserId && getUrAiAuth().currentUser === owner;
+    function revoke() {
+      ++requestEpoch;
+      clearTimeout(refreshTimer);
+      clearTimeout(expiryTimer);
       setNodes([]);
+      setEras([]);
+      setDataOwner(null);
+      setDenied(true);
       setEventsLoading(false);
-      setEventsError(caught instanceof Error ? caught.message : "Life Map events could not be loaded.");
-      return () => { cancelled = true; };
+      // A local withdrawal clears immediately and cannot regrant itself before
+      // the server mutation completes. A fresh explicit retry rechecks authority.
     }
-  }, [explicitDemo, resolvedUserId, attempt]);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (explicitDemo) {
-      setEras(lifeMapEras);
-      setErasLoading(false);
-      setErasError(null);
-      return () => { cancelled = true; };
-    }
-    if (!resolvedUserId || !firebasePublicEnvReady) {
-      setEras([]);
-      setErasLoading(false);
-      setErasError(null);
-      return () => { cancelled = true; };
-    }
-    try {
-      const erasQuery = query(collection(getFirebaseDb(), "users", resolvedUserId, "lifeMapEras"), limit(80));
-      const unsubscribe = onSnapshot(erasQuery, (snapshot) => {
-        if (cancelled) return;
-        setEras(snapshot.docs.map((doc) => normalizeEra(doc.id, doc.data(), resolvedUserId)));
-        setErasLoading(false);
-        setErasError(null);
-      }, (snapshotError) => {
-        if (cancelled) return;
+    async function refresh() {
+      const epoch = ++requestEpoch;
+      const startedAt = performance.now();
+      try {
+        if (!current()) throw new Error("Life Map owner changed.");
+        const snapshot = await getOperationalLifeMapSnapshot();
+        if (!current() || requestEpoch !== epoch) return;
+        if (snapshot.view !== 'life-map' || snapshot.owner !== resolvedUserId
+          || !['available', 'denied'].includes(snapshot.state) || !Array.isArray(snapshot.events)
+          || snapshot.events.length > 240 || !Array.isArray(snapshot.eras) || snapshot.eras.length !== 0
+          || snapshot.events.some(event => !event || typeof event.id !== 'string' || event.userId !== resolvedUserId
+            || event.replayAvailable !== false || event.locked !== false)) throw new Error('Invalid Life Map projection.');
+        const lifetime = Number(snapshot.validUntil) - Number(snapshot.issuedAt);
+        // Compare server timestamps to each other, then subtract the entire
+        // client-observed request duration. Wall-clock skew cannot extend a lease.
+        const remaining = lifetime - (performance.now() - startedAt);
+        if (snapshot.state === 'available' && (!Number.isFinite(lifetime) || lifetime > 30_000 || !Number.isFinite(remaining) || remaining <= 0)) throw new Error('Expired Life Map projection.');
+        setDenied(snapshot.state === 'denied');
+        setDataOwner(owner);
+        setNodes(snapshot.state === 'available' ? snapshot.events.map(event => mapLifeMapEventToNode(normalizeEvent(event.id, event, resolvedUserId))) : []);
+        setEventsError(null);
+        setEventsLoading(false);
+        // Bounded display lease: an offline refresh may not retain private rows.
+        clearTimeout(expiryTimer);
+        if (snapshot.state === 'available') expiryTimer = setTimeout(() => { if (current()) { setNodes([]); setEventsError('Life Map access needs to be checked again.'); } }, remaining);
+        refreshTimer = setTimeout(() => void refresh(), 15_000);
+      } catch {
+        if (cancelled || requestEpoch !== epoch) return;
+        setDenied(false);
+        setNodes([]);
         setEras([]);
-        setErasLoading(false);
-        setErasError(snapshotError instanceof Error ? snapshotError.message : "Life Map eras could not be loaded.");
-      });
-      return () => { cancelled = true; unsubscribe(); };
-    } catch (caught) {
-      setEras([]);
-      setErasLoading(false);
-      setErasError(caught instanceof Error ? caught.message : "Life Map eras could not be loaded.");
-      return () => { cancelled = true; };
+        setEventsLoading(false);
+        setEventsError('Life Map memories could not be loaded.');
+      }
     }
+    window.addEventListener(MANUAL_WEATHER_RESET_EVENT, revoke);
+    const unsubscribeAuth = onAuthStateChanged(getUrAiAuth(), user => { if (user !== owner) revoke(); });
+    void refresh();
+    return () => {
+      cancelled = true;
+      ++requestEpoch;
+      clearTimeout(refreshTimer);
+      clearTimeout(expiryTimer);
+      window.removeEventListener(MANUAL_WEATHER_RESET_EVENT, revoke);
+      unsubscribeAuth();
+    };
   }, [explicitDemo, resolvedUserId, attempt]);
 
   const loading = eventsLoading || erasLoading;
   const error = eventsError || erasError;
-  const sourceMode: LifeMapSourceMode = explicitDemo ? "explicit-demo" : !resolvedUserId ? "signed-out" : !firebasePublicEnvReady ? "unavailable" : error ? "error" : !loading && nodes.length === 0 ? "empty" : "private";
-  return { nodes, eras, loading, error, usingSeedData: explicitDemo, sourceMode };
+  const sourceMode: LifeMapSourceMode = explicitDemo ? "explicit-demo" : !resolvedUserId ? "signed-out" : !firebasePublicEnvReady ? "unavailable" : denied ? "denied" : error ? "error" : !loading && nodes.length === 0 ? "empty" : "private";
+  const ownerMatches = explicitDemo || (firebasePublicEnvReady && resolvedUserId && getUrAiAuth().currentUser === dataOwner);
+  return { nodes: ownerMatches ? nodes : [], eras: ownerMatches ? eras : [], loading, error, usingSeedData: explicitDemo, sourceMode };
 }
 
 export const __lifeMapEventNormalizationForTests = {

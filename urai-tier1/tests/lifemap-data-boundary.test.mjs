@@ -28,7 +28,8 @@ test('sample memories require only the explicit demo-user contract', () => {
 })
 
 test('empty and failed private snapshots never substitute seed memories', () => {
-  assert.match(source, /setNodes\(snapshot\.docs\.map/)
+  assert.match(source, /snapshot\.state === 'available' \? snapshot\.events\.map/)
+  assert.doesNotMatch(source, /collection\(getFirebaseDb/)
   assert.doesNotMatch(source, /setNodes\([^)]*lifeMapNodes/)
   assert.match(source, /setNodes\(\[\]\)/)
   assert.match(source, /setEras\(\[\]\)/)
@@ -40,8 +41,9 @@ test('empty and failed private snapshots never substitute seed memories', () => 
 test('normalized documents inherit the authenticated owner rather than a fake identity', () => {
   assert.match(source, /function normalizeEvent\(id: string, data: DocumentData, ownerId = ""\)/)
   assert.match(source, /userId: typeof data\.userId === "string" \? data\.userId : ownerId/)
-  assert.match(source, /normalizeEvent\(doc\.id, doc\.data\(\), resolvedUserId\)/)
-  assert.match(source, /normalizeEra\(doc\.id, doc\.data\(\), resolvedUserId\)/)
+  assert.match(source, /normalizeEvent\(event\.id, event, resolvedUserId\)/)
+  assert.match(source, /event\.userId !== resolvedUserId/)
+  assert.match(source, /snapshot\.eras\.length !== 0/)
 })
 
 

@@ -1,0 +1,11 @@
+{
+  "functions": { "source": "apps/functions/test/lifemap-native-runtime" },
+  "firestore": { "rules": "firebase/firestore.rules" },
+  "emulators": {
+    "auth": { "host": "127.0.0.1", "port": 19098 },
+    "firestore": { "host": "127.0.0.1", "port": 18081 },
+    "functions": { "host": "127.0.0.1", "port": 15001 },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
+  }
+}

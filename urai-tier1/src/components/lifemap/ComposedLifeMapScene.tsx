@@ -216,6 +216,7 @@ function truthLabel(sourceMode: LifeMapSourceMode) {
   if (sourceMode === "empty") return "Private universe ready for its first memory";
   if (sourceMode === "unavailable") return "Private memory service resting safely";
   if (sourceMode === "error") return "Private memory data could not be opened";
+  if (sourceMode === "denied") return "Private memories hidden · consent and visibility permission required";
   return "Private universe";
 }
 

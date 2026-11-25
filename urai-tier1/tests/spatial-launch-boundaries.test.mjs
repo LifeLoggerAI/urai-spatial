@@ -9,7 +9,7 @@ const root = process.cwd()
 function read(relativePath) {
   const absolute = path.join(root, relativePath)
   assert.ok(fs.existsSync(absolute), `missing expected file: ${relativePath}`)
-  return fs.readFileSync(absolute, 'utf8')
+  return fs.readFileSync(absolute, 'utf8').replace(/\r\n?/g, '\n')
 }
 
 const launchBoundary = read('src/lib/spatial-launch-boundaries.ts')

@@ -32,7 +32,7 @@ test('fallback diagnostic neutralizes provider configuration before starting Nex
 test('Life Map event listeners remain offline when public Firebase configuration is absent', () => {
   assert.match(lifeMapEventsSource, /firebasePublicEnvReady/)
   assert.equal((lifeMapEventsSource.match(/if \(!firebasePublicEnvReady\)/g) ?? []).length, 1)
-  assert.match(lifeMapEventsSource, /if \(!resolvedUserId \|\| !firebasePublicEnvReady\) \{[\s\S]*setEras\(\[\]\)/)
+  assert.match(lifeMapEventsSource, /setEras\(\[\]\)[\s\S]*if \(!firebasePublicEnvReady\)[\s\S]*return \(\) => \{ cancelled = true; \};[\s\S]*getOperationalLifeMapSnapshot\(\)/)
   assert.match(lifeMapEventsSource, /const positionedDemoNodes = canonicalLifeMapDemoNodes\.map/)
   assert.match(lifeMapEventsSource, /if \(explicitDemo\) \{[\s\S]*setNodes\(positionedDemoNodes\)/)
   assert.match(lifeMapEventsSource, /if \(explicitDemo\) \{[\s\S]*setEras\(lifeMapEras\)/)

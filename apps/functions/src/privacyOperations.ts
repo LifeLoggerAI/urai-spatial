@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
+import { lifeMapAuthorityBinding, readLifeMapProjection } from './lifeMapProjection'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -1566,6 +1567,31 @@ function safeRows(snapshot: FirebaseFirestore.QuerySnapshot, kind: string) {
 export const getPassportSnapshot = functions.https.onCall(async (data, context) => {
   const uid = await requireCurrentPrivacyOwner(context)
   const userRef = db.doc(`users/${uid}`)
+  if (data?.view === 'life-map') {
+    async function readProjectionAuthority(transaction: FirebaseFirestore.Transaction) {
+      const [user, accountFence, tombstone, grant, policy, applied, deletions] = await Promise.all([
+        transaction.get(userRef), transaction.get(accountDeletionFenceRef(uid)),
+        transaction.get(db.doc(`privacyDeletionTombstones/${uid}`)),
+        transaction.get(db.doc(`consentRecords/${uid}_memory_storage`)),
+        transaction.get(userRef.collection('privacyPolicy').doc('current')),
+        transaction.get(userRef.collection('privacyRuntime').doc('life-map-visibility')),
+        transaction.get(userRef.collection('deletionJobs').where('state', 'in', ['awaiting-grace', 'queued', 'in-progress', 'failed']).limit(1)),
+      ])
+      return { user: user.data(), accountFence: accountFence.exists, tombstone: tombstone.data(),
+        grant: grant.data(), policy: policy.data(), applied: applied.data(), pendingDeletion: !deletions.empty }
+    }
+    return readLifeMapProjection(uid, {
+      verifyOwner: async () => { await requireCurrentPrivacyOwner(context) },
+      now: () => Date.now(),
+      readAuthority: () => db.runTransaction(readProjectionAuthority),
+      // Canonical rows and both authorities belong to one consistent Firestore snapshot.
+      readMemories: () => db.runTransaction(async transaction => {
+        if (!lifeMapAuthorityBinding(uid, await readProjectionAuthority(transaction), Date.now())) return []
+        const memories = await transaction.get(userRef.collection('memories').limit(240))
+        return memories.docs.map(item => ({ id: item.id, data: item.data() }))
+      }),
+    })
+  }
   if (data?.view === 'life-map-visibility') {
     // This subset of the existing owner Passport omits identity, device, provider and audit rows.
     const visibility = await db.runTransaction(async transaction => {

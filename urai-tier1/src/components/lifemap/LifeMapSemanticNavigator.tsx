@@ -49,9 +49,10 @@ export default function LifeMapSemanticNavigator({
   const showSampleSelection = sampleFallback && sourceMode === 'explicit-demo'
   const SelectedHeading = showSampleSelection ? 'h1' : 'h2'
   const privateView = Boolean(authenticatedUserId) && !explicitDemo
-  const readFailed = privateView && (sourceMode === 'error' || sourceMode === 'unavailable')
+  const readFailed = privateView && (sourceMode === 'error' || sourceMode === 'unavailable' || sourceMode === 'denied')
   let readNotice = ''
-  if (readFailed) readNotice = 'Your private Life Map could not be loaded.'
+  if (sourceMode === 'denied') readNotice = 'Your private Life Map needs current memory consent and confirmed visibility permission.'
+  else if (readFailed) readNotice = 'Your private Life Map could not be loaded.'
   else if (privateView && loading) readNotice = 'Loading your private Life Map…'
   else if (privateView && sourceMode === 'empty') readNotice = 'No Memory Stars are visible in your Life Map.'
   else if (semanticOnly) readNotice = 'The 3D view is unavailable. Use search to explore your Life Map.'

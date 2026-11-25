@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
-const read = (path) => fs.readFileSync(path, 'utf8')
+const read = (path) => fs.readFileSync(path, 'utf8').replace(/\r\n?/g, '\n')
 
 test('persistent world navigation preserves canonical ownership and separate hit targets', () => {
   const gateway = read('src/spatial/world/GroundGateway.tsx')
