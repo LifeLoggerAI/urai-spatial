@@ -20,6 +20,15 @@ body:has(.urai-home-spatial-runtime-layer:not([data-urai-home-runtime^="accessib
   pointer-events: auto;
 }
 
+.urai-home-spatial-runtime-layer[data-urai-home-runtime^="accessible-fallback-"] .urai-genesis-home__orb-panel a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 48px;
+  min-height: 48px;
+}
+
 /* Lay a selected description out with the fallback notice. The destinations
    keep their own full-size native targets at the bottom of the viewport. */
 .home-runtime-recovery:has([data-home-emotional-weather="manual"]) {

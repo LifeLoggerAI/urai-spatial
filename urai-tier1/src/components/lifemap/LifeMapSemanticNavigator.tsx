@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom'
 import { lifeMapTypeLabels, type LifeMapNode, type LifeMapNodeType } from './lifeMapData'
 import { requestLifeMapSelection } from './lifeMapSelection'
 import { retryPrivateLifeMap, useLifeMapEvents } from './useLifeMapEvents'
+import { LifeMapVisibilityReview } from './LifeMapVisibilityReview'
 
 const TYPE_FILTERS: readonly (LifeMapNodeType | 'all')[] = ['all', 'memory', 'relationship', 'season', 'recovery', 'threshold', 'ritual', 'forecast', 'legacy']
 
@@ -216,6 +217,7 @@ export default function LifeMapSemanticNavigator({
         {readFailed ? <button type="button" onClick={retry}>Retry Life Map</button> : null}
         <Link href="/home" prefetch={false}>Return Home</Link>
       </div>
+      {privateView && authenticatedUserId ? <LifeMapVisibilityReview key={authenticatedUserId} owner={authenticatedUserId} /> : null}
     </div> : null}
     <button
       ref={triggerRef}

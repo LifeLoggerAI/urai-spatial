@@ -264,6 +264,8 @@ test('actual manual runtime display contains no auth owner identifier or passive
 
 function privacyFixture(p, { reject = false, contract = 'operational-v1' } = {}) {
   const calls = []
+  const started = Promise.withResolvers()
+  const completion = Promise.withResolvers()
   const owner = p.auth.currentUser
   const projectId = 'synthetic-project'
   const manual = compile('lib/uraiEmotion/manualWeatherSession.ts', id => {
@@ -284,9 +286,12 @@ function privacyFixture(p, { reject = false, contract = 'operational-v1' } = {})
     '@/lib/uraiEmotion/manualWeatherSession':manual,
     './privacyContractAuthority':compile('lib/privacy/privacyContractAuthority.ts', require),
     './privacyBackendCapability':compile('lib/privacy/privacyBackendCapability.ts', require),
+    './authorizedExportDownload':compile('lib/privacy/authorizedExportDownload.ts', require),
     'firebase/functions':{httpsCallable:(_functions, name) => async payload => {
       calls.push({name, payload, snapshot:p.render().snapshot})
       if (name === 'getOperationalPrivacyCapabilities') return {data:capability}
+      started.resolve()
+      await completion.promise
       if (reject) throw new Error('provider unavailable')
       if (name === 'setCanonicalConsent') return {data:{status:payload.status}}
       if (name === 'createDeletionRequest' && contract === 'canonical-account-v1') {
@@ -300,7 +305,7 @@ function privacyFixture(p, { reject = false, contract = 'operational-v1' } = {})
     assert.ok(Object.hasOwn(dependencies,id), 'Unexpected privacy dependency: ' + id)
     return dependencies[id]
   }, {process:{env:{NEXT_PUBLIC_URAI_PRIVACY_CONTRACT:contract}}})
-  return {module,calls}
+  return {module,calls,mutationStarted:started.promise,completeMutation:completion.resolve}
 }
 for (const operation of ['consent','deletion']) for (const reject of [false,true]) test(`actual SDK ${operation} request clears first, even when request ${reject?'fails':'is only queued'}`, async () => {
   const p = providerFixture()
@@ -315,9 +320,13 @@ for (const operation of ['consent','deletion']) for (const reject of [false,true
     ? {domain:'memory',next:denied,expectedRevision:12,operationId:'existing-op'}
     : {scope:'memories',confirmation:'CONFIRM DELETE',operationId:'existing-op'}
   const call = operation === 'consent' ? f.module.applyOperationalConsentPolicy(payload) : f.module.createOperationalDeletionRequest(payload)
+  await f.mutationStarted
+  assert.equal(p.render().snapshot.enabled,false)
+  assert.equal(p.render().snapshot.reading.weather,null)
+  f.completeMutation()
   if (reject) await assert.rejects(call,/unavailable/); else assert.equal((await call).state,'requested')
   assert.deepEqual(f.calls.map(call => call.name), operation === 'deletion'
-    ? ['getOperationalPrivacyCapabilities','createDeletionRequest'] : ['applyConsentPolicy'])
+    ? ['getOperationalPrivacyCapabilities','createSpatialDeletionRequest'] : ['applyConsentPolicy'])
   assert.deepEqual(JSON.parse(JSON.stringify(f.calls.at(-1).payload)),payload)
   for (const {snapshot} of f.calls) {
     assert.equal(snapshot.enabled,false)
@@ -338,6 +347,10 @@ for (const operation of ['consent','deletion']) for (const reject of [false,true
   const call = operation === 'consent'
     ? session.setConsent('memory.storage','revoked')
     : session.requestDeletion('Disposable account removal','REQUEST ACCOUNT DELETION')
+  await f.mutationStarted
+  assert.equal(p.render().snapshot.enabled,false)
+  assert.equal(p.render().snapshot.reading.weather,null)
+  f.completeMutation()
   if (reject) await assert.rejects(call,/unavailable/)
   else assert.equal((await call).status,operation === 'consent' ? 'revoked' : 'pending')
   assert.equal(f.calls.length,1)
@@ -361,10 +374,14 @@ test('clear-only notifier is inert during SSR without a browser', () => {
 
 test('actual Settings, Home normal/fallback, and RootLayout own the mounted preference/status/provider', () => {
   const Controls = () => null, Status = () => null, Provider = () => null
+  const settledRoutes = []
   function consumer(path,webgl = true) { return compile(path,id => {
     if (id === 'react/jsx-runtime') return require(id)
-    if (id === 'react') return {useState:value => [typeof value === 'function'?value():value,()=>{}],useRef:value => ({current:value}),useEffect:()=>{},useMemo:fn => fn(),useCallback:fn => fn,Suspense:Symbol('Suspense')}
+    if (id === 'react') return {useState:value => [typeof value === 'function'?value():value,()=>{}],useRef:value => ({current:value}),useEffect:()=>{},useLayoutEffect:effect => effect(),useMemo:fn => fn(),useCallback:fn => fn,Suspense:Symbol('Suspense')}
     if (id === 'next/navigation') return {usePathname:()=>'/home'}
+    if (id === '@/spatial/store/useSceneStore') return {
+      useSceneStore: {getState: () => ({setPlaceFromRoute: route => settledRoutes.push(route)})},
+    }
     if (id.includes('HomeSpatialCanvas')) return {useWebGLAvailable:()=>webgl}
     if (id.includes('useUraiLocale')) return {useUraiLocale:()=>({text:key=>key,props:()=>({lang:'en',dir:'ltr'})})}
     if (id.includes('ManualEmotionalWeatherControls')) return {ManualEmotionalWeatherControls:Controls,HomeManualEmotionalWeatherStatus:Status}
@@ -375,5 +392,6 @@ test('actual Settings, Home normal/fallback, and RootLayout own the mounted pref
   },{process,window:{location:{search:''}},navigator:{}}) }
   assert.ok(nodes(consumer('app/settings/DeviceSettingsClient.tsx').default()).some(node=>node.type===Controls))
   for (const webgl of [true,false]) assert.ok(nodes(consumer('app/HomeSpatialRuntimeLayer.tsx',webgl).default()).some(node=>node.type===Status))
+  assert.deepEqual(settledRoutes, ['/home', '/home'])
   assert.ok(nodes(consumer('app/layout.tsx').default({children:'existing worlds'})).some(node=>node.type===Provider))
 })

@@ -59,6 +59,7 @@ function harness(search = '?memoryId=memory-one', { autoPolicy = true } = {}) {
   const driver = hooks()
   const subscriptions = []
   const policies = []
+  const auth = {}
   let authCallback
   let authStopped = false
   const listeners = new Map()
@@ -71,7 +72,7 @@ function harness(search = '?memoryId=memory-one', { autoPolicy = true } = {}) {
   const owner = load('useSelectedMemory.ts', {
     react: driver.react,
     'next/navigation': { useSearchParams: () => new URLSearchParams(browser.location.search) },
-    'firebase/auth': { getAuth: () => ({}), onAuthStateChanged(_auth, callback) { authCallback = callback; return () => { authStopped = true } } },
+    'firebase/auth': { onAuthStateChanged(source, callback) { assert.equal(source, auth); authCallback = callback; return () => { authStopped = true } } },
     'firebase/firestore': {
       doc: (...parts) => parts,
       onSnapshot(ref, receive, error) {
@@ -89,7 +90,7 @@ function harness(search = '?memoryId=memory-one', { autoPolicy = true } = {}) {
         return () => { subscription.stopped = true }
       },
     },
-    '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true, getFirebaseDb: () => ({}) },
+    '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true, getUrAiAuth: () => auth, getFirebaseDb: () => ({}) },
     './selectedMemoryContract': contract,
     './memoryConsentAdmission': load('memoryConsentAdmission.ts', {}),
     './explicitDemoMemory': { buildNamedExplicitDemoMemory: contract.buildExplicitDemoMemory },

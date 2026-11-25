@@ -25,7 +25,18 @@ export default function ReplayRoutePage() {
       >
         Replay the thread. Film beats. Cinematic memory camera film.
       </span>
-      <Suspense fallback={<main role="status">Opening Replay…</main>}><FinalReplayFilm /></Suspense>
+      <Suspense fallback={
+        <main aria-labelledby="replay-entry-heading" className="grid place-items-center overflow-y-auto">
+          <section className="max-w-xl p-6">
+            <h1 id="replay-entry-heading" className="font-serif text-4xl">Choose a memory to enter Replay.</h1>
+            <a href="/life-map/" className="mt-3 inline-flex min-h-12 items-center rounded-sm px-2 underline focus-visible:outline-2 focus-visible:outline-offset-4">
+              Choose a memory
+            </a>
+          </section>
+        </main>
+      }>
+        <FinalReplayFilm />
+      </Suspense>
     </>
   )
 }

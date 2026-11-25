@@ -46,6 +46,9 @@ for (const viewport of viewports) {
     await expect(shadow).toBeVisible()
     await tabTo(page, shadow)
     await expect(shadow).toBeInViewport({ ratio: 1 })
+    const bounds = await shadow.boundingBox()
+    expect(bounds?.height).toBeGreaterThanOrEqual(48)
+    expect(bounds?.width).toBeGreaterThanOrEqual(48)
     await shadow.click({ trial: true })
     await page.keyboard.press('Enter')
     await expect(page).toHaveURL(/\/shadow\/?(?:\?|$)/)
@@ -58,6 +61,37 @@ for (const viewport of viewports) {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false')
   })
 }
+
+test.describe('touch access to the fallback Orb', () => {
+  test.use({ hasTouch: true, viewport: { width: 320, height: 568 } })
+
+  test('tapping near the lower edge of Shadow opens the realm and the Home button returns by touch', async ({ page }) => {
+    await page.goto('/home/')
+    const home = page.locator('[data-urai-home-runtime="accessible-fallback-without-webgl"]')
+    await home.locator('button[aria-controls="urai-orb-companion-panel"]').tap()
+    const shadow = home.locator('#urai-orb-companion-panel').getByRole('link', { name: 'Shadow', exact: true })
+    await shadow.scrollIntoViewIfNeeded()
+    await expect(shadow).toBeInViewport({ ratio: 1 })
+    const bounds = await shadow.boundingBox()
+    if (!bounds) throw new Error('Shadow has no visible touch target')
+    expect(bounds.height).toBeGreaterThanOrEqual(48)
+    expect(bounds.width).toBeGreaterThanOrEqual(48)
+    await page.touchscreen.tap(bounds.x + bounds.width / 2, bounds.y + bounds.height - 2)
+    await expect(page).toHaveURL(/\/shadow\/?(?:\?|$)/)
+
+    const destinations = page.getByRole('navigation', { name: 'Shadow Realm fallback destinations' })
+    const returnHome = destinations.getByRole('button', { name: 'Home', exact: true })
+    await returnHome.scrollIntoViewIfNeeded()
+    await expect(returnHome).toBeInViewport({ ratio: 1 })
+    expect(await returnHome.evaluate(button => {
+      const { x, y, width, height } = button.getBoundingClientRect()
+      return button.contains(document.elementFromPoint(x + width / 2, y + height / 2))
+    })).toBe(true)
+    await returnHome.tap()
+    await expect(page).toHaveURL(/\/home\/?(?:\?|$)/)
+    await expect(home.locator('button[aria-controls="urai-orb-companion-panel"]')).toHaveAttribute('aria-expanded', 'false')
+  })
+})
 
 for (const viewport of [{ width: 390, height: 844 }, { width: 667, height: 375 }]) {
   test(`selected Weather and fallback navigation receive separate pointer targets at ${viewport.width}×${viewport.height}`, async ({ page }) => {

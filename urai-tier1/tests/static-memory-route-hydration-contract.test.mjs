@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { createRequire } from 'node:module'
+import { runInNewContext } from 'node:vm'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import ts from 'typescript'
 
 const focusPage = readFileSync(new URL('../src/app/focus/page.tsx', import.meta.url), 'utf8')
 const focusClient = readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
@@ -9,21 +14,58 @@ const replayClient = readFileSync(new URL('../src/app/replay/CinematicReplayClie
 const lifeMoviePage = readFileSync(new URL('../src/app/life-movie/page.tsx', import.meta.url), 'utf8')
 const lifeMovieClient = readFileSync(new URL('../src/app/life-movie/LifeMovieClient.tsx', import.meta.url), 'utf8')
 const visibleLayer = readFileSync(new URL('../src/app/UraiAutonomousV1Layer.tsx', import.meta.url), 'utf8')
+const selection = readFileSync(new URL('../src/spatial/memory/useSelectedMemory.ts', import.meta.url), 'utf8')
 const smoke = readFileSync(new URL('../../scripts/urai-release-control-smoke.mjs', import.meta.url), 'utf8')
 
-// Static export must expose the real surfaces before client-side query hydration begins.
-test('focus and replay render real static surfaces instead of Suspense loading shells', () => {
-  assert.doesNotMatch(focusPage, /Suspense|Focus loading/)
-  assert.match(focusPage, /return <FinalFocusChamber \/>/)
-  assert.doesNotMatch(replayPage, /Suspense|Replay loading/)
-  assert.match(replayPage, /<FinalReplayFilm \/>/)
+const routes = [
+  { source: focusPage, client: './FocusChamberClient', heading: 'Focus Memory Star', action: 'Open Life Map' },
+  { source: replayPage, client: './CinematicReplayClient', heading: 'Choose a memory to enter Replay.', action: 'Choose a memory' },
+]
+
+// Keep real React server rendering; only the browser-only client is controlled.
+function renderRoute({ source, client }, suspended) {
+  const require = createRequire(import.meta.url)
+  const pending = new Promise(() => {})
+  function RouteClient() {
+    if (suspended) throw pending
+    return createElement('main', { 'data-selected-client': client })
+  }
+  const compiled = ts.transpileModule(source, {
+    fileName: 'page.tsx',
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+  })
+  const exports = {}
+  runInNewContext(compiled.outputText, {
+    exports,
+    require(id) {
+      if (id === client) return { __esModule: true, default: RouteClient }
+      if (id.endsWith('.css')) return {}
+      assert.ok(id === 'react' || id === 'react/jsx-runtime', `Unexpected route import ${id}`)
+      return require(id)
+    },
+  })
+  return renderToStaticMarkup(createElement(exports.default))
+}
+
+test('Focus and Replay expose neutral headings and working map links while the query client suspends', () => {
+  for (const route of routes) {
+    const html = renderRoute(route, true)
+    assert.equal((html.match(/<main\b/g) ?? []).length, 1)
+    assert.equal(html.match(/<h1\b[^>]*>([^<]+)<\/h1>/)?.[1], route.heading)
+    const link = html.match(/<a\b[^>]*href="(.*?)"[^>]*>([^<]+)<\/a>/)
+    assert.ok(link, 'The neutral entry needs an ordinary link before JavaScript loads')
+    assert.ok(['/life-map', '/life-map/'].includes(link[1]))
+    assert.equal(link[2].trim(), route.action)
+    assert.doesNotMatch(html, /data-(?:memory-id|manifest-id|node|star-id|selected-client)|urai-final-focus-chamber|cinematic-replay-client|quiet-reset|demo=1/i)
+  }
 })
 
-test('memory routes hydrate exact query identity without useSearchParams', () => {
-  for (const source of [focusClient, replayClient]) {
-    assert.doesNotMatch(source, /useSearchParams/)
-    assert.match(source, /new URLSearchParams\(window\.location\.search\)/)
-    assert.match(source, /setIdentity\(\{ memoryId: nextMemoryId, manifestId: nextManifestId, node: nextNode \}\)/)
+test('each resolved boundary mounts its own client once and removes the neutral threshold', () => {
+  for (const route of routes) {
+    const html = renderRoute(route, false)
+    assert.equal((html.match(/<main\b/g) ?? []).length, 1)
+    assert.ok(html.includes(`data-selected-client="${route.client}"`))
+    assert.ok(!html.includes(route.heading))
   }
 })
 
@@ -39,32 +81,33 @@ test('Life Movie hydrates memory and movie identity without useSearchParams', ()
   assert.match(lifeMovieClient, /window\.removeEventListener\('popstate', hydrateIdentity\)/)
 })
 
-test('visible Focus owner hydrates and exposes the same exact query identity', () => {
-  assert.match(visibleLayer, /new URLSearchParams\(window\.location\.search\)/)
-  assert.match(visibleLayer, /setFocusIdentity\(\{ memoryId, manifestId, node \}\)/)
-  assert.match(visibleLayer, /data-testid="urai-final-focus-chamber"/)
-  assert.match(visibleLayer, /data-memory-id=\{identity\.memoryId\}/)
-  assert.match(visibleLayer, /data-manifest-id=\{identity\.manifestId\}/)
-  assert.match(visibleLayer, /data-node=\{identity\.node\}/)
-  assert.match(visibleLayer, /data-visible-route-owner="urai-autonomous-v1-focus"/)
-  assert.match(visibleLayer, /<FocusWorld identity=\{focusIdentity\} \/>/)
-  assert.doesNotMatch(visibleLayer, /if \(pathname\.startsWith\("\/focus"\)\) return <FocusWorld \/>/)
+test('only route-owned clients stamp the resolved memory, manifest and node on their visible surfaces', () => {
+  assert.doesNotMatch(visibleLayer, /FocusWorld|ReplayWorld|["']\/(?:focus|replay)["']/)
+  assert.match(focusClient, /data-testid="urai-final-focus-chamber"/)
+  assert.match(replayClient, /data-testid="cinematic-replay-client"/)
+  for (const source of [focusClient, replayClient]) {
+    assert.match(source, /const result = useSelectedMemory\(\)/)
+    assert.match(source, /data-memory-id=\{memory\??\.id\}/)
+    assert.match(source, /data-manifest-id=\{memory\??\.replayManifest\.id\}/)
+    assert.match(source, /data-node=\{memory\??\.star\.id\}/)
+  }
 })
 
-test('visible Focus identity refreshes on same-path history navigation', () => {
-  assert.match(visibleLayer, /const hydrateFocusIdentity = \(\) => \{/)
-  assert.match(visibleLayer, /hydrateFocusIdentity\(\);/)
-  assert.match(visibleLayer, /window\.addEventListener\("popstate", hydrateFocusIdentity\)/)
-  assert.match(visibleLayer, /window\.removeEventListener\("popstate", hydrateFocusIdentity\)/)
+test('same-path query changes fence the previous selection and its Focus camera', () => {
+  assert.match(selection, /useSearchParams\(\)\.toString\(\)/)
+  assert.match(selection, /return selection\.key === selectionKey \? selection\.result : LOADING/)
+  assert.match(focusClient, /const locationSearch = useSearchParams\(\)\.toString\(\)/)
+  assert.match(focusClient, /checkpoint === 'focus-return:' \+ memory\.star\.id/)
+  assert.match(focusClient, /consumeFocusViewHandoff\(ticket!, memory\.ownerId, memory\.id, memory\.replayManifest\.id, memory\.star\.id\)/)
 })
 
-test('visible Focus navigation preserves memory, manifest, and node identity', () => {
-  assert.match(visibleLayer, /memoryRoute\("\/replay", identity, \{ from: "focus-chamber" \}\)/)
-  assert.match(visibleLayer, /memoryRoute\("\/life-map", identity, \{ unwind: "focus" \}\)/)
-  assert.match(visibleLayer, /memoryRoute\("\/focus", identity\)/)
-  assert.match(visibleLayer, /href=\{replayHref\}/)
-  assert.match(visibleLayer, /href=\{lifeMapHref\}/)
-  assert.match(visibleLayer, /href=\{focusHref\}/)
+test('Focus sends only the selected memory, manifest and node to Replay and back to Life Map', () => {
+  assert.match(focusClient, /if \(!memory\) return null/)
+  assert.match(focusClient, /new URLSearchParams\(\{ memoryId: memory\.id, manifestId: memory\.replayManifest\.id, node: memory\.star\.id/)
+  assert.match(focusClient, /if \(memory\.demo\) next\.set\('demo', '1'\)/)
+  assert.match(focusClient, /query\.set\('memoryId', memory\.demo \? memory\.star\.id : memory\.id\)/)
+  assert.match(focusClient, /query\.set\('node', memory\.star\.id\)/)
+  assert.match(focusClient, /query\.set\('manifestId', memory\.replayManifest\.id\)/)
 })
 
 test('strict smoke waits for an exact visible hydrated identity', () => {
