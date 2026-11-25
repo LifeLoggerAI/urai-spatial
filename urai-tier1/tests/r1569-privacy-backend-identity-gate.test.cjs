@@ -53,6 +53,7 @@ function harness({answer = capability(), uid = 'owner-1', projectId = 'project-1
       return { data: { jobId: 'synthetic-job', state: 'queued' } }
     } },
     '@/lib/firebase/client': { app, functions: { fake: true }, getFirebaseDb:()=>{} },
+    '@/lib/uraiEmotion/manualWeatherSession': {notifyManualWeatherRevocation: () => {}},
     './privacyContractAuthority': contract,
     './privacyBackendCapability': helper,
   }
@@ -106,9 +107,9 @@ test('verified operational backend preserves exact requested scopes and confirma
   await client.createOperationalDeletionRequest({scope:'memories',confirmation:'CONFIRM DELETE',operationId:'delete-safe-1234'})
   await client.getOperationalExportDownloadUrl({jobId:'synthetic-job',file:'manifest'})
   assert.deepEqual(calls.map(x=>x.name), [
-    'getOperationalPrivacyCapabilities','createExportRequest',
-    'getOperationalPrivacyCapabilities','createDeletionRequest',
-    'getOperationalPrivacyCapabilities','getExportDownloadUrl',
+    'getOperationalPrivacyCapabilities','createSpatialExportRequest',
+    'getOperationalPrivacyCapabilities','createSpatialDeletionRequest',
+    'getOperationalPrivacyCapabilities','getOperationalExportDownloadUrl',
   ])
   assert.deepEqual(calls[1].payload,{scopes:['consent','audit'],operationId:'export-safe-1234'})
   assert.deepEqual(calls[3].payload,{scope:'memories',confirmation:'CONFIRM DELETE',operationId:'delete-safe-1234'})
@@ -119,7 +120,7 @@ test('verified operational backend preserves exact requested scopes and confirma
 test('all owner Privacy API entry points require current identity before operations', () => {
   for (const name of [
     'getOperationalPrivacyCapabilities', 'applyConsentPolicy',
-    'createExportRequest', 'cancelExportRequest', 'getExportDownloadUrl',
+    'createExportRequest', 'cancelExportRequest', 'getOperationalExportDownloadUrl',
     'createDeletionRequest', 'cancelDeletionRequest', 'getPassportSnapshot',
   ]) {
     const marker = 'export const ' + name + ' = functions.https.onCall(async '

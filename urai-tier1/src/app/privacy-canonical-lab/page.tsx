@@ -50,8 +50,11 @@ export default function CanonicalPrivacyLabPage() {
         catch { setEnabled(false); setUser(null) }
       }
     }
+    const offline = () => { session.current?.stopDownload(); setDownload(null) }
+    window.addEventListener('offline', offline)
     const stop = onAuthStateChanged(auth, next => reset(next && auth.currentUser !== next ? null : next, authorized()), () => reset(null, false))
     return () => {
+      window.removeEventListener('offline', offline)
       mounted.current = false
       session.current?.close(); session.current = null; pending.current = null
       stop()
@@ -91,7 +94,7 @@ export default function CanonicalPrivacyLabPage() {
 
   useEffect(() => {
     if (!download) return
-    const delay = download.receipt.signedUrlExpiresAt - Date.now()
+    const delay = download.receipt.downloadExpiresAt - Date.now()
     if (delay <= 0) { setDownload(null); return }
     const timer = setTimeout(() => setDownload(current => current === download ? null : current), Math.min(delay, 2147483647))
     return () => clearTimeout(timer)
@@ -133,7 +136,7 @@ export default function CanonicalPrivacyLabPage() {
     const value = await current.getDownload(exportRequest)
     if (mounted.current && session.current === current && current.isCurrent()) setDownload({ receipt: value, issuingSession: current })
     // Do not copy the bearer URL into raw result/status text.
-    return { jobId: value.jobId, requestId: value.requestId, signedUrlExpiresAt: value.signedUrlExpiresAt }
+    return { jobId: value.jobId, requestId: value.requestId, downloadExpiresAt: value.downloadExpiresAt }
   }
   async function register() {
     if (!enabled || busy || user || !authorized()) return
@@ -160,7 +163,7 @@ export default function CanonicalPrivacyLabPage() {
       <section><h2>Disposable authentication</h2>
         <p>{currentOwner ? 'Signed into local Auth emulator.' : 'No local test identity signed in.'}</p>
         <button type="button" disabled={busy || Boolean(user)} onClick={() => void register()}>Create disposable local test account</button>{' '}
-        <button type="button" disabled={busy || !user} onClick={() => { if (authorized()) void signOut(getUrAiAuth()) }}>Sign out</button>
+        <button type="button" disabled={!user} onClick={() => { if (authorized()) void signOut(getUrAiAuth()) }}>Sign out</button>
       </section>
       <section><h2>Canonical consent</h2>
         <label>Approved registry purpose <select disabled={!currentOwner || busy} value={purpose} onChange={e => setPurpose(e.target.value as CanonicalPurpose)}>{purposes.map(p => <option key={p} value={p}>{p}</option>)}</select></label>{' '}
@@ -174,9 +177,16 @@ export default function CanonicalPrivacyLabPage() {
         <button type="button" disabled={!currentOwner || busy || !downloadable} onClick={() => void operate('Owner download eligibility check', requestDownload)}>Check completed export availability</button>
         <p role="status" data-canonical-export-status={visibleExport?.status ?? 'unverified'}>Export request status: <strong>{visibleExport?.status ?? (exportRequest ? 'Awaiting server status' : 'No request selected')}</strong>.</p>
         <p>{downloadable ? 'The server reports a completed package. Download access still requires its current owner check.' : 'No completed downloadable package has been verified.'}</p>
-        {visibleDownload && <a href={visibleDownload.receipt.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" onClick={event => {
-          if (!canonicalDownloadIsCurrent(visibleDownload, session.current)) { event.preventDefault(); setDownload(null) }
-        }}>Download completed account export</a>}
+        {visibleDownload && <button type="button" disabled={busy} onClick={() => void operate('Secure export download', async current => {
+          if (!canonicalDownloadIsCurrent(visibleDownload, current)) throw new Error('CANONICAL_EXPORT_STATE_CHANGED')
+          await current.saveDownload(visibleDownload.receipt)
+          if (session.current === current && current.isCurrent()) setDownload(null)
+          return { jobId: visibleDownload.receipt.jobId, downloaded: true }
+        })}>Download completed account export</button>}
+        {visibleDownload && busy && <button type="button" onClick={() => {
+          session.current?.stopDownload()
+          setDownload(null)
+        }}>Cancel download</button>}
       </section>
       <section aria-label="Canonical account deletion request status"><h2>Account deletion request only</h2>
         <p>This submits a <strong>pending full account deletion request</strong>. There is no partial-memory scope, and no destructive job executes from this screen.</p>

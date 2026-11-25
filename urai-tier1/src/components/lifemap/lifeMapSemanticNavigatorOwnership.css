@@ -76,3 +76,48 @@ html.urai-route-life-map[dir='rtl'] .life-map-semantic-inspector {
 }
 
 @media (max-width: 760px) { html.urai-route-life-map[dir='rtl'] body #life-map-navigator { right: auto !important; left: max(12px, env(safe-area-inset-left)) !important; } }
+
+html body > div.life-map-read-notice {
+  position: fixed;
+  z-index: 2147483599;
+  inset-inline: 16px;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  width: min(26rem, calc(100vw - 32px));
+  height: auto;
+  min-height: 0;
+  max-height: 68svh;
+  overflow: auto;
+  margin-inline: auto;
+  padding: 20px;
+  border: 1px solid #52748b;
+  border-radius: 18px;
+  background: #071525;
+  color: #eef7ff;
+}
+.life-map-read-notice h1, .life-map-read-notice h2 { margin: 0; font-size: 1.5rem; line-height: 1.2; }
+.life-map-read-notice p, .life-map-read-message { margin: 12px 0; line-height: 1.5; }
+.life-map-read-actions, .life-map-signed-out-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.life-map-signed-out-actions { margin-block-start: 12px; }
+.life-map-read-notice a, .life-map-read-notice button, .life-map-read-retry,
+.life-map-signed-out-actions a, .life-map-signed-out-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 48px;
+  padding-inline: 16px;
+  border: 1px solid #819eb2;
+  border-radius: 24px;
+  background: #102538;
+  color: #eef7ff;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.life-map-read-notice :focus-visible, .life-map-read-retry:focus-visible, .life-map-read-message:focus-visible,
+.life-map-signed-out-actions :focus-visible {
+  outline: 3px solid #a5f3fc;
+  outline-offset: 2px;
+}

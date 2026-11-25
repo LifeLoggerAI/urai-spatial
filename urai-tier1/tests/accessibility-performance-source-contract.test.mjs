@@ -50,7 +50,7 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companion, "aria-current={destination.id === world.destination ? 'page' : undefined}")
   requireText(companion, 'aria-label="Return through the world"')
   requireText(worldShell, "const showWorldCompanion = world.destination !== 'life-map'")
-  requireText(worldShell, 'showWorldCompanion ? <PersistentWorldCompanion /> : null')
+  requireText(worldShell, 'showWorldCompanion ? <PersistentWorldCompanion ambientPlayback={ambientPlayback} onRetryAmbient={retryPlayback} /> : null')
   requireText(routeOwnerCss, ".urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb")
   requireText(routeOwnerCss, 'background: transparent !important;')
   requireText(routeOwnerCss, 'box-shadow: none !important;')

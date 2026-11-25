@@ -31,9 +31,9 @@ test('authenticated UI refuses unsupported contract before attaching an auth lis
 
 test('existing scoped operations are not silently transformed into canonical account deletion', () => {
   assert.match(api, /createOperationalExportRequest\(scopes: string\[\]/)
-  assert.match(api, /createExportRequest', \{ scopes, operationId:/)
+  assert.match(api, /createSpatialExportRequest', \{ scopes, operationId:/)
   assert.match(api, /createOperationalDeletionRequest\(payload: \{ scope: string; confirmation: string/)
-  assert.match(api, /createDeletionRequest', \{ \.\.\.payload, operationId:/)
+  assert.match(api, /createSpatialDeletionRequest', \{ \.\.\.payload, operationId:/)
   assert.doesNotMatch(api, /callOperationalPrivacyFunction\('setCanonicalConsent'/)
 })
 

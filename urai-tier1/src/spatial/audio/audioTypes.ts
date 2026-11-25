@@ -35,3 +35,5 @@ export interface AmbientState {
   track: AmbientTrack;
   intensity: number;
 }
+
+export type AmbientPlaybackOutcome = 'unattempted' | 'starting' | 'playing' | 'blocked' | 'unavailable' | 'interrupted';

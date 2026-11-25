@@ -50,15 +50,15 @@ async function call(c,name,data){return (await httpsCallable(c.fn,name,{timeout:
   assert.equal(rejected,true,'revoked user old credential unexpectedly accepted by capability endpoint')
   checks.push('revoked-user-handshake-denied')
   // The backend itself must reject a direct call that bypasses client preflight.
-  await assert.rejects(call(revoked,'createExportRequest',{
+  await assert.rejects(call(revoked,'createSpatialExportRequest',{
     operationId:'r1580-revoked-export-0001',scopes:['consent']
   }),e=>e&&['functions/permission-denied','functions/unauthenticated'].includes(e.code))
   checks.push('revoked-user-direct-export-denied')
-  await assert.rejects(call(revoked,'createDeletionRequest',{
+  await assert.rejects(call(revoked,'createSpatialDeletionRequest',{
     operationId:'r1580-revoked-delete-0001',scope:'memories',confirmation:'CONFIRM DELETE'
   }),e=>e&&e.code==='functions/permission-denied')
   checks.push('revoked-user-direct-deletion-denied')
-  await assert.rejects(call(revoked,'getExportDownloadUrl',{jobId:'not-found'}),
+  await assert.rejects(call(revoked,'getOperationalExportDownloadUrl',{jobId:'not-found'}),
     e=>e&&e.code==='functions/permission-denied')
   checks.push('revoked-user-direct-download-denied')
 
@@ -68,15 +68,15 @@ async function call(c,name,data){return (await httpsCallable(c.fn,name,{timeout:
   await assert.rejects(call(fenced,'getOperationalPrivacyCapabilities'),
     e=>e && e.code==='functions/permission-denied')
   checks.push('active-deletion-tombstone-denied')
-  await assert.rejects(call(fenced,'createExportRequest',{
+  await assert.rejects(call(fenced,'createSpatialExportRequest',{
     operationId:'r1580-fenced-export-0001',scopes:['audit']
   }),e=>e&&e.code==='functions/permission-denied')
   checks.push('tombstone-direct-export-denied')
-  await assert.rejects(call(fenced,'createDeletionRequest',{
+  await assert.rejects(call(fenced,'createSpatialDeletionRequest',{
     operationId:'r1580-fenced-delete-0001',scope:'memories',confirmation:'CONFIRM DELETE'
   }),e=>e&&e.code==='functions/permission-denied')
   checks.push('tombstone-direct-deletion-denied')
-  await assert.rejects(call(good,'getExportDownloadUrl',{jobId:'not-found'}),
+  await assert.rejects(call(good,'getOperationalExportDownloadUrl',{jobId:'not-found'}),
     e=>e&&e.code==='functions/not-found')
   checks.push('healthy-owner-direct-download-reaches-authorized-handler')
 
@@ -95,15 +95,15 @@ async function call(c,name,data){return (await httpsCallable(c.fn,name,{timeout:
   await assert.rejects(call(refresh,'getOperationalPrivacyCapabilities'),
     e=>e&&['functions/unauthenticated','functions/permission-denied'].includes(e.code))
   checks.push('refreshtoken-revoked-old-credential-denied')
-  await assert.rejects(call(refresh,'createExportRequest',{
+  await assert.rejects(call(refresh,'createSpatialExportRequest',{
     operationId:'r1582-refresh-export-0001',scopes:['consent']
   }),e=>e&&['functions/permission-denied','functions/unauthenticated'].includes(e.code))
   checks.push('refresh-revoked-direct-export-denied')
-  await assert.rejects(call(refresh,'createDeletionRequest',{
+  await assert.rejects(call(refresh,'createSpatialDeletionRequest',{
     operationId:'r1582-refresh-delete-0001',scope:'memories',confirmation:'CONFIRM DELETE'
   }),e=>e&&['functions/permission-denied','functions/unauthenticated'].includes(e.code))
   checks.push('refresh-revoked-direct-deletion-denied')
-  await assert.rejects(call(refresh,'getExportDownloadUrl',{jobId:'not-found'}),
+  await assert.rejects(call(refresh,'getOperationalExportDownloadUrl',{jobId:'not-found'}),
     e=>e&&['functions/permission-denied','functions/unauthenticated'].includes(e.code))
   checks.push('refresh-revoked-direct-download-denied')
 

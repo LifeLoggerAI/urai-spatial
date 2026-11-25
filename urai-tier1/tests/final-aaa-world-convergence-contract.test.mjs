@@ -39,7 +39,7 @@ test('the full journey participates in one persistent world model', () => {
 test('Orb ownership follows destination canon without visual duplication', () => {
   assert.match(shell, /PersistentWorldCompanion/)
   assert.match(shell, /const showWorldCompanion = world\.destination !== 'life-map'/)
-  assert.match(shell, /\{showWorldCompanion \? <PersistentWorldCompanion \/> : null\}/)
+  assert.match(shell, /\{showWorldCompanion \? <PersistentWorldCompanion ambientPlayback=\{ambientPlayback\} onRetryAmbient=\{retryPlayback\} \/> : null\}/)
   assert.match(companion, /PRIMARY_DESTINATIONS/)
   assert.match(companion, /SECONDARY_DESTINATIONS/)
   for (const destination of canonicalDestinations) assert.match(companion, new RegExp(`['"]${destination}['"]`))

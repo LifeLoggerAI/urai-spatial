@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import type { AmbientPlaybackOutcome } from '@/spatial/audio/audioTypes'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { publishOrbState } from '@/app/home/orbStateController'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
@@ -62,7 +63,42 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   return `${target.pathname}${target.search}${target.hash}`
 }
 
-export function PersistentWorldCompanion() {
+type AmbientFeedbackProps = {
+  ambientPlayback: AmbientPlaybackOutcome
+  onRetryAmbient: () => void
+}
+
+export function SpatialSoundControls({ambientPlayback, onRetryAmbient, hydrated, audioEnabled, toggleAudio}:
+  AmbientFeedbackProps & {hydrated: boolean; audioEnabled: boolean; toggleAudio: () => void}) {
+  const unavailable = audioEnabled && ambientPlayback === 'unavailable'
+  const retryable = audioEnabled && ['blocked', 'unavailable', 'interrupted'].includes(ambientPlayback)
+  const feedback: Record<AmbientPlaybackOutcome, string> = {
+    unattempted: 'Ambience has not started.',
+    starting: 'Starting ambience.',
+    playing: 'Ambience is playing.',
+    blocked: 'The browser blocked playback. You can retry.',
+    unavailable: 'The ambient track is unavailable. You can retry.',
+    interrupted: 'Playback was interrupted. You can retry.',
+  }
+  return <>
+    <button
+      type="button"
+      aria-pressed={audioEnabled}
+      aria-label={unavailable ? 'Spatial sound unavailable' : audioEnabled ? 'Mute spatial sound' : 'Enable spatial sound'}
+      data-world-target="spatial-audio-toggle"
+      disabled={!hydrated}
+      aria-disabled={!hydrated || unavailable}
+      onClick={unavailable ? undefined : toggleAudio}
+    >
+      {unavailable ? 'Sound unavailable' : audioEnabled ? 'Mute spatial sound' : 'Enable spatial sound'}
+    </button>
+    <span role="status" aria-live="polite">{audioEnabled ? feedback[ambientPlayback] : 'Sound is off.'}</span>
+    {hydrated && retryable ? <button type="button" onClick={onRetryAmbient}>Retry spatial sound</button> : null}
+    {hydrated && unavailable ? <button type="button" onClick={toggleAudio}>Turn off spatial sound</button> : null}
+  </>
+}
+
+export function PersistentWorldCompanion({ambientPlayback, onRetryAmbient}: AmbientFeedbackProps) {
   const router = useRouter()
   const { world, phase } = useUraiWorldState()
   const [open, setOpen] = useState(false)
@@ -216,6 +252,7 @@ export function PersistentWorldCompanion() {
         <nav className="urai-world-companion__secondary" aria-label="Travel to private URAI realms">{destinationButtons(secondaryDestinations)}</nav>
         <section className="urai-world-companion__estate" aria-labelledby="urai-public-estate-title">
           <h2 id="urai-public-estate-title">Public constellation</h2>
+          <a href="/launch">Explore destinations</a>
           <ul>
             {PUBLIC_ESTATE.map((entry) => (
               <li key={entry.id} data-estate-id={entry.id} data-estate-status={entry.status}>
@@ -239,16 +276,8 @@ export function PersistentWorldCompanion() {
             Return
           </button>
         ) : null}
-        <button
-          type="button"
-          aria-pressed={audioEnabled}
-          aria-label={audioEnabled ? 'Mute spatial sound' : 'Enable spatial sound'}
-          data-world-target="spatial-audio-toggle"
-          disabled={!hydrated}
-          onClick={toggleAudio}
-        >
-          {audioEnabled ? 'Sound on' : 'Sound off'}
-        </button>
+        <SpatialSoundControls hydrated={hydrated} audioEnabled={audioEnabled} toggleAudio={toggleAudio}
+          ambientPlayback={ambientPlayback} onRetryAmbient={onRetryAmbient} />
         <OrbConversationPanel active={open && phase === 'idle'} />
       </div>
       <button

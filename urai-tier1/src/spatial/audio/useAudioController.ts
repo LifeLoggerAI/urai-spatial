@@ -3,6 +3,7 @@
 import { clientApiUrl } from "@/lib/clientApiUrl";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type {
+  AmbientPlaybackOutcome,
   AmbientTrack,
   NarratorAudioLine,
   SpatialAudioCue,
@@ -39,7 +40,15 @@ function hasWindow() {
   return typeof window !== "undefined";
 }
 
-export function useAudioController() {
+function playbackFailure(error: unknown, mediaError: MediaError | null): AmbientPlaybackOutcome {
+  const name = error && typeof error === "object" && "name" in error ? error.name : undefined;
+  if (name === "NotAllowedError") return "blocked";
+  // Network, decode and unsupported-source errors make this attempt unavailable.
+  if (name === "NotSupportedError" || (mediaError && [2, 3, 4].includes(mediaError.code))) return "unavailable";
+  return "interrupted";
+}
+
+export function useAudioController(onAmbientPlayback?: (outcome: AmbientPlaybackOutcome) => void) {
   const activeEngineRef = useRef<VoiceEngine>(DEFAULT_ENGINE);
   const isSpeakingRef = useRef(false);
   const currentClipIdRef = useRef<string | undefined>(undefined);
@@ -51,6 +60,7 @@ export function useAudioController() {
   const cueAudioRef = useRef<HTMLAudioElement | null>(null);
   const activeAmbientRef = useRef<"A" | "B">("A");
   const ambientTrackRef = useRef<AmbientTrack | null>(null);
+  const ambientAttemptRef = useRef(0);
   const fadeRafRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -68,20 +78,23 @@ export function useAudioController() {
     if (hasWindow()) window.dispatchEvent(new CustomEvent("urai-audio-stop-all"));
   }, []);
 
-  const stopAmbient = useCallback(() => {
+  const stopAmbient = useCallback((outcome: AmbientPlaybackOutcome = "unattempted") => {
+    ambientAttemptRef.current += 1;
     if (fadeRafRef.current) {
       cancelAnimationFrame(fadeRafRef.current);
       fadeRafRef.current = null;
     }
     for (const audio of [ambientARef.current, ambientBRef.current]) {
       if (!audio) continue;
+      audio.onerror = null;
       audio.pause();
       audio.currentTime = 0;
       audio.src = "";
       audio.volume = 0;
     }
     ambientTrackRef.current = null;
-  }, []);
+    onAmbientPlayback?.(outcome);
+  }, [onAmbientPlayback]);
 
   const stopCue = useCallback(() => {
     if (!cueAudioRef.current) return;
@@ -124,7 +137,11 @@ export function useAudioController() {
   const setAmbientPhase = useCallback(
     (phase: SpatialAudioPhase, intensity = 1) => {
       if (!hasWindow()) return;
-      ensureAmbient();
+      if (typeof Audio !== "function") { stopAmbient("unavailable"); return; }
+      try { ensureAmbient(); } catch (error) {
+        stopAmbient(playbackFailure(error, null));
+        return;
+      }
       const nextTrack = PHASE_TO_AMBIENT[phase];
       if (ambientTrackRef.current === nextTrack) return;
       const nextSrc = AMBIENT_SRC[nextTrack];
@@ -133,6 +150,12 @@ export function useAudioController() {
       const next = nextKey === "A" ? ambientARef.current : ambientBRef.current;
       if (!next) return;
       if (fadeRafRef.current) cancelAnimationFrame(fadeRafRef.current);
+      const attempt = ++ambientAttemptRef.current;
+      const isCurrent = () => ambientAttemptRef.current === attempt;
+      const fail = (error: unknown) => {
+        if (isCurrent()) stopAmbient(playbackFailure(error, next.error));
+      };
+      next.onerror = () => { if (next.error) fail(next.error); };
       next.src = nextSrc;
       next.loop = true;
       next.volume = 0;
@@ -140,11 +163,20 @@ export function useAudioController() {
       // quick return must replace that fade, and repeated requests must not
       // restart it before the previous track has finished fading out.
       ambientTrackRef.current = nextTrack;
-      void next.play().catch(() => undefined);
+      onAmbientPlayback?.("starting");
+      try {
+        void next.play().then(() => {
+          if (isCurrent()) onAmbientPlayback?.("playing");
+        }, fail);
+      } catch (error) {
+        fail(error);
+        return;
+      }
       const started = performance.now();
       const duration = phase === "REPLAY" ? 2000 : phase === "FOCUS" ? 1600 : 1300;
       const target = isSpeakingRef.current ? 0.18 : Math.min(0.62, 0.28 + intensity * 0.34);
       const tick = () => {
+        if (!isCurrent()) return;
         const t = Math.min(1, (performance.now() - started) / duration);
         const eased = 1 - Math.pow(1 - t, 3);
         next.volume = target * eased;
@@ -154,6 +186,7 @@ export function useAudioController() {
           return;
         }
         if (current) {
+          current.onerror = null;
           current.pause();
           current.currentTime = 0;
           current.src = "";
@@ -165,7 +198,7 @@ export function useAudioController() {
       };
       fadeRafRef.current = requestAnimationFrame(tick);
     },
-    [ensureAmbient],
+    [ensureAmbient, onAmbientPlayback, stopAmbient],
   );
 
   const playCue = useCallback((cue: SpatialAudioCue) => {

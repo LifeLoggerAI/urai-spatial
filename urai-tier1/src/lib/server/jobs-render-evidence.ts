@@ -25,7 +25,7 @@ export type ReadOnlyJobsMovieRecord = {
   output: { renderPlanDigest: string }
   consent: {
     purpose: 'life-movie.render'
-    policyVersion: '1.1.0'
+    policyVersion: string
     decisionReceiptId: string
   }
 }
@@ -33,6 +33,9 @@ export type ReadOnlyJobsMovieRecord = {
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
 const JOB_ID = /^[A-Za-z0-9_-]{10,64}$/
 const SHA256 = /^[a-f0-9]{64}$/
+// Jobs #540 bounds; current readback is not a Privacy consent grant.
+const POLICY = /^\S(?:.{0,78}\S)?$/
+const RECEIPT_ID = /^\S(?:.{0,158}\S)?$/
 const RECEIPT = /^str_[A-Za-z0-9_-]{16,64}_[a-z0-9]{8,16}_[A-Za-z0-9_-]{40,64}$/
 
 function dataRecord(value: unknown): value is Record<string, unknown> {
@@ -108,8 +111,9 @@ export async function readProtectedJobsMovieRecord(
       || typeof payload.sceneTruthDigest !== 'string' || !SHA256.test(payload.sceneTruthDigest)
       || payload.providerGenerationAuthorized !== false
       || payload.publicReleaseAuthorized !== false || payload.spatialRequired !== false
-      || consent.purpose !== 'life-movie.render' || consent.policyVersion !== '1.1.0'
-      || typeof consent.decisionReceiptId !== 'string' || !SHA256.test(consent.decisionReceiptId)
+      || consent.purpose !== 'life-movie.render'
+      || typeof consent.policyVersion !== 'string' || !POLICY.test(consent.policyVersion)
+      || typeof consent.decisionReceiptId !== 'string' || !RECEIPT_ID.test(consent.decisionReceiptId)
       || !containsScopedVideoArtifact(output.outputs, tenant, payload.projectId)) return null
 
     // Do NOT surface raw job payload, source paths, GCS refs or output metadata.
@@ -118,7 +122,7 @@ export async function readProtectedJobsMovieRecord(
       sourceSystem: 'urai-studio', jobType: 'studio.render.video',
       status: 'SUCCESS', outputDeletedAt: null,
       output: { renderPlanDigest: payload.renderPlanDigest },
-      consent: { purpose: 'life-movie.render', policyVersion: '1.1.0',
+      consent: { purpose: 'life-movie.render', policyVersion: consent.policyVersion,
         decisionReceiptId: consent.decisionReceiptId },
     }
   } catch {

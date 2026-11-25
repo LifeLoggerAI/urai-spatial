@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "target": "urai-live",
     "public": "urai-tier1/out",
     "ignore": [
       "firebase.json",
@@ -28,6 +29,23 @@
         ]
       },
       {
+        "source": "/api/system/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store, max-age=0"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json; charset=utf-8"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          }
+        ]
+      },
+      {
         "source": "**/*.html",
         "headers": [
           {
@@ -42,6 +60,14 @@
           {
             "key": "Cache-Control",
             "value": "no-store, max-age=0"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json; charset=utf-8"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
           }
         ]
       }

@@ -1,3 +1,6 @@
+import { connection } from 'next/server'
+import { publicStorytimeSampleAvailable } from '@/lib/storytime/publicSampleAvailable'
+
 const launchDestinations = [
   ['/login', 'Enter your private world', 'Sign in or create your UrAi identity.'],
   ['/life-map', 'Life Map', 'Navigate your private memories, people, places, and chapters.'],
@@ -13,7 +16,9 @@ export const metadata = {
   description: 'Enter the production UrAi experience and its private spatial launch surfaces.',
 }
 
-export default function LaunchPage() {
+export default async function LaunchPage() {
+  if (process.env.URAI_FIREBASE_STATIC_EXPORT !== 'true') await connection()
+  const publicSamplesAvailable = publicStorytimeSampleAvailable()
   return (
     <main className="launchHub" aria-labelledby="launch-heading">
       <section className="launchHero">
@@ -26,7 +31,8 @@ export default function LaunchPage() {
         </p>
         <div className="launchActions">
           <a href="/login">Enter UrAi</a>
-          <a href="/demo">Open disclosed demo</a>
+          <a href="/home">Return Home</a>
+          {publicSamplesAvailable && <a href="/demo">Open disclosed demo</a>}
         </div>
       </section>
 
@@ -39,6 +45,12 @@ export default function LaunchPage() {
               <span>{detail}</span>
             </a>
           ))}
+          {publicSamplesAvailable && (
+            <a id="storytime-sample" href="/demo/storytime">
+              <strong>Storytime sample</strong>
+              <span>Read The Quiet Reset, a four-chapter demonstration.</span>
+            </a>
+          )}
         </div>
       </section>
 

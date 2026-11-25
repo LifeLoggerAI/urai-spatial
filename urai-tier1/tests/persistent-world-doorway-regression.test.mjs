@@ -41,7 +41,7 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.match(companionCss, /\.urai-world-companion__orb \{[\s\S]*width: 64px;[\s\S]*height: 64px;/)
   assert.match(companionCss, /bottom: max\(14px, env\(safe-area-inset-bottom\)\)/)
   assert.match(shell, /world\.destination !== 'life-map'/)
-  assert.match(shell, /showWorldCompanion \? <PersistentWorldCompanion \/> : null/)
+  assert.match(shell, /showWorldCompanion \? <PersistentWorldCompanion ambientPlayback=\{ambientPlayback\} onRetryAmbient=\{retryPlayback\} \/> : null/)
 
   assert.match(collisionCss, /\.urai-world-runtime\[data-world-destination='home'\] > \.urai-ground-gateway \{[\s\S]*display: none !important;[\s\S]*pointer-events: none !important;/)
   assert.doesNotMatch(collisionCss, /\.urai-world-runtime\[data-world-destination=['"]home['"]\]:has\(/)

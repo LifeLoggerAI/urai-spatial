@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Environment, Lightformer, Sparkles, Stars, useAnimations, useGLTF } from '@react-three/drei'
-import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
+import { Component, Suspense, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { isOrbState, resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
@@ -51,6 +51,7 @@ const ORB_PALETTE: Record<OrbState, { core: string; emissive: string; aura: stri
   transition: { core: '#f8ffff', emissive: '#8cd9e3', aura: '#c3f6ff', light: '#f0ffff' },
 }
 
+type TerrainSource = 'retained-and-procedural' | 'procedural'
 type Nearby = 'orb' | 'ground' | 'life-map' | null
 type TransitionSequence = 'idle' | 'ground:opening' | 'ground:traversal' | 'ground:closing' | 'life-map:opening' | 'life-map:traversal' | 'life-map:closing'
 type Props = { onOrbOpen?: () => void; webglAvailable?: boolean; onSceneFailure?: (error: Error) => void }
@@ -257,9 +258,16 @@ const STONE_SCATTER = Array.from({ length: 34 }, (_, index) => {
   return [x, z, scale, rotation] as const
 })
 
-function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> }) {
+function Terrain({ target, onSourceChange }: {
+  target: MutableRefObject<THREE.Vector3 | null>
+  onSourceChange: (source: TerrainSource | null) => void
+}) {
   const sanctuary = useGLTF(HOME_SANCTUARY_MODEL)
   const authored = useMemo(() => prepareNaturalSanctuary(sanctuary.scene), [sanctuary.scene])
+  const reportTerrain = useCallback((group: THREE.Group | null) => {
+    if (!group) onSourceChange(null)
+    else onSourceChange(authored.userData.groundBounds ? 'retained-and-procedural' : 'procedural')
+  }, [authored, onSourceChange])
   const extension = useMemo(() => makeHomeTerrainGeometry(authored.userData.groundBounds), [authored])
   const vista = useMemo(() => makeHomeVistaGeometry(), [])
   const infill = useMemo(() => authored.userData.groundBounds
@@ -282,7 +290,7 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
     if (useSceneStore.getState().inputLocked) return
     target.current = new THREE.Vector3(THREE.MathUtils.clamp(event.point.x, HOME_BOUNDS.minX, HOME_BOUNDS.maxX), 0, THREE.MathUtils.clamp(event.point.z, HOME_BOUNDS.minZ, HOME_BOUNDS.maxZ))
   }
-  return <group name="home-authored-terrain" userData={{ geometryOwner: 'retained-glb-ground-topology-plus-original-terrain-extension', materialOwner: 'original-procedural-detail-not-photographic-pbr', sharedElevation: true }}>
+  return <group name="home-authored-terrain" ref={reportTerrain} userData={{ geometryOwner: 'retained-glb-ground-topology-plus-original-terrain-extension', materialOwner: 'original-procedural-detail-not-photographic-pbr', sharedElevation: true }}>
     <primitive object={authored} />
     {infill ? <mesh name="home-retained-ground-gap-infill" geometry={infill} receiveShadow raycast={() => null} userData={{ role: 'recessed-noninteractive-authored-ground-coverage' }}>
       <HomeSurfaceMaterial kind="ground" color="#ffffff" vertexColors roughness={.98} metalness={0} envMapIntensity={.24} />
@@ -776,7 +784,7 @@ function SceneReady({ onReady }: { onReady: () => void }) {
   return null
 }
 
-function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onGroundComplete: () => void; onLifeMap: () => void; onReady: () => void; onTransitionSequence: (value: TransitionSequence) => void; groundDescent: boolean; reducedMotion: boolean; reducedStimulation: boolean; orbState: OrbState }) {
+function Scene(props: { onTerrainSourceChange: (source: TerrainSource | null) => void; onSplatMountChange: (mounted: boolean) => void; input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onGroundComplete: () => void; onLifeMap: () => void; onReady: () => void; onTransitionSequence: (value: TransitionSequence) => void; groundDescent: boolean; reducedMotion: boolean; reducedStimulation: boolean; orbState: OrbState }) {
   const phase = useSceneStore((state) => state.phase)
   const cosmic = phase === 'ASCENT'
   return <>
@@ -796,8 +804,8 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
       <pointLight position={[-4.1,2.2,-3.9]} color="#d6a56c" intensity={.3} distance={6} decay={2} />
       <pointLight position={[4.3,2.1,-4.2]} color="#a5c9c3" intensity={.22} distance={6} decay={2} />
     </> : null}
-    {HOME_INTERPRETIVE_SPLAT_ASSET ? <HomeInterpretiveSplatEnvironment src={HOME_INTERPRETIVE_SPLAT_ASSET} /> : null}
-    <Terrain target={props.target} />
+    {HOME_INTERPRETIVE_SPLAT_ASSET ? <HomeInterpretiveSplatEnvironment src={HOME_INTERPRETIVE_SPLAT_ASSET} onMountChange={props.onSplatMountChange} /> : null}
+    <Terrain target={props.target} onSourceChange={props.onTerrainSourceChange} />
     <SanctuaryPath />
     {!cosmic ? <Horizon /> : null}
     <AtmosphericMist reducedMotion={props.reducedMotion} />
@@ -815,8 +823,62 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
   </>
 }
 
+function HomeSourceExplanation({ terrain, splatMounted, open, onOpenChange }: {
+  terrain: TerrainSource | null
+  splatMounted: boolean
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  const trigger = useRef<HTMLButtonElement>(null)
+  const closeControl = useRef<HTMLButtonElement>(null)
+  const id = useId()
+
+  function showExplanation() {
+    if (!dialog.current) return
+    dialog.current.showModal()
+    closeControl.current?.focus({ preventScroll: true })
+    onOpenChange(true)
+  }
+
+  function closeExplanation() {
+    dialog.current?.close()
+    onOpenChange(false)
+    trigger.current?.focus({ preventScroll: true })
+  }
+
+  return <>
+    <button className={styles.explanationTrigger} type="button" ref={trigger}
+      aria-haspopup="dialog" aria-controls={id} aria-expanded={open}
+      onClick={showExplanation}>
+      Why am I seeing this?
+    </button>
+    <dialog className={styles.explanationDialog} id={id} ref={dialog} aria-labelledby={id + '-title'}
+      onCancel={(event) => { event.preventDefault(); closeExplanation() }}
+      onKeyDown={(event) => {
+        event.stopPropagation()
+        if (event.key === 'Escape') { event.preventDefault(); closeExplanation() }
+      }}
+      onPointerDown={(event) => event.stopPropagation()}>
+      <h2 id={id + '-title'}>Home source explanation</h2>
+      <p>This explanation covers the ground and the optional interpretive scenery in Home.</p>
+      <div aria-live="polite">
+        {terrain === 'retained-and-procedural' && <p>The ground combines terrain from a 3D model with computer-generated terrain and surface detail.</p>}
+        {terrain === 'procedural' && <p>The ground uses computer-generated terrain and surface detail.</p>}
+        {splatMounted && <p>Asset Factory supplied the interpretive scenery as a non-autobiographical artwork.</p>}
+        {!terrain && !splatMounted && <p>Neither layer is currently displayed.</p>}
+      </div>
+      <a href="/privacy-controls">Review consent</a>
+      <button type="button" ref={closeControl} onClick={closeExplanation}>Close</button>
+    </dialog>
+  </>
+}
+
 export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpen, webglAvailable = true, onSceneFailure }: Props) {
   const quality = useAdaptiveSpatialQuality()
+  const [terrainSource, setTerrainSource] = useState<TerrainSource | null>(null)
+  const [splatMounted, setSplatMounted] = useState(false)
+  const [explanationOpen, setExplanationOpen] = useState(false)
   const [canvasReady, setCanvasReady] = useState(false)
   const [sceneReady, setSceneReady] = useState(false)
   const [nearby, setNearby] = useState<Nearby>(null)
@@ -849,8 +911,8 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   }, [groundDescent])
   const interact = useCallback(() => { if (nearby === 'orb') openOrb(); else if (nearby === 'ground') startGround(); else if (nearby === 'life-map') startLifeMap() }, [nearby, openOrb, startGround, startLifeMap])
   const reset = useCallback(() => { if (!groundDescent) { yaw.current = .055; pitch.current = -.04; target.current = SPAWN.clone() } }, [groundDescent])
-  const input = useMovementInput({ enabled: !groundDescent, onInteract: interact, onReset: reset })
-  const look = useDragLook({ yaw, pitch, enabled: !groundDescent && phase !== 'ASCENT', sensitivity: .0031, minPitch: -.55, maxPitch: .68, onDragState: setDragging })
+  const input = useMovementInput({ enabled: !groundDescent && !explanationOpen, onInteract: interact, onReset: reset })
+  const look = useDragLook({ yaw, pitch, enabled: !explanationOpen && !groundDescent && phase !== 'ASCENT', sensitivity: .0031, minPitch: -.55, maxPitch: .68, onDragState: setDragging })
 
   useEffect(() => { const reduced = window.matchMedia('(prefers-reduced-motion: reduce)'); const mobile = window.matchMedia('(pointer: coarse), (max-width: 700px)'); const apply = () => { setReducedMotion(reduced.matches); setMobileControls(mobile.matches) }; apply(); reduced.addEventListener?.('change', apply); mobile.addEventListener?.('change', apply); return () => { reduced.removeEventListener?.('change', apply); mobile.removeEventListener?.('change', apply) } }, [])
   useEffect(() => {
@@ -881,7 +943,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
     return () => window.removeEventListener(URAI_ORB_STATE_EVENT, onOrbState)
   }, [groundDescent, phase])
   useEffect(() => { if (phase !== 'ASCENT' && !groundDescent) setOrbState('idle') }, [groundDescent, phase])
-  useEffect(() => { const cancel = (event: KeyboardEvent) => { if (event.key !== 'Escape') return; const store = useSceneStore.getState(); if (store.phase === 'ASCENT') { event.preventDefault(); store.setPhase('HOME'); store.unlock(); setPortalSequence('idle'); setOrbState('idle') } else if (groundDescent) { event.preventDefault(); setGroundDescent(false); setPortalSequence('idle'); setOrbState('idle') } }; window.addEventListener('keydown', cancel, true); return () => window.removeEventListener('keydown', cancel, true) }, [groundDescent])
+  useEffect(() => { const cancel = (event: KeyboardEvent) => { if (explanationOpen || event.key !== 'Escape') return; const store = useSceneStore.getState(); if (store.phase === 'ASCENT') { event.preventDefault(); store.setPhase('HOME'); store.unlock(); setPortalSequence('idle'); setOrbState('idle') } else if (groundDescent) { event.preventDefault(); setGroundDescent(false); setPortalSequence('idle'); setOrbState('idle') } }; window.addEventListener('keydown', cancel, true); return () => window.removeEventListener('keydown', cancel, true) }, [explanationOpen, groundDescent])
 
   if (!webglAvailable) return null
   const ready = canvasReady && sceneReady
@@ -895,8 +957,9 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
       <img src={phase === 'ASCENT' ? '/assets/urai/home/home-sky-ascent.webp' : groundDescent ? '/assets/urai/home/home-ground-portal.webp' : HOME_PROVIDER_ENVIRONMENT} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center center', transform:'scale(1.018)', filter:'saturate(1.1) contrast(1.035) brightness(.94)' }} />
     </picture>
     <div aria-hidden="true" style={{ position:'absolute', inset:0, zIndex:0, background:'radial-gradient(circle at 50% 44%, rgba(2,6,12,0) 0%, rgba(2,6,12,.04) 54%, rgba(1,3,8,.32) 100%), linear-gradient(180deg, rgba(1,4,9,.05), rgba(1,4,9,0) 58%, rgba(1,4,9,.18))' }} />
-    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} style={{ background: 'transparent' }} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:true, powerPreference:'high-performance' }} onCreated={({ gl, scene }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.shadowMap.type = THREE.PCFSoftShadowMap; gl.setClearColor(0x000000,0); scene.background = null; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
+    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Suspense fallback={null}><Canvas className={styles.canvas} style={{ background: 'transparent' }} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:true, powerPreference:'high-performance' }} onCreated={({ gl, scene }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.shadowMap.type = THREE.PCFSoftShadowMap; gl.setClearColor(0x000000,0); scene.background = null; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene onTerrainSourceChange={setTerrainSource} onSplatMountChange={setSplatMounted} input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></Suspense></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
+    <HomeSourceExplanation terrain={terrainSource} splatMounted={splatMounted} open={explanationOpen} onOpenChange={setExplanationOpen} />
     {context ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" style={{ zIndex:3 }}>{context}</div> : null}
     {!transitioning && mobileControls ? <MobileMovementPad input={input} label="Home movement controls" /> : null}
     <span className="sr-only" data-testid="urai-home-webgl-orb">The Orb companion is physically present in the Home environment.</span>

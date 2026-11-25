@@ -53,7 +53,7 @@ const tick = () => new Promise(resolve => setImmediate(resolve))
 // cancellation of a request already admitted by Firebase.
 function fixture({ authorized = true } = {}) {
   const auth = { currentUser: null }
-  const slots = [], calls = [], factories = []
+  const slots = [], calls = [], factories = [], weatherClears = []
   let cursor = 0, effects = [], listener, authError, disposed = false, tree
   let stateWrites = 0, authReads = 0, subscriptions = 0, factoryHook
   function slot(kind, init) {
@@ -96,6 +96,7 @@ function fixture({ authorized = true } = {}) {
         }
       },
     },
+    '@/lib/uraiEmotion/manualWeatherSession': { notifyManualWeatherRevocation: () => weatherClears.push(calls.length) },
     '@/lib/firebase/client': {
       disposableFirebaseReviewAuthorized: () => authorized,
       functions: { synthetic: true },
@@ -113,7 +114,7 @@ function fixture({ authorized = true } = {}) {
     return tree
   }
   const f = {
-    auth, calls, factories,
+    auth, calls, factories, weatherClears,
     get stateWrites() { return stateWrites },
     get authReads() { return authReads },
     get subscriptions() { return subscriptions },
@@ -179,12 +180,15 @@ test('current actor can display confirmed grant and revocation without expanding
   assert.deepEqual(Array.from(select.props.children, n => n.props.value), ['memory.storage', 'data.export'])
   const grant = clickGrant(f)
   assert.equal(grant.payload.purpose, 'memory.storage')
+  assert.deepEqual(f.weatherClears, [f.calls.indexOf(grant)])
   assert.equal(f.view().state, 'unverified')
   await f.resolve(grant, { status: 'granted' })
   await f.resolve(last(f, 'evaluateCanonicalConsent'), { allowed: true, reason: 'GRANTED' })
   assert.equal(f.view().state, 'allowed')
   f.button('Revoke').props.onClick()
-  await f.resolve(last(f, 'setCanonicalConsent'), { status: 'revoked' })
+  const revoke = last(f, 'setCanonicalConsent')
+  assert.deepEqual(f.weatherClears, [f.calls.indexOf(grant), f.calls.indexOf(revoke)])
+  await f.resolve(revoke, { status: 'revoked' })
   await f.resolve(last(f, 'evaluateCanonicalConsent'), { allowed: false, reason: 'REVOKED' })
   assert.equal(f.view().state, 'denied')
   assert.match(f.view().status, /Jobs acknowledgement and private writes unverified/)
@@ -207,6 +211,7 @@ for (const sameUid of [false, true]) {
     assert.equal(callsNamed(f, 'setCanonicalConsent').length, 0)
     assert.equal(f.view().state, 'unverified')
     assert.equal(f.view().grantDisabled, true)
+    assert.deepEqual(f.weatherClears, [])
   })
 }
 

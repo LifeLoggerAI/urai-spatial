@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { HomeManualEmotionalWeatherStatus } from '@/lib/uraiEmotion/ManualEmotionalWeatherControls'
 import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
@@ -222,12 +223,15 @@ export default function HomeSpatialRuntimeLayer() {
         data-home-assets-ready="false"
         aria-label="Spatial Home fallback"
       >
-        <div role="status" aria-live="polite" className="home-runtime-recovery">
-          {unavailable
-            ? 'WebGL is unavailable. Accessible Home controls remain available.'
-            : assetLoadFailed
-              ? 'Home assets could not load. Accessible Home controls remain available.'
-              : 'The spatial renderer could not recover. Accessible Home controls remain available.'}
+        <div className="home-runtime-recovery">
+          <HomeManualEmotionalWeatherStatus />
+          <div role="status" aria-live="polite">
+            {unavailable
+              ? 'WebGL is unavailable. Accessible Home controls remain available.'
+              : assetLoadFailed
+                ? 'Home assets could not load. Accessible Home controls remain available.'
+                : 'The spatial renderer could not recover. Accessible Home controls remain available.'}
+          </div>
           {!unavailable ? <button type="button" data-testid="home-retry-assets" onClick={retryHome}>Retry loading Home</button> : null}
         </div>
         <HomeSemanticNavigation spatialAvailable={false} spatialReady={false} />
@@ -241,6 +245,7 @@ export default function HomeSpatialRuntimeLayer() {
   return (
     <>
       <HomeSemanticNavigation spatialAvailable spatialReady={assetsReady} />
+      <HomeManualEmotionalWeatherStatus />
       <section
       ref={runtimeRef}
       className="urai-home-spatial-runtime-layer"

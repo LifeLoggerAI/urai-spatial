@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
@@ -100,4 +101,11 @@ test('sensitive provider rollout gates fail closed on consent, enforcement, rete
   assert.match(launchBoundary, /if \(!consent\.explicitSessionConsent\) return false/)
   assert.match(launchBoundary, /consent\.enforcementState !== gate\.policyEnforcementRequired/)
   assert.match(launchBoundary, /gate\.consentDomains\.every/)
+})
+
+// Immutable source: LifeLoggerAI/urai-storytime@aba97cc4bb4a37e78dafc8155de5c9c68570a9ce,
+// src/components/storytime/StoryChapterReader.tsx. Keep this presentation-only snapshot in sync.
+test('the Storytime sample uses the canonical read-only chapter renderer', () => {
+  const source = read('src/components/storytime/StoryChapterReader.tsx')
+  assert.equal(createHash('sha256').update(source).digest('hex'), '62b90467c1adaf528c181a7f55030d2475aa38558e9465b4b10455638c83d8e4')
 })

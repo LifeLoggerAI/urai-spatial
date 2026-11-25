@@ -95,8 +95,8 @@ const cases=[
   ['spatial job incorrectly routed',f=>{f.record.payload.spatialRequired=true}],
   ['consent purpose not render',f=>{f.record.consent.purpose='memory.store'}],
   ['consent policy version missing',f=>{delete f.record.consent.policyVersion}],
-  ['consent policy version stale',f=>{f.record.consent.policyVersion='1.0.0'}],
-  ['receipt not digest',f=>{f.record.consent.decisionReceiptId='forged'}],
+  ['consent policy version leading whitespace',f=>{f.record.consent.policyVersion=' 1.0.0'}],
+  ['receipt leading whitespace',f=>{f.record.consent.decisionReceiptId=' forged'}],
   ['receipt missing',f=>{delete f.record.consent.decisionReceiptId}],
   ['missing mp4 outputs',f=>{f.record.output.outputs=[]}],
   ['wrong artifact type',f=>{f.record.output.outputs[0].kind='srt'}],
@@ -194,4 +194,82 @@ test('R1716 revoked consent between protected Jobs readbacks denies',async()=>{
   const f=fixture()
   const result=await resolve(selected,seamReaders(f,fakeBinding(),()=>{f.record.consent.purpose='revoked'}))
   assert.equal(result.status,'unavailable')
+})
+
+
+// R1718 contract alignment: Jobs #540 and studioLifeMovieBridge carry opaque
+// nonempty consent receipt IDs and bounded policy versions. These are NOT
+// independent Privacy grants. The read-only projection must preserve them.
+test('R1718 bridge-compatible non-default policy and opaque receipt projected verbatim', async()=>{
+  const f=fixture()
+  f.record.consent.policyVersion='2.0.3'
+  f.record.consent.decisionReceiptId='render-decision_2026-v2'
+  const result=await readJob(uid,tenant,jobId,f.reader)
+  assert.equal(result?.consent.policyVersion,'2.0.3')
+  assert.equal(result?.consent.decisionReceiptId,'render-decision_2026-v2')
+  assert.equal(result?.output.renderPlanDigest,renderPlanDigest)
+})
+test('R1718 boundary 80-character policy and 160-character opaque receipt', async()=>{
+  const f=fixture()
+  f.record.consent.policyVersion='v'.repeat(80)
+  f.record.consent.decisionReceiptId='r'.repeat(160)
+  const result=await readJob(uid,tenant,jobId,f.reader)
+  assert.equal(result?.consent.policyVersion,'v'.repeat(80))
+  assert.equal(result?.consent.decisionReceiptId,'r'.repeat(160))
+})
+for(const [name,field,value] of [
+  ['empty policy','policyVersion',''],
+  ['leading whitespace policy','policyVersion',' bad'],
+  ['trailing whitespace policy','policyVersion','bad '],
+  ['oversized policy','policyVersion','v'.repeat(81)],
+  ['empty receipt','decisionReceiptId',''],
+  ['leading whitespace receipt','decisionReceiptId',' bad'],
+  ['trailing whitespace receipt','decisionReceiptId','bad '],
+  ['oversized receipt','decisionReceiptId','r'.repeat(161)],
+]){
+ test('R1718 malformed current consent denies: '+name,async()=>{
+   const f=fixture();f.record.consent[field]=value
+   assert.equal(await readJob(uid,tenant,jobId,f.reader),null)
+ })
+}
+
+
+// R1722 HOLD: a bounded Jobs consent receipt is data, never a Privacy grant.
+// Even a matching Jobs record cannot supply the missing independently issued
+// Memory-to-Jobs binding or canonical render-purpose authority.
+test('R1722 nondefault opaque Jobs consent readback cannot create a Memory render binding', async()=>{
+  const f=fixture()
+  f.record.consent.policyVersion='2.0.3'
+  f.record.consent.decisionReceiptId='render-decision_2026-v2'
+  const readback=await readJob(uid,tenant,jobId,f.reader)
+  assert.equal(readback?.consent.policyVersion,'2.0.3')
+  assert.equal(readback?.consent.decisionReceiptId,'render-decision_2026-v2')
+  const outcome=await resolve(selected,seamReaders(f,null))
+  assert.equal(outcome.status,'unavailable')
+  assert.equal('jobId' in outcome,false)
+  assert.deepEqual(f.calls,['jobs/'+jobId])
+})
+test('R1722 fake SHA binding cannot launder opaque Jobs receipt into private render',async()=>{
+  const f=fixture()
+  f.record.consent.decisionReceiptId='render-decision_2026-v2'
+  const result=await resolve(selected,seamReaders(f,fakeBinding()))
+  assert.equal(result.status,'unavailable')
+  assert.equal('jobId' in result,false)
+})
+test('R1722 synthetic binding with opaque receipt cannot masquerade as approved issuer',async()=>{
+  const f=fixture()
+  f.record.consent.decisionReceiptId='render-decision_2026-v2'
+  const binding=fakeBinding()
+  binding.decisionReceiptId='render-decision_2026-v2'
+  const result=await resolve(selected,seamReaders(f,binding))
+  assert.equal(result.status,'unavailable')
+  assert.equal('jobId' in result,false)
+  assert.deepEqual(f.calls,[])
+})
+test('R1722 nondefault Jobs policy is not silently upgraded to synthetic Privacy consent',async()=>{
+  const f=fixture()
+  f.record.consent.policyVersion='2.0.3'
+  const outcome=await resolve(selected,seamReaders(f,fakeBinding()))
+  assert.equal(outcome.status,'unavailable')
+  assert.equal('jobId' in outcome,false)
 })

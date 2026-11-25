@@ -16,19 +16,19 @@ function overviewButton() {
 }
 
 export function LifeMapIndependentInputBoundary() {
-  const [announcement, setAnnouncement] = useState('Life Map ready. Choose a memory or open movement help.')
+  const [announcement, setAnnouncement] = useState('')
 
   useEffect(() => {
     const requestStep = (direction: -1 | 1) => {
       window.dispatchEvent(new CustomEvent('urai:life-map-step', { detail: { direction } }))
-      setAnnouncement(direction > 0 ? 'Traveling forward to the next memory.' : 'Traveling back to the previous memory.')
+      setAnnouncement(direction > 0 ? 'Next memory requested.' : 'Previous memory requested.')
     }
 
     const reset = () => {
       const button = overviewButton()
       if (button) button.click()
       else window.dispatchEvent(new CustomEvent('urai:life-map-overview'))
-      setAnnouncement('Returned to the whole private constellation.')
+      setAnnouncement('Overview requested.')
     }
 
     const onKeyDown = (event: KeyboardEvent) => {

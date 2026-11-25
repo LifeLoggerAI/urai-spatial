@@ -48,7 +48,8 @@ test('selected-memory travel and recenter remain user controlled', () => {
   assert.ok(sceneSource.includes('setPhase("arrival")'))
   assert.ok(sceneSource.includes('setSelectedId(null)'))
   assert.ok(sceneSource.includes('Overview'))
-  assert.ok(sceneSource.includes('if (selectedId) overview(); else router.push("/home")'))
+  assert.ok(sceneSource.includes('const homeReturnHref = explicitDemoRequested ? "/home?demo=1" : "/home"'))
+  assert.match(sceneSource, /if \(overviewIsCurrent \|\| !selectedId\) router\.push\(homeReturnHref\)\s+else overview\(\)/)
 })
 
 test('mobile controls retain safe areas and 48px touch targets', () => {

@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Vector4 } from 'three'
+import { Vector4, type Group } from 'three'
 import { createCapturedRealitySplatSession } from '@/spatial/captured-reality/capturedRealitySplatSession'
 import type { CapturedSplatResources } from '@/spatial/captured-reality/capturedRealitySplatResources'
 
@@ -39,8 +39,10 @@ export function HomeInterpretiveSplatEnvironment({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
   scale = 1,
+  onMountChange,
 }: {
   src: string
+  onMountChange?: (mounted: boolean) => void
   position?: [number, number, number]
   rotation?: [number, number, number]
   scale?: number | [number, number, number]
@@ -50,6 +52,9 @@ export function HomeInterpretiveSplatEnvironment({
   const [resource, setResource] = useState<CapturedSplatResources | null>(null)
   const [failed, setFailed] = useState(false)
   const viewport = useRef(new Vector4())
+  const reportMount = useCallback((group: Group | null) => {
+    onMountChange?.(group !== null)
+  }, [onMountChange])
 
   useEffect(() => {
     if (!approvedSrc) return
@@ -93,6 +98,7 @@ export function HomeInterpretiveSplatEnvironment({
   return (
     <group
       name="home-interpretive-gaussian-environment"
+      ref={reportMount}
       position={position}
       rotation={rotation}
       scale={scale}

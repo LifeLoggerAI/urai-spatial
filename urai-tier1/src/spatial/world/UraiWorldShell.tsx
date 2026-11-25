@@ -1,6 +1,7 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
+import type { AmbientPlaybackOutcome } from '@/spatial/audio/audioTypes'
 import SpatialAmbientRuntime from '@/spatial/audio/SpatialAmbientRuntime'
 import SpatialPositionedAudioRuntime from '@/spatial/audio/SpatialPositionedAudioRuntime'
 import HapticRuntime from '@/spatial/haptics/HapticRuntime'
@@ -34,6 +35,9 @@ import './lifeMapProductionIsolation.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
+  const [ambientPlayback, setAmbientPlayback] = useState<AmbientPlaybackOutcome>('unattempted')
+  const retryAmbient = useRef<(() => void) | null>(null)
+  const retryPlayback = useCallback(() => retryAmbient.current?.(), [])
   const showWorldCompanion = world.destination !== 'life-map' && world.destination !== 'location-map'
 
   return (
@@ -48,7 +52,7 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
       data-camera-checkpoint={world.cameraCheckpoint ?? ''}
       data-companion-owned={showWorldCompanion ? 'true' : 'false'}
     >
-      <SpatialAmbientRuntime />
+      <SpatialAmbientRuntime onPlayback={setAmbientPlayback} retryRef={retryAmbient} />
       <SpatialPositionedAudioRuntime />
       <HapticRuntime />
       <MotionOrchestrator />
@@ -58,7 +62,7 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
       <GroundGateway />
       {world.destination === 'life-map' ? <LifeMapRouteTransactionBridge /> : null}
       {world.destination === 'life-map' ? <LifeMapIndependentInputBoundary /> : null}
-      {showWorldCompanion ? <PersistentWorldCompanion /> : null}
+      {showWorldCompanion ? <PersistentWorldCompanion ambientPlayback={ambientPlayback} onRetryAmbient={retryPlayback} /> : null}
       {showWorldCompanion ? <PossibleFuturesOrbEntry /> : null}
       <WorldTransitionController />
       <p className="sr-only" aria-live="polite" aria-atomic="true">

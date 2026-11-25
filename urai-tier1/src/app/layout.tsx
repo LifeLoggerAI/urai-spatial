@@ -56,6 +56,7 @@ import './route-layering-hotfix.css'
 import './native-doorway-final-fix.css'
 import './location-map-header-evidence-fix.css'
 import './urai-production-system.css'
+import ManualEmotionalWeatherProvider from '@/lib/uraiEmotion/ManualEmotionalWeatherProvider'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
 import PassiveSignalRuntime from '@/spatial/signals/PassiveSignalRuntime'
 import SensorySafeRuntime from '@/spatial/accessibility/SensorySafeRuntime'
@@ -132,18 +133,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         ) : null}
         <WorldRuntimeBoundary>
-          <SensorySafeRuntime />
-          <LocaleRuntime />
-          <PassiveSignalRuntime />
-          <UraiAAAARoutePolish />
-          <UraiFinalAssetSpineBridge />
-          {children}
-          <UraiAutonomousV1Layer />
-          <UraiV2StateController />
-          <UraiV2OnboardingLayer />
-          <Suspense fallback={null}>
-            <AdamPresenceRuntime />
-          </Suspense>
+          <ManualEmotionalWeatherProvider>
+            <SensorySafeRuntime />
+            <LocaleRuntime />
+            <PassiveSignalRuntime />
+            <UraiAAAARoutePolish />
+            <UraiFinalAssetSpineBridge />
+            {children}
+            <UraiAutonomousV1Layer />
+            <UraiV2StateController />
+            <UraiV2OnboardingLayer />
+            <Suspense fallback={null}>
+              <AdamPresenceRuntime />
+            </Suspense>
+          </ManualEmotionalWeatherProvider>
         </WorldRuntimeBoundary>
       </body>
     </html>
