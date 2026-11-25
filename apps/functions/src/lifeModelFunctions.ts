@@ -583,10 +583,11 @@ export const revokeLifeEntity = lifeModelFunctions.https.onCall(async (data, con
 
 export const getReplayLifeModelAuthority = lifeModelFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
-  await requireMemoryDomainProcessingConsent(db, uid, context)
+  const authority = await requireMemoryDomainProcessingConsent(db, uid, context)
   const memoryId = requireToken(data?.memoryId, 'memoryId')
   const memory = await db.doc(`users/${uid}/memories/${memoryId}`).get()
-  if (!memory.exists || (memory.get('ownerId') ?? memory.get('userId')) !== uid || memory.get('deleted') === true) {
+  if (!memory.exists || (memory.get('ownerId') ?? memory.get('userId')) !== uid || memory.get('deleted') === true
+    || memory.get('consentState') !== 'authorized') {
     return { available: false, reason: 'MEMORY_UNAVAILABLE' }
   }
   const lifeMovie = isRecord(memory.get('lifeMovie')) ? memory.get('lifeMovie') as JsonMap : {}
@@ -640,6 +641,19 @@ export const getReplayLifeModelAuthority = lifeModelFunctions.https.onCall(async
       knowledgeCutoff: typeof bundle.get('knowledgeCutoff') === 'string' ? bundle.get('knowledgeCutoff') : null,
     }] : []
   })
+  // Bind the reply to unchanged source versions as well as current consent.
+  // A scene/person/memory withdrawal or correction during asynchronous reads
+  // invalidates the complete projection rather than returning a mixed version.
+  const sources = [memory, scene, ...bundles, ...personSnapshots]
+  const freshSources = await db.getAll(...sources.map(source => source.ref))
+  if (freshSources.some((fresh, index) => !fresh.exists || !sources[index].updateTime
+    || !fresh.updateTime?.isEqual(sources[index].updateTime!))) {
+    return { available: false, reason: 'MEMORY_SOURCE_CHANGED' }
+  }
+  // Revalidate after private reads: a withdrawn/replaced grant cannot release
+  // a scene or person projection obtained under the previous authority.
+  if (await requireMemoryDomainProcessingConsent(db, uid, context) !== authority)
+    throw new functions.https.HttpsError('permission-denied', 'Memory processing authority changed.')
   return {
     available: true,
     schemaVersion: 'urai-life-model-v1',
