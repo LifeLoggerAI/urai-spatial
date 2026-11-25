@@ -1,11 +1,12 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { lifeMapTypeLabels, type LifeMapNode, type LifeMapNodeType } from './lifeMapData'
 import { requestLifeMapSelection } from './lifeMapSelection'
-import { useLifeMapEvents } from './useLifeMapEvents'
+import { retryPrivateLifeMap, useLifeMapEvents } from './useLifeMapEvents'
 
 const TYPE_FILTERS: readonly (LifeMapNodeType | 'all')[] = ['all', 'memory', 'relationship', 'season', 'recovery', 'threshold', 'ritual', 'forecast', 'legacy']
 
@@ -21,7 +22,10 @@ function matchesSearch(node: LifeMapNode, search: string) {
     .some((value) => String(value).toLowerCase().includes(query))
 }
 
-export default function LifeMapSemanticNavigator({ authenticatedUserId = null }: { authenticatedUserId?: string | null }) {
+export default function LifeMapSemanticNavigator({
+  authenticatedUserId = null,
+  semanticOnly = false,
+}: { authenticatedUserId?: string | null; semanticOnly?: boolean }) {
   const router = useRouter()
   const params = useSearchParams()
   const explicitDemo = params.get('demo') === '1'
@@ -36,6 +40,28 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   const selected = nodes.find((node) => node.id === selectedId) || null
   const searchRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const noticeRef = useRef<HTMLParagraphElement>(null)
+  const retrying = useRef(false)
+  const privateView = Boolean(authenticatedUserId) && !explicitDemo
+  const readFailed = privateView && (sourceMode === 'error' || sourceMode === 'unavailable')
+  let readNotice = ''
+  if (readFailed) readNotice = 'Your private Life Map could not be loaded.'
+  else if (privateView && loading) readNotice = 'Loading your private Life Map…'
+  else if (privateView && sourceMode === 'empty') readNotice = 'No Memory Stars are visible in your Life Map.'
+  else if (semanticOnly) readNotice = 'The 3D view is unavailable. Use search to explore your Life Map.'
+
+  function retry() {
+    noticeRef.current?.focus()
+    retrying.current = true
+    retryPrivateLifeMap()
+  }
+
+  useEffect(() => {
+    if (retrying.current && !loading && !readFailed) {
+      retrying.current = false
+      if (!readNotice && document.activeElement === document.body) triggerRef.current?.focus()
+    }
+  }, [loading, readFailed, readNotice])
 
   const closeNavigator = useCallback(() => {
     setOpen(false)
@@ -46,6 +72,10 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     () => nodes.filter((node) => matchesSearch(node, search) && (typeFilter === 'all' || node.type === typeFilter) && (eraFilter === 'all' || node.eraId === eraFilter)),
     [eraFilter, nodes, search, typeFilter],
   )
+
+  let resultSummary = `${visibleNodes.length} life objects match these filters.`
+  if (loading) resultSummary = 'Opening constellation…'
+  if (readFailed || (privateView && (loading || sourceMode === 'empty'))) resultSummary = readNotice
 
   const withIdentity = useCallback((next: URLSearchParams) => {
     if (explicitDemo) next.set('demo', '1')
@@ -166,12 +196,21 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   if (!portalReady) return null
 
   return createPortal(<>
+    {readNotice && !open ? <div className="life-map-read-notice" role={semanticOnly ? 'main' : 'region'} aria-label="Private Life Map">
+      {semanticOnly ? <h1>Life Map</h1> : <h2>Life Map</h2>}
+      <p ref={noticeRef} tabIndex={-1} role="status" aria-live="polite" aria-atomic="true">{readNotice}</p>
+      <div className="life-map-read-actions">
+        {readFailed ? <button type="button" onClick={retry}>Retry Life Map</button> : null}
+        <Link href="/home" prefetch={false}>Return Home</Link>
+      </div>
+    </div> : null}
     <button
       ref={triggerRef}
       type="button"
       className="life-map-search-trigger"
       data-testid="life-map-semantic-trigger"
       data-life-map-source={sourceMode}
+      data-life-map-fallback={semanticOnly ? 'authored-semantic' : undefined}
       aria-label="Search and navigate Life Map"
       aria-expanded={open}
       aria-controls={open ? 'life-map-navigator' : undefined}
@@ -186,19 +225,20 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
       <input ref={searchRef} id="life-map-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search memories, people, places…" />
       <div className="filter-row" role="group" aria-label="Filter by life object type">{TYPE_FILTERS.map((type) => <button key={type} type="button" data-active={typeFilter === type ? 'true' : 'false'} aria-pressed={typeFilter === type} onClick={() => setTypeFilter(type)}>{type === 'all' ? 'All' : lifeMapTypeLabels[type]}</button>)}</div>
       <div className="filter-row" role="group" aria-label="Filter by era"><button type="button" data-active={eraFilter === 'all' ? 'true' : 'false'} aria-pressed={eraFilter === 'all'} onClick={() => setEraFilter('all')}>All eras</button>{eras.map((era) => <button key={era.id} type="button" data-active={eraFilter === era.id ? 'true' : 'false'} aria-pressed={eraFilter === era.id} onClick={() => setEraFilter(era.id)}>{era.title}</button>)}</div>
-      <p className="sr-only" role="status" aria-live="polite">{loading ? 'Opening constellation…' : `${visibleNodes.length} life objects match these filters.`}</p>
-      <ul className="semantic-results" role="list" aria-label="Visible Life Map objects" data-visible-count={visibleNodes.length}>
-        {loading ? <li>Opening constellation…</li> : visibleNodes.length ? visibleNodes.map((node) => <li key={node.id}><button className="life-map-semantic-result" data-life-map-semantic-result data-life-map-node-id={node.id} aria-label={node.title} aria-current={selected?.id === node.id ? 'true' : undefined} aria-describedby={`life-map-result-${node.id}-details`} type="button" data-selected={selected?.id === node.id ? 'true' : 'false'} onClick={(event) => selectNode(node, event.detail === 0 ? 'keyboard' : 'pointer')}><strong dir="auto">{node.title}</strong><span id={`life-map-result-${node.id}-details`}><span>{lifeMapTypeLabels[node.type]} · {node.dateLabel}</span><small dir="auto">{node.summary}</small></span></button></li>) : <li>No life objects match these filters.</li>}
+      <p ref={noticeRef} tabIndex={-1} className={readFailed ? 'life-map-read-message' : 'sr-only'} role="status" aria-live="polite">{resultSummary}</p>
+      {readFailed ? <button type="button" className="life-map-read-retry" onClick={retry}>Retry Life Map</button> : null}
+      <ul className="semantic-results" role="list" aria-label="Visible Life Map objects" data-visible-count={readFailed ? 0 : visibleNodes.length}>
+        {readFailed ? null : loading ? <li>Opening constellation…</li> : visibleNodes.length ? visibleNodes.map((node) => <li key={node.id}><button className="life-map-semantic-result" data-life-map-semantic-result data-life-map-node-id={node.id} aria-label={node.title} aria-current={selected?.id === node.id ? 'true' : undefined} aria-describedby={`life-map-result-${node.id}-details`} type="button" data-selected={selected?.id === node.id ? 'true' : 'false'} onClick={(event) => selectNode(node, event.detail === 0 ? 'keyboard' : 'pointer')}><strong dir="auto">{node.title}</strong><span id={`life-map-result-${node.id}-details`}><span>{lifeMapTypeLabels[node.type]} · {node.dateLabel}</span><small dir="auto">{node.summary}</small></span></button></li>) : <li>{sourceMode === 'empty' ? 'No Memory Stars are visible in your Life Map.' : 'No life objects match these filters.'}</li>}
       </ul>
       <p className="privacy-truth">{sourceMode === 'explicit-demo' ? 'Disclosed sample universe · not your memories' : sourceMode === 'private' ? 'Private universe' : sourceMode}</p>
     </section> : null}
 
-    {selected && open ? <aside className="life-map-semantic-inspector" aria-label="Selected life object details">
+    {selected && open && !readFailed ? <aside className="life-map-semantic-inspector" data-life-map-source={sourceMode} aria-label="Selected life object details">
       <span>{lifeMapTypeLabels[selected.type]} · {selected.dateLabel}</span>
       <h2>{selected.title}</h2>
       <p>{selected.summary}</p>
       <nav className="semantic-thresholds" aria-label="Selected memory destinations">
-        <button type="button" onClick={() => router.push(destinationHref('focus', selected))}>Enter Focus</button>
+        <button type="button" disabled={Boolean(selected.locked)} onClick={() => router.push(destinationHref('focus', selected))}>Enter Focus</button>
         <button type="button" disabled={!selected.replayAvailable || selected.locked} onClick={() => router.push(destinationHref('replay', selected))}>Replay</button>
         <button type="button" onClick={overview}>Overview</button>
       </nav>

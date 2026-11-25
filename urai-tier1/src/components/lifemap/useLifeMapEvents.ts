@@ -104,6 +104,12 @@ function resolveUserId(explicitUserId?: string): string | null {
   return null;
 }
 
+const retryEvent = "urai:retry-private-life-map";
+
+export function retryPrivateLifeMap() {
+  window.dispatchEvent(new Event(retryEvent));
+}
+
 export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const explicitDemo = useMemo(() => explicitDemoEnabled(userId), [userId]);
   const resolvedUserId = useMemo(() => resolveUserId(userId), [userId]);
@@ -113,6 +119,24 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const [erasLoading, setErasLoading] = useState(!explicitDemo);
   const [eventsError, setEventsError] = useState<string | null>(null);
   const [erasError, setErasError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    if (!resolvedUserId) return;
+    // The scene, navigator and route bridge each own an existing subscription.
+    // Retry all three from the same gesture without reloading the page.
+    function retry() {
+      setNodes([]);
+      setEras([]);
+      setEventsLoading(true);
+      setErasLoading(true);
+      setEventsError(null);
+      setErasError(null);
+      setAttempt((previous) => previous + 1);
+    }
+    window.addEventListener(retryEvent, retry);
+    return () => window.removeEventListener(retryEvent, retry);
+  }, [resolvedUserId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -154,7 +178,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       setEventsError(caught instanceof Error ? caught.message : "Life Map events could not be loaded.");
       return () => { cancelled = true; };
     }
-  }, [explicitDemo, resolvedUserId]);
+  }, [explicitDemo, resolvedUserId, attempt]);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,7 +214,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       setErasError(caught instanceof Error ? caught.message : "Life Map eras could not be loaded.");
       return () => { cancelled = true; };
     }
-  }, [explicitDemo, resolvedUserId]);
+  }, [explicitDemo, resolvedUserId, attempt]);
 
   const loading = eventsLoading || erasLoading;
   const error = eventsError || erasError;

@@ -7,6 +7,7 @@ const accessGate = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMa
 const semanticNavigator = fs.readFileSync(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
 const routeBoundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 const routeTransactionBridge = fs.readFileSync(new URL('../src/spatial/world/LifeMapRouteTransactionBridge.tsx', import.meta.url), 'utf8')
+const firebaseClient = fs.readFileSync(new URL('../src/lib/firebase/client.ts', import.meta.url), 'utf8')
 
 test('Life Map identity fails closed instead of defaulting to demo-user', () => {
   assert.doesNotMatch(source, /return "demo-user"/)
@@ -46,12 +47,15 @@ test('normalized documents inherit the authenticated owner rather than a fake id
 
 test('signed-out Life Map never auto-opens disclosed demo content', () => {
   assert.doesNotMatch(accessGate, /setTimeout\(onOpenDemo/)
+  assert.doesNotMatch(accessGate, /enterPublicSample/)
   assert.doesNotMatch(accessGate, /USER_ID_KEY|urai:userId/)
   assert.doesNotMatch(accessGate, /localStorage\.getItem/)
   assert.match(accessGate, /onAuthStateChanged\(auth/)
   assert.match(accessGate, /user \? "private" : "signed-out"/)
   assert.match(accessGate, /current\.get\("demo"\) === "1"/)
   assert.match(accessGate, /onClick=\{onOpenDemo\}/)
+  assert.match(accessGate, /const sampleAction = publicSamplesAvailable \? openDemo : undefined/)
+  assert.match(accessGate, /<Link href="\/login" prefetch=\{false\}>Sign in<\/Link>/)
 })
 
 test('private Life Map data is loaded only from the Firebase-authenticated UID threaded by the access gate', () => {
@@ -67,7 +71,8 @@ test('semantic Life Map navigation uses authenticated ownership and remains avai
   assert.match(routeBoundary, /<LifeMapSemanticNavigator authenticatedUserId=\{authenticatedUserId\}/)
   assert.match(accessGate, /if \(!webglAvailable\) \{/)
   assert.match(accessGate, /if \(mode === "signed-out"\) \{[\s\S]*<LifeMapSemanticNavigator authenticatedUserId=\{null\} \/><\/\>;/)
-  assert.match(accessGate, /return <><LifeMapLoading label="WebGL is unavailable\. Semantic navigation remains available" \/><LifeMapSemanticNavigator authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\} \/><\/\>;/)
+  assert.match(accessGate, /if \(mode === "private"\) return <LifeMapSemanticNavigator authenticatedUserId=\{authenticatedUserId\} semanticOnly \/>/)
+  assert.match(accessGate, /return <><LifeMapLoading label="WebGL is unavailable\. Semantic navigation remains available" \/><LifeMapSemanticNavigator authenticatedUserId=\{null\} \/><\/\>;/)
   assert.doesNotMatch(semanticNavigator, /localStorage\.getItem/)
 })
 
@@ -83,7 +88,8 @@ test('semantic Life Map fallback preserves the Focus and Replay journey without 
 
 
 test('persistent Life Map route transactions use Firebase auth rather than implicit browser identity', () => {
-  assert.match(routeTransactionBridge, /onAuthStateChanged\(getAuth\(app\)/)
+  assert.match(routeTransactionBridge, /onAuthStateChanged\(getUrAiAuth\(\)/)
+  assert.match(firebaseClient, /export function getUrAiAuth\(\) \{\s*const auth = getAuth\(app\)[\s\S]*?return auth\b/)
   assert.match(routeTransactionBridge, /setAuthenticatedUserId\(user\?\.uid \?\? null\)/)
   assert.match(routeTransactionBridge, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)/)
   assert.doesNotMatch(routeTransactionBridge, /localStorage\.getItem/)

@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { assetCssStack, lifeMapAssets } from "@/spatial/assets/uraiAssets";
 import { requestUraiWorldReturn } from "@/spatial/world/worldEvents";
@@ -38,15 +39,23 @@ function LifeMapLoading({ label = "Opening your memory universe" }: { label?: st
   </main>;
 }
 
-function SignedOutLifeMap({ onOpenDemo, onReturnHome }: { onOpenDemo: () => void; onReturnHome: () => void }) {
+function SignedOutActions({ onOpenDemo }: { onOpenDemo?: () => void }) {
+  return <div className="life-map-signed-out-actions">
+    <Link href="/login" prefetch={false}>Sign in</Link>
+    {onOpenDemo ? <button type="button" onClick={onOpenDemo}>Open disclosed sample</button> : null}
+    <Link href="/home" prefetch={false}>Return Home</Link>
+  </div>;
+}
+
+function SignedOutLifeMap({ onOpenDemo }: { onOpenDemo?: () => void }) {
   return <main aria-label="Signed-out Life Map threshold" data-testid="urai-life-map-signed-out-threshold" data-life-map-source="signed-out" data-private-memory-mounted="false" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"#01030a" }}>
     <picture aria-hidden="true" style={{ position:"absolute", inset:0 }}><source media="(max-width:700px)" srcSet={lifeMapAssets.mobile.src} /><img src={lifeMapAssets.primary.src} alt="" draggable={false} style={{ width:"100%", height:"100%", objectFit:"cover", filter:"saturate(1.05) contrast(1.08) brightness(.62)" }} /></picture>
     <div aria-hidden="true" style={{ position:"absolute", inset:0, background:"radial-gradient(circle at 50% 42%,rgba(16,48,73,.04),rgba(1,3,10,.76) 88%)" }} />
     <section style={{ position:"absolute", left:"max(16px,env(safe-area-inset-left))", bottom:"max(18px,env(safe-area-inset-bottom))", width:"min(420px,calc(100% - 32px))", padding:18, border:"1px solid rgba(183,239,255,.2)", borderRadius:22, background:"rgba(2,7,17,.8)", backdropFilter:"blur(20px)" }}>
-      <p style={{ margin:0, fontSize:10, fontWeight:900, letterSpacing:".22em", textTransform:"uppercase", color:"#b7efff" }}>DISCLOSED SAMPLE · NOT YOUR MEMORIES</p>
-      <h1 style={{ margin:"8px 0 0", fontSize:"clamp(24px,4vw,40px)", lineHeight:.95, letterSpacing:"-.05em" }}>Entering an interactive sample universe.</h1>
-      <p style={{ margin:"12px 0 0", fontSize:13, lineHeight:1.5, color:"rgba(235,244,255,.76)" }}>No private memory data is mounted. You can travel, search, select, inspect, and return safely.</p>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:14 }}><button type="button" onClick={onOpenDemo} style={{ minHeight:48, padding:"0 18px", border:0, borderRadius:999, fontWeight:900, cursor:"pointer" }}>Open disclosed sample</button><button type="button" onClick={onReturnHome} style={{ minHeight:48, padding:"0 18px", border:"1px solid rgba(232,251,255,.2)", borderRadius:999, background:"rgba(2,7,17,.62)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button></div>
+      <p style={{ margin:0, fontSize:10, fontWeight:900, letterSpacing:".22em", textTransform:"uppercase", color:"#b7efff" }}>PRIVATE LIFE MAP</p>
+      <h1 style={{ margin:"8px 0 0", fontSize:"clamp(24px,4vw,40px)", lineHeight:.95, letterSpacing:"-.05em" }}>Your Life Map</h1>
+      <p style={{ margin:"12px 0 0", fontSize:13, lineHeight:1.5, color:"rgba(235,244,255,.76)" }}>Sign in to open your private Life Map.</p>
+      <SignedOutActions onOpenDemo={onOpenDemo} />
     </section>
     <div role="status" aria-live="polite" style={{ position:"absolute", left:"max(16px,env(safe-area-inset-left))", top:"max(16px,env(safe-area-inset-top))", fontSize:10, fontWeight:900, letterSpacing:".2em", textTransform:"uppercase", color:"rgba(220,247,255,.72)" }}>Signed out · no personal data displayed</div>
   </main>;
@@ -70,7 +79,7 @@ function useWebGLCapability() {
   return available;
 }
 
-function LifeMapAccessGate() {
+function LifeMapAccessGate({ publicSamplesAvailable }: { publicSamplesAvailable: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const query = useMemo(() => params.toString(), [params]);
@@ -80,24 +89,20 @@ function LifeMapAccessGate() {
 
   useEffect(() => {
     const current = new URLSearchParams(query);
-    if (current.get("demo") === "1") { setMode("explicit-demo"); setAuthenticatedUserId(null); return; }
-
-    // The signed-out public entrance should show an explicitly disclosed,
-    // synthetic sample, never an empty personal map or a user's private data.
-    // Retain the signed-out boundary for owner/deep-linked context, so an
-    // unknown private memory URL is never silently interpreted as a demo.
-    const enterPublicSample = () => {
-      if (["memoryId", "node", "manifestId", "userId", "ownerId"].some((key) => current.has(key))) return;
-      const next = new URLSearchParams(query);
-      next.set("demo", "1");
-      next.set("overview", "1");
-      router.replace(`/life-map?${next.toString()}`, { scroll: false });
-    };
+    if (current.get("demo") === "1") {
+      if (!publicSamplesAvailable) {
+        setMode("checking");
+        router.replace("/life-map", { scroll: false });
+        return;
+      }
+      setAuthenticatedUserId(null);
+      setMode("explicit-demo");
+      return;
+    }
 
     if (!firebasePublicEnvReady) {
       setAuthenticatedUserId(null);
       setMode("signed-out");
-      enterPublicSample();
       return;
     }
 
@@ -106,41 +111,45 @@ function LifeMapAccessGate() {
     return onAuthStateChanged(auth, (user) => {
       setAuthenticatedUserId(user?.uid ?? null);
       setMode(user ? "private" : "signed-out");
-      if (!user) enterPublicSample();
     });
-  }, [query, router]);
+  }, [publicSamplesAvailable, query, router]);
 
   const openDemo = useCallback(() => {
     const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
-    if (pathname !== "/life-map") return;
-    const next = new URLSearchParams(query);
+    if (pathname !== "/life-map" || !publicSamplesAvailable) return;
+    const next = new URLSearchParams();
     next.set("demo", "1");
     next.set("manifestId", DEMO_MANIFEST_ID);
     next.set("overview", "1");
-    setMode("explicit-demo");
     router.replace(`/life-map?${next.toString()}`, { scroll:false });
-  }, [query, router]);
+  }, [publicSamplesAvailable, router]);
 
+  const sampleAction = publicSamplesAvailable ? openDemo : undefined;
+  if (params.get("demo") === "1" && !publicSamplesAvailable) return <LifeMapLoading label="Opening your Life Map" />;
   if (mode === "checking" || webglAvailable === null) return <LifeMapLoading label="Checking the private threshold" />;
   if (!webglAvailable) {
     if (mode === "signed-out") {
-      return <><SignedOutLifeMap onOpenDemo={openDemo} onReturnHome={() => router.push("/home")} /><LifeMapSemanticNavigator authenticatedUserId={null} /></>;
+      return <><SignedOutLifeMap onOpenDemo={sampleAction} /><LifeMapSemanticNavigator authenticatedUserId={null} /></>;
     }
-    return <><LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" /><LifeMapSemanticNavigator authenticatedUserId={mode === "private" ? authenticatedUserId : null} /></>;
+    if (mode === "private") return <LifeMapSemanticNavigator authenticatedUserId={authenticatedUserId} semanticOnly />;
+    return <><LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" /><LifeMapSemanticNavigator authenticatedUserId={null} /></>;
   }
   return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} data-life-map-source={mode} data-private-memory-mounted={mode === "signed-out" ? "false" : undefined} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}>
     <LifeMapRouteBoundary authenticatedUserId={mode === "private" ? authenticatedUserId : null} />
     {mode === "signed-out" ? <aside data-testid="urai-life-map-signed-out-disclosure" aria-label="Signed-out Life Map disclosure" style={{ position:"absolute", zIndex:120, left:"max(16px,env(safe-area-inset-left))", bottom:"max(16px,env(safe-area-inset-bottom))", width:"min(390px,calc(100vw - 32px))", padding:14, border:"1px solid rgba(183,239,255,.2)", borderRadius:18, background:"rgba(2,7,17,.78)", backdropFilter:"blur(18px)", color:"#f8fbff" }}>
       <strong style={{ display:"block", fontSize:11, letterSpacing:".12em", textTransform:"uppercase" }}>Signed out · no personal data displayed</strong>
-      <span style={{ display:"block", marginTop:6, fontSize:12, lineHeight:1.45, color:"rgba(235,244,255,.76)" }}>This is the real empty Life Map realm. No private memories are mounted.</span>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:10 }}>
-        <button type="button" onClick={openDemo} style={{ minHeight:48, padding:"0 16px", border:0, borderRadius:999, fontWeight:900, cursor:"pointer" }}>Open disclosed sample</button>
-        <button type="button" onClick={() => router.push("/home")} style={{ minHeight:48, padding:"0 16px", border:"1px solid rgba(232,251,255,.2)", borderRadius:999, background:"rgba(2,7,17,.62)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button>
-      </div>
+      <span style={{ display:"block", marginTop:6, fontSize:12, lineHeight:1.45, color:"rgba(235,244,255,.76)" }}>Sign in to open your private Life Map.</span>
+      <SignedOutActions onOpenDemo={sampleAction} />
     </aside> : null}
   </section>;
 }
 
-export default function SpatialLifeMapCanonical() {
-  return <Suspense fallback={<LifeMapLoading label="Checking the private threshold" />}><LifeMapAccessGate /></Suspense>;
+export default function SpatialLifeMapCanonical({ publicSamplesAvailable, children }: { publicSamplesAvailable: boolean; children: ReactNode }) {
+  const pathname = usePathname();
+  const canonicalRoute = pathname === "/life-map" || pathname === "/life-map/";
+  return <div className="lifemap-starfield-shell">
+    {canonicalRoute ? <Suspense fallback={<LifeMapLoading label="Checking the private threshold" />}>
+      <LifeMapAccessGate publicSamplesAvailable={publicSamplesAvailable} />
+    </Suspense> : children}
+  </div>;
 }

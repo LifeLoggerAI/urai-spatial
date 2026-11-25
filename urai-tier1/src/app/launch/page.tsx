@@ -1,3 +1,4 @@
+import { connection } from 'next/server'
 import { publicStorytimeSampleAvailable } from '@/lib/storytime/publicSampleAvailable'
 
 const launchDestinations = [
@@ -15,9 +16,8 @@ export const metadata = {
   description: 'Enter the production UrAi experience and its private spatial launch surfaces.',
 }
 
-export const dynamic = 'force-dynamic'
-
-export default function LaunchPage() {
+export default async function LaunchPage() {
+  if (process.env.URAI_FIREBASE_STATIC_EXPORT !== 'true') await connection()
   const publicSamplesAvailable = publicStorytimeSampleAvailable()
   return (
     <main className="launchHub" aria-labelledby="launch-heading">
