@@ -15,7 +15,10 @@ export const metadata = {
   description: 'Enter the production UrAi experience and its private spatial launch surfaces.',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default function LaunchPage() {
+  const publicSamplesAvailable = publicStorytimeSampleAvailable()
   return (
     <main className="launchHub" aria-labelledby="launch-heading">
       <section className="launchHero">
@@ -29,7 +32,7 @@ export default function LaunchPage() {
         <div className="launchActions">
           <a href="/login">Enter UrAi</a>
           <a href="/home">Return Home</a>
-          <a href="/demo">Open disclosed demo</a>
+          {publicSamplesAvailable && <a href="/demo">Open disclosed demo</a>}
         </div>
       </section>
 
@@ -42,7 +45,7 @@ export default function LaunchPage() {
               <span>{detail}</span>
             </a>
           ))}
-          {publicStorytimeSampleAvailable() && (
+          {publicSamplesAvailable && (
             <a id="storytime-sample" href="/demo/storytime">
               <strong>Storytime sample</strong>
               <span>Read The Quiet Reset, a four-chapter demonstration.</span>
