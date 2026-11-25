@@ -1,0 +1,22 @@
+/* Keep the existing no-WebGL/error experience and reserve the launcher's
+   horizontal space instead of allowing it to cover the recovery message.
+   These selectors deliberately do not affect the settled WebGL world. */
+@media (max-width: 720px) {
+  .urai-home-spatial-runtime-layer[data-testid="urai-home-accessible-fallback"] > .home-runtime-recovery {
+    box-sizing: border-box;
+    left: max(16px, env(safe-area-inset-left, 0px));
+    right: max(88px, calc(env(safe-area-inset-right, 0px) + 80px));
+    width: auto;
+    max-width: none;
+    transform: none;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Three stacked destinations consume most of a short/reflowed viewport.
+   Retain all three controls and their touch targets, but use one row here. */
+@media (max-width: 720px) and (max-height: 480px) {
+  .urai-home-spatial-runtime-layer[data-testid="urai-home-accessible-fallback"] > .home-semantic-navigation[data-home-navigation-owner="runtime-boundary"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

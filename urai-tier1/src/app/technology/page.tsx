@@ -1,3 +1,5 @@
+import InstitutionalPublicSurface from '../InstitutionalPublicSurface'
+
 export const metadata = {
   title: 'URAI Technology',
   description: 'Architecture layers behind the URAI spatial memory system.',
@@ -13,9 +15,12 @@ const layers = [
 
 export default function TechnologyPage() {
   return (
-    <main className="container">
-      <h1>The system behind URAI</h1>
-      <p>URAI is built as connected layers: experience, context, intelligence, trust, and evidence.</p>
+    <InstitutionalPublicSurface
+      eyebrow="UrAi · Technology"
+      title="The system behind UrAi."
+      lede="Experience, context, intelligence, trust, and evidence work together to keep your memories useful and your choices clear."
+      links={[{ href: '/home', label: 'Enter UrAi', primary: true }, { href: '/privacy-controls', label: 'Privacy & consent' }, { href: '/status', label: 'Current availability' }]}
+    >
       <section>
         {layers.map((layer) => (
           <article key={layer.name}>
@@ -24,6 +29,6 @@ export default function TechnologyPage() {
           </article>
         ))}
       </section>
-    </main>
+    </InstitutionalPublicSurface>
   )
 }

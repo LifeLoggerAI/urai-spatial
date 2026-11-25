@@ -34,7 +34,7 @@ import './lifeMapProductionIsolation.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
-  const showWorldCompanion = world.destination !== 'life-map' && world.destination !== 'location-map'
+  const showWorldCompanion = world.destination !== 'life-map' && world.destination !== 'location-map' && world.destination !== 'infrastructure-hub'
 
   return (
     <div

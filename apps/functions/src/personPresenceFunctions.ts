@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import { createHash, randomUUID } from 'node:crypto'
+import { preparePersonPresenceAuthority, loadPersonPresenceAuthority, requirePersonPresenceRenderBinding, type PresenceMode } from './personPresenceAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -67,6 +68,7 @@ export const preparePersonPresenceSession = personPresenceFunctions.https.onCall
   await requirePresenceConsent(uid)
 
   const bundleId = requireToken(data?.bundleId, 'bundleId')
+  const sceneTruthPacketId = requireToken(data?.sceneTruthPacketId, 'sceneTruthPacketId')
   const mode = String(data?.mode ?? '')
   if (!MODES.has(mode)) throw new functions.https.HttpsError('invalid-argument', 'Presence mode is invalid.')
 
@@ -88,6 +90,7 @@ export const preparePersonPresenceSession = personPresenceFunctions.https.onCall
   if (mode === 'HISTORICAL_AS_OF' && !knowledgeCutoff) {
     throw new functions.https.HttpsError('failed-precondition', 'Historical presence requires a knowledge cutoff.')
   }
+  const authority = await preparePersonPresenceAuthority(db, uid, { bundleId, sceneTruthPacketId, mode: mode as PresenceMode })
 
   const sessionId = `presence:${randomUUID()}`
   await db.doc(`users/${uid}/simulationSessions/${sessionId}`).set({
@@ -95,6 +98,13 @@ export const preparePersonPresenceSession = personPresenceFunctions.https.onCall
     ownerId: uid,
     personId,
     bundleId,
+    sceneTruthPacketId,
+    graphSnapshotId: authority.graphSnapshotId,
+    bundleHash: authority.bundleHash,
+    sceneTruthHash: authority.sceneTruthHash,
+    graphHash: authority.graphHash,
+    authorityDigest: authority.authorityDigest,
+    dependencyIds: authority.dependencyIds,
     mode,
     knowledgeCutoff: mode === 'HISTORICAL_AS_OF' ? knowledgeCutoff : null,
     presentationClass: 'SIMULATED',
@@ -109,6 +119,8 @@ export const preparePersonPresenceSession = personPresenceFunctions.https.onCall
     sessionId,
     personId,
     bundleId,
+    sceneTruthPacketId,
+    authorityDigest: authority.authorityDigest,
     mode,
     knowledgeCutoff: mode === 'HISTORICAL_AS_OF' ? knowledgeCutoff : null,
     presentationClass: 'SIMULATED',
@@ -135,31 +147,22 @@ export const closePersonPresenceSession = personPresenceFunctions.https.onCall(a
 
 export const getPersonPresenceCapabilities = personPresenceFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
+  await requirePresenceConsent(uid)
   const sessionId = requireToken(data?.sessionId, 'sessionId')
   const session = await db.doc(`users/${uid}/simulationSessions/${sessionId}`).get()
   if (!session.exists || session.get('ownerId') !== uid || session.get('state') !== 'active') {
     throw new functions.https.HttpsError('not-found', 'Presence session was not found.')
   }
   const bundleId = requireToken(session.get('bundleId'), 'bundleId')
-  const personId = requireToken(session.get('personId'), 'personId')
-  const refs = ['voice','visual','motion'].map((modality) => db.doc(`users/${uid}/personRenderBindings/${bundleId}:${modality}`))
-  const snapshots = await db.getAll(...refs)
-  const accepted = (snapshot: FirebaseFirestore.DocumentSnapshot, modality: string) =>
-    snapshot.exists
-    && snapshot.get('ownerId') === uid
-    && snapshot.get('personId') === personId
-    && snapshot.get('bundleId') === bundleId
-    && snapshot.get('modality') === modality
-    && snapshot.get('reviewState') === 'ACCEPTED'
-    && snapshot.get('consentState') === 'authorized'
-    && snapshot.get('state') === 'current'
+  const authority = await loadPersonPresenceAuthority(db, uid, sessionId)
+  const accepted = await Promise.all(['voice','visual','motion'].map((modality) => requirePersonPresenceRenderBinding(db, uid, authority, modality).then(() => true, () => false)))
 
   return {
     sessionId,
     bundleId,
-    voice: accepted(snapshots[0], 'voice'),
-    visual: accepted(snapshots[1], 'visual'),
-    motion: accepted(snapshots[2], 'motion'),
+    voice: accepted[0],
+    visual: accepted[1],
+    motion: accepted[2],
     providerIdentifiersExposed: false,
   }
 })
@@ -197,6 +200,8 @@ export const promotePersonRenderBinding = personPresenceFunctions.https.onCall(a
   if (!bundle.exists || bundle.get('ownerId') !== ownerId || bundle.get('state') !== 'current' || bundle.get('synthetic') !== false) {
     throw new functions.https.HttpsError('failed-precondition', 'Person model bundle is unavailable.')
   }
+  const bundleHash = requireSha256(bundle.get('bundleHash'), 'bundleHash')
+  if (sourceAuthorityHash !== bundleHash) throw new functions.https.HttpsError('failed-precondition', 'PERSON_RENDER_SOURCE_AUTHORITY_MISMATCH')
   if (!policy.exists) throw new functions.https.HttpsError('failed-precondition', 'CONSENT_POLICY_REQUIRED')
   const policyData = policy.data() ?? {}
   const domains = isRecord(policyData.domains) ? policyData.domains : {}
@@ -213,6 +218,8 @@ export const promotePersonRenderBinding = personPresenceFunctions.https.onCall(a
     ownerId,
     personId,
     bundleId,
+    bundleHash,
+    dependencyIds: [...new Set([bundleId, personId, ...tokenArray(bundle.get('dependencyIds'), 512), ...tokenArray(bundle.get('sourceIds'), 512)])],
     modality,
     provider,
     providerResourceId,

@@ -26,7 +26,7 @@ export default defineConfig({
     launchOptions: { args: ciWebglArgs },
   },
   webServer: {
-    command: 'python3 -m http.server 3000 --bind 127.0.0.1 --directory urai-tier1/out',
+    command: 'python3 scripts/serve-static-preview.py --port 3000 --directory urai-tier1/out',
     url: 'http://127.0.0.1:3000/home/',
     reuseExistingServer: false,
     timeout: 30000,

@@ -19,7 +19,7 @@ test('Replay discovers captured places only through authenticated server authori
 test('server entry requires release gate, dual consent, same owner binding and accepted source-backed asset', () => {
   assert.match(functions, /getCapturedRealityReplayEntry/)
   assert.match(functions, /capturedRealityEnabled\(\)/)
-  assert.match(functions, /requireLocationRuntimeConsent\(uid\)/)
+  assert.match(functions, /requireLocationRuntimeConsent\(uid, transaction\)/)
   assert.match(functions, /capturedRealityReplayBindings/)
   assert.match(functions, /ownerId/)
   assert.match(functions, /reviewState.*accepted/)
@@ -31,7 +31,7 @@ test('Replay shows no captured-place action without an authorized binding and us
   assert.match(replay, /useCapturedRealityReplayEntry/)
   assert.match(replay, /capturedRealityEntry\?\.href/)
   assert.match(replay, /Enter captured place/)
-  assert.match(hook, /\/spatial\/captured-reality\?assetId=/)
+  assert.match(hook, /capturedRealityJourneyEntryHref\(data\.assetId, memoryId\)/)
 })
 
 test('captured replay bindings participate in export/deletion lifecycle', () => {

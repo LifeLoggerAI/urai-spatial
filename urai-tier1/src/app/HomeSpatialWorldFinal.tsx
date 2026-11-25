@@ -100,6 +100,10 @@ export default function HomeSpatialWorldFinal() {
     resetPointer();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === "o") {
+        // A world shortcut must not consume text entry or browser/assistive commands.
+        if (event.defaultPrevented || event.isComposing || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+        const target = event.target;
+        if (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, [role="textbox"], [role="combobox"]'))) return;
         event.preventDefault();
         setTransitionTarget('orb');
         setOrbOpen((open) => !open);

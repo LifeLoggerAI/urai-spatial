@@ -1,5 +1,7 @@
 "use client";
 
+import { withLifeMapSelectionIdentity } from '@/spatial/memory/lifeMapSelectionJourney';
+
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, Line, Stars } from "@react-three/drei";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,7 +13,6 @@ import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpat
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.8, 13.5];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0, -3.5];
-const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
 const SELECTED_MEMORY_STANDOFF = 5.6;
 
 type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
@@ -237,7 +238,6 @@ export default function AdaptiveLifeMapScene() {
   const explicitDemoRequested = params.get("demo") === "1";
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
-  const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
   const [selectedId, setSelectedId] = useState<string | null>(params.get("overview") === "1" ? null : queryNode || null);
   const [phase, setPhase] = useState<JourneyPhase>(selectedId ? "arrival" : "overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
@@ -251,11 +251,7 @@ export default function AdaptiveLifeMapScene() {
   }, []);
   useEffect(() => () => clearTimers(), [clearTimers]);
 
-  const withIdentity = useCallback((next: URLSearchParams) => {
-    if (explicitDemoRequested) next.set("demo", "1");
-    if (manifestId) next.set("manifestId", manifestId);
-    return next;
-  }, [explicitDemoRequested, manifestId]);
+  const withIdentity = useCallback((next: URLSearchParams, memoryId?: string) => withLifeMapSelectionIdentity(params, next, memoryId), [params]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
     clearTimers();
@@ -267,7 +263,7 @@ export default function AdaptiveLifeMapScene() {
       timers.current.push(window.setTimeout(() => setPhase("approach"), 760));
       timers.current.push(window.setTimeout(() => setPhase("arrival"), 1320));
     }
-    const next = withIdentity(new URLSearchParams());
+    const next = withIdentity(new URLSearchParams(), node.id);
     next.set("memoryId", node.id);
     next.set("node", node.id);
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
@@ -284,7 +280,7 @@ export default function AdaptiveLifeMapScene() {
 
   const destinationHref = useCallback((route: "focus" | "replay") => {
     if (!selected) return "/life-map";
-    const next = withIdentity(new URLSearchParams());
+    const next = withIdentity(new URLSearchParams(), selected.id);
     next.set("memoryId", selected.id);
     next.set("node", selected.id);
     next.set("returnNode", selected.id);

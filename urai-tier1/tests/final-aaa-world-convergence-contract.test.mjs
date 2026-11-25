@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
+import vm from 'node:vm'
+import ts from 'typescript'
+import { isOrbState, resolveAuthorizedHomeReviewOrbState } from '../src/app/home/orbStateController.ts'
 
 const read = (path) => fs.readFileSync(path, 'utf8')
 
@@ -58,11 +61,11 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionPolished as HomeWorldProduction \} from "\.\/HomeWorldProductionPolished"/)
   assert.match(homeProduction, /name="home-orb-sanctuary"/)
   assert.match(homeProduction, /data-testid="urai-home-webgl-orb"/)
-  assert.match(homeProduction, /<Orb onOpen=\{props\.onOrbOpen\} reducedMotion=\{props\.reducedMotion\} reducedStimulation=\{props\.reducedStimulation\} state=\{props\.orbState\} \/>/)
+  assert.match(homeProduction, /<Orb onOpen=\{props\.onOrbOpen\} reducedMotion=\{props\.reducedMotion\} reducedStimulation=\{props\.reducedStimulation\} state=\{props\.orbState\} anchor=\{orbAnchor\} \/>/)
   assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true, reducedStimulation\)/)
   assert.match(companion, /<OrbConversationPanel active=\{open && phase === 'idle'\} \/>/)
   assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT,\s*onOrbState\)/)
-  assert.match(homeProduction, /setOrbState\(event\.detail\.state\)/)
+  assert.match(homeProduction, /setOrbState\(reviewOrbState\.current \?\? event\.detail\.state\)/)
   assert.match(homeProduction, /window\.removeEventListener\(URAI_ORB_STATE_EVENT,\s*onOrbState\)/)
   assert.match(homeProduction, /data-home-orb-state=\{orbState\}/)
   assert.match(homeProduction, /data-home-orb-clip=\{ORB_CLIPS\[orbState\]\}/)
@@ -76,14 +79,42 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger|urai-home-spatial-runtime-orb/)
 })
 
+test('actual Home Orb event handler preserves guarded state delivery and authorized review override', () => {
+  const file = ts.createSourceFile('HomeWorldProductionPolished.tsx', homeProduction, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const declarations = []
+  function visit(node) {
+    if (ts.isVariableDeclaration(node) && node.name.getText(file) === 'onOrbState') declarations.push(node)
+    ts.forEachChild(node, visit)
+  }
+  visit(file)
+  assert.equal(declarations.length, 1, 'one actual Home event owner is required')
+  const code = ts.transpileModule('const ' + declarations[0].getText(file), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
+  for (const [phase, groundDescent, search, state, expected] of [
+    ['HOME', false, '', 'attention', ['attention']],
+    ['HOME', false, '?homeOrbState=warning', 'attention', ['attention']],
+    ['HOME', false, '?homeAssetReview=1&homePrivateFixture=1&homeOrbState=warning', 'attention', ['warning']],
+    ['HOME', false, '?homeAssetReview=1&homePrivateFixture=1&homeOrbState=invalid', 'attention', ['attention']],
+    ['HOME', false, '', 'invalid', []],
+    ['HOME', false, '', undefined, []],
+    ['ASCENT', false, '', 'attention', []],
+    ['HOME', true, '', 'attention', []],
+  ]) {
+    const observed = []
+    const context = vm.createContext({ phase, groundDescent, isOrbState, reviewOrbState: { current: resolveAuthorizedHomeReviewOrbState(search) }, setOrbState: value => observed.push(value), event: { detail: { state } } })
+    vm.runInContext(code + '\nonOrbState(event)', context)
+    assert.deepEqual(observed, expected, JSON.stringify({ phase, groundDescent, search, state }))
+  }
+})
+
 test('Home Gold Master ground detail preserves density with bounded instanced rendering', () => {
-  assert.match(homeProduction, /const STONE_SCATTER = Array\.from\(\{ length: 34 \}/)
+  assert.match(homeProduction, /const STONE_SCATTER = Array\.from\(\{ length: 48 \}/)
   assert.match(homeProduction, /function StoneBatch/)
   assert.match(homeProduction, /<instancedMesh/)
   assert.match(homeProduction, /mesh\.setMatrixAt\(localIndex, transform\.matrix\)/)
   assert.match(homeProduction, /mesh\.setColorAt\(localIndex, color\)/)
   assert.match(homeProduction, /STONE_SCATTER\.slice\(0, 12\)/)
   assert.match(homeProduction, /STONE_SCATTER\.slice\(12\)/)
+  assert.match(homeProduction, /const FERN_PLACEMENTS = Array\.from\(\{ length: 104 \}/)
   assert.match(homeProduction, /castShadow=\{castShadow\}/)
   assert.match(homeProduction, /receiveShadow/)
   assert.doesNotMatch(homeProduction, /STONE_SCATTER\.map\([\s\S]{0,220}<mesh/)

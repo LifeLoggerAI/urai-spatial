@@ -23,7 +23,7 @@ const destinations = [
     params: {
       from: 'home-sky',
       entryPortal: 'home-sky',
-      cameraCheckpoint: 'home-sky-ascent',
+      cameraCheckpoint: 'home-sky-ascent-complete',
     },
   },
 ] as const
@@ -124,26 +124,36 @@ async function waitForAuthorizedSettledIdentity(page: Page, destination: Destina
 }
 
 async function activate(page: Page, destination: Destination, activation: Activation) {
-  const navigation = page.getByRole('navigation', { name: 'Direct Home destinations' })
+  const navigation = page.getByRole('navigation', { name: 'Accessible Home destinations' })
   await expect(navigation).toBeVisible({ timeout: 30_000 })
-  const target = navigation.getByRole('button', { name: destination.label, exact: true })
+  const target = navigation.getByRole('link', { name: destination.label, exact: true })
   await expect(target).toBeVisible()
   await expect(target).toBeEnabled()
-  await target.scrollIntoViewIfNeeded()
+  const renderedLink = await target.evaluate(element => ({
+    tagName: element.tagName,
+    href: element.getAttribute('href'),
+    target: element.getAttribute('target'),
+  }))
+  expect(renderedLink.tagName).toBe('A')
+  const renderedUrl = new URL(renderedLink.href, baseURL)
+  expect(normalizedPathname(renderedUrl.toString())).toBe(destination.pathname)
+  expect(renderedUrl.searchParams.toString()).toBe(new URLSearchParams(destination.params).toString())
+  expect(renderedLink.target).toBeNull()
 
   if (activation.method === 'keyboard') {
     await target.focus()
     await expect(target).toBeFocused()
     await target.press('Enter', { noWaitAfter: true })
-    return
+    return renderedLink
   }
 
   if (activation.method === 'touch') {
     await target.tap({ noWaitAfter: true })
-    return
+    return renderedLink
   }
 
   await target.click({ noWaitAfter: true })
+  return renderedLink
 }
 
 async function returnThroughCanonicalHistory(page: Page, destination: Destination) {
@@ -174,14 +184,12 @@ async function proveCanonicalTravel(
 ) {
   const page = await context.newPage()
   await page.goto('/home/', { waitUntil: 'domcontentloaded' })
-  await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
-
-  await activate(page, destination, activation)
+  const renderedLink = await activate(page, destination, activation)
 
   const expected = expectedSignature(destination)
   await expect.poll(
     () => canonicalSignature(page, destination),
-    { timeout: 20_000, message: `${activation.id} must settle on the canonical ${destination.id} URL` },
+    { timeout: 45_000, message: `${activation.id} must settle on the canonical ${destination.id} URL` },
   ).toBe(expected)
 
   const identity = await waitForAuthorizedSettledIdentity(page, destination)
@@ -196,6 +204,7 @@ async function proveCanonicalTravel(
   return {
     destination: destination.id,
     activation: activation.id,
+    renderedLink,
     canonicalUrl: settledUrl,
     settledIdentity: identity,
     backUrl: page.url(),

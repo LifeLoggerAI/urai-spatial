@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "urai-play-console-observation-v1",
+  "observedAt": "2026-10-06T22:19:00Z",
+  "method": "authenticated Google Play Console rendered DOM and screenshot readback",
+  "sourceContextSha": "b983d0436e82e3147bf19c8d9f478272386fddff",
+  "packageName": "com.urailabs.urai",
+  "developerAccountId": "5930711665694942613",
+  "appId": "4972566068213337893",
+  "track": "internal",
+  "release": {
+    "label": "UrAi Internal 0.1.126 - 82a708f2",
+    "versionCode": 126,
+    "versionName": "0.1.126-unsigned",
+    "status": "Available to internal testers",
+    "releasedDisplay": "Sep 30 9:07 AM",
+    "minimumApi": 24,
+    "targetSdk": 36,
+    "sourceShaPrefixFromLabel": "82a708f2",
+    "fullSourceShaVerified": false
+  },
+  "signing": {
+    "playSignsReleases": true,
+    "appSigningCertificateSha256": "B8:8D:29:6D:94:DD:02:1C:FD:53:9F:89:8B:FB:3B:2B:0F:2C:AD:8E:52:D8:75:89:58:71:D6:5E:BD:C6:39:D6",
+    "appSigningFingerprintBasis": "Play-generated Digital Asset Links JSON",
+    "uploadCertificateSha256": "55:85:DC:9B:95:B9:05:A3:55:05:42:FF:CA:54:8F:1D:99:CC:9D:A1:0D:ED:71:40:30:3E:CB:D5:2D:D6:D7:A6",
+    "privateKeyRead": false,
+    "keyChanged": false
+  },
+  "production": {
+    "status": "Inactive",
+    "closedTestOptedIn": 0,
+    "consoleRequirements": "At least 12 testers opted in for at least 14 days before production access application",
+    "accessApplicationEnabled": false
+  },
+  "limitations": [
+    "Existing Play release is a predecessor; this observation does not bind it to the active Spatial candidate.",
+    "A version name containing unsigned does not negate Play's observed app signing.",
+    "Current package artifact bytes, full source identity, device runtime, deep links, auth and production backend parity were not verified.",
+    "No Play upload, key reset, key generation, production promotion or account mutation performed."
+  ],
+  "releaseDetailsUrl": "https://play.google.com/console/u/0/developers/5930711665694942613/app/4972566068213337893/tracks/4701637438220164952/releases/2/details"
+}

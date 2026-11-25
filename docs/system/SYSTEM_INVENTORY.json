@@ -1,5 +1,17 @@
 {
   "schemaVersion": "1.0.0",
+  "snapshotAuthority": {
+    "status": "HISTORICAL_SNAPSHOT",
+    "snapshotGeneratedAt": "2026-07-03T12:35:00Z",
+    "currentExecutionRegister": "https://github.com/LifeLoggerAI/urai-labs-llc/issues/61",
+    "interpretation": "All original repository heads, counts, classifications and evidence claims below remain the dated snapshot; they are not current repository, provider, deployment or legal authority.",
+    "refreshRequired": [
+      "Read the current owning issue and relevant default-branch and candidate heads.",
+      "Read exact-head workflow results, protected deployment receipts and deployed runtime fingerprints.",
+      "Require applicable independent human, provider and legal acceptance; source presence is insufficient."
+    ],
+    "expiry": "Any fresh verification expires when its relevant source, configuration, approval or deployed artifact changes; do not relabel this snapshot as current."
+  },
   "generatedAt": "2026-07-03T12:35:00Z",
   "canonicalRuntime": {
     "repository": "LifeLoggerAI/urai-spatial",

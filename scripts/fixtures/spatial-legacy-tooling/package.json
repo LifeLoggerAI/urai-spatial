@@ -1,0 +1,20 @@
+{
+  "name": "urai-legacy-tooling-quarantine",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.0.0",
+  "description": "Standalone nonproduction regression fixture. Raw braces HIGH remains unwaived; not a launch importer.",
+  "dependencies": {
+    "@next/eslint-plugin-next": "15.5.27",
+    "braces": "file:vendor/braces",
+    "chokidar": "file:vendor/chokidar",
+    "fast-glob": "3.3.1",
+    "micromatch": "4.0.8"
+  },
+  "pnpm": {
+    "overrides": {
+      "braces": "file:vendor/braces",
+      "chokidar@3.6.0": "file:vendor/chokidar"
+    }
+  }
+}

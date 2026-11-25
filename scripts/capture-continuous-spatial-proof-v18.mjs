@@ -1,3 +1,4 @@
+import { inspectHomeCaption } from './lib/home-ui-readability.mjs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -20,7 +21,7 @@ const orbClips = {
 }
 
 const destinationTelemetry = {
-  orb: { x: 0, z: -4.25, radius: 2.4, attribute: 'data-home-distance-orb' },
+  orb: { x: 1.8, z: -9.5, radius: 2.4, attribute: 'data-home-distance-orb' },
   ground: { x: -5.4, z: -10.8, radius: 2.8, attribute: 'data-home-distance-ground' },
   'life-map': { x: 5.4, z: -10.8, radius: 2.8, attribute: 'data-home-distance-life-map' },
 }
@@ -69,9 +70,14 @@ async function waitFrames(page, count = 2) {
 async function visibleCount(locator) {
   return locator.evaluateAll((nodes) => nodes.filter((node) => {
     if (node.closest('.sr-only')) return false
-    const style = getComputedStyle(node)
+    let effectiveOpacity = 1
+    for (let current = node; current; current = current.parentElement) {
+      const style = getComputedStyle(current)
+      if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse') return false
+      effectiveOpacity *= Number.parseFloat(style.opacity || '1')
+    }
     const rect = node.getBoundingClientRect()
-    return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+    return effectiveOpacity > 0.02
       && rect.width > 4 && rect.height > 4 && rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth
   }).length)
 }
@@ -451,6 +457,7 @@ async function captureInteraction(browser, spec, method, destination) {
   const result = {
     nearby: await page.locator(ownerSelector).getAttribute('data-home-nearby').catch(() => null),
     contextVisible: await visibleCount(page.locator('.home-world-context')).catch(() => 0) === 1,
+    captionReadability: await inspectHomeCaption(page).catch(error => ({ passed:false, error:String(error) })),
     editableFocusProven,
     focusClear: movement?.focus || movementFailure?.evidence?.focus || null,
     movement,
@@ -463,6 +470,7 @@ async function captureInteraction(browser, spec, method, destination) {
   receipt.interactions.push(record)
   const failed = Boolean(movementFailure)
     || result.nearby !== destination || !result.contextVisible
+    || !result.captionReadability.passed
     || !movement || movement.distanceTravelled == null || movement.distanceTravelled < 0.25
     || (method === 'keyboard' && (!result.editableFocusProven || !result.focusClear?.blurred || result.focusClear.afterEditable))
     || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length
@@ -480,14 +488,19 @@ async function capturePointerLook(browser) {
   const query = expectReady ? 'homePrivateFixture=1' : candidateQuery('homePrivateFixture=1')
   await page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded' })
   await waitForAssetHome(page)
-  const owner = page.locator(ownerSelector)
-  const canvas = owner.locator('canvas').first()
-  const box = await canvas.boundingBox()
-  if (!box) throw new Error('Home canvas missing for pointer-look proof')
-  await canvas.dispatchEvent('pointerdown', { pointerId: 31, pointerType: 'mouse', button: 0, clientX: box.x + box.width * 0.5, clientY: box.y + box.height * 0.5 })
-  await canvas.dispatchEvent('pointermove', { pointerId: 31, pointerType: 'mouse', buttons: 1, clientX: box.x + box.width * 0.64, clientY: box.y + box.height * 0.42 })
-  const cameraMode = await owner.getAttribute('data-home-camera-mode')
-  await canvas.dispatchEvent('pointerup', { pointerId: 31, pointerType: 'mouse', button: 0 })
+  const box = await page.evaluate((selector) => {
+    const owner = document.querySelector(selector)
+    const canvas = owner?.querySelector('canvas')
+    if (!(canvas instanceof HTMLCanvasElement)) return null
+    const rect = canvas.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  }, ownerSelector)
+  if (!box || !(box.width > 0 && box.height > 0)) throw new Error('Home canvas missing for pointer-look proof')
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5)
+  await page.mouse.down({ button: 'left' })
+  await page.mouse.move(box.x + box.width * 0.64, box.y + box.height * 0.42, { steps: 4 })
+  const cameraMode = await page.evaluate((selector) => document.querySelector(selector)?.getAttribute('data-home-camera-mode') ?? null, ownerSelector)
+  await page.mouse.up({ button: 'left' })
   const screenshot = path.join(outputDir, `${id}-${exactHead.slice(0, 12)}.png`)
   await page.screenshot({ path: screenshot })
   const diagnosticResult = diagnostics()
@@ -526,7 +539,7 @@ async function captureFallback(browser) {
   const diagnostics = attachDiagnostics(page, 'home-no-webgl-fallback')
   await page.addInitScript(() => { Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', { configurable: true, value: () => null }) })
   await page.goto(urlFor('/home/'), { waitUntil: 'domcontentloaded' })
-  const fallback = page.getByRole('region', { name: 'Spatial Home fallback' })
+  const fallback = page.getByRole('main', { name: 'Spatial Home fallback' })
   await fallback.waitFor({ state: 'visible', timeout: 30_000 })
   const semantic = page.getByRole('navigation', { name: 'Accessible Home destinations' })
   const screenshot = path.join(outputDir, `home-no-webgl-fallback-${exactHead.slice(0, 12)}.png`)

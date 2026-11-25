@@ -3,6 +3,14 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const appFile = (path) => fs.readFileSync(new URL(`../src/app/${path}`, import.meta.url), 'utf8')
+const spatialFile = (path) => fs.readFileSync(new URL(`../src/spatial/${path}`, import.meta.url), 'utf8')
+
+function productionHomeSource() {
+  // The app adapter delegates composition; inspect the actual rendered owner.
+  assert.match(appFile('AssetDrivenHomeWorld.tsx'), /<HomeWorldProduction /)
+  assert.match(spatialFile('layout/HomeWorldProduction.tsx'), /HomeWorldProductionPolished as HomeWorldProduction/)
+  return spatialFile('layout/HomeWorldProductionPolished.tsx')
+}
 
 test('permanent movement proof prompt is absent', () => {
   const source = appFile('HomeSpatialRuntimeLayer.tsx')
@@ -11,17 +19,20 @@ test('permanent movement proof prompt is absent', () => {
 })
 
 test('desktop does not mount mobile controls', () => {
-  const source = appFile('AssetDrivenHomeWorld.tsx')
-  assert.match(source, /mobileControlsVisible/)
-  assert.match(source, /coarsePointer\.matches \|\| narrowViewport\.matches/)
-  assert.match(source, /mobileControlsVisible \? <MobileMovementPad/)
+  const source = productionHomeSource()
+  assert.match(source, /const \[mobileControls, setMobileControls\] = useState\(false\)/)
+  assert.match(source, /window\.matchMedia\('\(pointer: coarse\), \(max-width: 700px\)'\)/)
+  assert.match(source, /setMobileControls\(mobile\.matches\)/)
+  assert.match(source, /!transitioning && mobileControls \? <MobileMovementPad/)
 })
 
-test('canonical camera preserves safe embodied framing', () => {
-  const source = appFile('AssetDrivenHomeWorld.tsx')
-  assert.match(source, /SPAWN = new THREE\.Vector3\(0, 0, 8\.0\)/)
-  assert.match(source, /position: \[0, 1\.82, 8\.0\], fov: 48/)
-  assert.match(source, /camera\.position\.set\(position\.current\.x, 1\.82, position\.current\.z\)/)
+test('canonical camera preserves terrain-relative bodyless first-person framing', () => {
+  const source = productionHomeSource()
+  assert.match(source, /SPAWN = new THREE\.Vector3\(-0\.85, 0, 8\.4\)/)
+  assert.match(source, /position:\[SPAWN\.x,1\.68,SPAWN\.z\], fov:50/)
+  assert.match(source, /position\.current\.y = homeWalkSurfaceHeight\(position\.current\.x, position\.current\.z\)/)
+  assert.match(source, /copy\(position\.current\)\.add\(new THREE\.Vector3\(0, portrait \? 1\.58 : 1\.68, \.14\)\)/)
+  assert.match(source, /data-home-embodied-self="privacy-preserving-shadow"/)
 })
 
 test('Home is source-owned as a personal sanctuary rather than proof geometry', () => {
@@ -59,8 +70,18 @@ test('sanctuary materials and atmosphere are grounded and restrained', () => {
 
 test('accessibility and semantic fallback ownership remain outside visual composition', () => {
   const world = appFile('AssetDrivenHomeWorld.tsx')
-  assert.match(world, /HomeFallback reason="no-webgl"/)
-  assert.match(world, /prefers-reduced-motion: reduce/)
-  assert.match(world, /Why am I seeing this\?/)
-  assert.match(world, /aria-disabled=\{!ambientAudioPath\}/)
+  const runtime = appFile('HomeSpatialRuntimeLayer.tsx')
+  const audio = spatialFile('audio/SpatialAmbientRuntime.tsx')
+  assert.doesNotMatch(world, /<HomeSemanticNavigation|<HomeFallback/)
+  assert.match(runtime, /webglAvailable === false \|\| rendererState === 'failed'/)
+  assert.match(runtime, /data-testid="urai-home-accessible-fallback"/)
+  assert.match(runtime, /data-webgl-ready="false"/)
+  assert.match(runtime, /data-home-assets-ready="false"/)
+  assert.match(runtime, /'home\.webglUnavailable'.*'home\.assetsUnavailable'.*'home\.rendererUnavailable'/)
+  assert.match(runtime, /<HomeSemanticNavigation \/>/)
+  assert.match(runtime, /min-width:48px;min-height:48px/)
+  assert.match(runtime, /@media\(prefers-reduced-motion:reduce\).*animation:none/)
+  // The separate audio owner keeps unavailable or unconsented output silent.
+  assert.match(audio, /useState\(false\); const \[muted,setMuted\]=useState\(true\)/)
+  assert.match(audio, /if\(consented&&!muted&&!sensorySafe\)audio\.setAmbientPhase\(spatialPhase\);else audio\.stopAmbient\(\)/)
 })

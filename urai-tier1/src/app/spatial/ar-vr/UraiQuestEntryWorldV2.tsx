@@ -1,5 +1,6 @@
 'use client'
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import {
   useCallback,
   useEffect,
@@ -65,14 +66,16 @@ function runtimeSessionForRightHandTurning(
         gamepad?: Gamepad
       }>
     },
+    get frameRate() { return session.frameRate },
   }
 }
 
-export default function UraiQuestEntryWorldV2() {
+export default function UraiQuestEntryWorldV2({ immersiveSessionEnabled = false }: { immersiveSessionEnabled?: boolean }) {
   const router = useRouter()
 
   const mountRef = useRef<HTMLDivElement>(null)
   const runtimeRef = useRef<UraiXrWorldRuntime | null>(null)
+  const motionPreferenceOverridden = useRef(false)
 
   const [message, setMessage] = useState(
     'Building the explorable entry chamber…',
@@ -80,6 +83,19 @@ export default function UraiQuestEntryWorldV2() {
   const [reducedMotion, setReducedMotion] = useState(false)
   const [vrActive, setVrActive] = useState(false)
   const [rendererReady, setRendererReady] = useState(false)
+
+  useEffect(() => {
+    if (!window.matchMedia) return
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const applyPreference = () => {
+      if (motionPreferenceOverridden.current) return
+      setReducedMotion(media.matches)
+      if (runtimeRef.current) runtimeRef.current.reducedMotion = media.matches
+    }
+    applyPreference()
+    media.addEventListener('change', applyPreference)
+    return () => media.removeEventListener('change', applyPreference)
+  }, [])
 
   const openRoute = useCallback(
     async (route: string, label: string) => {
@@ -185,7 +201,9 @@ export default function UraiQuestEntryWorldV2() {
     const runtime = runtimeRef.current
 
     if (runtime) {
-      runtime.reducedMotion = reducedMotion
+      runtime.reducedMotion = motionPreferenceOverridden.current
+        ? reducedMotion
+        : window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? reducedMotion
     }
   }, [reducedMotion])
 
@@ -274,6 +292,7 @@ export default function UraiQuestEntryWorldV2() {
       className={styles.world}
       data-testid="urai-quest-explorable-world"
       data-quest-proof="QUEST_IMMERSIVE_ENTRY_VERIFIED_MINIMAL_SHELL"
+      data-immersive-session-gated={immersiveSessionEnabled ? 'false' : 'true'}
       data-renderer-ready={
         rendererReady ? 'true' : 'false'
       }
@@ -285,7 +304,7 @@ export default function UraiQuestEntryWorldV2() {
       />
 
       <header className={styles.hud}>
-        <p>URAI XR ENTRY · LIVE 3D</p>
+        <p>URAI XR ENTRY{rendererReady ? ' · LIVE 3D' : ''}</p>
         <strong>Explorable entry chamber</strong>
         <span aria-live="polite">{message}</span>
       </header>
@@ -295,7 +314,7 @@ export default function UraiQuestEntryWorldV2() {
         aria-label="XR and comfort controls"
       >
         <QuestVrEntryButton
-          disabled={!rendererReady}
+          disabled={!rendererReady || !immersiveSessionEnabled}
           onSessionRequested={attachSession}
           onSessionEnded={handleSessionEnded}
         />
@@ -325,6 +344,7 @@ export default function UraiQuestEntryWorldV2() {
           type="button"
           aria-pressed={reducedMotion}
           onClick={() => {
+            motionPreferenceOverridden.current = true
             setReducedMotion((current) => !current)
           }}
         >
@@ -352,6 +372,7 @@ export default function UraiQuestEntryWorldV2() {
             {portal.label}
           </button>
         ))}
+        <AdamLauncherSlot name="xr-portals" />
       </nav>
 
       <div

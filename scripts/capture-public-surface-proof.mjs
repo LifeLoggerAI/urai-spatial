@@ -1,5 +1,6 @@
 import { chromium } from 'playwright'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 
 const base = process.env.URAI_PUBLIC_SURFACE_BASE || 'http://127.0.0.1:4176'
@@ -24,7 +25,7 @@ const viewports = [
   { id:'mobile', width:390, height:844, isMobile:true, hasTouch:true },
 ]
 
-const receipt = { schemaVersion:'urai-public-surface-proof-1', exactHead, capturedAt:new Date().toISOString(), captures:[], redirects:[], errors:[] }
+const receipt = { schemaVersion:'urai-public-surface-proof-2', exactHead, capturedAt:new Date().toISOString(), captures:[], redirects:[], errors:[] }
 const fileSafe = route => route.split('/').filter(Boolean).join('-') || 'root'
 const browser = await chromium.launch({ headless:true })
 
@@ -66,7 +67,8 @@ try {
       if (diagnostics.consoleErrors.length || diagnostics.pageErrors.length || diagnostics.failedRequests.length) throw new Error(`${route} diagnostics failed: ${JSON.stringify(diagnostics)}`)
       const file = `${fileSafe(route)}-${vp.id}-${exactHead.slice(0,12)}.png`
       await page.screenshot({ path:path.join(outputDir,file), fullPage:true })
-      receipt.captures.push({ route, heading, viewport:vp.id, file, actionCount, actionBox, footerBox, geometry, diagnostics })
+      const image = await readFile(path.join(outputDir, file))
+      receipt.captures.push({ route, heading, viewport:vp.id, file, bytes:image.length, sha256:createHash('sha256').update(image).digest('hex'), actionCount, actionBox, footerBox, geometry, diagnostics })
       await page.close()
     }
     await context.close()
@@ -86,6 +88,13 @@ try {
   await browser.close()
 }
 
-await writeFile(path.join(outputDir,'receipt.json'), JSON.stringify(receipt,null,2)+'\\n')
-console.log(JSON.stringify(receipt,null,2))
+await writeFile(path.join(outputDir,'receipt.json'), JSON.stringify(receipt,null,2)+'\n')
+const persisted = JSON.parse(await readFile(path.join(outputDir, 'receipt.json'), 'utf8'))
+if (persisted.exactHead !== exactHead) throw new Error('Persisted receipt head mismatch')
+if (!persisted.errors.length && (persisted.captures.length !== routes.length * viewports.length || persisted.redirects.length !== 1)) throw new Error('Persisted receipt coverage is incomplete')
+for (const capture of persisted.captures) {
+  const image = await readFile(path.join(outputDir, capture.file))
+  if (image.length !== capture.bytes || createHash('sha256').update(image).digest('hex') !== capture.sha256) throw new Error(`Persisted image hash mismatch: ${capture.file}`)
+}
+console.log(JSON.stringify(persisted,null,2))
 if (receipt.errors.length) process.exit(1)

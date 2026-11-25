@@ -1,6 +1,9 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import { createHash } from 'node:crypto'
+import { invalidateLifeModelDependencies } from './personPresenceAuthority'
+import { readLifeSourceBindings, requireLifeItemSources, lifeItemDigest, lifeAuthorityDigest } from './lifeGraphAuthority'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -18,7 +21,6 @@ const CLAIM_STATUS = new Set(['accepted','disputed'])
 const PRESENTATION_CLASSES = new Set(['ARCHIVAL','RECONSTRUCTED','INTERPRETIVE','SIMULATED','COUNTERFACTUAL'])
 const CAUSAL_EDGE_KINDS = new Set(['PARTICIPATED_IN','OCCURRED_AT','INVOLVES_OBJECT','RELATES_TO','CAUSED','CHANGED','EVIDENCED_BY','BEFORE','AFTER','OWNED','LIVED_AT'])
 const MAX_CLAIMS_PER_STATE = 256
-const MAX_DEPENDENCY_INVALIDATIONS = 100
 
 type JsonMap = Record<string, unknown>
 
@@ -80,14 +82,18 @@ function stableDigest(value: unknown) {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex')
 }
 
-async function requireModelConsent(uid: string) {
-  const snapshot = await db.doc(`users/${uid}/privacyPolicy/current`).get()
+async function requireModelConsent(uid: string, transaction?: FirebaseFirestore.Transaction) {
+  const ref = db.doc(`users/${uid}/privacyPolicy/current`)
+  const snapshot = transaction ? await transaction.get(ref) : await ref.get()
   if (!snapshot.exists) throw new functions.https.HttpsError('failed-precondition', 'CONSENT_POLICY_REQUIRED')
   const policy = snapshot.data() ?? {}
-  const domains = isRecord(policy.domains) ? policy.domains : {}
+  if (!isCanonicalStoredPolicy(policy, uid)) {
+    throw new functions.https.HttpsError('failed-precondition', 'CONSENT_POLICY_REQUIRED')
+  }
+  const domains: JsonMap = isRecord(policy.domains) ? policy.domains : {}
   const models = isRecord(domains.models) ? domains.models : {}
   const identity = isRecord(domains.identity) ? domains.identity : {}
-  const enforcement = isRecord(policy.enforcement) ? policy.enforcement : {}
+  const enforcement: JsonMap = isRecord(policy.enforcement) ? policy.enforcement : {}
   if (!['granted','limited'].includes(String(models.mode ?? '')) || models.modelContext !== true) {
     throw new functions.https.HttpsError('permission-denied', 'MODEL_CONTEXT_NOT_AUTHORIZED')
   }
@@ -100,26 +106,92 @@ async function requireModelConsent(uid: string) {
 }
 
 async function invalidateDependency(uid: string, dependencyId: string, reasonId: string, revoked = false) {
-  const collections = ['lifeGraphSnapshots','personModelBundles','sceneTruthPackets','renderManifests','lifeMovies']
-  const batch = db.batch()
-  let count = 0
-  for (const collection of collections) {
-    const snapshot = await db.collection(`users/${uid}/${collection}`)
-      .where('dependencyIds', 'array-contains', dependencyId)
-      .limit(MAX_DEPENDENCY_INVALIDATIONS)
-      .get()
-    for (const doc of snapshot.docs) {
-      batch.set(doc.ref, {
-        state: revoked ? 'revoked' : 'invalidated',
-        invalidatedBy: reasonId,
-        invalidatedAt: fieldValue.serverTimestamp(),
-      }, { merge: true })
-      count += 1
-    }
-  }
-  if (count) await batch.commit()
-  return count
+  return invalidateLifeModelDependencies(db, uid, dependencyId, reasonId, revoked, fieldValue.serverTimestamp())
 }
+
+
+/**
+ * Authorized read-only evidence packet for the Council integration.
+ * This callable never dispatches to an external provider. Each call binds
+ * graph content to current owner/source consent inside one transaction.
+ */
+export const getCouncilLifeGraphEvidence = lifeModelFunctions.https.onCall(async (data, context) => {
+  const uid = requireUid(context)
+  const snapshotId = requireToken(data?.snapshotId, 'snapshotId')
+  const requestedEntityIds = optionalTokenArray(data?.entityIds, 8)
+  if (!requestedEntityIds.length) {
+    throw new functions.https.HttpsError('invalid-argument', 'COUNCIL_GRAPH_ENTITY_SELECTION_REQUIRED')
+  }
+  return db.runTransaction(async (transaction) => {
+    await requireModelConsent(uid, transaction)
+    const graph = await transaction.get(db.doc(`users/${uid}/lifeGraphSnapshots/${snapshotId}`))
+    if (!graph.exists || graph.get('ownerId') !== uid || graph.get('schemaVersion') !== 'urai-life-model-v1'
+      || graph.get('state') !== 'current' || graph.get('syntheticOutputMayBecomeHistoricalSource') !== false) {
+      throw new functions.https.HttpsError('failed-precondition', 'COUNCIL_GRAPH_UNAVAILABLE')
+    }
+    const graphData = graph.data() ?? {}
+    const { graphHash, compiledAt, updatedAt, ...graphBody } = graphData
+    if (typeof graphHash !== 'string' || graphHash !== stableDigest(graphBody)) {
+      throw new functions.https.HttpsError('failed-precondition', 'COUNCIL_GRAPH_HASH_MISMATCH')
+    }
+    const graphEntityIds = Array.isArray(graphData.entityIds) ? graphData.entityIds : []
+    if (!requestedEntityIds.every(id => graphEntityIds.includes(id))) {
+      throw new functions.https.HttpsError('permission-denied', 'COUNCIL_GRAPH_ENTITY_NOT_SELECTED')
+    }
+    const graphClaimIds = Array.isArray(graphData.claimIds) ? graphData.claimIds : []
+    const graphEdgeIds = Array.isArray(graphData.edgeIds) ? graphData.edgeIds : []
+    if (graphClaimIds.length > 1024 || graphEdgeIds.length > 1024) {
+      throw new functions.https.HttpsError('failed-precondition', 'COUNCIL_GRAPH_UNBOUNDED')
+    }
+    const [entities, claims, edges] = await Promise.all([
+      transaction.getAll(...requestedEntityIds.map(id => db.doc(`users/${uid}/lifeEntities/${id}`))),
+      graphClaimIds.length ? transaction.getAll(...graphClaimIds.map((id: string) => db.doc(`users/${uid}/lifeClaims/${id}`))) : [],
+      graphEdgeIds.length ? transaction.getAll(...graphEdgeIds.map((id: string) => db.doc(`users/${uid}/lifeCausalEdges/${id}`))) : [],
+    ])
+    if (!entities.every(entity => entity.exists && entity.get('ownerId') === uid
+      && entity.get('revoked') !== true && entity.get('synthetic') !== true)) {
+      throw new functions.https.HttpsError('failed-precondition', 'COUNCIL_ENTITY_REVOKED')
+    }
+    const member = new Set(graphEntityIds)
+    if (!claims.every(claim => claim.exists && claim.get('ownerId') === uid
+      && claim.get('synthetic') === false && ['accepted', 'disputed'].includes(String(claim.get('status')))
+      && member.has(claim.get('subjectEntityId')))
+      || !edges.every(edge => edge.exists && edge.get('ownerId') === uid
+      && edge.get('synthetic') === false && ['accepted', 'disputed'].includes(String(edge.get('status')))
+      && member.has(edge.get('fromEntityId')) && member.has(edge.get('toEntityId')))) {
+      throw new functions.https.HttpsError('failed-precondition', 'COUNCIL_GRAPH_DEPENDENCY_INVALID')
+    }
+    const selected = new Set(requestedEntityIds)
+    const selectedClaims = claims.filter(claim => selected.has(claim.get('subjectEntityId'))).slice(0, 24)
+    const selectedEdges = edges.filter(edge => selected.has(edge.get('fromEntityId'))
+      && selected.has(edge.get('toEntityId'))).slice(0, 24)
+    // Even omitted graph records must be current: graph authority is indivisible.
+    for (const item of [...entities, ...claims, ...edges]) {
+      const field = item.ref.parent.id === 'lifeEntities' ? 'createdFromSourceIds' : 'sourceIds'
+      const bindings = await requireLifeItemSources(db, transaction, uid, item.data() ?? {}, field)
+      const prior = isRecord(graphData.authorityBindings) ? graphData.authorityBindings[item.ref.path] : null
+      if (!isRecord(prior) || prior.itemDigest !== lifeItemDigest(item)
+        || prior.sourceBindingDigest !== lifeAuthorityDigest(bindings)) {
+        throw new functions.https.HttpsError('failed-precondition', 'COUNCIL_GRAPH_SOURCE_CHANGED')
+      }
+    }
+    const evidence = {
+      snapshotId, graphHash,
+      entities: entities.map(entity => ({ id: entity.id, kind: entity.get('kind'),
+        label: String(entity.get('canonicalLabel') ?? '').slice(0, 180) })),
+      claims: selectedClaims.map(claim => ({ id: claim.id, subjectEntityId: claim.get('subjectEntityId'),
+        predicate: claim.get('predicate'), value: claim.get('value'), confidence: claim.get('confidence'),
+        evidenceClass: claim.get('evidenceClass'), status: claim.get('status'), sourceIds: claim.get('sourceIds') })),
+      edges: selectedEdges.map(edge => ({ id: edge.id, fromEntityId: edge.get('fromEntityId'),
+        toEntityId: edge.get('toEntityId'), kind: edge.get('kind'), status: edge.get('status'),
+        evidenceClass: edge.get('evidenceClass'), sourceIds: edge.get('sourceIds') })),
+    }
+    if (Buffer.byteLength(JSON.stringify(evidence), 'utf8') > 16_384) {
+      throw new functions.https.HttpsError('resource-exhausted', 'COUNCIL_EVIDENCE_SIZE_LIMIT')
+    }
+    return { ...evidence, providerDispatchAuthorized: false, sourceChecked: true }
+  })
+})
 
 export const upsertLifeEntity = lifeModelFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
@@ -133,8 +205,11 @@ export const upsertLifeEntity = lifeModelFunctions.https.onCall(async (data, con
   const createdFromSourceIds = tokenArray(data?.createdFromSourceIds, 128)
   if (!createdFromSourceIds.length) throw new functions.https.HttpsError('invalid-argument', 'At least one source is required.')
 
+  if (data?.synthetic === true) throw new functions.https.HttpsError('failed-precondition', 'SYNTHETIC_ENTITY_CANNOT_ENTER_HISTORICAL_GRAPH')
   const ref = db.doc(`users/${uid}/lifeEntities/${id}`)
   await db.runTransaction(async (transaction) => {
+    await requireModelConsent(uid, transaction)
+    const bindings = await readLifeSourceBindings(db, transaction, uid, createdFromSourceIds)
     const current = await transaction.get(ref)
     transaction.set(ref, {
       id,
@@ -143,12 +218,14 @@ export const upsertLifeEntity = lifeModelFunctions.https.onCall(async (data, con
       canonicalLabel,
       aliases: [...new Set(aliases)],
       createdFromSourceIds,
+      sourceBindingDigest: lifeAuthorityDigest(bindings),
       revoked: false,
       revision: Math.max(1, Number(current.get('revision') ?? 0) + 1),
       createdAt: current.exists ? current.get('createdAt') ?? fieldValue.serverTimestamp() : fieldValue.serverTimestamp(),
       updatedAt: fieldValue.serverTimestamp(),
     }, { merge: true })
   })
+  await invalidateDependency(uid, id, `entity-update:${id}`)
   return { id, kind }
 })
 
@@ -170,11 +247,6 @@ export const upsertLifeClaim = lifeModelFunctions.https.onCall(async (data, cont
   if (evidenceClass !== 'UNKNOWN' && !sourceIds.length) {
     throw new functions.https.HttpsError('invalid-argument', 'Evidence-backed claims require source IDs.')
   }
-  const entity = await db.doc(`users/${uid}/lifeEntities/${subjectEntityId}`).get()
-  if (!entity.exists || entity.get('ownerId') !== uid || entity.get('revoked') === true) {
-    throw new functions.https.HttpsError('failed-precondition', 'Subject entity is unavailable.')
-  }
-
   const ref = db.doc(`users/${uid}/lifeClaims/${id}`)
   const value = boundedJson(data?.value)
   const payload = {
@@ -191,10 +263,43 @@ export const upsertLifeClaim = lifeModelFunctions.https.onCall(async (data, cont
     valueDigest: stableDigest(value),
     updatedAt: fieldValue.serverTimestamp(),
   }
-  await ref.set({
-    ...payload,
-    createdAt: fieldValue.serverTimestamp(),
-  }, { merge: true })
+  if (evidenceClass === 'UNKNOWN' && (status !== 'disputed' || confidence !== 'unknown')) {
+    throw new functions.https.HttpsError('failed-precondition', 'OWNER_ASSERTION_REQUIRES_NONHISTORICAL_CLASSIFICATION')
+  }
+  const idempotent = await db.runTransaction(async (transaction) => {
+    await requireModelConsent(uid, transaction)
+    const entity = await transaction.get(db.doc(`users/${uid}/lifeEntities/${subjectEntityId}`))
+    const existing = await transaction.get(ref)
+    if (!entity.exists || entity.get('ownerId') !== uid || entity.get('revoked') === true) {
+      throw new functions.https.HttpsError('failed-precondition', 'Subject entity is unavailable.')
+    }
+    if (evidenceClass !== 'UNKNOWN') {
+      // Historical evidence enters through protected producer output and the
+      // exact canonical owner-review transaction. Client flags do not confer it.
+      if (!existing.exists || existing.get('ownerId') !== uid || typeof existing.get('privateLifeModelReviewId') !== 'string') {
+        throw new functions.https.HttpsError('failed-precondition', 'HISTORICAL_CLAIM_OWNER_REVIEW_REQUIRED')
+      }
+      await requireLifeItemSources(db, transaction, uid, existing.data() ?? {}, 'sourceIds')
+      for (const key of ['subjectEntityId','predicate','evidenceClass','confidence','status','valueDigest']) {
+        if (existing.get(key) !== payload[key as keyof typeof payload]) {
+          throw new functions.https.HttpsError('failed-precondition', 'HISTORICAL_CLAIM_REVIEW_CONTENT_MISMATCH')
+        }
+      }
+      if (lifeAuthorityDigest(existing.get('sourceIds')) !== lifeAuthorityDigest(sourceIds) || existing.get('synthetic') !== false) {
+        throw new functions.https.HttpsError('failed-precondition', 'HISTORICAL_CLAIM_REVIEW_CONTENT_MISMATCH')
+      }
+      return true
+    }
+    if (existing.exists && existing.get('evidenceClass') !== 'UNKNOWN') {
+      throw new functions.https.HttpsError('failed-precondition', 'HISTORICAL_CLAIM_REQUIRES_CORRECTION')
+    }
+    transaction.set(ref, { ...payload, historicalSourceAuthority: false,
+      syntheticOutputMayBecomeHistoricalSource: false,
+      createdAt: existing.exists ? existing.get('createdAt') : fieldValue.serverTimestamp()
+    }, { merge: true })
+    return false
+  })
+  if (idempotent) return { id, subjectEntityId, evidenceClass, idempotent: true }
   await invalidateDependency(uid, id, `claim-update:${id}`)
   return { id, subjectEntityId, evidenceClass }
 })
@@ -217,9 +322,12 @@ export const upsertLifeCausalEdge = lifeModelFunctions.https.onCall(async (data,
   if (data?.synthetic === true) throw new functions.https.HttpsError('failed-precondition', 'SYNTHETIC_OUTPUT_CANNOT_ENTER_LIFE_CAUSAL_GRAPH')
   const sourceIds = tokenArray(data?.sourceIds, 128)
   if (!sourceIds.length) throw new functions.https.HttpsError('invalid-argument', 'Causal edges require source IDs.')
+  await db.runTransaction(async (transaction) => {
+  await requireModelConsent(uid, transaction)
+  await readLifeSourceBindings(db, transaction, uid, sourceIds)
   const [fromEntity, toEntity] = await Promise.all([
-    db.doc(`users/${uid}/lifeEntities/${fromEntityId}`).get(),
-    db.doc(`users/${uid}/lifeEntities/${toEntityId}`).get(),
+    transaction.get(db.doc(`users/${uid}/lifeEntities/${fromEntityId}`)),
+    transaction.get(db.doc(`users/${uid}/lifeEntities/${toEntityId}`)),
   ])
   if (
     !fromEntity.exists || !toEntity.exists
@@ -227,31 +335,38 @@ export const upsertLifeCausalEdge = lifeModelFunctions.https.onCall(async (data,
     || fromEntity.get('revoked') === true || toEntity.get('revoked') === true
   ) throw new functions.https.HttpsError('failed-precondition', 'Causal edge entities are unavailable.')
 
-  await db.doc(`users/${uid}/lifeCausalEdges/${id}`).set({
-    id, ownerId: uid, fromEntityId, toEntityId, kind, evidenceClass, sourceIds, confidence, status,
-    synthetic: false,
-    updatedAt: fieldValue.serverTimestamp(),
-    createdAt: fieldValue.serverTimestamp(),
-  }, { merge: true })
-  await invalidateDependency(uid, id, `causal-edge-update:${id}`)
+  const existing = await transaction.get(db.doc(`users/${uid}/lifeCausalEdges/${id}`))
+  if (!existing.exists || existing.get('ownerId') !== uid || typeof existing.get('privateLifeModelReviewId') !== 'string') {
+    throw new functions.https.HttpsError('failed-precondition', 'HISTORICAL_EDGE_OWNER_REVIEW_REQUIRED')
+  }
+  await requireLifeItemSources(db, transaction, uid, existing.data() ?? {}, 'sourceIds')
+  const requested = { fromEntityId, toEntityId, kind, evidenceClass, confidence, status }
+  for (const key of Object.keys(requested) as Array<keyof typeof requested>) {
+    if (existing.get(key) !== requested[key]) throw new functions.https.HttpsError('failed-precondition', 'HISTORICAL_EDGE_REVIEW_CONTENT_MISMATCH')
+  }
+  if (existing.get('synthetic') !== false || lifeAuthorityDigest(existing.get('sourceIds')) !== lifeAuthorityDigest(sourceIds)) {
+    throw new functions.https.HttpsError('failed-precondition', 'HISTORICAL_EDGE_REVIEW_CONTENT_MISMATCH')
+  }
+  })
   return { id, fromEntityId, toEntityId, kind }
 })
 
 export const compileLifeCausalGraphSnapshot = lifeModelFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
-  await requireModelConsent(uid)
   const snapshotId = requireToken(data?.snapshotId, 'snapshotId')
   const entityIds = tokenArray(data?.entityIds, 512)
   const claimIds = optionalTokenArray(data?.claimIds, 1024)
   const edgeIds = optionalTokenArray(data?.edgeIds, 1024)
   if (!entityIds.length) throw new functions.https.HttpsError('invalid-argument', 'Graph snapshot requires entities.')
 
+  return db.runTransaction(async (transaction) => {
+  await requireModelConsent(uid, transaction)
   const [entities, claims, edges] = await Promise.all([
-    db.getAll(...entityIds.map((id) => db.doc(`users/${uid}/lifeEntities/${id}`))),
-    claimIds.length ? db.getAll(...claimIds.map((id) => db.doc(`users/${uid}/lifeClaims/${id}`))) : [],
-    edgeIds.length ? db.getAll(...edgeIds.map((id) => db.doc(`users/${uid}/lifeCausalEdges/${id}`))) : [],
+    transaction.getAll(...entityIds.map((id) => db.doc(`users/${uid}/lifeEntities/${id}`))),
+    claimIds.length ? transaction.getAll(...claimIds.map((id) => db.doc(`users/${uid}/lifeClaims/${id}`))) : [],
+    edgeIds.length ? transaction.getAll(...edgeIds.map((id) => db.doc(`users/${uid}/lifeCausalEdges/${id}`))) : [],
   ])
-  if (!entities.every((entity) => entity.exists && entity.get('ownerId') === uid && entity.get('revoked') !== true)) {
+  if (!entities.every((entity) => entity.exists && entity.get('ownerId') === uid && entity.get('revoked') !== true && entity.get('synthetic') !== true)) {
     throw new functions.https.HttpsError('failed-precondition', 'Graph entities are unavailable.')
   }
   if (!claims.every((claim) =>
@@ -261,12 +376,20 @@ export const compileLifeCausalGraphSnapshot = lifeModelFunctions.https.onCall(as
     edge.exists && edge.get('ownerId') === uid && edge.get('synthetic') === false && ['accepted','disputed'].includes(String(edge.get('status') ?? ''))
   )) throw new functions.https.HttpsError('failed-precondition', 'Graph causal edges are unavailable.')
 
+  const selectedEntities = new Set(entityIds)
+  if (claims.some(claim => !selectedEntities.has(claim.get('subjectEntityId')))
+    || edges.some(edge => !selectedEntities.has(edge.get('fromEntityId')) || !selectedEntities.has(edge.get('toEntityId')))) {
+    throw new functions.https.HttpsError('failed-precondition', 'Graph dependency identity is incomplete.')
+  }
+  const authorityBindings: Record<string, unknown> = {}
   const sourceIds = new Set<string>()
   for (const item of [...entities, ...claims, ...edges]) {
     const field = item.ref.parent.id === 'lifeEntities' ? 'createdFromSourceIds' : 'sourceIds'
+    const bindings = await requireLifeItemSources(db, transaction, uid, item.data() ?? {}, field)
+    authorityBindings[item.ref.path] = { itemDigest: lifeItemDigest(item), sourceBindingDigest: lifeAuthorityDigest(bindings) }
     for (const sourceId of Array.isArray(item.get(field)) ? item.get(field) : []) sourceIds.add(String(sourceId))
   }
-  const dependencyIds = [...new Set([...entityIds, ...claimIds, ...edgeIds])]
+  const dependencyIds = [...new Set([...entityIds, ...claimIds, ...edgeIds, ...sourceIds])]
   const graphBody = {
     schemaVersion: 'urai-life-model-v1',
     ownerId: uid,
@@ -276,17 +399,19 @@ export const compileLifeCausalGraphSnapshot = lifeModelFunctions.https.onCall(as
     edgeIds,
     sourceIds: [...sourceIds],
     dependencyIds,
+    authorityBindings,
     syntheticOutputMayBecomeHistoricalSource: false,
     state: 'current',
   }
   const graphHash = stableDigest(graphBody)
-  await db.doc(`users/${uid}/lifeGraphSnapshots/${snapshotId}`).set({
+  transaction.set(db.doc(`users/${uid}/lifeGraphSnapshots/${snapshotId}`), {
     ...graphBody,
     graphHash,
     compiledAt: fieldValue.serverTimestamp(),
     updatedAt: fieldValue.serverTimestamp(),
   }, { merge: true })
   return { snapshotId, graphHash, entityCount: entityIds.length, claimCount: claimIds.length, edgeCount: edgeIds.length }
+  })
 })
 
 export const upsertLifeEntityState = lifeModelFunctions.https.onCall(async (data, context) => {
@@ -308,29 +433,63 @@ export const upsertLifeEntityState = lifeModelFunctions.https.onCall(async (data
     }
   }) : []
 
-  const entity = await db.doc(`users/${uid}/lifeEntities/${entityId}`).get()
-  if (!entity.exists || entity.get('ownerId') !== uid || entity.get('revoked') === true) {
-    throw new functions.https.HttpsError('failed-precondition', 'Entity is unavailable.')
-  }
-
-  await db.doc(`users/${uid}/lifeEntityStates/${id}`).set({
-    id, ownerId: uid, entityId, asOf, claimIds, relationshipContextIds, sourceIds,
-    negativeConstraints,
-    ...(knowledgeCutoff ? { knowledgeCutoff } : {}),
-    updatedAt: fieldValue.serverTimestamp(),
-  }, { merge: true })
+  await db.runTransaction(async (transaction) => {
+    await requireModelConsent(uid, transaction)
+    const bindings = await readLifeSourceBindings(db, transaction, uid, sourceIds)
+    const [entity, existing, claims, relationships] = await Promise.all([
+      transaction.get(db.doc(`users/${uid}/lifeEntities/${entityId}`)),
+      transaction.get(db.doc(`users/${uid}/lifeEntityStates/${id}`)),
+      claimIds.length ? transaction.getAll(...claimIds.map(claimId => db.doc(`users/${uid}/lifeClaims/${claimId}`))) : [],
+      relationshipContextIds.length ? transaction.getAll(...relationshipContextIds.map(edgeId => db.doc(`users/${uid}/lifeCausalEdges/${edgeId}`))) : [],
+    ])
+    if (!entity.exists || entity.get('ownerId') !== uid || entity.get('revoked') === true
+      || (existing.exists && existing.get('ownerId') !== uid)) {
+      throw new functions.https.HttpsError('failed-precondition', 'Entity or temporal state is unavailable.')
+    }
+    const entityBindings = await requireLifeItemSources(db, transaction, uid, entity.data() ?? {}, 'createdFromSourceIds')
+    if (entityBindings.some(binding => !sourceIds.includes(binding.id))) throw new functions.https.HttpsError('failed-precondition', 'STATE_SOURCE_SET_INCOMPLETE')
+    const authorityBindings: Record<string, unknown> = {}
+    for (const claim of claims) {
+      if (!claim.exists || claim.get('ownerId') !== uid || claim.get('subjectEntityId') !== entityId
+        || claim.get('synthetic') === true || !['accepted','disputed'].includes(String(claim.get('status')))) {
+        throw new functions.https.HttpsError('failed-precondition', 'STATE_CLAIM_AUTHORITY_UNAVAILABLE')
+      }
+      const current = await requireLifeItemSources(db, transaction, uid, claim.data() ?? {}, 'sourceIds')
+      if (current.some(binding => !sourceIds.includes(binding.id))) throw new functions.https.HttpsError('failed-precondition', 'STATE_SOURCE_SET_INCOMPLETE')
+      authorityBindings[claim.ref.path] = { itemDigest: lifeItemDigest(claim), sourceBindingDigest: lifeAuthorityDigest(current) }
+    }
+    for (const edge of relationships) {
+      if (!edge.exists || edge.get('ownerId') !== uid || edge.get('synthetic') === true
+        || edge.get('status') !== 'accepted' || ![edge.get('fromEntityId'),edge.get('toEntityId')].includes(entityId)) {
+        throw new functions.https.HttpsError('failed-precondition', 'STATE_RELATIONSHIP_AUTHORITY_UNAVAILABLE')
+      }
+      const current = await requireLifeItemSources(db, transaction, uid, edge.data() ?? {}, 'sourceIds')
+      if (current.some(binding => !sourceIds.includes(binding.id))) throw new functions.https.HttpsError('failed-precondition', 'STATE_SOURCE_SET_INCOMPLETE')
+      authorityBindings[edge.ref.path] = { itemDigest: lifeItemDigest(edge), sourceBindingDigest: lifeAuthorityDigest(current) }
+    }
+    for (const constraint of negativeConstraints) {
+      if (constraint.sourceIds.some((sourceId: string) => !sourceIds.includes(sourceId))) throw new functions.https.HttpsError('failed-precondition', 'STATE_SOURCE_SET_INCOMPLETE')
+      await readLifeSourceBindings(db, transaction, uid, constraint.sourceIds)
+    }
+    transaction.set(db.doc(`users/${uid}/lifeEntityStates/${id}`), {
+      id, ownerId: uid, entityId, asOf, claimIds, relationshipContextIds, sourceIds,
+      negativeConstraints, knowledgeCutoff, sourceBindingDigest: lifeAuthorityDigest(bindings),
+      authorityBindings, updatedAt: fieldValue.serverTimestamp(),
+    })
+  })
   await invalidateDependency(uid, id, `state-update:${id}`)
   return { id, entityId, claimCount: claimIds.length }
 })
 
 export const compilePersonModelBundle = lifeModelFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
-  await requireModelConsent(uid)
   const personId = requireToken(data?.personId, 'personId')
   const stateId = requireToken(data?.stateId, 'stateId')
+  return db.runTransaction(async (transaction) => {
+  await requireModelConsent(uid, transaction)
   const [person, state] = await Promise.all([
-    db.doc(`users/${uid}/lifeEntities/${personId}`).get(),
-    db.doc(`users/${uid}/lifeEntityStates/${stateId}`).get(),
+    transaction.get(db.doc(`users/${uid}/lifeEntities/${personId}`)),
+    transaction.get(db.doc(`users/${uid}/lifeEntityStates/${stateId}`)),
   ])
   if (!person.exists || person.get('ownerId') !== uid || person.get('kind') !== 'person' || person.get('revoked') === true) {
     throw new functions.https.HttpsError('failed-precondition', 'Person is unavailable.')
@@ -338,15 +497,30 @@ export const compilePersonModelBundle = lifeModelFunctions.https.onCall(async (d
   if (!state.exists || state.get('ownerId') !== uid || state.get('entityId') !== personId) {
     throw new functions.https.HttpsError('failed-precondition', 'Temporal person state is unavailable.')
   }
-  const claimIds = Array.isArray(state.get('claimIds')) ? state.get('claimIds').slice(0, MAX_CLAIMS_PER_STATE) : []
+  await requireLifeItemSources(db, transaction, uid, person.data() ?? {}, 'createdFromSourceIds')
+  const stateBindings = await requireLifeItemSources(db, transaction, uid, state.data() ?? {}, 'sourceIds')
+  const claimIds = tokenArray(state.get('claimIds'), MAX_CLAIMS_PER_STATE)
+  const authorityBindings: Record<string, unknown> = {
+    [person.ref.path]: { itemDigest: lifeItemDigest(person) },
+    [state.ref.path]: { itemDigest: lifeItemDigest(state), sourceBindingDigest: lifeAuthorityDigest(stateBindings) },
+  }
   const claimRefs = claimIds.map((id: string) => db.doc(`users/${uid}/lifeClaims/${id}`))
-  const claims = claimRefs.length ? await db.getAll(...claimRefs) : []
+  const claims = claimRefs.length ? await transaction.getAll(...claimRefs) : []
   const acceptedClaimIds: string[] = []
   const sourceIds = new Set<string>(Array.isArray(state.get('sourceIds')) ? state.get('sourceIds') : [])
   let unknownClaims = 0
   let disputedClaims = 0
   for (const claim of claims) {
-    if (!claim.exists || claim.get('ownerId') !== uid || claim.get('subjectEntityId') !== personId) continue
+    if (!claim.exists || claim.get('ownerId') !== uid || claim.get('subjectEntityId') !== personId
+      || !['accepted','disputed'].includes(String(claim.get('status')))) {
+      throw new functions.https.HttpsError('failed-precondition', 'PERSON_CLAIM_AUTHORITY_UNAVAILABLE')
+    }
+    const bindings = await requireLifeItemSources(db, transaction, uid, claim.data() ?? {}, 'sourceIds')
+    const binding = { itemDigest: lifeItemDigest(claim), sourceBindingDigest: lifeAuthorityDigest(bindings) }
+    if (lifeAuthorityDigest(state.get('authorityBindings')?.[claim.ref.path]) !== lifeAuthorityDigest(binding)) {
+      throw new functions.https.HttpsError('failed-precondition', 'PERSON_STATE_DEPENDENCY_CHANGED')
+    }
+    authorityBindings[claim.ref.path] = binding
     if (claim.get('synthetic') === true) {
       throw new functions.https.HttpsError('failed-precondition', 'SYNTHETIC_HISTORICAL_CLAIM_DETECTED')
     }
@@ -358,7 +532,24 @@ export const compilePersonModelBundle = lifeModelFunctions.https.onCall(async (d
     for (const sourceId of Array.isArray(claim.get('sourceIds')) ? claim.get('sourceIds') : []) sourceIds.add(String(sourceId))
   }
 
-  const dependencyIds = [...new Set([personId, stateId, ...claimIds])]
+  const relationshipIds = optionalTokenArray(state.get('relationshipContextIds'), 128)
+  const relationships = relationshipIds.length ? await transaction.getAll(...relationshipIds.map(id => db.doc(`users/${uid}/lifeCausalEdges/${id}`))) : []
+  for (const edge of relationships) {
+    if (!edge.exists || edge.get('ownerId') !== uid || edge.get('synthetic') === true || edge.get('status') !== 'accepted'
+      || ![edge.get('fromEntityId'),edge.get('toEntityId')].includes(personId)) {
+      throw new functions.https.HttpsError('failed-precondition', 'PERSON_RELATIONSHIP_UNAVAILABLE')
+    }
+    const bindings = await requireLifeItemSources(db, transaction, uid, edge.data() ?? {}, 'sourceIds')
+    const current = { itemDigest: lifeItemDigest(edge), sourceBindingDigest: lifeAuthorityDigest(bindings) }
+    if (lifeAuthorityDigest(state.get('authorityBindings')?.[edge.ref.path]) !== lifeAuthorityDigest(current)) {
+      throw new functions.https.HttpsError('failed-precondition', 'PERSON_STATE_DEPENDENCY_CHANGED')
+    }
+    authorityBindings[edge.ref.path] = current
+  }
+  for (const constraint of Array.isArray(state.get('negativeConstraints')) ? state.get('negativeConstraints') : []) {
+    await readLifeSourceBindings(db, transaction, uid, constraint.sourceIds)
+  }
+  const dependencyIds = [...new Set([personId, stateId, ...claimIds, ...relationshipIds, ...sourceIds])]
   const bundleBody = {
     schemaVersion: 'urai-life-model-v1',
     ownerId: uid,
@@ -373,10 +564,11 @@ export const compilePersonModelBundle = lifeModelFunctions.https.onCall(async (d
     evidenceCoverage: { acceptedClaims: acceptedClaimIds.length, unknownClaims, disputedClaims },
     dependencyIds,
     synthetic: false,
+    authorityBindings,
   }
   const bundleHash = stableDigest(bundleBody)
   const bundleId = requireToken(data?.bundleId ?? `person-model:${personId}:${stateId}`, 'bundleId')
-  await db.doc(`users/${uid}/personModelBundles/${bundleId}`).set({
+  transaction.set(db.doc(`users/${uid}/personModelBundles/${bundleId}`), {
     id: bundleId,
     ...bundleBody,
     bundleHash,
@@ -384,13 +576,47 @@ export const compilePersonModelBundle = lifeModelFunctions.https.onCall(async (d
     compiledAt: fieldValue.serverTimestamp(),
   }, { merge: true })
   return { bundleId, bundleHash, evidenceCoverage: bundleBody.evidenceCoverage }
+  })
 })
+
+
+async function requireCurrentPersonBundle(uid: string, bundle: FirebaseFirestore.DocumentSnapshot, transaction: FirebaseFirestore.Transaction) {
+  const row = bundle.data() ?? {}
+  if (!bundle.exists || row.ownerId !== uid || row.schemaVersion !== 'urai-life-model-v1'
+    || row.state !== 'current' || row.synthetic !== false || !isRecord(row.authorityBindings)) {
+    throw new functions.https.HttpsError('failed-precondition', 'PERSON_CURRENT_AUTHORITY_REQUIRED')
+  }
+  const paths = Object.keys(row.authorityBindings)
+  if (!paths.length || paths.length > 514 || paths.some(path => !path.startsWith(`users/${uid}/`)
+    || !/^users\/[^/]+\/(lifeEntities|lifeEntityStates|lifeClaims|lifeCausalEdges)\/[^/]+$/.test(path))) {
+    throw new functions.https.HttpsError('failed-precondition', 'PERSON_DEPENDENCY_SCOPE_INVALID')
+  }
+  const dependencies = await transaction.getAll(...paths.map(path => db.doc(path)))
+  for (const item of dependencies) {
+    const body = item.data() ?? {}, expected = row.authorityBindings[item.ref.path]
+    if (!item.exists || body.ownerId !== uid || body.revoked === true || body.synthetic === true
+      || body.status === 'superseded' || !isRecord(expected) || expected.itemDigest !== lifeItemDigest(item)) {
+      throw new functions.https.HttpsError('failed-precondition', 'PERSON_DEPENDENCY_CHANGED')
+    }
+    const field = item.ref.path.includes('/lifeEntities/') ? 'createdFromSourceIds' : 'sourceIds'
+    const bindings = await requireLifeItemSources(db, transaction, uid, body, field)
+    if (expected.sourceBindingDigest && expected.sourceBindingDigest !== lifeAuthorityDigest(bindings)) {
+      throw new functions.https.HttpsError('failed-precondition', 'PERSON_DEPENDENCY_SOURCE_CHANGED')
+    }
+    if (item.ref.path.includes('/lifeEntityStates/')) {
+      for (const constraint of Array.isArray(body.negativeConstraints) ? body.negativeConstraints : []) {
+        await readLifeSourceBindings(db, transaction, uid, constraint.sourceIds)
+      }
+    }
+  }
+}
 
 export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
-  await requireModelConsent(uid)
   const sceneId = requireToken(data?.sceneId, 'sceneId')
   const graphSnapshotId = requireToken(data?.graphSnapshotId, 'graphSnapshotId')
+  // Legacy SceneTruth packets remain possible, but are not authorized as a selected memory.
+  const memoryId = data?.memoryId === undefined ? null : requireToken(data.memoryId, 'memoryId')
   const presentationClass = String(data?.presentationClass ?? '')
   if (!PRESENTATION_CLASSES.has(presentationClass)) {
     throw new functions.https.HttpsError('invalid-argument', 'Presentation class is invalid.')
@@ -404,14 +630,17 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
   const criticalUnknowns = boundedStringArray(data?.criticalUnknowns, 128)
   const forbiddenAssertions = boundedStringArray(data?.forbiddenAssertions, 128)
 
-  const [graphSnapshot, bundles, claims] = await Promise.all([
-    db.doc(`users/${uid}/lifeGraphSnapshots/${graphSnapshotId}`).get(),
+  return db.runTransaction(async (transaction) => {
+  await requireModelConsent(uid, transaction)
+  const [graphSnapshot, bundles, claims, memory] = await Promise.all([
+    transaction.get(db.doc(`users/${uid}/lifeGraphSnapshots/${graphSnapshotId}`)),
     personModelBundleIds.length
-      ? db.getAll(...personModelBundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`)))
+      ? transaction.getAll(...personModelBundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`)))
       : [],
     knownClaimIds.length
-      ? db.getAll(...knownClaimIds.map((id) => db.doc(`users/${uid}/lifeClaims/${id}`)))
+      ? transaction.getAll(...knownClaimIds.map((id) => db.doc(`users/${uid}/lifeClaims/${id}`)))
       : [],
+    memoryId ? transaction.get(db.doc(`users/${uid}/memories/${memoryId}`)) : Promise.resolve(null),
   ])
   if (
     !graphSnapshot.exists
@@ -421,11 +650,61 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
     || graphSnapshot.get('syntheticOutputMayBecomeHistoricalSource') !== false
   ) throw new functions.https.HttpsError('failed-precondition', 'Current Life Causal Graph snapshot is required.')
 
-  const dependencyIds = new Set<string>([graphSnapshotId, ...personModelBundleIds, ...knownClaimIds])
+  const graphEntities = tokenArray(graphSnapshot.get('entityIds'), 512)
+  const graphClaims = optionalTokenArray(graphSnapshot.get('claimIds'), 1024)
+  const graphEdges = optionalTokenArray(graphSnapshot.get('edgeIds'), 1024)
+  const graphSourceIds = tokenArray(graphSnapshot.get('sourceIds'), 256)
+  const expected = graphSnapshot.get('authorityBindings')
+  if (!isRecord(expected) || !graphEntities.length) throw new functions.https.HttpsError('failed-precondition', 'GRAPH_CONTENT_BINDING_REQUIRED')
+  const refs = [
+    ...graphEntities.map(id => db.doc(`users/${uid}/lifeEntities/${id}`)),
+    ...graphClaims.map(id => db.doc(`users/${uid}/lifeClaims/${id}`)),
+    ...graphEdges.map(id => db.doc(`users/${uid}/lifeCausalEdges/${id}`)),
+  ]
+  const dependencies = await transaction.getAll(...refs)
+  for (const item of dependencies) {
+    if (!item.exists || item.get('ownerId') !== uid || item.get('revoked') === true || item.get('synthetic') === true
+      || ['superseded','revoked'].includes(String(item.get('status')))) throw new functions.https.HttpsError('failed-precondition', 'GRAPH_DEPENDENCY_UNAVAILABLE')
+    const field = item.ref.parent.id === 'lifeEntities' ? 'createdFromSourceIds' : 'sourceIds'
+    const bindings = await requireLifeItemSources(db, transaction, uid, item.data() ?? {}, field)
+    const current = { itemDigest: lifeItemDigest(item), sourceBindingDigest: lifeAuthorityDigest(bindings) }
+    if (lifeAuthorityDigest(expected[item.ref.path]) !== lifeAuthorityDigest(current)) throw new functions.https.HttpsError('failed-precondition', 'GRAPH_DEPENDENCY_CHANGED')
+  }
+  if (knownClaimIds.some(id => !graphClaims.includes(id)) || sourceIds.some(id => !graphSourceIds.includes(id))) {
+    throw new functions.https.HttpsError('failed-precondition', 'SCENE_GRAPH_LINEAGE_MISMATCH')
+  }
+  // The scene's memory identity and source receipts must be checked at
+  // compilation time. Owner-equal scene packets alone are not memory evidence.
+  let memoryBinding: { memoryId: string; memorySourceIds: string[]; memorySourceBindingDigest: string } | null = null
+  if (memoryId) {
+    if (!memory?.exists || (memory.get('ownerId') ?? memory.get('userId')) !== uid
+      || memory.get('deleted') === true || memory.get('demo') === true || memory.get('synthetic') === true
+      || ['pending','revoked'].includes(String(memory.get('consentState')))) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENE_MEMORY_UNAVAILABLE')
+    }
+    const movie = isRecord(memory.get('lifeMovie')) ? memory.get('lifeMovie') as JsonMap : {}
+    const provenance = isRecord(movie.provenance) ? movie.provenance as JsonMap : {}
+    const memorySourceIds = tokenArray(provenance.sourceIds, 256)
+    if (movie.sceneTruthPacketId !== sceneId || !memorySourceIds.length
+      || memorySourceIds.some(id => !sourceIds.includes(id) || !graphSourceIds.includes(id))) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENE_MEMORY_SOURCE_LINEAGE_MISMATCH')
+    }
+    if (!claims.some(claim => claim.exists && claim.get('status') === 'accepted'
+      && Array.isArray(claim.get('sourceIds'))
+      && claim.get('sourceIds').some((id: unknown) => memorySourceIds.includes(String(id))))) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENE_MEMORY_EVIDENCE_REQUIRED')
+    }
+    const sourceBindings = await readLifeSourceBindings(db, transaction, uid, memorySourceIds)
+    memoryBinding = { memoryId, memorySourceIds, memorySourceBindingDigest: lifeAuthorityDigest(sourceBindings) }
+  }
+
+  const dependencyIds = new Set<string>([graphSnapshotId, ...personModelBundleIds, ...knownClaimIds, ...graphSourceIds, ...sourceIds, ...(memoryId ? [memoryId] : [])])
+
   for (const dependency of Array.isArray(graphSnapshot.get('dependencyIds')) ? graphSnapshot.get('dependencyIds') : []) {
     dependencyIds.add(String(dependency))
   }
   for (const bundle of bundles) {
+    await requireCurrentPersonBundle(uid, bundle, transaction)
     if (
       !bundle.exists
       || bundle.get('ownerId') !== uid
@@ -434,6 +713,10 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
       || bundle.get('synthetic') !== false
     ) {
       throw new functions.https.HttpsError('failed-precondition', 'Scene Person Model authority is unavailable.')
+    }
+    if (optionalTokenArray(bundle.get('acceptedClaimIds'), 256).some(id => !graphClaims.includes(id))
+      || tokenArray(bundle.get('sourceIds'), 256).some(id => !graphSourceIds.includes(id))) {
+      throw new functions.https.HttpsError('failed-precondition', 'SCENE_PERSON_GRAPH_LINEAGE_MISMATCH')
     }
     for (const dependency of Array.isArray(bundle.get('dependencyIds')) ? bundle.get('dependencyIds') : []) {
       dependencyIds.add(String(dependency))
@@ -466,7 +749,9 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
     schemaVersion: 'urai-life-model-v1',
     ownerId: uid,
     sceneId,
+    ...(memoryBinding ?? {}),
     graphSnapshotId,
+    graphHash: graphSnapshot.get('graphHash'),
     presentationClass,
     personModelBundleIds,
     knownClaimIds,
@@ -481,13 +766,14 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
     state: 'current',
   }
   const packetHash = stableDigest(body)
-  await db.doc(`users/${uid}/sceneTruthPackets/${sceneId}`).set({
+  transaction.set(db.doc(`users/${uid}/sceneTruthPackets/${sceneId}`), {
     ...body,
     packetHash,
     compiledAt: fieldValue.serverTimestamp(),
     updatedAt: fieldValue.serverTimestamp(),
   }, { merge: true })
   return { sceneId, decision, packetHash }
+  })
 })
 
 export const applyLifeCorrection = lifeModelFunctions.https.onCall(async (data, context) => {
@@ -514,6 +800,11 @@ export const applyLifeCorrection = lifeModelFunctions.https.onCall(async (data, 
   }
 
   await db.runTransaction(async (transaction) => {
+    await requireModelConsent(uid, transaction)
+    const correctionBindings = await readLifeSourceBindings(db, transaction, uid, sourceIds)
+    if (correctionBindings.some(binding => binding.sourceEvidenceClass !== evidenceClass)) {
+      throw new functions.https.HttpsError('failed-precondition', 'CORRECTION_TESTIMONY_SOURCE_REQUIRED')
+    }
     const [target, existingCorrection, existingReplacement] = await Promise.all([
       transaction.get(targetRef),
       transaction.get(correctionRef),
@@ -522,6 +813,7 @@ export const applyLifeCorrection = lifeModelFunctions.https.onCall(async (data, 
     if (!target.exists || target.get('ownerId') !== uid || target.get('synthetic') === true) {
       throw new functions.https.HttpsError('not-found', 'Target claim is unavailable.')
     }
+    await requireLifeItemSources(db, transaction, uid, target.data() ?? {}, 'sourceIds')
     if (target.get('status') === 'superseded') {
       throw new functions.https.HttpsError('failed-precondition', 'Target claim was already superseded.')
     }
@@ -540,6 +832,9 @@ export const applyLifeCorrection = lifeModelFunctions.https.onCall(async (data, 
       status: 'accepted',
       synthetic: false,
       valueDigest: stableDigest(replacementValue),
+      sourceBindingDigest: lifeAuthorityDigest(correctionBindings),
+      historicalSourceAuthority: false,
+      syntheticOutputMayBecomeHistoricalSource: false,
       correctsClaimId: targetClaimId,
       correctionId,
       createdAt: fieldValue.serverTimestamp(),
@@ -583,7 +878,9 @@ export const revokeLifeEntity = lifeModelFunctions.https.onCall(async (data, con
 export const getReplayLifeModelAuthority = lifeModelFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   const memoryId = requireToken(data?.memoryId, 'memoryId')
-  const memory = await db.doc(`users/${uid}/memories/${memoryId}`).get()
+  return db.runTransaction(async (transaction) => {
+  await requireModelConsent(uid, transaction)
+  const memory = await transaction.get(db.doc(`users/${uid}/memories/${memoryId}`))
   if (!memory.exists || (memory.get('ownerId') ?? memory.get('userId')) !== uid || memory.get('deleted') === true) {
     return { available: false, reason: 'MEMORY_UNAVAILABLE' }
   }
@@ -596,9 +893,9 @@ export const getReplayLifeModelAuthority = lifeModelFunctions.https.onCall(async
     return { available: false, reason: 'SCENE_TRUTH_REQUIRED' }
   }
   const [scene, bundles] = await Promise.all([
-    db.doc(`users/${uid}/sceneTruthPackets/${sceneTruthPacketId}`).get(),
+    transaction.get(db.doc(`users/${uid}/sceneTruthPackets/${sceneTruthPacketId}`)),
     personModelBundleIds.length
-      ? db.getAll(...personModelBundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`)))
+      ? transaction.getAll(...personModelBundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`)))
       : [],
   ])
   if (
@@ -620,9 +917,10 @@ export const getReplayLifeModelAuthority = lifeModelFunctions.https.onCall(async
   )) {
     return { available: false, reason: 'PERSON_MODEL_UNAVAILABLE' }
   }
+  for (const bundle of bundles) await requireCurrentPersonBundle(uid, bundle, transaction)
   const personIds = [...new Set(bundles.map((bundle) => String(bundle.get('personId') ?? '')).filter((id) => SAFE_TOKEN.test(id)))]
   const personSnapshots = personIds.length
-    ? await db.getAll(...personIds.map((id) => db.doc(`users/${uid}/lifeEntities/${id}`)))
+    ? await transaction.getAll(...personIds.map((id) => db.doc(`users/${uid}/lifeEntities/${id}`)))
     : []
   const labels = new Map(personSnapshots
     .filter((person) => person.exists && person.get('ownerId') === uid && person.get('kind') === 'person' && person.get('revoked') !== true)
@@ -648,4 +946,6 @@ export const getReplayLifeModelAuthority = lifeModelFunctions.https.onCall(async
     presentationClass: String(scene.get('presentationClass')),
     syntheticOutputMayBecomeHistoricalSource: false,
   }
+  })
 })
+

@@ -8,10 +8,10 @@ type Props = {
   onOrbOpen: () => void
   webglAvailable: true
   onSceneFailure?: (error: Error) => void
+  onAssetsReadyChange?: (ready: boolean) => void
 }
 
 const HOME_SPAWN = { x: -0.85, z: 8.4 } as const
-const HOME_ORB = { x: 0, z: -4.25 } as const
 const HOME_GROUND = { x: -5.4, z: -10.8 } as const
 const HOME_LIFE_MAP = { x: 5.4, z: -10.8 } as const
 const REVIEW_ORB_STATES = new Set<OrbState>([
@@ -25,14 +25,26 @@ function synchronizeCanonicalHomeTelemetry(world: HTMLElement) {
   if (!Number.isFinite(playerX) || !Number.isFinite(playerZ)) return
 
   const distance = (target: { x: number; z: number }) => Math.hypot(playerX - target.x, playerZ - target.z).toFixed(3)
-  world.dataset.homeDistance = distance(HOME_SPAWN)
-  world.dataset.homeDistanceOrb = distance(HOME_ORB)
-  world.dataset.homeDistanceGround = distance(HOME_GROUND)
-  world.dataset.homeDistanceLifeMap = distance(HOME_LIFE_MAP)
+  if (world.dataset.homeDistance !== distance(HOME_SPAWN)) world.dataset.homeDistance = distance(HOME_SPAWN)
+  // The canonical and research-preview scenes have different physical Orb
+  // anchors. Read the currently rendered source anchor rather than claiming
+  // proximity to a stale coordinate from a different world.
+  const orbX = Number.parseFloat(world.dataset.homeOrbAnchorX ?? '')
+  const orbZ = Number.parseFloat(world.dataset.homeOrbAnchorZ ?? '')
+  if (Number.isFinite(orbX) && Number.isFinite(orbZ)) {
+    const actualOrbDistance = distance({ x: orbX, z: orbZ })
+    if (world.dataset.homeDistanceOrb !== actualOrbDistance) world.dataset.homeDistanceOrb = actualOrbDistance
+  } else {
+    // Missing source anchor must not leave a stale positive proximity receipt.
+    if (world.dataset.homeDistanceOrb !== undefined) delete world.dataset.homeDistanceOrb
+  }
+  if (world.dataset.homeDistanceGround !== distance(HOME_GROUND)) world.dataset.homeDistanceGround = distance(HOME_GROUND)
+  if (world.dataset.homeDistanceLifeMap !== distance(HOME_LIFE_MAP)) world.dataset.homeDistanceLifeMap = distance(HOME_LIFE_MAP)
 }
 
-export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable, onSceneFailure }: Props) {
+export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable, onSceneFailure, onAssetsReadyChange }: Props) {
   const ownerRef = useRef<HTMLDivElement>(null)
+  const lastReportedAssetsReady = useRef<boolean | null>(null)
 
   useEffect(() => {
     const owner = ownerRef.current
@@ -41,13 +53,19 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable, onScen
 
     const hardenHomeOwnership = () => {
       owner.querySelectorAll('canvas').forEach((canvas) => {
-        canvas.setAttribute('aria-hidden', 'true')
-        canvas.setAttribute('role', 'presentation')
-        canvas.setAttribute('tabindex', '-1')
+        if (canvas.getAttribute('aria-hidden') !== 'true') canvas.setAttribute('aria-hidden', 'true')
+        if (canvas.getAttribute('role') !== 'presentation') canvas.setAttribute('role', 'presentation')
+        if (canvas.getAttribute('tabindex') !== '-1') canvas.setAttribute('tabindex', '-1')
       })
 
       const world = owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
-      if (!world) return
+      if (!world) {
+        if (lastReportedAssetsReady.current !== false) {
+          lastReportedAssetsReady.current = false
+          onAssetsReadyChange?.(false)
+        }
+        return
+      }
       const query = new URLSearchParams(window.location.search)
       const reviewMode = query.get('homeAssetReview') === '1'
       const privateFixture = query.get('homePrivateFixture') === '1'
@@ -56,10 +74,27 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable, onScen
         ? requestedOrbState as OrbState
         : null
 
-      world.setAttribute('data-home-asset-mode', reviewMode ? 'disclosed-review-candidate' : 'ready')
-      world.setAttribute('data-home-personalization-mode', privateFixture ? 'private-personalized' : 'standard')
-      world.setAttribute('data-home-review-fixture', reviewMode && privateFixture ? 'safe-private' : 'none')
+      const assetMode = reviewMode ? 'disclosed-review-candidate' : 'ready'
+      const personalizationMode = privateFixture ? 'private-personalized' : 'standard'
+      const reviewFixture = reviewMode && privateFixture ? 'safe-private' : 'none'
+      if (world.getAttribute('data-home-asset-mode') !== assetMode) world.setAttribute('data-home-asset-mode', assetMode)
+      if (world.getAttribute('data-home-personalization-mode') !== personalizationMode) world.setAttribute('data-home-personalization-mode', personalizationMode)
+      if (world.getAttribute('data-home-review-fixture') !== reviewFixture) world.setAttribute('data-home-review-fixture', reviewFixture)
       synchronizeCanonicalHomeTelemetry(world)
+
+      const assetsReady = world.dataset.homeAssetsReady === 'true'
+      const inputReady = world.dataset.homeInputReady === 'true'
+      const renderedFrames = Number.parseInt(world.dataset.homeRenderedFrames || '0', 10)
+      if (world.dataset.homeInteractionReady !== (assetsReady && inputReady ? 'true' : 'false')) {
+        world.dataset.homeInteractionReady = assetsReady && inputReady ? 'true' : 'false'
+      }
+      if (world.dataset.homeReady !== (assetsReady && inputReady && Number.isFinite(renderedFrames) && renderedFrames >= 3 ? 'true' : 'false')) {
+        world.dataset.homeReady = assetsReady && inputReady && Number.isFinite(renderedFrames) && renderedFrames >= 3 ? 'true' : 'false'
+      }
+      if (lastReportedAssetsReady.current !== assetsReady) {
+        lastReportedAssetsReady.current = assetsReady
+        onAssetsReadyChange?.(assetsReady)
+      }
 
       if (reviewOrbState !== appliedReviewOrbState) {
         appliedReviewOrbState = reviewOrbState
@@ -71,7 +106,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable, onScen
     const observer = new MutationObserver(hardenHomeOwnership)
     observer.observe(owner, {
       attributes: true,
-      attributeFilter: ['data-home-player-x', 'data-home-player-z'],
+      attributeFilter: ['data-home-player-x', 'data-home-player-z', 'data-home-orb-anchor-x', 'data-home-orb-anchor-z', 'data-home-assets-ready', 'data-home-input-ready', 'data-home-rendered-frames'],
       childList: true,
       subtree: true,
     })
@@ -80,7 +115,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable, onScen
       observer.disconnect()
       window.removeEventListener('popstate', hardenHomeOwnership)
     }
-  }, [])
+  }, [onAssetsReadyChange])
 
   return (
     <div

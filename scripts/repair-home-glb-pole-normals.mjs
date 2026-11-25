@@ -2,6 +2,7 @@
 import fs from 'node:fs'
 import crypto from 'node:crypto'
 import { execFileSync } from 'node:child_process'
+import { verifyCanonicalHomeRepairRetirement, verifyGlbNormalIntegrity } from './lib/glb-normal-integrity.mjs'
 
 const PACK_PATH = 'operations/assets/generated-receipts/urai-final-glb-pack-v1.json'
 
@@ -147,8 +148,11 @@ function replaceOnceSameLength(text, before, after, label) {
   return text.slice(0, first) + after + text.slice(first + before.length)
 }
 
-function repairAsset(config, pack) {
+async function repairAsset(config, pack) {
   const original = fs.readFileSync(config.glbPath), repaired = Buffer.from(original), parsed = parseGlb(repaired, config.label)
+  if (config.assetId === 'home-entry-chamber-v1' && !parsed.json.meshes?.some((mesh) => mesh?.name === config.targetMesh)) {
+    return verifyCanonicalHomeRepairRetirement(original, config, pack, readJson(config.receiptPath), readJson(config.rehearsalPath))
+  }
   const { accessor, accessorIndex, base, stride } = findTargetNormalAccessor(parsed, config)
   if (!Array.isArray(accessor.min) || accessor.min.length !== 3 || !Array.isArray(accessor.max) || accessor.max.length !== 3) fail(`${config.label} NORMAL accessor ${accessorIndex} must retain min/max metadata`)
   const bottomOffset = parsed.binStart + base + config.bottomIndex * stride, topOffset = parsed.binStart + base + config.topIndex * stride
@@ -227,8 +231,14 @@ function repairOrbAsset(config, pack) {
 
 
 const pack = readJson(PACK_PATH)
-const results = configs.map((config) => repairAsset(config, pack))
+const results = []
+for (const config of configs) results.push(await repairAsset(config, pack))
 results.push(repairOrbAsset(ORB_CONFIG, pack))
+for (const result of results) {
+  if (result.normalIntegrity) continue
+  const config = result.label === ORB_CONFIG.label ? ORB_CONFIG : configs.find((entry) => entry.label === result.label)
+  result.normalIntegrity = await verifyGlbNormalIntegrity(fs.readFileSync(config.glbPath), config.label)
+}
 if (results.some((result) => result.packChanged)) writeJson(PACK_PATH, pack)
 if (process.env.GITHUB_ACTIONS === 'true') {
   for (const result of results) {
