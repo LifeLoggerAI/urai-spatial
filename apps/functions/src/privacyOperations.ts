@@ -1436,6 +1436,12 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
       if (!current.exists || current.get('uid') !== uid || !ownerJob.exists || ownerJob.get('uid') !== uid
         || !['queued', 'awaiting-grace'].includes(String(current.get('state')))
         || current.get('state') !== ownerJob.get('state')) return false
+      // Trigger snapshots may be stale. Claim only the same immutable request
+      // identity in both current records before using its destructive scope.
+      if (job.jobId !== snapshot.id || typeof job.receiptId !== 'string'
+        || !/^[A-Za-z0-9_-]{1,160}$/.test(job.receiptId)
+        || [current, ownerJob].some(record => record.get('jobId') !== snapshot.id
+          || record.get('scope') !== scope || record.get('receiptId') !== receiptId)) return false
       const deadline = current.get('executeAfter')
       if (!(deadline instanceof Timestamp) || !Number.isSafeInteger(deadline.toMillis()) || deadline.toMillis() > Date.now()) return false
       const generation = fence.exists ? fence.get('generation') : 0
@@ -1475,35 +1481,63 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
       }
     }
     const finalReceipt = {
-      receiptId,
+      receiptId, jobId: snapshot.id,
       ownerDigest: ownerDigest(uid),
-      kind: 'deletion',
-      scope,
-      result: 'completed',
-      deletedCollections,
+      kind: 'deletion', scope, result: 'completed', deletedCollections,
       retainedExceptions: Array.isArray(job.retainedExceptions) ? job.retainedExceptions : [],
-      completedAt: fieldValue.serverTimestamp(),
-      createdAt: fieldValue.serverTimestamp(),
+      completedAt: fieldValue.serverTimestamp(), createdAt: fieldValue.serverTimestamp(),
     }
-    await durableReceiptRef.set(finalReceipt)
-    if (scope !== 'account') {
-      await Promise.all([
-        snapshot.ref.update({ state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }),
-        userJobRef.set({ state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-        userReceiptRef.set({ result: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-      ])
-      await finishExportDeletionFence(uid, snapshot.id)
-    } else {
-      await snapshot.ref.delete()
-    }
+    // Local completion and its durable evidence commit together. This receipt
+    // does not certify downstream providers or cross-system deletion.
+    await db.runTransaction(async transaction => {
+      const current = await transaction.get(snapshot.ref)
+      const owner = scope === 'account' ? null : await transaction.get(userJobRef)
+      const fence = scope === 'account' ? null : await transaction.get(exportFenceRef(uid))
+      if (!current.exists || current.get('uid') !== uid || current.get('jobId') !== snapshot.id
+        || current.get('scope') !== scope || current.get('receiptId') !== receiptId
+        || current.get('state') !== 'in-progress'
+        || (owner && (!owner.exists || owner.get('uid') !== uid || owner.get('jobId') !== snapshot.id
+          || owner.get('scope') !== scope || owner.get('receiptId') !== receiptId || owner.get('state') !== 'in-progress')))
+        throw new functions.https.HttpsError('failed-precondition', 'Deletion completion identity changed.')
+      if (fence && (!fence.exists || !isRecord(fence.get('pendingDeletions'))
+        || fence.get('pendingDeletions')[snapshot.id] !== true))
+        throw new functions.https.HttpsError('failed-precondition', 'Deletion completion fence changed.')
+      transaction.set(durableReceiptRef, finalReceipt)
+      if (scope === 'account') transaction.delete(snapshot.ref)
+      else {
+        const completed = { state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }
+        transaction.update(snapshot.ref, completed)
+        transaction.update(userJobRef, completed)
+        transaction.set(userReceiptRef, { result: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true })
+        const pending = { ...fence!.get('pendingDeletions') as JsonMap }
+        delete pending[snapshot.id]
+        transaction.update(exportFenceRef(uid), { pendingDeletions: pending, updatedAt: fieldValue.serverTimestamp() })
+      }
+    })
   } catch (error) {
     const failure = error instanceof Error ? error.message.slice(0, 240) : 'UNKNOWN_DELETION_FAILURE'
-    await Promise.all([
-      snapshot.ref.set({ state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-      userJobRef.set({ state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-      userReceiptRef.set({ result: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-    ])
-    throw error
+    const completed = await db.runTransaction(async transaction => {
+      const durable = await transaction.get(durableReceiptRef)
+      // A commit can succeed even when its reply is lost. Do not replace that
+      // atomic completion with failure or recreate an erased account subtree.
+      if (durable.exists && durable.get('result') === 'completed'
+        && durable.get('jobId') === snapshot.id && durable.get('receiptId') === receiptId
+        && durable.get('scope') === scope && durable.get('ownerDigest') === ownerDigest(uid)) return true
+      const current = await transaction.get(snapshot.ref)
+      const owner = scope === 'account' ? null : await transaction.get(userJobRef)
+      const stillClaimed = (record: FirebaseFirestore.DocumentSnapshot) => record.exists
+        && record.get('uid') === uid && record.get('jobId') === snapshot.id
+        && record.get('scope') === scope && record.get('receiptId') === receiptId
+        && record.get('state') === 'in-progress'
+      if (!stillClaimed(current) || (owner && !stillClaimed(owner))) return false
+      transaction.set(snapshot.ref, { state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true })
+      if (scope !== 'account') {
+        transaction.set(userJobRef, { state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true })
+        transaction.set(userReceiptRef, { result: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true })
+      }
+      return false
+    })
+    if (!completed) throw error
   }
 }
 
