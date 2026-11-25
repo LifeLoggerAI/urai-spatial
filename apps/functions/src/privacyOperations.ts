@@ -995,7 +995,7 @@ async function readDownloadAuthority(transaction: FirebaseFirestore.Transaction,
   const { jobId, file, assetId } = selection
   const { job, subject } = await readBoundExport(transaction, uid, jobId, 'ready')
   const expiresAt = job.get('expiresAt')
-  const packageExpiresAt = expiresAt instanceof admin.firestore.Timestamp ? expiresAt.toMillis() : Number.NaN
+  const packageExpiresAt = expiresAt instanceof Timestamp ? expiresAt.toMillis() : Number.NaN
   if (!Number.isSafeInteger(packageExpiresAt) || packageExpiresAt <= Date.now() || packageExpiresAt > subject.canonicalExportConsentExpiresAt) {
     throw new functions.https.HttpsError('failed-precondition', 'Export has expired or its authority lifetime changed.')
   }
