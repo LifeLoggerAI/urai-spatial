@@ -1,13 +1,14 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { HomeManualEmotionalWeatherStatus } from '@/lib/uraiEmotion/ManualEmotionalWeatherControls'
 import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
 import HomeSceneRenderBoundary from './home/HomeSceneRenderBoundary'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { useSceneStore } from '@/spatial/store/useSceneStore'
 import { clearHomeAssetCache, isHomeAssetLoadError } from '@/spatial/layout/HomeWorldProductionPolished'
 
 type RendererState = 'ready' | 'recovering' | 'failed'
@@ -68,6 +69,11 @@ export default function HomeSpatialRuntimeLayer() {
   const [recoveryKey, setRecoveryKey] = useState(0)
   const [assetsReady, setAssetsReady] = useState(false)
   const [assetLoadFailed, setAssetLoadFailed] = useState(false)
+
+  useLayoutEffect(() => {
+    // The camera reads a shared store that can still hold Ascent after a client-side return.
+    if (homeRouteActive) useSceneStore.getState().setPlaceFromRoute('/home')
+  }, [homeRouteActive])
 
   const onSceneFailure = useCallback((error: Error) => {
     setAssetLoadFailed(isHomeAssetLoadError(error))

@@ -9,6 +9,11 @@
   pointer-events: none !important;
 }
 
+/* The open Orb menu owns taps wherever it covers Home's destination rail. */
+body:has(.urai-world-companion[data-open='true']) .home-semantic-navigation[data-home-navigation-owner='runtime-boundary'] {
+  z-index: 2;
+}
+
 /* Keep Life Map's compact movement help below and behind the primary Map controls. */
 .urai-world-runtime[data-world-destination='life-map'] .life-map-movement-help {
   top: max(68px, calc(env(safe-area-inset-top) + 58px)) !important;

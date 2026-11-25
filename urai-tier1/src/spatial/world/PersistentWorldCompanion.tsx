@@ -300,7 +300,7 @@ export function PersistentWorldCompanion({ambientPlayback, onRetryAmbient}: Ambi
           toggleCompanion()
         }}
       >
-        <span aria-hidden="true" />
+        {open && world.destination === 'home' ? 'Close menu' : <span aria-hidden="true" />}
       </button>
     </aside>
   )

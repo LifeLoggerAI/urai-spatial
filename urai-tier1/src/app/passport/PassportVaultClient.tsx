@@ -6,6 +6,7 @@ import { Float, OrbitControls, RoundedBox } from '@react-three/drei'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { operationalPrivacyContractSelected } from '@/lib/privacy/privacyContractAuthority'
 import { assetCssStack, passportAssets } from '@/spatial/assets/uraiAssets'
 import {
   cancelOperationalDeletionRequest,
@@ -22,6 +23,9 @@ import './passport-vault.css'
 
 type LoadState = 'loading' | 'private' | 'demo' | 'signed-out' | 'empty' | 'offline' | 'unavailable'
 type SnapshotPayload = Record<string, unknown>
+
+const DEMO_MESSAGE = 'DEMONSTRATION — sample data only. No private account is connected.'
+const OFFLINE_NO_SNAPSHOT = 'Offline. Reconnect to load your vault records.'
 
 const ZONES = [
   ['identity', 'Identity core'],
@@ -117,7 +121,7 @@ export default function PassportVaultClient() {
   const explicitDemo = params.get('demo') === '1'
   const [user, setUser] = useState<User | null>(null)
   const [state, setState] = useState<LoadState>('loading')
-  const [snapshot, setSnapshot] = useState<SnapshotPayload>(() => toDemoPayload())
+  const [snapshot, setSnapshot] = useState<SnapshotPayload | null>(null)
   const [selectedZone, setSelectedZone] = useState('identity')
   const [message, setMessage] = useState('Opening your Ownership Vault…')
   const [webglAvailable, setWebglAvailable] = useState(true)
@@ -137,18 +141,31 @@ export default function PassportVaultClient() {
     } catch {
       setWebglAvailable(false)
     }
-    const onOffline = () => { setState('offline'); setMessage('Offline. The vault remains readable from its last server snapshot, but no sensitive action can begin.') }
-    const onOnline = () => { setMessage('Connection restored. Refreshing owner authority…'); setState('loading') }
+  }, [])
+
+  useEffect(() => {
+    const onOffline = () => {
+      if (explicitDemo) { setMessage('Offline. ' + DEMO_MESSAGE); return }
+      if (!user) return
+      setState('offline')
+      setMessage(snapshot ? 'Offline. Your last loaded vault records remain readable. Sensitive actions require a connection.' : OFFLINE_NO_SNAPSHOT)
+    }
+    const onOnline = () => {
+      if (explicitDemo) { setMessage(DEMO_MESSAGE); return }
+      if (!user) return
+      setMessage('Connection restored. Refreshing owner authority…')
+      setState('loading')
+    }
     window.addEventListener('offline', onOffline)
     window.addEventListener('online', onOnline)
     return () => { window.removeEventListener('offline', onOffline); window.removeEventListener('online', onOnline) }
-  }, [])
+  }, [explicitDemo, user, snapshot])
 
   useEffect(() => {
     if (explicitDemo) {
       setSnapshot(toDemoPayload())
       setState('demo')
-      setMessage('DEMONSTRATION — sample data only. No private account is connected.')
+      setMessage(DEMO_MESSAGE)
       return
     }
     if (!firebasePublicEnvReady) {
@@ -158,12 +175,17 @@ export default function PassportVaultClient() {
     }
     return onAuthStateChanged(getAuth(app), (nextUser) => {
       setUser(nextUser)
+      setSnapshot(null)
+      setExports([])
+      setDeletions([])
+      setReceipts([])
       if (!nextUser) {
         setState('signed-out')
         setMessage('Sign in to open your private Ownership Vault.')
         return
       }
       setState(navigator.onLine ? 'loading' : 'offline')
+      if (!navigator.onLine) setMessage(OFFLINE_NO_SNAPSHOT)
     })
   }, [explicitDemo])
 
@@ -185,7 +207,7 @@ export default function PassportVaultClient() {
   }, [user, explicitDemo, state])
 
   useEffect(() => {
-    if (!user || explicitDemo) return
+    if (!user || explicitDemo || !operationalPrivacyContractSelected(process.env.NEXT_PUBLIC_URAI_PRIVACY_CONTRACT)) return
     const unsubscribers = [
       subscribeOperationalUserCollection('exportJobs', user.uid, setExports, () => setMessage('Export history is temporarily unavailable.')),
       subscribeOperationalUserCollection('deletionJobs', user.uid, setDeletions, () => setMessage('Deletion history is temporarily unavailable.')),
@@ -203,13 +225,15 @@ export default function PassportVaultClient() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const owner = record(snapshot.owner)
-  const consent = record(snapshot.consent)
+  const ownerCanViewRecords = user && (state === 'private' || state === 'empty' || state === 'offline')
+  const visibleSnapshot = ownerCanViewRecords || (state === 'demo' && explicitDemo) ? snapshot : null
+  const owner = record(visibleSnapshot?.owner)
+  const consent = record(visibleSnapshot?.consent)
   const enforcement = record(consent.enforcement)
-  const sources = list(snapshot.sources)
-  const devices = list(snapshot.devices)
-  const serverReceipts = list(snapshot.receipts)
-  const recovery = record(snapshot.recovery)
+  const sources = list(visibleSnapshot?.sources)
+  const devices = list(visibleSnapshot?.devices)
+  const serverReceipts = list(visibleSnapshot?.receipts)
+  const recovery = record(visibleSnapshot?.recovery)
   const keyState = String(owner.keyState ?? 'locked')
   const canOperate = state === 'private' && keyState === 'authorized' && !busy
   const requiredText = DELETION_SCOPES.find(([scope]) => scope === deletionScope)?.[2] ?? 'CONFIRM DELETE'
@@ -243,12 +267,17 @@ export default function PassportVaultClient() {
     devices,
     provenance: sources,
     consent: Object.entries(record(consent.domains)).map(([id, value]) => ({ id, ...record(value) })),
-    exports: exports.length ? exports : list(snapshot.exports),
-    deletion: deletions.length ? deletions : list(snapshot.deletions),
+    exports: exports.length ? exports : list(visibleSnapshot?.exports),
+    deletion: deletions.length ? deletions : list(visibleSnapshot?.deletions),
     audit: receipts.length ? receipts : serverReceipts,
     recovery: [recovery],
     identity: [owner],
   }
+
+  const rows = visibleSnapshot ? zoneRows[selectedZone] ?? [] : []
+  const zoneMessage = visibleSnapshot ? 'No owner-scoped records exist in this zone.'
+    : state === 'signed-out' ? 'Sign in to view records in this zone.'
+    : state === 'loading' ? 'Waiting for vault access.' : 'Vault records are unavailable.'
 
   return (
     <main className="passportVault" data-route-owner="passport-ownership-vault" data-passport-source={state} data-key-state={keyState}>
@@ -264,9 +293,9 @@ export default function PassportVaultClient() {
       <header className="passportHeader"><p>UrAi Passport</p><h1>Your life remains in your possession.</h1><div role="status" aria-live="polite" className="passportStatus">{message}</div>{state === 'demo' && <span className="passportDisclosure">DEMONSTRATION — sample data only</span>}</header>
       <nav className="passportZones" aria-label="Ownership Vault zones">{ZONES.map(([id, label]) => <button key={id} type="button" aria-pressed={selectedZone === id} onClick={() => setSelectedZone(id)}>{label}</button>)}</nav>
       <section id="passport-controls" tabIndex={-1} className="passportPanel">
-        <div className="passportPanelHeading"><div><p>Owner reference {String(owner.ownerReference ?? 'not available')}</p><h2>{ZONES.find(([id]) => id === selectedZone)?.[1]}</h2></div><span data-state={keyState} className="passportKeyState">{keyState}</span></div>
-        <p><strong>Ownership:</strong> {String(owner.ownershipStatus ?? 'unavailable')}. <strong>Consent revision:</strong> {String(consent.revision ?? 0)}. <strong>Enforcement:</strong> {String(enforcement.state ?? 'unavailable')}.</p>
-        <div className="passportRows">{(zoneRows[selectedZone] ?? []).length ? (zoneRows[selectedZone] ?? []).map((row, index) => <article key={String(row.id ?? index)}><h3>{String(row.label ?? row.kind ?? row.id ?? `Record ${index + 1}`)}</h3><dl>{Object.entries(row).filter(([key]) => !['id', 'ownerId', 'uid', 'token', 'secret'].includes(key)).slice(0, 8).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{Array.isArray(value) ? value.join(', ') : typeof value === 'object' && value ? 'Protected structured record' : String(value ?? 'not available')}</dd></div>)}</dl></article>) : <p>No owner-scoped records exist in this zone.</p>}</div>
+        <div className="passportPanelHeading"><div>{visibleSnapshot && <p>Owner reference {String(owner.ownerReference ?? 'not available')}</p>}<h2>{ZONES.find(([id]) => id === selectedZone)?.[1]}</h2></div><span data-state={keyState} className="passportKeyState">{keyState}</span></div>
+        {visibleSnapshot && <p><strong>Ownership:</strong> {String(owner.ownershipStatus ?? 'unavailable')}. <strong>Consent revision:</strong> {String(consent.revision ?? 'unavailable')}. <strong>Enforcement:</strong> {String(enforcement.state ?? 'unavailable')}.</p>}
+        <div className="passportRows">{rows.length ? rows.map((row, index) => <article key={String(row.id ?? index)}><h3>{String(row.label ?? row.kind ?? row.id ?? `Record ${index + 1}`)}</h3><dl>{Object.entries(row).filter(([key]) => !['id', 'ownerId', 'uid', 'token', 'secret'].includes(key)).slice(0, 8).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{Array.isArray(value) ? value.join(', ') : typeof value === 'object' && value ? 'Protected structured record' : String(value ?? 'not available')}</dd></div>)}</dl></article>) : <p>{zoneMessage}</p>}</div>
         <div className="passportActions"><a href="/privacy-controls">Enter Consent Sanctuary</a><a href="/mirror">Return to Mirror</a><a href="/ground">Return to Ground</a></div>
         <section className="passportOperation"><h3>Export chamber</h3><p>Exports exclude credentials, provider secrets, raw secret fields, and legally excepted records. The ownership key must be authorized by a recent sign-in.</p><div className="passportCheckGrid">{['profile', 'consent', 'memories', 'spatial', 'audit'].map((scope) => <label key={scope}><input type="checkbox" checked={exportScopes.includes(scope)} disabled={state !== 'private' || busy} onChange={(event) => setExportScopes((items) => event.target.checked ? [...new Set([...items, scope])] : items.filter((item) => item !== scope))} />{scope}</label>)}</div><button type="button" disabled={state !== 'private' || busy || exportScopes.length === 0} onClick={() => void requestExport()}>Unlock and request export</button><ol>{user && (state === 'private' || state === 'empty') && exports.filter(job => job.uid === user.uid).slice(0, 6).map(job => (
           <li key={job.id}>
@@ -277,7 +306,7 @@ export default function PassportVaultClient() {
               onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}
           </li>
         ))}</ol></section>
-        <section className="passportOperation passportDanger"><h3>Deletion chamber</h3><p>Deletion is scoped, revision-safe, queued through the trusted backend, and leaves an append-only privacy-safe receipt. Provider and legal retention exceptions are disclosed rather than hidden.</p><label>Scope<select value={deletionScope} disabled={state !== 'private' || busy} onChange={(event) => { setDeletionScope(event.target.value); setConfirmation('') }}>{DELETION_SCOPES.map(([scope, label]) => <option key={scope} value={scope}>{label}</option>)}</select></label><label>Type {requiredText}<input value={confirmation} disabled={state !== 'private' || busy} onChange={(event) => setConfirmation(event.target.value)} /></label><button type="button" disabled={state !== 'private' || busy} onClick={() => void requestDeletion()}>Unlock and create deletion request</button><ol>{deletions.slice(0, 6).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {String(job.scope)} {['queued', 'awaiting-grace'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalDeletionRequest(job.id)}>Cancel</button>}</li>)}</ol></section>
+        <section className="passportOperation passportDanger"><h3>Deletion chamber</h3><p>Deletion is scoped, revision-safe, queued through the trusted backend, and leaves an append-only privacy-safe receipt. Provider and legal retention exceptions are disclosed rather than hidden.</p><label>Scope<select value={deletionScope} disabled={state !== 'private' || busy} onChange={(event) => { setDeletionScope(event.target.value); setConfirmation('') }}>{DELETION_SCOPES.map(([scope, label]) => <option key={scope} value={scope}>{label}</option>)}</select></label><label>Type {requiredText}<input value={confirmation} disabled={state !== 'private' || busy} onChange={(event) => setConfirmation(event.target.value)} /></label><button type="button" disabled={state !== 'private' || busy} onClick={() => void requestDeletion()}>Unlock and create deletion request</button><ol>{visibleSnapshot && user && deletions.slice(0, 6).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {String(job.scope)} {['queued', 'awaiting-grace'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalDeletionRequest(job.id)}>Cancel</button>}</li>)}</ol></section>
       </section>
       <aside className="passportKey" aria-label="Ownership key status"><strong>Ownership key: {keyState}</strong><span>{keyState === 'authorized' ? 'Sensitive actions may proceed under the trusted recent-auth window.' : 'Sensitive actions remain locked until recent authentication is proven.'}</span></aside>
     </main>

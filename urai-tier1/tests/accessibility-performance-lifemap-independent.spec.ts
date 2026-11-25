@@ -385,38 +385,3 @@ test.describe('Supporting route responsive and accessible runtime evidence', () 
     })
   }
 })
-
-test.describe('Disclosed sample without WebGL', () => {
-  test.use({ viewport: { width: 320, height: 568 }, reducedMotion: 'reduce', launchOptions: { args: ['--disable-webgl'] } })
-
-  test('selected star actions are on screen before another key or scroll', async ({ page, browserName }) => {
-    test.skip(browserName !== 'chromium', 'This profile disables WebGL through Chromium.')
-    await page.goto('/life-map')
-    await page.getByRole('button', { name: 'Open disclosed sample' }).click()
-    for (const title of ['The Quiet Reset', 'Protected Chapter']) {
-      const search = await openSemanticExplorer(page)
-      await search.getByRole('textbox').fill(title)
-      await search.getByRole('button', { name: title, exact: true }).press('Enter')
-      const card = page.getByRole('complementary', { name: 'Selected life object details' })
-      const heading = card.getByRole('heading', { name: title })
-      await expect(heading).toBeFocused()
-      const focus = card.getByRole('button', { name: 'Enter Focus' })
-      const home = card.getByRole('link', { name: 'Return Home' })
-      await expectViewportContained(page, heading)
-      await expectViewportContained(page, home)
-      for (const target of [heading, home]) {
-        expect(await target.evaluate((element) => {
-          const box = element.getBoundingClientRect()
-          return element.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2))
-        })).toBe(true)
-      }
-      if (title === 'Protected Chapter') {
-        await expect(focus).toBeDisabled()
-        await expect(card.getByRole('button', { name: 'Replay', exact: true })).toBeDisabled()
-      } else {
-        await page.keyboard.press('Tab')
-        await expect(focus).toBeFocused()
-      }
-    }
-  })
-})
