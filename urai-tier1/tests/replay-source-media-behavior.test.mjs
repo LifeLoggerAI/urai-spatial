@@ -58,6 +58,18 @@ test('source media admission cannot use demo art for a personal memory or interp
   assert.deepEqual(replayVisualAdmission({ ...personal, sourceMedia: [source] }), { kind: 'recorded-source', media: source })
 })
 
+test('only the bundled silent film declares recorded audio absent', () => {
+  const sample = buildExplicitDemoMemory('demo:quiet-reset')
+  assert.equal(replayVisualAdmission(sample).recordedAudio, 'none')
+  assert.equal(replayVisualAdmission(buildExplicitDemoMemory('demo:another')).recordedAudio, undefined)
+  const suppliedVideo = { kind: 'video', url: 'https://example.invalid/source.webm' }
+  for (const demo of [true, false]) {
+    assert.deepEqual(replayVisualAdmission({ ...sample, demo, sourceMedia: [suppliedVideo] }), {
+      kind: 'recorded-source', media: suppliedVideo,
+    })
+  }
+})
+
 test('owner, source, manifest, and privacy changes produce a new teardown boundary', () => {
   const memory = buildExplicitDemoMemory('demo:source-test')
   const identity = replaySessionIdentity(memory)

@@ -2,7 +2,7 @@ import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selec
 
 export type ReplayVisualAdmission =
   | { kind: 'recorded-source'; media: SelectedMemoryMedia }
-  | { kind: 'disclosed-demo'; media: SelectedMemoryMedia | null }
+  | { kind: 'disclosed-demo'; media: SelectedMemoryMedia | null; recordedAudio?: 'none' }
   | { kind: 'neutral'; media: null }
 
 export function replayVisualAdmission(memory: SelectedMemory): ReplayVisualAdmission {
@@ -11,7 +11,7 @@ export function replayVisualAdmission(memory: SelectedMemory): ReplayVisualAdmis
   // This bundled film is an explicitly synthetic public fixture, never a recording.
   // Do not use it for other demo IDs or as a substitute for an owner's original media.
   if (memory.demo && memory.id === 'demo:quiet-reset') {
-    return { kind: 'disclosed-demo', media: {
+    return { kind: 'disclosed-demo', recordedAudio: 'none', media: {
       kind: 'video',
       url: '/assets/urai/demo/quiet-reset-synthetic-video.webm',
       caption: 'Synthetic demonstration film. Fictional memory, no personal recording.',

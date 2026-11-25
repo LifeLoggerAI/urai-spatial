@@ -62,3 +62,18 @@ test.describe('Possible Futures accessibility and truth evidence', () => {
     await expect(page.getByText('POSSIBLE FUTURE · NOT A MEMORY', { exact: true })).toBeVisible()
   })
 })
+
+test.describe('Possible Futures from the touch Orb menu', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, reducedMotion: 'reduce' })
+
+  test('sound and scenario controls accept their own taps', async ({ page }) => {
+    await page.goto('/home/', { waitUntil: 'domcontentloaded' })
+    await page.getByTestId('home-semantic-orb').tap()
+    const menu = page.locator('#urai-world-companion-menu')
+    await menu.getByRole('button', { name: 'Enable spatial sound' }).tap()
+    await menu.getByRole('button', { name: 'Mute spatial sound' }).tap()
+    await expect(menu.getByRole('button', { name: 'Enable spatial sound' })).toHaveAttribute('aria-pressed', 'false')
+    await menu.getByRole('button', { name: 'Explore a Possible Future' }).tap()
+    await expect(page).toHaveURL(/\/possible-futures(?:[/?#]|$)/)
+  })
+})

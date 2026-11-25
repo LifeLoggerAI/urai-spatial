@@ -12,7 +12,6 @@ import { LifeMapRouteTransactionBridge } from './LifeMapRouteTransactionBridge'
 import { LifeMapSelectedActionRuntimeInvariant } from './LifeMapSelectedActionRuntimeInvariant'
 import { PersistentRealmAtmosphere } from './PersistentRealmAtmosphere'
 import { PersistentWorldCompanion } from './PersistentWorldCompanion'
-import { PossibleFuturesOrbEntry } from '@/spatial/scenario/PossibleFuturesOrbEntry'
 import { WorldTransitionController } from './WorldTransitionController'
 import { useUraiWorldState } from './WorldStateProvider'
 import './worldNavigation.css'
@@ -63,7 +62,6 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
       {world.destination === 'life-map' ? <LifeMapRouteTransactionBridge /> : null}
       {world.destination === 'life-map' ? <LifeMapIndependentInputBoundary /> : null}
       {showWorldCompanion ? <PersistentWorldCompanion ambientPlayback={ambientPlayback} onRetryAmbient={retryPlayback} /> : null}
-      {showWorldCompanion ? <PossibleFuturesOrbEntry /> : null}
       <WorldTransitionController />
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         URAI destination {world.destination}. World layer {world.layer}.

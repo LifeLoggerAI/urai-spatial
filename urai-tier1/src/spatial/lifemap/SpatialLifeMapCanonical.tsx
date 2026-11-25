@@ -22,6 +22,7 @@ function LifeMapLoading({ label = "Opening your memory universe" }: { label?: st
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.key !== "Escape" || isEditableTarget(event.target)) return;
+      if (document.getElementById("life-map-navigator")) return;
       event.preventDefault();
       requestUraiWorldReturn();
     };
@@ -132,7 +133,7 @@ function LifeMapAccessGate({ publicSamplesAvailable }: { publicSamplesAvailable:
       return <><SignedOutLifeMap onOpenDemo={sampleAction} /><LifeMapSemanticNavigator authenticatedUserId={null} /></>;
     }
     if (mode === "private") return <LifeMapSemanticNavigator authenticatedUserId={authenticatedUserId} semanticOnly />;
-    return <><LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" /><LifeMapSemanticNavigator authenticatedUserId={null} /></>;
+    return <><LifeMapLoading label="Choose Search to explore the public sample without 3D" /><LifeMapSemanticNavigator sampleFallback /></>;
   }
   return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} data-life-map-source={mode} data-private-memory-mounted={mode === "signed-out" ? "false" : undefined} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}>
     <LifeMapRouteBoundary authenticatedUserId={mode === "private" ? authenticatedUserId : null} />

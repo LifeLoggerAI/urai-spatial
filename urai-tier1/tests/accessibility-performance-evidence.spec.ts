@@ -206,17 +206,37 @@ test.describe('URAI accessibility and performance evidence', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const before = page.url()
     const runtime = page.locator('.urai-home-spatial-runtime-layer')
-    await expect(runtime.locator('canvas')).toBeVisible({ timeout: 15_000 })
-    await runtime.locator('canvas').evaluate((canvas) => canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true })))
-    await expect(runtime.getByRole('status').filter({ hasText: /Restoring the spatial Home renderer/i })).toBeVisible()
-    await expect(runtime.locator('canvas')).toBeVisible({ timeout: 15_000 })
-    await expect.poll(() => page.url()).toBe(before)
+    const canvas = runtime.locator('canvas')
+    const loseContext = (element: Element) => {
+      if (!(element instanceof HTMLCanvasElement)) throw new Error('Home canvas unavailable')
+      const extension = element.getContext('webgl2')?.getExtension('WEBGL_lose_context')
+      if (!extension) throw new Error('WebGL context loss extension unavailable')
+      extension.loseContext()
+    }
+    const hasLiveContext = (element: Element) => {
+      const gl = element instanceof HTMLCanvasElement ? element.getContext('webgl2') : null
+      return !!gl && !gl.isContextLost() && gl.drawingBufferWidth > 0 && gl.drawingBufferHeight > 0
+    }
+    await expect(runtime).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 15_000 })
+    const original = await canvas.elementHandle()
+    if (!original) throw new Error('Home canvas unavailable')
+    await Promise.all([
+      runtime.getByRole('status').filter({ hasText: /Restoring the spatial Home renderer/i }).waitFor({ state: 'attached' }),
+      original.evaluate(loseContext),
+    ])
+    await expect.poll(() => original.evaluate((element) => element.isConnected)).toBe(false)
+    await expect(runtime).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 15_000 })
+    await expect.poll(() => canvas.evaluate(hasLiveContext)).toBe(true)
+    await expect(page).toHaveURL(before)
 
-    await runtime.locator('canvas').evaluate((canvas) => canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true })))
+    await canvas.evaluate(loseContext)
     const fallback = page.locator('[data-urai-home-runtime="accessible-fallback-after-renderer-failure"]')
-    await expect(fallback).toBeVisible()
     await expect(fallback.getByRole('status').filter({ hasText: /could not recover/i })).toBeVisible()
-    await expect.poll(() => page.url()).toBe(before)
+    await expect(fallback.getByRole('link', { name: /life map/i }).first()).toBeVisible()
+    await fallback.getByRole('button', { name: 'Retry loading Home' }).click()
+    await expect(runtime).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 15_000 })
+    await expect.poll(() => canvas.evaluate(hasLiveContext)).toBe(true)
+    await expect(page).toHaveURL(before)
   })
 
   test('offline transition preserves the current route and recovers online', async ({ page, context }) => {

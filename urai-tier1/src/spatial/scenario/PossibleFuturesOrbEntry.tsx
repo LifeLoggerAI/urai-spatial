@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
 import type { UraiOriginRealm } from '@/spatial/world/worldTypes'
@@ -20,19 +19,7 @@ function scenarioOriginFor(destination: string): UraiOriginRealm {
  */
 export function PossibleFuturesOrbEntry() {
   const { world, phase } = useUraiWorldState()
-  const [companionOpen, setCompanionOpen] = useState(false)
-
-  useEffect(() => {
-    const owner = document.querySelector<HTMLElement>('.urai-world-companion')
-    if (!owner) return
-    const sync = () => setCompanionOpen(owner.dataset.open === 'true')
-    sync()
-    const observer = new MutationObserver(sync)
-    observer.observe(owner, { attributes: true, attributeFilter: ['data-open'] })
-    return () => observer.disconnect()
-  }, [world.destination])
-
-  if (!companionOpen || world.destination === 'possible-futures') return null
+  if (world.destination === 'possible-futures') return null
 
   const explore = () => {
     if (phase !== 'idle') return

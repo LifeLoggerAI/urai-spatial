@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import type { AmbientPlaybackOutcome } from '@/spatial/audio/audioTypes'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { publishOrbState } from '@/app/home/orbStateController'
+import { PossibleFuturesOrbEntry } from '@/spatial/scenario/PossibleFuturesOrbEntry'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
 import {
@@ -250,6 +251,7 @@ export function PersistentWorldCompanion({ambientPlayback, onRetryAmbient}: Ambi
         <p>{current.label}</p>
         <nav aria-label="Travel through the URAI world">{destinationButtons(primaryDestinations)}</nav>
         <nav className="urai-world-companion__secondary" aria-label="Travel to private URAI realms">{destinationButtons(secondaryDestinations)}</nav>
+        {open ? <PossibleFuturesOrbEntry /> : null}
         <section className="urai-world-companion__estate" aria-labelledby="urai-public-estate-title">
           <h2 id="urai-public-estate-title">Public constellation</h2>
           <a href="/launch">Explore destinations</a>
