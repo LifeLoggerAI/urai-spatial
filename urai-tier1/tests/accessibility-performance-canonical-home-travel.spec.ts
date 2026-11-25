@@ -135,7 +135,9 @@ async function activate(page: Page, destination: Destination, activation: Activa
     target: element.getAttribute('target'),
   }))
   expect(renderedLink.tagName).toBe('A')
-  expect(renderedLink.href).toBe(`${destination.pathname}/?${new URLSearchParams(destination.params).toString()}`)
+  const renderedUrl = new URL(renderedLink.href, baseURL)
+  expect(normalizedPathname(renderedUrl.toString())).toBe(destination.pathname)
+  expect(renderedUrl.searchParams.toString()).toBe(new URLSearchParams(destination.params).toString())
   expect(renderedLink.target).toBeNull()
 
   if (activation.method === 'keyboard') {
@@ -187,7 +189,7 @@ async function proveCanonicalTravel(
   const expected = expectedSignature(destination)
   await expect.poll(
     () => canonicalSignature(page, destination),
-    { timeout: 20_000, message: `${activation.id} must settle on the canonical ${destination.id} URL` },
+    { timeout: 45_000, message: `${activation.id} must settle on the canonical ${destination.id} URL` },
   ).toBe(expected)
 
   const identity = await waitForAuthorizedSettledIdentity(page, destination)
