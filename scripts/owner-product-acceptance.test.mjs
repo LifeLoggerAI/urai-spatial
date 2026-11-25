@@ -36,3 +36,16 @@ test('rejects missing binding context', () => assert.equal(validateOwnerProductA
 test('rejects changed attestation bytes', () => assert.equal(validateOwnerProductAcceptance(fixture(),context,Buffer.from('changed')).valid,false));
 test('rejects absent required fields', () => { const r=fixture(); delete r.limitations; assert.equal(validateOwnerProductAcceptance(r,context,bytes).valid,false); });
 test('rejects non-object input', () => assert.equal(validateOwnerProductAcceptance(null,context,bytes).valid,false));
+
+
+for (const reviewedAt of ['2026-02-30T12:00:00Z','2025-02-29T12:00:00Z','2026-04-31T12:00:00Z','2026-11-25T24:00:00Z']) {
+ test('rejects calendar rollover '+reviewedAt, () => assert.equal(validateOwnerProductAcceptance({...fixture(),reviewedAt},context,bytes).valid,false));
+}
+test('accepts genuine leap day', () => assert.equal(validateOwnerProductAcceptance({...fixture(),reviewedAt:'2024-02-29T12:00:00Z'},context,bytes).valid,true));
+test('malformed records always report no authority', () => {
+ const result = validateOwnerProductAcceptance(null,context,bytes);
+ assert.equal(result.identityAuthenticated,false);
+ assert.equal(result.independentApproval,false);
+ assert.equal(result.productionAuthorized,false);
+});
+
