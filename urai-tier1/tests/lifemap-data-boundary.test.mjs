@@ -72,7 +72,9 @@ test('semantic Life Map navigation uses authenticated ownership and remains avai
   assert.match(accessGate, /if \(!webglAvailable\) \{/)
   assert.match(accessGate, /if \(mode === "signed-out"\) \{[\s\S]*<LifeMapSemanticNavigator authenticatedUserId=\{null\} \/><\/\>;/)
   assert.match(accessGate, /if \(mode === "private"\) return <LifeMapSemanticNavigator authenticatedUserId=\{authenticatedUserId\} semanticOnly \/>/)
-  assert.match(accessGate, /return <><LifeMapLoading label="WebGL is unavailable\. Semantic navigation remains available" \/><LifeMapSemanticNavigator authenticatedUserId=\{null\} \/><\/\>;/)
+  assert.match(accessGate, /return <><LifeMapLoading label="[^"]+" \/><LifeMapSemanticNavigator sampleFallback \/><\/\>;/)
+  assert.match(semanticNavigator, /sampleFallback && sourceMode === 'explicit-demo'/)
+  assert.match(semanticNavigator, /selected && \(open \|\| showSampleSelection\) && !readFailed/)
   assert.doesNotMatch(semanticNavigator, /localStorage\.getItem/)
 })
 

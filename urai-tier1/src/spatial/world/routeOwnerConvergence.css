@@ -38,9 +38,7 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   filter: none !important;
 }
 
-/* Once open, return the transparent controller to its normal grid position below
- * the menu. This preserves a pointer-close target without covering destination
- * buttons such as Life Map. */
+/* When Home opens the menu, its existing toggle becomes a visible dismiss button. */
 .urai-world-runtime[data-world-destination='home']
   .urai-world-companion[data-open='true'] .urai-world-companion__orb,
 .urai-world-runtime[data-world-destination='home']
@@ -48,11 +46,15 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   position: relative !important;
   left: auto !important;
   top: auto !important;
-  width: 64px !important;
-  height: 64px !important;
+  width: auto !important;
+  min-width: 88px;
+  height: 48px !important;
+  padding: 0 16px;
+  color: #f3fbf8;
+  font: 700 14px/1.25 system-ui, sans-serif;
   transform: none !important;
-  border-color: transparent !important;
-  background: transparent !important;
+  border-color: rgba(230,246,240,.45) !important;
+  background: #102c2a !important;
   box-shadow: none !important;
   filter: none !important;
 }

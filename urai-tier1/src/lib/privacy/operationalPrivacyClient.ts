@@ -78,6 +78,19 @@ export function applyOperationalConsentPolicy(payload: { domain: string; next: R
   return callOperationalPrivacyFunction('applyConsentPolicy', { ...payload, operationId: payload.operationId ?? operationId('consent') })
 }
 
+export type OperationalLifeMapVisibility = {
+  view: 'life-map-visibility'
+  owner: string
+} & ({ state: 'unavailable' } | {
+  state: 'available'
+  revision: number
+  confirmed: boolean
+  memory: import('@/app/privacy-controls/consentModel').ConsentDomainPolicy
+})
+
+export function getOperationalLifeMapVisibility() {
+  return callOperationalPrivacyFunction<OperationalLifeMapVisibility>('getPassportSnapshot', { view: 'life-map-visibility' })
+}
 export function getOperationalPassportSnapshot() { return callOperationalPrivacyFunction('getPassportSnapshot') }
 export function createOperationalExportRequest(scopes: string[], suppliedOperationId?: string) {
   return callOperationalPrivacyFunction('createSpatialExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })

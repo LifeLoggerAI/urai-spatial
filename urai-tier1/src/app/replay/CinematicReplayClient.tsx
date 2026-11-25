@@ -235,6 +235,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const admission = useMemo(() => replayVisualAdmission(memory), [memory])
   const media = admission.media
   const video = media?.kind === 'video'
+  const silentFilm = admission.kind === 'disclosed-demo' && admission.recordedAudio === 'none'
   const webgl = useReplayWebGL()
   const reducedMotion = useReducedMotion()
   const [narrativePlaying, setNarrativePlaying] = useState(false)
@@ -393,7 +394,8 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
         if (element.requestFullscreen) void element.requestFullscreen().catch(() => {})
         else (element as HTMLVideoElement & { webkitEnterFullscreen?: () => void }).webkitEnterFullscreen?.()
       }}>Fullscreen</button> : null}
-      {video ? <button className="memoryAudio" type="button" disabled={!videoSnapshot.audioAllowed} onClick={() => videoSession.current?.setMuted(!videoSnapshot.muted)} aria-label={!videoSnapshot.audioAllowed ? 'Recorded audio is off while low stimulation is on' : videoSnapshot.muted ? 'Enable recorded audio' : 'Mute recorded audio'} aria-pressed={!videoSnapshot.muted}>{!videoSnapshot.audioAllowed ? 'Audio off: low stimulation' : videoSnapshot.muted ? 'Enable audio' : 'Mute audio'}</button> : null}
+      {silentFilm && <span className="replayVideoTime">Silent sample film</span>}
+      {video && !silentFilm ? <button className="memoryAudio" type="button" disabled={!videoSnapshot.audioAllowed} onClick={() => videoSession.current?.setMuted(!videoSnapshot.muted)} aria-label={!videoSnapshot.audioAllowed ? 'Recorded audio is off while low stimulation is on' : videoSnapshot.muted ? 'Enable recorded audio' : 'Mute recorded audio'} aria-pressed={!videoSnapshot.muted}>{!videoSnapshot.audioAllowed ? 'Audio off: low stimulation' : videoSnapshot.muted ? 'Enable audio' : 'Mute audio'}</button> : null}
     </section>
     <ReplayProductControls memory={memory} />
     {lifeModelAuthority.available ? <ReplayPersonPresence people={lifeModelAuthority.people} /> : null}

@@ -325,6 +325,15 @@
   .urai-world-companion__estate ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+@media (max-width: 560px) and (max-height: 640px) {
+  .urai-world-runtime[data-world-destination='shadow']:has(.urai-spatial-realm-fallback) .urai-world-companion[data-open='false'] {
+    left: auto;
+    right: max(14px, env(safe-area-inset-right));
+    transform: none;
+    justify-items: end;
+  }
+}
+
 @media (forced-colors: active) {
   .urai-world-companion__estate-card,
   .urai-world-companion__estate a {

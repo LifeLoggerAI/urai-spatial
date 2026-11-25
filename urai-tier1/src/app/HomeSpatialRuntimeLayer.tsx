@@ -1,13 +1,14 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { HomeManualEmotionalWeatherStatus } from '@/lib/uraiEmotion/ManualEmotionalWeatherControls'
 import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
 import HomeSceneRenderBoundary from './home/HomeSceneRenderBoundary'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { useSceneStore } from '@/spatial/store/useSceneStore'
 import { clearHomeAssetCache, isHomeAssetLoadError } from '@/spatial/layout/HomeWorldProductionPolished'
 
 type RendererState = 'ready' | 'recovering' | 'failed'
@@ -69,6 +70,11 @@ export default function HomeSpatialRuntimeLayer() {
   const [assetsReady, setAssetsReady] = useState(false)
   const [assetLoadFailed, setAssetLoadFailed] = useState(false)
 
+  useLayoutEffect(() => {
+    // The camera reads a shared store that can still hold Ascent after a client-side return.
+    if (homeRouteActive) useSceneStore.getState().setPlaceFromRoute('/home')
+  }, [homeRouteActive])
+
   const onSceneFailure = useCallback((error: Error) => {
     setAssetLoadFailed(isHomeAssetLoadError(error))
     setAssetsReady(false)
@@ -100,6 +106,15 @@ export default function HomeSpatialRuntimeLayer() {
   }, [homeRuntimeActive, rendererState])
 
   useEffect(() => {
+    if (!homeRuntimeActive || rendererState !== 'recovering') return
+    const timer = window.setTimeout(() => {
+      setRecoveryKey((value) => value + 1)
+      setRendererState('ready')
+    }, 250)
+    return () => window.clearTimeout(timer)
+  }, [homeRuntimeActive, rendererState])
+
+  useEffect(() => {
     if (!homeRuntimeActive || rendererState === 'failed') {
       setAssetsReady(false)
       return
@@ -107,23 +122,18 @@ export default function HomeSpatialRuntimeLayer() {
     const root = runtimeRef.current
     if (!root) return
 
-    let recoveryTimer: ReturnType<typeof setTimeout> | null = null
     let attachedCanvas: HTMLCanvasElement | null = null
 
     const onContextLost = (event: Event) => {
       event.preventDefault()
+      setAssetsReady(false)
       if (recoveryAttemptsRef.current >= 1) {
         setAssetLoadFailed(false)
-        setAssetsReady(false)
         setRendererState('failed')
         return
       }
       recoveryAttemptsRef.current += 1
       setRendererState('recovering')
-      recoveryTimer = setTimeout(() => {
-        setRecoveryKey((value) => value + 1)
-        setRendererState('ready')
-      }, 250)
     }
 
     const onContextRestored = () => setRendererState('ready')
@@ -138,7 +148,7 @@ export default function HomeSpatialRuntimeLayer() {
         attachedCanvas.addEventListener('webglcontextrestored', onContextRestored)
       }
       const owner = root.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
-      setAssetsReady(owner?.getAttribute('data-home-assets-ready') === 'true')
+      setAssetsReady(rendererState === 'ready' && owner?.getAttribute('data-home-assets-ready') === 'true')
     }
 
     setAssetsReady(false)
@@ -148,7 +158,6 @@ export default function HomeSpatialRuntimeLayer() {
 
     return () => {
       observer.disconnect()
-      if (recoveryTimer) clearTimeout(recoveryTimer)
       attachedCanvas?.removeEventListener('webglcontextlost', onContextLost)
       attachedCanvas?.removeEventListener('webglcontextrestored', onContextRestored)
     }

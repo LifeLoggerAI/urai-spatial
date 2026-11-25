@@ -224,3 +224,28 @@ for (const destination of destinations) {
     })
   }
 }
+
+test('returning from a governed sky Ascent leaves Home settled until the next activation', async ({ page }) => {
+  test.setTimeout(90_000)
+  await page.goto('/home', { waitUntil: 'domcontentloaded' })
+  const sky = page.getByRole('button', { name: 'Ascend through Home sky to Life Map' })
+  const sanctuary = page.getByTestId('home-visible-navigable-sanctuary-world')
+  await expect(sky).toBeVisible({ timeout: 30_000 })
+  await sky.click()
+  await page.getByRole('button', { name: 'Open disclosed sample' }).click({ timeout: 20_000 })
+  await page.getByRole('button', { name: 'Home', exact: true }).click()
+
+  await expect(sanctuary).toHaveAttribute('data-home-scene-phase', 'HOME', { timeout: 15_000 })
+  await expect(sanctuary).toHaveAttribute('data-home-portal-sequence', 'idle')
+  await expect(sanctuary).toHaveAttribute('data-home-input-locked', 'false')
+  await expect(sky).toBeEnabled({ timeout: 20_000 })
+
+  // Observe beyond the completed Ascent's navigation deadline without supplying more input.
+  const leftHome = page.waitForURL(url => normalizedPathname(url.href) !== '/home', {
+    waitUntil: 'commit', timeout: 6_000,
+  })
+  await expect(leftHome).rejects.toThrow(/Timeout/)
+  await expect(sanctuary).toHaveAttribute('data-home-camera-mode', 'embodied-first-person')
+  await sky.click()
+  await expect.poll(() => normalizedPathname(page.url()), { timeout: 20_000 }).toBe('/life-map')
+})

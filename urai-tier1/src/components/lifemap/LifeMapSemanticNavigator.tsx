@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom'
 import { lifeMapTypeLabels, type LifeMapNode, type LifeMapNodeType } from './lifeMapData'
 import { requestLifeMapSelection } from './lifeMapSelection'
 import { retryPrivateLifeMap, useLifeMapEvents } from './useLifeMapEvents'
+import { LifeMapVisibilityReview } from './LifeMapVisibilityReview'
 
 const TYPE_FILTERS: readonly (LifeMapNodeType | 'all')[] = ['all', 'memory', 'relationship', 'season', 'recovery', 'threshold', 'ritual', 'forecast', 'legacy']
 
@@ -25,7 +26,8 @@ function matchesSearch(node: LifeMapNode, search: string) {
 export default function LifeMapSemanticNavigator({
   authenticatedUserId = null,
   semanticOnly = false,
-}: { authenticatedUserId?: string | null; semanticOnly?: boolean }) {
+  sampleFallback = false,
+}: { authenticatedUserId?: string | null; semanticOnly?: boolean; sampleFallback?: boolean }) {
   const router = useRouter()
   const params = useSearchParams()
   const explicitDemo = params.get('demo') === '1'
@@ -41,7 +43,11 @@ export default function LifeMapSemanticNavigator({
   const searchRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const noticeRef = useRef<HTMLParagraphElement>(null)
+  const selectedHeadingRef = useRef<HTMLHeadingElement>(null)
+  const focusAfterSelection = useRef<string | null>(null)
   const retrying = useRef(false)
+  const showSampleSelection = sampleFallback && sourceMode === 'explicit-demo'
+  const SelectedHeading = showSampleSelection ? 'h1' : 'h2'
   const privateView = Boolean(authenticatedUserId) && !explicitDemo
   const readFailed = privateView && (sourceMode === 'error' || sourceMode === 'unavailable')
   let readNotice = ''
@@ -91,6 +97,7 @@ export default function LifeMapSemanticNavigator({
   }, [])
 
   const selectNode = useCallback((node: LifeMapNode, source: 'semantic' | 'keyboard' | 'pointer' = 'semantic') => {
+    if (showSampleSelection && (open || source === 'semantic')) focusAfterSelection.current = node.id
     // Semantic result activation returns focus to the navigator trigger. Global keyboard
     // stepping must not steal focus into that button, otherwise the next Arrow key is
     // correctly ignored by the button-target guard and the selected identity gets stuck.
@@ -112,7 +119,7 @@ export default function LifeMapSemanticNavigator({
     // If the listener already handled the event, localSelectionId preserves the
     // departure/travel/approach sequence and this replace is idempotent.
     router.replace(destination, { scroll: false })
-  }, [closeNavigator, commitBrowserIdentity, router, withIdentity])
+  }, [closeNavigator, commitBrowserIdentity, open, router, showSampleSelection, withIdentity])
 
   const destinationHref = useCallback((route: 'focus' | 'replay', node: LifeMapNode) => {
     const next = withIdentity(new URLSearchParams())
@@ -163,6 +170,13 @@ export default function LifeMapSemanticNavigator({
   }, [open])
 
   useEffect(() => {
+    if (!open && showSampleSelection && selectedId && focusAfterSelection.current === selectedId && selectedHeadingRef.current) {
+      selectedHeadingRef.current.focus({ preventScroll: true })
+      focusAfterSelection.current = null
+    }
+  }, [open, selectedId, showSampleSelection])
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return
       if (event.key === 'Escape' && open) { event.preventDefault(); closeNavigator(); return }
@@ -203,6 +217,7 @@ export default function LifeMapSemanticNavigator({
         {readFailed ? <button type="button" onClick={retry}>Retry Life Map</button> : null}
         <Link href="/home" prefetch={false}>Return Home</Link>
       </div>
+      {privateView && authenticatedUserId ? <LifeMapVisibilityReview key={authenticatedUserId} owner={authenticatedUserId} /> : null}
     </div> : null}
     <button
       ref={triggerRef}
@@ -210,13 +225,14 @@ export default function LifeMapSemanticNavigator({
       className="life-map-search-trigger"
       data-testid="life-map-semantic-trigger"
       data-life-map-source={sourceMode}
+      data-sample-fallback={showSampleSelection || undefined}
       data-life-map-fallback={semanticOnly ? 'authored-semantic' : undefined}
       aria-label="Search and navigate Life Map"
       aria-expanded={open}
       aria-controls={open ? 'life-map-navigator' : undefined}
       onClick={() => { setOpen((value) => !value) }}
     >
-      <span aria-hidden="true">⌕</span><span className="sr-only">Search life</span>
+      {showSampleSelection ? <span>Search</span> : <><span aria-hidden="true">⌕</span><span className="sr-only">Search life</span></>}
     </button>
 
     {open ? <section className="life-map-navigator" aria-label="Search and filter Life Map" id="life-map-navigator">
@@ -233,14 +249,15 @@ export default function LifeMapSemanticNavigator({
       <p className="privacy-truth">{sourceMode === 'explicit-demo' ? 'Disclosed sample universe · not your memories' : sourceMode === 'private' ? 'Private universe' : sourceMode}</p>
     </section> : null}
 
-    {selected && open && !readFailed ? <aside className="life-map-semantic-inspector" data-life-map-source={sourceMode} aria-label="Selected life object details">
-      <span>{lifeMapTypeLabels[selected.type]} · {selected.dateLabel}</span>
-      <h2>{selected.title}</h2>
+    {selected && (open || showSampleSelection) && !readFailed ? <aside className="life-map-semantic-inspector" data-life-map-source={sourceMode} data-sample-fallback={showSampleSelection || undefined} data-search-open={open} aria-label="Selected life object details">
+      <span>{showSampleSelection ? 'Public sample · ' : ''}{lifeMapTypeLabels[selected.type]} · {selected.dateLabel}</span>
+      <SelectedHeading ref={selectedHeadingRef} tabIndex={showSampleSelection ? -1 : undefined}>{selected.title}</SelectedHeading>
       <p>{selected.summary}</p>
       <nav className="semantic-thresholds" aria-label="Selected memory destinations">
         <button type="button" disabled={Boolean(selected.locked)} onClick={() => router.push(destinationHref('focus', selected))}>Enter Focus</button>
         <button type="button" disabled={!selected.replayAvailable || selected.locked} onClick={() => router.push(destinationHref('replay', selected))}>Replay</button>
         <button type="button" onClick={overview}>Overview</button>
+        {showSampleSelection ? <Link href="/home" prefetch={false}>Return Home</Link> : null}
       </nav>
       {related.length ? <div className="related-paths"><strong>Connected</strong>{related.slice(0, 4).map((node) => <button key={node.id} type="button" onClick={() => selectNode(node)}>{node.title}</button>)}</div> : null}
     </aside> : null}

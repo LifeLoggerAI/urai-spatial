@@ -1563,9 +1563,29 @@ function safeRows(snapshot: FirebaseFirestore.QuerySnapshot, kind: string) {
   }))
 }
 
-export const getPassportSnapshot = functions.https.onCall(async (_data, context) => {
+export const getPassportSnapshot = functions.https.onCall(async (data, context) => {
   const uid = await requireCurrentPrivacyOwner(context)
   const userRef = db.doc(`users/${uid}`)
+  if (data?.view === 'life-map-visibility') {
+    // This subset of the existing owner Passport omits identity, device, provider and audit rows.
+    const visibility = await db.runTransaction(async transaction => {
+      const [policy, applied] = await transaction.getAll(
+        userRef.collection('privacyPolicy').doc('current'), userRef.collection('privacyRuntime').doc('life-map-visibility'))
+      if (!policy.exists) return { state: 'unavailable' as const }
+      const stored = parseStoredPolicy(policy.data(), uid)
+      const memory = stored.domains.memory
+      const enabled = consentEnabled(memory)
+      const confirmed = stored.revision > 0 && typeof stored.enforcement.jobId === 'string'
+        && stored.enforcement.state === 'fully-enforced' && stored.enforcement.affectedTargets.includes('life-map-visibility') && applied.exists
+        && applied.get('ownerId') === uid && applied.get('domain') === 'memory'
+        && applied.get('target') === 'life-map-visibility' && applied.get('revision') === stored.revision
+        && applied.get('sourceJobId') === stored.enforcement.jobId && applied.get('mode') === memory.mode
+        && applied.get('enabled') === enabled && applied.get('lifeMapVisible') === memory.lifeMapVisible
+      return { state: 'available' as const, revision: stored.revision, memory, confirmed }
+    })
+    await requireCurrentPrivacyOwner(context)
+    return { view: 'life-map-visibility', owner: uid, ...visibility }
+  }
   const [user, policy, sources, devices, providers, exports, deletions, receipts] = await Promise.all([
     userRef.get(),
     userRef.collection('privacyPolicy').doc('current').get(),

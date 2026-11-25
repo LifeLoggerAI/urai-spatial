@@ -62,3 +62,41 @@ test.describe('Possible Futures accessibility and truth evidence', () => {
     await expect(page.getByText('POSSIBLE FUTURE · NOT A MEMORY', { exact: true })).toBeVisible()
   })
 })
+
+test.describe('Possible Futures from the touch Orb menu', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, reducedMotion: 'reduce' })
+
+  test('sound and scenario controls accept their own taps', async ({ page }) => {
+    await page.goto('/home/', { waitUntil: 'domcontentloaded' })
+    await page.getByTestId('home-semantic-orb').tap()
+    const menu = page.locator('#urai-world-companion-menu')
+    await menu.getByRole('button', { name: 'Enable spatial sound' }).tap()
+    await menu.getByRole('button', { name: 'Mute spatial sound' }).tap()
+    await expect(menu.getByRole('button', { name: 'Enable spatial sound' })).toHaveAttribute('aria-pressed', 'false')
+    await menu.getByRole('button', { name: 'Explore a Possible Future' }).tap()
+    await expect(page).toHaveURL(/\/possible-futures(?:[/?#]|$)/)
+  })
+
+  test('Home rail keeps the centers of scrolled Orb destinations tappable', async ({ page }) => {
+    for (const [name, path] of [['Life Movie', '/life-movie'], ['Emotional Atlas', '/location-map']]) {
+      await page.goto('/home/', { waitUntil: 'domcontentloaded' })
+      await page.getByTestId('home-semantic-orb').tap()
+      const close = page.getByRole('button', { name: 'Close Orb travel controls' })
+      await expect(close).toHaveText('Close menu')
+      const closeSize = await rect(close)
+      expect(Math.min(closeSize.width, closeSize.height)).toBeGreaterThanOrEqual(48)
+      await close.tap()
+      await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'true')
+      await expect(page).toHaveURL(/\/home\/?$/)
+      await page.getByTestId('home-semantic-orb').tap()
+      const target = page.locator('#urai-world-companion-menu').getByRole('button', { name, exact: true })
+      await target.scrollIntoViewIfNeeded()
+      await expect.poll(() => target.evaluate((element) => {
+        const rect = element.getBoundingClientRect()
+        return element.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2))
+      })).toBe(true)
+      await target.tap()
+      await expect.poll(() => new URL(page.url()).pathname.replace(/\/$/, '')).toBe(path)
+    }
+  })
+})
