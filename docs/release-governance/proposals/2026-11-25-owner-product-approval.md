@@ -1,6 +1,6 @@
 # Proposed owner approval mode
 
-Status: PROPOSED — NOT ADOPTED. Prepared November 25, 2026 at Adam Clamp's request.
+Status: OWNER ADOPTED LIMITED POLICY — INTEGRATION PENDING. Prepared November 25, 2026 at Adam Clamp's request. See ../2026-11-25-owner-product-policy-adoption.md for the explicit owner decision and implementation limits.
 This document is a policy proposal, not a release decision, signature, waiver, or change to executable gates.
 
 ## Problem and proposed decision
