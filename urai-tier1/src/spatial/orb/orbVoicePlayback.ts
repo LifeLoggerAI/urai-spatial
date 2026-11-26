@@ -14,6 +14,12 @@ type VoiceOptions = {
   requestExternalAudio: (text: string, signal: AbortSignal) => Promise<Blob | null>
   onPhase: (phase: OrbVoicePhase) => void
   onNotice: (notice: OrbVoiceNotice) => void
+  /**
+   * Optional render-only handoff for the actual external audio element. This
+   * never creates or substitutes audio; it lets an isolated visual fixture
+   * follow the same clock that the listener hears.
+   */
+  onExternalMediaChange?: (media: HTMLAudioElement | null) => void
   environment?: VoiceEnvironment
   voiceAvailabilityTimeoutMs?: number
 }
@@ -75,6 +81,7 @@ export class OrbVoicePlayback {
           this.objectUrl = url
           audio = this.environment.createAudio(url)
           this.audio = audio
+          this.options.onExternalMediaChange?.(audio)
           const ownsAudio = () => this.owns(generation, controller) && this.audio === audio
           audio.onplaying = () => {
             if (!ownsAudio()) return
@@ -127,6 +134,7 @@ export class OrbVoicePlayback {
       audio.onerror = null
       audio.pause()
       audio.src = ''
+      this.options.onExternalMediaChange?.(null)
     }
     if (this.objectUrl) this.environment.revokeObjectURL(this.objectUrl)
     this.objectUrl = null

@@ -6,7 +6,7 @@ import { isOrbState, resolveOrbSensoryOutput } from '../src/app/home/orbStateCon
 const localVoice = { name: 'Local English', lang: 'en-US', localService: true }
 const remoteVoice = { name: 'Remote English', lang: 'en-US', localService: false }
 
-function fixture({ voices = [localVoice], requestExternalAudio = async () => new Blob(['voice']), playAudio } = {}) {
+function fixture({ voices = [localVoice], requestExternalAudio = async () => new Blob(['voice']), playAudio, onExternalMediaChange } = {}) {
   const phases = []
   const notices = []
   const audios = []
@@ -24,6 +24,7 @@ function fixture({ voices = [localVoice], requestExternalAudio = async () => new
   const playback = new OrbVoicePlayback({
     onPhase: (phase) => phases.push(phase),
     onNotice: (notice) => notices.push(notice),
+    onExternalMediaChange,
     requestExternalAudio: (text, signal) => {
       requests.push({ text, signal })
       return requestExternalAudio(text, signal)
@@ -82,6 +83,15 @@ test('external audio reports preparing until onplaying, buffering returns to pre
   assert.deepEqual(f.revokedUrls, ['blob:voice-1'])
   assert.equal(audio.pauseCount, 1)
   assert.equal(audio.src, '')
+})
+
+test('the render bridge receives only the actual external media and is cleared on interruption', async () => {
+  const media = []
+  const f = fixture({ onExternalMediaChange: (audio) => media.push(audio) })
+  await f.playback.play('Local fixture', true)
+  assert.equal(media[0], f.audios[0])
+  f.playback.stop()
+  assert.equal(media.at(-1), null)
 })
 
 test('stopping a pending external request prevents both late playback and device fallback', async () => {
