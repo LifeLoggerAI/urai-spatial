@@ -6,6 +6,7 @@ import { Component, Suspense, useEffect, useRef, useState, type MutableRefObject
 import * as THREE from 'three'
 import { COUNCIL_AGENTS } from './councilAgentSchema'
 import CouncilConversationPanel from './CouncilConversationPanel'
+import CouncilSyntheticSpeechFixture from './CouncilSyntheticSpeechFixture'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import {
@@ -111,26 +112,32 @@ function RiggedCouncilHuman({
   index,
   selected,
   reducedMotion,
+  speechMedia,
   onSelect,
 }: {
   modelUrl: string
   index: number
   selected: boolean
   reducedMotion: boolean
+  speechMedia: HTMLAudioElement | null
   onSelect: () => void
 }) {
   const model = useGLTF(modelUrl)
   const root = useRef<THREE.Group>(null)
   const { actions } = useAnimations(model.animations, root)
 
+  const speaking = selected && !!speechMedia && !speechMedia.paused && !speechMedia.ended && !speechMedia.muted
+
   useEffect(() => {
-    if (reducedMotion) return
-    const clip = selected ? (actions.listen_acknowledge ?? actions.idle_breath) : actions.idle_breath
+    const clip = speaking ? actions.speak_calm : selected ? (actions.listen_acknowledge ?? actions.idle_breath) : actions.idle_breath
+    if (reducedMotion && !speaking) return
     clip?.reset().fadeIn(0.25).play()
+    if (speaking && clip) clip.paused = true
     return () => {
+      if (clip) clip.paused = false
       clip?.fadeOut(0.2)
     }
-  }, [actions, reducedMotion, selected])
+  }, [actions, reducedMotion, selected, speaking])
 
   useEffect(() => {
     model.scene.traverse((object) => {
@@ -143,6 +150,14 @@ function RiggedCouncilHuman({
 
   useFrame(({ clock }) => {
     if (!root.current) return
+    if (speaking) {
+      const clip = actions.speak_calm
+      if (clip) {
+        // The same audio element heard by the user is the clock source. These
+        // current Council models only expose skeletal speaking motion, not lips.
+        clip.time = (speechMedia?.currentTime ?? 0) * (reducedMotion ? 0.24 : 1)
+      }
+    }
     root.current.rotation.y = ROTATIONS[index]?.[1] ?? 0
     root.current.position.y = reducedMotion ? 0 : Math.sin((clock.elapsedTime + index * 0.77) * 0.8) * 0.004
   })
@@ -218,6 +233,8 @@ class CouncilRenderBoundary extends Component<{ children: ReactNode }, { failed:
 function CouncilStage() {
   const [selected, setSelected] = useState(0)
   const [dragging, setDragging] = useState(false)
+  const [speechMedia, setSpeechMedia] = useState<HTMLAudioElement | null>(null)
+  const [syntheticFixtureEnabled, setSyntheticFixtureEnabled] = useState(false)
   const selectedAgent = COUNCIL_AGENTS[selected] ?? COUNCIL_AGENTS[0]
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
@@ -227,6 +244,11 @@ function CouncilStage() {
   const yaw = useRef(0)
   const pitch = useRef(-0.025)
   const input = useMovementInput({ onEscape: () => requestUraiWorldReturn() })
+  useEffect(() => {
+    const allowed = process.env.NEXT_PUBLIC_URAI_CHALK_SYNTHETIC_SPEECH_FIXTURE === 'true'
+    setSyntheticFixtureEnabled(allowed && new URLSearchParams(window.location.search).get('chalkSpeechFixture') === '1')
+  }, [])
+  useEffect(() => () => setSpeechMedia(null), [])
   const dragLook = useDragLook({
     yaw,
     pitch,
@@ -297,6 +319,7 @@ function CouncilStage() {
                 index={index}
                 selected={selected === index}
                 reducedMotion={reducedMotion}
+                speechMedia={selected === index ? speechMedia : null}
                 onSelect={() => setSelected(index)}
               />
             ))}
@@ -316,6 +339,7 @@ function CouncilStage() {
         <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#e8d8b9]/80">{selectedAgent.role}</p>
         <p className="mt-3 max-w-[38ch] text-sm leading-6 text-white/72">{selectedAgent.focus}</p>
         <CouncilConversationPanel agent={selectedAgent} />
+        {syntheticFixtureEnabled ? <CouncilSyntheticSpeechFixture onMedia={setSpeechMedia} reducedMotion={reducedMotion} /> : null}
         <div className="pointer-events-auto mt-4 flex flex-wrap gap-2">
           <button className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950" type="button" onClick={() => travel('home', '/home?returnFrom=council')}>Return Home</button>
           <button className="rounded-full border border-white/20 px-4 py-2 text-xs text-white" type="button" onClick={() => travel('mirror', '/mirror?from=council')}>Mirror</button>
