@@ -89,7 +89,7 @@ function harness(search = '?memoryId=memory-one', { autoPolicy = true } = {}) {
         return () => { subscription.stopped = true }
       },
     },
-    '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true, getFirebaseDb: () => ({}) },
+    '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true, getFirebaseDb: () => ({}), getUrAiAuth: () => ({}) },
     './selectedMemoryContract': contract,
     './memoryConsentAdmission': load('memoryConsentAdmission.ts', {}),
     './explicitDemoMemory': { buildNamedExplicitDemoMemory: contract.buildExplicitDemoMemory },

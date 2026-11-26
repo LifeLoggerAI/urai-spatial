@@ -8,6 +8,7 @@ import { COUNCIL_AGENTS } from './councilAgentSchema'
 import CouncilConversationPanel from './CouncilConversationPanel'
 import AnonymousFacialFixture, { type AnonymousRenderFrame } from '@/spatial/digital-human/AnonymousFacialFixture'
 import AnonymousCalibrationControls from '@/spatial/digital-human/AnonymousCalibrationControls'
+import ChalkSyntheticConversationBridge from '@/spatial/digital-human/ChalkSyntheticConversationBridge'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import {
@@ -345,10 +346,13 @@ function CouncilStage() {
       </section>
 
       {faceLabEnabled ? (
-        <AnonymousCalibrationControls
-          onMedia={setFaceLabMedia} onMute={setFaceLabMuted}
-          onFreeze={setFaceLabFrozen} onFrame={faceLabFrame}
-        />
+        <>
+          <ChalkSyntheticConversationBridge onMedia={setFaceLabMedia} reducedMotion={reducedMotion} />
+          <AnonymousCalibrationControls
+            onMedia={setFaceLabMedia} onMute={setFaceLabMuted}
+            onFreeze={setFaceLabFrozen} onFrame={faceLabFrame}
+          />
+        </>
       ) : null}
       <MovementHelp realm="Council" summary="Walk around the chamber and choose a Council presence." controls="WASD or arrows move. Drag to look. Tap a Council person to select them. Escape returns. Mobile movement controls appear on touch devices." />
       <MobileMovementPad input={input} label="Move through Council" />

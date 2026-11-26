@@ -19,3 +19,11 @@ test('extended capture profile sustains REAL audio-clock morphs across macOS com
  assert.equal(wav.length,288044)
  assert.equal(new DataView(wav.buffer,wav.byteOffset,wav.byteLength).getUint32(40,true),288000)
 })
+test('synthetic conversation fixture remains local, clock-shaped, and reduced-motion safe',()=>{
+ const full=calibrationPose(.25,true,false,false,'conversation')
+ const reduced=calibrationPose(.25,true,true,false,'conversation')
+ assert.ok(full.jawOpen>0)
+ assert.ok(reduced.jawOpen<full.jawOpen)
+ assert.equal(calibrationPose(.25,true,false,true,'conversation').jawOpen,0)
+ assert.ok(makeToneWav('conversation').byteLength>44)
+})

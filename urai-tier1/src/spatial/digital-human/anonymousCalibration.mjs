@@ -1,8 +1,10 @@
 // Anonymous technical calibration. Not speech synthesis, phoneme alignment, or a likeness.
 export const CHANNELS = Object.freeze(['jawOpen','AA','EE','OO','PP','blinkLeft','blinkRight','browInnerUp','mouthSmileLeft','mouthSmileRight']);
-export function calibrationPose(t, playing=false, reducedMotion=false, muted=false, profile='short') {
+/** @param {number} t @param {boolean} [playing] @param {boolean} [reducedMotion] @param {boolean} [muted] @param {string} [profile] */
+export function calibrationPose(t, playing=false, reducedMotion=false, muted=false, profile = /** @type {string} */ ('short')) {
  const values=Object.fromEntries(CHANNELS.map(k=>[k,0]));
  if(!playing || muted || !Number.isFinite(t) || t<0)return values;
+ const pulse=(a,b)=>t>=a&&t<b?Math.min(1,(t-a)/.07,(b-t)/.07):0;
  // Extended NONSPEECH capture profile: real PCM audio and real media.currentTime.
  // The macOS Chromium compositor may take >10 wall-clock seconds to capture.
  // This makes the *actual audible* technical tone and corresponding facial
@@ -17,19 +19,32 @@ export function calibrationPose(t, playing=false, reducedMotion=false, muted=fal
   values.OO=sustain*f*(.19+.12*(1-oscillation));
   return values;
  }
- const pulse=(a,b)=>t>=a&&t<b?Math.min(1,(t-a)/.07,(b-t)/.07):0;
+ if(profile==='conversation'){
+  // Local, non-verbal speech-shaped fixture. The visual cadence and its PCM
+  // envelope derive from this same media clock; it is not TTS or a provider.
+  const f=reducedMotion?.55:1;
+  const syllables=[[.12,.39,'AA'],[.48,.71,'OO'],[.82,1.08,'EE'],[1.18,1.46,'AA'],[1.6,1.9,'OO'],[2.02,2.24,'EE']];
+  for(const [start,end,vowel] of syllables){
+   const energy=pulse(start,end)*f;
+   values.jawOpen=Math.max(values.jawOpen,energy*(vowel==='AA'?.72:vowel==='OO'?.53:.34));
+   values[vowel]=Math.max(values[vowel],energy*(vowel==='AA'?.8:.76));
+  }
+  values.blinkLeft=.55*f*pulse(1.02,1.13);values.blinkRight=.55*f*pulse(1.04,1.15);
+  return values;
+ }
  const a=pulse(.18,.63),o=pulse(.73,1.1),e=pulse(1.2,1.62),s=pulse(1.73,2.08),f=reducedMotion?.55:1;
  values.jawOpen=f*(.66*a+.49*o+.26*e+.12*s);values.AA=.74*a*f;values.OO=.82*o*f;values.EE=.79*e*f;
  values.blinkLeft=.86*f*pulse(1.02,1.18);values.blinkRight=.86*f*pulse(1.04,1.2);
  values.mouthSmileLeft=.62*s*f;values.mouthSmileRight=.62*s*f;return values;
 }
-export function makeToneWav(profile='short') {
+/** @param {string} [profile] */
+export function makeToneWav(profile = /** @type {string} */ ('short')) {
  const rate=16000,samples=rate*(profile==='capture'?9:2.3),output=new ArrayBuffer(44+samples*2),v=new DataView(output);
  const label=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
  label(0,'RIFF');v.setUint32(4,36+samples*2,true);label(8,'WAVE');label(12,'fmt ');
  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,rate,true);
  v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);label(36,'data');v.setUint32(40,samples*2,true);
- for(let i=0;i<samples;i++) {const t=i/rate,p=calibrationPose(t,true,false,false,profile);const amp=Math.min(1,(p.jawOpen+p.AA+p.OO+p.EE+p.mouthSmileLeft)*.7);v.setInt16(44+2*i,Math.round(32767*.14*amp*Math.sin(2*Math.PI*220*t)),true)}
+ for(let i=0;i<samples;i++) {const t=i/rate,p=calibrationPose(t,true,false,false,profile);const amp=Math.min(1,(p.jawOpen+p.AA+p.OO+p.EE+p.mouthSmileLeft)*.7);const carrier=profile==='conversation'?(Math.sin(2*Math.PI*170*t)+.35*Math.sin(2*Math.PI*510*t)):Math.sin(2*Math.PI*220*t);v.setInt16(44+2*i,Math.round(32767*.1*amp*carrier),true)}
  return new Uint8Array(output);
 }
 export function writeMorphs(scene,weights) {

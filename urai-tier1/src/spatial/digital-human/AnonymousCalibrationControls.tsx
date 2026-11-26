@@ -12,16 +12,18 @@ export default function AnonymousCalibrationControls({onMedia,onMute,onFreeze,on
  const [playbackRate,setPlaybackRate]=useState(1)
  const [frozen,setFrozen]=useState(false)
  const [playing,setPlaying]=useState(false)
+ const [fixtureMode,setFixtureMode]=useState<'capture'|'conversation'>('capture')
  useEffect(()=>{
-  const wav=makeToneWav('capture')
+  const wav=makeToneWav(fixtureMode)
   const url=URL.createObjectURL(new Blob([new Uint8Array(wav)],{type:'audio/wav'}))
   const audio=new Audio(url)
+  audio.dataset.uraiFixtureProfile=fixtureMode
   audio.preload='auto';urlRef.current=url;audioRef.current=audio
   const ended=()=>setPlaying(false)
   audio.addEventListener('ended',ended)
   onMedia(audio);setReady(true)
   return ()=>{audio.removeEventListener('ended',ended);audio.pause();audio.removeAttribute('src');audio.load();URL.revokeObjectURL(url);onMedia(null)}
- },[onMedia])
+ },[fixtureMode,onMedia])
  const play=async()=>{
   const a=audioRef.current;if(!a)return
   try{await a.play();setPlaying(true)}catch{setPlaying(false)}
@@ -33,9 +35,10 @@ export default function AnonymousCalibrationControls({onMedia,onMute,onFreeze,on
  <strong className="text-sm">{labMode==='unified-guide'?'Original V4 Guide body / face laboratory':'Anonymous facial animation lab'}</strong>
  <p className="text-xs">{labMode==='unified-guide'
   ?'Nonproduction skinned V4 Guide facial prototype. One original skeleton; technical tone only. NOT Council speech, Founder Adam, likeness approval, or release.'
-  :'Nine-second non-speech capture tone and anonymous face only. Not Adam, not a Council provider, not production. Facial motion uses the real media clock; optional 0.1x playback allows genuine WebGL screenshots.'}</p>
+  :'Local anonymous audio-clock lab only. The speech-shaped fixture is synthetic PCM, not TTS, a provider, a Council voice, or a person. Facial motion follows the real media clock.'}</p>
  <div className="flex flex-wrap gap-2">
- <button type="button" data-testid="calibration-play" disabled={!ready} onClick={play}>Play test tone</button>
+ <button type="button" data-testid="calibration-play" disabled={!ready} onClick={play}>{fixtureMode==='conversation'?'Play synthetic speech fixture':'Play test tone'}</button>
+ <button type="button" data-testid="calibration-fixture-mode" aria-pressed={fixtureMode==='conversation'} onClick={()=>setFixtureMode(current=>current==='capture'?'conversation':'capture')}>{fixtureMode==='conversation'?'Use capture tone':'Use synthetic speech fixture'}</button>
  <button type="button" data-testid="calibration-slow" aria-pressed={playbackRate!==1} onClick={()=>{const next=playbackRate===1 ? 0.1 : 1; if(audioRef.current)audioRef.current.playbackRate=next;setPlaybackRate(next)}}>{playbackRate===1?'Slow audio-clock capture (0.1x)':'Restore normal audio speed'}</button>
  <button type="button" data-testid="calibration-pause" onClick={()=>{audioRef.current?.pause();setPlaying(false)}}>Pause</button>
  <button type="button" data-testid="calibration-stop" onClick={stop}>Stop</button>
@@ -47,7 +50,7 @@ export default function AnonymousCalibrationControls({onMedia,onMute,onFreeze,on
  </label>
  <p aria-live="polite" className="text-xs" data-testid="calibration-status">{labMode==='unified-guide'
   ?'Original skinned character telemetry is reported on the Council realm. This is not a character voice.'
-  :`Audio ${playing?'playing':'stopped'}; sample clock ${onFrame?.time.toFixed(3)??'0.000'} seconds; geometry weight ${onFrame?.max.toFixed(3)??'0.000'}.`}</p>
- <span data-testid="calibration-telemetry" data-audio-playback-rate={playbackRate} data-morphs-frozen={frozen?'true':'false'} data-playing={onFrame?.playing?'true':'false'} data-max-weight={onFrame?.max??0} data-time={onFrame?.time??0} data-morph-bindings={onFrame?.written??0} data-face-measurement-basis={onFrame?.face.source??'unavailable'} data-face-visible={onFrame?.face.visible?'true':'false'} data-face-cx={onFrame?.face.cx??0} data-face-cy={onFrame?.face.cy??0} data-face-rx={onFrame?.face.rx??0} data-face-ry={onFrame?.face.ry??0} hidden />
+  :`${fixtureMode==='conversation'?'Caption fixture: “This is a local synthetic response.” ':''}Audio ${playing?'playing':'stopped'}; sample clock ${onFrame?.time.toFixed(3)??'0.000'} seconds; geometry weight ${onFrame?.max.toFixed(3)??'0.000'}.`}</p>
+ <span data-testid="calibration-telemetry" data-fixture-mode={fixtureMode} data-caption-fixture={fixtureMode==='conversation'?'This is a local synthetic response.':''} data-audio-playback-rate={playbackRate} data-morphs-frozen={frozen?'true':'false'} data-playing={onFrame?.playing?'true':'false'} data-max-weight={onFrame?.max??0} data-time={onFrame?.time??0} data-morph-bindings={onFrame?.written??0} data-face-measurement-basis={onFrame?.face.source??'unavailable'} data-face-visible={onFrame?.face.visible?'true':'false'} data-face-cx={onFrame?.face.cx??0} data-face-cy={onFrame?.face.cy??0} data-face-rx={onFrame?.face.rx??0} data-face-ry={onFrame?.face.ry??0} hidden />
  </aside>
 }
