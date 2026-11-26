@@ -105,7 +105,7 @@ function coverageSnapshot(value: unknown, fallback: NonNullable<HomeWorldState["
 }
 
 export function serializeState(state: HomeWorldState): DocumentData {
-  return {
+  const data = {
     version: state.version ?? 3,
     userId: state.userId,
     groundTier: state.groundTier,
@@ -129,6 +129,7 @@ export function serializeState(state: HomeWorldState): DocumentData {
     createdAt: state.createdAt || serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
+  return Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined));
 }
 
 export function compactExplanation(explanation: HomeWorldExplanation): DocumentData {
