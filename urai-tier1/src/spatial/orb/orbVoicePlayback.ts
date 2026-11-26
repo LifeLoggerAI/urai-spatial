@@ -134,8 +134,8 @@ export class OrbVoicePlayback {
       audio.onerror = null
       audio.pause()
       audio.src = ''
+      this.options.onExternalMediaChange?.(null)
     }
-    this.options.onExternalMediaChange?.(null)
     if (this.objectUrl) this.environment.revokeObjectURL(this.objectUrl)
     this.objectUrl = null
   }
