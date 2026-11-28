@@ -243,7 +243,7 @@ for (const [method, route] of serverContracts) {
     const finalUrl = new URL(response.url)
     const passed = response.status !== 404
       && response.status >= 300
-      && response.status < 600
+      && response.status < 500
       && finalUrl.origin === canonicalOrigin
       && normalizePath(finalUrl.pathname) === normalizePath(requested.pathname)
       && !contentType.includes('text/html')
